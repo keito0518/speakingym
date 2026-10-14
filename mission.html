@@ -82,7 +82,7 @@ function affirmativeMention(t,kind){
   const left=t.slice(Math.max(0,match.index-90),match.index),last=left.trim().split(/\s+/).slice(-7).join(' ');
   if(/\b(?:not|no|without|never|isn t|wasn t|don t want|do not want|didn t order|did not order|don t need)(?:\s+(?:a|an|the|some|any|my|this|that|one|drink|coffee|latte|milk)){0,3}$/.test(last)&&!/\bnot the$/.test(last))continue;
   if(/\b(?:do not|don t|did not|didn t)\s+(?:want|order|ask for|need|like|have)(?:\s+(?:a|an|the|some|any|my|this|that|one|drink|coffee|latte|milk)){0,3}$/.test(last))continue;
-  if(kind==='iced'&&/\b(?:ordered|wanted|asked for)\s+(?:a\s+)?hot\b/.test(t)&&/\b(?:this|it|drink|coffee|latte)\s+(?:is|was|came|arrived)\s+$/.test(last))continue;
+  if(kind==='iced'&&/\b(?:ordered|wanted|asked for)\s+(?:a\s+)?hot\b/.test(t)&&/\b(?:this|it|drink|coffee|latte)\s+(?:is|was|came|arrived)\s+(?:a|an)?\s*$/.test(last))continue;
   return true
  }
  return false
