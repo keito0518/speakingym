@@ -371,13 +371,13 @@ async function start(){cleanup();const myRun=token;chooseStory();reactionTimes={
 by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';
 transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);
 elapsedClock=setInterval(()=>{if(myRun!==token)return;if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
-if(IS_IOS&&Rec){if(myRun!==token)return;firstQuestion();return;}
 if(isSilentMode()){
  try{if(!window.MediaRecorder)throw Error('no MediaRecorder');await ensureSilentModel()}
  catch(e){asrInfo('このiPhoneでは無音モデルを準備できませんでした。標準に戻すか文字入力を利用してね。');by('fallback').open=true;}
  if(myRun!==token)return;
  firstQuestion();return
 }
+if(IS_IOS&&Rec){if(myRun!==token)return;firstQuestion();return;}
 const ok=await acquireCapture(myRun);
 if(myRun!==token)return;
 if(!ok){micDenied=true;mode='text';transcript('マイクを使えません。文字入力でも会話を進められます。');by('fallback').open=true}
