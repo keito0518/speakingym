@@ -236,6 +236,7 @@ const LEVEL_DIALOGUE={
  challenge:{
   alexStart:"It's been ages! Last time we caught up, you were nervous about switching jobs. How has the transition been, and has anything surprised you?",
   alexBack:"Anyway, before we got interrupted, you were saying the new role's been an adjustment. What's been the biggest challenge, and how have you dealt with it?",
+  quietBack:"You mentioned adjusting to the new role. What's been the biggest challenge so far, and how have you dealt with it?",
   alexEnd:"That's a really interesting way of looking at it. Let's catch up again when you've settled in a bit more!",
   intro:"長めの質問を聞き取り、理由やエピソードも交えて話します。",
   goals:["仕事の変化と意外だった点を理由と一緒に話そう。","聞き取りにくい質問も必要なら確認して答えよう。","最近の仕事の課題と対処法を説明しよう。"]
@@ -258,7 +259,7 @@ const EVENTS={
  challenge:{line:"Sorry to bother you both. We've mixed up the orders—would you mind telling me exactly which drink you ordered, including the milk?",reply:"Thanks for clearing that up. I'll bring the right one over.",goal:"飲み物とミルクの種類を具体的に説明しよう。",example:"Of course. I ordered a medium flat white with regular milk, no sugar. I hope that helps."}
  }}
 };
-function line(key){return LEVEL_DIALOGUE[sessionLevel][key]}
+function line(key){const d=LEVEL_DIALOGUE[sessionLevel];return key==='alexBack'&&storyType==='quiet'&&d.quietBack?d.quietBack:d[key]}
 function surpriseDelay(){return sessionLevel==='easy'?7500:sessionLevel==='challenge'?4800:5800}
 function speakingRate(){const setting=by('speechSpeed').value;return setting==='slow'?.8:setting==='normal'?1:setting==='fast'?1.15:sessionLevel==='easy'?.82:sessionLevel==='challenge'?1.13:.96}
 function updateSpeedNote(){
