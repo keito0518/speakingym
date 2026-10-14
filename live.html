@@ -486,7 +486,7 @@ function askedAboutYou(input){
  || /\b(?:what do you do|what about your job)\b/.test(t);
 }
 function isClarification(input){return /\b(?:say that again|repeat|speak slowly|didn t catch|did not catch|what do you mean|pardon|what did you say|don t understand|do not understand|didn t understand|did not understand|couldn t understand|could not understand)\b/.test(wordsOf(input))}
-function isDifficulty(input){return /\b(?:stress|stressed|tough|hard|difficult|terrible|awful|bad|overwhelmed|exhausted|hate|nervous|worried|anxious|problem|not good|not great|don t like|do not like|don t enjoy|do not enjoy)\b/.test(wordsOf(input))}
+function isDifficulty(input){return /\b(?:stress|stressed|stressful|tough|hard|difficult|terrible|awful|bad|overwhelmed|exhausted|exhausting|tired|hate|nervous|worried|anxious|problem|not good|not great|don t like|do not like|don t enjoy|do not enjoy)\b/.test(wordsOf(input))}
 function isBusy(input){return /\b(?:busy|hectic|lot of work|overtime|long hours|deadlines|swamped)\b/.test(wordsOf(input))}
 function isPositive(input){return /\b(?:love|great|good|nice|awesome|amazing|exciting|enjoy|happy|fantastic|fun|friendly)\b/.test(wordsOf(input))}
 function alexReplyTo(input,which){
