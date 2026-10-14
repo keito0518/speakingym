@@ -95,7 +95,7 @@ const Synth=window.speechSynthesis||null;
 const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
 let stage='idle', micStream=null, audioContext=null, analyser=null, samples=null, raf=0, token=0, recog=null, recActive=false;
 let voiceTimer=0, speechMs=0, hadVoice=false, recentVoice=0, startTime=0, elapsedClock=0, timerClock=0, currentUtterance=null;
-let lastLine='', transcriptHistory=[], interruption=false, mode='voice', timeoutId=null, isNpc=false, noiseFloor=.004, micDenied=false;
+let lastLine='', transcriptHistory=[], interruption=false, mode='voice', timeoutId=null, isNpc=false, noiseFloor=.004, micDenied=false, asrFailures=0, asrDisabled=false;
 const phaseList=['friend','barista','return'], stages={friend:0,barista:1,return:2,done:3};
 const cues={alexStart:"Hey! Good to see you again! How's your new job going?",emma:"Oh, sorry to interrupt! Is this your flat white?",emmaThanks:"Thanks! Sorry for interrupting.",alexBack:"Anyway, you were telling me about your new job. What's been the best part so far?",alexEnd:"That's awesome. We should catch up again soon!"};
 const hints={easy:["新しい仕事について、短く一言伝えてみよう。","自分の飲み物かどうかを短く答えよう。","新しい仕事で好きなことを一つ話そう。"],standard:["新しい仕事について、出来事を一つ交えて話そう。","店員の質問に答えて、ありがとうも伝えよう。","割り込み前の話題に戻って、仕事の良いところを伝えよう。"],challenge:["仕事の近況を、理由やエピソードを交えて話してみよう。","店員に自然に返し、必要なら注文内容を確認しよう。","先ほどの話題に戻り、説明を続けて友達にも質問を返そう。"]};
@@ -119,11 +119,11 @@ function addEvent(t){const el=document.createElement('div');el.className='event'
 function clearListeners(){if(timeoutId){clearTimeout(timeoutId);timeoutId=null}voiceTimer=0;speechMs=0;hadVoice=false;recentVoice=0;noiseFloor=.004;}
 function updateTimeline(){const ix=stages[stage]??0;by('timeline').replaceChildren();['Alexと話す','店員に応対する','Alexとの話に戻る'].forEach((t,i)=>{const d=document.createElement('div');d.className='step '+(i<ix?'done':i===ix?'current':'');const n=document.createElement('span');n.className='num';n.textContent=i<ix?'✓':String(i+1);d.append(n,document.createTextNode(' '+t));by('timeline').append(d)})}
 function stopRecognition(){if(recog){recog.onend=null;recog.onerror=null;recog.onresult=null;try{recog.abort()}catch(e){}recog=null}recActive=false;}
-function startRecognition(){stopRecognition();if(!Rec||!micStream||isNpc||!['friend','barista','return'].includes(stage))return;
+function startRecognition(){stopRecognition();if(!Rec||!micStream||isNpc||asrDisabled||!['friend','barista','return'].includes(stage))return;
 try{recog=new Rec();recog.lang='en-AU';recog.interimResults=true;recog.continuous=true;recog.maxAlternatives=1;
-recog.onresult=e=>{let joined='';for(let i=0;i<e.results.length;i++)joined+=e.results[i][0].transcript+' ';lastLine=joined.trim();transcript(lastLine?'聞き取り中：'+lastLine:'話してみよう')};
-recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){transcript('音声認識の許可がありません。声の検知と文字入力で練習できます。')}else if(e.error==='network'){transcript('音声認識に接続できません。マイク音量で割り込みを検知します。')}};
-recog.onend=()=>{recActive=false;if(!isNpc&&micStream&&['friend','barista','return'].includes(stage)){timeoutId=setTimeout(()=>{if(!recActive&&!isNpc)startRecognition()},480)}};
+recog.onresult=e=>{asrFailures=0;let joined='';for(let i=0;i<e.results.length;i++)joined+=e.results[i][0].transcript+' ';lastLine=joined.trim();transcript(lastLine?'聞き取り中：'+lastLine:'話してみよう')};
+recog.onerror=e=>{asrFailures++;if(e.error==='not-allowed'||e.error==='service-not-allowed'||asrFailures>=3)asrDisabled=true;if(e.error==='not-allowed'||e.error==='service-not-allowed'){transcript('音声認識の許可がありません。声の検知と文字入力で練習できます。')}else if(e.error==='network'){transcript('音声認識に接続できません。マイク音量で割り込みを検知します。')}};
+recog.onend=()=>{recActive=false;if(!isNpc&&micStream&&['friend','barista','return'].includes(stage)){timeoutId=setTimeout(()=>{if(!recActive&&!isNpc&&!asrDisabled)startRecognition()},480)}};
 recog.start();recActive=true;
 }catch(e){transcript('音声認識を使えませんでした。マイクでの音量検知は引き続き利用できます。')}
 }
@@ -140,7 +140,7 @@ if(!Synth||!window.SpeechSynthesisUtterance){timeoutId=setTimeout(finish,900);re
 try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.voice=v;u.lang=v?v.lang:'en-AU';u.rate=who==='Emma'?1.04:.96;u.pitch=who==='Emma'?1.16:.91;u.volume=1;currentUtterance=u;u.onend=finish;u.onerror=finish;timeoutId=setTimeout(finish,Math.max(4000,Math.min(20000,text.length*135)));Synth.speak(u);
 }catch(e){timeoutId=setTimeout(finish,950)}
 }
-function refreshControls(){updateTimeline();repeat.disabled=stage==='idle';const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!micStream;
+function refreshControls(){updateTimeline();repeat.disabled=stage==='idle'||isNpc;const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!micStream;
 if(stage==='idle'){main.textContent='▶ LIVEを始める';main.disabled=false;setStatus('始める準備ができています','');setMic('マイクはオフです','「LIVEを始める」を押して利用を許可してください。',false);goal('カフェで友達と話してみよう。会話中に店員が近づくことも。')}
 else if(stage==='friend'){main.textContent='話し終えた →';main.disabled=isNpc;goal(hints[by('level').value][0]);if(!isNpc){setStatus('あなたの番。英語で話そう','active');setMic('聞いています','話している途中に店員が割り込むことがあります。',!!micStream)}}
 else if(stage==='barista'){main.textContent='店員への返事を終える →';main.disabled=isNpc;goal(hints[by('level').value][1]);if(!isNpc){setStatus('Emmaへ返事をしよう','active');setMic('店員への返事を聞いています','返事ができたら次へ。',!!micStream)}}
@@ -150,12 +150,13 @@ else if(stage==='done'){main.disabled=true;setStatus('トレーニング終了',
 function resetVoiceWindow(){clearListeners();lastLine='';}
 function userTurn(){if(stage==='done')return;isNpc=false;resetVoiceWindow();refreshControls();if(micStream)startRecognition();else transcript('マイクを使えない場合は、下の「文字で返答する」を開いて入力してね。');}
 function firstQuestion(){stage='friend';addLine('Alex',cues.alexStart);refreshControls();say('Alex',cues.alexStart,userTurn)}
-async function start(){cleanup();stage='idle';feed.replaceChildren();by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);elapsedClock=setInterval(()=>{if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
+async function start(){cleanup();asrFailures=0;asrDisabled=false;stage='idle';feed.replaceChildren();by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);elapsedClock=setInterval(()=>{if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
 try{
 if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('unsupported');
 micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=new Audio();await audioContext.resume();const src=audioContext.createMediaStreamSource(micStream);analyser=audioContext.createAnalyser();analyser.fftSize=1024;src.connect(analyser);samples=new Float32Array(analyser.fftSize);monitor()}micDenied=false;mode='voice';
-}catch(e){micStream=null;micDenied=true;mode='text';transcript('マイクを使えません。文字入力で会話を進められます。');by('fallback').open=true}
+micDenied=false;mode='voice';
+try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=new Audio();await audioContext.resume();const src=audioContext.createMediaStreamSource(micStream);analyser=audioContext.createAnalyser();analyser.fftSize=1024;src.connect(analyser);samples=new Float32Array(analyser.fftSize);monitor()}else transcript('このブラウザでは音量検知に対応していません。文字入力でも続けられます。')}catch(e){analyser=null;transcript('音声検知を開始できませんでした。文字入力でも続けられます。')}
+}catch(e){if(micStream){micStream.getTracks().forEach(t=>t.stop())}micStream=null;micDenied=true;mode='text';transcript('マイクを使えません。文字入力で会話を進められます。');by('fallback').open=true}
 if(stage==='idle')firstQuestion();
 }
 function monitor(){if(!analyser||!micStream)return;analyser.getFloatTimeDomainData(samples);let sum=0;for(let i=0;i<samples.length;i++)sum+=samples[i]*samples[i];const rms=Math.sqrt(sum/samples.length);
@@ -171,7 +172,7 @@ if(speechMs>=1000&&voiced){triggerInterrupt();}
 }
 raf=requestAnimationFrame(monitor)
 }
-function triggerInterrupt(){if(stage!=='friend'||interruption||isNpc)return;interruption=true;const spoken=lastLine;stopRecognition();if(spoken)transcriptHistory.push({stage:'friend',said:spoken});addEvent('☕ 店員があなたの話の途中に近づいてきた');stage='barista';resetVoiceWindow();addLine('Emma',cues.emma);refreshControls();say('Emma',cues.emma,userTurn)}
+function triggerInterrupt(){if(stage!=='friend'||interruption||isNpc)return;interruption=true;const spoken=lastLine;stopRecognition();if(spoken){transcriptHistory.push({stage:'friend',said:spoken});addLine('You',spoken,'発話の途中まで認識しました')}else addLine('You','…','話している最中に店員が入ってきた');addEvent('☕ 店員があなたの話の途中に近づいてきた');stage='barista';resetVoiceWindow();addLine('Emma',cues.emma);refreshControls();say('Emma',cues.emma,userTurn)}
 function submitReply(text,fromText){const val=(text||lastLine||'').trim();if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
 if(val)addLine('You',val);else addLine('You','（声で返答しました）',micStream?'音声が文字起こしされていないため、内容は確認できません。':'');
 lastLine='';by('typed').value='';stopRecognition();
