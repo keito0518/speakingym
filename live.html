@@ -58,13 +58,14 @@ a{color:inherit}button{touch-action:manipulation}
 .hidden{display:none!important}
 @media(max-width:760px){.container{padding:18px 12px 40px}.layout{grid-template-columns:1fr}.head{flex-direction:column;gap:12px}.head h1{font-size:29px}.head p{font-size:12px}.select{width:100%}.scene{padding:21px;min-height:160px}.scene h2{font-size:25px}.cast{margin-top:15px}.feed{height:340px;padding:16px}.actions{padding:14px}.status{padding:10px 14px}.bubble p{font-size:14px}.panel{padding:17px}.topin{padding:13px 14px}.micarea{padding:11px}.room{border-radius:17px}.footer{font-size:9px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+.pace-settings{display:grid;gap:9px;min-width:190px}.pace-setting{display:block;font-size:11px;font-weight:900;color:#607166;margin-bottom:5px}.pace-settings .select{width:100%}.pace-caption{font-size:10px;color:#6b806f;line-height:1.65}
 </style>
 </head>
 <body>
 <header class="top"><div class="topin"><a href="./" class="logo">Speaking<span>ym</span><span style="font-size:11px;margin-left:9px;color:#acd0b4;letter-spacing:.2px">LIVE</span></a><div class="topright"><span class="tag">EXPERIMENTAL</span><a href="./" class="home">通常練習へ ↗</a></div></div></header>
 <main class="container">
 <div class="head"><div><div class="eyebrow">IMMERSIVE SPEAKING EXPERIMENT</div><h1>台本どおりにいかない、英会話。</h1><p>友達と話している途中、店員が近づいてきたら？<br>マイクをオンにして、英語の世界で会話してみよう。</p></div>
-<div><label for="level" style="font-size:11px;font-weight:850;color:#68786f">練習レベル</label><br><select id="level" class="select"><option value="easy">基礎｜短く伝える</option><option value="standard" selected>標準｜自然に返す</option><option value="challenge">応用｜会話を広げる</option></select></div></div>
+<div class="pace-settings"><div><label for="level" class="pace-setting">練習レベル</label><select id="level" class="select"><option value="easy">基礎｜短く伝える</option><option value="standard" selected>標準｜自然に返す</option><option value="challenge">応用｜会話を広げる</option></select></div><div><label for="interruptDelay" class="pace-setting">🎭 会話への割り込みタイミング</label><select id="interruptDelay" class="select"><option value="3500">早め｜約3.5秒</option><option value="5500" selected>自然｜約5.5秒</option><option value="8000">ゆったり｜約8秒</option></select><div class="pace-caption">あなたが話し始めてからの目安。声を検知した場合だけ発生するよ。</div></div></div></div>
 <div class="layout">
 <section class="room" aria-label="カフェでの英会話">
 <div class="scene"><div class="location">📍 MELBOURNE, AUSTRALIA · CAFÉ</div><h2>Saturday at the café ☕</h2><p>Alexと久しぶりにカフェで会った。近況を話していると、店員のEmmaが近づいてくるかもしれない。</p><div class="cast"><div class="person"><div class="face">A</div> Alex · 友達</div><div class="person"><div class="face">E</div> Emma · 店員</div></div></div>
@@ -80,7 +81,7 @@ a{color:inherit}button{touch-action:manipulation}
 <div id="summary" class="summary hidden"><div class="eyebrow">WORKOUT COMPLETE</div><h2>会話、おつかれさま！</h2><p>途中で思わぬ出来事があっても、元の会話に戻る練習ができたね。</p><div class="review" id="review"></div><button class="btn primary" id="againBtn">↻ もう一度チャレンジ</button></div>
 </section>
 <aside class="side"><section class="panel"><h3>会話の流れ</h3><div class="timeline" id="timeline"><div class="step current"><span class="num">1</span> Alexと話す</div><div class="step"><span class="num">2</span> 店員に応対する</div><div class="step"><span class="num">3</span> Alexとの話に戻る</div></div></section>
-<section class="panel"><h3>このモードのポイント</h3><div class="legend"><div><b>🎤 話している最中に割り込み</b>マイクから発話を検知して、店員が会話に入ってくる。</div><div><b>🗣 2人の登場人物</b>AlexとEmmaの声を切り替える。音声は端末の合成音声を利用。</div><div><b>🔁 話題が続く</b>店員が去った後、友達との元の会話に戻る。</div></div></section>
+<section class="panel"><h3>このモードのポイント</h3><div class="legend"><div><b>🎤 話している最中に割り込み</b>マイクから発話を検知し、選んだタイミングで店員が会話に入ってくる。</div><div><b>🗣 2人の登場人物</b>AlexとEmmaの声を切り替える。音声は端末の合成音声を利用。</div><div><b>🔁 話題が続く</b>店員が去った後、友達との元の会話に戻る。</div></div></section>
 <section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>固定シナリオによるリアルタイム割り込み実験</strong>です。自由会話を生成するAIや文法・発音の採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。マイクの音量検知は端末内で行い、このページは録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>iPhoneでは音声認識・マイクと読み上げの同時動作に制約がある場合があります。音声が出ない場合は再生ボタン、聞き取れない場合は文字入力でも進めます。</p></section>
 <section class="panel"><h3>困ったとき</h3><div class="help"><details><summary>店員に何て言えばいい？</summary><p>“Yes, that's mine, thank you!” / “No, I ordered a latte.”</p></details><details><summary>友達との話にどう戻る？</summary><p>“Anyway, as I was saying...” / “Where were we?”</p></details></div></section>
 </aside>
@@ -137,9 +138,10 @@ lastLine=''; if(Synth){try{Synth.cancel()}catch(e){}}
 let finished=false;
 const finish=()=>{if(finished)return;finished=true;clearTimeout(timeoutId);timeoutId=null;isNpc=false;if(after)after();};
 if(!Synth||!window.SpeechSynthesisUtterance){timeoutId=setTimeout(finish,900);return;}
-try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.voice=v;u.lang=v?v.lang:'en-AU';u.rate=who==='Emma'?1.04:.96;u.pitch=who==='Emma'?1.16:.91;u.volume=1;currentUtterance=u;u.onend=finish;u.onerror=finish;timeoutId=setTimeout(finish,Math.max(4000,Math.min(20000,text.length*135)));Synth.speak(u);
+try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.voice=v;u.lang=v?v.lang:'en-AU';u.rate=who==='Emma'?.91:.93;u.pitch=who==='Emma'?1.07:.98;u.volume=1;currentUtterance=u;u.onend=finish;u.onerror=finish;timeoutId=setTimeout(finish,Math.max(4000,Math.min(20000,text.length*135)));Synth.speak(u);
 }catch(e){timeoutId=setTimeout(finish,950)}
 }
+function sayAfter(waitMs,who,text,after){isNpc=true;stopRecognition();setStatus('会話の自然な間をとっています…','talking');setMic('少し待ってね','まもなく相手が話し始めます',false);refreshControls();timeoutId=setTimeout(()=>{timeoutId=null;say(who,text,after)},waitMs)}
 function refreshControls(){updateTimeline();repeat.disabled=stage==='idle'||isNpc;const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!micStream;
 if(stage==='idle'){main.textContent='▶ LIVEを始める';main.disabled=false;setStatus('始める準備ができています','');setMic('マイクはオフです','「LIVEを始める」を押して利用を許可してください。',false);goal('カフェで友達と話してみよう。会話中に店員が近づくことも。')}
 else if(stage==='friend'){main.textContent='話し終えた →';main.disabled=isNpc;goal(hints[by('level').value][0]);if(!isNpc){setStatus('あなたの番。英語で話そう','active');setMic('聞いています','話している途中に店員が割り込むことがあります。',!!micStream)}}
@@ -168,17 +170,18 @@ const voiced=rms>Math.max(.014,noiseFloor*2.8);
 const now=performance.now();
 if(voiced){if(!hadVoice)recentVoice=now;hadVoice=true;speechMs+=Math.min(45,now-(voiceTimer||now));}
 voiceTimer=now;
-if(speechMs>=1000&&voiced){triggerInterrupt();}
+const targetMs=Number(by('interruptDelay').value)||5500;
+if(speechMs>=1250&&recentVoice&&now-recentVoice>=targetMs&&voiced){triggerInterrupt();}
 }
 raf=requestAnimationFrame(monitor)
 }
-function triggerInterrupt(){if(stage!=='friend'||interruption||isNpc)return;interruption=true;const spoken=lastLine;stopRecognition();if(spoken){transcriptHistory.push({stage:'friend',said:spoken});addLine('You',spoken,'発話の途中まで認識しました')}else addLine('You','…','話している最中に店員が入ってきた');addEvent('☕ 店員があなたの話の途中に近づいてきた');stage='barista';resetVoiceWindow();addLine('Emma',cues.emma);refreshControls();say('Emma',cues.emma,userTurn)}
+function triggerInterrupt(){if(stage!=='friend'||interruption||isNpc)return;interruption=true;const spoken=lastLine;stopRecognition();if(spoken){transcriptHistory.push({stage:'friend',said:spoken});addLine('You',spoken,'発話の途中まで認識しました')}else addLine('You','…','話している最中に店員が入ってきた');addEvent('☕ 店員があなたの話の途中に近づいてきた');stage='barista';resetVoiceWindow();addLine('Emma',cues.emma);refreshControls();sayAfter(550,'Emma',cues.emma,userTurn)}
 function submitReply(text,fromText){const val=(text||lastLine||'').trim();if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
 if(val)addLine('You',val);else addLine('You','（声で返答しました）',micStream?'音声が文字起こしされていないため、内容は確認できません。':'');
 lastLine='';by('typed').value='';stopRecognition();
-if(stage==='friend'){if(!interruption){addEvent('☕ 店員がカップを持って近づいてきた');stage='barista';addLine('Emma',cues.emma);refreshControls();say('Emma',cues.emma,userTurn)}return;}
-if(stage==='barista'){stage='return';resetVoiceWindow();addLine('Emma',cues.emmaThanks);say('Emma',cues.emmaThanks,()=>{addLine('Alex',cues.alexBack);say('Alex',cues.alexBack,userTurn)});return;}
-if(stage==='return'){addLine('Alex',cues.alexEnd);say('Alex',cues.alexEnd,complete)}
+if(stage==='friend'){if(!interruption){addEvent('☕ 店員がカップを持って近づいてきた');stage='barista';addLine('Emma',cues.emma);refreshControls();sayAfter(900,'Emma',cues.emma,userTurn)}return;}
+if(stage==='barista'){stage='return';resetVoiceWindow();addLine('Emma',cues.emmaThanks);sayAfter(700,'Emma',cues.emmaThanks,()=>{addLine('Alex',cues.alexBack);sayAfter(900,'Alex',cues.alexBack,userTurn)});return;}
+if(stage==='return'){addLine('Alex',cues.alexEnd);sayAfter(900,'Alex',cues.alexEnd,complete)}
 }
 function complete(){stage='done';cleanup(true);refreshControls();by('actions').classList.add('hidden');by('summary').classList.remove('hidden');const review=by('review');review.replaceChildren();
 const lv=by('level').value;[0,1,2].forEach((i)=>{const d=document.createElement('div');d.className='reviewitem';const h=document.createElement('strong');h.textContent=['① 新しい仕事の話','② 店員への返事','③ 元の会話に戻る'][i];const p=document.createElement('p');const found=transcriptHistory.find(x=>x.stage===phaseList[i]);p.textContent=(found&&found.said!=='（文字起こしなし）'?'あなた: '+found.said+'\n':'')+'例: '+examples[phaseList[i]][['easy','standard','challenge'].indexOf(lv)];d.append(h,p);review.append(d)});
