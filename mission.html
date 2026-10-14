@@ -26,7 +26,7 @@
    <section class="card hidden" id="gameCard" aria-label="会話トレーニング">
     <div class="session-head"><div><div class="eyebrow">LIVE MISSION</div><h2 class="heading">英語で注文を直そう</h2></div><div class="timer" id="clock">03:00</div></div>
     <div class="progress-track" role="progressbar" aria-label="経過時間" aria-valuemin="0" aria-valuemax="180" aria-valuenow="0" id="progress"><span id="progressFill"></span></div>
-    <div class="stateline"><span class="status-pill" id="progressProblem">① ミスを説明</span><span class="status-pill" id="progressCorrect">② 正しい注文</span><span class="status-pill" id="progressFix">③ 交換に合意</span></div>
+    <div class="stateline"><span class="status-pill" id="engineMode">無料の会話分岐（AI未接続）</span><span class="status-pill" id="progressProblem">① ミスを説明</span><span class="status-pill" id="progressCorrect">② 正しい注文</span><span class="status-pill" id="progressFix">③ 交換に合意</span></div>
     <div id="chat" class="chat" aria-live="polite" aria-label="英会話"></div>
     <div class="hint-status" id="status" aria-live="polite">店員の話を聞こう。</div>
     <div class="replybox"><label for="reply" class="control-label">あなたの返答（英語）</label><textarea id="reply" placeholder="例: Sorry, I ordered an iced latte, but this one is hot. Could you remake it?" spellcheck="false" autocomplete="off" autocapitalize="sentences"></textarea><div class="input-actions"><button class="btn ghost small" id="micBtn" type="button">🎙 話して入力</button><button class="btn ghost small" id="repeatBtn" type="button">🔊 聞き直す</button><button class="btn primary" id="sendBtn" type="button">返答する →</button></div><p class="keyboard-note" id="recognitionNote">マイクが使えない場合は英文を入力してね。iPhoneのキーボード🎤も利用できます。</p><div class="action"><button class="btn secondary small" id="hintBtn" type="button">💡 ヒントを見る</button><button class="btn ghost small" id="muteBtn" type="button">🔊 音声オン</button><button class="btn ghost small" id="quitBtn" type="button">中断する</button></div><div class="hint hidden" id="hint" aria-live="polite"></div></div>
@@ -58,7 +58,7 @@ let endpoint='';
 try{endpoint=localStorage.getItem('speakingym-survival-endpoint')||''}catch(e){}
 $('endpoint').value=endpoint;
 let level='standard',remaining=180,timeLimit=180,running=false,ended=false,busy=false,turn=0,round=0,timerId=null,recognition=null,speechTimer=null,activeUtterance=null,speechEpoch=0,voiceOn=true,runId=0,aiActive=false,pendingRequest=null,lastBarista='',lastMissing='',hardPoint=null;
-let facts={problem:false,iced:false,oat:false,fix:false},messages=[],usedHints=0,unknownCount=0,successfulPhrases=[],originalStage='start';
+let facts={problem:false,iced:false,oat:false,fix:false},messages=[],usedHints=0,unknownCount=0,successfulPhrases=[],originalStage='start',lastAskedKey='',repeatQuestionCount=0;
 const INTRO={
 easy:"Here you go! One hot latte. Is that okay?",
 standard:"Here's your latte! One regular hot latte. Is everything alright with your order?",
@@ -99,7 +99,7 @@ function parseIntent(original){
  const ask=/\b(?:what about you|how about you|and you|how are you|what do you recommend|what is|what s)\b/.test(t);
  const repeat=/\b(?:repeat|again|slowly|pardon|didn t catch|did not catch|don t understand|do not understand|what did you say)\b/.test(t);
  const refund=/\b(?:refund|money back|cancel|money)\b/.test(t);
- const onlyAcknowledgement=/^(?:yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|yes please|sure thanks|thank you|thanks|all right|of course)$/i.test(t);
+ const onlyAcknowledgement=/^(?:yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|yes please|sure thanks|thank you|thanks|all right|of course|absolutely|definitely|yes it (?:was|is)|yes that (?:is|s) right|that (?:is|s) right|yes i did|i did|yes i want that|please do|that would be great|sounds great|sure thing|yup|yep that (?:is|s) right)(?: please| thanks| thank you)?$/i.test(t);
  return{t,iced,oat,hot,mistake,reqFix,agree,no,ask,repeat,refund,onlyAcknowledgement,short:t.split(' ').length<=3}
 }
 function requirementText(){
@@ -164,6 +164,36 @@ function sync(){
 function failureCheckpoint(input){
  if(hardPoint)return;hardPoint={facts:{...facts},lastMissing:missing(),quote:lastBarista,input:input||'',level};
 }
+function nextQuestion(key,need){
+ const alt={
+ problem:[
+  level==='easy'?"Sorry, what is wrong with this coffee?":need.start,
+  "I want to get it right. What did you order, and what did you receive instead?",
+  "I may have missed a detail. Was your order different in temperature or milk? For example, 'I ordered iced, but got hot'."
+ ],
+ iced:[
+  need.askIced,
+  "Just checking the temperature: was your original order an iced latte, or a hot one?",
+  "Sorry, I still need to confirm the temperature. You can say 'Yes, iced' if you wanted it cold."
+ ],
+ oat:[
+  need.askOat,
+  "Could you confirm the milk type for the drink you wanted? Was it oat milk?",
+  "I still need to confirm the milk: was your original order made with oat milk or regular milk?"
+ ],
+ fix:[
+  need.askFix,
+  "Would you like me to make you a new drink to match your original order?",
+  "I can remake it now. Would that solve the problem for you?"
+ ]};
+ const variants=alt[key]||alt.problem;
+ repeatQuestionCount=lastAskedKey===key?repeatQuestionCount+1:0;
+ lastAskedKey=key;
+ if(repeatQuestionCount>=2){
+  setMessage('この無料版では英文の意図を理解しきれない場合があります。言い換えるか「ヒントを見る」を試してね。');
+ }
+ return variants[Math.min(repeatQuestionCount,variants.length-1)]
+}
 function resolveLocal(input){
  const i=parseIntent(input),need=variants[level],previous=lastMissing;
  if(i.repeat)return{reply:lastBarista||need.start,next:previous||'problem'};
@@ -177,25 +207,25 @@ function resolveLocal(input){
  if(i.iced)facts.iced=true;
  if(i.oat)facts.oat=true;
  if(i.reqFix&&!i.refund)facts.fix=true;
- // Short affirmative replies are valid only when the barista just asked about that specific detail.
+ // Confirm the *most recent* explicit question, not any prior unanswered stage.
  if(i.onlyAcknowledgement&&i.agree&&!i.no){
   if(previous==='iced'){facts.problem=true;facts.iced=true}
   if(previous==='oat')facts.oat=true;
-  if(previous==='fix')facts.fix=true
+  if(previous==='fix')facts.fix=true;
  }
  if(successReady())return{reply:need.done,success:true};
  const next=missing();
  if(i.onlyAcknowledgement&&previous==='problem')
-  return{reply:"Thanks. What did you originally order? I'll make sure we get it right.",next:'problem'};
+  return{reply:nextQuestion('problem',need),next:'problem'};
  if(!i.t||(!facts.problem&&!i.iced&&!i.oat&&!i.hot&&!i.mistake&&!i.reqFix&&!i.agree)){
   unknownCount++;failureCheckpoint(input);
-  return{reply:unknownCount>1?"Could you tell me which drink you ordered, including the temperature and milk?":"Sorry, I'm not quite sure what happened. Was the drink different from your order?",next:'problem'};
+  return{reply:nextQuestion('problem',need),next:'problem'};
  }
- if(next==='problem')return{reply:level==='easy'?"Oh, sorry! What's wrong with the coffee?":need.start,next:'problem'};
- if(next==='iced')return{reply:need.askIced,next:'iced'};
- if(next==='oat')return{reply:need.askOat,next:'oat'};
- if(next==='fix')return{reply:need.askFix,next:'fix'};
- failureCheckpoint(input);return{reply:need.start,next:'problem'};
+ if(next==='problem')return{reply:nextQuestion('problem',need),next:'problem'};
+ if(next==='iced')return{reply:nextQuestion('iced',need),next:'iced'};
+ if(next==='oat')return{reply:nextQuestion('oat',need),next:'oat'};
+ if(next==='fix')return{reply:nextQuestion('fix',need),next:'fix'};
+ failureCheckpoint(input);return{reply:nextQuestion('problem',need),next:'problem'};
 }
 function applyAiFacts(response){
  const raw=response&&typeof response==='object'?response:{};
@@ -219,7 +249,7 @@ async function fromAI(text,currentTurn){
  if(!data||typeof data.reply!=='string'||!data.reply.trim()||data.reply.length>850)throw Error('invalid AI reply');
  if(currentTurn!==turn||ended)return null;
  applyAiFacts(data);
- aiActive=true;
+ aiActive=true;updateEndpoint();
  const clean=data.reply.trim();
  const won=successReady();
  return{reply:clean,success:won};
@@ -233,7 +263,7 @@ async function respond(){
  const text=$('reply').value.trim();if(!text){setStatus('英語で言いたいことを入力するか、マイクで話してね。');return}
  stopRecognizer();$('reply').value='';
  turn++;const current=turn,epoch=runId;addMessage('You',text);successfulPhrases.push(text);
- busy=true;sync();setStatus('店員が考えています…');
+ busy=true;sync();setStatus(endpoint?'AIの返答を待っています…':'発言から注文内容を判定しています…');
  let result=await fromAI(text,current);
  if(!result){if(epoch!==runId||ended)return;result=resolveLocal(text)}
  if(epoch!==runId||ended||current!==turn)return;
@@ -254,7 +284,7 @@ function renderHints(){
 }
 function clearSession(){runId++;turn++;ended=false;running=false;busy=false;aiActive=false;stopRecognizer();stopSpeech();if(pendingRequest){pendingRequest.abort();pendingRequest=null}if(timerId!==null){clearInterval(timerId);timerId=null}}
 function begin(checkpoint=false){
- clearSession();level=$('level').value;timeLimit=checkpoint?75:180;remaining=timeLimit;running=true;ended=false;round=0;usedHints=0;unknownCount=0;messages=[];successfulPhrases=[];lastMissing='';lastBarista='';facts={problem:false,iced:false,oat:false,fix:false};if(!checkpoint)hardPoint=null;
+ clearSession();level=$('level').value;timeLimit=checkpoint?75:180;remaining=timeLimit;running=true;ended=false;round=0;usedHints=0;unknownCount=0;lastAskedKey='';repeatQuestionCount=0;messages=[];successfulPhrases=[];lastMissing='';lastBarista='';facts={problem:false,iced:false,oat:false,fix:false};if(!checkpoint)hardPoint=null;
  if(checkpoint&&hardPoint){facts={...hardPoint.facts};lastMissing=hardPoint.lastMissing||'';}
  stats.attempts++;saveStats();
  $('setupCard').classList.add('hidden');$('resultCard').classList.add('hidden');$('gameCard').classList.remove('hidden');
@@ -284,6 +314,7 @@ function finish(won,reason){
  $('checkpointBtn').disabled=!hardPoint&&!(!won&&round>0);
 }
 function updateEndpoint(){
+ $('engineMode').textContent=aiActive?'AI返答を利用中':endpoint?'AI接続先を設定済み（利用前）':'無料の会話分岐（AI未接続）';
  $('endpointStatus').textContent=endpoint?'AI接続先を設定済み（応答成功時のみ使用。失敗時は無料版に戻ります）':'AIは未接続。現在は無料の分岐モードです。';
  $('endpoint').value=endpoint;
 }
