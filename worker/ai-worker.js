@@ -34,7 +34,8 @@ function headersFor(origin) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Vary": "Origin"
+    "Vary": "Origin",
+    "X-Content-Type-Options": "nosniff"
   };
 }
 function reply(body, status, origin) {
@@ -61,7 +62,7 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY }, 200, ALLOWED_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true" }, 200, ALLOWED_ORIGIN);
     }
     // Origin checks only restrict browser use. They are not authentication.
     if (origin !== ALLOWED_ORIGIN) {
@@ -73,8 +74,10 @@ export default {
     if (path !== "/" || request.method !== "POST") {
       return reply({ error: "not_found" }, 404, origin);
     }
-    if (!env.GEMINI_API_KEY) {
-      return reply({ error: "ai_unavailable", message: "AI key is not configured." }, 503, origin);
+    // AI access is OFF unless explicitly enabled by the site owner.
+    // Do not allow a secret upload or a deployment to expose a billable API by accident.
+    if (!env.GEMINI_API_KEY || env.ALLOW_AI !== "true") {
+      return reply({ error: "ai_disabled", message: "AI trial is currently turned off." }, 503, origin);
     }
     // Required bindings are configured in wrangler.toml.
     // Conservative public demo limits; limits are approximate/per Cloudflare edge location.
