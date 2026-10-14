@@ -75,20 +75,32 @@ standard:{start:"No problem. Could you tell me exactly what you ordered?",askIce
 challenge:{start:"I'm sorry about that. Could you confirm the original drink and the changes you'd like?",askIced:"Thanks for letting me know. Just to confirm, was your order iced rather than hot?",askOat:"I see. You ordered that with oat milk rather than regular milk, correct?",askFix:"I appreciate you explaining. Would you like me to remake your drink to the original order?",done:"You're absolutely right. I'll remake it as a medium iced oat latte. Sorry for the inconvenience!"}
 };
 const good=t=>/\b(yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|that s right|sounds good|go ahead|would be great|thank you|thanks)\b/.test(t);
-function norm(s){return String(s||'').toLowerCase().replace(/[‘’]/g,"'").replace(/[^a-z0-9'\s]/g,' ').replace(/\s+/g,' ').trim()}
+function norm(s){return String(s||'').toLowerCase().replace(/[‘’']/g,' ').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()}
+function affirmativeMention(t,kind){
+ const r=kind==='iced'?/\b(?:iced|ice cold|cold|chilled|with ice|over ice)\b/g:/\b(?:oat|oatmilk|oat milk)\b/g;
+ for(const match of t.matchAll(r)){
+  const left=t.slice(Math.max(0,match.index-90),match.index),last=left.trim().split(/\s+/).slice(-7).join(' ');
+  if(/\b(?:not|no|without|never|isn t|wasn t)\s+(?:an?\s+)?(?:\w+\s+){0,2}$/.test(last))continue;
+  if(/\b(?:do not|don t|did not|didn t)\s+(?:want|order|ask for|need|like|have)\s+(?:an?\s+)?(?:\w+\s+){0,2}$/.test(last))continue;
+  if(kind==='iced'&&/\b(?:ordered|wanted|asked for)\s+(?:a\s+)?hot\b/.test(t)&&/\b(?:this|it|drink|coffee|latte)\s+(?:is|was|came|arrived)\s+$/.test(last))continue;
+  return true
+ }
+ return false
+}
 function parseIntent(original){
  const t=norm(original);
- const iced=/\b(iced|ice cold|cold|chilled|with ice|over ice)\b/.test(t);
- const oat=/\b(oat|oatmilk|oatmilk)\b/.test(t);
- const hot=/\b(hot|warm|heated)\b/.test(t);
- const mistake=/\b(wrong|mistake|mix up|mixed up|instead|different|not|wasn t|didn t|isn t|should be|supposed to|ordered|asked for|wanted|received|got|missing)\b/.test(t);
- const reqFix=/\b(remake|replace|replacement|exchange|change it|change this|change the drink|fix it|fix the drink|switch it|make it iced|make me a new|make another|make a new|please make|redo|a new one|another one|bring me another|bring me a new)\b/.test(t);
- const agree=/\b(yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|sounds good|go ahead)\b/.test(t);
- const no=/\b(no|nope|don t|didn t|do not|wrong)\b/.test(t);
- const ask=/\b(what about you|how about you|and you|how are you|what do you recommend|what is|what s)\b/.test(t);
- const repeat=/\b(repeat|again|slowly|pardon|didn t catch|did not catch|don t understand|do not understand|what did you say)\b/.test(t);
- const refund=/\b(refund|money back|cancel|money)\b/.test(t);
- return{t,iced,oat,hot,mistake,reqFix,agree,no,ask,repeat,refund,short:t.split(' ').length<=3};
+ const iced=affirmativeMention(t,'iced'),oat=affirmativeMention(t,'oat');
+ const hot=/\b(?:hot|warm|heated)\b/.test(t);
+ const mistake=/\b(?:wrong|mistake|mix up|mixed up|instead|different|not|wasn t|didn t|isn t|should be|supposed to|ordered|asked for|wanted|received|got|missing)\b/.test(t);
+ const reqFix=/\b(?:remake|remaking|replace|replacing|replacement|exchange|switch|redo|fix (?:this|it|the|my)|change (?:it|this|the)|make (?:it|me|another|a new)|bring (?:me|another)|another one|new one|please make)\b/.test(t)||
+  /\b(?:could|can|would)\s+you\s+(?:please\s+)?(?:make|bring|give)\s+(?:me\s+)?(?:an?\s+)?(?:iced|cold|new|another)\b/.test(t);
+ const agree=/\b(?:yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|sounds good|go ahead)\b/.test(t);
+ const no=/\b(?:no|nope|not|never|without|don t|didn t|do not|did not|isn t|wasn t)\b/.test(t);
+ const ask=/\b(?:what about you|how about you|and you|how are you|what do you recommend|what is|what s)\b/.test(t);
+ const repeat=/\b(?:repeat|again|slowly|pardon|didn t catch|did not catch|don t understand|do not understand|what did you say)\b/.test(t);
+ const refund=/\b(?:refund|money back|cancel|money)\b/.test(t);
+ const onlyAcknowledgement=/^(?:yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|yes please|sure thanks|thank you|thanks|all right|of course)$/i.test(t);
+ return{t,iced,oat,hot,mistake,reqFix,agree,no,ask,repeat,refund,onlyAcknowledgement,short:t.split(' ').length<=3}
 }
 function requirementText(){
  return level==='easy'?'冷たいラテへの交換を成立させる':level==='standard'?'アイス＋オーツミルクのラテに交換':"注文の温度・ミルクの違いを説明し、交換を成立";
@@ -118,7 +130,7 @@ function say(text,after){
 }
 function barista(text,after){addMessage('Emma',text);say(text,after)}
 function clockString(secs){return String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0')}
-function updateClock(){$('clock').textContent=clockString(remaining);$('clock').classList.toggle('low',remaining<=30);$('progressFill').style.width=((timeLimit-remaining)/timeLimit*100)+'%';$('progress').setAttribute('aria-valuenow',String(Math.round((timeLimit-remaining)/timeLimit*180)))}
+function updateClock(){$('clock').textContent=clockString(remaining);$('clock').classList.toggle('low',remaining<=30);$('progressFill').style.width=((timeLimit-remaining)/timeLimit*100)+'%';$('progress').setAttribute('aria-valuemax',String(timeLimit));$('progress').setAttribute('aria-valuenow',String(timeLimit-remaining))}
 function tick(){if(!running||ended)return;remaining=Math.max(0,remaining-1);updateClock();if(remaining===0)finish(false,'timeout')}
 function stopRecognizer(){if(recognition){try{recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort()}catch(e){}recognition=null}$('micBtn').textContent='🎙 話して入力'}
 function micAction(){
@@ -153,38 +165,37 @@ function failureCheckpoint(input){
  if(hardPoint)return;hardPoint={facts:{...facts},lastMissing:missing(),quote:lastBarista,input:input||'',level};
 }
 function resolveLocal(input){
- const i=parseIntent(input),was=missing(),need=variants[level];
- // Parse earlier turns into explicit states. Polite and imperfect English are allowed.
- if((i.hot&&i.mistake)||/\b(this|it)\s+(?:is|s)\s+hot\b/.test(i.t)||/\bwrong\b/.test(i.t)||(/\b(i|we)\s+(?:ordered|asked for|wanted)\b/.test(i.t)&&i.iced)){facts.problem=true}
+ const i=parseIntent(input),need=variants[level],previous=lastMissing;
+ if(i.repeat)return{reply:lastBarista||need.start,next:previous||'problem'};
+ if(i.refund)return{reply:"I can help with a refund, or I can remake your original iced oat latte. Which would you prefer?",next:previous||'problem'};
+ if(i.ask&&!i.mistake&&!i.reqFix&&!i.iced&&!i.oat)
+  return{reply:"I'm doing well, thanks for asking! Let's sort out your drink. What did you originally order?",next:previous||'problem'};
+ const correction=(i.hot&&i.mistake)||
+  /\b(?:wrong (?:drink|coffee|one)|not my (?:coffee|drink|latte|order)|not what (?:i|we) ordered|not the (?:right|correct) (?:coffee|drink|one)|this (?:is|was) hot|this (?:is|was) not mine|you (?:gave|brought) (?:me )?the wrong)\b/.test(i.t)||
+  (i.iced&&/\b(?:ordered|asked for|wanted|supposed to be|should be)\b/.test(i.t));
+ if(correction)facts.problem=true;
  if(i.iced)facts.iced=true;
  if(i.oat)facts.oat=true;
  if(i.reqFix&&!i.refund)facts.fix=true;
- // Confirm an explicit offer, including a short "yes, please".
- if(lastMissing==='fix'&&i.agree&&!i.no)facts.fix=true;
- if(lastMissing==='iced'&&i.agree&&!i.no){facts.problem=true;facts.iced=true}
- if(lastMissing==='oat'&&i.agree&&!i.no)facts.oat=true;
- const lacks=missing();if(successReady())return{reply:need.done,success:true};
- if(i.refund)return{reply:"I can help with a refund, but if you still want your iced oat latte, I can remake it for you. Which would you prefer?",next:'start'};
- if(i.repeat)return{reply:lastBarista||need.start,next:lastMissing||'start'};
- if(i.ask&&!i.mistake&&!i.reqFix&&!i.iced&&!i.oat)return{reply:"I'm doing well, thanks for asking! Let's get your drink sorted first. What did you originally order?",next:'start'};
- if(!i.t||(!i.iced&&!i.oat&&!i.hot&&!i.mistake&&!i.reqFix&&!i.agree)){
+ // Short affirmative replies are valid only when the barista just asked about that specific detail.
+ if(i.onlyAcknowledgement&&i.agree&&!i.no){
+  if(previous==='iced'){facts.problem=true;facts.iced=true}
+  if(previous==='oat')facts.oat=true;
+  if(previous==='fix')facts.fix=true
+ }
+ if(successReady())return{reply:need.done,success:true};
+ const next=missing();
+ if(i.onlyAcknowledgement&&previous==='problem')
+  return{reply:"Thanks. What did you originally order? I'll make sure we get it right.",next:'problem'};
+ if(!i.t||(!facts.problem&&!i.iced&&!i.oat&&!i.hot&&!i.mistake&&!i.reqFix&&!i.agree)){
   unknownCount++;failureCheckpoint(input);
-  return{reply:unknownCount>1?"I want to make sure I get your drink right. Could you tell me if you wanted it iced and whether you'd like oat milk?":"I'm sorry, could you explain what was wrong with the drink? I want to get it right.",next:'start'};
+  return{reply:unknownCount>1?"Could you tell me which drink you ordered, including the temperature and milk?":"Sorry, I'm not quite sure what happened. Was the drink different from your order?",next:'problem'};
  }
- if(lacks==='problem'){
-  lastMissing='problem';return{reply:level==='easy'?"Sorry! Is there something wrong with the coffee?":need.start,next:'problem'};
- }
- if(lacks==='iced'){
-  lastMissing='iced';return{reply:need.askIced,next:'iced'};
- }
- if(lacks==='oat'){
-  lastMissing='oat';return{reply:need.askOat,next:'oat'};
- }
- if(lacks==='fix'){
-  lastMissing='fix';return{reply:need.askFix,next:'fix'};
- }
- // Last safety net.
- failureCheckpoint(input);return{reply:need.start,next:'start'};
+ if(next==='problem')return{reply:level==='easy'?"Oh, sorry! What's wrong with the coffee?":need.start,next:'problem'};
+ if(next==='iced')return{reply:need.askIced,next:'iced'};
+ if(next==='oat')return{reply:need.askOat,next:'oat'};
+ if(next==='fix')return{reply:need.askFix,next:'fix'};
+ failureCheckpoint(input);return{reply:need.start,next:'problem'};
 }
 function applyAiFacts(response){
  const raw=response&&typeof response==='object'?response:{};
@@ -249,7 +260,7 @@ function begin(checkpoint=false){
  $('setupCard').classList.add('hidden');$('resultCard').classList.add('hidden');$('gameCard').classList.remove('hidden');
  $('chat').replaceChildren();$('reply').value='';$('hint').classList.add('hidden');$('hint').textContent='';updateClock();sync();
  timerId=setInterval(tick,1000);setStatus('店員が話し終わるまで待ってね。');
- const intro=checkpoint?"Let's try that again. Could you explain what was wrong with your drink?":INTRO[level];
+ const intro=checkpoint?({problem:"Let's try again. What was wrong with the drink?",iced:variants[level].askIced,oat:variants[level].askOat,fix:variants[level].askFix,done:INTRO[level]})[missing()]:INTRO[level];
  barista(intro,()=>setStatus('あなたの番！ 注文を直すために話しかけよう。'));
  $('gameCard').scrollIntoView?.({block:'start',behavior:'smooth'});
 }
