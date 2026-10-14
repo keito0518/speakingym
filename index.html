@@ -28,6 +28,42 @@
 @media(max-width:850px){.plan-switch-bar{flex-wrap:wrap}.quick-start{order:3;width:100%;justify-content:center}}
 @media(max-width:680px){.plan-switch-bar{flex-wrap:nowrap}.quick-start{order:3}.quick-status{flex-wrap:wrap}}
 
+
+  /* v0.4 — larger level controls and prominent, actionable speaking goal */
+  .difficulty-section{margin-top:20px;padding:18px 20px;background:#f6f8f5;border:1px solid #dfe7dd;border-radius:16px}
+  .difficulty-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:13px}
+  .difficulty-title{color:var(--ink);font-size:16px;font-weight:900;letter-spacing:-.2px}
+  .difficulty-sub{color:#64746c;font-size:11px;line-height:1.5}
+  .difficulty-section .level-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;padding:0;background:transparent}
+  .difficulty-section .level-btn{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-width:0;min-height:66px;padding:11px 6px;border:1.5px solid #d1ddd1;border-radius:12px;background:#fff;color:#344a3e;font-size:17px;font-weight:900;line-height:1.2;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+  .difficulty-section .level-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 5px 12px rgba(23,64,47,.13)}
+  .difficulty-section .level-btn:focus-visible{outline:3px solid #ed8564;outline-offset:3px}
+  .level-tip{font-size:11px;font-weight:650;color:#708178;white-space:normal;text-align:center}
+  .difficulty-section .level-btn.active .level-tip{color:#d8ebe0}
+  .goal{margin-top:19px;margin-bottom:21px;padding:20px 21px;background:#fff6e9;border:2px solid #efddc1;border-radius:16px;gap:14px}
+  .goal-icon{width:45px;height:45px;border-radius:13px;font-size:23px;background:#ffe5c6}
+  .goal-copy{min-width:0;flex:1}
+  .goal strong{font-size:16px;line-height:1.4;color:#493928;margin-bottom:8px;font-weight:900}
+  .goal p{font-size:18px;line-height:1.58;letter-spacing:-.2px;font-weight:850;color:#42382e;margin:3px 0 9px}
+  .goal-help{display:block;font-size:12px;color:#795e46;line-height:1.65}
+  .goal-check{margin-top:12px;background:rgba(255,255,255,.84);border:1px solid #f2e5d4;border-radius:9px;padding:9px 11px;font-size:12px;line-height:1.65;color:#68503a}
+  .response-label{font-size:16px}
+  @media(max-width:680px){
+    .difficulty-section{margin-top:17px;padding:15px 13px;border-radius:14px}
+    .difficulty-title{font-size:15px}
+    .difficulty-sub{font-size:10px}
+    .difficulty-section .level-pick{gap:7px}
+    .difficulty-section .level-btn{min-height:66px;padding:10px 3px;font-size:17px;border-radius:10px}
+    .level-tip{font-size:10px}
+    .goal{padding:16px 14px;gap:10px;border-radius:14px}
+    .goal-icon{width:37px;height:37px;font-size:19px;border-radius:10px}
+    .goal strong{font-size:14px;line-height:1.5;margin-bottom:7px}
+    .goal p{font-size:17px;line-height:1.6}
+    .goal-help{font-size:12px}
+    .goal-check{padding:9px 10px}
+    .response-label{font-size:15px}
+    .response-label span{font-size:10px}
+  }
 </style>
 </head>
 <body>
@@ -37,7 +73,7 @@
         <span class="brand-symbol"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 14h3l3-7 4 10 3-7h3" stroke="currentColor" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span>speakin<span class="brand-highlight">gym</span><span class="brand-dot">.</span></span>
       </div>
-      <div class="header-right"><span class="early-access">FREE WORKOUT / PRO PREVIEW</span><span class="version">v0.3</span></div>
+      <div class="header-right"><span class="early-access">FREE WORKOUT / PRO PREVIEW</span><span class="version">v0.4</span></div>
     </header>
 
     <section class="hero" aria-labelledby="hero-title">
@@ -358,15 +394,18 @@ window.SPEAKINGYM_SCENES = [
     const s=scene(),v=variation(),lv=current(),samples=v.samples[levelIndex()];const aiLive=plan==='pro'&&!!apiUrl;return `
     <section class="practice" aria-label="英会話トレーニング">
       ${quickSession?`<div class="quick-status"><span>⚡ 5問チャレンジ中</span><strong>${quickSession.at+1} / 5</strong><button data-action="quick-exit">終了する</button></div>`:''}
-      <div class="practice-header"><div><span class="small-label">TODAY'S SPEAKING WORKOUT</span><h2 class="practice-title">${s.emoji} ${safe(s.title)}</h2><p class="practice-sub">${safe(s.subtitle)}</p></div>
-        <div><div class="level-label" style="margin-bottom:7px">難易度を選ぶ</div><div class="level-pick" role="group" aria-label="難易度">${LEVELS.map(l=>`<button class="level-btn ${level===l.key?'active':''}" aria-pressed="${level===l.key}" data-action="level" data-level="${l.key}">${l.name}</button>`).join('')}</div></div></div>
+      <div class="practice-header"><div><span class="small-label">TODAY'S SPEAKING WORKOUT</span><h2 class="practice-title">${s.emoji} ${safe(s.title)}</h2><p class="practice-sub">${safe(s.subtitle)}</p></div></div>
+      <div class="difficulty-section" aria-label="練習の難易度を選ぶ">
+        <div class="difficulty-top"><strong class="difficulty-title">① 難易度を選ぼう</strong><span class="difficulty-sub">途中で変更してもOK</span></div>
+        <div class="level-pick" role="group" aria-label="難易度">${LEVELS.map(l=>`<button class="level-btn ${level===l.key?'active':''}" aria-pressed="${level===l.key}" data-action="level" data-level="${l.key}"><span class="level-name">${l.name}</span><span class="level-tip">${l.key==='easy'?'まずは一言':l.key==='standard'?'会話をつなぐ':'自然に伝える'}</span></button>`).join('')}</div>
+      </div>
       <div class="separator"></div>
       <div class="workout-counter"><b>💬 CONVERSATION ${variantIndex+1} / ${s.variants.length}</b><span class="mini-step">01 聞く → 02 話す → 03 振り返る</span></div>
-      <div class="prompt-card"><div class="prompt-top"><span class="from-label">🟢 話し相手からの質問</span><button class="play-btn" data-action="play-question" title="質問を英語で読み上げ">▶ 音声を聞く</button></div>
+      <div class="prompt-card"><div class="prompt-top"><span class="from-label">② 相手の英語を聞こう</span><button class="play-btn" data-action="play-question" title="質問を英語で読み上げ">▶ 音声を聞く</button></div>
         <p class="quote-en" lang="en">“${safe(v.q)}”</p>${showJa?`<p class="translation">${safe(v.ja)}</p>`:''}
         <button class="text-toggle" data-action="toggle-ja">${showJa?'− 日本語訳を隠す':'+ 日本語訳を見る'}</button></div>
-      <div class="goal"><span class="goal-icon">🎯</span><div><strong>今回のミッション</strong><p>${safe(lv.goal)}</p></div></div>
-      <label for="answer" class="response-label">あなたなら、どう答える？ <span>まずは声に出してみよう</span></label>
+      <div class="goal" aria-label="この問題の練習目標"><span class="goal-icon" aria-hidden="true">🎯</span><div class="goal-copy"><strong>③ 今回、あなたが英語で伝えること</strong><p>${safe(lv.goal)}</p><span class="goal-help">上の相手の言葉を聞いて、この内容を自分の英語で伝えてみよう。</span><div class="goal-check"><span aria-hidden="true">✓</span> できたらOK：${safe(lv.check)}</div></div></div>
+      <label for="answer" class="response-label">④ 英語で答えてみよう！ <span>まずは声に出してみよう</span></label>
       <div class="answer-wrap"><textarea id="answer" class="answer-text" maxlength="500" spellcheck="false" lang="en" placeholder="英語で答えてみよう…（文字入力もOK）" aria-label="英語の回答">${safe(answer)}</textarea>
         <button class="mic-btn ${listening?'active':''}" data-action="mic" aria-label="${listening?'音声入力を停止':'マイクで答える'}" aria-pressed="${listening}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5m-4 0h8"/></svg><span>${listening?'聞き取り中…':'声で答える'}</span></button></div>
       <p class="small-help">${listening?'● マイクで聞き取っています。話し終えると文字になります。':'※ 音声認識は端末によって使えない場合があります。文字入力も利用できます。'}</p>
