@@ -126,7 +126,7 @@ a{color:inherit}button{touch-action:manipulation}
 <div id="summary" class="summary hidden"><div class="eyebrow">WORKOUT COMPLETE</div><h2>会話、おつかれさま！</h2><p>突然の出来事があってもなくても、自然に会話を続ける練習ができたね。</p><div id="reactionCard"></div><div class="review" id="review"></div><button class="btn primary" id="againBtn">↻ もう一度チャレンジ</button></div>
 </section>
 <aside class="side"><section class="panel"><h3>会話の流れ</h3><div class="timeline" id="timeline"><div class="step current"><span class="num">1</span> Alexと話す</div><div class="step"><span class="num">2</span> 予想外の出来事</div><div class="step"><span class="num">3</span> Alexとの話に戻る</div></div></section>
-<section class="panel"><h3>会話のリアクション（試験版）</h3><p>「What about you?」と聞き返す、仕事が大変だったと話す、注文を訂正するなど、聞き取った英文によって相手の返し方が変わります。現在は無料のキーワード分岐で、自由に会話を理解・生成するAIではありません。</p><p>文字起こしが空欄のときは、内容に合わせた返答はできません。</p></section>
+<section class="panel"><h3>会話のリアクション（試験版）</h3><p>「What about you?」「How about you?」と聞き返すと、<strong>標準の音声認識モードでは「話し終えた」を押さなくても</strong>Alexが答えます。途中で話を遮るより、質問への回答を優先します。</p><p>それ以外の英文は従来どおり「話し終えた」で送信。無料のキーワード分岐なので、自由に理解・生成するAIではありません。文字起こしが空欄のときは内容に合わせた返答はできません。</p></section>
 <section class="panel"><h3>今回のLIVE+機能</h3><div class="legend"><div><b>🎲 筋書きが変わる</b>店員、初対面の知り合い、注文確認、何も起こらない日。開始ごとに分岐。</div><div><b>🗣 難易度で会話も話速も変化</b>基礎は短い質問、標準は会話を続ける練習、応用は長めの質問や説明に挑戦。</div><div><b>☕ 環境音をオン・オフ</b>より聞こえる音量のざわめき風の合成音に変更。不要ならオフに。</div><div><b>📈 戻って話すまでを計測</b>元の会話に戻るとき、発話開始までの時間をこの端末で記録。</div></div></section>
 <section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>分岐する固定シナリオによる割り込み実験</strong>です。セリフはAIが自由生成するものではありません。自由会話・文法採点・発音採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。ブラウザ対応時は端末のマイク音量または音声認識を利用し、このページ自体では録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>標準モードでは、iPhoneの音声認識の開始・終了音をアプリ側から消せない場合があります。無料・無音モードではブラウザ標準の音声認識を使わず、端末で文字起こししますが、初回のダウンロードと処理待ちが発生します。iPhoneで動かない場合は標準モードまたは文字入力を使ってね。</p></section>
 <section class="panel"><h3>困ったとき</h3><div class="help"><details><summary>割り込みに何て言えばいい？</summary><p>店員なら “Yes, that's mine, thanks!”。初対面の人なら “Nice to meet you, I'm ...”。どちらも自然な一言からで大丈夫。</p></details><details><summary>友達との話にどう戻る？</summary><p>“Anyway, as I was saying...” / “Where were we?”</p></details></div></section>
@@ -150,6 +150,26 @@ let lastLine='', transcriptHistory=[], interruption=false, mode='voice', timeout
 let asrStartedAt=0, asrSpeechSeenAt=0, asrStopEpoch=0, recognitionFinal='', transcriptionStatus='ready';
 let storyType='barista', liveEvent=null, sessionLevel='standard', reactionTimes={}, turnStartedAt=0, voiceFirstSeen=0, ambientNode=null, ambientGain=null, ambientContext=null;
 let friendFollowups=0, finalFollowups=0, conversationTopic='general';
+let turnSerial=0,autoReplyTimer=null;
+function isReciprocalQuestion(input){
+ const t=wordsOf(input);
+ // The question must be at the end of the recognised speech, not somewhere mid-sentence.
+ return /\b(?:what|how)\s+(?:a?bout|a\s+out)\s+(?:you|u|yourself)\s*$/.test(t)
+ || /\b(?:and\s+(?:you|u)|how\s+(?:are|r)\s+(?:you|u)|how\s+have\s+you\s+been|what\s+about\s+your\s+job)\s*$/.test(t);
+}
+function scheduleReciprocalReply(input,delay){
+ if(isSilentMode()||isNpc||!['friend','return'].includes(stage)||!isReciprocalQuestion(input))return;
+ if(autoReplyTimer!==null)clearTimeout(autoReplyTimer);
+ const ownTurn=turnSerial,ownToken=token;
+ asrInfo('↪ 聞き返しを認識！ Alexが返事します。');
+ autoReplyTimer=later(()=>{
+  autoReplyTimer=null;
+  if(ownTurn!==turnSerial||ownToken!==token||isNpc||!['friend','return'].includes(stage))return;
+  const spoken=(lastLine||by('typed').value||input).trim();
+  if(!isReciprocalQuestion(spoken))return;
+  submitReply(spoken,false)
+ },delay);
+}
 let silentModelPromise=null,silentRecorder=null,silentPieces=[],silentRecordingStarted=0,silentTranscriptionActive=false,silentReady=false;
 function isSilentMode(){return by('asrMode').value==='silent'}
 async function ensureSilentModel(){
@@ -344,8 +364,12 @@ function startRecognition(manual=false){
    for(let i=0;i<e.results.length;i++){const part=e.results[i]?.[0]?.transcript?.trim();if(!part)continue;if(e.results[i].isFinal)finalParts.push(part);else partialParts.push(part);}
    recognitionFinal=finalParts.join(' ');
    const joined=[recognitionFinal,...partialParts].filter(Boolean).join(' ').trim();
-   if(joined){lastLine=joined;by('typed').value=joined;transcript('あなた：'+joined);asrInfo('✓ 文字起こしできています。話し終わったら「話し終えた」を押してね。');}
-   if(IS_IOS&&joined&&stage==='friend'&&!interruption&&storyType!=='quiet'){
+   if(joined){
+    lastLine=joined;by('typed').value=joined;transcript('あなた：'+joined);
+    asrInfo('✓ 文字起こしできています。話し終わったら「話し終えた」を押してね。');
+    if(isReciprocalQuestion(joined))scheduleReciprocalReply(joined,finalParts.length>0?850:2200);
+   }
+   if(IS_IOS&&joined&&stage==='friend'&&!interruption&&storyType!=='quiet'&&!isReciprocalQuestion(joined)){
     const now=performance.now();const wait=surpriseDelay();
     if(!asrSpeechSeenAt)asrSpeechSeenAt=now;
     const words=joined.split(/\s+/).length;
@@ -366,7 +390,12 @@ function startRecognition(manual=false){
    if(token!==ownEpoch||asrStopEpoch!==ownStop)return;
    recActive=false;recog=null;
    if(!speakingStage())return;
-   if(IS_IOS){setMic('音声認識を再開する','マイクボタンで再試行できます',false);if(!lastLine)asrInfo('音声認識が止まりました。「音声認識を開始・再試行」を押してね。');return;}
+   if(IS_IOS){
+    setMic('音声認識を再開する','マイクボタンで再試行できます',false);
+    if(lastLine&&isReciprocalQuestion(lastLine))scheduleReciprocalReply(lastLine,450);
+    else if(!lastLine)asrInfo('音声認識が止まりました。「音声認識を開始・再試行」を押してね。');
+    return;
+   }
    if(!asrDisabled&&micStream)later(()=>{if(!recActive&&speakingStage())startRecognition()},600);
   };
   rr.start();recActive=true;transcriptionStatus='starting';
@@ -401,7 +430,7 @@ else if(stage==='return'){main.textContent='会話を終える →';main.disable
 else if(stage==='done'){main.disabled=true;setStatus('トレーニング終了','');}
 }
 function resetVoiceWindow(){clearListeners();lastLine='';}
-function userTurn(){if(stage==='done')return;const myRun=token;isNpc=false;resetVoiceWindow();turnStartedAt=performance.now();voiceFirstSeen=0;asrSpeechSeenAt=0;recognitionFinal='';refreshControls();
+function userTurn(){if(stage==='done')return;turnSerial++;autoReplyTimer=null;const myRun=token;isNpc=false;resetVoiceWindow();turnStartedAt=performance.now();voiceFirstSeen=0;asrSpeechSeenAt=0;recognitionFinal='';refreshControls();
 if(isSilentMode()){
  transcript('あなたの番！ 英語で話してね。');
  acquireCapture(myRun).then(ok=>{
@@ -468,7 +497,15 @@ if(storyType!=='quiet'&&speechMs>=1250&&recentVoice&&now-recentVoice>=targetMs&&
 }
 raf=requestAnimationFrame(monitor)
 }
-function triggerInterrupt(){if(stage!=='friend'||interruption||isNpc)return;interruption=true;
+function triggerInterrupt(){
+ if(stage!=='friend'||interruption||isNpc)return;
+ // Let a reciprocal question reach Alex instead of cutting the question off.
+ if(!isSilentMode()&&isReciprocalQuestion(lastLine)){
+  if(autoReplyTimer!==null)clearTimeout(autoReplyTimer);
+  autoReplyTimer=null;
+  submitReply(lastLine,false);return
+ }
+ interruption=true;
 if(isSilentMode()&&silentRecorder){
  const run=token;stopSilentRecording().then(blob=>transcribeSilentBlob(blob)).then(t=>{
   if(run!==token||!t)return;
@@ -555,7 +592,10 @@ function proceedAfterFriend(){
  if(!interruption){addEvent(liveEvent.event);stage='barista';addLine(liveEvent.speaker,liveEvent.line);refreshControls();sayAfter(1200,liveEvent.speaker,liveEvent.line,userTurn)}
 }
 function resumeWithAlex(){stage='return';resetVoiceWindow();const next=continuationLine();addLine('Alex',next);sayAfter(900,'Alex',next,userTurn);}
-function submitReply(text,fromText){const val=(text||lastLine||'').trim();if(stage==='friend')rememberTopic(val);if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
+function submitReply(text,fromText){
+ turnSerial++;
+ if(autoReplyTimer!==null){clearTimeout(autoReplyTimer);autoReplyTimer=null}
+ const val=(text||lastLine||'').trim();if(stage==='friend')rememberTopic(val);if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
 if(val)addLine('You',val);else addLine('You','（声で返答しました）',micStream?'音声が文字起こしされていないため、内容は確認できません。':'');
 lastLine='';by('typed').value='';stopRecognition();asrInfo('会話の相手に返事しています。');
 if(stage==='friend'){
@@ -592,7 +632,7 @@ const r=by('reactionCard');r.replaceChildren();if(reactionTimes.return!=null){le
 const note=document.createElement('p');note.textContent='※採点ではありません。返答例と自分の表現を比べて、もう一度声に出してみよう。';review.append(note);
 try{const n=Number(localStorage.getItem('speakingym-live-runs')||0);localStorage.setItem('speakingym-live-runs',String(n+1))}catch(e){}
 }
-function cleanup(keepView){token++;clearListeners();releaseCapture();stopAmbience();if(!keepView){friendFollowups=0;finalFollowups=0;conversationTopic='general'}silentTranscriptionActive=false;recActive=false;transcriptionStatus='ready';asrSpeechSeenAt=0;recognitionFinal='';if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);reactionTimes=keepView?reactionTimes:{};turnStartedAt=0;voiceFirstSeen=0;lastLine='';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
+function cleanup(keepView){token++;turnSerial++;autoReplyTimer=null;clearListeners();releaseCapture();stopAmbience();if(!keepView){friendFollowups=0;finalFollowups=0;conversationTopic='general'}silentTranscriptionActive=false;recActive=false;transcriptionStatus='ready';asrSpeechSeenAt=0;recognitionFinal='';if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);reactionTimes=keepView?reactionTimes:{};turnStartedAt=0;voiceFirstSeen=0;lastLine='';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
 main.addEventListener('click',()=>{if(stage==='idle')start();else if(!isNpc&&['friend','barista','return'].includes(stage)){if(isSilentMode()&&silentRecorder)finishSilentTurn();else submitReply('',false)}});
 by('sendText').addEventListener('click',()=>{const t=by('typed').value.trim();if(!t){transcript('英文を入力してから送信してね。');return;}if(stage==='idle'){transcript('まずLIVEを始めてください。');return;}if(isNpc){transcript('相手が話し終わるまで待ってね。');return;}if(stage==='done')return;submitReply(t,true)});
 repeat.addEventListener('click',()=>{if(isNpc)return;const s=stage;const t=s==='friend'?line('alexStart'):s==='barista'?liveEvent?.line:s==='return'?continuationLine():'';if(!t)return;const who=s==='barista'?liveEvent.speaker:'Alex';sayAfter(IS_IOS?480:220,who,t,()=>{if(stage===s)userTurn()})});
