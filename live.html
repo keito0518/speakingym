@@ -126,7 +126,7 @@ a{color:inherit}button{touch-action:manipulation}
 </section>
 <aside class="side"><section class="panel"><h3>会話の流れ</h3><div class="timeline" id="timeline"><div class="step current"><span class="num">1</span> Alexと話す</div><div class="step"><span class="num">2</span> 予想外の出来事</div><div class="step"><span class="num">3</span> Alexとの話に戻る</div></div></section>
 <section class="panel"><h3>今回のLIVE+機能</h3><div class="legend"><div><b>🎲 筋書きが変わる</b>店員、初対面の知り合い、注文確認、何も起こらない日。開始ごとに分岐。</div><div><b>🎤 話している最中に割り込み</b>マイク音量を検知し、選んだタイミングで別の人が話しかける。</div><div><b>☕ オン・オフできる環境音</b>小さなカフェ風の合成音を流せる。聞き取りが難しい場合はオフに。</div><div><b>📈 戻って話すまでを計測</b>元の会話に戻るとき、発話開始までの時間をこの端末で記録。</div></div></section>
-<section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>分岐する固定シナリオによる割り込み実験</strong>です。セリフはAIが自由生成するものではありません。自由会話・文法採点・発音採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。ブラウザ対応時は端末のマイク音量または音声認識を利用し、このページ自体では録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>iPhoneでは相手の音声再生中はマイクを解放し、自分の番ではブラウザの音声認識を優先します。Braveなど一部ブラウザでは自動文字起こしが使えないことがあります。その場合は「音声認識を開始・再試行」またはiPhoneのキーボード🎤を使ってね。</p></section>
+<section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>分岐する固定シナリオによる割り込み実験</strong>です。セリフはAIが自由生成するものではありません。自由会話・文法採点・発音採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。ブラウザ対応時は端末のマイク音量または音声認識を利用し、このページ自体では録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>iPhoneでは相手の音声再生中はマイクを解放し、自分の番ではブラウザの音声認識を優先します。Braveなど一部ブラウザでは自動文字起こしが使えないことがあります。文字起こしされない場合は、大きなマイクボタンから再試行するか、下の欄でiPhoneキーボードの🎤を使ってね。</p></section>
 <section class="panel"><h3>困ったとき</h3><div class="help"><details><summary>割り込みに何て言えばいい？</summary><p>店員なら “Yes, that's mine, thanks!”。初対面の人なら “Nice to meet you, I'm ...”。どちらも自然な一言からで大丈夫。</p></details><details><summary>友達との話にどう戻る？</summary><p>“Anyway, as I was saying...” / “Where were we?”</p></details></div></section>
 </aside>
 </div>
@@ -198,7 +198,7 @@ function startRecognition(manual=false){
  const ownEpoch=token,ownStop=asrStopEpoch;
  try{
   const rr=new Rec();recog=rr;rr.lang='en-US';rr.interimResults=true;rr.continuous=!IS_IOS;rr.maxAlternatives=1;
-  rr.onstart=()=>{if(token!==ownEpoch||asrStopEpoch!==ownStop)return;recActive=true;transcriptionStatus='listening';asrInfo('● 音声認識中｜英語を話してね');};
+  rr.onstart=()=>{if(token!==ownEpoch||asrStopEpoch!==ownStop)return;recActive=true;transcriptionStatus='listening';asrInfo('● 音声認識中｜英語を話してね');setMic('英語を聞き取っています','話し終わったら「話し終えた」を押してね',true);mic.setAttribute('aria-label','音声認識を再開始する');};
   rr.onspeechstart=()=>{if(token!==ownEpoch||asrStopEpoch!==ownStop)return;asrSpeechSeenAt=performance.now();asrInfo('話している内容を聞き取っています…')};
   rr.onresult=e=>{
    if(token!==ownEpoch||asrStopEpoch!==ownStop||isNpc)return;
@@ -229,7 +229,7 @@ function startRecognition(manual=false){
    if(token!==ownEpoch||asrStopEpoch!==ownStop)return;
    recActive=false;recog=null;
    if(!speakingStage())return;
-   if(IS_IOS){if(!lastLine)asrInfo('音声認識が止まりました。「音声認識を開始・再試行」を押してね。');return;}
+   if(IS_IOS){setMic('音声認識を再開する','マイクボタンで再試行できます',false);if(!lastLine)asrInfo('音声認識が止まりました。「音声認識を開始・再試行」を押してね。');return;}
    if(!asrDisabled&&micStream)later(()=>{if(!recActive&&speakingStage())startRecognition()},600);
   };
   rr.start();recActive=true;transcriptionStatus='starting';
@@ -256,7 +256,7 @@ try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.v
 }catch(e){timeoutId=later(finish,950)}
 }
 function sayAfter(waitMs,who,text,after){isNpc=true;stopRecognition();if(IS_IOS)releaseCapture();setStatus('会話の自然な間をとっています…','talking');setMic('少し待ってね','まもなく相手が話し始めます',false);refreshControls();timeoutId=later(()=>{timeoutId=null;say(who,text,after)},waitMs)}
-function refreshControls(){updateTimeline();by('asrBtn').disabled=stage==='idle'||stage==='done'||isNpc;repeat.disabled=stage==='idle'||isNpc;const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!micStream;
+function refreshControls(){updateTimeline();by('asrBtn').disabled=stage==='idle'||stage==='done'||isNpc;repeat.disabled=stage==='idle'||isNpc;const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!(!!micStream||(IS_IOS&&!!Rec&&on&&!isNpc));
 if(stage==='idle'){main.textContent='▶ LIVEを始める';main.disabled=false;setStatus('始める準備ができています','');setMic('マイクはオフです','「LIVEを始める」を押して利用を許可してください。',false);goal('カフェで友達と話してみよう。会話中に店員が近づくことも。')}
 else if(stage==='friend'){main.textContent='話し終えた →';main.disabled=isNpc;goal(hints[by('level').value][0]);if(!isNpc){setStatus('あなたの番。英語で話そう','active');setMic('聞いています','話している途中に店員が割り込むことがあります。',!!micStream)}}
 else if(stage==='barista'){main.textContent='店員への返事を終える →';main.disabled=isNpc;goal(liveEvent?.goal||hints[by('level').value][1]);if(!isNpc){setStatus((liveEvent?.speaker||'相手')+'へ返事をしよう','active');setMic('割り込みへの返事を聞いています','返事ができたら次へ。',!!micStream)}}
@@ -338,7 +338,7 @@ by('sendText').addEventListener('click',()=>{const t=by('typed').value.trim();if
 repeat.addEventListener('click',()=>{if(isNpc)return;const s=stage;const t=s==='friend'?cues.alexStart:s==='barista'?liveEvent?.line:s==='return'?cues.alexBack:'';if(!t)return;const who=s==='barista'?liveEvent.speaker:'Alex';sayAfter(IS_IOS?480:220,who,t,()=>{if(stage===s)userTurn()})});
 reset.addEventListener('click',()=>{cleanup();stage='idle';feed.replaceChildren();addLine('Alex','Hey! Long time no see.','準備ができたら「LIVEを始める」を押してね。');by('actions').classList.remove('hidden');by('summary').classList.add('hidden');by('fallback').open=false;by('typed').value='';by('reactionCard').replaceChildren();asrInfo('準備ができたらLIVEを始めてね。');refreshControls();transcript('');});
 by('againBtn').addEventListener('click',start);
-mic.addEventListener('click',async()=>{if(stage==='idle')return start();if(micStream){releaseCapture();micDenied=true;setMic('マイクをオフにしました','文字入力で続けられます。',false);transcript('マイクはオフです。');return}transcript('マイクを再度有効にするには、最初から始めてください。')});
+mic.addEventListener('click',async()=>{if(stage==='idle')return start();if(IS_IOS&&Rec&&speakingStage()){startRecognition(true);return;}if(micStream){releaseCapture();micDenied=true;setMic('マイクをオフにしました','文字入力で続けられます。',false);transcript('マイクはオフです。');return}asrInfo('マイクを使えません。下の欄からiPhoneのキーボード🎤で入力してね。');by('fallback').open=true;});
 by('asrBtn').addEventListener('click',()=>{if(!speakingStage()){asrInfo('相手が話し終わってから押してね。');return}startRecognition(true);});
 by('level').addEventListener('change',()=>{refreshControls()});
 by('ambientMode').addEventListener('change',()=>{if(audioContext&&stage!=='idle')playAmbience();});
