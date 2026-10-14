@@ -1,0 +1,24 @@
+name: Speakingym AI Worker tests
+
+on:
+  pull_request:
+    paths:
+      - "worker/**"
+      - ".github/workflows/worker-tests.yml"
+  push:
+    paths:
+      - "worker/**"
+      - ".github/workflows/worker-tests.yml"
+
+jobs:
+  safety-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test the no-billing fallback and AI bridge
+        run: node --test worker/ai-worker.test.mjs
