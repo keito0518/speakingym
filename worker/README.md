@@ -1,55 +1,65 @@
-# Speakingym SURVIVAL — AI接続ガイド（開発者向け）
+# Speakingym SURVIVAL | AI接続（初期費用0円）
 
-Speakingym の [3分ミッション](../mission.html) は、GitHub Pages 上で **無料・設定不要のルール型分岐**として動作します。
+このディレクトリには **Gemini Free Tier × Cloudflare Workers Free** のバックエンドが準備されています。**まだサーバーはデプロイされていないため、公開サイトはAI未接続**です。
 
-このディレクトリの worker は、**将来、本物のAI返答を使いたいときの任意の拡張**です。GitHub にファイルを置くだけではAIは接続されません。Cloudflare Workers のデプロイ・Google Gemini API キーの登録が必要です。
+## 重要：無料のまま開始する条件
 
-## 構成
+1. Google AI Studioで **請求先未連携の無料プロジェクト** を選び、GeminiのFree Tier APIキーを発行する。有料プロジェクトのキーは使わない。
+2. Cloudflareは **Workers Free** で登録する。Workers Paidにアップグレードしない。
+3. Gemini無料枠の上限に達したらAI会話を停止し、ブラウザ側は従来のルール分岐に戻す。自動で課金枠を使わない。
+4. 無料枠で送った英会話テキストはGoogleの製品改善に利用されることがある。**個人情報・秘密情報を入力しない**注意書きが必要。
+5. **公開向け認証はまだない**ため、まず本人・少人数限定で検証する。レート制限は厳密な利用回数管理ではない。
 
-- \`mission.html\`（GitHub Pages）: テキスト入力、ブラウザ音声認識、会話の表示、3分間のタイマー、達成判定、振り返り
-- \`mission-worker.js\`（Cloudflare Workers にデプロイ）: Gemini APIキーをサーバー側の secret に保持し、Emma の自然な英文の返答を生成
-- Geminiの音声認識・音声合成は使いません。これらは現在のブラウザ機能のままです。
+## Gemini APIキーを発行
 
-## AI接続（任意）
+[Google AI StudioのAPIキー画面](https://aistudio.google.com/apikey) で Free Tier のキーを作成する。
 
-1. Cloudflare の管理画面で Worker を新規作成し、\`mission-worker.js\` のコードを登録してデプロイ
-2. Worker の **Secrets** へ \`GEMINI_API_KEY\` を登録（コードには書き込まない）
-3. Worker の **Variables** へ \`ALLOW_AI\` = \`true\` を設定。ローカル開発を許可する場合のみ \`ALLOW_LOCAL_DEV\` = \`true\` も設定
-4. Google AI Studio で \`gemini-2.5-flash-lite\` の利用枠・課金・クォータを確認し、**無料枠内に収まる制限を設定**する
-5. [mission.html](../mission.html) の「AI自由会話を接続する（開発者向け）」に Worker の HTTPS URL を登録
+モデルは **\`gemini-3.5-flash-lite\`**。2026年10月のGoogle公式案内では旧2.5シリーズは新規プロジェクトで利用が制限される場合があるため、こちらを採用しました。
 
-登録されたURLはそのブラウザのローカルストレージに保存されます。失敗したら自動的にルール型分岐へ戻ります。Gemini APIキーは **Webページのコードにも利用者のブラウザにも公開されません**。
+**APIキーをGitHub・HTML・チャットに投稿しないでください。**
 
-## セキュリティ・費用に関する注意
+## Cloudflare Workers Freeにデプロイ
 
-- Google Geminiの無料枠にはリクエスト数制限やデータ利用条件があります。課金が有効なプロジェクトを使う場合、意図しない費用が発生する可能性があります。
-- Worker は **GitHub Pagesのオリジン以外のブラウザをCORSで拒否**しますが、CORSはAPIの認証や完全な不正利用対策ではありません。第三者は偽のOriginヘッダを付けて直接アクセスできる場合があります。**一般公開前に、Cloudflare等のレート制限、ボット対策、Gemini側の厳格なクォータ設定を必ず追加してください。**
-- 接続されたAIサーバーにはユーザーが入力・発話して文字起こしされた英文、直近の会話履歴、進行状況が送信されます。ユーザーへの明示とプライバシーポリシー整備が必要です。
-- \`mission-worker.js\` のAPI実行部分は雛形です。実際のCloudflare・Gemini環境での接続確認は、デプロイしてから行う必要があります。
-- \`ALLOW_AI=true\` を設定しなければ、WorkerはAIリクエストを実行しません。
+PCのターミナルから、この \`worker\` フォルダで以下を実行。
 
-## API仕様（試作版）
+\`\`\`sh
+npx wrangler login
+npx wrangler deploy
+npx wrangler secret put GEMINI_API_KEY
+\`\`\`
 
-ブラウザからWorkerへ \`POST application/json\`：
+- デプロイ後、\`https://speakingym-survival-ai.<account>.workers.dev/\` 形式のURLが発行されます。
+- APIキーは \`GEMINI_API_KEY\` というWorkers **Secret** として入力。GitHubに保存しない。
+- \`GET https://<worker-url>/health\` で \`aiConfigured:true\` を確認できる。
+- \`wrangler.toml\` のレート制限は、暫定で同一IP **6回／分**、全体 **30回／分**。Cloudflareのレート制限はデータセンターごと・概算であり、厳密な全世界共通利用上限ではない。
 
+### サイトで接続テスト
+
+[Speakingym 3分ミッション](https://keito0518.github.io/speakingym/mission.html) の「AI自由会話を接続する（開発者向け）」を開き、**Worker URLだけ** 登録してください。Gemini APIキーは入力しません。
+
+設定URLはそのブラウザにのみ保存されます。**他のユーザーは引き続きルール型分岐モード**です。検証後、全ユーザー向けのデフォルトURLをサイトに設定できます。
+
+## システムと制約
+
+- \`mission.html\`：今ある3分会話画面、ブラウザ音声認識と読み上げ（基本無料）
+- \`ai-worker.js\`：Geminiを呼び出す新しい本番候補のWorker。APIキー、入力長、出力長、Origin、リクエスト数を制限
+- \`wrangler.toml\`：Workers Free向けの設定・レート制限
+- \`mission-worker.js\`：旧版のWorker雛形。**新規デプロイには使わない**。モデルは旧2.5を指定しています。
+
+通信内容は会話履歴・ユーザーの英語・会話の達成状況で、Geminiに送信されます。発音の評価は行いません。Workersのレート制限やOrigin検査だけではボット対策・認証として十分ではないため、一般公開前には認証・Turnstile・厳密な回数制限を追加検討してください。
+
+### 内部API
+
+\`POST /\` で以下のJSONを受信：
 \`\`\`json
 {
   "level": "standard",
-  "goal": "Correct a wrong café order",
-  "userText": "I ordered an iced oat latte. Can you remake it?",
-  "history": [{"role": "assistant", "content": "Is everything alright?"}],
-  "facts": {"problem": false, "iced": false, "oat": false, "fix": false},
-  "remaining": 155
+  "userText": "I ordered iced oat milk, but this is hot.",
+  "history": [{"role":"assistant","content":"Is everything okay?"}],
+  "facts": {"problem":false,"iced":false,"oat":false,"fix":false},
+  "remaining": 120
 }
 \`\`\`
+返答は \`{"reply":"...","missionState":{"problem":true,"iced":true,"oat":true,"fix":false}}\` 形式。
 
-レスポンス：
-
-\`\`\`json
-{
-  "reply": "I'm sorry about that! I'll make a fresh iced oat latte for you.",
-  "missionState": {"problem": true, "iced": true, "oat": true, "fix": true}
-}
-\`\`\`
-
-\`missionState\` が示す事実が確定した場合に限り、ブラウザ側の達成チェックが進みます。正規の発話データが得られない場合、発音や文法の正確さは採点しません。
+現時点では**Gemini実API接続・iPhone実機での動作は未検証**。キーがない状態ではAI本番公開済みとは扱いません。
