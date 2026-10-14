@@ -149,7 +149,7 @@ let voiceTimer=0, speechMs=0, hadVoice=false, recentVoice=0, startTime=0, elapse
 let lastLine='', transcriptHistory=[], interruption=false, mode='voice', timeoutId=null, isNpc=false, noiseFloor=.004, micDenied=false, asrFailures=0, asrDisabled=false;
 let asrStartedAt=0, asrSpeechSeenAt=0, asrStopEpoch=0, recognitionFinal='', transcriptionStatus='ready';
 let storyType='barista', liveEvent=null, sessionLevel='standard', reactionTimes={}, turnStartedAt=0, voiceFirstSeen=0, ambientNode=null, ambientGain=null, ambientContext=null;
-let friendFollowups=0, finalFollowups=0;
+let friendFollowups=0, finalFollowups=0, conversationTopic='general';
 let silentModelPromise=null,silentRecorder=null,silentPieces=[],silentRecordingStarted=0,silentTranscriptionActive=false,silentReady=false;
 function isSilentMode(){return by('asrMode').value==='silent'}
 async function ensureSilentModel(){
@@ -434,7 +434,7 @@ if(runEpoch!==token){releaseCapture();return false}
 return true
 }catch(e){if(stream)try{stream.getTracks().forEach(t=>t.stop())}catch(_){}releaseCapture();return false}
 }
-async function start(){cleanup();friendFollowups=0;finalFollowups=0;const myRun=token;chooseStory();updateSpeedNote();playAmbience();reactionTimes={};asrFailures=0;asrDisabled=false;micDenied=false;recognitionFinal='';stage='idle';asrInfo('会話中、英語を話すと文字起こしが表示されます。');feed.replaceChildren();
+async function start(){cleanup();friendFollowups=0;finalFollowups=0;conversationTopic='general';const myRun=token;chooseStory();updateSpeedNote();playAmbience();reactionTimes={};asrFailures=0;asrDisabled=false;micDenied=false;recognitionFinal='';stage='idle';asrInfo('会話中、英語を話すと文字起こしが表示されます。');feed.replaceChildren();
 by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';
 transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);
 elapsedClock=setInterval(()=>{if(myRun!==token)return;if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
@@ -476,7 +476,7 @@ if(isSilentMode()&&silentRecorder){
   addLine('You',t,'割り込み前の言葉を後から文字起こししました。');
  }).catch(()=>{if(run===token)asrInfo('途中の言葉は認識できませんでした。')});
 }
-const spoken=lastLine;stopRecognition();if(spoken){transcriptHistory.push({stage:'friend',said:spoken});addLine('You',spoken,'発話の途中まで認識しました')}else addLine('You','…','話している最中に店員が入ってきた');addEvent(liveEvent.event);stage='barista';resetVoiceWindow();addLine(liveEvent.speaker,liveEvent.line);refreshControls();sayAfter(550,liveEvent.speaker,liveEvent.line,userTurn)}
+const spoken=lastLine;rememberTopic(spoken);stopRecognition();if(spoken){transcriptHistory.push({stage:'friend',said:spoken});addLine('You',spoken,'発話の途中まで認識しました')}else addLine('You','…','話している最中に店員が入ってきた');addEvent(liveEvent.event);stage='barista';resetVoiceWindow();addLine(liveEvent.speaker,liveEvent.line);refreshControls();sayAfter(550,liveEvent.speaker,liveEvent.line,userTurn)}
 function wordsOf(input){return String(input||'').toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9'\s]/g,' ').replace(/\s+/g,' ').trim()}
 function askedAboutYou(input){
  const t=wordsOf(input);
@@ -507,6 +507,38 @@ function alexReplyTo(input,which){
   return {text:"Sounds like you're settling in. That's good to hear!",followUp:false,kind:'work'};
  return null
 }
+function rememberTopic(input){
+ const t=wordsOf(input);if(!t||askedAboutYou(input))return;
+ if(/\b(?:coworker|coworkers|colleague|colleagues|team|manager|boss)\b/.test(t)){conversationTopic='people';return}
+ if(isDifficulty(input)){conversationTopic='stress';return}
+ if(isBusy(input)){conversationTopic='busy';return}
+ if(/\b(?:learn|learning|training|skill|skills)\b/.test(t)){conversationTopic='learning';return}
+}
+function continuationLine(){
+ const variants={
+  people:{
+   easy:"You said the people at work are nice. Do you like your team?",
+   standard:"Anyway, you mentioned your team earlier. What's it been like working with everyone?",
+   challenge:"Before we got interrupted, you mentioned the people you work with. How has your team helped you settle into the new role?"
+  },
+  stress:{
+   easy:"You said work is hard. Are things getting better?",
+   standard:"Anyway, you said the new job has been stressful. What's been the hardest part?",
+   challenge:"You were saying the transition has been challenging. What do you think would make things more manageable?"
+  },
+  busy:{
+   easy:"You sound busy! Do you have time to relax?",
+   standard:"Anyway, you mentioned being really busy. What has been taking up most of your time?",
+   challenge:"You mentioned things have been pretty hectic lately. How are you balancing the workload with everything else?"
+  },
+  learning:{
+   easy:"You said you are learning a lot! Is it fun?",
+   standard:"Anyway, you said you're learning a lot at work. What's been the most interesting thing so far?",
+   challenge:"You mentioned learning new skills in your role. Which skill has made the biggest difference for you?"
+  }
+ };
+ return variants[conversationTopic]?.[sessionLevel]||line('alexBack');
+}
 function visitorReplyTo(input){
  const t=wordsOf(input);if(!t||!liveEvent)return liveEvent?.reply||'';
  if(storyType==='friend'){
@@ -522,8 +554,8 @@ function proceedAfterFriend(){
  if(storyType==='quiet'){addEvent('☕ 今回は誰にも邪魔されずに話せた');resumeWithAlex();return}
  if(!interruption){addEvent(liveEvent.event);stage='barista';addLine(liveEvent.speaker,liveEvent.line);refreshControls();sayAfter(1200,liveEvent.speaker,liveEvent.line,userTurn)}
 }
-function resumeWithAlex(){stage='return';resetVoiceWindow();addLine('Alex',line('alexBack'));sayAfter(900,'Alex',line('alexBack'),userTurn);}
-function submitReply(text,fromText){const val=(text||lastLine||'').trim();if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
+function resumeWithAlex(){stage='return';resetVoiceWindow();const next=continuationLine();addLine('Alex',next);sayAfter(900,'Alex',next,userTurn);}
+function submitReply(text,fromText){const val=(text||lastLine||'').trim();if(stage==='friend')rememberTopic(val);if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
 if(val)addLine('You',val);else addLine('You','（声で返答しました）',micStream?'音声が文字起こしされていないため、内容は確認できません。':'');
 lastLine='';by('typed').value='';stopRecognition();asrInfo('会話の相手に返事しています。');
 if(stage==='friend'){
@@ -539,7 +571,7 @@ if(stage==='friend'){
 if(stage==='barista'){
  const reaction=visitorReplyTo(val);
  stage='return';resetVoiceWindow();addLine(liveEvent.speaker,reaction);
- sayAfter(720,liveEvent.speaker,reaction,()=>{addLine('Alex',line('alexBack'));sayAfter(950,'Alex',line('alexBack'),userTurn)});
+ sayAfter(720,liveEvent.speaker,reaction,()=>{const next=continuationLine();addLine('Alex',next);sayAfter(950,'Alex',next,userTurn)});
  return
 }
 if(stage==='return'){
@@ -560,10 +592,10 @@ const r=by('reactionCard');r.replaceChildren();if(reactionTimes.return!=null){le
 const note=document.createElement('p');note.textContent='※採点ではありません。返答例と自分の表現を比べて、もう一度声に出してみよう。';review.append(note);
 try{const n=Number(localStorage.getItem('speakingym-live-runs')||0);localStorage.setItem('speakingym-live-runs',String(n+1))}catch(e){}
 }
-function cleanup(keepView){token++;clearListeners();releaseCapture();stopAmbience();if(!keepView){friendFollowups=0;finalFollowups=0}silentTranscriptionActive=false;recActive=false;transcriptionStatus='ready';asrSpeechSeenAt=0;recognitionFinal='';if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);reactionTimes=keepView?reactionTimes:{};turnStartedAt=0;voiceFirstSeen=0;lastLine='';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
+function cleanup(keepView){token++;clearListeners();releaseCapture();stopAmbience();if(!keepView){friendFollowups=0;finalFollowups=0;conversationTopic='general'}silentTranscriptionActive=false;recActive=false;transcriptionStatus='ready';asrSpeechSeenAt=0;recognitionFinal='';if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);reactionTimes=keepView?reactionTimes:{};turnStartedAt=0;voiceFirstSeen=0;lastLine='';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
 main.addEventListener('click',()=>{if(stage==='idle')start();else if(!isNpc&&['friend','barista','return'].includes(stage)){if(isSilentMode()&&silentRecorder)finishSilentTurn();else submitReply('',false)}});
 by('sendText').addEventListener('click',()=>{const t=by('typed').value.trim();if(!t){transcript('英文を入力してから送信してね。');return;}if(stage==='idle'){transcript('まずLIVEを始めてください。');return;}if(isNpc){transcript('相手が話し終わるまで待ってね。');return;}if(stage==='done')return;submitReply(t,true)});
-repeat.addEventListener('click',()=>{if(isNpc)return;const s=stage;const t=s==='friend'?line('alexStart'):s==='barista'?liveEvent?.line:s==='return'?line('alexBack'):'';if(!t)return;const who=s==='barista'?liveEvent.speaker:'Alex';sayAfter(IS_IOS?480:220,who,t,()=>{if(stage===s)userTurn()})});
+repeat.addEventListener('click',()=>{if(isNpc)return;const s=stage;const t=s==='friend'?line('alexStart'):s==='barista'?liveEvent?.line:s==='return'?continuationLine():'';if(!t)return;const who=s==='barista'?liveEvent.speaker:'Alex';sayAfter(IS_IOS?480:220,who,t,()=>{if(stage===s)userTurn()})});
 reset.addEventListener('click',()=>{cleanup();stage='idle';feed.replaceChildren();addLine('Alex','Hey! Long time no see.','準備ができたら「LIVEを始める」を押してね。');by('actions').classList.remove('hidden');by('summary').classList.add('hidden');by('fallback').open=false;by('typed').value='';by('reactionCard').replaceChildren();asrInfo('準備ができたらLIVEを始めてね。');refreshControls();transcript('');});
 by('againBtn').addEventListener('click',start);
 mic.addEventListener('click',async()=>{if(stage==='idle')return start();if(isSilentMode()&&speakingStage()){asrInfo('無音モードで録音しています。話し終えたら「話し終えた」を押してね。');return}if(IS_IOS&&Rec&&speakingStage()){startRecognition(true);return;}if(micStream){releaseCapture();micDenied=true;setMic('マイクをオフにしました','文字入力で続けられます。',false);transcript('マイクはオフです。');return}asrInfo('マイクを使えません。下の欄からiPhoneのキーボード🎤で入力してね。');by('fallback').open=true;});
