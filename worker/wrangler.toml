@@ -1,0 +1,20 @@
+name = "speakingym-survival-ai"
+main = "ai-worker.js"
+compatibility_date = "2026-10-14"
+workers_dev = true
+
+# Conservative per-minute throttles for a public FREE-tier trial.
+# The rate-limit API uses per-edge, eventually consistent counters.
+[[ratelimits]]
+name = "USER_LIMIT"
+namespace_id = "98101"
+  [ratelimits.simple]
+  limit = 6
+  period = 60
+
+[[ratelimits]]
+name = "GLOBAL_LIMIT"
+namespace_id = "98102"
+  [ratelimits.simple]
+  limit = 30
+  period = 60
