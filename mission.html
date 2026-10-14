@@ -80,8 +80,8 @@ function affirmativeMention(t,kind){
  const r=kind==='iced'?/\b(?:iced|ice cold|cold|chilled|with ice|over ice)\b/g:/\b(?:oat|oatmilk|oat milk)\b/g;
  for(const match of t.matchAll(r)){
   const left=t.slice(Math.max(0,match.index-90),match.index),last=left.trim().split(/\s+/).slice(-7).join(' ');
-  if(/\b(?:not|no|without|never|isn t|wasn t)\s+(?:an?\s+)?(?:\w+\s+){0,2}$/.test(last))continue;
-  if(/\b(?:do not|don t|did not|didn t)\s+(?:want|order|ask for|need|like|have)\s+(?:an?\s+)?(?:\w+\s+){0,2}$/.test(last))continue;
+  if(/\b(?:not|no|without|never|isn t|wasn t|don t want|do not want|didn t order|did not order|don t need)(?:\s+(?:a|an|the|some|any|my|this|that|one|drink|coffee|latte|milk)){0,3}$/.test(last)&&!/\bnot the$/.test(last))continue;
+  if(/\b(?:do not|don t|did not|didn t)\s+(?:want|order|ask for|need|like|have)(?:\s+(?:a|an|the|some|any|my|this|that|one|drink|coffee|latte|milk)){0,3}$/.test(last))continue;
   if(kind==='iced'&&/\b(?:ordered|wanted|asked for)\s+(?:a\s+)?hot\b/.test(t)&&/\b(?:this|it|drink|coffee|latte)\s+(?:is|was|came|arrived)\s+$/.test(last))continue;
   return true
  }
@@ -170,7 +170,7 @@ function resolveLocal(input){
  if(i.refund)return{reply:"I can help with a refund, or I can remake your original iced oat latte. Which would you prefer?",next:previous||'problem'};
  if(i.ask&&!i.mistake&&!i.reqFix&&!i.iced&&!i.oat)
   return{reply:"I'm doing well, thanks for asking! Let's sort out your drink. What did you originally order?",next:previous||'problem'};
- const correction=(i.hot&&i.mistake)||
+ const correction=
   /\b(?:wrong (?:drink|coffee|one)|not my (?:coffee|drink|latte|order)|not what (?:i|we) ordered|not the (?:right|correct) (?:coffee|drink|one)|this (?:is|was) hot|this (?:is|was) not mine|you (?:gave|brought) (?:me )?the wrong)\b/.test(i.t)||
   (i.iced&&/\b(?:ordered|asked for|wanted|supposed to be|should be)\b/.test(i.t));
  if(correction)facts.problem=true;
