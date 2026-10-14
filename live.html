@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#132b23">
+<meta name="description" content="Speakingym LIVE — 英語の世界で突然の会話に挑戦。マイクを使った割り込み会話の体験版。">
+<title>Speakingym LIVE | カフェで本当に話してみる</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:#182a23;background:#f6f7f2;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}button,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #4eb7a3;outline-offset:3px}
+a{color:inherit}button{touch-action:manipulation}
+.top{background:#132d23;color:#fff}.topin{max-width:1040px;padding:16px 22px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{text-decoration:none;font-size:21px;font-weight:950;letter-spacing:-1px}.logo span{color:#ff9371}.topright{display:flex;align-items:center;gap:10px}.tag{border:1px solid #527264;color:#d6e5dc;padding:6px 9px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.6px}.home{font-size:12px;color:#d6e5dc;text-decoration:none}
+.container{max-width:1040px;margin:auto;padding:22px 22px 60px}
+.head{display:flex;align-items:start;justify-content:space-between;gap:20px;margin-bottom:17px}.eyebrow{font-size:11px;color:#9c583e;letter-spacing:1.2px;font-weight:900}.head h1{font-size:clamp(27px,5vw,43px);letter-spacing:-1.5px;margin:5px 0}.head p{color:#68786f;line-height:1.8;font-size:13px;margin:0}
+.select{border:1px solid #d8e2da;border-radius:12px;background:#fff;padding:11px 14px;font-weight:850;min-height:44px;max-width:100%}
+.layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,.75fr);gap:18px;align-items:start}
+.room{background:#fefefe;border:1px solid #e1e8dd;border-radius:22px;overflow:hidden;box-shadow:0 18px 48px #1c322015}
+.scene{background:radial-gradient(circle at 80% 22%,#51735e 0,transparent 42%),linear-gradient(130deg,#233d30 20%,#10291f 92%);color:#fff;min-height:188px;padding:24px;position:relative;overflow:hidden}
+.scene:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;border:2px solid #ffffff17;right:-65px;bottom:-125px;box-shadow:0 0 0 34px #ffffff09,0 0 0 70px #ffffff06;pointer-events:none}
+.location{display:flex;align-items:center;gap:8px;color:#b6d6c1;font-size:11px;font-weight:900;letter-spacing:.8px}.scene h2{font-size:27px;letter-spacing:-.7px;margin:12px 0 5px}.scene p{font-size:12px;max-width:410px;line-height:1.9;color:#d9e6db}.cast{display:flex;gap:10px;margin-top:22px}.person{display:flex;align-items:center;gap:8px;background:#ffffff19;border:1px solid #ffffff20;padding:7px 11px;border-radius:40px;font-size:11px}.face{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#eeb884;color:#553a25;font-weight:950}.person:nth-child(2) .face{background:#c0d7ed;color:#354a66}
+.status{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:13px 20px;border-bottom:1px solid #e9ede7;background:#fbfcf9;font-size:11px;color:#68776e}.pill{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:#375e49}.light{height:8px;width:8px;border-radius:50%;background:#a6b7a9}.light.active{background:#3dbe80;box-shadow:0 0 0 4px #39be7c22}.light.talking{background:#f7a36c;box-shadow:0 0 0 4px #f7a36c33;animation:pulse 1.1s infinite}@keyframes pulse{50%{transform:scale(1.3)}}
+.feed{height:360px;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:17px;background:linear-gradient(180deg,#fff,#fbfcf9);scroll-behavior:smooth}
+.line{max-width:94%;display:flex;gap:9px;align-items:flex-end;animation:enter .3s ease}@keyframes enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.line.you{align-self:flex-end;flex-direction:row-reverse}.bubble{background:#f1f5ec;border:1px solid #e8eee4;padding:12px 14px;border-radius:16px 16px 16px 3px;max-width:400px}
+.line.you .bubble{background:#e5f5e9;border-color:#cfe8d6;border-radius:16px 16px 3px 16px}.line.emma .bubble{background:#fff2e8;border-color:#f2ded1}
+.who{font-size:10px;font-weight:900;color:#5a7c65;margin-bottom:5px}.line.emma .who{color:#a76a4a}.line.you .who{color:#2c8555}.bubble p{font-size:15px;line-height:1.65;margin:0;overflow-wrap:anywhere}.bubble .sub{display:block;margin-top:7px;font-size:11px;color:#7b887b;line-height:1.6}
+.avatar{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#dfe9d8;display:grid;place-items:center;color:#385540;font-weight:950;font-size:11px}.line.emma .avatar{background:#f8dfcb;color:#995c3c}.line.you .avatar{background:#d9ece0;color:#2d734b}
+.event{text-align:center;font-size:11px;font-weight:850;color:#99633e;align-self:center;background:#fff3e8;padding:8px 16px;border-radius:20px;border:1px solid #f6dec6}
+.actions{padding:18px 20px 20px;border-top:1px solid #e7ece5}
+.goal{font-size:12px;color:#54695a;line-height:1.8;min-height:21px;margin:0 0 13px}
+.micarea{display:flex;align-items:center;gap:14px;padding:14px;background:#f4f6f0;border:1px solid #e3e8dc;border-radius:16px}
+.mic{flex:0 0 64px;width:64px;height:64px;border-radius:20px;border:none;background:#e7684f;color:#fff;font-size:30px;box-shadow:0 6px 12px #a4493633;display:grid;place-items:center}
+.mic.live{background:#1c8d5b;animation:glow 1.3s infinite}@keyframes glow{50%{box-shadow:0 0 0 9px #2ca66d21}}
+.mic.disabled{background:#a7b0a9}
+.miccopy{flex:1;min-width:0}.miccopy strong{display:block;font-size:14px}.miccopy span{display:block;color:#66786d;font-size:11px;line-height:1.7;margin-top:4px}
+.meter{height:4px;width:100%;background:#dce8dc;overflow:hidden;margin-top:10px;border-radius:10px}.meter span{display:block;background:#40b980;width:0%;height:100%;transition:width .09s}
+.transcript{font-size:12px;color:#436d54;margin:12px 0;min-height:18px;line-height:1.7}
+.btns{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.btn{background:#fff;border:1px solid #dbe3db;color:#1d3428;border-radius:11px;padding:11px 15px;font-weight:850;font-size:12px;min-height:44px}
+.btn.primary{background:#173e2c;color:#fff;border-color:#173e2c}.btn.coral{background:#ea7354;color:#fff;border-color:#ea7354}
+.btn:disabled{opacity:.48}
+.keypad{margin-top:13px;padding:12px;border-radius:12px;background:#fafbf8;border:1px solid #e7eae5}
+.keypad summary{font-size:12px;font-weight:850;color:#647268;cursor:pointer}
+.keypad textarea{margin-top:10px;min-height:64px;width:100%;border:1px solid #d9e5da;border-radius:8px;padding:10px;line-height:1.6;resize:vertical}
+.side{display:flex;flex-direction:column;gap:14px}
+.panel{background:#fff;border:1px solid #e2e8e1;border-radius:18px;padding:19px;box-shadow:0 12px 32px #1c32200a}.panel h3{font-size:15px;margin:0 0 10px}
+.panel p{font-size:12px;line-height:1.9;color:#6a786c;margin:0 0 10px}
+.timeline{display:grid;gap:10px}.step{display:flex;gap:9px;align-items:center;color:#8b948b;font-size:12px;font-weight:800}
+.num{height:27px;width:27px;border-radius:50%;display:grid;place-items:center;background:#f0f3ec;font-size:11px}.step.current{color:#245d42}.step.current .num{background:#d9f2df;color:#246846}.step.done{color:#5c7966}.step.done .num{background:#d8eadf}
+.legend{display:grid;grid-template-columns:1fr;gap:10px;font-size:11px;color:#53675c}
+.legend b{font-size:11px;display:block;color:#243b2c}
+.notice{background:#fff9ec;border-color:#f1e6ca}.notice h3{font-size:13px}
+.summary{padding:25px}.summary h2{font-size:26px;letter-spacing:-.6px}.summary p{font-size:13px;color:#6e7d70;line-height:1.85}
+.review{margin:17px 0;display:grid;gap:10px}.reviewitem{border:1px solid #e1e8de;background:#fbfcf9;border-radius:12px;padding:13px}.reviewitem strong{font-size:12px;display:block;margin-bottom:7px}.reviewitem p{margin:0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.help{display:flex;gap:10px;flex-direction:column}.help details{border-top:1px solid #e2e9e2;padding-top:10px;font-size:12px}.help summary{font-weight:900;cursor:pointer}.help p{margin:10px 0}
+.footer{max-width:1040px;margin:15px auto 0;padding:0 22px 24px;color:#9ba59a;font-size:10px;text-align:center}
+.hidden{display:none!important}
+@media(max-width:760px){.container{padding:18px 12px 40px}.layout{grid-template-columns:1fr}.head{flex-direction:column;gap:12px}.head h1{font-size:29px}.head p{font-size:12px}.select{width:100%}.scene{padding:21px;min-height:160px}.scene h2{font-size:25px}.cast{margin-top:15px}.feed{height:340px;padding:16px}.actions{padding:14px}.status{padding:10px 14px}.bubble p{font-size:14px}.panel{padding:17px}.topin{padding:13px 14px}.micarea{padding:11px}.room{border-radius:17px}.footer{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin"><a href="./" class="logo">Speaking<span>ym</span><span style="font-size:11px;margin-left:9px;color:#acd0b4;letter-spacing:.2px">LIVE</span></a><div class="topright"><span class="tag">EXPERIMENTAL</span><a href="./" class="home">通常練習へ ↗</a></div></div></header>
+<main class="container">
+<div class="head"><div><div class="eyebrow">IMMERSIVE SPEAKING EXPERIMENT</div><h1>台本どおりにいかない、英会話。</h1><p>友達と話している途中、店員が近づいてきたら？<br>マイクをオンにして、英語の世界で会話してみよう。</p></div>
+<div><label for="level" style="font-size:11px;font-weight:850;color:#68786f">練習レベル</label><br><select id="level" class="select"><option value="easy">基礎｜短く伝える</option><option value="standard" selected>標準｜自然に返す</option><option value="challenge">応用｜会話を広げる</option></select></div></div>
+<div class="layout">
+<section class="room" aria-label="カフェでの英会話">
+<div class="scene"><div class="location">📍 MELBOURNE, AUSTRALIA · CAFÉ</div><h2>Saturday at the café ☕</h2><p>Alexと久しぶりにカフェで会った。近況を話していると、店員のEmmaが近づいてくるかもしれない。</p><div class="cast"><div class="person"><div class="face">A</div> Alex · 友達</div><div class="person"><div class="face">E</div> Emma · 店員</div></div></div>
+<div class="status"><div class="pill"><span id="liveLight" class="light"></span><span id="liveState">始める準備ができています</span></div><span id="duration">00:00</span></div>
+<div id="feed" class="feed" aria-live="polite"><div class="line"><div class="avatar">A</div><div class="bubble"><div class="who">Alex</div><p>Hey! Long time no see.</p><span class="sub">準備ができたら「LIVEを始める」を押してね。</span></div></div></div>
+<div class="actions" id="actions">
+<p class="goal" id="goal">シーン開始後、まずは友達の質問に声で答えてみよう。</p>
+<div class="micarea"><button id="micBtn" class="mic" aria-label="マイクをオンにする">🎙</button><div class="miccopy"><strong id="micTitle">マイクはオフです</strong><span id="micDesc">「LIVEを始める」を押すとマイクの許可を確認します。</span><div class="meter" aria-hidden="true"><span id="meterFill"></span></div></div></div>
+<div class="transcript" id="transcript" aria-live="polite"></div>
+<div class="btns"><button class="btn primary" id="mainBtn">▶ LIVEを始める</button><button class="btn" id="repeatBtn" disabled>🔊 もう一度聞く</button><button class="btn" id="resetBtn">↻ 最初から</button></div>
+<details class="keypad" id="fallback"><summary>マイクが使えないとき・文字で返答する</summary><textarea id="typed" placeholder="例: It's been pretty good!"></textarea><div class="btns"><button id="sendText" class="btn">文字の返答を送る</button></div><p style="color:#8b948c;font-size:10px;line-height:1.6">文字入力では、発話中の割り込み検知は行われません。</p></details>
+</div>
+<div id="summary" class="summary hidden"><div class="eyebrow">WORKOUT COMPLETE</div><h2>会話、おつかれさま！</h2><p>途中で思わぬ出来事があっても、元の会話に戻る練習ができたね。</p><div class="review" id="review"></div><button class="btn primary" id="againBtn">↻ もう一度チャレンジ</button></div>
+</section>
+<aside class="side"><section class="panel"><h3>会話の流れ</h3><div class="timeline" id="timeline"><div class="step current"><span class="num">1</span> Alexと話す</div><div class="step"><span class="num">2</span> 店員に応対する</div><div class="step"><span class="num">3</span> Alexとの話に戻る</div></div></section>
+<section class="panel"><h3>このモードのポイント</h3><div class="legend"><div><b>🎤 話している最中に割り込み</b>マイクから発話を検知して、店員が会話に入ってくる。</div><div><b>🗣 2人の登場人物</b>AlexとEmmaの声を切り替える。音声は端末の合成音声を利用。</div><div><b>🔁 話題が続く</b>店員が去った後、友達との元の会話に戻る。</div></div></section>
+<section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>固定シナリオによるリアルタイム割り込み実験</strong>です。自由会話を生成するAIや文法・発音の採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。マイクの音量検知は端末内で行い、このページは録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>iPhoneでは音声認識・マイクと読み上げの同時動作に制約がある場合があります。音声が出ない場合は再生ボタン、聞き取れない場合は文字入力でも進めます。</p></section>
+<section class="panel"><h3>困ったとき</h3><div class="help"><details><summary>店員に何て言えばいい？</summary><p>“Yes, that's mine, thank you!” / “No, I ordered a latte.”</p></details><details><summary>友達との話にどう戻る？</summary><p>“Anyway, as I was saying...” / “Where were we?”</p></details></div></section>
+</aside>
+</div>
+</main><div class="footer">Speakingym LIVE · Beta experiment · 音声データはこのアプリのサーバーへ保存しません</div>
+<script>
+(function(){
+'use strict';
+const by=id=>document.getElementById(id);
+const main=by('mainBtn'),repeat=by('repeatBtn'),reset=by('resetBtn'),mic=by('micBtn'),feed=by('feed');
+const Synth=window.speechSynthesis||null;
+const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
+let stage='idle', micStream=null, audioContext=null, analyser=null, samples=null, raf=0, token=0, recog=null, recActive=false;
+let voiceTimer=0, speechMs=0, hadVoice=false, recentVoice=0, startTime=0, elapsedClock=0, timerClock=0, currentUtterance=null;
+let lastLine='', transcriptHistory=[], interruption=false, mode='voice', timeoutId=null, isNpc=false, noiseFloor=.004, micDenied=false;
+const phaseList=['friend','barista','return'], stages={friend:0,barista:1,return:2,done:3};
+const cues={alexStart:"Hey! Good to see you again! How's your new job going?",emma:"Oh, sorry to interrupt! Is this your flat white?",emmaThanks:"Thanks! Sorry for interrupting.",alexBack:"Anyway, you were telling me about your new job. What's been the best part so far?",alexEnd:"That's awesome. We should catch up again soon!"};
+const hints={easy:["新しい仕事について、短く一言伝えてみよう。","自分の飲み物かどうかを短く答えよう。","新しい仕事で好きなことを一つ話そう。"],standard:["新しい仕事について、出来事を一つ交えて話そう。","店員の質問に答えて、ありがとうも伝えよう。","割り込み前の話題に戻って、仕事の良いところを伝えよう。"],challenge:["仕事の近況を、理由やエピソードを交えて話してみよう。","店員に自然に返し、必要なら注文内容を確認しよう。","先ほどの話題に戻り、説明を続けて友達にも質問を返そう。"]};
+const examples={
+ friend:["It's good! Everyone has been really nice.","It's been great so far. I'm learning a lot.","I was nervous at first, but my colleagues have been really supportive."],
+ barista:["Yes, that's mine. Thanks!","Yes, thank you so much!","Yes, it is. Thanks for bringing it over!"],
+ return:["I really like my team.","I love working with my team. Everyone's so friendly.","The best part is definitely the team. We help each other a lot. How about your work?"]
+};
+function setStatus(t,kind){by('liveState').textContent=t;by('liveLight').className='light '+(kind||'');}
+function goal(t){by('goal').textContent=t;}
+function setMic(t,desc,live){by('micTitle').textContent=t;by('micDesc').textContent=desc;mic.className='mic'+(live?' live':'');mic.setAttribute('aria-label',live?'マイクをオフにする':'マイクの利用状況');}
+function transcript(t){by('transcript').textContent=t;}
+function addLine(who,message,sub){const row=document.createElement('div');row.className='line '+(who==='You'?'you':who==='Emma'?'emma':'alex');
+const avatar=document.createElement('div');avatar.className='avatar';avatar.textContent=who==='You'?'Y':who==='Emma'?'E':'A';
+const bubble=document.createElement('div');bubble.className='bubble';const title=document.createElement('div');title.className='who';title.textContent=who;
+const p=document.createElement('p');p.textContent=message;bubble.append(title,p);
+if(sub){const small=document.createElement('span');small.className='sub';small.textContent=sub;bubble.append(small)}
+row.append(avatar,bubble);feed.append(row);feed.scrollTop=feed.scrollHeight;
+}
+function addEvent(t){const el=document.createElement('div');el.className='event';el.textContent=t;feed.append(el);feed.scrollTop=feed.scrollHeight;}
+function clearListeners(){if(timeoutId){clearTimeout(timeoutId);timeoutId=null}voiceTimer=0;speechMs=0;hadVoice=false;recentVoice=0;noiseFloor=.004;}
+function updateTimeline(){const ix=stages[stage]??0;by('timeline').replaceChildren();['Alexと話す','店員に応対する','Alexとの話に戻る'].forEach((t,i)=>{const d=document.createElement('div');d.className='step '+(i<ix?'done':i===ix?'current':'');const n=document.createElement('span');n.className='num';n.textContent=i<ix?'✓':String(i+1);d.append(n,document.createTextNode(' '+t));by('timeline').append(d)})}
+function stopRecognition(){if(recog){recog.onend=null;recog.onerror=null;recog.onresult=null;try{recog.abort()}catch(e){}recog=null}recActive=false;}
+function startRecognition(){stopRecognition();if(!Rec||!micStream||isNpc||!['friend','barista','return'].includes(stage))return;
+try{recog=new Rec();recog.lang='en-AU';recog.interimResults=true;recog.continuous=true;recog.maxAlternatives=1;
+recog.onresult=e=>{let joined='';for(let i=0;i<e.results.length;i++)joined+=e.results[i][0].transcript+' ';lastLine=joined.trim();transcript(lastLine?'聞き取り中：'+lastLine:'話してみよう')};
+recog.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){transcript('音声認識の許可がありません。声の検知と文字入力で練習できます。')}else if(e.error==='network'){transcript('音声認識に接続できません。マイク音量で割り込みを検知します。')}};
+recog.onend=()=>{recActive=false;if(!isNpc&&micStream&&['friend','barista','return'].includes(stage)){timeoutId=setTimeout(()=>{if(!recActive&&!isNpc)startRecognition()},480)}};
+recog.start();recActive=true;
+}catch(e){transcript('音声認識を使えませんでした。マイクでの音量検知は引き続き利用できます。')}
+}
+function chooseVoice(role){const voices=Synth?Synth.getVoices():[];const english=voices.filter(v=>/^en/i.test(v.lang));
+if(!english.length)return null;
+if(role==='Emma')return english.find(v=>/en-GB/i.test(v.lang))||english.find(v=>/female|samantha|victoria|karen/i.test(v.name))||english[english.length-1];
+return english.find(v=>/en-AU/i.test(v.lang))||english.find(v=>/male|daniel|alex/i.test(v.name))||english[0];
+}
+function say(who,text,after){isNpc=true;stopRecognition();setStatus(who+'が話しています','talking');setMic('相手の話を聞こう','声が終わったらあなたの番です',false);transcript('');
+lastLine=''; if(Synth){try{Synth.cancel()}catch(e){}}
+let finished=false;
+const finish=()=>{if(finished)return;finished=true;clearTimeout(timeoutId);timeoutId=null;isNpc=false;if(after)after();};
+if(!Synth||!window.SpeechSynthesisUtterance){timeoutId=setTimeout(finish,900);return;}
+try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.voice=v;u.lang=v?v.lang:'en-AU';u.rate=who==='Emma'?1.04:.96;u.pitch=who==='Emma'?1.16:.91;u.volume=1;currentUtterance=u;u.onend=finish;u.onerror=finish;timeoutId=setTimeout(finish,Math.max(4000,Math.min(20000,text.length*135)));Synth.speak(u);
+}catch(e){timeoutId=setTimeout(finish,950)}
+}
+function refreshControls(){updateTimeline();repeat.disabled=stage==='idle';const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!micStream;
+if(stage==='idle'){main.textContent='▶ LIVEを始める';main.disabled=false;setStatus('始める準備ができています','');setMic('マイクはオフです','「LIVEを始める」を押して利用を許可してください。',false);goal('カフェで友達と話してみよう。会話中に店員が近づくことも。')}
+else if(stage==='friend'){main.textContent='話し終えた →';main.disabled=isNpc;goal(hints[by('level').value][0]);if(!isNpc){setStatus('あなたの番。英語で話そう','active');setMic('聞いています','話している途中に店員が割り込むことがあります。',!!micStream)}}
+else if(stage==='barista'){main.textContent='店員への返事を終える →';main.disabled=isNpc;goal(hints[by('level').value][1]);if(!isNpc){setStatus('Emmaへ返事をしよう','active');setMic('店員への返事を聞いています','返事ができたら次へ。',!!micStream)}}
+else if(stage==='return'){main.textContent='会話を終える →';main.disabled=isNpc;goal(hints[by('level').value][2]);if(!isNpc){setStatus('Alexとの会話を続けよう','active');setMic('友達との会話に戻ろう','今度は最後まで話してみよう。',!!micStream)}}
+else if(stage==='done'){main.disabled=true;setStatus('トレーニング終了','');}
+}
+function resetVoiceWindow(){clearListeners();lastLine='';}
+function userTurn(){if(stage==='done')return;isNpc=false;resetVoiceWindow();refreshControls();if(micStream)startRecognition();else transcript('マイクを使えない場合は、下の「文字で返答する」を開いて入力してね。');}
+function firstQuestion(){stage='friend';addLine('Alex',cues.alexStart);refreshControls();say('Alex',cues.alexStart,userTurn)}
+async function start(){cleanup();stage='idle';feed.replaceChildren();by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);elapsedClock=setInterval(()=>{if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
+try{
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('unsupported');
+micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=new Audio();await audioContext.resume();const src=audioContext.createMediaStreamSource(micStream);analyser=audioContext.createAnalyser();analyser.fftSize=1024;src.connect(analyser);samples=new Float32Array(analyser.fftSize);monitor()}micDenied=false;mode='voice';
+}catch(e){micStream=null;micDenied=true;mode='text';transcript('マイクを使えません。文字入力で会話を進められます。');by('fallback').open=true}
+if(stage==='idle')firstQuestion();
+}
+function monitor(){if(!analyser||!micStream)return;analyser.getFloatTimeDomainData(samples);let sum=0;for(let i=0;i<samples.length;i++)sum+=samples[i]*samples[i];const rms=Math.sqrt(sum/samples.length);
+const active=['friend','barista','return'].includes(stage)&&!isNpc;
+by('meterFill').style.width=(active?Math.max(3,Math.min(100,rms*950)):0)+'%';
+if(active&&stage==='friend'&&!interruption){
+noiseFloor=Math.min(.021,noiseFloor*.999+Math.min(rms,.012)*.001);
+const voiced=rms>Math.max(.014,noiseFloor*2.8);
+const now=performance.now();
+if(voiced){if(!hadVoice)recentVoice=now;hadVoice=true;speechMs+=Math.min(45,now-(voiceTimer||now));}
+voiceTimer=now;
+if(speechMs>=1000&&voiced){triggerInterrupt();}
+}
+raf=requestAnimationFrame(monitor)
+}
+function triggerInterrupt(){if(stage!=='friend'||interruption||isNpc)return;interruption=true;const spoken=lastLine;stopRecognition();if(spoken)transcriptHistory.push({stage:'friend',said:spoken});addEvent('☕ 店員があなたの話の途中に近づいてきた');stage='barista';resetVoiceWindow();addLine('Emma',cues.emma);refreshControls();say('Emma',cues.emma,userTurn)}
+function submitReply(text,fromText){const val=(text||lastLine||'').trim();if(val)transcriptHistory.push({stage,said:val,method:fromText?'typed':'voice'});else transcriptHistory.push({stage,said:'（文字起こしなし）',method:micStream?'voice':'none'});
+if(val)addLine('You',val);else addLine('You','（声で返答しました）',micStream?'音声が文字起こしされていないため、内容は確認できません。':'');
+lastLine='';by('typed').value='';stopRecognition();
+if(stage==='friend'){if(!interruption){addEvent('☕ 店員がカップを持って近づいてきた');stage='barista';addLine('Emma',cues.emma);refreshControls();say('Emma',cues.emma,userTurn)}return;}
+if(stage==='barista'){stage='return';resetVoiceWindow();addLine('Emma',cues.emmaThanks);say('Emma',cues.emmaThanks,()=>{addLine('Alex',cues.alexBack);say('Alex',cues.alexBack,userTurn)});return;}
+if(stage==='return'){addLine('Alex',cues.alexEnd);say('Alex',cues.alexEnd,complete)}
+}
+function complete(){stage='done';cleanup(true);refreshControls();by('actions').classList.add('hidden');by('summary').classList.remove('hidden');const review=by('review');review.replaceChildren();
+const lv=by('level').value;[0,1,2].forEach((i)=>{const d=document.createElement('div');d.className='reviewitem';const h=document.createElement('strong');h.textContent=['① 新しい仕事の話','② 店員への返事','③ 元の会話に戻る'][i];const p=document.createElement('p');const found=transcriptHistory.find(x=>x.stage===phaseList[i]);p.textContent=(found&&found.said!=='（文字起こしなし）'?'あなた: '+found.said+'\n':'')+'例: '+examples[phaseList[i]][['easy','standard','challenge'].indexOf(lv)];d.append(h,p);review.append(d)});
+const note=document.createElement('p');note.textContent='※採点ではありません。返答例と自分の表現を比べて、もう一度声に出してみよう。';review.append(note);
+try{const n=Number(localStorage.getItem('speakingym-live-runs')||0);localStorage.setItem('speakingym-live-runs',String(n+1))}catch(e){}
+}
+function cleanup(keepView){token++;stopRecognition();clearListeners();if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);if(raf)cancelAnimationFrame(raf);raf=0;if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}if(audioContext){try{audioContext.close()}catch(e){}audioContext=null}analyser=null;by('meterFill').style.width='0%';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
+main.addEventListener('click',()=>{if(stage==='idle')start();else if(!isNpc&&['friend','barista','return'].includes(stage))submitReply('',false)});
+by('sendText').addEventListener('click',()=>{const t=by('typed').value.trim();if(!t){transcript('英文を入力してから送信してね。');return;}if(stage==='idle'){transcript('まずLIVEを始めてください。');return;}if(isNpc){transcript('相手が話し終わるまで待ってね。');return;}if(stage==='done')return;submitReply(t,true)});
+repeat.addEventListener('click',()=>{const s=stage;let t=s==='friend'?cues.alexStart:s==='barista'?cues.emma:s==='return'?cues.alexBack:'';if(!t)return;const who=s==='barista'?'Emma':'Alex';say(who,t,()=>{if(stage===s)userTurn()})});
+reset.addEventListener('click',()=>{cleanup();stage='idle';feed.replaceChildren();addLine('Alex','Hey! Long time no see.','準備ができたら「LIVEを始める」を押してね。');by('actions').classList.remove('hidden');by('summary').classList.add('hidden');refreshControls();transcript('');});
+by('againBtn').addEventListener('click',start);
+mic.addEventListener('click',async()=>{if(stage==='idle')return start();if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;stopRecognition();setMic('マイクをオフにしました','文字入力で続けられます。',false);transcript('マイクはオフです。');return}transcript('マイクを再度有効にするには、最初から始めてください。')});
+by('level').addEventListener('change',()=>{refreshControls()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&Synth){try{Synth.pause()}catch(e){}}else if(Synth){try{Synth.resume()}catch(e){}}});
+window.addEventListener('beforeunload',cleanup);
+refreshControls();
+})();
+</script>
+</body></html>
