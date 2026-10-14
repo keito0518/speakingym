@@ -517,8 +517,8 @@ const spoken=lastLine;rememberTopic(spoken);stopRecognition();if(spoken){transcr
 function wordsOf(input){return String(input||'').toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9'\s]/g,' ').replace(/\s+/g,' ').trim()}
 function askedAboutYou(input){
  const t=wordsOf(input);
- return /\b(?:what|how)\s+(?:a?bout|a\s+out)\s+(?:you|u)\b/.test(t)
- || /\b(?:and|what about)\s+(?:you|u)\b/.test(t)
+ return /\b(?:what|how)\s+(?:a?bout|a\s+out)\s+(?:you|u|yourself)\b/.test(t)
+ || /\b(?:and|what about)\s+(?:you|u|yourself)\b/.test(t)
  || /\b(?:how are you|how s your|how is your|how have you been)\b/.test(t)
  || /\b(?:what do you do|what about your job)\b/.test(t);
 }
