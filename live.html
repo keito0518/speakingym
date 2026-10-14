@@ -64,6 +64,24 @@ a{color:inherit}button{touch-action:manipulation}
 .reaction-card{background:#eaf5ec;border:1px solid #cae4d2;padding:15px;border-radius:13px;margin:16px 0}
 .reaction-card strong{display:block;font-size:15px}.reaction-card p{margin:7px 0 0;font-size:12px;color:#41634d}
 .mode-note{font-size:10px;line-height:1.6;color:#63766b}
+
+/* Mobile: centred, full-width stack, without narrow left-anchored controls. */
+@media(max-width:760px){
+ html,body{width:100%;max-width:100%;overflow-x:clip}
+ .container{width:100%;max-width:540px;margin-inline:auto;padding:22px 16px 44px}
+ .head{display:flex;flex-direction:column;align-items:stretch;width:100%;gap:20px;text-align:center;margin:0 auto 22px}
+ .head>div:first-child{width:100%;min-width:0}
+ .head h1{max-width:100%;margin:10px auto;font-size:clamp(26px,7.2vw,36px);line-height:1.45;overflow-wrap:anywhere}
+ .head p{max-width:400px;margin:0 auto;font-size:13px;line-height:1.85}
+ .pace-settings{display:grid;width:100%;min-width:0;max-width:460px;margin:0 auto;gap:14px;text-align:left}
+ .pace-settings>div{min-width:0;width:100%}
+ .pace-settings .select{display:block;width:100%;max-width:none;min-height:52px;padding:12px 14px;font-size:16px;box-sizing:border-box}
+ .pace-setting{font-size:13px;margin:0 0 7px}
+ .layout{width:100%;grid-template-columns:minmax(0,1fr)}
+ .room,.side{width:100%;min-width:0;margin-inline:auto}
+ .cast{flex-wrap:wrap}.scene{padding:20px;text-align:left}
+ .room,.panel{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -87,7 +105,7 @@ a{color:inherit}button{touch-action:manipulation}
 </section>
 <aside class="side"><section class="panel"><h3>会話の流れ</h3><div class="timeline" id="timeline"><div class="step current"><span class="num">1</span> Alexと話す</div><div class="step"><span class="num">2</span> 予想外の出来事</div><div class="step"><span class="num">3</span> Alexとの話に戻る</div></div></section>
 <section class="panel"><h3>今回のLIVE+機能</h3><div class="legend"><div><b>🎲 筋書きが変わる</b>店員、初対面の知り合い、注文確認、何も起こらない日。開始ごとに分岐。</div><div><b>🎤 話している最中に割り込み</b>マイク音量を検知し、選んだタイミングで別の人が話しかける。</div><div><b>☕ オン・オフできる環境音</b>小さなカフェ風の合成音を流せる。聞き取りが難しい場合はオフに。</div><div><b>📈 戻って話すまでを計測</b>元の会話に戻るとき、発話開始までの時間をこの端末で記録。</div></div></section>
-<section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>分岐する固定シナリオによる割り込み実験</strong>です。セリフはAIが自由生成するものではありません。自由会話・文法採点・発音採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。マイクの音量検知は端末内で行い、このページは録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>iPhoneでは音声認識・マイクと読み上げの同時動作に制約がある場合があります。音声が出ない場合は再生ボタン、聞き取れない場合は文字入力でも進めます。</p></section>
+<section class="panel notice"><h3>🧪 実験版について</h3><p>これは<strong>分岐する固定シナリオによる割り込み実験</strong>です。セリフはAIが自由生成するものではありません。自由会話・文法採点・発音採点はまだ接続していません。</p><p>音声認識が利用できるブラウザでは話した内容を文字で表示。マイクの音量検知は端末内で行い、このページは録音を保存・送信しません。ただし、ブラウザ標準の音声認識自体は外部サービスで処理される場合があります。</p><p>iPhoneでは相手の音声再生中にマイクを一度解放して、返答時に再接続します。Safari側の音量制御により完全には解決しない場合があります。音が小さい場合は音量ボタンを確認し、文字入力でも続けられます。</p></section>
 <section class="panel"><h3>困ったとき</h3><div class="help"><details><summary>割り込みに何て言えばいい？</summary><p>店員なら “Yes, that's mine, thanks!”。初対面の人なら “Nice to meet you, I'm ...”。どちらも自然な一言からで大丈夫。</p></details><details><summary>友達との話にどう戻る？</summary><p>“Anyway, as I was saying...” / “Where were we?”</p></details></div></section>
 </aside>
 </div>
@@ -99,6 +117,10 @@ const by=id=>document.getElementById(id);
 const main=by('mainBtn'),repeat=by('repeatBtn'),reset=by('resetBtn'),mic=by('micBtn'),feed=by('feed');
 const Synth=window.speechSynthesis||null;
 const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
+const IS_IOS=/iPad|iPhone|iPod/i.test(navigator.userAgent||'')||(/Macintosh/i.test(navigator.userAgent||'')&&navigator.maxTouchPoints>1);
+const pendingDelays=new Set();
+function later(fn,ms){const epoch=token;const id=setTimeout(()=>{pendingDelays.delete(id);if(epoch===token)fn()},ms);pendingDelays.add(id);return id}
+function clearDelays(){for(const id of pendingDelays)clearTimeout(id);pendingDelays.clear();timeoutId=null}
 let stage='idle', micStream=null, audioContext=null, analyser=null, samples=null, raf=0, token=0, recog=null, recActive=false;
 let voiceTimer=0, speechMs=0, hadVoice=false, recentVoice=0, startTime=0, elapsedClock=0, timerClock=0, currentUtterance=null;
 let lastLine='', transcriptHistory=[], interruption=false, mode='voice', timeoutId=null, isNpc=false, noiseFloor=.004, micDenied=false, asrFailures=0, asrDisabled=false;
@@ -138,14 +160,16 @@ if(sub){const small=document.createElement('span');small.className='sub';small.t
 row.append(avatar,bubble);feed.append(row);feed.scrollTop=feed.scrollHeight;
 }
 function addEvent(t){const el=document.createElement('div');el.className='event';el.textContent=t;feed.append(el);feed.scrollTop=feed.scrollHeight;}
-function clearListeners(){if(timeoutId){clearTimeout(timeoutId);timeoutId=null}voiceTimer=0;speechMs=0;hadVoice=false;recentVoice=0;noiseFloor=.004;}
+function clearListeners(){clearDelays();voiceTimer=0;speechMs=0;hadVoice=false;recentVoice=0;noiseFloor=.004;}
 function updateTimeline(){const ix=stages[stage]??0;by('timeline').replaceChildren();['Alexと話す','予想外の出来事','Alexとの話に戻る'].forEach((t,i)=>{const d=document.createElement('div');d.className='step '+(i<ix?'done':i===ix?'current':'');const n=document.createElement('span');n.className='num';n.textContent=i<ix?'✓':String(i+1);d.append(n,document.createTextNode(' '+t));by('timeline').append(d)})}
 function stopRecognition(){if(recog){recog.onend=null;recog.onerror=null;recog.onresult=null;try{recog.abort()}catch(e){}recog=null}recActive=false;}
 function startRecognition(){stopRecognition();if(!Rec||!micStream||isNpc||asrDisabled||!['friend','barista','return'].includes(stage))return;
 try{recog=new Rec();recog.lang='en-AU';recog.interimResults=true;recog.continuous=true;recog.maxAlternatives=1;
 recog.onresult=e=>{asrFailures=0;let joined='';for(let i=0;i<e.results.length;i++)joined+=e.results[i][0].transcript+' ';lastLine=joined.trim();transcript(lastLine?'聞き取り中：'+lastLine:'話してみよう')};
 recog.onerror=e=>{asrFailures++;if(e.error==='not-allowed'||e.error==='service-not-allowed'||asrFailures>=3)asrDisabled=true;if(e.error==='not-allowed'||e.error==='service-not-allowed'){transcript('音声認識の許可がありません。声の検知と文字入力で練習できます。')}else if(e.error==='network'){transcript('音声認識に接続できません。マイク音量で割り込みを検知します。')}};
-recog.onend=()=>{recActive=false;if(!isNpc&&micStream&&['friend','barista','return'].includes(stage)){timeoutId=setTimeout(()=>{if(!recActive&&!isNpc&&!asrDisabled)startRecognition()},480)}};
+const recognitionEpoch=token;
+recog.onend=()=>{recActive=false;if(recognitionEpoch!==token)return;
+if(!isNpc&&micStream&&['friend','barista','return'].includes(stage)){later(()=>{if(!recActive&&!isNpc&&!asrDisabled)startRecognition()},480)}};
 recog.start();recActive=true;
 }catch(e){transcript('音声認識を使えませんでした。マイクでの音量検知は引き続き利用できます。')}
 }
@@ -155,15 +179,15 @@ if(role==='Emma')return english.find(v=>/en-GB/i.test(v.lang))||english.find(v=>
 if(role==='Jamie')return english.find(v=>/en-US/i.test(v.lang))||english.find(v=>/en-CA/i.test(v.lang))||english[english.length-1];
 return english.find(v=>/en-AU/i.test(v.lang))||english.find(v=>/male|daniel|alex/i.test(v.name))||english[0];
 }
-function say(who,text,after){isNpc=true;stopRecognition();setStatus(who+'が話しています','talking');setMic('相手の話を聞こう','声が終わったらあなたの番です',false);transcript('');
+function say(who,text,after){const speechEpoch=token;isNpc=true;stopRecognition();if(IS_IOS)releaseCapture();setStatus(who+'が話しています','talking');setMic('相手の話を聞こう','声が終わったらあなたの番です',false);transcript('');
 lastLine=''; if(Synth){try{Synth.cancel()}catch(e){}}
 let finished=false;
-const finish=()=>{if(finished)return;finished=true;clearTimeout(timeoutId);timeoutId=null;isNpc=false;if(after)after();};
-if(!Synth||!window.SpeechSynthesisUtterance){timeoutId=setTimeout(finish,900);return;}
-try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.voice=v;u.lang=v?v.lang:'en-AU';u.rate=who==='Emma'?.91:who==='Jamie'?.99:.93;u.pitch=who==='Emma'?1.07:who==='Jamie'?1.15:.98;u.volume=1;currentUtterance=u;u.onend=finish;u.onerror=finish;timeoutId=setTimeout(finish,Math.max(4000,Math.min(20000,text.length*135)));Synth.speak(u);
-}catch(e){timeoutId=setTimeout(finish,950)}
+const finish=()=>{if(finished||speechEpoch!==token)return;finished=true;clearTimeout(timeoutId);timeoutId=null;isNpc=false;if(after)after();};
+if(!Synth||!window.SpeechSynthesisUtterance){timeoutId=later(finish,900);return;}
+try{const u=new SpeechSynthesisUtterance(text);const v=chooseVoice(who);if(v)u.voice=v;u.lang=v?v.lang:'en-AU';u.rate=who==='Emma'?.91:who==='Jamie'?.99:.93;u.pitch=who==='Emma'?1.07:who==='Jamie'?1.15:.98;u.volume=1;currentUtterance=u;u.onend=finish;u.onerror=finish;timeoutId=later(finish,Math.max(4000,Math.min(20000,text.length*135)));Synth.speak(u);
+}catch(e){timeoutId=later(finish,950)}
 }
-function sayAfter(waitMs,who,text,after){isNpc=true;stopRecognition();setStatus('会話の自然な間をとっています…','talking');setMic('少し待ってね','まもなく相手が話し始めます',false);refreshControls();timeoutId=setTimeout(()=>{timeoutId=null;say(who,text,after)},waitMs)}
+function sayAfter(waitMs,who,text,after){isNpc=true;stopRecognition();if(IS_IOS)releaseCapture();setStatus('会話の自然な間をとっています…','talking');setMic('少し待ってね','まもなく相手が話し始めます',false);refreshControls();timeoutId=later(()=>{timeoutId=null;say(who,text,after)},waitMs)}
 function refreshControls(){updateTimeline();repeat.disabled=stage==='idle'||isNpc;const on=['friend','barista','return'].includes(stage);by('micBtn').disabled=!micStream;
 if(stage==='idle'){main.textContent='▶ LIVEを始める';main.disabled=false;setStatus('始める準備ができています','');setMic('マイクはオフです','「LIVEを始める」を押して利用を許可してください。',false);goal('カフェで友達と話してみよう。会話中に店員が近づくことも。')}
 else if(stage==='friend'){main.textContent='話し終えた →';main.disabled=isNpc;goal(hints[by('level').value][0]);if(!isNpc){setStatus('あなたの番。英語で話そう','active');setMic('聞いています','話している途中に店員が割り込むことがあります。',!!micStream)}}
@@ -172,16 +196,38 @@ else if(stage==='return'){main.textContent='会話を終える →';main.disable
 else if(stage==='done'){main.disabled=true;setStatus('トレーニング終了','');}
 }
 function resetVoiceWindow(){clearListeners();lastLine='';}
-function userTurn(){if(stage==='done')return;isNpc=false;resetVoiceWindow();turnStartedAt=performance.now();voiceFirstSeen=0;refreshControls();if(micStream)startRecognition();else transcript('マイクを使えない場合は、下の「文字で返答する」を開いて入力してね。');}
+function userTurn(){if(stage==='done')return;const myRun=token;isNpc=false;resetVoiceWindow();turnStartedAt=performance.now();voiceFirstSeen=0;refreshControls();
+if(micStream){startRecognition();return}
+if(IS_IOS&&!micDenied){transcript('マイクを再接続しています…');acquireCapture(myRun).then(ok=>{if(myRun!==token||isNpc||stage==='done')return;if(ok){refreshControls();startRecognition();transcript('あなたの番です。話してみよう！')}else{micDenied=true;by('fallback').open=true;transcript('マイクを使えません。文字入力でも続けられます。')}});return}
+transcript('マイクを使えない場合は、下の「文字で返答する」を開いて入力してね。');}
 function firstQuestion(){stage='friend';addLine('Alex',cues.alexStart);refreshControls();say('Alex',cues.alexStart,userTurn)}
-async function start(){cleanup();chooseStory();reactionTimes={};asrFailures=0;asrDisabled=false;stage='idle';feed.replaceChildren();by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);elapsedClock=setInterval(()=>{if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
-try{
-if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('unsupported');
-micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-micDenied=false;mode='voice';
-try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=new Audio();await audioContext.resume();const src=audioContext.createMediaStreamSource(micStream);analyser=audioContext.createAnalyser();analyser.fftSize=1024;src.connect(analyser);samples=new Float32Array(analyser.fftSize);monitor();playAmbience()}else transcript('このブラウザでは音量検知に対応していません。文字入力でも続けられます。')}catch(e){analyser=null;transcript('音声検知を開始できませんでした。文字入力でも続けられます。')}
-}catch(e){if(micStream){micStream.getTracks().forEach(t=>t.stop())}micStream=null;micDenied=true;mode='text';transcript('マイクを使えません。文字入力で会話を進められます。');by('fallback').open=true}
-if(stage==='idle')firstQuestion();
+function releaseCapture(){stopRecognition();if(raf)cancelAnimationFrame(raf);raf=0;stopAmbience();
+if(micStream){micStream.getTracks().forEach(t=>{try{t.stop()}catch(e){}});micStream=null}
+if(audioContext){try{audioContext.close()}catch(e){}audioContext=null}
+analyser=null;samples=null;by('meterFill').style.width='0%'}
+async function acquireCapture(runEpoch){
+if(micStream)return true;
+if(!navigator.mediaDevices?.getUserMedia)return false;
+let stream=null;
+try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+if(runEpoch!==token){stream.getTracks().forEach(t=>t.stop());return false}
+micStream=stream;micDenied=false;mode='voice';
+try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=new Audio();await audioContext.resume();
+if(runEpoch!==token||!micStream){releaseCapture();return false}
+const src=audioContext.createMediaStreamSource(micStream);analyser=audioContext.createAnalyser();analyser.fftSize=1024;src.connect(analyser);samples=new Float32Array(analyser.fftSize);monitor();playAmbience()}}
+catch(e){analyser=null;transcript('音声検知は利用できません。文字入力でも続けられます。')}
+if(runEpoch!==token){releaseCapture();return false}
+return true
+}catch(e){if(stream)try{stream.getTracks().forEach(t=>t.stop())}catch(_){}releaseCapture();return false}
+}
+async function start(){cleanup();const myRun=token;chooseStory();reactionTimes={};asrFailures=0;asrDisabled=false;micDenied=false;stage='idle';feed.replaceChildren();
+by('summary').classList.add('hidden');by('actions').classList.remove('hidden');main.disabled=true;main.textContent='準備中…';
+transcript('マイクの許可を確認しています');startTime=Date.now();clearInterval(elapsedClock);
+elapsedClock=setInterval(()=>{if(myRun!==token)return;if(stage!=='idle'&&stage!=='done'){const n=Math.floor((Date.now()-startTime)/1000);by('duration').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}},1000);
+const ok=await acquireCapture(myRun);
+if(myRun!==token)return;
+if(!ok){micDenied=true;mode='text';transcript('マイクを使えません。文字入力でも会話を進められます。');by('fallback').open=true}
+firstQuestion();
 }
 function monitor(){if(!analyser||!micStream)return;analyser.getFloatTimeDomainData(samples);let sum=0;for(let i=0;i<samples.length;i++)sum+=samples[i]*samples[i];const rms=Math.sqrt(sum/samples.length);
 const active=['friend','barista','return'].includes(stage)&&!isNpc;
@@ -216,13 +262,13 @@ const r=by('reactionCard');r.replaceChildren();if(reactionTimes.return!=null){le
 const note=document.createElement('p');note.textContent='※採点ではありません。返答例と自分の表現を比べて、もう一度声に出してみよう。';review.append(note);
 try{const n=Number(localStorage.getItem('speakingym-live-runs')||0);localStorage.setItem('speakingym-live-runs',String(n+1))}catch(e){}
 }
-function cleanup(keepView){token++;stopRecognition();clearListeners();if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);if(raf)cancelAnimationFrame(raf);raf=0;stopAmbience();if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}if(audioContext){try{audioContext.close()}catch(e){}audioContext=null}analyser=null;by('meterFill').style.width='0%';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
+function cleanup(keepView){token++;clearListeners();releaseCapture();if(Synth)try{Synth.cancel()}catch(e){}isNpc=false;clearInterval(elapsedClock);reactionTimes=keepView?reactionTimes:{};turnStartedAt=0;voiceFirstSeen=0;lastLine='';if(!keepView){interruption=false;transcriptHistory=[];stage='idle';by('duration').textContent='00:00';}}
 main.addEventListener('click',()=>{if(stage==='idle')start();else if(!isNpc&&['friend','barista','return'].includes(stage))submitReply('',false)});
 by('sendText').addEventListener('click',()=>{const t=by('typed').value.trim();if(!t){transcript('英文を入力してから送信してね。');return;}if(stage==='idle'){transcript('まずLIVEを始めてください。');return;}if(isNpc){transcript('相手が話し終わるまで待ってね。');return;}if(stage==='done')return;submitReply(t,true)});
-repeat.addEventListener('click',()=>{const s=stage;let t=s==='friend'?cues.alexStart:s==='barista'?cues.emma:s==='return'?cues.alexBack:'';if(!t)return;const who=s==='barista'?'Emma':'Alex';say(who,t,()=>{if(stage===s)userTurn()})});
-reset.addEventListener('click',()=>{cleanup();stage='idle';feed.replaceChildren();addLine('Alex','Hey! Long time no see.','準備ができたら「LIVEを始める」を押してね。');by('actions').classList.remove('hidden');by('summary').classList.add('hidden');refreshControls();transcript('');});
+repeat.addEventListener('click',()=>{if(isNpc)return;const s=stage;const t=s==='friend'?cues.alexStart:s==='barista'?liveEvent?.line:s==='return'?cues.alexBack:'';if(!t)return;const who=s==='barista'?liveEvent.speaker:'Alex';sayAfter(IS_IOS?480:220,who,t,()=>{if(stage===s)userTurn()})});
+reset.addEventListener('click',()=>{cleanup();stage='idle';feed.replaceChildren();addLine('Alex','Hey! Long time no see.','準備ができたら「LIVEを始める」を押してね。');by('actions').classList.remove('hidden');by('summary').classList.add('hidden');by('fallback').open=false;by('typed').value='';by('reactionCard').replaceChildren();refreshControls();transcript('');});
 by('againBtn').addEventListener('click',start);
-mic.addEventListener('click',async()=>{if(stage==='idle')return start();if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;stopRecognition();setMic('マイクをオフにしました','文字入力で続けられます。',false);transcript('マイクはオフです。');return}transcript('マイクを再度有効にするには、最初から始めてください。')});
+mic.addEventListener('click',async()=>{if(stage==='idle')return start();if(micStream){releaseCapture();micDenied=true;setMic('マイクをオフにしました','文字入力で続けられます。',false);transcript('マイクはオフです。');return}transcript('マイクを再度有効にするには、最初から始めてください。')});
 by('level').addEventListener('change',()=>{refreshControls()});
 by('ambientMode').addEventListener('change',()=>{if(audioContext&&stage!=='idle')playAmbience();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&Synth){try{Synth.pause()}catch(e){}}else if(Synth){try{Synth.resume()}catch(e){}}});
