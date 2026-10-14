@@ -38,7 +38,7 @@
    <div class="step" id="step1"><span class="mark">01</span><div><b>何が違うか伝える</b><p>届いたものが熱いこと、注文と違うことを伝えよう。</p></div></div><div class="step" id="step2"><span class="mark">02</span><div><b>本当に欲しいものを伝える</b><p>Iced / Oat milk など。難易度によって必要な情報が増える。</p></div></div><div class="step" id="step3"><span class="mark">03</span><div><b>どうしてほしいか伝える</b><p>交換をお願いするか、店員の交換提案に同意しよう。</p></div></div>
    </section>
    <section class="card"><h2 class="heading">この試作版について</h2><p class="notice" style="margin-top:9px"><b>無料・すぐに使えるミッション版</b>。今は発言から状況を判断するルール型の会話分岐。自由な文章を生成するAIではないので、複雑な発言は理解しきれないことがあるよ。</p><p class="notice" style="margin-top:8px">ただし、一般的な言い換えや質問には応じるようにしてある。文字入力が最も確実で、マイクの音声認識はブラウザ依存。発音の採点はまだ行わない。</p>
-    <details class="advanced" id="aiSettings"><summary>AI自由会話を接続する（開発者向け）</summary><p>Cloudflare Workers等で保護したHTTPSの接続先を指定すると、そのサーバーで生成した店員の返答を使える。現在は未接続。APIキーはここに入力しないでください。</p><label class="control-label" for="endpoint" style="margin-top:12px">保護済みのAI接続URL</label><input id="endpoint" class="text-input" type="url" placeholder="https://your-worker.workers.dev/" autocomplete="off" spellcheck="false"><div class="action"><button class="btn ghost small" id="saveEndpoint" type="button">接続先を保存</button><button class="btn ghost small" id="clearEndpoint" type="button">接続を解除</button></div><p class="saved" id="endpointStatus">AIは未接続。現在は無料の分岐モードです。</p></details>
+    <details class="advanced" id="aiSettings"><summary>AI自由会話を接続する（開発者向け）</summary><p>Cloudflare Workers等で保護したHTTPSの接続先を指定すると、そのサーバーで生成した店員の返答を使える。現在は未接続。接続するとあなたの英文・会話履歴が指定先のサーバーに送られます。APIキーはここに入力しないでください。</p><label class="control-label" for="endpoint" style="margin-top:12px">保護済みのAI接続URL</label><input id="endpoint" class="text-input" type="url" placeholder="https://your-worker.workers.dev/" autocomplete="off" spellcheck="false"><div class="action"><button class="btn ghost small" id="saveEndpoint" type="button">接続先を保存</button><button class="btn ghost small" id="clearEndpoint" type="button">接続を解除</button></div><p class="saved" id="endpointStatus">AIは未接続。現在は無料の分岐モードです。</p></details>
    </section>
    <section class="card"><h2 class="heading">ミニ実績</h2><div class="result-line"><span>この端末のクリア回数</span><strong id="clears">0回</strong></div><div class="result-line"><span>この端末の挑戦回数</span><strong id="attempts">0回</strong></div><p class="tiny">端末内のブラウザ保存のみ。ログインやクラウド同期はありません。</p></section>
   </aside>
@@ -57,7 +57,7 @@ try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');stats={attempts:Number(v
 let endpoint='';
 try{endpoint=localStorage.getItem('speakingym-survival-endpoint')||''}catch(e){}
 $('endpoint').value=endpoint;
-let level='standard',remaining=180,running=false,ended=false,busy=false,turn=0,round=0,timerId=null,recognition=null,speechTimer=null,activeUtterance=null,speechEpoch=0,voiceOn=true,runId=0,aiActive=false,pendingRequest=null,lastBarista='',lastMissing='',hardPoint=null;
+let level='standard',remaining=180,timeLimit=180,running=false,ended=false,busy=false,turn=0,round=0,timerId=null,recognition=null,speechTimer=null,activeUtterance=null,speechEpoch=0,voiceOn=true,runId=0,aiActive=false,pendingRequest=null,lastBarista='',lastMissing='',hardPoint=null;
 let facts={problem:false,iced:false,oat:false,fix:false},messages=[],usedHints=0,unknownCount=0,successfulPhrases=[],originalStage='start';
 const INTRO={
 easy:"Here you go! One hot latte. Is that okay?",
@@ -71,8 +71,8 @@ challenge:['Be specific about both temperature and milk.','I ordered a medium ic
 };
 const variants={
 easy:{start:"Let's get that sorted! What was wrong with the drink?",askIced:"Oh, you wanted it cold? Would you like me to make you an iced latte instead?",askOat:"Sure! Was it supposed to be made with oat milk?",askFix:"Got it. Would you like me to make you a new one?",done:"Of course! I'll get you a fresh iced latte right away. Sorry about that!"},
-standard:{start:"No problem. Could you tell me exactly what you ordered?",askIced:"Sorry for the mix-up! Was your latte supposed to be iced?",askOat:"Thanks for explaining. Did you want oat milk or regular milk?",askFix:"Thanks for clarifying. Shall I remake that as an iced oat latte?",done:"Absolutely. I'll remake your iced oat latte now. Thanks for your patience!"},
-challenge:{start:"I'm sorry about that. Could you confirm the original drink and the changes you'd like?",askIced:"Thanks for letting me know. Just to confirm, was your order iced rather than hot?",askOat:"I see. Was that with oat milk, or did you order regular milk?",askFix:"I appreciate you explaining. Would you like me to remake your drink to the original order?",done:"You're absolutely right. I'll remake it as a medium iced oat latte. Sorry for the inconvenience!"}
+standard:{start:"No problem. Could you tell me exactly what you ordered?",askIced:"Sorry for the mix-up! Was your latte supposed to be iced?",askOat:"Thanks for explaining. You wanted oat milk rather than regular milk, right?",askFix:"Thanks for clarifying. Shall I remake that as an iced oat latte?",done:"Absolutely. I'll remake your iced oat latte now. Thanks for your patience!"},
+challenge:{start:"I'm sorry about that. Could you confirm the original drink and the changes you'd like?",askIced:"Thanks for letting me know. Just to confirm, was your order iced rather than hot?",askOat:"I see. You ordered that with oat milk rather than regular milk, correct?",askFix:"I appreciate you explaining. Would you like me to remake your drink to the original order?",done:"You're absolutely right. I'll remake it as a medium iced oat latte. Sorry for the inconvenience!"}
 };
 const good=t=>/\b(yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|that s right|sounds good|go ahead|would be great|thank you|thanks)\b/.test(t);
 function norm(s){return String(s||'').toLowerCase().replace(/[‘’]/g,"'").replace(/[^a-z0-9'\s]/g,' ').replace(/\s+/g,' ').trim()}
@@ -82,7 +82,7 @@ function parseIntent(original){
  const oat=/\b(oat|oatmilk|oatmilk)\b/.test(t);
  const hot=/\b(hot|warm|heated)\b/.test(t);
  const mistake=/\b(wrong|mistake|mix up|mixed up|instead|different|not|wasn t|didn t|isn t|should be|supposed to|ordered|asked for|wanted|received|got|missing)\b/.test(t);
- const reqFix=/\b(remake|replace|replacement|exchange|change|fix|switch|make it|make me|make another|make a new|could you|can you|would you|please make|redo|bring me)\b/.test(t);
+ const reqFix=/\b(remake|replace|replacement|exchange|change it|change this|change the drink|fix it|fix the drink|switch it|make it iced|make me a new|make another|make a new|please make|redo|a new one|another one|bring me another|bring me a new)\b/.test(t);
  const agree=/\b(yes|yeah|yep|sure|okay|ok|correct|right|exactly|please|sounds good|go ahead)\b/.test(t);
  const no=/\b(no|nope|don t|didn t|do not|wrong)\b/.test(t);
  const ask=/\b(what about you|how about you|and you|how are you|what do you recommend|what is|what s)\b/.test(t);
@@ -118,7 +118,7 @@ function say(text,after){
 }
 function barista(text,after){addMessage('Emma',text);say(text,after)}
 function clockString(secs){return String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0')}
-function updateClock(){$('clock').textContent=clockString(remaining);$('clock').classList.toggle('low',remaining<=30);$('progressFill').style.width=((180-remaining)/180*100)+'%';$('progress').setAttribute('aria-valuenow',String(Math.min(180,180-remaining)))}
+function updateClock(){$('clock').textContent=clockString(remaining);$('clock').classList.toggle('low',remaining<=30);$('progressFill').style.width=((timeLimit-remaining)/timeLimit*100)+'%';$('progress').setAttribute('aria-valuenow',String(Math.round((timeLimit-remaining)/timeLimit*180)))}
 function tick(){if(!running||ended)return;remaining=Math.max(0,remaining-1);updateClock();if(remaining===0)finish(false,'timeout')}
 function stopRecognizer(){if(recognition){try{recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort()}catch(e){}recognition=null}$('micBtn').textContent='🎙 話して入力'}
 function micAction(){
@@ -222,7 +222,7 @@ async function respond(){
  const text=$('reply').value.trim();if(!text){setStatus('英語で言いたいことを入力するか、マイクで話してね。');return}
  stopRecognizer();$('reply').value='';
  turn++;const current=turn,epoch=runId;addMessage('You',text);successfulPhrases.push(text);
- usedHints=usedHints;busy=true;sync();setStatus('店員が考えています…');
+ busy=true;sync();setStatus('店員が考えています…');
  let result=await fromAI(text,current);
  if(!result){if(epoch!==runId||ended)return;result=resolveLocal(text)}
  if(epoch!==runId||ended||current!==turn)return;
@@ -243,7 +243,7 @@ function renderHints(){
 }
 function clearSession(){runId++;turn++;ended=false;running=false;busy=false;aiActive=false;stopRecognizer();stopSpeech();if(pendingRequest){pendingRequest.abort();pendingRequest=null}if(timerId!==null){clearInterval(timerId);timerId=null}}
 function begin(checkpoint=false){
- clearSession();level=$('level').value;remaining=checkpoint?75:180;running=true;ended=false;round=0;usedHints=0;unknownCount=0;messages=[];successfulPhrases=[];lastMissing='';lastBarista='';facts={problem:false,iced:false,oat:false,fix:false};if(!checkpoint)hardPoint=null;
+ clearSession();level=$('level').value;timeLimit=checkpoint?75:180;remaining=timeLimit;running=true;ended=false;round=0;usedHints=0;unknownCount=0;messages=[];successfulPhrases=[];lastMissing='';lastBarista='';facts={problem:false,iced:false,oat:false,fix:false};if(!checkpoint)hardPoint=null;
  if(checkpoint&&hardPoint){facts={...hardPoint.facts};lastMissing=hardPoint.lastMissing||'';}
  stats.attempts++;saveStats();
  $('setupCard').classList.add('hidden');$('resultCard').classList.add('hidden');$('gameCard').classList.remove('hidden');
