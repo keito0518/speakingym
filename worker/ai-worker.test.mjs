@@ -98,5 +98,5 @@ test("successful Gemini JSON response returns conversational reply and facts", a
   assert.deepEqual(body.missionState, { problem: true, iced: true, oat: true, fix: true });
   const opts = upstream.mock.calls[0].arguments[1];
   assert.equal(opts.headers["x-goog-api-key"], "test-key-not-real");
-  assert.match(opts.body, /gemini/i);
+  assert.match(opts.body, /You are Emma/);
 });
