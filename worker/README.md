@@ -6,9 +6,10 @@
 
 1. Google AI Studioで **請求先未連携の無料プロジェクト** を選び、GeminiのFree Tier APIキーを発行する。有料プロジェクトのキーは使わない。
 2. Cloudflareは **Workers Free** で登録する。Workers Paidにアップグレードしない。
-3. Gemini無料枠の上限に達したらAI会話を停止し、ブラウザ側は従来のルール分岐に戻す。自動で課金枠を使わない。
-4. 無料枠で送った英会話テキストはGoogleの製品改善に利用されることがある。**個人情報・秘密情報を入力しない**注意書きが必要。
-5. **公開向け認証はまだない**ため、まず本人・少人数限定で検証する。レート制限は厳密な利用回数管理ではない。
+3. **`ALLOW_AI` を `true` にするまでWorkerはGeminiを呼びません**。APIキーを登録しただけでは稼働しない安全スイッチです。
+4. Gemini無料枠の上限に達したらAI会話を停止し、ブラウザ側は従来のルール分岐に戻す。自動で課金枠を使わない。
+5. 無料枠で送った英会話テキストはGoogleの製品改善に利用されることがある。**個人情報・秘密情報を入力しない**注意書きが必要。
+6. **公開向け認証はまだない**ため、まず本人・少人数限定で検証する。レート制限は厳密な利用回数管理ではない。
 
 ## Gemini APIキーを発行
 
@@ -26,6 +27,8 @@ PCのターミナルから、この \`worker\` フォルダで以下を実行。
 npx wrangler login
 npx wrangler deploy
 npx wrangler secret put GEMINI_API_KEY
+# テスト前に明示的に有効化（入力値は true）
+npx wrangler secret put ALLOW_AI
 \`\`\`
 
 - デプロイ後、\`https://speakingym-survival-ai.<account>.workers.dev/\` 形式のURLが発行されます。
@@ -38,6 +41,10 @@ npx wrangler secret put GEMINI_API_KEY
 [Speakingym 3分ミッション](https://keito0518.github.io/speakingym/mission.html) の「AI自由会話を接続する（開発者向け）」を開き、**Worker URLだけ** 登録してください。Gemini APIキーは入力しません。
 
 設定URLはそのブラウザにのみ保存されます。**他のユーザーは引き続きルール型分岐モード**です。検証後、全ユーザー向けのデフォルトURLをサイトに設定できます。
+
+## ローカルの安全性テスト
+
+Node.js 22以上で `node --test worker/ai-worker.test.mjs` をリポジトリのルートから実行。GitHubのPRでも同じテストを自動で実行します。**実際のGemini APIキー・Cloudflareアカウント・課金は不要**なモックテストです。
 
 ## システムと制約
 
@@ -62,4 +69,4 @@ npx wrangler secret put GEMINI_API_KEY
 \`\`\`
 返答は \`{"reply":"...","missionState":{"problem":true,"iced":true,"oat":true,"fix":false}}\` 形式。
 
-現時点では**Gemini実API接続・iPhone実機での動作は未検証**。キーがない状態ではAI本番公開済みとは扱いません。
+現時点では**Gemini実API接続・iPhone実機での動作は未検証**。安全性テストは実APIへの接続成功を証明するものではありません。キーがない状態ではAI本番公開済みとは扱いません。
