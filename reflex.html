@@ -77,21 +77,11 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
  <p class="speech-status" id="micStatus" role="status">マイクをもう一度押すと、前の文章を消して最初から話せるよ。</p>
  <p class="voice-note">一部ブラウザでは音声が提供元の認識サーバーへ送信される場合があります。SpeakingymのAIサーバーには送信しません。</p>
 </div>
-  <div class="sample hidden" id="sample" aria-live="polite">
- <div class="label">3 WAYS TO SAY IT · 例文3パターン</div>
- <div class="examples-stack">
-  <div class="example-card"><div class="example-head">QUICK · 短く言う</div><div class="example-body" id="sampleQuick"></div></div>
-  <div class="example-card featured"><div class="example-head">NATURAL · 自然に言う</div><div class="example-body" id="sampleText"></div></div>
-  <div class="example-card"><div class="example-head">POLITE · 丁寧に言う</div><div class="example-body" id="samplePolite"></div></div>
- </div>
- <div class="example-tip" id="sampleTip"></div>
- <div class="sample-foot"><button class="btn" id="hearSample" type="button">🔊 自然な例文を聞く</button><small>端末標準の読み上げ音声</small></div>
-</div>
   <div class="button-row" id="ratingButtons">
    <button class="btn primary" type="button" id="spoken">✓ 口から出た！</button>
    <button class="btn" type="button" id="stuck">↻ 詰まった</button>
   </div>
-  <button class="btn orange block hidden" id="next" type="button">次のお題へ →</button>
+
   <div class="skip-row"><span class="meta">✨ 回答例・講評は終了後にまとめて確認</span><button class="text-link" id="finishEarly" type="button">ここで終了</button></div>
  </section>
  <section class="pane end" id="endPane" aria-live="polite">
@@ -337,7 +327,7 @@ function stopListening(){
 }
 function cancelReading(){if(speaker)try{speaker.cancel()}catch(e){}}
 function startRecognitionCycle(){
- if(!listenWanted||state!=="running"||exampleOpened)return;
+ if(!listenWanted||state!=="running")return;
  try{
   const rec=new Recognizer();recognition=rec;
   rec.lang="en-US";rec.interimResults=true;rec.continuous=true;
@@ -385,7 +375,7 @@ function startRecognitionCycle(){
    $("micStatus").textContent="短い無音で認識が途切れたので、再開を試しています…";
    restartTimer=setTimeout(()=>{
     restartTimer=null;
-    if(listenWanted&&state==="running"&&!exampleOpened)startRecognitionCycle();
+    if(listenWanted&&state==="running")startRecognitionCycle();
    },350);
   };
   rec.start();
@@ -397,7 +387,7 @@ function startRecognitionCycle(){
  }
 }
 function microphone(reset=true){
- if(state!=="running"||exampleOpened)return;
+ if(state!=="running")return;
  if(!Recognizer){$("micStatus").textContent="このブラウザでは音声認識を利用できません。自分で声に出すか、英文を手入力してね。";return;}
  cancelReading();stopListening();
  if(reset){$("transcript").value="";baseSpeech="";}
@@ -420,25 +410,18 @@ function clearSpeech(){
  $("resumeMic").classList.add("hidden");
  $("micStatus").textContent="英文を全消ししました。新しく話してみよう。";
 }
-function readNaturalExample(){
- if(state!=="running"||$("sample").classList.contains("hidden")||!current)return;
- if(!speaker||!window.SpeechSynthesisUtterance){
-  $("hearSample").textContent="このブラウザは読み上げ未対応";
-  return;
- }
+function speakExample(text){
+ if(!speaker||!window.SpeechSynthesisUtterance)return;
  try{
-  cancelReading();const voice=new window.SpeechSynthesisUtterance(current.sample);
-  const voices=speaker.getVoices();
-  const preferred=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
-  if(preferred)voice.voice=preferred;voice.lang=preferred?.lang||"en-US";voice.rate=.92;
-  speaker.speak(voice);
- }catch(e){$("hearSample").textContent="読み上げできませんでした";}
+  cancelReading();const u=new window.SpeechSynthesisUtterance(text);
+  const voices=speaker.getVoices(),voice=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
+  if(voice)u.voice=voice;u.lang=voice?.lang||"en-US";u.rate=.92;speaker.speak(u);
+ }catch(e){}
 }
-
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
 function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
-function pane(id){for(const k of ["introPane","playPane","endPane"])$(k).classList.toggle("active",k===id)}
+function pane(id){for(const k of ["introPane","playPane","endPane","historyPane"])$(k).classList.toggle("active",k===id)}
 function clock(){
  const seconds=Math.max(0,remaining);
  $("time").textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
