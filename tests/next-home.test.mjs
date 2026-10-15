@@ -134,7 +134,7 @@ test("all 24 reflex questions have three English examples and a usage tip",()=>{
  assert.equal(quick.length,24);
  assert.match(jsOf(sprint),/EXTRA_ANSWERS\[card\.id\]/);
  assert.match(jsOf(sprint),/function showReview\(/);
- assert.equal((jsOf(sprint).match(/await fetch\(/g)||[]).length,1,"Only explicit teacher request uses Gemini");
+ assert.equal((jsOf(sprint).match(/await fetch\(/g)||[]).length,2,"Health check and one POST happen only on explicit teacher request");
 });
 test("advanced question content is authored in English and all 24 cards change with level",()=>{
  const script=jsOf(sprint);
