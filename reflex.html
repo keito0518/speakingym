@@ -141,14 +141,14 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
-  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
- <section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
+  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
   <div class="teacher-head"><span aria-hidden="true">👩‍🏫</span><div><strong>英会話教師からのアドバイス</strong><p>あなたが話した英文を、良かった点・改善する表現・練習課題まで丁寧にフィードバック。</p></div></div>
   <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini1回だけ無料枠のAPIリクエストを使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
   <button class="btn primary block" type="button" id="requestTeacher">✨ AI先生に個別講評してもらう</button>
   <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
   <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
- </section><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
+ </section><div class="review-point"><strong>📘 お題の学習ポイント（共通）</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ お題のヒント（共通）</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
+ <div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
  </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
   <div class="history-head"><div class="kicker">MY EXPRESSION BOOK</div><h2>📌 自分のフレーズ帳</h2><p>講評から保存した英語を、何度でも声に出そう。英語を隠す練習もできるよ。すべてこの端末内に保存。</p></div>
@@ -157,7 +157,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <div class="end-actions"><button type="button" class="btn" id="phrasesBack">← 設定へ戻る</button></div>
  </section><section class="pane" id="historyPane" aria-label="60秒チャレンジの練習履歴"><div class="history-head"><h2>📚 練習履歴</h2><p>保存された各セッションの講評を、もう一度確認できるよ。最新20回を端末内に保存。</p></div><div id="historyList"></div><div class="end-actions"><button class="btn" id="historyBack" type="button">← 設定へ戻る</button><button class="btn" id="clearHistory" type="button">履歴を全削除</button></div></section>
 </div>
-<div class="info">このドリル本体ではGemini API・有料の音声サービスは不使用。講評画面の「AI先生」を希望して押した場合に限り、無料枠のGeminiへ最大5問の英文を1回送信します。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
+<div class="info">このドリル本体ではGemini API・有料の音声サービスは不使用。 📌 既存の教材解説は全員共通。AI先生を押すと、実際に話した英文への個別講評が表示されます。講評画面の「AI先生」を希望して押した場合に限り、無料枠のGeminiへ最大5問の英文を1回送信します。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
 </main>
 <script>
 (()=>{
