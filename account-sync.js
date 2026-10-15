@@ -1,4 +1,5 @@
 import {firebaseConfig} from "./firebase-config.js";
+import {buildLearningDashboard,japaneseDate} from "./dashboard-data.mjs";
 import {SYNC_ITEMS,OWNER_KEY,readSnapshot,removeSnapshot,applySnapshot,saveGuestSnapshot,readGuestSnapshot,mergeSnapshots,snapshotsEqual,normalizeValue} from "./account-data.mjs";
 
 // This module makes zero Firebase requests until the owner supplies a free Spark config.
@@ -101,24 +102,87 @@ function notify(){
  window.dispatchEvent(new Event("speakingym:account-ready"));
  dashboard();
 }
+function emptySection(parent,title,description,linkText,href){
+ const box=node("div",undefined,"empty-state");
+ const strong=node("strong",title),p=node("p",description),a=node("a",linkText);
+ a.href=href;box.append(strong,p,a);parent.append(box);
+}
 function dashboard(){
  const root=$("sg-account-stats");if(!root)return;
- const data=readSnapshot(localStorage),stats=data["speakingym-reflex-stats-v1"]||{};
- const phrases=data["speakingym-reflex-saved-phrases-v1"]||[];
- const scene=data["speakingym-saved-coaching-v1"]||[];
- const history=data["speakingym-reflex-history-v1"]||[];
- const records=data["speakingym-v01-records"]||[];
- const cafe=data["speakingym-survival-stats-v1"]||{},aiScenes=data["speakingym-scenes-stats-v1"]||{};
- root.replaceChildren();
- for(const [label,number]of [
-  ["60秒チャレンジ",stats.sessions||0],
-  ["保存フレーズ",phrases.length+scene.length],
-  ["保存した練習",history.length+records.length],
-  ["AI実戦英会話",aiScenes.total||0],
-  ["カフェ練習",cafe.attempts||0]
- ]){
-  const box=node("div",undefined,"sg-stat");box.append(node("strong",String(number)),node("span",label));root.append(box);
+ const view=buildLearningDashboard(readSnapshot(localStorage));
+ if($("greeting-name")){
+  const displayName=typeof user?.displayName==="string"?user.displayName.trim().slice(0,28):"";
+  $("greeting-name").textContent=displayName?displayName+" さん、おかえりなさい。":"おかえりなさい。";
  }
+ if($("sg-weekly-active"))$("sg-weekly-active").textContent=String(view.weekly.activeDays);
+ if($("sg-weekly-caption"))$("sg-weekly-caption").textContent="保存履歴で確認できる60秒練習："+view.weekly.recordedSessions+"回";
+ const daysRoot=$("sg-weekly-days");
+ if(daysRoot){
+  daysRoot.replaceChildren();
+  for(const day of view.weekly.days){
+   const item=node("div",undefined,"weekday"+(day.completed?" done":"")+(day.today?" today":""));
+   item.setAttribute("role","listitem");
+   item.setAttribute("aria-label",day.key+"："+day.completed+"回");
+   const mark=node("span",day.completed?"✓":"·","weekday-dot");
+   const label=node("span",day.label);
+   item.append(mark,label);daysRoot.append(item);
+  }
+ }
+ root.replaceChildren();
+ const stats=[
+  ["⚡",view.totals.sprint,"60秒チャレンジ","REFLEX WORKOUT"],
+  ["↗",view.totals.phrases,"保存フレーズ","YOUR PHRASEBOOK"],
+  ["◉",view.totals.ai,"AI実戦英会話","ROLEPLAY SESSIONS"],
+  ["☕",view.totals.cafe,"カフェ練習","CAFÉ CHALLENGE"]
+ ];
+ for(const [icon,count,label,english] of stats){
+  const card=node("div",undefined,"sg-stat");
+  card.append(node("div",icon,"stat-icon"),node("strong",String(count)),node("div",label,"stat-label"),node("div",english,"stat-en"));
+  root.append(card);
+ }
+ if($("sg-next-title"))$("sg-next-title").textContent=view.nextAction.title;
+ if($("sg-next-description"))$("sg-next-description").textContent=view.nextAction.subtitle;
+ for(const id of ["sg-next-action","sg-hero-action"]){
+  const link=$(id);if(!link)continue;
+  link.href=view.nextAction.href;
+  link.textContent=view.nextAction.label+" ↗";
+ }
+ const phraseRoot=$("sg-saved-list");
+ if(phraseRoot){
+  phraseRoot.replaceChildren();
+  if(view.phrases.length===0)emptySection(phraseRoot,"まだ保存フレーズがないよ。","気に入った英文は、講評からワンタップで保存できる。","60秒チャレンジへ ↗","./reflex.html");
+  for(const p of view.phrases){
+   const row=node("article",undefined,"saved-item");
+   row.append(node("div",p.source,"saved-source"),node("div",p.english,"saved-text"));
+   if(p.subtitle)row.append(node("p",p.subtitle,"saved-sub"));
+   phraseRoot.append(row);
+  }
+ }
+ const feedbackRoot=$("sg-feedback-list");
+ if(feedbackRoot){
+  feedbackRoot.replaceChildren();
+  if(view.recentTeacher.length===0)emptySection(feedbackRoot,"まだAI先生の講評はありません。","60秒チャレンジで英文を残し、終了後に「AI先生」を押すと個別アドバイスをもらえるよ。","60秒チャレンジを始める ↗","./reflex.html");
+  for(const feedback of view.recentTeacher){
+   const card=node("article",undefined,"feedback-item");
+   card.append(node("div",feedback.date?japaneseDate(feedback.date)+" · AI TEACHER":"AI TEACHER","feedback-date"));
+   if(feedback.praise)card.append(node("div","✓ GOOD POINT","feedback-label"),node("p",feedback.praise));
+   if(feedback.improvement)card.append(node("div","↗ NEXT STEP","feedback-label improve"),node("p",feedback.improvement));
+   if(feedback.rewrite)card.append(node("div","“"+feedback.rewrite+"”","feedback-rewrite"));
+   feedbackRoot.append(card);
+  }
+ }
+ const historyRoot=$("sg-session-list");
+ if(historyRoot){
+  historyRoot.replaceChildren();
+  if(view.recentSessions.length===0)emptySection(historyRoot,"最初の記録を作ろう。","60秒チャレンジを終えると、ここに最近の練習が表示されるよ。","練習してみる ↗","./reflex.html");
+  for(const workout of view.recentSessions){
+   const card=node("article",undefined,"session-item"),left=node("div");
+   const name={easy:"基礎",standard:"標準",challenge:"応用"}[workout.level];
+   left.append(node("div",japaneseDate(workout.date)+" · "+name,"session-date"),node("div",workout.total+"問チャレンジ","session-meta"));
+   card.append(left,node("span","言えた "+workout.spoke+"問","session-pill"));historyRoot.append(card);
+  }
+ }
+ if($("sg-session-total"))$("sg-session-total").textContent="保存した練習："+view.totals.savedSessions+"件。講評の詳細は60秒チャレンジの履歴から確認できます。";
 }
 function refreshUi(){if(user)status("☁ "+(user.displayName||"Googleユーザー")+" · クラウド保存");else status(configured?"ゲスト利用中 · 記録はこの端末に保存":"ゲスト利用中 · ログイン機能は設定待ち");renderControls();notify();}
 async function syncAll({reloadOnChange=true}={}){
@@ -206,17 +270,7 @@ function onChanged(event){
   catch(e){status("保存は端末内で完了。クラウド同期は次回再試行するよ。")}
  },350));
 }
-function initDashboard(){
- if(!$("sg-account-stats"))return;
- document.head.append(node("style",[
- ".sg-account-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0}",
- ".sg-stat{padding:17px 13px;background:#f2f7ee;border-radius:13px;text-align:center}",
- ".sg-stat strong{display:block;font-size:29px;line-height:1.4}",
- ".sg-stat span{font-size:12px;color:#53715c}",
- "@media(min-width:700px){.sg-account-stats{grid-template-columns:repeat(4,1fr)}}"
- ].join("\n")));
- dashboard();
-}
+function initDashboard(){dashboard();}
 async function start(){
  // Never advertise an unavailable Google-login button to ordinary visitors.
  if(!configured && !$("sg-account-stats"))return;
