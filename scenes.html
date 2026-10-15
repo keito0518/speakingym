@@ -154,6 +154,7 @@ function turnLimit(){return $("level").value==="challenge"?12:$("level").value==
 const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 const synth=window.speechSynthesis||null;
 let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0;
+let micWanted=false,micBase="",micCycleFinal="",micCycleInterim="",micSilentStops=0,micRestartTimer=null;
 function status(message){$("status").textContent=message}
 function goals(container,done){container.replaceChildren();container.setAttribute("lang",missionLanguage());task().goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
@@ -165,22 +166,133 @@ function say(text){lastSpoken=text;if(!synth||!window.SpeechSynthesisUtterance)r
  if(v)u.voice=v;u.lang=v?.lang||"en-AU";u.rate=voiceRate();u.pitch=1;synth.speak(u);
 }catch(e){}}
 function cancelSpeech(){if(synth)try{synth.cancel()}catch(e){}}
-function stopRecognition(){if(recognition){const old=recognition;recognition=null;try{old.onresult=old.onend=old.onerror=old.onstart=null;old.abort()}catch(e){}}$("stopMic").classList.add("hidden");$("mic").textContent=$("reply").value.trim()?"🎙 もう一度話す":"🎙 話して入力"}
-function updateControls(){const locked=!running||processing||!!pendingText;for(const id of ["reply","send","mic","clear"]){$(id).disabled=locked}$("stopMic").disabled=locked;$("repeat").disabled=!running;$("retry").disabled=processing}
+function joinSpeech(left,right){return [String(left||"").trim(),String(right||"").trim()].filter(Boolean).join(" ").trim().slice(0,450)}
+function stopRecognition(){
+ micWanted=false;
+ if(micRestartTimer!==null){clearTimeout(micRestartTimer);micRestartTimer=null}
+ if(recognition){
+  const old=recognition;recognition=null;
+  try{old.onresult=old.onend=old.onerror=old.onstart=null;old.abort()}catch(e){}
+ }
+ $("stopMic").classList.add("hidden");
+ $("mic").textContent=$("reply").value.trim()?"🎙 最初から録り直す":"🎙 話して入力";
+}
+function updateControls(){
+ const locked=!running||processing||!!pendingText;
+ for(const id of ["reply","send","mic","clear","resumeMic"]){$(id).disabled=locked}
+ $("stopMic").disabled=locked;$("repeat").disabled=!running;$("retry").disabled=processing;
+}
 function showTime(){$("timer").textContent=String(Math.floor(remaining/60)).padStart(2,"0")+":"+String(remaining%60).padStart(2,"0")}
 function stopClock(){if(timer){clearInterval(timer);timer=null}}
-function finish(success,message){running=false;processing=false;pendingText="";stopRecognition();if(!success)cancelSpeech();stopClock();updateControls();$("result").classList.remove("hidden");$("result").replaceChildren();const title=document.createElement("strong");title.textContent=success?"🎉 ミッション達成！":"今回の練習は終了";const p=document.createElement("p");p.textContent=message;$("result").append(title,p);status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")}
-function clear(){if(!running||processing||pendingText)return;stopRecognition();$("reply").value="";$("mic").textContent="🎙 話して入力";status("入力を消しました。話し直してね。")}
-function microphone(){if(!running||processing||pendingText)return;if(!Recognition){status("このブラウザではマイク認識が使えません。キーボードで入力してね。");return}
- cancelSpeech();stopRecognition();$("reply").value="";
- try{const rec=new Recognition();recognition=rec;rec.lang="en-US";rec.interimResults=true;rec.continuous=false;
- rec.onstart=()=>{if(recognition!==rec)return;$("mic").textContent="🔁 最初から話す";$("stopMic").classList.remove("hidden");status("聞き取り中。もう一度マイクを押すと最初からやり直せます。")};
- rec.onresult=e=>{if(recognition!==rec)return;let txt="";for(let i=0;i<e.results.length;i++){const value=e.results[i][0]?.transcript||"";txt+=" "+value} $("reply").value=txt.trim()};
- rec.onerror=e=>{if(recognition!==rec)return;stopRecognition();status("音声認識に失敗しました（"+(e.error||"unknown")+"）。再挑戦してね。")};
- rec.onend=()=>{if(recognition!==rec)return;stopRecognition();status("認識内容を確認して送信してね。違えばもう一度マイクを押してね。")};
- rec.start();}catch(e){stopRecognition();status("マイクを開始できませんでした。文字入力を使ってね。")}}
+function finish(success,message){
+ running=false;processing=false;pendingText="";stopRecognition();
+ if(!success)cancelSpeech();stopClock();updateControls();
+ $("resumeMic").classList.add("hidden");
+ $("result").classList.remove("hidden");$("result").replaceChildren();
+ const title=document.createElement("strong");title.textContent=success?"🎉 ミッション達成！":"今回の練習は終了";
+ const p=document.createElement("p");p.textContent=message;
+ $("result").append(title,p);status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")
+}
+function clear(){
+ if(!running||processing||pendingText)return;
+ stopRecognition();$("reply").value="";
+ micBase="";micCycleFinal="";micCycleInterim="";micSilentStops=0;
+ $("resumeMic").classList.add("hidden");$("mic").textContent="🎙 話して入力";
+ status("入力を消しました。話し直してね。")
+}
+function startRecognitionCycle(){
+ if(!micWanted||!running||processing||pendingText)return;
+ try{
+  const rec=new Recognition();recognition=rec;
+  rec.lang="en-US";rec.interimResults=true;
+  // Supported desktop browsers keep listening during pauses. Safari may still auto-stop.
+  rec.continuous=true;
+  micCycleFinal="";micCycleInterim="";
+  rec.onstart=()=>{
+   if(recognition!==rec||!micWanted)return;
+   $("mic").textContent="🔁 最初から録り直す";
+   $("stopMic").classList.remove("hidden");
+   $("resumeMic").classList.add("hidden");
+   status("🎙 認識中。言葉に詰まっても大丈夫！話し終えたら「認識停止」を押してね。")
+  };
+  rec.onresult=e=>{
+   if(recognition!==rec||!micWanted)return;
+   let final="",interim="";
+   for(let i=0;i<e.results.length;i++){
+    const part=e.results[i][0]?.transcript||"";
+    if(e.results[i].isFinal)final=joinSpeech(final,part);
+    else interim=joinSpeech(interim,part);
+   }
+   micCycleFinal=final;micCycleInterim=interim;
+   if(final||interim)micSilentStops=0;
+   $("reply").value=joinSpeech(micBase,joinSpeech(final,interim));
+  };
+  rec.onerror=e=>{
+   if(recognition!==rec)return;
+   const code=e?.error||"unknown";
+   if(code==="no-speech")return; // onend will try a gentle restart
+   const text=$("reply").value;
+   stopRecognition();
+   $("resumeMic").classList.remove("hidden");
+   status("音声認識が停止しました（"+code+"）。文章は保存したよ。続けるなら「続きを話す」を押してね。");
+   $("reply").value=text;
+  };
+  rec.onend=()=>{
+   if(recognition!==rec)return;
+   recognition=null;
+   if(!micWanted)return;
+   micBase=joinSpeech(micBase,joinSpeech(micCycleFinal,micCycleInterim));
+   $("reply").value=micBase;micCycleFinal="";micCycleInterim="";
+   micSilentStops+=1;
+   if(micSilentStops>=3){
+    stopRecognition();
+    $("resumeMic").classList.remove("hidden");
+    status("端末の制限で認識がいったん止まったよ。文章は残してあるので「続きを話す」で追加入力できるよ。");
+    return;
+   }
+   // Many mobile engines stop after a pause even if continuous=true.
+   // Retry only while the user still wants to listen; preserve all confirmed text.
+   status("無音でいったん切れたので、続けて聞き取っています…");
+   micRestartTimer=setTimeout(()=>{
+    micRestartTimer=null;
+    if(micWanted)startRecognitionCycle();
+   },350);
+  };
+  rec.start();
+ }catch(e){
+  stopRecognition();
+  $("resumeMic").classList.remove("hidden");
+  status("このブラウザでは連続認識を再開できませんでした。文章は残っているよ。「続きを話す」を押してね。")
+ }
+}
+function microphone(){
+ if(!running||processing||pendingText)return;
+ if(!Recognition){status("このブラウザではマイク認識が使えません。キーボードの音声入力を使ってね。");return}
+ cancelSpeech();stopRecognition();
+ $("reply").value="";micBase="";micCycleFinal="";micCycleInterim="";micSilentStops=0;
+ $("resumeMic").classList.add("hidden");
+ micWanted=true;
+ startRecognitionCycle();
+}
+function resumeMicrophone(){
+ if(!running||processing||pendingText||micWanted)return;
+ if(!Recognition){status("このブラウザではマイク認識が使えません。");return}
+ cancelSpeech();stopRecognition();
+ micBase=$("reply").value.trim().slice(0,450);
+ micCycleFinal="";micCycleInterim="";micSilentStops=0;micWanted=true;
+ $("resumeMic").classList.add("hidden");
+ startRecognitionCycle();
+}
+function stopMicrophone(){
+ if(!micWanted&&!recognition)return;
+ // Save the live interim transcript visible in the textbox.
+ const text=$("reply").value;stopRecognition();$("reply").value=text;
+ micBase=text.trim().slice(0,450);
+ $("resumeMic").classList.remove("hidden");
+ status("録音完了。文章を確認して「返答する」を押してね。続きがあれば「続きを話す」で追加できるよ。");
+}
 function leave(){runToken++;running=false;processing=false;pendingText="";stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
-function start(){leave();running=true;turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"3分経過。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
+function start(){leave();running=true;turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText||micWanted)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"3分経過。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
 function errorMessage(code){const known={gemini_quota:"無料枠の上限に達しました。しばらく待ってください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が不正な形式でした。",invalid_ai_response:"AIの返答内容を読み取れませんでした。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
 async function answer(text){const requestToken=runToken;processing=true;updateControls();status("AIが返答を考えています…");$("error").classList.add("hidden");
  const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),19500);
@@ -199,7 +311,7 @@ function send(){if(!running||processing||pendingText)return;const text=$("reply"
  stopRecognition();cancelSpeech();$("reply").value="";pendingText=text;turn++;addMessage("You",text);history.push({role:"user",content:text});updateControls();answer(text)}
 $("scenes").addEventListener("click",e=>{const button=e.target.closest("[data-scene]");if(button)select(button.dataset.scene)});
 $("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
-$("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",()=>{stopRecognition();status("認識停止。文字を直して送信できるよ。")});
+$("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",stopMicrophone);$("resumeMic").addEventListener("click",resumeMicrophone);
 $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply||lastSpoken)});
 $("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running)answer(pendingText)});
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
