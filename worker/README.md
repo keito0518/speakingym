@@ -1,6 +1,6 @@
 # Speakingym SURVIVAL | AI接続（初期費用0円）
 
-このディレクトリには **Gemini Free Tier × Cloudflare Workers Free** のバックエンドが準備されています。新URL `https://speakingym.pages.dev` からの接続に対応しています（旧GitHub Pagesも互換性のため許可）。**まだサーバーはデプロイされていないため、公開サイトはAI未接続**です。
+このディレクトリには **Gemini Free Tier × Cloudflare Workers Free** のバックエンドが準備されています。新URL `https://speakingym.pages.dev` からの接続に対応しています（旧GitHub Pagesも互換性のため許可）。**公開Workerは稼働確認済み**（/health）。Geminiの実利用可否は本番通信で個別確認してください。
 
 ## 重要：無料のまま開始する条件
 
@@ -9,7 +9,7 @@
 3. **`ALLOW_AI` を `true` にするまでWorkerはGeminiを呼びません**。APIキーを登録しただけでは稼働しない安全スイッチです。
 4. Gemini無料枠の上限に達したらAI会話を停止し、ブラウザ側は従来のルール分岐に戻す。自動で課金枠を使わない。
 5. 無料枠で送った英会話テキストはGoogleの製品改善に利用されることがある。**個人情報・秘密情報を入力しない**注意書きが必要。
-6. **公開向け認証はまだない**ため、まず本人・少人数限定で検証する。レート制限は厳密な利用回数管理ではない。
+6. **Firebase本人確認＋D1回数制御の実装が準備済み**ですが、運営者がCloudflare D1を作成して有効化するまでは従来のIP制限のみです。導入手順は [PLAN_CONTROLS_SETUP.md](./PLAN_CONTROLS_SETUP.md) を参照。
 
 ## Gemini APIキーを発行
 
@@ -83,4 +83,4 @@ Node.js 22以上で `node --test worker/ai-worker.test.mjs` をリポジトリ�
 ```
 返答は `{"reply":"...","missionState":{"problem":true,"iced":true,"oat":true,"fix":false}}` 形式。
 
-現時点では**Gemini実API接続・iPhone実機での動作は未検証**。安全性テストは実APIへの接続成功を証明するものではありません。キーがない状態ではAI本番公開済みとは扱いません。
+接続の/healthチェックは確認済みですが、AI実会話の本番応答を自動テストだけで保証できません。安全性テストは実APIへの接続成功を証明するものではありません。キーがない状態ではAI本番公開済みとは扱いません。
