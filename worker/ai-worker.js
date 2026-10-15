@@ -142,6 +142,23 @@ function scenarioInstruction(scene, level) {
  ].join("\n");
 }
 
+const COACHING_INSTRUCTION = [
+ "Alongside the dialogue reply, quietly assess ONLY the latest English user utterance for learning feedback.",
+ "Always return a coaching object with keys natural, tip, praise (all strings). If the sentence needs no improvement, natural must be empty.",
+ "natural: a concise, better or more idiomatic English way to express the SAME intent, preserving facts, tone, tense and negation. If the user's phrasing is already natural, return an empty string.",
+ "tip: one brief concrete learning explanation in Japanese (under 85 Japanese characters). Do not nitpick harmless variations or invent an error.",
+ "praise: one specific encouraging observation in Japanese (under 65 Japanese characters), tied to what the user actually said. Avoid generic praise.",
+ "Keep these coaching fields OUTSIDE the spoken barista/roleplay reply. Do not lecture during the conversation.",
+ "You are grading transcribed text only. NEVER evaluate actual pronunciation, fluency, speech clarity or accent.",
+ "Keep coaching concise and grounded in the latestUserText; no invented user quotes.",
+ "Return ONE JSON object with the required reply, roleplay goal fields, and the required coaching object. Keep feedback very brief so the dialogue remains the priority.",
+].join("\n");
+function normalizeCoaching(input) {
+ const item=input&&typeof input==="object"?input:{};
+ const clean=(value,limit)=>typeof value==="string"?value.trim().slice(0,limit):"";
+ return {natural:clean(item.natural,260),tip:clean(item.tip,240),praise:clean(item.praise,200)};
+}
+
 function headersFor(origin) {
   return {
     "Content-Type": "application/json; charset=utf-8",
@@ -257,9 +274,9 @@ export default {
           headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
           signal: controller.signal,
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: scene ? scenarioInstruction(scene, level) : SYSTEM }] },
+            systemInstruction: { parts: [{ text: (scene ? scenarioInstruction(scene, level) : SYSTEM) + "\n" + COACHING_INSTRUCTION }] },
             contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
-            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 900, thinkingConfig: { thinkingLevel: "minimal" } }
+            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1100, thinkingConfig: { thinkingLevel: "minimal" } }
           })
         }
       );
@@ -290,14 +307,14 @@ export default {
         }
         const completed = normalizeProgress(data.progress);
         for (const key of Object.keys(completed)) completed[key] ||= progress[key];
-        return reply({ reply: data.reply.trim(), progress: completed, sceneId: requestedId }, 200, origin);
+        return reply({ reply: data.reply.trim(), progress: completed, sceneId: requestedId, coaching: normalizeCoaching(data.coaching) }, 200, origin);
       }
       const missionState = normalizeFacts(data.missionState);
       // Preserve previously established facts even if model forgets them.
       for (const key of Object.keys(missionState)) {
         missionState[key] = missionState[key] || facts[key];
       }
-      return reply({ reply: data.reply.trim(), missionState }, 200, origin);
+      return reply({ reply: data.reply.trim(), missionState, coaching: normalizeCoaching(data.coaching) }, 200, origin);
     } catch {
       return reply({ error: "ai_timeout", message: "Gemini API timed out." }, 504, origin);
     } finally {

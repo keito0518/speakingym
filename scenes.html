@@ -16,7 +16,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 .btn{border:1px solid #d5e2d6;background:#fff;color:#31583e;border-radius:11px;padding:11px 14px;font-weight:850;font-size:12px}.btn.primary{border-color:#ee6c4d;background:#f47553;color:white}.btn.subtle{background:#eef5ec}.btn:disabled{cursor:not-allowed}.wide{width:100%}
 #chat{margin:16px 0;display:flex;flex-direction:column;gap:13px;max-height:350px;min-height:150px;overflow-y:auto;border:1px solid #e8eee6;border-radius:13px;padding:14px;background:#fbfcfa}.bubble{max-width:90%;background:#f0f5ef;border-radius:14px;padding:11px 14px;font-size:13px;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word;align-self:flex-start}.bubble.me{align-self:flex-end;background:#fff0e7}.bubble strong{display:block;font-size:10px;color:#6c8875;margin-bottom:4px}.bubble.me strong{color:#b16d51}
 .response-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}.response-head label{font-size:12px;font-weight:850}textarea{resize:vertical;min-height:90px;font-size:15px;line-height:1.6}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions .btn{flex:1}.actions .btn.primary{flex:1.4}#status{font-size:12px;color:#52735b;min-height:21px;font-weight:750}#error{margin-top:12px;background:#fff6ef;border:1px solid #edccb5;border-radius:12px;padding:13px;color:#8d4834;font-size:12px;line-height:1.8}.hidden{display:none!important}
-#result{background:#ecf8ee;border:1px solid #cbe6cf;border-radius:12px;padding:14px;margin-top:13px;font-size:13px}#result strong{font-size:17px}.muted{font-size:11px;color:#748476;line-height:1.7;margin-top:10px}.pill{display:inline-block;border-radius:99px;background:#eaf0e9;font-size:11px;padding:5px 10px;color:#4b6653;font-weight:750}
+#result{background:#ecf8ee;border:1px solid #cbe6cf;border-radius:12px;padding:14px;margin-top:13px;font-size:13px}.coach-report{background:#fff;border:2px solid #d5e8d7;border-radius:16px;padding:18px;margin:14px 0}.coach-report h3{margin:0 0 7px;font-size:20px}.coach-report .subline{font-size:12px;color:#6b796d;margin:0 0 11px}.coach-point{padding:12px 0;border-top:1px solid #e5ede4}.coach-label{display:block;font-size:11px;letter-spacing:.2px;color:#647b69;font-weight:850;margin-bottom:5px}.coach-original{font-size:13px;color:#566358;overflow-wrap:anywhere}.coach-natural{font-size:15px;color:#1b5c40;font-weight:850;overflow-wrap:anywhere}.coach-tip{font-size:12px;color:#526958;line-height:1.75}.coach-praise{font-size:12px;font-weight:750;color:#365842;margin-top:6px}.review-saved{margin:14px 0;border:1px solid #dce7db;border-radius:12px;padding:11px}.review-saved summary{cursor:pointer;font-size:13px;font-weight:850}.review-saved li{font-size:12px;margin:8px 0;overflow-wrap:anywhere}#result strong{font-size:17px}.muted{font-size:11px;color:#748476;line-height:1.7;margin-top:10px}.pill{display:inline-block;border-radius:99px;background:#eaf0e9;font-size:11px;padding:5px 10px;color:#4b6653;font-weight:750}
 @media(max-width:750px){.scenes{grid-template-columns:1fr}.scene{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:12px;row-gap:0}.scene .emoji{grid-row:1/4}.scene .tag{padding:0}.settings{grid-template-columns:1fr}main{padding:20px 15px 45px}.card{padding:15px}.actions .btn{flex:1 1 calc(50% - 8px)}.actions .btn.primary{flex-basis:100%}}
 </style>
 </head>
@@ -34,6 +34,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
 <div class="assignment" id="setupAssignment" aria-live="polite"></div><div class="goals" id="setupGoals" aria-live="polite"></div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
+<details class="review-saved"><summary>📚 保存した言い換えを復習</summary><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 <div class="muted">カフェの注文ミッションも残してあるよ：<a href="./mission.html" style="text-decoration:underline">☕ SURVIVALで練習する →</a></div>
 </section>
 <section class="card hidden" id="practice">
@@ -47,6 +48,8 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="muted" id="recognitionHelp">言葉に詰まっても大丈夫。認識中は待機し、終わったら「⏹ 認識停止」を押して確認しよう。音声認識が自動停止した場合は再開を試みるよ。</div><div class="actions"><button class="btn hidden" type="button" id="resumeMic">🎙 続きを話す</button></div>
 <div id="error" class="hidden" role="alert"><strong>AIとの通信ができませんでした。</strong><div id="errorReason"></div><div class="actions"><button class="btn" id="retry" type="button">↻ 同じ発言を再送</button></div></div>
 <div id="result" class="hidden" role="status"></div>
+<div id="coachReport" class="coach-report hidden" aria-live="polite"></div>
+<div class="actions"><button class="btn subtle hidden" id="saveReview" type="button">📌 表現を復習用に保存</button></div>
 <div class="actions"><button class="btn" type="button" id="back">← シーン選択に戻る</button><button class="btn" type="button" id="again">🔁 もう一度</button></div>
 </section>
 </main>
@@ -155,6 +158,8 @@ const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 const synth=window.speechSynthesis||null;
 let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0;
 let micWanted=false,micBase="",micCycleFinal="",micCycleInterim="",micSilentStops=0,micRestartTimer=null;
+let coachingHistory=[];
+const REVIEW_KEY="speakingym-saved-coaching-v1";
 function status(message){$("status").textContent=message}
 function goals(container,done){container.replaceChildren();container.setAttribute("lang",missionLanguage());task().goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
@@ -184,6 +189,63 @@ function updateControls(){
 }
 function showTime(){$("timer").textContent=String(Math.floor(remaining/60)).padStart(2,"0")+":"+String(remaining%60).padStart(2,"0")}
 function stopClock(){if(timer){clearInterval(timer);timer=null}}
+function safeReviewData(){
+ try{const value=JSON.parse(localStorage.getItem(REVIEW_KEY)||"[]");return Array.isArray(value)?value.filter(v=>v&&typeof v.original==="string"&&typeof v.natural==="string").slice(0,20):[]}catch(e){return []}
+}
+function showSavedReview(){
+ const saved=$("savedReview");saved.replaceChildren();
+ const items=safeReviewData();
+ if(!items.length){const p=document.createElement("p");p.className="muted";p.textContent="まだ保存した表現はありません。練習後に保存するとここで復習できます。";saved.append(p);return}
+ const list=document.createElement("ul");
+ for(const item of items){
+  const li=document.createElement("li");li.textContent=item.original+" → "+item.natural;
+  list.append(li);
+ }
+ saved.append(list);
+}
+function recordCoaching(original,raw){
+ if(!raw||typeof raw!=="object")return;
+ const cap=(v,n)=>typeof v==="string"?v.trim().slice(0,n):"";
+ const item={original:cap(original,450),natural:cap(raw.natural,260),tip:cap(raw.tip,240),praise:cap(raw.praise,200)};
+ if(!item.original||!(item.natural||item.tip||item.praise))return;
+ coachingHistory.push(item);
+ if(coachingHistory.length>12)coachingHistory.shift();
+}
+function renderCoachReport(){
+ const root=$("coachReport");root.replaceChildren();
+ const save=$("saveReview");save.classList.add("hidden");save.disabled=false;save.textContent="📌 表現を復習用に保存";
+ if(!coachingHistory.length){root.classList.add("hidden");return}
+ root.classList.remove("hidden");
+ const title=document.createElement("h3");title.textContent="🧠 AI Speaking Report";
+ const lead=document.createElement("p");lead.className="subline";lead.textContent="会話中のAI応答と同時に生成した添削。追加のAPI通信はありません。音声の発音・流暢さは評価していません。";
+ root.append(title,lead);
+ const praise=[...coachingHistory].reverse().find(item=>item.praise);
+ if(praise){const p=document.createElement("p");p.className="coach-praise";p.textContent="✓ "+praise.praise;root.append(p)}
+ const corrections=coachingHistory.filter(item=>item.natural&&item.natural.trim().toLowerCase()!==item.original.trim().toLowerCase()).slice(-3).reverse();
+ if(!corrections.length){const p=document.createElement("p");p.className="coach-tip";p.textContent="今回は大きな言い換え候補はありません。伝わった表現を次のシーンでも使ってみよう。";root.append(p);return}
+ for(const item of corrections){
+  const box=document.createElement("div");box.className="coach-point";
+  for(const [label,value,cls] of [["YOU SAID",item.original,"coach-original"],["MORE NATURAL",item.natural,"coach-natural"],["POINT",item.tip,"coach-tip"]]){
+   if(!value)continue;
+   const tag=document.createElement("span");tag.className="coach-label";tag.textContent=label;
+   const para=document.createElement("div");para.className=cls;para.textContent=value;
+   box.append(tag,para);
+  }
+  root.append(box);
+ }
+ save.classList.remove("hidden");
+}
+function saveCoachReview(){
+ const items=coachingHistory.filter(x=>x.natural&&x.natural.toLowerCase()!==x.original.toLowerCase()).slice(-3);
+ if(!items.length)return;
+ const saved=safeReviewData();
+ const unique=items.filter(x=>!saved.some(y=>y.original===x.original&&y.natural===x.natural));
+ try{
+  localStorage.setItem(REVIEW_KEY,JSON.stringify([...unique,...saved].slice(0,20).map(x=>({original:x.original,natural:x.natural}))));
+  $("saveReview").textContent="✓ この端末に保存しました";$("saveReview").disabled=true;
+  showSavedReview();
+ }catch(e){$("saveReview").textContent="保存できませんでした（ブラウザ設定をご確認ください）";}
+}
 function finish(success,message){
  running=false;processing=false;pendingText="";stopRecognition();
  if(!success)cancelSpeech();stopClock();updateControls();
@@ -191,7 +253,7 @@ function finish(success,message){
  $("result").classList.remove("hidden");$("result").replaceChildren();
  const title=document.createElement("strong");title.textContent=success?"🎉 ミッション達成！":"今回の練習は終了";
  const p=document.createElement("p");p.textContent=message;
- $("result").append(title,p);status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")
+ $("result").append(title,p);renderCoachReport();status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")
 }
 function clear(){
  if(!running||processing||pendingText)return;
@@ -291,8 +353,8 @@ function stopMicrophone(){
  $("resumeMic").classList.remove("hidden");
  status("録音完了。文章を確認して「返答する」を押してね。続きがあれば「続きを話す」で追加できるよ。");
 }
-function leave(){runToken++;running=false;processing=false;pendingText="";stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
-function start(){leave();running=true;turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText||micWanted)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"3分経過。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
+function leave(){runToken++;running=false;processing=false;pendingText="";stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("coachReport").classList.add("hidden");$("saveReview").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
+function start(){leave();running=true;turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};coachingHistory=[];lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText||micWanted)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"3分経過。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
 function errorMessage(code){const known={gemini_quota:"無料枠の上限に達しました。しばらく待ってください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が不正な形式でした。",invalid_ai_response:"AIの返答内容を読み取れませんでした。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
 async function answer(text){const requestToken=runToken;processing=true;updateControls();status("AIが返答を考えています…");$("error").classList.add("hidden");
  const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),19500);
@@ -302,7 +364,7 @@ async function answer(text){const requestToken=runToken;processing=true;updateCo
  if(typeof data.reply!=="string"||!data.reply.trim()||data.reply.length>850||!data.progress||data.sceneId!==sceneId)throw Error("invalid_ai_response");
  if(!running||requestToken!==runToken)return;
  progress={step1:progress.step1||data.progress.step1===true,step2:progress.step2||data.progress.step2===true,step3:progress.step3||data.progress.step3===true};
- const spoken=data.reply.trim();lastReply=spoken;history.push({role:"assistant",content:spoken});addMessage(SCENES[sceneId].speaker,spoken);say(spoken);goals($("progress"),true);
+ recordCoaching(text,data.coaching);const spoken=data.reply.trim();lastReply=spoken;history.push({role:"assistant",content:spoken});addMessage(SCENES[sceneId].speaker,spoken);say(spoken);goals($("progress"),true);
  pendingText="";processing=false;updateControls();
  if(Object.values(progress).every(Boolean)){finish(true,"3つの目標をクリア！言いたいことを英語で伝えられたよ。")}else if(turn>=turnLimit()){finish(false,"今回の発言回数に達したよ！別の言い方でも挑戦してみよう。")}else status("いい感じ！会話を続けよう。");
  }catch(e){if(!running||requestToken!==runToken)return;processing=false;const code=String(e?.message||"network_error").slice(0,60);$("errorReason").textContent=errorMessage(code);$("error").classList.remove("hidden");$("error").scrollIntoView?.({block:"nearest",behavior:"smooth"});status("返答に失敗したため、会話を一時停止しています。");updateControls();
@@ -314,9 +376,14 @@ $("start").addEventListener("click",start);$("back").addEventListener("click",le
 $("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",stopMicrophone);$("resumeMic").addEventListener("click",resumeMicrophone);
 $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply||lastSpoken)});
 $("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running)answer(pendingText)});
+$("saveReview").addEventListener("click",saveCoachReview);
+$("clearReview").addEventListener("click",()=>{
+ try{localStorage.removeItem(REVIEW_KEY)}catch(e){}
+ showSavedReview();
+});
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
-$("level").addEventListener("change",renderAssignment);renderAssignment();updateControls();
+$("level").addEventListener("change",renderAssignment);renderAssignment();showSavedReview();updateControls();
 })();
 </script>
 </body>
