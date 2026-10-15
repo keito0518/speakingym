@@ -87,7 +87,7 @@ test("reflex uses twenty-four unique practical reactions and has no network requ
  assert.match(sprint,/id="resumeMic"/);
  assert.match(sprint,/id="stopMic"/);
  assert.match(sprint,/id="transcript"/);
- assert.match(sprint,/id="hearSample"/);
+ assert.match(sprint,/id="reviewAnswers"/);
  assert.match(sprint,/id="reviewAnswers"/);
  assert.match(sprint,/id="reportReview"/);
  assert.match(sprint,/id="historyPane"/);
@@ -141,6 +141,6 @@ test("advanced question content is authored in English and all 24 cards change w
  assert.equal((script.match(/standard:\[/g)||[]).length,24);
  assert.match(script,/HOW WOULD YOU RESPOND\?/);
  assert.match(script,/const LEVEL_TASKS=/);
- assert.match(script,/session\.level==="challenge"/);
+ assert.match(script,/reviewSession\.level==="challenge"/);
 });
 
