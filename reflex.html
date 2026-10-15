@@ -109,11 +109,158 @@ const cards=[
  {id:"connect5",group:"connect",category:"FIND COMMON GROUND",situation:"相手も自然が好きだとわかった",challenge:"共通点を伝えて、最近行った場所を聞く",hint:"二つの文につなげてみよう。",sample:"Me too! Have you been anywhere interesting lately?"},
  {id:"connect6",group:"connect",category:"CHANGE THE TOPIC",situation:"会話が行き詰まってきた",challenge:"自然に違う話題を切り出す",hint:"強引に変えない。",sample:"By the way, have you heard about the new café nearby?"}
 ];
+
+const EXTRA_ANSWERS={
+ repair1:{quick:"A bit slower, please?",polite:"Would you mind speaking a little more slowly?",tip:"Could you...? でも十分丁寧。Would you mind + 動詞ing は、もう一段やわらかい依頼。"},
+ repair2:{quick:"One more time, please?",polite:"Would you mind repeating that last part?",tip:"最後だけ聞き逃したら that last part と伝えると、全部を繰り返してもらわずに済む。"},
+ repair3:{quick:"What does that mean?",polite:"Could you explain what you mean by that expression?",tip:"単語を聞くときは What does ... mean? でもOK。What do you mean by...? は相手の意図を確かめるときにも便利。"},
+ repair4:{quick:"I mean...",polite:"Perhaps I could explain it in a different way.",tip:"Let me put it another way. は「別の言い方をすると」。続けて自分の説明を加えよう。"},
+ repair5:{quick:"That's not what I meant.",polite:"Sorry if I wasn't clear. What I meant was...",tip:"強い否定より Sorry if I wasn't clear. で始めると、相手を責めずに訂正できる。"},
+ repair6:{quick:"Friday at three, right?",polite:"May I confirm that we're meeting at 3 p.m. on Friday?",tip:"Just to confirm は確認前の便利な前置き。曜日・時刻を具体的に復唱すると誤解が減る。"},
+ hold1:{quick:"Let me think.",polite:"If you don't mind, could I have a moment to think?",tip:"That's a good question. は褒め言葉に加え、考える間を自然につくれる。"},
+ hold2:{quick:"Just a second.",polite:"Could you give me a moment to put that into words?",tip:"find the right words / put that into words は、言いたいことを英語にするまで待ってもらう表現。"},
+ hold3:{quick:"Here's the main point.",polite:"Perhaps I should start by explaining the main point.",tip:"最初に結論から言いたいときは Let me start with...。会話にも発表にも使える。"},
+ hold4:{quick:"It depends.",polite:"I'd say it depends on the circumstances.",tip:"It depends. のあとに on + 名詞を付けると、何によるのか具体的になる。"},
+ hold5:{quick:"Which part do you mean?",polite:"Could you clarify which aspect you'd like me to focus on?",tip:"be more specific は「もう少し具体的に」。clarify も確認したいときに便利。"},
+ hold6:{quick:"Back to the point...",polite:"If we could return to what we were discussing...",tip:"Anyway, getting back to... は話を元へ戻すときの定番。...の後に本題を続ける。"},
+ bound1:{quick:"Sorry, I can't make it.",polite:"I'd love to, but I'm afraid I already have plans. Thanks for asking!",tip:"I can't make it. は予定に行けないときの自然な一言。Thanks for asking を添えると好印象。"},
+ bound2:{quick:"How about tomorrow?",polite:"Would it be possible to move it to tomorrow instead?",tip:"doesn't work for me は時間の都合が悪いときに便利。否定だけでなく代案を付けよう。"},
+ bound3:{quick:"That's over my budget.",polite:"I'm afraid that's a little more than I was hoping to spend.",tip:"beyond my budget は予算オーバー。I'm afraid を付けると断る言い方がやわらぐ。"},
+ bound4:{quick:"Can I think about it?",polite:"Would you mind if I took a little time to consider the offer?",tip:"think it over は「じっくり検討する」。即答せずに判断を保留するときに使える。"},
+ bound5:{quick:"I see it differently.",polite:"I understand your point, although I see it somewhat differently.",tip:"I see your point, but... は相手を尊重して異論を出せる。but の後には理由も続けよう。"},
+ bound6:{quick:"Is there another option?",polite:"Would it be possible to explore an alternative arrangement?",tip:"another option / alternative は代案。Would there be...? なら柔らかく可能性を探れる。"},
+ connect1:{quick:"How was the trip?",polite:"I'd love to hear what you enjoyed most about your trip.",tip:"What was the best part...? は Yes/No で終わらず、相手が具体的に答えやすい質問。"},
+ connect2:{quick:"How long have you liked it?",polite:"May I ask how long you've been interested in that?",tip:"How long have you been into...? は趣味について使いやすい口語表現。"},
+ connect3:{quick:"How's the new job?",polite:"Congratulations on the new role! How have you been finding it so far?",tip:"How's it going so far? は始まって間もないことの感想を自然に聞ける。"},
+ connect4:{quick:"What was good about it?",polite:"Without giving too much away, what did you enjoy most about it?",tip:"ネタバレを避けたいなら Without giving too much away を前に付けるとスマート。"},
+ connect5:{quick:"Me too! Where have you been lately?",polite:"I love nature as well. Have you visited any great places recently?",tip:"Me too! で共通点を示してから質問すると会話が自然につながる。"},
+ connect6:{quick:"By the way, something else...",polite:"On a different note, have you tried that new café nearby?",tip:"By the way / On a different note は話題転換に便利。短い一言を添えるだけで唐突さを減らせる。"}
+};
+
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
 let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[];
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const speaker=window.speechSynthesis||null;
 let recognition=null,listenWanted=false,baseSpeech="",finalSpeech="",interimSpeech="",restartCount=0,restartTimer=null;
+
+function combineText(left,right){
+ return [String(left||"").trim(),String(right||"").trim()].filter(Boolean).join(" ").slice(0,450);
+}
+function updateMicButtons(){
+ const listening=!!recognition||listenWanted;
+ $("micBtn").textContent=listening?"🔁 最初から話す":"🎙 英語を話して入力";
+ $("micBtn").classList.toggle("listening",listening);
+ $("stopMic").classList.toggle("hidden",!listening);
+}
+function stopListening(){
+ listenWanted=false;
+ if(restartTimer!==null){clearTimeout(restartTimer);restartTimer=null;}
+ if(recognition){
+  const prev=recognition;recognition=null;
+  try{prev.onstart=null;prev.onresult=null;prev.onend=null;prev.onerror=null;prev.abort();}catch(e){}
+ }
+ updateMicButtons();
+}
+function cancelReading(){if(speaker)try{speaker.cancel()}catch(e){}}
+function startRecognitionCycle(){
+ if(!listenWanted||state!=="running"||exampleOpened)return;
+ try{
+  const rec=new Recognizer();recognition=rec;
+  rec.lang="en-US";rec.interimResults=true;rec.continuous=true;
+  finalSpeech="";interimSpeech="";
+  rec.onstart=()=>{
+   if(recognition!==rec)return;
+   updateMicButtons();
+   $("resumeMic").classList.add("hidden");
+   $("micStatus").textContent="🎙 聞き取り中。少し言葉に詰まっても続けて話してOK。終わったら認識停止。";
+  };
+  rec.onresult=event=>{
+   if(recognition!==rec)return;
+   let done="",partial="";
+   for(let i=0;i<event.results.length;i++){
+    const phrase=event.results[i]?.[0]?.transcript||"";
+    if(event.results[i].isFinal)done=combineText(done,phrase);
+    else partial=combineText(partial,phrase);
+   }
+   finalSpeech=done;interimSpeech=partial;
+   if(done||partial)restartCount=0;
+   $("transcript").value=combineText(baseSpeech,combineText(done,partial));
+  };
+  rec.onerror=event=>{
+   if(recognition!==rec)return;
+   const code=event?.error||"unknown";
+   if(code==="no-speech")return;
+   const text=$("transcript").value;
+   stopListening();$("transcript").value=text;
+   $("resumeMic").classList.remove("hidden");
+   $("micStatus").textContent="音声認識が止まりました（"+code+"）。文章は残しています。続きを話すか、手入力で修正できます。";
+  };
+  rec.onend=()=>{
+   if(recognition!==rec)return;
+   recognition=null;
+   if(!listenWanted)return;
+   baseSpeech=combineText(baseSpeech,combineText(finalSpeech,interimSpeech));
+   $("transcript").value=baseSpeech;finalSpeech="";interimSpeech="";
+   restartCount++;
+   if(restartCount>2){
+    stopListening();
+    $("resumeMic").classList.remove("hidden");
+    $("micStatus").textContent="ブラウザの制限で一時停止。文章はそのまま。『続きを話す』で再開できます。";
+    return;
+   }
+   $("micStatus").textContent="短い無音で認識が途切れたので、再開を試しています…";
+   restartTimer=setTimeout(()=>{
+    restartTimer=null;
+    if(listenWanted&&state==="running"&&!exampleOpened)startRecognitionCycle();
+   },350);
+  };
+  rec.start();
+ }catch(e){
+  const text=$("transcript").value;
+  stopListening();$("transcript").value=text;
+  $("resumeMic").classList.remove("hidden");
+  $("micStatus").textContent="この端末では自動再開できませんでした。続きはボタンから話せるよ。";
+ }
+}
+function microphone(reset=true){
+ if(state!=="running"||exampleOpened)return;
+ if(!Recognizer){$("micStatus").textContent="このブラウザでは音声認識を利用できません。自分で声に出すか、英文を手入力してね。";return;}
+ cancelReading();stopListening();
+ if(reset){$("transcript").value="";baseSpeech="";}
+ else baseSpeech=$("transcript").value.trim().slice(0,450);
+ finalSpeech="";interimSpeech="";restartCount=0;
+ $("resumeMic").classList.add("hidden");
+ listenWanted=true;updateMicButtons();
+ startRecognitionCycle();
+}
+function stopMicManually(){
+ if(!listenWanted&&!recognition)return;
+ const text=$("transcript").value;
+ stopListening();$("transcript").value=text;
+ baseSpeech=text.trim().slice(0,450);
+ $("resumeMic").classList.remove("hidden");
+ $("micStatus").textContent="文字起こしを確認して、自分で『口から出た』か判断しよう。続きも話せるよ。";
+}
+function clearSpeech(){
+ stopListening();$("transcript").value="";baseSpeech="";finalSpeech="";interimSpeech="";
+ $("resumeMic").classList.add("hidden");
+ $("micStatus").textContent="英文を全消ししました。新しく話してみよう。";
+}
+function readNaturalExample(){
+ if(state!=="running"||$("sample").classList.contains("hidden")||!current)return;
+ if(!speaker||!window.SpeechSynthesisUtterance){
+  $("hearSample").textContent="このブラウザは読み上げ未対応";
+  return;
+ }
+ try{
+  cancelReading();const voice=new window.SpeechSynthesisUtterance(current.sample);
+  const voices=speaker.getVoices();
+  const preferred=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
+  if(preferred)voice.voice=preferred;voice.lang=preferred?.lang||"en-US";voice.rate=.92;
+  speaker.speak(voice);
+ }catch(e){$("hearSample").textContent="読み上げできませんでした";}
+}
+
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
 function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
@@ -204,6 +351,11 @@ function finish(early){
  $("weakOnly").hidden=!unique.length;
  pane("endPane");
 }
+$("micBtn").addEventListener("click",()=>microphone(true));
+$("stopMic").addEventListener("click",stopMicManually);
+$("resumeMic").addEventListener("click",()=>microphone(false));
+$("clearSpeech").addEventListener("click",clearSpeech);
+$("hearSample").addEventListener("click",readNaturalExample);
 $("start").addEventListener("click",()=>start(false));
 $("spoken").addEventListener("click",()=>rate(true));
 $("stuck").addEventListener("click",()=>rate(false));
@@ -212,7 +364,7 @@ $("next").addEventListener("click",nextCard);
 $("finishEarly").addEventListener("click",()=>finish(true));
 $("again").addEventListener("click",()=>start(false));
 $("weakOnly").addEventListener("click",()=>start(true));
-window.addEventListener("pagehide",stopTimer);
+window.addEventListener("pagehide",()=>{stopTimer();stopListening();cancelReading();});
 })();
 </script>
 </body>
