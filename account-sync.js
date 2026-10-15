@@ -98,9 +98,30 @@ async function cloudWrite(uid,item,value){
  if(safe===null)return;
  await dbFns.setDoc(locationFor(uid,item),{version:1,payload:JSON.stringify(safe),updatedAt:dbFns.serverTimestamp()});
 }
+let quotaLookup=null;
+async function updateQuotaUi(){
+ const el=$("sg-plan-info");if(!el)return;
+ if(!user){el.textContent="GoogleログインするとAIの利用枠が表示されるよ。";return}
+ if(quotaLookup)return;
+ quotaLookup=true;
+ try{
+  const api="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
+  const health=await fetch(api+"health").then(r=>r.ok?r.json():null).catch(()=>null);
+  if(!health?.plansEnabled){el.textContent="無料ベータ期間中。AIは混雑防止の利用制限で提供しています。";return}
+  const idToken=await authFns.getIdToken(user);
+  const response=await fetch(api+"entitlement",{headers:{"Authorization":"Bearer "+idToken}});
+  if(!response.ok)throw Error("quota");
+  const data=await response.json();
+  const n=Math.max(0,(data?.limits?.sessions||0)-(data?.used?.sessions||0));
+  const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
+  el.textContent=(data.plan==="pro"?"Pro":"Free")+" · 本日の残り：AI英会話 "+n+" セッション／AI先生 "+t+" 回（日本時間の午前0時に更新）";
+ }catch{el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
+ finally{quotaLookup=false}
+}
 function notify(){
  window.dispatchEvent(new Event("speakingym:account-ready"));
  dashboard();
+ if($("sg-plan-info"))void updateQuotaUi();
 }
 function emptySection(parent,title,description,linkText,href){
  const box=node("div",undefined,"empty-state");
