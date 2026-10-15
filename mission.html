@@ -285,7 +285,8 @@ function showAiFailure(){
  const cause=messages[aiErrorCode]||(aiErrorCode.startsWith('gemini_http_')?'Gemini APIがエラーを返しました。':'通信エラーが発生しました。');
  $('aiErrorReason').textContent=cause+'（エラーコード: '+aiErrorCode+'）';
  $('aiErrorBox').classList.remove('hidden');
- setStatus('AIの応答が停止中です。上のエラーを確認してください。');
+ $('aiErrorBox').scrollIntoView?.({block:'center',behavior:'smooth'});
+ setStatus('AIの応答が停止中です。エラー内容を確認してください。');
 }
 function acceptResult(result,text){
  const won=result.success;
