@@ -118,7 +118,7 @@ export default {
     };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
+    const timer = setTimeout(() => controller.abort(), 16000);
     try {
       const upstream = await fetch(
         "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent",
@@ -129,20 +129,27 @@ export default {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: SYSTEM }] },
             contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
-            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 360, temperature: 0.6 }
+            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 900, thinkingConfig: { thinkingLevel: "minimal" } }
           })
         }
       );
-      if (upstream.status === 429 || upstream.status === 403) {
-        return reply({ error: "ai_limit_reached", message: "Gemini free quota reached or unavailable." }, 429, origin);
+      if (upstream.status === 429) {
+        return reply({ error: "gemini_quota", message: "Gemini free quota or rate limit was reached." }, 429, origin);
+      }
+      if (upstream.status === 401 || upstream.status === 403) {
+        return reply({ error: "gemini_auth", message: "Gemini rejected the API key or access rights." }, 502, origin);
+      }
+      if (upstream.status === 404) {
+        return reply({ error: "gemini_model", message: "The configured Gemini model could not be found." }, 502, origin);
       }
       if (!upstream.ok) {
-        return reply({ error: "ai_unavailable", message: "Gemini could not answer." }, 502, origin);
+        // Provide the HTTP category, never upstream text (which may contain sensitive details).
+        return reply({ error: "gemini_http_" + upstream.status, message: "Gemini API returned an error." }, 502, origin);
       }
       const result = await upstream.json();
       const rawText = result?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
       let data;
-      try { data = JSON.parse(rawText); } catch { return reply({ error: "invalid_ai_response" }, 502, origin); }
+      try { data = JSON.parse(rawText); } catch { return reply({ error: "gemini_invalid_json" }, 502, origin); }
       if (typeof data?.reply !== "string" || !data.reply.trim() || data.reply.length > 850) {
         return reply({ error: "invalid_ai_response" }, 502, origin);
       }
@@ -153,7 +160,7 @@ export default {
       }
       return reply({ reply: data.reply.trim(), missionState }, 200, origin);
     } catch {
-      return reply({ error: "ai_timeout", message: "AI response timed out." }, 504, origin);
+      return reply({ error: "ai_timeout", message: "Gemini API timed out." }, 504, origin);
     } finally {
       clearTimeout(timer);
     }
