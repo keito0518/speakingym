@@ -1,6 +1,6 @@
 # Speakingym: Firebase Spark (無料) 初期設定
 
-現在のサイトはログイン機能のコードを準備した状態です。**Firebaseプロジェクトをサイトオーナーが設定するまではゲストモードのまま**で、Googleログイン・クラウド同期は有効になりません。
+Webアプリの公開設定はSpeakingymの firebase-config.js に反映済みです。**実際のGoogleログイン・クラウド同期には、Firebase AuthenticationのGoogle認証有効化、承認済みドメインの追加、Cloud Firestore作成、セキュリティルールの公開が必要**です。FirebaseのWebアプリを登録しただけではまだ同期できません。
 
 ## 料金を0円に保つ
 
@@ -32,18 +32,9 @@
 3. **allow read, write: if true** のような公開ルールにはしない。別ユーザーの記録へのアクセスを禁止する。
 公式: https://firebase.google.com/docs/firestore/security/rules-conditions
 
-## 4. 公開Web設定をGitHubに入力
+## 4. 公開Web設定（完了）
 
-リポジトリ keito0518/speakingym の firebase-config.js を編集。以下の4つをFirebaseコンソールで表示された公開値に置き換える。
-
-    export const firebaseConfig = {
-      apiKey: "Firebase Web API key",
-      authDomain: "project-id.firebaseapp.com",
-      projectId: "project-id",
-      appId: "Firebase Web app ID"
-    };
-
-これらのFirebase Web設定値は公開クライアント用であり、サービスアカウント秘密鍵とは異なる。**Gemini APIキーをここに貼らないこと。**
+firebase-config.js へのFirebase Webアプリ設定は反映済みです。これらの設定値は公開クライアント用であり、サービスアカウント秘密鍵とは異なります。**Gemini APIキーをここに貼らないこと。**
 
 ## 5. テストする
 
