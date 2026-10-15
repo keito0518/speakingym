@@ -1,68 +1,190 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f8f1">
-<meta name="description" content="Speakingymのマイページ。Googleアカウントでログインすると、練習記録と保存フレーズをスマホ・PCで同期できます。">
-<title>マイページ | Speakingym</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#113c2e">
+<meta name="description" content="Speakingymのマイページ。実際の学習履歴、今週の練習状況、AI先生の講評、保存フレーズをまとめて確認できます。">
+<title>My Learning Space | Speakingym</title>
 <style>
-:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#1d3e2b;background:#f5f8f1;line-height:1.75}
-*{box-sizing:border-box}body{margin:0;min-width:320px}
-header{background:#1b4e37;color:white;padding:20px}
-.header-inner{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.logo{font-size:24px;font-weight:950;letter-spacing:-1px;color:white;text-decoration:none}.logo span{color:#f9a27b}
-header a.back{font-size:12px;font-weight:800;color:#e0efe4;text-decoration:none}
-main{max-width:840px;padding:38px 18px 80px;margin:0 auto}
-.kicker{font-size:11px;letter-spacing:2px;font-weight:950;color:#ba6d4c}
-h1{font-size:clamp(31px,6vw,48px);letter-spacing:-1px;margin:11px 0 14px;line-height:1.35}
-.lead{font-size:14px;color:#63786a;max-width:710px}
-.card{background:white;border:1px solid #dfe9dc;border-radius:19px;padding:24px;margin:23px 0}
-.card h2{font-size:22px;margin:0 0 10px}
-.sg-account-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0}
-.sg-stat{padding:17px 13px;background:#f2f7ee;border-radius:13px;text-align:center}
-.sg-stat strong{display:block;font-size:29px;line-height:1.4}.sg-stat span{font-size:12px;color:#53715c}
-.ctas{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
-.btn{display:flex;align-items:center;justify-content:center;padding:13px 15px;border-radius:11px;min-height:48px;font-size:13px;font-weight:900;text-decoration:none;color:#23513c;background:#f0f6ed;border:1px solid #d7e7d5}
-.btn.primary{background:#1b523a;color:#fff;border-color:#1b523a}
-.note{font-size:12px;color:#697d6e;line-height:1.95}.note strong{color:#234c38}
-ul{padding-left:19px;font-size:13px;color:#536a5b;line-height:2}
-@media(max-width:540px){.ctas{grid-template-columns:1fr}.card{padding:19px}.header-inner{gap:8px}.logo{font-size:21px}}
+:root{--forest:#123d2e;--ink:#203a2e;--muted:#6b7c70;--cream:#f7f7f1;--line:#e4eae1;--accent:#fa9c70;--lime:#d5f3a1;--white:#fff;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;color:var(--ink);background:var(--cream);font-synthesis:none;line-height:1.6}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:var(--cream)}a{color:inherit;text-decoration:none}button{font:inherit}a,button{touch-action:manipulation}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #ef9a73;outline-offset:4px}
+body.account-page .sg-accountbar{background:#113b2e;border-bottom:1px solid #336051;color:#e9f5e8}
+body.account-page .sg-account-status{color:#d0e9d5}
+body.account-page .sg-accountbar button,body.account-page .sg-accountbar a{color:#ecf4e7;background:#ffffff16;border:1px solid #ffffff3d;border-radius:9px}
+body.account-page .sg-accountbar button.primary{background:var(--lime);color:#163c2c;border-color:var(--lime)}
+body.account-page .sg-accountbar-inner{max-width:1160px}
+.site-header{background:var(--forest);color:#fff}
+.site-header-inner{max-width:1160px;margin:auto;padding:22px 24px 25px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{font-size:25px;line-height:1;font-weight:950;letter-spacing:-1.5px}.logo span{color:var(--accent)}
+.header-link{font-size:12px;font-weight:800;color:#dcece0;display:inline-flex;align-items:center;gap:8px}
+.header-link:hover{text-decoration:underline}
+main{max-width:1160px;padding:0 24px 90px;margin:0 auto}
+.hero{background:radial-gradient(circle at 95% 13%,#3a7053 0,transparent 34%),linear-gradient(135deg,#143f30,#174d37 65%,#21573f);color:#fff;border-radius:0 0 28px 28px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.82fr);gap:30px;padding:42px clamp(24px,4.5vw,56px) 46px;position:relative;overflow:hidden;box-shadow:0 20px 38px #194e3222}
+.hero:after{content:"";position:absolute;width:290px;height:290px;border:1px solid #ffffff18;border-radius:50%;right:-154px;top:-108px;pointer-events:none;box-shadow:0 0 0 43px #ffffff04,0 0 0 87px #ffffff04}
+.hero-left,.rhythm{position:relative;z-index:1}
+.eyebrow,.section-kicker{font-size:10px;letter-spacing:2.25px;font-weight:900}
+.eyebrow{color:#b8e7b6;display:flex;gap:9px;align-items:center}.eyebrow:before{content:"";height:6px;width:6px;background:var(--lime);border-radius:50%}
+#greeting-name{display:block;font-size:12px;color:#d0e6d7;margin-top:14px;font-weight:700}
+.hero h1{font-size:clamp(34px,4.5vw,59px);letter-spacing:-2.1px;line-height:1.35;margin:18px 0 13px;font-weight:950}
+.hero h1 em{font-style:normal;color:var(--lime)}
+.hero-desc{color:#d6e6db;font-size:13px;line-height:1.9;max-width:500px}
+.hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:27px}
+.hero-button{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:11px;background:var(--lime);border-radius:12px;padding:12px 20px;color:#16422f;font-weight:900;font-size:13px;box-shadow:0 7px 25px #061f1426}
+.hero-button:hover{background:#e7ffbf}
+.hero-small-link{font-size:12px;font-weight:800;color:#e4f2e8}
+.rhythm{align-self:center;background:#ffffff11;border:1px solid #ffffff30;border-radius:20px;padding:23px 22px 19px;backdrop-filter:blur(12px)}
+.rhythm-top{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#d9ebdc;font-size:10px;font-weight:900;letter-spacing:1.5px}
+.rhythm-top span:last-child{font-size:10px;letter-spacing:0;color:#cde3d2}
+.rhythm-summary{display:flex;align-items:baseline;gap:10px;margin-top:13px}
+.rhythm-summary strong{font-size:56px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-3px}
+.rhythm-summary span{font-size:12px;color:#d5e7d8}
+.rhythm-caption{font-size:11px;color:#d2e4d8;margin-top:8px}
+.weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:23px}
+.weekday{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.weekday .weekday-dot{width:min(31px,100%);aspect-ratio:1;border-radius:10px;background:#ffffff11;border:1px solid #ffffff19;display:grid;place-items:center;color:#a9c5b2;font-size:11px}
+.weekday.done .weekday-dot{background:#d5f3a1;border-color:#d5f3a1;color:#16432d}
+.weekday.today .weekday-dot{outline:2px solid #f9ad7e;outline-offset:3px}
+.weekday>span:last-child{color:#c4decd;font-size:10px;font-weight:750}
+.weeknote{font-size:10px;color:#a9cbb7;margin:16px 0 0;line-height:1.7}
+.page-content{padding-top:37px}
+.section-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 17px}
+.section-kicker{color:#c26b4a;margin:0 0 6px}
+.section-heading h2{font-size:clamp(21px,2.5vw,28px);font-weight:950;letter-spacing:-.7px;line-height:1.3;margin:0}
+.section-heading>a{font-size:12px;font-weight:850;color:#397455;white-space:nowrap}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.sg-stat{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;border-radius:19px;padding:19px 21px;background:white;border:1px solid var(--line);box-shadow:0 9px 26px #28533808;overflow:hidden}
+.sg-stat:before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#d5e4d5}
+.sg-stat:first-child{background:#f0f6e9}.sg-stat:first-child:before{background:#a5cc89}
+.sg-stat:nth-child(2){background:#fff4ec}.sg-stat:nth-child(2):before{background:#f6ae82}
+.sg-stat:nth-child(3):before{background:#a5c5cf}.sg-stat:nth-child(4):before{background:#d5c4a4}
+.sg-stat .stat-icon{height:32px;width:32px;border-radius:10px;background:#ffffffa8;display:grid;place-items:center;font-size:16px}
+.sg-stat strong{display:block;font-size:clamp(31px,4.5vw,44px);line-height:1.05;font-weight:950;letter-spacing:-1.7px;font-variant-numeric:tabular-nums;margin:12px 0 7px}
+.sg-stat .stat-label{font-size:12px;font-weight:900}
+.sg-stat .stat-en{font-size:10px;font-weight:700;color:#8e9b8e;margin-top:1px;letter-spacing:.35px}
+.main-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:18px;margin-top:30px;align-items:stretch}
+.panel{background:white;border:1px solid var(--line);border-radius:21px;padding:25px;min-width:0}
+.panel .section-heading{margin-bottom:19px}
+.next-panel{background:#fff;display:flex;flex-direction:column}
+.next-feature{border-radius:16px;background:#f2f6ed;padding:21px;position:relative;overflow:hidden;flex:1}
+.next-feature:after{content:"↗";position:absolute;font-size:115px;line-height:1;right:-8px;top:-32px;color:#dceade;transform:rotate(-9deg);pointer-events:none}
+.next-feature>*{position:relative;z-index:1}
+.next-tag{display:inline-block;border-radius:40px;background:#e0eddf;color:#46755b;font-size:10px;font-weight:950;letter-spacing:.5px;padding:5px 11px}
+.next-feature h3{font-size:clamp(20px,2.6vw,27px);letter-spacing:-.6px;line-height:1.45;margin:18px 0 7px;max-width:380px}
+.next-feature p{font-size:12px;color:#657b6d;line-height:1.8;max-width:370px}
+.next-button{display:inline-flex;background:var(--forest);color:#fff;border-radius:10px;align-items:center;justify-content:center;gap:12px;padding:13px 17px;min-height:46px;font-size:12px;font-weight:900;margin-top:14px}
+.shortcut-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.shortcut-row a{padding:13px 9px;border:1px solid var(--line);border-radius:11px;color:#3c644b;font-size:11px;font-weight:850;text-align:center;background:#fff}
+.shortcut-row a:hover{background:#f5f8f1}
+.saved-list,.recent-feedback-list,.session-list{display:grid;gap:9px}
+.saved-item{padding:14px 15px;border-radius:12px;background:#f7f9f4;border:1px solid #eef0e9;min-width:0}
+.saved-source{font-size:10px;color:#aa765c;font-weight:850;letter-spacing:.3px}
+.saved-text{font-size:14px;line-height:1.6;font-weight:850;margin:6px 0;overflow-wrap:anywhere}
+.saved-sub{font-size:11px;color:#748578;margin:0;overflow-wrap:anywhere}
+.empty-state{padding:24px 18px;background:#f8faf6;border:1px dashed #cbdccf;border-radius:13px;text-align:left}
+.empty-state strong{font-size:14px;display:block}.empty-state p{font-size:12px;color:#697e70;line-height:1.8;margin:6px 0 13px}
+.empty-state a{font-size:12px;font-weight:850;color:#2d7250}
+.lower-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:18px}
+.feedback-item{padding:16px;border-left:3px solid #b0d6a4;border-radius:0 10px 10px 0;background:#f6faf3}
+.feedback-date{font-size:10px;font-weight:900;color:#8d9b8c}
+.feedback-label{font-size:10px;font-weight:950;letter-spacing:.6px;color:#438263;margin:12px 0 3px}
+.feedback-label.improve{color:#b56f4e}
+.feedback-item p{font-size:12px;color:#334f3e;line-height:1.75;margin:0;overflow-wrap:anywhere}
+.feedback-rewrite{font-size:12px;font-weight:900;color:#2a6b48;margin-top:11px;overflow-wrap:anywhere}
+.session-item{padding:13px 15px;border-radius:12px;background:#f7f9f5;border:1px solid #edf0eb;display:flex;align-items:center;justify-content:space-between;gap:11px}
+.session-item .session-date{font-size:13px;font-weight:900}
+.session-item .session-meta{font-size:11px;color:#7a897e}
+.session-pill{border-radius:30px;background:#e6efe0;color:#386147;padding:6px 9px;font-size:10px;font-weight:850;white-space:nowrap}
+.micro-note{font-size:11px;color:#748478;line-height:1.7;margin:14px 0 0}
+.privacy-info{border:1px solid var(--line);border-radius:16px;background:#fff;margin-top:23px;overflow:hidden}
+.privacy-info summary{list-style:none;cursor:pointer;padding:18px 23px;font-size:13px;font-weight:850;display:flex;align-items:center;justify-content:space-between}
+.privacy-info summary::-webkit-details-marker{display:none}
+.privacy-info summary:after{content:"＋";font-size:20px;color:#688570;font-weight:550}
+.privacy-info[open] summary:after{content:"−"}
+.privacy-info .privacy-body{padding:0 23px 20px;font-size:12px;line-height:1.9;color:#65766b}
+.privacy-info ul{margin:3px 0 12px;padding-left:20px}.privacy-info li{margin-bottom:6px}
+.footer-line{text-align:center;margin-top:36px;font-size:11px;letter-spacing:.4px;color:#829388}
+@media(max-width:850px){.hero{grid-template-columns:minmax(0,1fr);gap:24px}.rhythm{max-width:480px}.main-grid,.lower-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.site-header-inner{padding:17px 19px}.logo{font-size:23px}.header-link{font-size:11px}main{padding:0 14px 65px}.hero{margin:0 -14px;border-radius:0 0 23px 23px;padding:30px 23px 30px;gap:22px}.hero h1{font-size:38px;letter-spacing:-1.7px;margin-top:13px}.hero-desc{font-size:12px;line-height:1.85}.hero-actions{margin-top:22px;gap:15px}.hero-button{min-height:49px}.rhythm{padding:19px}.rhythm-summary strong{font-size:46px}.weekdays{gap:5px}.page-content{padding-top:29px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.sg-stat{min-height:135px;padding:15px 16px}.sg-stat strong{font-size:35px}.sg-stat .stat-label{font-size:11px}.panel{padding:19px}.main-grid{margin-top:23px;gap:12px}.lower-grid{gap:12px;margin-top:12px}.shortcut-row{gap:7px}.shortcut-row a{font-size:10px;padding:12px 6px}.section-heading h2{font-size:22px}.privacy-info{margin-top:13px}}
+@media(prefers-reduced-motion:no-preference){.hero-button,.next-button,.shortcut-row a{transition:transform .18s ease,background .18s ease}.hero-button:hover,.next-button:hover{transform:translateY(-2px)}}
 </style>
 </head>
-<body>
-<header><div class="header-inner"><a class="logo" href="./home-preview.html">speakin<span>gym.</span></a><a class="back" href="./home-preview.html">← トップページ</a></div></header>
+<body class="account-page">
+<header class="site-header"><div class="site-header-inner"><a href="./home-preview.html" class="logo" aria-label="Speakingym ホーム">speakin<span>gym.</span></a><a class="header-link" href="./home-preview.html">← ホームへ戻る</a></div></header>
 <main>
-<div class="kicker">YOUR LEARNING, YOUR PACE.</div>
-<h1>続きから、<br>英語を話そう。</h1>
-<p class="lead">Googleログインを使えば、学習履歴や覚えたい表現をユーザーごとに保存できるよ。今はログインせずにゲストとして練習してもOK。</p>
-<section class="card" aria-labelledby="accountTitle">
- <h2 id="accountTitle">学習ダッシュボード</h2>
- <p id="sg-account-details" class="note" aria-live="polite">読み込み中…</p>
- <div id="sg-account-stats" class="sg-account-stats">
-  <div class="sg-stat"><strong>—</strong><span>60秒チャレンジ</span></div>
-  <div class="sg-stat"><strong>—</strong><span>保存フレーズ</span></div>
-  <div class="sg-stat"><strong>—</strong><span>保存した練習</span></div>
-  <div class="sg-stat"><strong>—</strong><span>AI実戦英会話</span></div>
-  <div class="sg-stat"><strong>—</strong><span>カフェ練習</span></div>
+ <section class="hero" aria-labelledby="heroTitle">
+  <div class="hero-left">
+   <div class="eyebrow">YOUR SPEAKING SPACE</div>
+   <span id="greeting-name">おかえりなさい。</span>
+   <h1 id="heroTitle">話した分だけ、<br><em>前に進める。</em></h1>
+   <p class="hero-desc">完璧じゃなくていい。昨日よりひと言多く話せたら、それも立派な成長。あなたの練習を、ここから続けよう。</p>
+   <div class="hero-actions"><a id="sg-hero-action" class="hero-button" href="./reflex.html">⚡ 今日の練習を始める <span aria-hidden="true">↗</span></a><a href="#progress" class="hero-small-link">学習記録を見る ↓</a></div>
+  </div>
+  <aside class="rhythm" aria-labelledby="weeklyTitle">
+   <div class="rhythm-top"><span id="weeklyTitle">WEEKLY RHYTHM</span><span>直近7日間</span></div>
+   <div class="rhythm-summary"><strong id="sg-weekly-active">0</strong><span>日、英語に挑戦</span></div>
+   <p class="rhythm-caption" id="sg-weekly-caption">60秒チャレンジの履歴から集計</p>
+   <div id="sg-weekly-days" class="weekdays" role="list" aria-label="過去7日間の60秒チャレンジ記録">
+    <div class="weekday"><span class="weekday-dot">·</span><span>—</span></div>
+   </div>
+   <p class="weeknote">※ 直近20件の保存履歴から確認できた練習日数。成績や英語力の評価ではありません。</p>
+  </aside>
+ </section>
+ <div class="page-content" id="progress">
+  <div class="section-heading"><div><p class="section-kicker">YOUR NUMBERS</p><h2>少しずつ、積み重ねた記録。</h2></div><span class="section-kicker">ALL TIME</span></div>
+  <section id="sg-account-stats" class="stats-grid" aria-label="あなたの学習記録" aria-live="polite">
+   <div class="sg-stat"><span class="stat-icon">⚡</span><strong>—</strong><span class="stat-label">60秒チャレンジ</span></div>
+   <div class="sg-stat"><span class="stat-icon">↗</span><strong>—</strong><span class="stat-label">保存フレーズ</span></div>
+   <div class="sg-stat"><span class="stat-icon">◉</span><strong>—</strong><span class="stat-label">AI実戦英会話</span></div>
+   <div class="sg-stat"><span class="stat-icon">☕</span><strong>—</strong><span class="stat-label">カフェ練習</span></div>
+  </section>
+  <div class="main-grid">
+   <section class="panel next-panel" aria-labelledby="nextTitle">
+    <div class="section-heading"><div><p class="section-kicker">KEEP GOING</p><h2 id="nextTitle">次の一歩。</h2></div></div>
+    <div class="next-feature">
+     <span class="next-tag">RECOMMENDED FOR YOU</span>
+     <h3 id="sg-next-title">今日も、英語を口に出そう。</h3>
+     <p id="sg-next-description">60秒だけでもいい。まずは言葉にしてみよう。</p>
+     <a id="sg-next-action" class="next-button" href="./reflex.html">練習を始める <span aria-hidden="true">↗</span></a>
+    </div>
+    <div class="shortcut-row">
+     <a href="./scenes.html">◉ AI実戦英会話 ↗</a>
+     <a href="./mission.html">☕ カフェチャレンジ ↗</a>
+    </div>
+   </section>
+   <section class="panel" aria-labelledby="phrasesTitle">
+    <div class="section-heading"><div><p class="section-kicker">YOUR VOCABULARY</p><h2 id="phrasesTitle">覚えておきたい表現。</h2></div><a href="./reflex.html#phrases">フレーズ帳へ ↗</a></div>
+    <div id="sg-saved-list" class="saved-list" aria-live="polite"></div>
+   </section>
+  </div>
+  <div class="lower-grid">
+   <section class="panel" aria-labelledby="feedbackTitle">
+    <div class="section-heading"><div><p class="section-kicker">COACH'S NOTES</p><h2 id="feedbackTitle">最近のAI講評。</h2></div></div>
+    <div id="sg-feedback-list" class="recent-feedback-list" aria-live="polite"></div>
+    <p class="micro-note">AI先生に実際に講評してもらった内容のみ表示。発音や流暢さを測定したスコアではありません。</p>
+   </section>
+   <section class="panel" aria-labelledby="historyTitle">
+    <div class="section-heading"><div><p class="section-kicker">RECENT WORKOUTS</p><h2 id="historyTitle">最近の練習。</h2></div><a href="./reflex.html">履歴を見る ↗</a></div>
+    <div id="sg-session-list" class="session-list" aria-live="polite"></div>
+    <p class="micro-note" id="sg-session-total">保存された練習記録を表示しています。</p>
+   </section>
+  </div>
+  <details class="privacy-info">
+   <summary>学習記録の保存とプライバシーについて</summary>
+   <div class="privacy-body">
+    <p id="sg-account-details" role="status" aria-live="polite">ログイン状態を確認しています…</p>
+    <ul>
+     <li>ゲスト利用時は、この端末のブラウザ内に記録を保存します。</li>
+     <li>Googleログイン後は、保存した練習とフレーズをアカウントごとにクラウド同期します。</li>
+     <li>初回ログイン時には、ゲスト記録を引き継ぐか確認します。</li>
+     <li>ログアウトするとアカウント記録の表示を切り離し、ゲスト記録に戻ります。</li>
+     <li>録音データ、Googleのパスワード、GeminiのAPIキーは保存しません。</li>
+    </ul>
+    <p>Firebase Spark（無料）プランで運用中。無料枠上限では同期が制限されることがあります。端末間での引き継ぎは同じGoogleアカウントで確認してください。</p>
+   </div>
+  </details>
+  <div class="footer-line">SPEAKINGYM · SMALL STEPS, REAL PROGRESS.</div>
  </div>
- <div class="ctas">
-  <a href="./reflex.html" class="btn primary">⚡ 60秒チャレンジ</a>
-  <a href="./reflex.html#phrases" class="btn">📌 フレーズ帳</a>
-  <a href="./scenes.html" class="btn">🎙 AI実戦英会話</a>
-  <a href="./home-preview.html" class="btn">🏠 ホームに戻る</a>
- </div>
-</section>
-<section class="card" aria-labelledby="howTitle">
- <h2 id="howTitle">記録の保存について</h2>
- <ul>
-  <li>ゲスト：このブラウザ内だけに保存。スマホとPCの間では同期されない。</li>
-  <li>Googleログイン後：許可した学習記録を、あなた専用のクラウド領域に保存。</li>
-  <li>初回ログイン時：端末内のゲスト記録を引き継ぐか選べる。</li>
-  <li>ログアウト後：アカウントの記録を画面から切り離し、ゲストの記録に戻る。</li>
-  <li>音声ファイル・Googleのパスワード・GeminiのAPIキーは保存しない。</li>
- </ul>
- <p class="note"><strong>無料運用：</strong>FirebaseのSpark（無料）プランで、無料枠内のGoogleログインと学習記録の同期に対応しています。端末によってGoogle認証のポップアップが開かない場合があります。ログイン後は別の端末で同じアカウントにログインし、フレーズや学習履歴が引き継がれるか確認してください。無料枠の上限に達した場合は同期が制限されることがあります。</p>
-</section>
 </main>
 <script type="module" src="./account-sync.js"></script>
 </body>
