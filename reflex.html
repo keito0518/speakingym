@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#163d30">
+<meta name="description" content="Speakingymの60秒瞬発力スプリント。聞き返す、丁寧に断る、時間を稼ぐ、会話をつなぐ。一瞬の切り返しだけを練習する、無料・AIなしのゲーム。">
+<title>60秒スプリント | Speakingym NEXT</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#17392b;background:#f7f8f4;line-height:1.7;--green:#193e31;--coral:#f47b55;--line:#dce6dc}
+*{box-sizing:border-box}body{margin:0;min-width:320px}button,a{touch-action:manipulation}button{font:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{text-decoration:none;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid #fdb190;outline-offset:3px}
+header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-height:70px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;gap:12px}.brand{font-size:22px;font-weight:950;letter-spacing:-1px}.brand span{color:#faa17d}.head a.back{font-size:12px;font-weight:800;color:#dcece0}
+.shell{max-width:880px;margin:auto;padding:31px 18px 65px}.hero{text-align:center;max-width:720px;margin:0 auto 25px}.kicker{color:#c96547;font-size:11px;letter-spacing:2.2px;font-weight:950}.hero h1{font-size:clamp(31px,6.5vw,49px);line-height:1.2;letter-spacing:-1.5px;margin:13px 0 12px}.hero p{font-size:14px;color:#637669;line-height:1.9;margin:0}
+.board{background:#fff;border-radius:25px;border:1px solid var(--line);padding:25px;box-shadow:0 16px 40px #214b3610}.pane{display:none}.pane.active{display:block}
+.time-icon{height:66px;width:66px;margin:10px auto 15px;display:grid;place-items:center;border-radius:19px;background:#feeadf;color:#c75d41;font-size:34px;font-weight:900}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:23px 0}.mini{background:#f3f6f0;border-radius:12px;padding:14px;text-align:center;font-size:12px;font-weight:800;color:#45614c;line-height:1.6}.mini strong{font-size:22px;display:block;margin-bottom:2px}
+.btn{border:1px solid #d7e4d7;background:#fff;color:#204533;border-radius:13px;padding:13px 17px;font-size:14px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px}.btn.primary{background:var(--green);border-color:var(--green);color:#fff}.btn.orange{background:var(--coral);border-color:var(--coral);color:#fff}.btn.block{width:100%}.btn:active{transform:scale(.985)}
+.start-note{color:#738477;font-size:11px;text-align:center;line-height:1.8}.mode-label{font-size:12px;font-weight:850;margin:14px 0 7px}.select{width:100%;border:1px solid #d4e3d5;background:#fff;padding:13px;border-radius:11px;font:inherit;font-size:13px;color:#1d4330}
+.top-meter{display:flex;align-items:center;justify-content:space-between;gap:12px}.remain{font-size:35px;font-weight:950;letter-spacing:-1px;line-height:1.2;font-variant-numeric:tabular-nums}.remain.low{color:#cb5339}.reps{font-size:12px;font-weight:850;color:#567260}.bar{height:10px;background:#eff3ec;border-radius:99px;overflow:hidden;margin:14px 0 23px}.bar-fill{height:100%;width:100%;background:var(--coral);transition:width .85s linear}
+.prompt{background:#eff4eb;border:2px solid #d6e5d3;border-radius:19px;padding:23px;margin:0 0 16px;min-height:255px}.prompt.focus{background:#fff2e8;border-color:#f1c8ad}.prompt-tag{font-size:11px;font-weight:950;letter-spacing:.7px;color:#886042}.prompt-scene{font-size:15px;font-weight:800;color:#4d6855;margin:12px 0 8px}.prompt h2{font-size:clamp(24px,5vw,35px);letter-spacing:-.65px;line-height:1.45;margin:9px 0 12px;color:#193f2d}.prompt .instruction{font-size:14px;font-weight:650;color:#4e6652;margin:0;line-height:1.7}
+.voice-reminder{text-align:center;color:#76877a;font-size:12px;margin:10px auto 13px}.sample{padding:14px 16px;border:1px solid #ead4bd;border-radius:12px;background:#fff8ee;margin-bottom:12px}.sample .label{font-size:10px;font-weight:900;color:#b7684d;letter-spacing:1px}.sample .example{font-size:18px;line-height:1.6;color:#244d35;font-weight:750;margin-top:5px}.button-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.skip-row{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-top:12px}.text-link{font-size:12px;font-weight:900;color:#406d4d;border:none;background:none;padding:8px}.text-link:hover{text-decoration:underline}.meta{font-size:11px;color:#799080}.hidden{display:none!important}
+.end{text-align:center}.end .trophy{font-size:48px;margin:8px 0}.end h2{font-size:28px;margin:6px 0}.end p{color:#66786c;font-size:13px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.summary .item{background:#f3f6f0;border-radius:13px;padding:15px 7px}.summary strong{display:block;font-size:28px;line-height:1.15;color:#215d41}.summary span{font-size:11px;color:#6b816f;font-weight:800}.missed-list{text-align:left;background:#fff5eb;padding:15px;border-radius:13px;margin:18px 0}.missed-list h3{margin:0 0 9px;font-size:14px}.missed-list p{margin:5px 0;font-size:12px;color:#664d3e}.end-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.info{padding:16px 3px;font-size:12px;color:#788779;line-height:1.9;text-align:center}.info a{text-decoration:underline}
+@media(max-width:550px){.shell{padding-top:23px}.board{padding:18px}.three{grid-template-columns:1fr;gap:7px}.mini{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 15px}.mini strong{font-size:22px;margin:0}.prompt{min-height:280px;padding:18px}.prompt h2{font-size:28px}.button-row{gap:8px}.btn{padding:12px 10px;font-size:13px}.summary{gap:6px}.end-actions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.bar-fill{transition:none}}
+</style>
+</head>
+<body>
+<header><div class="head"><a class="brand" href="./home-preview.html">speakin<span>gym.</span></a><a class="back" href="./home-preview.html">← 新ホームに戻る</a></div></header>
+<main class="shell">
+<section class="hero"><div class="kicker">QUICK REACTION / 60 SECONDS</div><h1>英語の「えっと…」を、<br>1分で鍛える。</h1><p>これはAIとの会話ではありません。<strong>会話が止まりそうな瞬間の切り返し</strong>を、短時間で何度も声に出すトレーニングです。</p></section>
+<div class="board">
+ <section class="pane active" id="introPane" aria-label="60秒ドリルの設定">
+  <div class="time-icon" aria-hidden="true">60</div>
+  <div class="three"><div class="mini"><strong>①</strong>お題を見る</div><div class="mini"><strong>②</strong>英語で声に出す</div><div class="mini"><strong>③</strong>自分で判定</div></div>
+  <label class="mode-label" for="mode">今日の練習</label>
+  <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option></select>
+  <button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button>
+  <p class="start-note">マイクの許可もAPI通信も不要。自分の声で言ってみよう。<br>採点は自己評価で、英語の正確さを自動判定するものではありません。</p>
+ </section>
+ <section class="pane" id="playPane" aria-label="英語の瞬発力チャレンジ">
+  <div class="top-meter"><div><span class="kicker" style="letter-spacing:1px">REMAINING</span><div id="time" class="remain" aria-label="残り時間">01:00</div></div><div class="reps" id="count" aria-live="polite">0 問チャレンジ中</div></div>
+  <div class="bar" aria-hidden="true"><div class="bar-fill" id="progress"></div></div>
+  <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">会話が止まったら</div><p class="prompt-scene" id="situation"></p><h2 id="challenge"></h2><p class="instruction" id="hint"></p></div>
+  <p class="voice-reminder">🎙 実際に声に出してから、自己判定を押そう。</p>
+  <div class="sample hidden" id="sample"><div class="label">ONE POSSIBLE ANSWER</div><div class="example" id="sampleText"></div></div>
+  <div class="button-row" id="ratingButtons">
+   <button class="btn primary" type="button" id="spoken">✓ 口から出た！</button>
+   <button class="btn" type="button" id="stuck">↻ 詰まった</button>
+  </div>
+  <button class="btn orange block hidden" id="next" type="button">次のお題へ →</button>
+  <div class="skip-row"><button class="text-link" id="showSample" type="button">💡 例文を見る</button><button class="text-link" id="finishEarly" type="button">ここで終了</button></div>
+ </section>
+ <section class="pane end" id="endPane" aria-live="polite">
+  <div class="trophy" aria-hidden="true">⚡</div>
+  <div class="kicker">SESSION COMPLETE</div>
+  <h2>60秒、おつかれ！</h2>
+  <p id="endMessage">とっさの一言を何度も試せたね。</p>
+  <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
+  <div id="missedList" class="missed-list hidden"><h3>次にもう一度言ってみたい表現</h3><div id="missedItems"></div></div>
+  <div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
+ </section>
+</div>
+<div class="info">話す時間に集中するため、このドリルは音声を録音・送信しません。<br>練習回数・自己判定と苦手カードの番号だけを端末内に保存します。<a href="./index.html">旧トップを見る</a></div>
+</main>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1";
+const cards=[
+ {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してもらう",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
+ {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一度だけ言ってもらう",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
+ {id:"repair3",group:"repair",category:"CLARIFY",situation:"相手が知らない単語を使った",challenge:"その言葉の意味を聞き返す",hint:"“What do you mean by ...?”を使ってもいい。",sample:"What do you mean by that word?"},
+ {id:"repair4",group:"repair",category:"REPHRASE",situation:"自分の言ったことが伝わらない",challenge:"別の言い方で説明し直す",hint:"言い直す前のクッション表現。",sample:"Let me put it another way."},
+ {id:"repair5",group:"repair",category:"CORRECT",situation:"相手があなたの意図を誤解した",challenge:"やんわり「そういう意味じゃない」と伝える",hint:"否定だけでなく言い直しにつなげて。",sample:"Sorry, that's not quite what I meant."},
+ {id:"repair6",group:"repair",category:"CONFIRM",situation:"相手が言った日時に自信がない",challenge:"金曜の午後3時で合っているか確認",hint:"確認のために繰り返すと自然。",sample:"Just to confirm, you said Friday at three, right?"},
+ {id:"hold1",group:"hold",category:"BUY TIME",situation:"突然意見を聞かれて答えに詰まった",challenge:"少し考える時間をもらう",hint:"沈黙を会話に変えるひと言。",sample:"That's a good question. Let me think for a second."},
+ {id:"hold2",group:"hold",category:"BUY TIME",situation:"答えはあるけど英語にするのに時間がいる",challenge:"一瞬待ってもらう",hint:"短く一言でOK。",sample:"Give me a moment to find the right words."},
+ {id:"hold3",group:"hold",category:"THINK OUT LOUD",situation:"複雑な話をする前に頭を整理したい",challenge:"最初に結論から話すと宣言する",hint:"“First of all...”以外の表現に挑戦。",sample:"Let me start with the main point."},
+ {id:"hold4",group:"hold",category:"THINK OUT LOUD",situation:"質問の答えが一つに決まらない",challenge:"状況による、と前置きする",hint:"理由を続けやすい表現。",sample:"I think it really depends on the situation."},
+ {id:"hold5",group:"hold",category:"THINK OUT LOUD",situation:"相手の質問が少し広すぎる",challenge:"具体的に何を知りたいか聞く",hint:"質問に質問で返しても大丈夫。",sample:"Could you be a bit more specific?"},
+ {id:"hold6",group:"hold",category:"BUY TIME",situation:"会話の途中で話が脱線してしまった",challenge:"元の話題に戻す",hint:"自然なつなぎ言葉がポイント。",sample:"Anyway, getting back to what we were saying..."},
+ {id:"bound1",group:"boundaries",category:"SAY NO POLITELY",situation:"誘われたけど予定があって行けない",challenge:"感謝しつつ丁寧に断る",hint:"“No.”だけで終わらせない。",sample:"Thanks for inviting me, but I already have plans."},
+ {id:"bound2",group:"boundaries",category:"SAY NO POLITELY",situation:"提案された時間は都合が悪い",challenge:"別の時間を提案する",hint:"断ってから代案を。",sample:"That time doesn't work for me. Could we do it tomorrow?"},
+ {id:"bound3",group:"boundaries",category:"SET A BOUNDARY",situation:"料金が思ったより高い",challenge:"予算を超えていると丁寧に伝える",hint:"相手を責める必要はない。",sample:"That's a bit beyond my budget, I'm afraid."},
+ {id:"bound4",group:"boundaries",category:"NEGOTIATE",situation:"今すぐ決められない申し出が来た",challenge:"持ち帰って検討したいと伝える",hint:"即答を避けるだけでOK。",sample:"I'd like some time to think it over."},
+ {id:"bound5",group:"boundaries",category:"POLITE PUSHBACK",situation:"相手の意見に全部は賛成できない",challenge:"一部認めつつ反対意見を示す",hint:"“I see your point, but...”を参考に。",sample:"I see your point, but I look at it a little differently."},
+ {id:"bound6",group:"boundaries",category:"ASK FOR OPTIONS",situation:"提示された条件が厳しい",challenge:"ほかの選択肢がないか相談する",hint:"柔らかいお願いにしよう。",sample:"Would there be another option we could consider?"},
+ {id:"connect1",group:"connect",category:"KEEP IT GOING",situation:"相手が最近旅行に行ったらしい",challenge:"旅行の印象を自然に聞く",hint:"Yes / No で終わらない質問が良い。",sample:"What was the best part of the trip?"},
+ {id:"connect2",group:"connect",category:"KEEP IT GOING",situation:"相手が好きな趣味について話した",challenge:"どれくらい前から好きか聞く",hint:"How long を使ってみて。",sample:"How long have you been into that?"},
+ {id:"connect3",group:"connect",category:"SHOW INTEREST",situation:"相手が新しい仕事を始めたと言った",challenge:"興味を示して感想を聞く",hint:"お祝いしてから質問をしてもいい。",sample:"Oh, that's exciting! How's it going so far?"},
+ {id:"connect4",group:"connect",category:"ASK A FOLLOW-UP",situation:"友達におすすめの映画を教えてもらった",challenge:"ネタバレなしで魅力を聞く",hint:"“What did you like about ...?”",sample:"What did you like most about it?"},
+ {id:"connect5",group:"connect",category:"FIND COMMON GROUND",situation:"相手も自然が好きだとわかった",challenge:"共通点を伝えて、最近行った場所を聞く",hint:"二つの文につなげてみよう。",sample:"Me too! Have you been anywhere interesting lately?"},
+ {id:"connect6",group:"connect",category:"CHANGE THE TOPIC",situation:"会話が行き詰まってきた",challenge:"自然に違う話題を切り出す",hint:"強引に変えない。",sample:"By the way, have you heard about the new café nearby?"}
+];
+const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
+let pile=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[];
+function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
+function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
+function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
+function pane(id){for(const k of ["introPane","playPane","endPane"])$(k).classList.toggle("active",k===id)}
+function clock(){
+ const seconds=Math.max(0,remaining);
+ $("time").textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
+ $("time").classList.toggle("low",seconds<=10);
+ $("progress").style.width=(seconds/60*100)+"%";
+ $("count").textContent=rated+" 問チャレンジ";
+}
+function start(onlyMissed=false){
+ stopTimer();rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";missedIds=[];missedPrompts=[];
+ const existingMisses=readJSON(MISSES_KEY,[]);
+ const pool=onlyMissed&&Array.isArray(existingMisses)?cards.filter(c=>existingMisses.includes(c.id)):deck();
+ pile=shuffle(pool.length?pool:deck());
+ pane("playPane");clock();nextCard();
+ ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);
+}
+function stopTimer(){if(ticker!==null){clearInterval(ticker);ticker=null}}
+function nextCard(){
+ if(state!=="running")return;
+ if(index>=pile.length){pile=shuffle(deck());index=0}
+ current=pile[index++];exampleOpened=false;
+ $("category").textContent=current.category;
+ $("situation").textContent=current.situation;
+ $("challenge").textContent=current.challenge;
+ $("hint").textContent=current.hint;
+ $("sampleText").textContent=current.sample;
+ $("sample").classList.add("hidden");
+ $("ratingButtons").classList.remove("hidden");
+ $("next").classList.add("hidden");
+ $("showSample").disabled=false;
+ $("showSample").textContent="💡 例文を見る";
+ $("prompt").classList.remove("focus");
+}
+function reveal(){
+ if(state!=="running"||!current)return;
+ exampleOpened=true;
+ $("sample").classList.remove("hidden");
+ $("ratingButtons").classList.add("hidden");
+ $("next").classList.remove("hidden");
+ $("showSample").disabled=true;
+ $("prompt").classList.add("focus");
+ rate(false);
+}
+function rate(didSpeak){
+ if(state!=="running"||!current)return;
+ rated++;
+ if(didSpeak&&!exampleOpened)spoken++;
+ else {missed++;missedIds.push(current.id);missedPrompts.push(current)}
+ clock();
+ if(!didSpeak||exampleOpened){
+  $("sample").classList.remove("hidden");
+  $("ratingButtons").classList.add("hidden");
+  $("next").classList.remove("hidden");
+  $("showSample").disabled=true;
+  $("prompt").classList.add("focus");
+ }else nextCard();
+}
+function finish(early){
+ if(state!=="running")return;
+ state="finished";stopTimer();
+ $("total").textContent=String(rated);$("wins").textContent=String(spoken);$("misses").textContent=String(missed);
+ $("endMessage").textContent=rated?"「言えた」の数は自己評価。詰まった表現を次に声に出せれば、それも大きな前進！":"まだ声に出していないね。もう一度、1分だけ挑戦しよう。";
+ const missedAll=readJSON(MISSES_KEY,[]);
+ const kept=Array.isArray(missedAll)?missedAll.filter(x=>typeof x==="string"):[];
+ const unique=[...new Set([...missedIds,...kept])].filter(x=>cards.some(c=>c.id===x)).slice(0,30);
+ saveJSON(MISSES_KEY,unique);
+ const old=readJSON(STATS_KEY,{});
+ const values={sessions:Math.min(99999,(Number(old?.sessions)||0)+1),spoken:Math.min(99999,(Number(old?.spoken)||0)+spoken),attempted:Math.min(99999,(Number(old?.attempted)||0)+rated)};
+ saveJSON(STATS_KEY,values);
+ $("missedList").classList.toggle("hidden",!missedPrompts.length);
+ $("missedItems").replaceChildren();
+ for(const m of missedPrompts.slice(0,5)){
+  const p=document.createElement("p");p.textContent="• "+m.challenge+" → "+m.sample;$("missedItems").append(p);
+ }
+ $("weakOnly").hidden=!unique.length;
+ pane("endPane");
+}
+$("start").addEventListener("click",()=>start(false));
+$("spoken").addEventListener("click",()=>rate(true));
+$("stuck").addEventListener("click",()=>rate(false));
+$("showSample").addEventListener("click",reveal);
+$("next").addEventListener("click",nextCard);
+$("finishEarly").addEventListener("click",()=>finish(true));
+$("again").addEventListener("click",()=>start(false));
+$("weakOnly").addEventListener("click",()=>start(true));
+window.addEventListener("pagehide",stopTimer);
+})();
+</script>
+</body>
+</html>
