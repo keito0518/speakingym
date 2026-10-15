@@ -6,6 +6,7 @@ on:
       - scenes.html
       - tests/scenes-ui.test.mjs
       - tests/scenes-recognition.test.mjs
+      - tests/scenes-coaching.test.mjs
       - tests/survival-ui.test.mjs
       - tests/survival-mic.test.mjs
       - .github/workflows/mission-ui-tests.yml
@@ -15,6 +16,7 @@ on:
       - scenes.html
       - tests/scenes-ui.test.mjs
       - tests/scenes-recognition.test.mjs
+      - tests/scenes-coaching.test.mjs
       - tests/survival-ui.test.mjs
       - .github/workflows/mission-ui-tests.yml
 jobs:
@@ -27,4 +29,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node --test tests/survival-*.test.mjs tests/scenes-ui.test.mjs tests/scenes-recognition.test.mjs
+      - run: node --test tests/survival-*.test.mjs tests/scenes-ui.test.mjs tests/scenes-recognition.test.mjs tests/scenes-coaching.test.mjs
