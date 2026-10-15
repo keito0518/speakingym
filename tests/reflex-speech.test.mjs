@@ -23,11 +23,11 @@ function app(){
  const makeNode=id=>{
   if(elements.has(id))return elements.get(id);
   const classes=new Set(["hidden"]);
-  const node={id,value:id==="mode"?"mix":"",textContent:"",disabled:false,hidden:false,style:{},
+  const node={id,value:id==="mode"?"mix":id==="level"?"standard":"",textContent:"",disabled:false,hidden:false,checked:false,style:{},
    children:[],classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle:(c,v)=>{
     const result=v===undefined?!classes.has(c):v;if(result)classes.add(c);else classes.delete(c);return result;
    }},
-   listeners:{},addEventListener(k,v){this.listeners[k]=v},
+   listeners:{},setAttribute(name,value){this[name]=value},addEventListener(k,v){this.listeners[k]=v},
    replaceChildren(...nodes){this.children=nodes},append(...nodes){this.children.push(...nodes)}
   };
   elements.set(id,node);return node;
@@ -46,7 +46,7 @@ function app(){
   click:id=>{const action=makeNode(id).listeners.click;assert.equal(typeof action,"function","Missing control "+id);return action()},
   node:makeNode,FakeRecognizer,voicesRead,
   flush:()=>{const entry=timeouts.entries().next().value;assert.ok(entry,"A restart should be scheduled");timeouts.delete(entry[0]);entry[1]()},
-  tick:()=>interval?.()
+  tick:()=>interval?.(),storage
  };
 }
 
@@ -93,14 +93,52 @@ test("mic re-tap discards wrong transcript; manual clear and edits remain possib
  ui.click("clearSpeech");assert.equal(ui.node("transcript").value,"");
 });
 
-test("revealing sample shows all three variants, tip and can read aloud for free",()=>{
+test("model answers and contextual advice appear only after timed play",()=>{
  const ui=app();ui.click("start");ui.click("stuck");
- assert.equal(ui.node("sample").classList.contains("hidden"),false);
- for(const id of ["sampleQuick","sampleText","samplePolite","sampleTip"])assert.ok(ui.node(id).textContent.length>8,id+" must show detailed example");
- assert.notEqual(ui.node("sampleQuick").textContent,ui.node("sampleText").textContent);
- ui.click("hearSample");
+ assert.equal(ui.node("reportReview").classList.contains("hidden"),true);
+ ui.click("finishEarly");
+ assert.equal(ui.node("reportReview").classList.contains("hidden"),false);
+ assert.equal(ui.node("reviewAnswers").children.length,3);
+ assert.ok(ui.node("reviewGood").textContent.length>10);
+ assert.ok(ui.node("reviewImprove").textContent.length>10);
+ const answer=ui.node("reviewAnswers").children[1];
+ assert.match(answer.children[0].textContent,/NATURAL/);
+ answer.children[2].listeners.click();
  assert.equal(ui.voicesRead.length,1);
- assert.equal(ui.voicesRead[0].text,ui.node("sampleText").textContent);
+ assert.equal(ui.voicesRead[0].text,answer.children[1].textContent);
+});
+
+test("advanced problem statement and goal are in English",()=>{
+ const ui=app();ui.node("level").value="challenge";ui.click("start");
+ assert.equal(ui.node("prompt").lang,"en");
+ const prompt=ui.node("situation").textContent+" "+ui.node("challenge").textContent;
+ assert.match(prompt,/[A-Za-z]{5}/);
+ assert.doesNotMatch(prompt,/[\u3040-\u30ff\u3400-\u9fff]/);
+ ui.node("level").value="easy";
+ // Level stays stable during an active run.
+ ui.click("stuck");
+ assert.equal(ui.node("prompt").lang,"en");
+});
+
+test("transcript is not saved without opt-in but review remains available",()=>{
+ const ui=app();ui.click("start");ui.node("transcript").value="my private sentence";
+ ui.click("spoken");ui.click("finishEarly");
+ assert.match(ui.node("reviewYou").textContent,/my private sentence/);
+ const saved=JSON.parse(ui.storage.get("speakingym-reflex-history-v1"));
+ assert.equal(saved[0].attempts[0].transcript,"");
+});
+
+test("when transcript history is opted into, stored words and ratings can be replayed",()=>{
+ const ui=app();ui.node("saveTranscripts").checked=true;ui.click("start");
+ ui.node("transcript").value="Could you repeat that, please?";
+ ui.click("spoken");ui.click("finishEarly");
+ const stored=JSON.parse(ui.storage.get("speakingym-reflex-history-v1"));
+ assert.equal(stored[0].attempts[0].transcript,"Could you repeat that, please?");
+ ui.click("openHistory");
+ assert.equal(ui.node("historyPane").classList.contains("active"),true);
+ ui.node("historyList").children[0].children[1].listeners.click();
+ assert.equal(ui.node("endPane").classList.contains("active"),true);
+ assert.match(ui.node("reviewYou").textContent,/Could you repeat that, please/);
 });
 
 test("end of sixty seconds safely stops any active microphone capture",()=>{
