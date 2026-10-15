@@ -61,7 +61,7 @@ async function loginNow(){
 async function logoutNow(){
  if(!auth||busy)return;
  try{
-  if(pendingKeys(user?.uid).length){await syncAll();if(pendingKeys(user?.uid).length){status("未同期の記録があります。通信が回復してからログアウトしてね。");return}}
+  if(pendingKeys(user?.uid).length){await syncAll({reloadOnChange:false});if(pendingKeys(user?.uid).length){status("未同期の記録があります。通信が回復してからログアウトしてね。");return}}
   busy=true;renderControls();await authFns.signOut(auth)
  }
  catch(e){busy=false;renderControls();status(describeError(e))}
@@ -120,7 +120,7 @@ function dashboard(){
  }
 }
 function refreshUi(){if(user)status("☁ "+(user.displayName||"Googleユーザー")+" · クラウド保存");else status(configured?"ゲスト利用中 · 記録はこの端末に保存":"ゲスト利用中 · ログイン機能は設定待ち");renderControls();notify();}
-async function syncAll(){
+async function syncAll({reloadOnChange=true}={}){
  if(!user||busy)return;
  const uid=user.uid;
  busy=true;renderControls();status("クラウドと学習記録を同期中…");
@@ -154,7 +154,7 @@ async function syncAll(){
   const changed=!snapshotsEqual(local,desired);
   if(changed){
    removeSnapshot(localStorage);applySnapshot(localStorage,desired);
-   window.location.reload();return;
+   if(reloadOnChange){window.location.reload();return;}
   }
   status("✓ 同期しました");
  }catch(e){status("同期できませんでした。端末の記録は残っています。「同期」で再試行してね。")}
@@ -217,6 +217,8 @@ function initDashboard(){
  dashboard();
 }
 async function start(){
+ // Never advertise an unavailable Google-login button to ordinary visitors.
+ if(!configured && !$("sg-account-stats"))return;
  mount();initDashboard();window.addEventListener("speakingym:changed",onChanged);
  if(!configured){ready=false;refreshUi();return}
  status("Googleログインの準備中…");
