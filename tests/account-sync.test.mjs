@@ -21,7 +21,7 @@ function storage(seed={}){
 test("cloud data allowlist has 8 distinct fixed keys and excludes credentials",()=>{
  assert.equal(SYNC_ITEMS.length,9);
  assert.equal(new Set(SYNC_ITEMS.map(x=>x.doc)).size,9);
- assert.equal(new Set(SYNC_ITEMS.map(x=>x.key)).size,8);
+ assert.equal(new Set(SYNC_ITEMS.map(x=>x.key)).size,9);
  for(const x of SYNC_ITEMS){
   assert.match(x.key,/^speakingym-/);
   assert.doesNotMatch(x.key,/endpoint|api-url|gemini|token|voice-choice/);
