@@ -108,7 +108,7 @@ function dashboard(){
  const scene=data["speakingym-saved-coaching-v1"]||[];
  const history=data["speakingym-reflex-history-v1"]||[];
  const records=data["speakingym-v01-records"]||[];
- const cafe=data["speakingym-survival-stats-v1"]||{};
+ const cafe=data["speakingym-survival-stats-v1"]||{},aiScenes=data["speakingym-scenes-stats-v1"]||{};
  root.replaceChildren();
  for(const [label,number]of [
   ["60秒チャレンジ",stats.sessions||0],
