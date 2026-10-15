@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "./ai-worker.js";
 
-const ORIGIN = "https://keito0518.github.io";
+const ORIGIN = "https://speakingym.pages.dev";
+const LEGACY_ORIGIN = "https://keito0518.github.io";
 const ENDPOINT = "https://speakingym-test.workers.dev/";
 const goodLimit = { limit: async () => ({ success: true }) };
 const enabled = () => ({
@@ -40,6 +41,18 @@ test("Gemini remains disabled by default even when API key exists", async (t) =>
   assert.equal(result.status, 503);
   assert.equal((await result.json()).error, "ai_disabled");
   assert.equal(upstream.mock.callCount(), 0);
+});
+
+test("new Pages and old GitHub pages origins have CORS access", async () => {
+  for (const origin of [ORIGIN, LEGACY_ORIGIN]) {
+    const request = new Request(ENDPOINT, {
+      method: "OPTIONS",
+      headers: { Origin: origin, "Access-Control-Request-Method": "POST" }
+    });
+    const result = await worker.fetch(request, enabled());
+    assert.equal(result.status, 204);
+    assert.equal(result.headers.get("Access-Control-Allow-Origin"), origin);
+  }
 });
 
 test("requests from other web origins are rejected", async () => {
