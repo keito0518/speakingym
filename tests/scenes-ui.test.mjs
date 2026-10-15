@@ -60,3 +60,22 @@ test("recognition keeps listening across pauses, preserves recognized text and s
  assert.match(source,/pendingText\|\|micWanted/);
  assert.match(html,/id="resumeMic"/);
 });
+
+test("AI coaching report and browser-only review are available with no second fetch",()=>{
+ assert.match(html,/id="coachReport"/);
+ assert.match(html,/id="saveReview"/);
+ assert.match(html,/id="savedReview"/);
+ assert.match(source,/function renderCoachReport\(/);
+ assert.match(source,/function saveCoachReview\(/);
+ assert.match(source,/function recordCoaching\(/);
+ assert.match(source,/recordCoaching\(text,data\.coaching\)/);
+ assert.match(source,/renderCoachReport\(\)/);
+ assert.match(source,/localStorage\.setItem\(REVIEW_KEY/);
+ assert.equal((source.match(/await fetch\(/g)||[]).length,1);
+ assert.doesNotMatch(source,/innerHTML\s*=/);
+});
+
+test("a feedback-less AI response never invents an improvement or score",()=>{
+ assert.match(source,/if\(!coachingHistory\.length\)\{root\.classList\.add\("hidden"\);return\}/);
+ assert.match(source,/音声の発音・流暢さは評価していません/);
+});
