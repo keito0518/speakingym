@@ -11,7 +11,7 @@
 header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-height:70px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;gap:12px}.brand{font-size:22px;font-weight:950;letter-spacing:-1px}.brand span{color:#faa17d}.head a.back{font-size:12px;font-weight:800;color:#dcece0}
 .shell{max-width:880px;margin:auto;padding:31px 18px 65px}.hero{text-align:center;max-width:720px;margin:0 auto 25px}.kicker{color:#c96547;font-size:11px;letter-spacing:2.2px;font-weight:950}.hero h1{font-size:clamp(31px,6.5vw,49px);line-height:1.2;letter-spacing:-1.5px;margin:13px 0 12px}.hero p{font-size:14px;color:#637669;line-height:1.9;margin:0}
 .board{background:#fff;border-radius:25px;border:1px solid var(--line);padding:25px;box-shadow:0 16px 40px #214b3610}.pane{display:none}.pane.active{display:block}
-.time-icon{height:66px;width:66px;margin:10px auto 15px;display:grid;place-items:center;border-radius:19px;background:#feeadf;color:#c75d41;font-size:34px;font-weight:900}
+
 .three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:23px 0}.mini{background:#f3f6f0;border-radius:12px;padding:14px;text-align:center;font-size:12px;font-weight:800;color:#45614c;line-height:1.6}.mini strong{font-size:22px;display:block;margin-bottom:2px}
 .btn{border:1px solid #d7e4d7;background:#fff;color:#204533;border-radius:13px;padding:13px 17px;font-size:14px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px}.btn.primary{background:var(--green);border-color:var(--green);color:#fff}.btn.orange{background:var(--coral);border-color:var(--coral);color:#fff}.btn.block{width:100%}.btn:active{transform:scale(.985)}
 .start-note{color:#738477;font-size:11px;text-align:center;line-height:1.8}.mode-label{font-size:12px;font-weight:850;margin:14px 0 7px}.select{width:100%;border:1px solid #d4e3d5;background:#fff;padding:13px;border-radius:11px;font:inherit;font-size:13px;color:#1d4330}
@@ -50,6 +50,38 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .history-row .details{font-size:12px;color:#637466;margin-top:4px}
 .history-row strong{font-size:14px}
 @media(max-width:550px){.prompt{padding:19px!important}.prompt h2{font-size:clamp(27px,7vw,34px)!important}.review-nav .btn{padding:11px 8px;font-size:12px}.report-review{margin-top:20px}}
+
+/* A real workout identity, rather than an isolated '60' number. */
+.sprint-identity{display:flex;align-items:center;gap:16px;text-align:left;position:relative;overflow:hidden;border-radius:20px;padding:18px 20px;margin:0 0 20px;background:linear-gradient(116deg,#173f30,#246649);color:white;border:1px solid #2a6a4f;box-shadow:0 12px 30px #19432f1d}
+.sprint-identity:after{content:"";position:absolute;right:-30px;bottom:-85px;width:190px;height:190px;border-radius:100%;border:28px solid #ffffff0c;pointer-events:none}
+.sprint-lightning{display:grid;place-items:center;font-size:30px;flex:0 0 58px;width:58px;height:58px;border-radius:16px;background:#ffffff16;border:1px solid #ffffff26}
+.sprint-identity-copy{display:flex;flex-direction:column;min-width:0;position:relative;z-index:1}
+.sprint-overline{font-size:10px;letter-spacing:1.4px;font-weight:900;color:#c4e9ce}
+.sprint-identity-copy strong{font-weight:950;font-size:clamp(20px,4vw,30px);letter-spacing:-.6px;line-height:1.2;margin:4px 0}
+.sprint-identity-copy em{font-style:normal;color:#ffb18f}
+.sprint-caption{font-size:11px;color:#e2f2e5;font-weight:650}
+.sprint-duration{margin-left:auto;white-space:nowrap;position:relative;z-index:1;border:1px solid #ffffff47;color:#fce5d3;font-size:11px;letter-spacing:.7px;padding:6px 9px;border-radius:30px;font-weight:900}
+.intro-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.intro-shortcuts .btn{font-size:12px;min-height:48px}
+#savedCount{display:inline-grid;place-items:center;min-width:23px;height:23px;padding:0 4px;border-radius:30px;background:#ebf4e8;color:#1b5339;font-size:11px}
+.answer-set .save-phrase{margin-left:9px;background:#fff9f0;color:#935633;border-color:#f0d9c4}
+.answer-set .save-phrase.saved{background:#1e583e;color:white;border-color:#1e583e}
+.save-note{font-size:12px;line-height:1.6;color:#6f826f;margin-top:11px;min-height:19px}
+.after-review-saved{margin-top:16px;background:#eef6ea;border-color:#d5e8d4;color:#22553d}
+.phrase-tools{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:16px 0}
+.phrase-tools span{font-size:12px;font-weight:850;color:#467353}
+.phrase-tools .btn{font-size:12px}
+.saved-phrase-card{border:1px solid #dce8dd;border-radius:15px;padding:16px;background:#fbfdfb;margin:12px 0}
+.saved-phrase-card .phrase-level{font-size:10px;color:#a36449;font-weight:950;letter-spacing:.4px}
+.saved-phrase-card h3{font-size:15px;line-height:1.5;margin:6px 0;color:#285039}
+.saved-phrase-card .phrase-meaning{font-size:12px;color:#5b735f;line-height:1.7}
+.saved-phrase-card .phrase-english{font-size:19px;font-weight:850;line-height:1.7;margin:11px 0;overflow-wrap:anywhere}
+.saved-phrase-card .phrase-hidden{border:1px dashed #accbb6;border-radius:9px;padding:13px;text-align:center;color:#5c7865;background:#eff5eb;font-size:13px;font-weight:800}
+.saved-phrase-card .phrase-tip{font-size:12px;color:#4d6b55;line-height:1.7;border-top:1px solid #e3ebe0;padding-top:9px;margin-top:8px}
+.saved-phrase-card .phrase-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.saved-phrase-card .phrase-actions .btn{font-size:12px;min-height:39px;padding:8px 13px}
+@media(max-width:550px){.sprint-identity{padding:16px 13px;gap:10px}.sprint-lightning{font-size:24px;flex-basis:43px;width:43px;height:43px;border-radius:12px}.sprint-overline{font-size:8px;letter-spacing:.8px}.sprint-duration{font-size:9px;padding:5px 7px}.sprint-caption{font-size:10px}.intro-shortcuts{gap:7px}.intro-shortcuts .btn{padding:9px 6px;font-size:11px}}
+
 </style>
 </head>
 <body>
@@ -58,11 +90,15 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 <section class="hero"><div class="kicker">QUICK REACTION / 60 SECONDS</div><h1>英語の「えっと…」を、<br>1分で鍛える。</h1><p>これはAIとの会話ではありません。<strong>会話が止まりそうな瞬間の切り返し</strong>を、短時間で何度も声に出すトレーニングです。</p></section>
 <div class="board">
  <section class="pane active" id="introPane" aria-label="60秒ドリルの設定">
-  <div class="time-icon" aria-hidden="true">60</div>
+  <div class="sprint-identity" aria-label="クイックリアクション・60秒スプリント">
+ <span class="sprint-lightning" aria-hidden="true">⚡</span>
+ <div class="sprint-identity-copy"><span class="sprint-overline">QUICK REACTION WORKOUT</span><strong>1 MINUTE <em>SPRINT</em></strong><span class="sprint-caption">とっさの英語を、反射に変える。</span></div>
+ <span class="sprint-duration">60 SEC</span>
+</div>
   <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>全問講評</div><div class="mini"><strong>③</strong>履歴で復習</div></div>
   <label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
   <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option></select>
-  <label class="privacy-opt"><input type="checkbox" id="saveTranscripts"> 自分が話した英文も、この端末の履歴に保存する（任意）</label><button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button><button class="btn block" type="button" id="openHistory" style="margin-top:9px">📚 過去の練習履歴を見る</button>
+  <label class="privacy-opt"><input type="checkbox" id="saveTranscripts"> 自分が話した英文も、この端末の履歴に保存する（任意）</label><button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button><div class="intro-shortcuts"><button class="btn block" type="button" id="openPhrases">📌 保存した表現 <span id="savedCount" aria-live="polite">0</span></button><button class="btn block" type="button" id="openHistory">📚 練習履歴を見る</button></div>
   <p class="start-note">回答例は60秒終了まで非表示。1問ずつ講評してから復習できるよ。<br>追加AI料金なし・自己評価方式。英文の履歴保存は選択制。</p>
  </section>
  <section class="pane" id="playPane" aria-label="英語の瞬発力チャレンジ">
@@ -90,8 +126,13 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
-  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
-  <div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
+  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
+  <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
+ </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
+  <div class="history-head"><div class="kicker">MY EXPRESSION BOOK</div><h2>📌 自分のフレーズ帳</h2><p>講評から保存した英語を、何度でも声に出そう。英語を隠す練習もできるよ。すべてこの端末内に保存。</p></div>
+  <div class="phrase-tools"><span id="phraseTotal">0表現</span><button type="button" class="btn" id="togglePhraseHide">🙈 英語を隠して練習</button></div>
+  <div id="savedPhrasesList" aria-live="polite"></div>
+  <div class="end-actions"><button type="button" class="btn" id="phrasesBack">← 設定へ戻る</button></div>
  </section><section class="pane" id="historyPane" aria-label="60秒チャレンジの練習履歴"><div class="history-head"><h2>📚 練習履歴</h2><p>保存された各セッションの講評を、もう一度確認できるよ。最新20回を端末内に保存。</p></div><div id="historyList"></div><div class="end-actions"><button class="btn" id="historyBack" type="button">← 設定へ戻る</button><button class="btn" id="clearHistory" type="button">履歴を全削除</button></div></section>
 </div>
 <div class="info">このドリルではGemini API・有料の音声サービスは不使用。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
@@ -100,7 +141,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
-const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1";
+const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1",PHRASES_KEY="speakingym-reflex-saved-phrases-v1";
 const cards=[
  {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してもらう",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
  {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一度だけ言ってもらう",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
@@ -302,7 +343,7 @@ function taskFor(card,level){
 }
 
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
-let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false;
+let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false,hideSavedEnglish=false;
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const speaker=window.speechSynthesis||null;
 let recognition=null,listenWanted=false,baseSpeech="",finalSpeech="",interimSpeech="",restartCount=0,restartTimer=null;
@@ -421,7 +462,7 @@ function speakExample(text){
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
 function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
-function pane(id){for(const k of ["introPane","playPane","endPane","historyPane"])$(k).classList.toggle("active",k===id)}
+function pane(id){for(const k of ["introPane","playPane","endPane","historyPane","phrasesPane"])$(k).classList.toggle("active",k===id)}
 function clock(){
  const seconds=Math.max(0,remaining);
  $("time").textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
@@ -470,6 +511,113 @@ function transcriptObservation(text){
  }
  return "回答の英文を残せているので、お手本と見比べて言い直す練習ができるよ。";
 }
+// The phrase book is independent of session history: bookmarks survive old-history cleanup.
+const PHRASES_MAX=100,PHRASE_KINDS=["quick","natural","polite"];
+let phraseReturnPane="introPane";
+function readSavedPhrases(){
+ const stored=readJSON(PHRASES_KEY,[]);
+ if(!Array.isArray(stored))return [];
+ const list=[];
+ for(const p of stored.slice(0,PHRASES_MAX)){
+  if(!p||typeof p!=="object")continue;
+  if(!cards.some(c=>c.id===p.cardId)||!["easy","standard","challenge"].includes(p.level)||!PHRASE_KINDS.includes(p.kind))continue;
+  if(typeof p.text!=="string"||!p.text.trim()||p.text.length>450)continue;
+  const id=p.cardId+":"+p.level+":"+p.kind;
+  if(list.some(v=>v.id===id))continue;
+  list.push({
+   id,cardId:p.cardId,level:p.level,kind:p.kind,
+   text:p.text.trim(),situation:typeof p.situation==="string"?p.situation.slice(0,240):"",
+   goal:typeof p.goal==="string"?p.goal.slice(0,300):"",
+   tip:typeof p.tip==="string"?p.tip.slice(0,350):""
+  });
+ }
+ return list;
+}
+function updateBookmarkCount(){
+ const count=readSavedPhrases().length;
+ $("savedCount").textContent=String(count);
+ $("phraseTotal").textContent=count+"表現";
+}
+function writeBookmarks(items){
+ try{
+  localStorage.setItem(PHRASES_KEY,JSON.stringify(items.slice(0,PHRASES_MAX)));
+  updateBookmarkCount();return true;
+ }catch(e){
+  $("saveStatus").textContent="保存できませんでした。端末の保存設定・空き容量を確認してね。";
+  return false;
+ }
+}
+function bookmarkRecord(card,level,kind,example,task){
+ return {
+  id:card.id+":"+level+":"+kind,cardId:card.id,level,kind,
+  text:example,situation:task.situation,goal:task.challenge,
+  tip:task.improve
+ };
+}
+function updateBookmarkButton(button,record){
+ const saved=readSavedPhrases().some(x=>x.id===record.id);
+ button.textContent=saved?"✓ 保存済み（解除）":"📌 この表現を保存";
+ button.classList.toggle("saved",saved);
+ button.setAttribute("aria-pressed",String(saved));
+}
+function toggleBookmark(record,button){
+ const items=readSavedPhrases();
+ const present=items.some(x=>x.id===record.id);
+ if(!present&&items.length>=PHRASES_MAX){
+  $("saveStatus").textContent="保存は最大100表現まで。フレーズ帳で使わない表現を整理してね。";
+  return;
+ }
+ const next=present?items.filter(x=>x.id!==record.id):[record,...items];
+ if(!writeBookmarks(next))return;
+ updateBookmarkButton(button,record);
+ $("saveStatus").textContent=present?"保存を解除したよ。":"フレーズ帳に保存したよ！ いつでも復習できる。";
+}
+function showSavedPhrases(source="introPane"){
+ phraseReturnPane=source;
+ renderPhraseBook();
+ pane("phrasesPane");
+}
+function renderPhraseBook(){
+ const items=readSavedPhrases(),root=$("savedPhrasesList");
+ root.replaceChildren();updateBookmarkCount();
+ $("togglePhraseHide").textContent=hideSavedEnglish?"👁 英語を表示":"🙈 英語を隠して練習";
+ $("togglePhraseHide").disabled=items.length===0;
+ if(items.length===0){
+  const p=document.createElement("p");p.className="start-note";
+  p.textContent="まだ保存した表現がないよ。60秒チャレンジの講評で「この表現を保存」を押してみて！";
+  root.append(p);return;
+ }
+ for(const item of items){
+  const container=document.createElement("article");container.className="saved-phrase-card";
+  const badge=document.createElement("div");badge.className="phrase-level";
+  badge.textContent=({easy:"基礎",standard:"標準",challenge:"応用"}[item.level])+" · "+({quick:"QUICK",natural:"NATURAL",polite:"POLITE"}[item.kind]);
+  const title=document.createElement("h3");title.textContent=item.goal;
+  const scenario=document.createElement("div");scenario.className="phrase-meaning";scenario.textContent=item.situation;
+  const expression=document.createElement("p");expression.className="phrase-english";expression.textContent=item.text;
+  const covered=document.createElement("div");covered.className="phrase-hidden";covered.textContent="英文を隠しています。まず声に出してから答えを見よう。";
+  expression.classList.toggle("hidden",hideSavedEnglish);
+  covered.classList.toggle("hidden",!hideSavedEnglish);
+  const explanation=document.createElement("p");explanation.className="phrase-tip";explanation.textContent="💡 "+item.tip;
+  const actions=document.createElement("div");actions.className="phrase-actions";
+  const reveal=document.createElement("button");reveal.type="button";reveal.className="btn";
+  reveal.textContent="👁 答えを見る";reveal.classList.toggle("hidden",!hideSavedEnglish);
+  reveal.addEventListener("click",()=>{
+   expression.classList.remove("hidden");covered.classList.add("hidden");
+   reveal.classList.add("hidden");hear.classList.remove("hidden");
+  });
+  const hear=document.createElement("button");hear.type="button";hear.className="btn";
+  hear.textContent="🔊 音声で聞く";hear.classList.toggle("hidden",hideSavedEnglish);
+  hear.addEventListener("click",()=>speakExample(item.text));
+  const remove=document.createElement("button");remove.type="button";remove.className="btn";
+  remove.textContent="✕ 保存解除";
+  remove.addEventListener("click",()=>{
+   if(writeBookmarks(readSavedPhrases().filter(x=>x.id!==item.id)))renderPhraseBook();
+  });
+  actions.append(reveal,hear,remove);
+  container.append(badge,scenario,title,covered,expression,explanation,actions);
+  root.append(container);
+ }
+}
 function showReview(index){
  const a=reviewSession?.attempts||[];
  if(!a.length){$("reportReview").classList.add("hidden");return}
@@ -498,8 +646,14 @@ function showReview(index){
   const text=document.createElement("p");text.className="answer-text";text.textContent=example;
   const listen=document.createElement("button");listen.className="btn";listen.textContent="🔊 聞く";
   listen.addEventListener("click",()=>speakExample(example));
-  box.append(heading,text,listen);parent.append(box);
+  const kind=featured?"natural":label.startsWith("QUICK")?"quick":"polite";
+  const entry=bookmarkRecord(card,reviewSession.level,kind,example,info);
+  const bookmark=document.createElement("button");bookmark.type="button";bookmark.className="btn save-phrase";
+  updateBookmarkButton(bookmark,entry);
+  bookmark.addEventListener("click",()=>toggleBookmark(entry,bookmark));
+  box.append(heading,text,listen,bookmark);parent.append(box);
  }
+ $("saveStatus").textContent="使いたい表現は📌で保存して、フレーズ帳でいつでも復習できるよ。";
  $("reviewPrev").disabled=reviewIndex===0;
  $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
 }
@@ -600,6 +754,10 @@ $("reviewNext").addEventListener("click",()=>{
  if(reviewIndex<(reviewSession?.attempts.length||0)-1)showReview(reviewIndex+1);
  else showHistory();
 });
+$("openPhrases").addEventListener("click",()=>showSavedPhrases("introPane"));
+$("openPhrasesFromReview").addEventListener("click",()=>showSavedPhrases("endPane"));
+$("phrasesBack").addEventListener("click",()=>pane(phraseReturnPane));
+$("togglePhraseHide").addEventListener("click",()=>{hideSavedEnglish=!hideSavedEnglish;renderPhraseBook()});
 $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
@@ -607,6 +765,8 @@ $("clearHistory").addEventListener("click",()=>{
  try{localStorage.removeItem(HISTORY_KEY)}catch(e){}
  showHistory();
 });
+updateBookmarkCount();
+if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
 window.addEventListener("pagehide",()=>{stopTimer();stopListening();cancelReading();});
 })();
 </script>
