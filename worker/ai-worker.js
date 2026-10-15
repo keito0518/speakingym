@@ -152,7 +152,7 @@ const COACHING_INSTRUCTION = [
  "You are grading transcribed text only. NEVER evaluate actual pronunciation, fluency, speech clarity or accent.",
  "Keep coaching concise and grounded in the latestUserText; no invented user quotes.",
  "Format the response as a single JSON object with required reply and roleplay goal fields PLUS optional coaching.",
-].join("\\n");
+].join("\n");
 function normalizeCoaching(input) {
  const item=input&&typeof input==="object"?input:{};
  const clean=(value,limit)=>typeof value==="string"?value.trim().slice(0,limit):"";
@@ -274,7 +274,7 @@ export default {
           headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
           signal: controller.signal,
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: (scene ? scenarioInstruction(scene, level) : SYSTEM) + "\\n" + COACHING_INSTRUCTION }] },
+            systemInstruction: { parts: [{ text: (scene ? scenarioInstruction(scene, level) : SYSTEM) + "\n" + COACHING_INSTRUCTION }] },
             contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
             generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1100, thinkingConfig: { thinkingLevel: "minimal" } }
           })
