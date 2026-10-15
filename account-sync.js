@@ -272,6 +272,12 @@ function onChanged(event){
 }
 function initDashboard(){dashboard();}
 async function start(){
+ // Expose a narrow, non-privileged token getter for authenticated AI requests.
+ // The Worker validates the token signature and decides the plan; clients cannot set Pro.
+ window.speakingymAccount={
+  getIdToken:async()=>user&&auth&&authFns?authFns.getIdToken(user):null,
+  isLoggedIn:()=>!!user
+ };
  // Never advertise an unavailable Google-login button to ordinary visitors.
  if(!configured && !$("sg-account-stats"))return;
  mount();initDashboard();window.addEventListener("speakingym:changed",onChanged);
