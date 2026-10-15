@@ -88,7 +88,7 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  const a=await token("test_student_A"),b=await token("test_student_B");
  let aiCalls=0;
  t.mock.method(globalThis,"fetch",async url=>{
-  if(String(url).includes("googleapis.com"))return new Response(JSON.stringify({keys:[jwk]}),{status:200,headers:{"cache-control":"max-age=3600"}});
+  if(String(url).includes("/service_accounts/v1/jwk/"))return new Response(JSON.stringify({keys:[jwk]}),{status:200,headers:{"cache-control":"max-age=3600"}});
   aiCalls++;
   return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({reply:"Sure!",progress:{step1:false,step2:false,step3:false}})}]}}]}),{status:200});
  });
