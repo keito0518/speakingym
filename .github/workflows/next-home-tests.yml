@@ -1,0 +1,25 @@
+name: Speakingym NEXT preview tests
+on:
+  push:
+    paths:
+      - home-preview.html
+      - reflex.html
+      - tests/next-home.test.mjs
+      - .github/workflows/next-home-tests.yml
+  pull_request:
+    paths:
+      - home-preview.html
+      - reflex.html
+      - tests/next-home.test.mjs
+      - .github/workflows/next-home-tests.yml
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/next-home.test.mjs
