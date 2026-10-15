@@ -42,7 +42,7 @@ const EXTRA_SCENES = {
     opener: "Good evening! Welcome to Harbour Hotel. How can I help you?",
     variants: {
       standard: {
-        situation: "The guest has arrived two hours early and their room is not ready yet. You can store bags or offer an earlier room at an additional charge. Do not resolve the situation immediately; ask follow-up questions based on their choices.",
+        situation: "The guest has arrived two hours early to check in, but their room is not ready yet. You can store bags or offer an earlier room at an additional charge. Do not resolve the situation immediately; ask follow-up questions based on their choices.",
         goals: [
           "step1: the guest explains their early arrival AND their existing reservation",
           "step2: the guest asks for a workable alternative such as luggage storage or a free early check-in, showing they understand the room may not be ready",
