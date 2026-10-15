@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173d31">
+<meta name="description" content="Speakingym AI会話ミッション。ホテル、空港、初対面の雑談で、知っている英語を話せる英語に。">
+<title>AIシーン練習 | Speakingym</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#173c2d;background:#f7f8f4;line-height:1.65}
+*{box-sizing:border-box}body{margin:0;min-width:320px}button,select,textarea{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.55;cursor:not-allowed}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #5db891;outline-offset:3px}
+header{background:#173c2d;color:#fff}.top{max-width:1080px;margin:auto;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{font-size:22px;font-weight:950;letter-spacing:-.7px}.brand span{color:#ffa386}.back{font-size:12px;color:#dfefe4}
+main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px;letter-spacing:1.8px;color:#c36e51;font-weight:900}.intro h1{font-size:clamp(28px,5vw,39px);margin:7px 0 8px;line-height:1.34;letter-spacing:-1px}.intro p{font-size:13px;color:#66786a;max-width:650px;margin:0}.notice{background:#e9f3e8;border-radius:13px;color:#335644;font-size:12px;padding:12px 15px;margin-top:16px;line-height:1.8}
+.scenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:23px}.scene{background:white;border:2px solid #e0e9df;border-radius:17px;text-align:left;padding:17px;min-height:185px;box-shadow:0 7px 25px #173b2e06;display:flex;flex-direction:column;gap:7px;color:#1c4030}.scene[aria-pressed="true"]{border-color:#f47553;background:#fffaf7;box-shadow:0 0 0 2px #f4755320}.scene .emoji{font-size:30px}.scene strong{font-size:17px}.scene small{color:#637568;font-size:12px;line-height:1.65}.scene .tag{font-size:10px;font-weight:800;color:#ad674c;margin-top:auto;padding-top:9px}
+.card{background:white;border:1px solid #e1e9df;border-radius:17px;padding:20px;box-shadow:0 8px 29px #173b2e07;margin-top:16px}.row{display:flex;gap:13px;align-items:center;flex-wrap:wrap}.settings{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:block;font-size:11px;font-weight:850;color:#617264;margin-bottom:7px}select,textarea{border:1px solid #d7e3d8;background:#fff;border-radius:10px;color:#1c392a;width:100%;padding:11px 12px;font-size:13px}.goals{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.goal{border-radius:30px;background:#f2f5f0;border:1px solid #dfe9df;padding:6px 10px;font-size:11px;color:#526654}.goal.done{background:#e5f3e5;color:#207044;border-color:#b7dbb8}
+.btn{border:1px solid #d5e2d6;background:#fff;color:#31583e;border-radius:11px;padding:11px 14px;font-weight:850;font-size:12px}.btn.primary{border-color:#ee6c4d;background:#f47553;color:white}.btn.subtle{background:#eef5ec}.btn:disabled{cursor:not-allowed}.wide{width:100%}
+#chat{margin:16px 0;display:flex;flex-direction:column;gap:13px;max-height:350px;min-height:150px;overflow-y:auto;border:1px solid #e8eee6;border-radius:13px;padding:14px;background:#fbfcfa}.bubble{max-width:90%;background:#f0f5ef;border-radius:14px;padding:11px 14px;font-size:13px;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word;align-self:flex-start}.bubble.me{align-self:flex-end;background:#fff0e7}.bubble strong{display:block;font-size:10px;color:#6c8875;margin-bottom:4px}.bubble.me strong{color:#b16d51}
+.response-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}.response-head label{font-size:12px;font-weight:850}textarea{resize:vertical;min-height:90px;font-size:15px;line-height:1.6}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions .btn{flex:1}.actions .btn.primary{flex:1.4}#status{font-size:12px;color:#52735b;min-height:21px;font-weight:750}#error{margin-top:12px;background:#fff6ef;border:1px solid #edccb5;border-radius:12px;padding:13px;color:#8d4834;font-size:12px;line-height:1.8}.hidden{display:none!important}
+#result{background:#ecf8ee;border:1px solid #cbe6cf;border-radius:12px;padding:14px;margin-top:13px;font-size:13px}#result strong{font-size:17px}.muted{font-size:11px;color:#748476;line-height:1.7;margin-top:10px}.pill{display:inline-block;border-radius:99px;background:#eaf0e9;font-size:11px;padding:5px 10px;color:#4b6653;font-weight:750}
+@media(max-width:750px){.scenes{grid-template-columns:1fr}.scene{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:12px;row-gap:0}.scene .emoji{grid-row:1/4}.scene .tag{padding:0}.settings{grid-template-columns:1fr}main{padding:20px 15px 45px}.card{padding:15px}.actions .btn{flex:1 1 calc(50% - 8px)}.actions .btn.primary{flex-basis:100%}}
+</style>
+</head>
+<body>
+<header><div class="top"><a class="brand" href="./index.html">speakin<span>gym.</span></a><a class="back" href="./index.html">← トップに戻る</a></div></header>
+<main>
+<section class="intro"><div class="eyebrow">AI CONVERSATION · SCENE WORKOUT</div><h1>覚えた英語を、<br>本番の会話で使おう。</h1><p>毎回同じセリフではなく、あなたの答え方でAIの反応が変わる。3つの新しい場面で、3つの目標達成に挑戦！</p></section>
+<div class="notice">無料のAIベータ版です。会話文は外部のGemini AIへ送信され、無料枠では製品改善に使われる場合があります。実名・予約番号・住所などは入力せず、架空の情報を使ってください。無料枠が混雑・終了した場合はAIを停止します。</div>
+<section class="scenes" id="scenes" aria-label="練習するシーン">
+<button type="button" class="scene" data-scene="hotel" aria-pressed="true"><span class="emoji">🏨</span><strong>ホテルでチェックイン</strong><small>予約を伝えて、Wi-Fiや部屋について質問しよう。</small><span class="tag">旅行英会話 · ★★☆</span></button>
+<button type="button" class="scene" data-scene="airport" aria-pressed="false"><span class="emoji">🧳</span><strong>空港で荷物がない！</strong><small>スーツケースの特徴を説明し、次の対応を聞こう。</small><span class="tag">トラブル対応 · ★★★</span></button>
+<button type="button" class="scene" data-scene="smalltalk" aria-pressed="false"><span class="emoji">🗣️</span><strong>初対面の人と雑談</strong><small>話題を広げながら、質問を返してみよう。</small><span class="tag">日常英会話 · ★☆☆</span></button>
+</section>
+<section class="card" id="setup">
+<div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
+<div class="goals" id="setupGoals" aria-live="polite"></div>
+<div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
+<div class="muted">カフェの注文ミッションも残してあるよ：<a href="./mission.html" style="text-decoration:underline">☕ SURVIVALで練習する →</a></div>
+</section>
+<section class="card hidden" id="practice">
+<div class="row" style="justify-content:space-between"><div><span class="eyebrow" id="sceneLabel">AI CONVERSATION</span><h2 id="sceneTitle" style="margin:2px 0;font-size:20px">シーン練習</h2></div><span class="pill" id="timer">03:00</span></div>
+<div class="goals" id="progress"></div>
+<div id="chat" role="log" aria-live="polite" aria-label="英語での会話"></div>
+<p id="status" role="status">相手の話を聞こう。</p>
+<div class="response-head"><label for="reply">英語で答える</label><button class="btn" id="clear" type="button">🗑️ 全消し</button></div>
+<textarea id="reply" placeholder="英語を入力するか、マイクを押して話そう。" maxlength="450" autocapitalize="sentences" spellcheck="false"></textarea>
+<div class="actions"><button class="btn subtle" type="button" id="mic">🎙 話して入力</button><button class="btn hidden" type="button" id="stopMic">⏹ 認識停止</button><button class="btn" type="button" id="repeat">🔊 聞き直す</button><button class="btn primary" type="button" id="send">返答する →</button></div>
+<div class="muted">認識がおかしければ「全消し」、またはもう一度マイクで録り直せるよ。1回の練習は最大8発言まで。</div>
+<div id="error" class="hidden" role="alert"><strong>AIとの通信ができませんでした。</strong><div id="errorReason"></div><div class="actions"><button class="btn" id="retry" type="button">↻ 同じ発言を再送</button></div></div>
+<div id="result" class="hidden" role="status"></div>
+<div class="actions"><button class="btn" type="button" id="back">← シーン選択に戻る</button><button class="btn" type="button" id="again">🔁 もう一度</button></div>
+</section>
+</main>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const API="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
+const SCENES={
+ hotel:{name:"ホテルでチェックイン",speaker:"Sophie · Reception",intro:"Good evening! Welcome to Harbour Hotel. How can I help you?",goals:["チェックインを伝える","予約名を伝える（架空でOK）","ホテルについて質問する"]},
+ airport:{name:"空港で荷物がない！",speaker:"Jordan · Baggage service",intro:"Hello, this is baggage services. What seems to be the problem?",goals:["荷物がないと伝える","荷物の特徴を説明する","次の対応を尋ねる"]},
+ smalltalk:{name:"初対面の人と雑談",speaker:"Mia · Language exchange",intro:"Hey! Nice to meet you. Is this your first time at the meetup?",goals:["挨拶・自己紹介をする","趣味や経験を話す","相手に質問を返す"]}
+};
+const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+const synth=window.speechSynthesis||null;
+let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0;
+function status(message){$("status").textContent=message}
+function goals(container,done){container.replaceChildren();SCENES[sceneId].goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
+function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));goals($("setupGoals"),false)}
+function addMessage(who,text){const bubble=document.createElement("div");bubble.className="bubble"+(who==="You"?" me":"");const label=document.createElement("strong");label.textContent=who;const body=document.createElement("span");body.textContent=text;bubble.append(label,body);$("chat").append(bubble);$("chat").scrollTop=$("chat").scrollHeight}
+function voiceRate(){return $("speed").value==="slow"?.82:$("speed").value==="fast"?1.12:.98}
+function say(text){lastSpoken=text;if(!synth||!window.SpeechSynthesisUtterance)return;try{
+ synth.cancel();const u=new SpeechSynthesisUtterance(text);const voices=synth.getVoices();
+ const v=voices.find(x=>/^en-AU/i.test(x.lang))||voices.find(x=>/^en-GB/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang));
+ if(v)u.voice=v;u.lang=v?.lang||"en-AU";u.rate=voiceRate();u.pitch=1;synth.speak(u);
+}catch(e){}}
+function cancelSpeech(){if(synth)try{synth.cancel()}catch(e){}}
+function stopRecognition(){if(recognition){const old=recognition;recognition=null;try{old.onresult=old.onend=old.onerror=old.onstart=null;old.abort()}catch(e){}}$("stopMic").classList.add("hidden");$("mic").textContent=$("reply").value.trim()?"🎙 もう一度話す":"🎙 話して入力"}
+function updateControls(){const locked=!running||processing||!!pendingText;for(const id of ["reply","send","mic","clear"]){$(id).disabled=locked}$("stopMic").disabled=locked;$("repeat").disabled=!running;$("retry").disabled=processing}
+function showTime(){$("timer").textContent=String(Math.floor(remaining/60)).padStart(2,"0")+":"+String(remaining%60).padStart(2,"0")}
+function stopClock(){if(timer){clearInterval(timer);timer=null}}
+function finish(success,message){running=false;processing=false;pendingText="";stopRecognition();if(!success)cancelSpeech();stopClock();updateControls();$("result").classList.remove("hidden");$("result").replaceChildren();const title=document.createElement("strong");title.textContent=success?"🎉 ミッション達成！":"今回の練習は終了";const p=document.createElement("p");p.textContent=message;$("result").append(title,p);status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")}
+function clear(){if(!running||processing||pendingText)return;stopRecognition();$("reply").value="";$("mic").textContent="🎙 話して入力";status("入力を消しました。話し直してね。")}
+function microphone(){if(!running||processing||pendingText)return;if(!Recognition){status("このブラウザではマイク認識が使えません。キーボードで入力してね。");return}
+ cancelSpeech();stopRecognition();$("reply").value="";
+ try{const rec=new Recognition();recognition=rec;rec.lang="en-US";rec.interimResults=true;rec.continuous=false;
+ rec.onstart=()=>{if(recognition!==rec)return;$("mic").textContent="🔁 最初から話す";$("stopMic").classList.remove("hidden");status("聞き取り中。もう一度マイクを押すと最初からやり直せます。")};
+ rec.onresult=e=>{if(recognition!==rec)return;let txt="";for(let i=0;i<e.results.length;i++){const value=e.results[i][0]?.transcript||"";txt+=" "+value} $("reply").value=txt.trim()};
+ rec.onerror=e=>{if(recognition!==rec)return;stopRecognition();status("音声認識に失敗しました（"+(e.error||"unknown")+"）。再挑戦してね。")};
+ rec.onend=()=>{if(recognition!==rec)return;stopRecognition();status("認識内容を確認して送信してね。違えばもう一度マイクを押してね。")};
+ rec.start();}catch(e){stopRecognition();status("マイクを開始できませんでした。文字入力を使ってね。")}}
+function leave(){runToken++;running=false;processing=false;pendingText="";stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
+function start(){leave();running=true;turn=0;remaining=180;history=[];progress={step1:false,step2:false,step3:false};lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");$("sceneTitle").textContent=SCENES[sceneId].name;goals($("progress"),true);showTime();updateControls();const intro=SCENES[sceneId].intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"3分経過。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
+function errorMessage(code){const known={gemini_quota:"無料枠の上限に達しました。しばらく待ってください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が不正な形式でした。",invalid_ai_response:"AIの返答内容を読み取れませんでした。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
+async function answer(text){const requestToken=runToken;processing=true;updateControls();status("AIが返答を考えています…");$("error").classList.add("hidden");
+ const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),19500);
+ try{const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sceneId,level:$("level").value,userText:text,history:history.slice(-10),progress}),signal:controller.signal});
+ const data=await response.json().catch(()=>({error:"invalid_json"}));
+ if(!response.ok)throw Error(typeof data.error==="string"?data.error:"http_"+response.status);
+ if(typeof data.reply!=="string"||!data.reply.trim()||data.reply.length>850||!data.progress||data.sceneId!==sceneId)throw Error("invalid_ai_response");
+ if(!running||requestToken!==runToken)return;
+ progress={step1:progress.step1||data.progress.step1===true,step2:progress.step2||data.progress.step2===true,step3:progress.step3||data.progress.step3===true};
+ const spoken=data.reply.trim();lastReply=spoken;history.push({role:"assistant",content:spoken});addMessage(SCENES[sceneId].speaker,spoken);say(spoken);goals($("progress"),true);
+ pendingText="";processing=false;updateControls();
+ if(Object.values(progress).every(Boolean)){finish(true,"3つの目標をクリア！言いたいことを英語で伝えられたよ。")}else if(turn>=8){finish(false,"8回の発言を完了！次は別の言い方でも試してみよう。")}else status("いい感じ！会話を続けよう。");
+ }catch(e){if(!running||requestToken!==runToken)return;processing=false;const code=String(e?.message||"network_error").slice(0,60);$("errorReason").textContent=errorMessage(code);$("error").classList.remove("hidden");$("error").scrollIntoView?.({block:"nearest",behavior:"smooth"});status("返答に失敗したため、会話を一時停止しています。");updateControls();
+ }finally{clearTimeout(safety);if(requestController===controller)requestController=null}}
+function send(){if(!running||processing||pendingText)return;const text=$("reply").value.trim();if(!text){status("英語で何か話してみてね。");return}if(text.length>450){status("450文字以内で入力してね。");return}
+ stopRecognition();cancelSpeech();$("reply").value="";pendingText=text;turn++;addMessage("You",text);history.push({role:"user",content:text});updateControls();answer(text)}
+$("scenes").addEventListener("click",e=>{const button=e.target.closest("[data-scene]");if(button)select(button.dataset.scene)});
+$("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
+$("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",()=>{stopRecognition();status("認識停止。文字を直して送信できるよ。")});
+$("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply||lastSpoken)});
+$("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running)answer(pendingText)});
+$("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
+window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
+goals($("setupGoals"),false);updateControls();
+})();
+</script>
+</body>
+</html>
