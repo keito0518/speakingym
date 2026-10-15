@@ -94,7 +94,7 @@ const cards=[
  {id:"connect6",group:"connect",category:"CHANGE THE TOPIC",situation:"会話が行き詰まってきた",challenge:"自然に違う話題を切り出す",hint:"強引に変えない。",sample:"By the way, have you heard about the new café nearby?"}
 ];
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
-let pile=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[];
+let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[];
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
 function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
@@ -107,17 +107,17 @@ function clock(){
  $("count").textContent=rated+" 問チャレンジ";
 }
 function start(onlyMissed=false){
- stopTimer();rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";missedIds=[];missedPrompts=[];
+ stopTimer();rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";missedIds=[];missedPrompts=[];solvedIds=[];
  const existingMisses=readJSON(MISSES_KEY,[]);
- const pool=onlyMissed&&Array.isArray(existingMisses)?cards.filter(c=>existingMisses.includes(c.id)):deck();
- pile=shuffle(pool.length?pool:deck());
+ const chosen=onlyMissed&&Array.isArray(existingMisses)?cards.filter(c=>existingMisses.includes(c.id)):deck();
+ activePool=chosen.length?chosen:deck();pile=shuffle(activePool);
  pane("playPane");clock();nextCard();
  ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);
 }
 function stopTimer(){if(ticker!==null){clearInterval(ticker);ticker=null}}
 function nextCard(){
  if(state!=="running")return;
- if(index>=pile.length){pile=shuffle(deck());index=0}
+ if(index>=pile.length){pile=shuffle(activePool);index=0}
  current=pile[index++];exampleOpened=false;
  $("category").textContent=current.category;
  $("situation").textContent=current.situation;
@@ -144,7 +144,7 @@ function reveal(){
 function rate(didSpeak){
  if(state!=="running"||!current)return;
  rated++;
- if(didSpeak&&!exampleOpened)spoken++;
+ if(didSpeak&&!exampleOpened){spoken++;solvedIds.push(current.id)}
  else {missed++;missedIds.push(current.id);missedPrompts.push(current)}
  clock();
  if(!didSpeak||exampleOpened){
@@ -162,7 +162,7 @@ function finish(early){
  $("endMessage").textContent=rated?"「言えた」の数は自己評価。詰まった表現を次に声に出せれば、それも大きな前進！":"まだ声に出していないね。もう一度、1分だけ挑戦しよう。";
  const missedAll=readJSON(MISSES_KEY,[]);
  const kept=Array.isArray(missedAll)?missedAll.filter(x=>typeof x==="string"):[];
- const unique=[...new Set([...missedIds,...kept])].filter(x=>cards.some(c=>c.id===x)).slice(0,30);
+ const unique=[...new Set([...missedIds,...kept.filter(x=>!solvedIds.includes(x)||missedIds.includes(x))])].filter(x=>cards.some(c=>c.id===x)).slice(0,30);
  saveJSON(MISSES_KEY,unique);
  const old=readJSON(STATS_KEY,{});
  const values={sessions:Math.min(99999,(Number(old?.sessions)||0)+1),spoken:Math.min(99999,(Number(old?.spoken)||0)+spoken),attempted:Math.min(99999,(Number(old?.attempted)||0)+rated)};
