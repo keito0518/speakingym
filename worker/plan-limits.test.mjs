@@ -48,7 +48,7 @@ const toB64url=bytes=>Buffer.from(bytes).toString("base64url");
 async function signer(){
  const pair=await crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"]);
  const jwk=await crypto.subtle.exportKey("jwk",pair.publicKey);
- jwk.kid="test-signing-key";
+ jwk.kid="test-signing-"+crypto.randomUUID();
  const now=Math.floor(Date.now()/1000);
  async function token(uid,claims={}){
   const head=toB64url(JSON.stringify({alg:"RS256",kid:jwk.kid,typ:"JWT"}));
@@ -84,11 +84,11 @@ test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid si
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET")),/login_required/);
 });
 test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quotas",async t=>{
- const {token}=await signer();const db=fakeD1();
+ const {token,jwk}=await signer();const db=fakeD1();
  const a=await token("test_student_A"),b=await token("test_student_B");
  let aiCalls=0;
  t.mock.method(globalThis,"fetch",async url=>{
-  if(String(url).includes("googleapis.com"))throw Error("key should already be cached in test suite");
+  if(String(url).includes("googleapis.com"))return new Response(JSON.stringify({keys:[jwk]}),{status:200,headers:{"cache-control":"max-age=3600"}});
   aiCalls++;
   return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({reply:"Sure!",progress:{step1:false,step2:false,step3:false}})}]}}]}),{status:200});
  });
