@@ -22,6 +22,34 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .info{padding:16px 3px;font-size:12px;color:#788779;line-height:1.9;text-align:center}.info a{text-decoration:underline}
 @media(max-width:550px){.shell{padding-top:23px}.board{padding:18px}.three{grid-template-columns:1fr;gap:7px}.mini{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 15px}.mini strong{font-size:22px;margin:0}.prompt{min-height:280px;padding:18px}.prompt h2{font-size:28px}.button-row{gap:8px}.btn{padding:12px 10px;font-size:13px}.summary{gap:6px}.end-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.bar-fill{transition:none}}
+
+.privacy-opt{display:flex;gap:8px;align-items:center;margin-top:16px;font-size:12px;font-weight:680;color:#4f6e56}.privacy-opt input{width:18px;height:18px;accent-color:#22513c}
+.prompt{min-height:220px!important;padding:23px!important;background:#f0f6eb!important;border:2px solid #bfd6bc!important;display:flex;flex-direction:column;justify-content:center}
+.prompt-scene{font-size:clamp(15px,3vw,18px)!important;font-weight:750!important;color:#3d6248!important;margin:8px 0 16px!important}
+.prompt-cue{font-size:12px;letter-spacing:.3px;color:#a05a43;font-weight:950}
+.prompt h2{font-size:clamp(27px,5.5vw,40px)!important;line-height:1.38!important;margin:5px 0 0!important;letter-spacing:-.7px!important}
+.prompt[data-level="challenge"] .prompt-scene,.prompt[data-level="challenge"] h2{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+.report-review{border-top:2px solid #dfe9de;margin-top:24px;padding-top:23px;text-align:left}
+.report-progress{font-size:11px;font-weight:950;letter-spacing:1px;color:#aa6045}
+.report-review h3{font-size:clamp(22px,4vw,29px);line-height:1.4;margin:5px 0 14px}
+.review-situation{font-size:13px;color:#69816e;margin-top:13px;line-height:1.65}
+.review-result{display:inline-block;background:#e7f4e8;color:#2b6849;padding:5px 10px;border-radius:99px;font-size:12px;font-weight:900}
+.review-you{background:#f5f7f1;padding:14px;border-radius:11px;font-size:14px;color:#274934;margin:13px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.review-point{margin-top:13px;padding:14px;border:1px solid #e1e9dc;background:#f9fbf8;border-radius:12px}
+.review-point strong{font-size:11px;color:#6a906f;letter-spacing:.8px}
+.review-point p{font-size:13px;color:#365640;line-height:1.75;margin:6px 0 0}
+.answer-set{display:grid;gap:9px;margin-top:14px}
+.answer-set .answer-card{padding:11px 13px;border-radius:12px;border:1px solid #e1ebdf;background:#fff}
+.answer-set .answer-card.featured{background:#ebf7ea;border-color:#bcdcc4}
+.answer-set .answer-label{font-size:11px;font-weight:950;color:#aa6448}
+.answer-set .answer-text{font-size:15px;font-weight:850;margin:6px 0;color:#264b36;line-height:1.6}
+.answer-set .answer-card button{font-size:11px;min-height:36px;padding:6px 11px}
+.review-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:19px}
+.history-head h2{font-size:26px;margin:0 0 8px}.history-head p{font-size:12px;color:#748576}
+.history-row{border:1px solid #e1e9df;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;margin:9px 0}
+.history-row .details{font-size:12px;color:#637466;margin-top:4px}
+.history-row strong{font-size:14px}
+@media(max-width:550px){.prompt{padding:19px!important}.prompt h2{font-size:clamp(27px,7vw,34px)!important}.review-nav .btn{padding:11px 8px;font-size:12px}.report-review{margin-top:20px}}
 </style>
 </head>
 <body>
@@ -31,17 +59,17 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 <div class="board">
  <section class="pane active" id="introPane" aria-label="60秒ドリルの設定">
   <div class="time-icon" aria-hidden="true">60</div>
-  <div class="three"><div class="mini"><strong>①</strong>お題を見る</div><div class="mini"><strong>②</strong>英語で声に出す</div><div class="mini"><strong>③</strong>自分で判定</div></div>
-  <label class="mode-label" for="mode">今日の練習</label>
+  <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>全問講評</div><div class="mini"><strong>③</strong>履歴で復習</div></div>
+  <label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
   <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option></select>
-  <button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button>
-  <p class="start-note">マイクなしで遊べるよ。音声入力は任意・追加のAI課金なし。<br>評価は自己判定。文字起こしや発音の正しさを自動採点しません。</p>
+  <label class="privacy-opt"><input type="checkbox" id="saveTranscripts"> 自分が話した英文も、この端末の履歴に保存する（任意）</label><button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button><button class="btn block" type="button" id="openHistory" style="margin-top:9px">📚 過去の練習履歴を見る</button>
+  <p class="start-note">回答例は60秒終了まで非表示。1問ずつ講評してから復習できるよ。<br>追加AI料金なし・自己評価方式。英文の履歴保存は選択制。</p>
  </section>
  <section class="pane" id="playPane" aria-label="英語の瞬発力チャレンジ">
   <div class="top-meter"><div><span class="kicker" style="letter-spacing:1px">REMAINING</span><div id="time" class="remain" aria-label="残り時間">01:00</div></div><div class="reps" id="count" aria-live="polite">0 問チャレンジ中</div></div>
   <div class="bar" aria-hidden="true"><div class="bar-fill" id="progress"></div></div>
-  <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">会話が止まったら</div><p class="prompt-scene" id="situation"></p><h2 id="challenge"></h2><p class="instruction" id="hint"></p></div>
-  <p class="voice-reminder">まずは自力で声に出そう！音声入力は任意・自動採点なし。</p>
+  <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">60 SECOND CHALLENGE</div><p class="prompt-scene" id="situation"></p><div id="promptCue" class="prompt-cue">あなたなら英語で何と言う？</div><h2 id="challenge"></h2></div>
+  <p class="voice-reminder" id="roundNote">例文は終了後の講評で公開。まずは自分の英語を！</p>
 <div class="speech-panel" id="speechPanel">
  <div class="speech-actions"><button class="btn" id="micBtn" type="button">🎙 英語を話して入力</button><button class="btn hidden" id="stopMic" type="button">⏹ 認識停止</button><button class="btn hidden" id="resumeMic" type="button">＋ 続きを話す</button><button class="btn" id="clearSpeech" type="button">✕ 全消し</button></div>
  <label for="transcript">聞き取った英語（手入力・修正もOK）</label>
@@ -49,22 +77,12 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
  <p class="speech-status" id="micStatus" role="status">マイクをもう一度押すと、前の文章を消して最初から話せるよ。</p>
  <p class="voice-note">一部ブラウザでは音声が提供元の認識サーバーへ送信される場合があります。SpeakingymのAIサーバーには送信しません。</p>
 </div>
-  <div class="sample hidden" id="sample" aria-live="polite">
- <div class="label">3 WAYS TO SAY IT · 例文3パターン</div>
- <div class="examples-stack">
-  <div class="example-card"><div class="example-head">QUICK · 短く言う</div><div class="example-body" id="sampleQuick"></div></div>
-  <div class="example-card featured"><div class="example-head">NATURAL · 自然に言う</div><div class="example-body" id="sampleText"></div></div>
-  <div class="example-card"><div class="example-head">POLITE · 丁寧に言う</div><div class="example-body" id="samplePolite"></div></div>
- </div>
- <div class="example-tip" id="sampleTip"></div>
- <div class="sample-foot"><button class="btn" id="hearSample" type="button">🔊 自然な例文を聞く</button><small>端末標準の読み上げ音声</small></div>
-</div>
   <div class="button-row" id="ratingButtons">
    <button class="btn primary" type="button" id="spoken">✓ 口から出た！</button>
    <button class="btn" type="button" id="stuck">↻ 詰まった</button>
   </div>
-  <button class="btn orange block hidden" id="next" type="button">次のお題へ →</button>
-  <div class="skip-row"><button class="text-link" id="showSample" type="button">💡 例文を見る</button><button class="text-link" id="finishEarly" type="button">ここで終了</button></div>
+
+  <div class="skip-row"><span class="meta">✨ 回答例・講評は終了後にまとめて確認</span><button class="text-link" id="finishEarly" type="button">ここで終了</button></div>
  </section>
  <section class="pane end" id="endPane" aria-live="polite">
   <div class="trophy" aria-hidden="true">⚡</div>
@@ -72,17 +90,17 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
-  <div id="missedList" class="missed-list hidden"><h3>次にもう一度言ってみたい表現</h3><div id="missedItems"></div></div>
+  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
- </section>
+ </section><section class="pane" id="historyPane" aria-label="60秒チャレンジの練習履歴"><div class="history-head"><h2>📚 練習履歴</h2><p>保存された各セッションの講評を、もう一度確認できるよ。最新20回を端末内に保存。</p></div><div id="historyList"></div><div class="end-actions"><button class="btn" id="historyBack" type="button">← 設定へ戻る</button><button class="btn" id="clearHistory" type="button">履歴を全削除</button></div></section>
 </div>
-<div class="info">Gemini API・有料の音声サービスは使用しません。マイクは任意で、ブラウザによっては音声が認識サービスへ送られます。<br>認識した英文は画面に表示するだけで保存せず、練習回数・自己評価・苦手カードIDのみ端末内に保存します。<a href="./index.html">旧トップを見る</a></div>
+<div class="info">このドリルではGemini API・有料の音声サービスは不使用。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
 </main>
 <script>
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
-const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1";
+const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1";
 const cards=[
  {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してもらう",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
  {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一度だけ言ってもらう",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
@@ -137,8 +155,154 @@ const EXTRA_ANSWERS={
  connect6:{quick:"By the way, something else...",polite:"On a different note, have you tried that new café nearby?",tip:"By the way / On a different note は話題転換に便利。短い一言を添えるだけで唐突さを減らせる。"}
 };
 
+
+// Difficulty changes the actual problem, expected message and model answers.
+// Each entry is [situation, task, natural, quick, polite, useful focus, next-step tip].
+const LEVEL_TASKS={
+ repair1:{
+  easy:["話が速くて聞き取れない","ゆっくり話してほしい"],
+  standard:["駅員の説明が早すぎた","要点をゆっくり繰り返してもらう","Could you go over the main points a little more slowly?","A little slower, please?","Would you mind repeating the key points at a slower pace?","相手の速度だけでなく、聞きたい内容も指定すると伝わりやすい。","go over は説明をもう一度確認すること。main points を加えると要点に絞れる。"],
+  challenge:["A colleague gives a rapid technical explanation during a meeting.","Ask them to slow down and summarize the two most important steps before you continue.","Could we slow down a little and clarify the two most important steps before moving on?","Could you summarize the two key steps?","Would you mind slowing down and walking us through the two key steps?","要点を二つに絞る依頼は、会議を止めすぎず理解を確認できる。","before moving on を加えると「先に確認してから進めたい」という順序が明確になる。"]
+ },
+ repair2:{
+  easy:["最後の言葉を聞き逃した","もう一度言ってもらう"],
+  standard:["電話で最後の案内だけ聞き逃した","最後の部分だけ聞き直す","Sorry, I didn't catch the last part. Could you repeat it?","The last part, please?","I'm sorry, could you repeat the last part of the instructions?","聞き逃した場所を限定すると、相手にとって答えやすい。","didn't catch は「聞き取れなかった」。全部を言い直してもらう必要はない。"],
+  challenge:["Your manager has explained a deadline, but the final condition was unclear.","Politely request only the final condition and confirm whether it applies to everyone.","I missed the final condition. Could you repeat it and clarify whether it applies to the entire team?","Could you repeat the last condition?","Would you mind restating the final condition and confirming who it applies to?","単なる聞き直しから条件確認に進めると、仕事での誤解を防げる。","clarify whether ... は「〜かどうか明確にしてほしい」。"]
+ },
+ repair3:{
+  easy:["知らない言葉が出てきた","意味をたずねる"],
+  standard:["ホテルの人が unfamiliar な料金名を言った","その料金の意味と含まれるものを聞く","Could you explain what that fee means and what it includes?","What is that fee for?","Would you mind explaining exactly what's included in that charge?","意味だけでなく内訳まで聞くと、実際の判断につながる。","what it includes と具体化すれば追加料金の説明を引き出せる。"],
+  challenge:["An airline agent mentions a 'non-refundable fare difference'.","Ask what that term means and whether any exceptions might apply in your case.","Could you clarify what 'non-refundable fare difference' means and whether there are any exceptions?","Does that mean I can't get anything back?","Would you mind explaining that charge and any exceptions that could apply?","専門用語の説明と例外条件を一緒に聞くのがポイント。","whether there are any exceptions は規約・契約についての確認に応用できる。"]
+ },
+ repair4:{
+  easy:["説明が伝わらなかった","別の言い方にする"],
+  standard:["道順を説明したが相手が困っている","もっと簡単な言葉で説明し直す","Let me explain it more simply. It's right across from the station.","Let me try again.","Perhaps I can explain it more clearly: it's opposite the station.","説明し直すと宣言したあと、短く具体的な内容を続けるといい。","Let me put it another way だけで終えず、補足の説明まで含めよう。"],
+  challenge:["A coworker misinterprets your proposal as a request to cancel a project.","Correct the misunderstanding and restate that you only want to delay the launch.","I may not have been clear. I'm suggesting we postpone the launch, not cancel the project.","Not cancel it—delay the launch.","Let me clarify: my proposal is to move the launch date, rather than cancel the project.","誤解された点と本当の意図を対比すると、複雑な説明でも明確になる。","not A but B の対比が強力。相手の理解を責めず I may not have been clear と始められる。"]
+ },
+ repair5:{
+  easy:["違う意味で伝わってしまった","やんわり訂正する"],
+  standard:["店員が持ち帰り注文だと思った","店内で食べたいと訂正する","Sorry, I actually meant to eat here, not take it away.","For here, please.","Sorry for the confusion. I was hoping to dine in.","違いを具体的に言うと、相手がすぐ対応できる。","actually は押し付けずに言い直すときに使いやすい。"],
+  challenge:["A client believes you agreed to a fixed delivery date, but you only gave an estimate.","Correct the assumption politely and explain what still needs confirmation.","I apologize for the confusion. That was an estimate, not a confirmed delivery date. I'll verify the schedule.","That date was only an estimate.","I'm sorry I wasn't clearer. The delivery date remains provisional until we've confirmed the schedule.","見積もりと確約の違いを明確に伝えるのが重要。","provisional / confirmed を使えば、約束の確実性を正確に示せる。"]
+ },
+ repair6:{
+  easy:["待ち合わせの日時が不安","金曜3時で合っているか聞く"],
+  standard:["予約の日時を電話で確認したい","来週金曜の午後3時で合っているか尋ねる","Just to confirm, is my appointment next Friday at 3 p.m.?","Next Friday at three, right?","Could I confirm that my appointment is scheduled for next Friday at 3 p.m.?","日付と時刻を復唱することが確認のポイント。","Just to confirm で話し始めると確認であることが伝わる。"],
+  challenge:["A meeting has been moved across time zones, and the email lists two different times.","Ask which time zone is official and confirm the equivalent time in Japan.","The email lists two times. Could you confirm the official time zone and what time that will be in Japan?","Which time zone should we use?","Could you clarify the meeting's official time zone and confirm the corresponding time in Japan?","時差の問題を先に明確にすると、複数の日時があっても混乱しにくい。","corresponding time は別のタイムゾーンの対応する時刻を表せる。"]
+ },
+ hold1:{
+  easy:["突然質問された","少し考える時間をもらう"],
+  standard:["面接で意外な質問を受けた","少し考える時間をもらい、答え始める","That's an interesting question. Let me think for a moment. I'd say...","Let me think about that.","That's a thoughtful question. May I take a moment to consider it?","考える時間を作りながら会話を止めない技術。","Let me think... に続けて自分の意見を言い始めるとより自然。"],
+  challenge:["During a presentation, you're asked to compare two approaches you haven't fully analyzed.","Buy a few seconds, acknowledge the limitations, and offer an initial perspective.","That's worth considering. I haven't compared them in depth yet, but my initial view is that...","My initial thought is...","That's a valuable question. I haven't assessed both options fully, but I can share a preliminary view.","未検討の点を正直に認めた上で暫定的な意見を出せると信頼につながる。","preliminary view は「暫定的な見解」。断定を避けるのに便利。"]
+ },
+ hold2:{
+  easy:["言いたい言葉が出ない","ちょっと待ってもらう"],
+  standard:["単語が思い出せないけど会話を続けたい","言い方を探していると伝える","I know what I mean, but I need a second to find the right word.","Just a moment.","Bear with me for a moment while I find the right words.","言葉を探している状況を正直に伝えれば、沈黙を避けられる。","bear with me は「少し待ってください」という自然な表現。"],
+  challenge:["You're explaining a complex idea and lose the precise term halfway through.","Acknowledge the gap and paraphrase the meaning instead of stopping.","I can't recall the exact term, but what I mean is the process of checking the results before release.","I can't recall the word, but...","I can't remember the precise term; perhaps I can describe the concept instead.","単語を忘れても説明を続けられると会話の流れを保てる。","paraphrase / describe the concept の発想が会話力の鍵になる。"]
+ },
+ hold3:{
+  easy:["話が長くなりそう","まず結論から話す"],
+  standard:["議論が複雑になってきた","結論を先に言ってから理由を続ける","The main point is that we need more time. Let me explain why.","Here's the main point.","I'd like to start with the main conclusion, then explain the reasons.","結論と理由の順番を伝えると相手が理解しやすい。","The main point is that ... は要点を伝える定番。"],
+  challenge:["You're asked to explain why a project is behind schedule to senior staff.","State the main conclusion first, take responsibility, and indicate the next step.","The key issue is the delayed testing phase. We're adjusting the timeline and will share an updated plan tomorrow.","Testing caused the delay; we'll revise the plan.","To summarize, testing has delayed delivery, and we're preparing a revised schedule with clear next steps.","原因だけでなく今後の対応をセットで示すと説得力が上がる。","To summarize / The key issue is ... が長い話の整理に役立つ。"]
+ },
+ hold4:{
+  easy:["答えが一つではない","状況次第だと伝える"],
+  standard:["在宅勤務と出社のどちらがいいか聞かれた","状況による、と理由を一つ添える","It depends on the task. Working from home is great for focused work.","It depends on the task.","I'd say it depends on the type of work and how much collaboration is needed.","it depends だけでなく「何によるか」を言えると伝わる。","depends on + 名詞 のあとに理由を加えてみよう。"],
+  challenge:["Someone asks whether all employees should work remotely full-time.","Explain that your answer depends on the role and give a specific trade-off.","I think it depends on the role. Remote work helps with focus, but face-to-face collaboration can be valuable.","It depends on the role and team.","I wouldn't apply one rule to everyone; the right balance depends on responsibilities and collaboration needs.","一概に決められない理由を具体的に示せると議論が深まる。","trade-off を説明すると、単なる Yes/No から一歩進める。"]
+ },
+ hold5:{
+  easy:["質問が広すぎる","もう少し具体的に聞く"],
+  standard:["友人に『日本ってどう？』と聞かれた","生活か旅行か、どの話が聞きたいか確認","Do you mean living in Japan or travelling here?","Which part of Japan?","Are you asking about everyday life in Japan, or visiting as a tourist?","選択肢を示すと相手が答えやすくなる。","be more specific より具体的な二択にすると会話が進みやすい。"],
+  challenge:["A client asks you to 'make the service better' without specifying priorities.","Request the two most important success criteria before proposing changes.","Could you clarify which two outcomes matter most—speed, reliability, or customer experience?","What are your main priorities?","Would you mind identifying the key success criteria so we can prioritize improvements?","抽象的な依頼を測れる基準へ落とし込めると仕事で便利。","success criteria は改善目標を確認する定番表現。"]
+ },
+ hold6:{
+  easy:["話が脱線した","元の話題に戻す"],
+  standard:["会議で別の話が続いている","今日の主要議題に戻そうと提案","That makes sense. Could we get back to today's main topic?","Back to the main topic...","If everyone's ready, could we return to the main item on the agenda?","相手を遮らず自然に話を戻せると議論が進む。","get back to / return to は、話題に戻る際の便利な動詞。"],
+  challenge:["Your team has spent ten minutes debating a side issue while a decision is due.","Acknowledge the concern and redirect the group to the urgent decision.","That's a valid concern, but we need to finalize today's decision. Could we return to the proposal?","Can we get back to the decision?","I appreciate that point. Given our limited time, could we refocus on the decision we need today?","相手の懸念を認めて優先順位を伝えると、角が立ちにくい。","Given our limited time は時間制約を理由として示せる。"]
+ },
+bound1:{
+  easy:["誘われたけど行けない","丁寧に断る"],
+  standard:["同僚に今夜の飲み会に誘われた","感謝して断り、また誘ってほしいと伝える","Thanks for inviting me, but I can't make it tonight. Please ask me next time!","Sorry, I can't make it tonight.","I really appreciate the invitation, but I already have plans. I'd love to join next time.","断るだけでなく次回の意思を伝えると関係を保ちやすい。","I'd love to ... で前向きな気持ちを伝えられる。"],
+  challenge:["A colleague asks you to work overtime on a day you have an important personal commitment.","Decline respectfully, explain your limitation briefly and propose realistic help tomorrow.","I'm afraid I can't stay late today due to a prior commitment. I could take care of the urgent part first thing tomorrow.","I can't stay tonight, but I can help tomorrow.","I appreciate the urgency, but I have a prior commitment. Would it help if I prioritized this first thing tomorrow?","断りのあとに実行可能な代案を出すと建設的。","prior commitment は詳細を言わずに予定があることを伝える表現。"]
+ },
+ bound2:{
+  easy:["時間が合わない","別の時間を提案"],
+  standard:["友人との予定が土曜は難しい","土曜を断って日曜を提案","Saturday doesn't work for me. Are you free on Sunday instead?","How about Sunday instead?","I'm afraid I'm busy on Saturday. Would Sunday work for you?","無理な理由を長く説明せず代案を出すのがポイント。","Would Sunday work for you? は丁寧で汎用的。"],
+  challenge:["A client proposes moving an important call to an hour when your team cannot attend.","Politely decline that time, offer two alternatives and ask which works best.","We won't be available at that time. Could we do Tuesday morning or Wednesday afternoon instead?","Can we do Tuesday or Wednesday?","Unfortunately, our team isn't available then. Would Tuesday morning or Wednesday afternoon be more convenient?","代案を二つ出すと相手の選択がスムーズになる。","Would ... be more convenient? はビジネスで使える提案表現。"]
+ },
+ bound3:{
+  easy:["料金が高すぎる","予算オーバーを伝える"],
+  standard:["旅行の見積もりが予算を超えた","予算内の別案を尋ねる","That's more than I can afford. Is there a cheaper option?","That's over my budget.","I'm afraid this exceeds my budget. Could you suggest a more affordable alternative?","予算を伝えたあと代案を聞くと話が進みやすい。","affordable / within my budget は予算の交渉に役立つ。"],
+  challenge:["A vendor's renewal quote has increased by 20% without any new features.","Challenge the increase professionally and request a revised proposal within your budget.","The renewal price is 20% higher despite no added features. Could you review the quote and offer a plan closer to our budget?","Why is the renewal 20% higher?","Given that the features haven't changed, would you be able to revise the pricing or suggest a suitable alternative?","値上げの根拠と希望条件を一緒に述べると交渉が具体的になる。","Given that ... は背景事情を根拠にして丁寧に要求できる。"]
+ },
+ bound4:{
+  easy:["今すぐ決められない","考える時間をもらう"],
+  standard:["契約を今日決めてほしいと言われた","明日まで検討する時間をもらう","I'd like to think it over. Could I get back to you tomorrow?","Can I decide tomorrow?","Would it be possible to give you my decision by tomorrow instead?","いつ返答するか伝えると相手も予定を立てやすい。","get back to you は「あとで連絡する」。"],
+  challenge:["You're offered a new role, but you need time to check compensation and responsibilities.","Thank the recruiter, ask for two days and say what you need to review.","Thank you for the offer. Could I have two days to review the responsibilities and compensation before responding?","Could I have two days to review it?","I appreciate the offer. Would it be possible to respond in two days after reviewing the full terms?","感謝・必要な情報・期限を揃えると丁寧な返事になる。","before responding で返事までの流れを明確にできる。"]
+ },
+ bound5:{
+  easy:["相手と意見が違う","やわらかく反論"],
+  standard:["友達は車で行く方がいいと言っている","電車の方がいい理由を添えて反論","I see your point, but the train might be easier because parking is expensive.","I think the train is easier.","I understand why you'd prefer driving. However, the train may be more convenient given the parking costs.","まず相手を認めてから、自分の理由を話すとスムーズ。","I see your point, but ... は意見の違いを柔らかく示せる。"],
+  challenge:["A teammate argues that adding more features is the best way to launch a product.","Acknowledge their concern but argue for fewer features, giving a specific trade-off.","I understand the appeal, but launching with fewer features could help us test demand sooner and reduce risk.","I'd launch fewer features first.","I see the benefit of a broader launch; however, a smaller version might let us validate demand more quickly.","相手のメリットを認めたうえで別の優先順位を示すと説得力が増す。","could / might を使うと反対意見でも断定的になりにくい。"]
+ },
+ bound6:{
+  easy:["条件が厳しそう","別の選択肢を聞く"],
+  standard:["レンタカーの返却時間が早すぎる","少し遅らせる方法や追加料金を尋ねる","Could I return the car later, even if there's an extra fee?","Is a later return possible?","Would it be possible to extend the return time, and could you tell me the fee?","条件と費用をまとめて聞くと確認が一度で済む。","even if ... は妥協できる条件を示すときに便利。"],
+  challenge:["A venue's cancellation policy is strict, but an unexpected event may force a schedule change.","Ask about reasonable alternatives without assuming the fee will be waived.","I understand the policy. If our date changes, could we transfer the booking instead of cancelling it?","Could we change the date instead?","I appreciate the policy, but would a date change or credit be possible if plans unexpectedly change?","規約を認めてから具体的な代案を探すと交渉しやすい。","instead of ... でキャンセルではない別案を明確にできる。"]
+ },
+ connect1:{
+  easy:["友達が旅行に行った","感想を聞く"],
+  standard:["友人が初めて北海道を旅行した","一番印象に残ったことを聞く","What was the highlight of your trip to Hokkaido?","What did you like best?","I'd love to hear what stood out most during your trip to Hokkaido.","highlight / stood out は印象的だった点を聞く言い方。","感想を広げるには Yes/No で終わらない疑問詞を使おう。"],
+  challenge:["At a networking event, someone describes a challenging solo trip abroad.","Ask a thoughtful follow-up about what the experience taught them, not just where they went.","That sounds intense. What did travelling alone teach you about handling unexpected situations?","What did you learn on that trip?","It sounds like quite an experience. Would you mind sharing what you learned from it?","経験から学んだことに踏み込むと深い会話が生まれる。","What did ... teach you about ...? は相手の経験を掘り下げられる。"]
+ },
+ connect2:{
+  easy:["友達の趣味が気になる","いつ始めたか聞く"],
+  standard:["友人がランニングを続けている","いつから始めたかと、続けるコツを聞く","How long have you been running, and what keeps you motivated?","How long have you been running?","May I ask when you started running and how you stay motivated?","継続の理由まで聞くと、相手の話が広がる。","keep you motivated は継続の原動力をたずねる表現。"],
+  challenge:["You meet someone who has turned a hobby into a small business.","Ask how their priorities changed when their hobby became paid work.","How did your approach change once you started earning money from your hobby?","What changed when it became work?","I'd be interested to know how turning your hobby into a business affected your motivation.","単なる趣味紹介から価値観の変化を引き出せる質問。","once ... は「〜した時点から」で転換点を示せる。"]
+ },
+ connect3:{
+  easy:["友達が転職した","新しい仕事はどうか聞く"],
+  standard:["友達が新しい仕事を始めて1週間","祝福して、慣れたか聞く","Congrats on the new job! How's your first week been?","How's the new job going?","Congratulations on your new role! How has the first week been so far?","相手の状況に合わせて質問を具体的にすると会話が続きやすい。","How has ... been so far? は途中経過を聞ける。"],
+  challenge:["A friend has changed careers after years in another field.","Acknowledge the risk and ask what has surprised them most about the transition.","That must have been a big change. What's surprised you most about switching careers?","What's been the biggest surprise?","That sounds like a significant transition. What aspect of the new field has surprised you most?","経験の変化に共感してから質問を置くと温度感が出る。","switching careers / transition はキャリアチェンジの話題で便利。"]
+ },
+ connect4:{
+  easy:["映画をすすめられた","良かったところを聞く"],
+  standard:["友達が映画を絶賛した","ネタバレなしで良かった点を聞く","Without spoilers, what did you like most about it?","What was best about it?","I'd love to know what you enjoyed most, without any spoilers.","ネタバレを避けたい条件を先に伝えると便利。","Without spoilers を前置きとして使うと自然。"],
+  challenge:["A friend recommends a film that deals with a controversial historical event.","Ask what made the film compelling without requesting spoilers or assuming their view.","What made the film so compelling for you, especially given the sensitive subject matter?","What made it worth watching?","Without spoiling the plot, what aspects did you find most thought-provoking?","センシティブな話題でも相手の感じ方を丁寧に聞ける。","thought-provoking は「考えさせられる」。"]
+ },
+ connect5:{
+  easy:["友達も自然が好き","共通点を伝えて質問"],
+  standard:["相手も登山が好きとわかった","自分も好きだと伝え、おすすめを聞く","Me too! Do you have a favorite hiking trail around here?","Me too! Any favorite trails?","I enjoy hiking as well. Is there a trail you'd particularly recommend nearby?","共通点を一言で示してから具体的に尋ねると自然な会話になる。","particularly recommend は強くおすすめする場所を聞く表現。"],
+  challenge:["You meet someone who prefers remote wilderness trips over popular tourist routes.","Compare your preferences briefly and ask about the trade-off between access and solitude.","I enjoy quiet places too, although I usually choose easier routes. How do you balance access and solitude?","I like quiet spots too. Any tips?","I share your preference for less crowded places. How do you decide whether a remote route is worth the effort?","自分の好みの違いを添えた質問は会話の深さにつながる。","How do you balance A and B? は価値観の両立を聞く良い質問。"]
+ },
+ connect6:{
+  easy:["話題を変えたい","別の話を始める"],
+  standard:["雑談が終わりかけている","最近行ったカフェの話に変える","By the way, have you tried the new café near the station?","By the way, that new café...","On a different note, have you been to the new café near the station?","By the way で自然に話題を切り替えられる。","質問で締めると次の会話が続きやすい。"],
+  challenge:["A networking conversation has become overly detailed about a single problem.","Politely switch to asking about the other person's upcoming plans without sounding abrupt.","That sounds challenging. On a different note, what are you looking forward to working on next?","Speaking of what's next, any new plans?","I can see there's a lot involved. If you don't mind changing topics, what projects are you excited about next?","共感してから話題を移すと唐突な印象になりにくい。","On a different note はビジネスでも自然な話題転換。"]
+ }
+};
+const EASY_WORDING={
+ repair3:"知らない言葉の意味を聞く",repair4:"わかりやすく言い直す",repair6:"金曜の3時で合ってる？",
+ hold1:"考える時間をもらう",hold2:"ちょっと待って、と言う",hold3:"まず要点を伝える",
+ hold4:"状況次第と伝える",hold5:"具体的に聞き直す",hold6:"元の話に戻す",
+ bound1:"誘いを丁寧に断る",bound2:"別の日時を提案",bound3:"予算オーバーと伝える",
+ bound4:"考えてから返事する",bound5:"丁寧に別意見を出す",bound6:"代案をたずねる",
+ connect1:"旅行の感想を聞く",connect2:"趣味を始めた時期を聞く",connect3:"仕事の感想を聞く",
+ connect4:"映画の魅力を聞く",connect5:"共通点を伝えて質問",connect6:"自然に話題を変える"
+};
+function taskFor(card,level){
+ const data=LEVEL_TASKS[card.id];
+ if(level==="easy"){
+  const easy=data.easy;
+  return {situation:easy?.[0]||card.situation,challenge:EASY_WORDING[card.id]||easy?.[1]||card.challenge,
+   sample:card.sample,quick:EXTRA_ANSWERS[card.id].quick,polite:EXTRA_ANSWERS[card.id].polite,
+   good:"この場面では、短い英語でも相手に目的を伝えようとすることが第一歩。",improve:EXTRA_ANSWERS[card.id].tip};
+ }
+ const d=data[level];
+ return {situation:d[0],challenge:d[1],sample:d[2],quick:d[3],polite:d[4],good:d[5],improve:d[6]};
+}
+
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
-let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[];
+let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false;
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const speaker=window.speechSynthesis||null;
 let recognition=null,listenWanted=false,baseSpeech="",finalSpeech="",interimSpeech="",restartCount=0,restartTimer=null;
@@ -163,7 +327,7 @@ function stopListening(){
 }
 function cancelReading(){if(speaker)try{speaker.cancel()}catch(e){}}
 function startRecognitionCycle(){
- if(!listenWanted||state!=="running"||exampleOpened)return;
+ if(!listenWanted||state!=="running")return;
  try{
   const rec=new Recognizer();recognition=rec;
   rec.lang="en-US";rec.interimResults=true;rec.continuous=true;
@@ -211,7 +375,7 @@ function startRecognitionCycle(){
    $("micStatus").textContent="短い無音で認識が途切れたので、再開を試しています…";
    restartTimer=setTimeout(()=>{
     restartTimer=null;
-    if(listenWanted&&state==="running"&&!exampleOpened)startRecognitionCycle();
+    if(listenWanted&&state==="running")startRecognitionCycle();
    },350);
   };
   rec.start();
@@ -223,7 +387,7 @@ function startRecognitionCycle(){
  }
 }
 function microphone(reset=true){
- if(state!=="running"||exampleOpened)return;
+ if(state!=="running")return;
  if(!Recognizer){$("micStatus").textContent="このブラウザでは音声認識を利用できません。自分で声に出すか、英文を手入力してね。";return;}
  cancelReading();stopListening();
  if(reset){$("transcript").value="";baseSpeech="";}
@@ -246,25 +410,18 @@ function clearSpeech(){
  $("resumeMic").classList.add("hidden");
  $("micStatus").textContent="英文を全消ししました。新しく話してみよう。";
 }
-function readNaturalExample(){
- if(state!=="running"||$("sample").classList.contains("hidden")||!current)return;
- if(!speaker||!window.SpeechSynthesisUtterance){
-  $("hearSample").textContent="このブラウザは読み上げ未対応";
-  return;
- }
+function speakExample(text){
+ if(!speaker||!window.SpeechSynthesisUtterance)return;
  try{
-  cancelReading();const voice=new window.SpeechSynthesisUtterance(current.sample);
-  const voices=speaker.getVoices();
-  const preferred=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
-  if(preferred)voice.voice=preferred;voice.lang=preferred?.lang||"en-US";voice.rate=.92;
-  speaker.speak(voice);
- }catch(e){$("hearSample").textContent="読み上げできませんでした";}
+  cancelReading();const u=new window.SpeechSynthesisUtterance(text);
+  const voices=speaker.getVoices(),voice=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
+  if(voice)u.voice=voice;u.lang=voice?.lang||"en-US";u.rate=.92;speaker.speak(u);
+ }catch(e){}
 }
-
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
 function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
-function pane(id){for(const k of ["introPane","playPane","endPane"])$(k).classList.toggle("active",k===id)}
+function pane(id){for(const k of ["introPane","playPane","endPane","historyPane"])$(k).classList.toggle("active",k===id)}
 function clock(){
  const seconds=Math.max(0,remaining);
  $("time").textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
@@ -272,11 +429,106 @@ function clock(){
  $("progress").style.width=(seconds/60*100)+"%";
  $("count").textContent=rated+" 問チャレンジ";
 }
+
+const HISTORY_LIMIT=20;
+function historySessions(){
+ const all=readJSON(HISTORY_KEY,[]);
+ if(!Array.isArray(all))return [];
+ return all.filter(x=>x&&typeof x==="object"&&Array.isArray(x.attempts)).slice(0,HISTORY_LIMIT).map(x=>({
+  date:typeof x.date==="string"?x.date.slice(0,35):"",
+  level:["easy","standard","challenge"].includes(x.level)?x.level:"standard",
+  attempts:x.attempts.slice(0,60).filter(a=>a&&cards.some(c=>c.id===a.cardId)).map(a=>({
+   cardId:a.cardId,outcome:["spoken","stuck","unanswered"].includes(a.outcome)?a.outcome:"unanswered",
+   transcript:typeof a.transcript==="string"?a.transcript.slice(0,450):""
+  }))
+ }));
+}
+function saveSession(session){
+ const saved={date:session.date,level:session.level,attempts:session.attempts.slice(0,60).map(a=>({
+  cardId:a.cardId,outcome:a.outcome,transcript:saveWords?a.transcript.slice(0,450):""
+ }))};
+ saveJSON(HISTORY_KEY,[saved,...historySessions()].slice(0,HISTORY_LIMIT));
+}
+function openReview(session,fromHistory=false){
+ reviewSession=session;reviewIndex=0;
+ $("total").textContent=String(session.attempts.filter(x=>x.outcome!=="unanswered").length);
+ $("wins").textContent=String(session.attempts.filter(x=>x.outcome==="spoken").length);
+ $("misses").textContent=String(session.attempts.filter(x=>x.outcome==="stuck").length);
+ $("endMessage").textContent=fromHistory?"保存した練習を1問ずつ復習しよう。":"自分の回答とお手本を比べて、1問ずつ復習しよう。";
+ pane("endPane");showReview(0);
+}
+function transcriptObservation(text){
+ if(!text)return "";
+ if(/\b(?:would you mind|could you|would it be possible|may i|could i)\b/i.test(text)){
+  return "記録した英文には丁寧に依頼する表現が入っているね。";
+ }
+ if(/\b(?:because|since|although|however|but|instead)\b/i.test(text)){
+  return "記録した英文には理由や対比につなげる言葉が入っているね。";
+ }
+ if(/\b(?:what|when|why|how|where|who)\b[\s\S]{0,100}\?/i.test(text)){
+  return "記録した英文には相手に質問を返す形が入っているね。";
+ }
+ return "回答の英文を残せているので、お手本と見比べて言い直す練習ができるよ。";
+}
+function showReview(index){
+ const a=reviewSession?.attempts||[];
+ if(!a.length){$("reportReview").classList.add("hidden");return}
+ reviewIndex=Math.max(0,Math.min(index,a.length-1));
+ const item=a[reviewIndex],card=cards.find(c=>c.id===item.cardId);
+ if(!card)return;
+ const info=taskFor(card,reviewSession.level);
+ $("reportReview").classList.remove("hidden");
+ $("reviewCounter").textContent="REVIEW "+(reviewIndex+1)+" / "+a.length+" · "+reviewSession.level.toUpperCase();
+ $("reviewSituation").textContent=info.situation;
+ $("reviewChallenge").textContent=info.challenge;
+ const lang=reviewSession.level==="challenge"?"en":"ja";
+ $("reviewSituation").setAttribute("lang",lang);$("reviewChallenge").setAttribute("lang",lang);
+ $("reviewResult").textContent=item.outcome==="spoken"?"✓ 自己評価：言えた":item.outcome==="stuck"?"↻ 自己評価：詰まった":"⌛ 時間切れ・未回答";
+ $("reviewYou").textContent=item.transcript?"YOUR WORDS · "+item.transcript:"YOUR WORDS · 記録なし（マイク未使用、または英文保存オフ）";
+ const intro=item.outcome==="spoken"?"英語を口に出して挑戦できたのは良い一歩。":item.outcome==="stuck"?"詰まったことに気付けたのが次への手掛かり。":"次回は短い一言から始めてみよう。";
+ $("reviewGood").textContent=intro+transcriptObservation(item.transcript)+info.good;
+ $("reviewImprove").textContent=info.improve;
+ $("reviewTip").textContent=EXTRA_ANSWERS[card.id].tip;
+ const parent=$("reviewAnswers");parent.replaceChildren();
+ for(const [label,example,featured] of [
+  ["QUICK · 短く",info.quick,false],["NATURAL · 自然に",info.sample,true],["POLITE · 丁寧に",info.polite,false]
+ ]){
+  const box=document.createElement("div");box.className="answer-card"+(featured?" featured":"");
+  const heading=document.createElement("div");heading.className="answer-label";heading.textContent=label;
+  const text=document.createElement("p");text.className="answer-text";text.textContent=example;
+  const listen=document.createElement("button");listen.className="btn";listen.textContent="🔊 聞く";
+  listen.addEventListener("click",()=>speakExample(example));
+  box.append(heading,text,listen);parent.append(box);
+ }
+ $("reviewPrev").disabled=reviewIndex===0;
+ $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
+}
+function showHistory(){
+ const parent=$("historyList");parent.replaceChildren();
+ const sessions=historySessions();
+ if(!sessions.length){const p=document.createElement("p");p.textContent="まだ履歴はありません。60秒プレイするとここに保存されます。";parent.append(p)}
+ for(const session of sessions){
+  const row=document.createElement("div");row.className="history-row";
+  const title=document.createElement("strong");
+  const date=new Date(session.date),display=Number.isNaN(date.getTime())?"過去の練習":date.toLocaleDateString("ja-JP");
+  title.textContent=display+" · "+({easy:"基礎",standard:"標準",challenge:"応用"}[session.level]);
+  const details=document.createElement("div");details.className="details";details.textContent=session.attempts.length+"問 / 言えた "+session.attempts.filter(a=>a.outcome==="spoken").length+"問";
+  const info=document.createElement("div");info.append(title,details);
+  const btn=document.createElement("button");btn.className="btn";btn.textContent="講評を見る →";btn.addEventListener("click",()=>openReview(session,true));
+  row.append(info,btn);parent.append(row);
+ }
+ pane("historyPane");
+}
+
+
 function start(onlyMissed=false){
- stopListening();cancelReading();stopTimer();rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";missedIds=[];missedPrompts=[];solvedIds=[];
- const existingMisses=readJSON(MISSES_KEY,[]);
- const chosen=onlyMissed&&Array.isArray(existingMisses)?cards.filter(c=>existingMisses.includes(c.id)):deck();
- activePool=chosen.length?chosen:deck();pile=shuffle(activePool);
+ stopListening();cancelReading();stopTimer();
+ rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";
+ missedIds=[];missedPrompts=[];solvedIds=[];attempts=[];reviewIndex=0;
+ chosenLevel=$("level").value;saveWords=$("saveTranscripts").checked===true;
+ const old=readJSON(MISSES_KEY,[]);
+ const choice=onlyMissed&&Array.isArray(old)?cards.filter(c=>old.includes(c.id)):deck();
+ activePool=choice.length?choice:deck();pile=shuffle(activePool);
  pane("playPane");clock();nextCard();
  ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);
 }
@@ -285,85 +537,76 @@ function nextCard(){
  if(state!=="running")return;
  stopListening();cancelReading();
  $("transcript").value="";baseSpeech="";finalSpeech="";interimSpeech="";
- $("micStatus").textContent="声に出してね。音声入力が使えればマイクから文字にもできるよ。";
+ $("micStatus").textContent="声に出して、自分で判定しよう。音声入力は任意。";
  if(index>=pile.length){pile=shuffle(activePool);index=0}
  current=pile[index++];exampleOpened=false;
- $("category").textContent=current.category;
- $("situation").textContent=current.situation;
- $("challenge").textContent=current.challenge;
- $("hint").textContent=current.hint;
- $("sampleText").textContent=current.sample;
- const options=EXTRA_ANSWERS[current.id];
- $("sampleQuick").textContent=options.quick;
- $("samplePolite").textContent=options.polite;
- $("sampleTip").textContent=options.tip;
- $("sample").classList.add("hidden");
- $("ratingButtons").classList.remove("hidden");
- $("next").classList.add("hidden");
- $("showSample").disabled=false;
- $("showSample").textContent="💡 例文を見る";
- $("prompt").classList.remove("focus");
+ const problem=taskFor(current,chosenLevel);
+ $("prompt").setAttribute("data-level",chosenLevel);
+ $("prompt").setAttribute("lang",chosenLevel==="challenge"?"en":"ja");
+ $("category").textContent=current.category+" / "+chosenLevel.toUpperCase();
+ $("promptCue").textContent=chosenLevel==="challenge"?"HOW WOULD YOU RESPOND?":"あなたなら英語で何と言う？";
+ $("situation").textContent=problem.situation;
+ $("challenge").textContent=problem.challenge;
+ $("roundNote").textContent="例文は最後まで非公開！ 自分の英語で答えよう。";
 }
-function reveal(){
+function recordAttempt(outcome){
  if(state!=="running"||!current)return;
- stopListening();cancelReading();
- exampleOpened=true;
- $("sample").classList.remove("hidden");
- $("ratingButtons").classList.add("hidden");
- $("next").classList.remove("hidden");
- $("showSample").disabled=true;
- $("prompt").classList.add("focus");
- rate(false);
+ stopListening();
+ const utterance=$("transcript").value.trim().slice(0,450);
+ attempts.push({cardId:current.id,outcome,transcript:utterance});
+ if(outcome!=="unanswered"){
+  rated++;
+  if(outcome==="spoken"){spoken++;solvedIds.push(current.id)}
+  else{missed++;missedIds.push(current.id);missedPrompts.push(current)}
+ }
+ clock();
 }
 function rate(didSpeak){
  if(state!=="running"||!current)return;
- stopListening();
- rated++;
- if(didSpeak&&!exampleOpened){spoken++;solvedIds.push(current.id)}
- else {missed++;missedIds.push(current.id);missedPrompts.push(current)}
- clock();
- if(!didSpeak||exampleOpened){
-  $("sample").classList.remove("hidden");
-  $("ratingButtons").classList.add("hidden");
-  $("next").classList.remove("hidden");
-  $("showSample").disabled=true;
-  $("prompt").classList.add("focus");
- }else nextCard();
+ recordAttempt(didSpeak?"spoken":"stuck");
+ nextCard();
 }
 function finish(early){
  if(state!=="running")return;
- stopListening();cancelReading();
- state="finished";stopTimer();
- $("total").textContent=String(rated);$("wins").textContent=String(spoken);$("misses").textContent=String(missed);
- $("endMessage").textContent=rated?"「言えた」の数は自己評価。詰まった表現を次に声に出せれば、それも大きな前進！":"まだ声に出していないね。もう一度、1分だけ挑戦しよう。";
- const missedAll=readJSON(MISSES_KEY,[]);
- const kept=Array.isArray(missedAll)?missedAll.filter(x=>typeof x==="string"):[];
- const unique=[...new Set([...missedIds,...kept.filter(x=>!solvedIds.includes(x)||missedIds.includes(x))])].filter(x=>cards.some(c=>c.id===x)).slice(0,30);
- saveJSON(MISSES_KEY,unique);
+ if(current&&$("transcript").value.trim())recordAttempt("unanswered");
+ stopListening();cancelReading();state="finished";stopTimer();
+ const oldMisses=readJSON(MISSES_KEY,[]);
+ const kept=Array.isArray(oldMisses)?oldMisses.filter(x=>typeof x==="string"):[];
+ const updated=[...new Set([...missedIds,...kept.filter(x=>!solvedIds.includes(x)||missedIds.includes(x))])].filter(x=>cards.some(c=>c.id===x)).slice(0,30);
+ saveJSON(MISSES_KEY,updated);
  const old=readJSON(STATS_KEY,{});
- const values={sessions:Math.min(99999,(Number(old?.sessions)||0)+1),spoken:Math.min(99999,(Number(old?.spoken)||0)+spoken),attempted:Math.min(99999,(Number(old?.attempted)||0)+rated)};
- saveJSON(STATS_KEY,values);
- $("missedList").classList.toggle("hidden",!missedPrompts.length);
- $("missedItems").replaceChildren();
- for(const m of missedPrompts.slice(0,5)){
-  const p=document.createElement("p");p.textContent="• "+m.challenge+" → "+m.sample;$("missedItems").append(p);
- }
- $("weakOnly").hidden=!unique.length;
- pane("endPane");
+ saveJSON(STATS_KEY,{
+  sessions:Math.min(99999,(Number(old?.sessions)||0)+1),
+  spoken:Math.min(99999,(Number(old?.spoken)||0)+spoken),
+  attempted:Math.min(99999,(Number(old?.attempted)||0)+rated)
+ });
+ $("weakOnly").hidden=!updated.length;
+ const session={date:new Date().toISOString(),level:chosenLevel,attempts:attempts.map(x=>({...x}))};
+ saveSession(session);
+ openReview(session);
 }
 $("micBtn").addEventListener("click",()=>microphone(true));
 $("stopMic").addEventListener("click",stopMicManually);
 $("resumeMic").addEventListener("click",()=>microphone(false));
 $("clearSpeech").addEventListener("click",clearSpeech);
-$("hearSample").addEventListener("click",readNaturalExample);
 $("start").addEventListener("click",()=>start(false));
 $("spoken").addEventListener("click",()=>rate(true));
 $("stuck").addEventListener("click",()=>rate(false));
-$("showSample").addEventListener("click",reveal);
-$("next").addEventListener("click",nextCard);
 $("finishEarly").addEventListener("click",()=>finish(true));
 $("again").addEventListener("click",()=>start(false));
 $("weakOnly").addEventListener("click",()=>start(true));
+$("reviewPrev").addEventListener("click",()=>showReview(reviewIndex-1));
+$("reviewNext").addEventListener("click",()=>{
+ if(reviewIndex<(reviewSession?.attempts.length||0)-1)showReview(reviewIndex+1);
+ else showHistory();
+});
+$("openHistory").addEventListener("click",showHistory);
+$("historyBack").addEventListener("click",()=>pane("introPane"));
+$("clearHistory").addEventListener("click",()=>{
+ if(!window.confirm("この端末に保存した60秒チャレンジの履歴をすべて削除しますか？"))return;
+ try{localStorage.removeItem(HISTORY_KEY)}catch(e){}
+ showHistory();
+});
 window.addEventListener("pagehide",()=>{stopTimer();stopListening();cancelReading();});
 })();
 </script>

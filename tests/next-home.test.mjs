@@ -14,8 +14,8 @@ function fakeDocument(storageEntries={}){
  function element(id){
   if(elements.has(id))return elements.get(id);
   const set=new Set();
-  const e={id,textContent:"",value:id==="mode"?"mix":"",hidden:false,style:{},children:[],disabled:false,
-   listeners:{},
+  const e={id,textContent:"",value:id==="mode"?"mix":id==="level"?"standard":"",hidden:false,checked:false,style:{},children:[],disabled:false,
+   listeners:{},setAttribute(){},
    classList:{add:x=>set.add(x),remove:x=>set.delete(x),contains:x=>set.has(x),toggle(x,force){
     const selected=force===undefined?!set.has(x):force;
     if(selected)set.add(x);else set.delete(x);return selected;
@@ -87,40 +87,40 @@ test("reflex uses twenty-four unique practical reactions and has no network requ
  assert.match(sprint,/id="resumeMic"/);
  assert.match(sprint,/id="stopMic"/);
  assert.match(sprint,/id="transcript"/);
- assert.match(sprint,/id="hearSample"/);
- assert.match(sprint,/id="sampleQuick"/);
- assert.match(sprint,/id="samplePolite"/);
+ assert.match(sprint,/id="reviewAnswers"/);
+ assert.match(sprint,/id="reviewAnswers"/);
+ assert.match(sprint,/id="reportReview"/);
+ assert.match(sprint,/id="historyPane"/);
  assert.match(sprint,/@media\(max-width:550px\)/);
 });
 
-test("60 second game counts self-assessment and saves stats locally",()=>{
- const app=fakeDocument();
- app.run(sprint);
- app.click("start");
+test("60-second drill hides every sample until all turns are complete, then guides a review",()=>{
+ const app=fakeDocument();app.run(sprint);app.click("start");
  assert.equal(app.element("playPane").classList.contains("active"),true);
  assert.equal(app.element("time").textContent,"01:00");
- assert.ok(app.element("challenge").textContent.length>3);
- app.click("spoken");
- app.click("stuck");
- assert.equal(app.element("sample").classList.contains("hidden"),false);
- app.click("next");
- app.click("showSample");
- assert.equal(app.element("next").classList.contains("hidden"),false);
+ assert.equal(app.element("challenge").textContent.length>3,true);
+ assert.doesNotMatch(sprint,/id="sample"/);
+ app.click("spoken");app.click("stuck");
+ assert.equal(app.element("count").textContent,"2 問チャレンジ");
  app.click("finishEarly");
  assert.equal(app.element("endPane").classList.contains("active"),true);
- assert.equal(app.element("total").textContent,"3");
+ assert.equal(app.element("total").textContent,"2");
  assert.equal(app.element("wins").textContent,"1");
- assert.equal(app.element("misses").textContent,"2");
- const totals=JSON.parse(app.store.get("speakingym-reflex-stats-v1"));
- assert.deepEqual(totals,{sessions:1,spoken:1,attempted:3});
+ assert.equal(app.element("misses").textContent,"1");
+ assert.match(app.element("reviewCounter").textContent,/1 \/ 2/);
+ assert.equal(app.element("reviewAnswers").children.length,3);
+ app.click("reviewNext");
+ assert.match(app.element("reviewCounter").textContent,/2 \/ 2/);
+ const stats=JSON.parse(app.store.get("speakingym-reflex-stats-v1"));
+ assert.deepEqual(stats,{sessions:1,spoken:1,attempted:2});
+ const history=JSON.parse(app.store.get("speakingym-reflex-history-v1"));
+ assert.equal(history.length,1);
+ assert.equal(history[0].attempts.length,2);
  assert.equal(app.interval(),null);
- const missed=JSON.parse(app.store.get("speakingym-reflex-misses-v1"));
- assert.equal(missed.length,2);
 });
 
-test("timer finishes session at zero and no fabricated score is calculated",()=>{
- const app=fakeDocument();
- app.run(sprint);app.click("start");
+test("time limit ends practice and stores a session without fabricated scoring",()=>{
+ const app=fakeDocument();app.run(sprint);app.click("start");
  for(let i=0;i<60;i++)app.interval()?.();
  assert.equal(app.element("endPane").classList.contains("active"),true);
  assert.equal(app.element("total").textContent,"0");
@@ -131,7 +131,16 @@ test("timer finishes session at zero and no fabricated score is calculated",()=>
 test("all 24 reflex questions have three English examples and a usage tip",()=>{
  const quick=(jsOf(sprint).match(/(?:repair|hold|bound|connect)[1-6]:\{quick:/g)||[]);
  assert.equal(quick.length,24);
- assert.match(jsOf(sprint),/EXTRA_ANSWERS\[current\.id\]/);
- assert.match(jsOf(sprint),/options\.tip/);
+ assert.match(jsOf(sprint),/EXTRA_ANSWERS\[card\.id\]/);
+ assert.match(jsOf(sprint),/function showReview\(/);
  assert.equal((jsOf(sprint).match(/await fetch\(/g)||[]).length,0);
 });
+test("advanced question content is authored in English and all 24 cards change with level",()=>{
+ const script=jsOf(sprint);
+ assert.equal((script.match(/challenge:\[/g)||[]).length,24);
+ assert.equal((script.match(/standard:\[/g)||[]).length,24);
+ assert.match(script,/HOW WOULD YOU RESPOND\?/);
+ assert.match(script,/const LEVEL_TASKS=/);
+ assert.match(script,/reviewSession\.level==="challenge"/);
+});
+
