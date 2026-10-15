@@ -457,6 +457,19 @@ function openReview(session,fromHistory=false){
  $("endMessage").textContent=fromHistory?"保存した練習を1問ずつ復習しよう。":"自分の回答とお手本を比べて、1問ずつ復習しよう。";
  pane("endPane");showReview(0);
 }
+function transcriptObservation(text){
+ if(!text)return "";
+ if(/\b(?:would you mind|could you|would it be possible|may i|could i)\b/i.test(text)){
+  return "記録した英文には丁寧に依頼する表現が入っているね。";
+ }
+ if(/\b(?:because|since|although|however|but|instead)\b/i.test(text)){
+  return "記録した英文には理由や対比につなげる言葉が入っているね。";
+ }
+ if(/\b(?:what|when|why|how|where|who)\b[\s\S]{0,100}\?/i.test(text)){
+  return "記録した英文には相手に質問を返す形が入っているね。";
+ }
+ return "回答の英文を残せているので、お手本と見比べて言い直す練習ができるよ。";
+}
 function showReview(index){
  const a=reviewSession?.attempts||[];
  if(!a.length){$("reportReview").classList.add("hidden");return}
@@ -473,7 +486,7 @@ function showReview(index){
  $("reviewResult").textContent=item.outcome==="spoken"?"✓ 自己評価：言えた":item.outcome==="stuck"?"↻ 自己評価：詰まった":"⌛ 時間切れ・未回答";
  $("reviewYou").textContent=item.transcript?"YOUR WORDS · "+item.transcript:"YOUR WORDS · 記録なし（マイク未使用、または英文保存オフ）";
  const intro=item.outcome==="spoken"?"英語を口に出して挑戦できたのは良い一歩。":item.outcome==="stuck"?"詰まったことに気付けたのが次への手掛かり。":"次回は短い一言から始めてみよう。";
- $("reviewGood").textContent=intro+info.good;
+ $("reviewGood").textContent=intro+transcriptObservation(item.transcript)+info.good;
  $("reviewImprove").textContent=info.improve;
  $("reviewTip").textContent=EXTRA_ANSWERS[card.id].tip;
  const parent=$("reviewAnswers");parent.replaceChildren();
