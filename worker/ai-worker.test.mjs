@@ -198,3 +198,45 @@ test("old cafe clients receive the original missionState response schema",async 
  assert.equal(body.progress,undefined);
  assert.equal(body.sceneId,undefined);
 });
+
+test("difficulty changes the actual scenario, objections, and goal criteria sent to Gemini",async t=>{
+ const systems=[];
+ const mock=t.mock.method(globalThis,"fetch",async (_url,options)=>{
+  const body=JSON.parse(options.body);
+  systems.push(body.systemInstruction.parts[0].text);
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{
+   text:JSON.stringify({reply:"Let's discuss that in more detail.",progress:{step1:false,step2:false,step3:false}})
+  }]}}]}),{status:200});
+ });
+ const cases=[
+  ["hotel","standard","two hours early","ready"],
+  ["hotel","challenge","ocean-view","compensation"],
+  ["airport","standard","two distinct identifying features","delivery"],
+  ["airport","challenge","essential work equipment","deadline"],
+  ["smalltalk","standard","common interests","reasoned preference"],
+  ["smalltalk","challenge","remote vs office work","counterarguments"]
+ ];
+ for(const [sceneId,level,scenarioTerm,goalTerm] of cases){
+  const response=await worker.fetch(request({...payload,sceneId,level}),enabled());
+  assert.equal(response.status,200,sceneId+" "+level);
+  const prompt=systems.at(-1);
+  assert.ok(prompt.includes(scenarioTerm),sceneId+" "+level+" needs new complication: "+scenarioTerm);
+  assert.ok(prompt.includes(goalTerm),sceneId+" "+level+" needs stricter goal: "+goalTerm);
+ }
+ assert.equal(mock.mock.callCount(),6);
+});
+
+test("easy level still retains accessible core tasks",async t=>{
+ const prompts=[];
+ t.mock.method(globalThis,"fetch",async (_url,options)=>{
+  const body=JSON.parse(options.body);prompts.push(body.systemInstruction.parts[0].text);
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{
+   text:JSON.stringify({reply:"Certainly, I can help.",progress:{step1:false,step2:false,step3:false}})
+  }]}}]}),{status:200});
+ });
+ const response=await worker.fetch(request({...payload,sceneId:"hotel",level:"easy"}),enabled());
+ assert.equal(response.status,200);
+ assert.match(prompts[0],/front desk/);
+ assert.match(prompts[0],/booking name/i);
+ assert.doesNotMatch(prompts[0],/prepaid ocean-view booking discrepancy/);
+});
