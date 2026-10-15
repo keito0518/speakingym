@@ -5,12 +5,14 @@ on:
       - home-preview.html
       - reflex.html
       - tests/next-home.test.mjs
+      - tests/reflex-speech.test.mjs
       - .github/workflows/next-home-tests.yml
   pull_request:
     paths:
       - home-preview.html
       - reflex.html
       - tests/next-home.test.mjs
+      - tests/reflex-speech.test.mjs
       - .github/workflows/next-home-tests.yml
 jobs:
   smoke-test:
@@ -22,4 +24,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/next-home.test.mjs
+      - run: node --test tests/next-home.test.mjs tests/reflex-speech.test.mjs
