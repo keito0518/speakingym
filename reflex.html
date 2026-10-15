@@ -165,6 +165,70 @@ const EXTRA_ANSWERS={
  connect6:{quick:"By the way, something else...",polite:"On a different note, have you tried that new café nearby?",tip:"By the way / On a different note は話題転換に便利。短い一言を添えるだけで唐突さを減らせる。"}
 };
 
+
+// Difficulty changes the actual problem, expected message and model answers.
+// Each entry is [situation, task, natural, quick, polite, useful focus, next-step tip].
+const LEVEL_TASKS={
+ repair1:{
+  easy:["話が速くて聞き取れない","ゆっくり話してほしい"],
+  standard:["駅員の説明が早すぎた","要点をゆっくり繰り返してもらう","Could you go over the main points a little more slowly?","A little slower, please?","Would you mind repeating the key points at a slower pace?","相手の速度だけでなく、聞きたい内容も指定すると伝わりやすい。","go over は説明をもう一度確認すること。main points を加えると要点に絞れる。"],
+  challenge:["A colleague gives a rapid technical explanation during a meeting.","Ask them to slow down and summarize the two most important steps before you continue.","Could we slow down a little and clarify the two most important steps before moving on?","Could you summarize the two key steps?","Would you mind slowing down and walking us through the two key steps?","要点を二つに絞る依頼は、会議を止めすぎず理解を確認できる。","before moving on を加えると「先に確認してから進めたい」という順序が明確になる。"]
+ },
+ repair2:{
+  easy:["最後の言葉を聞き逃した","もう一度言ってもらう"],
+  standard:["電話で最後の案内だけ聞き逃した","最後の部分だけ聞き直す","Sorry, I didn't catch the last part. Could you repeat it?","The last part, please?","I'm sorry, could you repeat the last part of the instructions?","聞き逃した場所を限定すると、相手にとって答えやすい。","didn't catch は「聞き取れなかった」。全部を言い直してもらう必要はない。"],
+  challenge:["Your manager has explained a deadline, but the final condition was unclear.","Politely request only the final condition and confirm whether it applies to everyone.","I missed the final condition. Could you repeat it and clarify whether it applies to the entire team?","Could you repeat the last condition?","Would you mind restating the final condition and confirming who it applies to?","単なる聞き直しから条件確認に進めると、仕事での誤解を防げる。","clarify whether ... は「〜かどうか明確にしてほしい」。"]
+ },
+ repair3:{
+  easy:["知らない言葉が出てきた","意味をたずねる"],
+  standard:["ホテルの人が unfamiliar な料金名を言った","その料金の意味と含まれるものを聞く","Could you explain what that fee means and what it includes?","What is that fee for?","Would you mind explaining exactly what's included in that charge?","意味だけでなく内訳まで聞くと、実際の判断につながる。","what it includes と具体化すれば追加料金の説明を引き出せる。"],
+  challenge:["An airline agent mentions a 'non-refundable fare difference'.","Ask what that term means and whether any exceptions might apply in your case.","Could you clarify what 'non-refundable fare difference' means and whether there are any exceptions?","Does that mean I can't get anything back?","Would you mind explaining that charge and any exceptions that could apply?","専門用語の説明と例外条件を一緒に聞くのがポイント。","whether there are any exceptions は規約・契約についての確認に応用できる。"]
+ },
+ repair4:{
+  easy:["説明が伝わらなかった","別の言い方にする"],
+  standard:["道順を説明したが相手が困っている","もっと簡単な言葉で説明し直す","Let me explain it more simply. It's right across from the station.","Let me try again.","Perhaps I can explain it more clearly: it's opposite the station.","説明し直すと宣言したあと、短く具体的な内容を続けるといい。","Let me put it another way だけで終えず、補足の説明まで含めよう。"],
+  challenge:["A coworker misinterprets your proposal as a request to cancel a project.","Correct the misunderstanding and restate that you only want to delay the launch.","I may not have been clear. I'm suggesting we postpone the launch, not cancel the project.","Not cancel it—delay the launch.","Let me clarify: my proposal is to move the launch date, rather than cancel the project.","誤解された点と本当の意図を対比すると、複雑な説明でも明確になる。","not A but B の対比が強力。相手の理解を責めず I may not have been clear と始められる。"]
+ },
+ repair5:{
+  easy:["違う意味で伝わってしまった","やんわり訂正する"],
+  standard:["店員が持ち帰り注文だと思った","店内で食べたいと訂正する","Sorry, I actually meant to eat here, not take it away.","For here, please.","Sorry for the confusion. I was hoping to dine in.","違いを具体的に言うと、相手がすぐ対応できる。","actually は押し付けずに言い直すときに使いやすい。"],
+  challenge:["A client believes you agreed to a fixed delivery date, but you only gave an estimate.","Correct the assumption politely and explain what still needs confirmation.","I apologize for the confusion. That was an estimate, not a confirmed delivery date. I'll verify the schedule.","That date was only an estimate.","I'm sorry I wasn't clearer. The delivery date remains provisional until we've confirmed the schedule.","見積もりと確約の違いを明確に伝えるのが重要。","provisional / confirmed を使えば、約束の確実性を正確に示せる。"]
+ },
+ repair6:{
+  easy:["待ち合わせの日時が不安","金曜3時で合っているか聞く"],
+  standard:["予約の日時を電話で確認したい","来週金曜の午後3時で合っているか尋ねる","Just to confirm, is my appointment next Friday at 3 p.m.?","Next Friday at three, right?","Could I confirm that my appointment is scheduled for next Friday at 3 p.m.?","日付と時刻を復唱することが確認のポイント。","Just to confirm で話し始めると確認であることが伝わる。"],
+  challenge:["A meeting has been moved across time zones, and the email lists two different times.","Ask which time zone is official and confirm the equivalent time in Japan.","The email lists two times. Could you confirm the official time zone and what time that will be in Japan?","Which time zone should we use?","Could you clarify the meeting's official time zone and confirm the corresponding time in Japan?","時差の問題を先に明確にすると、複数の日時があっても混乱しにくい。","corresponding time は別のタイムゾーンの対応する時刻を表せる。"]
+ },
+ hold1:{
+  easy:["突然質問された","少し考える時間をもらう"],
+  standard:["面接で意外な質問を受けた","少し考える時間をもらい、答え始める","That's an interesting question. Let me think for a moment. I'd say...","Let me think about that.","That's a thoughtful question. May I take a moment to consider it?","考える時間を作りながら会話を止めない技術。","Let me think... に続けて自分の意見を言い始めるとより自然。"],
+  challenge:["During a presentation, you're asked to compare two approaches you haven't fully analyzed.","Buy a few seconds, acknowledge the limitations, and offer an initial perspective.","That's worth considering. I haven't compared them in depth yet, but my initial view is that...","My initial thought is...","That's a valuable question. I haven't assessed both options fully, but I can share a preliminary view.","未検討の点を正直に認めた上で暫定的な意見を出せると信頼につながる。","preliminary view は「暫定的な見解」。断定を避けるのに便利。"]
+ },
+ hold2:{
+  easy:["言いたい言葉が出ない","ちょっと待ってもらう"],
+  standard:["単語が思い出せないけど会話を続けたい","言い方を探していると伝える","I know what I mean, but I need a second to find the right word.","Just a moment.","Bear with me for a moment while I find the right words.","言葉を探している状況を正直に伝えれば、沈黙を避けられる。","bear with me は「少し待ってください」という自然な表現。"],
+  challenge:["You're explaining a complex idea and lose the precise term halfway through.","Acknowledge the gap and paraphrase the meaning instead of stopping.","I can't recall the exact term, but what I mean is the process of checking the results before release.","I can't recall the word, but...","I can't remember the precise term; perhaps I can describe the concept instead.","単語を忘れても説明を続けられると会話の流れを保てる。","paraphrase / describe the concept の発想が会話力の鍵になる。"]
+ },
+ hold3:{
+  easy:["話が長くなりそう","まず結論から話す"],
+  standard:["議論が複雑になってきた","結論を先に言ってから理由を続ける","The main point is that we need more time. Let me explain why.","Here's the main point.","I'd like to start with the main conclusion, then explain the reasons.","結論と理由の順番を伝えると相手が理解しやすい。","The main point is that ... は要点を伝える定番。"],
+  challenge:["You're asked to explain why a project is behind schedule to senior staff.","State the main conclusion first, take responsibility, and indicate the next step.","The key issue is the delayed testing phase. We're adjusting the timeline and will share an updated plan tomorrow.","Testing caused the delay; we'll revise the plan.","To summarize, testing has delayed delivery, and we're preparing a revised schedule with clear next steps.","原因だけでなく今後の対応をセットで示すと説得力が上がる。","To summarize / The key issue is ... が長い話の整理に役立つ。"]
+ },
+ hold4:{
+  easy:["答えが一つではない","状況次第だと伝える"],
+  standard:["在宅勤務と出社のどちらがいいか聞かれた","状況による、と理由を一つ添える","It depends on the task. Working from home is great for focused work.","It depends on the task.","I'd say it depends on the type of work and how much collaboration is needed.","it depends だけでなく「何によるか」を言えると伝わる。","depends on + 名詞 のあとに理由を加えてみよう。"],
+  challenge:["Someone asks whether all employees should work remotely full-time.","Explain that your answer depends on the role and give a specific trade-off.","I think it depends on the role. Remote work helps with focus, but face-to-face collaboration can be valuable.","It depends on the role and team.","I wouldn't apply one rule to everyone; the right balance depends on responsibilities and collaboration needs.","一概に決められない理由を具体的に示せると議論が深まる。","trade-off を説明すると、単なる Yes/No から一歩進める。"]
+ },
+ hold5:{
+  easy:["質問が広すぎる","もう少し具体的に聞く"],
+  standard:["友人に『日本ってどう？』と聞かれた","生活か旅行か、どの話が聞きたいか確認","Do you mean living in Japan or travelling here?","Which part of Japan?","Are you asking about everyday life in Japan, or visiting as a tourist?","選択肢を示すと相手が答えやすくなる。","be more specific より具体的な二択にすると会話が進みやすい。"],
+  challenge:["A client asks you to 'make the service better' without specifying priorities.","Request the two most important success criteria before proposing changes.","Could you clarify which two outcomes matter most—speed, reliability, or customer experience?","What are your main priorities?","Would you mind identifying the key success criteria so we can prioritize improvements?","抽象的な依頼を測れる基準へ落とし込めると仕事で便利。","success criteria は改善目標を確認する定番表現。"]
+ },
+ hold6:{
+  easy:["話が脱線した","元の話題に戻す"],
+  standard:["会議で別の話が続いている","今日の主要議題に戻そうと提案","That makes sense. Could we get back to today's main topic?","Back to the main topic...","If everyone's ready, could we return to the main item on the agenda?","相手を遮らず自然に話を戻せると議論が進む。","get back to / return to は、話題に戻る際の便利な動詞。"],
+  challenge:["Your team has spent ten minutes debating a side issue while a decision is due.","Acknowledge the concern and redirect the group to the urgent decision.","That's a valid concern, but we need to finalize today's decision. Could we return to the proposal?","Can we get back to the decision?","I appreciate that point. Given our limited time, could we refocus on the decision we need today?","相手の懸念を認めて優先順位を伝えると、角が立ちにくい。","Given our limited time は時間制約を理由として示せる。"]
+ },
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
 let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false;
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
