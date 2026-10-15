@@ -1,6 +1,6 @@
 # Speakingym SURVIVAL | AI接続（初期費用0円）
 
-このディレクトリには **Gemini Free Tier × Cloudflare Workers Free** のバックエンドが準備されています。**まだサーバーはデプロイされていないため、公開サイトはAI未接続**です。
+このディレクトリには **Gemini Free Tier × Cloudflare Workers Free** のバックエンドが準備されています。新URL `https://speakingym.pages.dev` からの接続に対応しています（旧GitHub Pagesも互換性のため許可）。**まだサーバーはデプロイされていないため、公開サイトはAI未接続**です。
 
 ## 重要：無料のまま開始する条件
 
@@ -52,7 +52,7 @@ npx wrangler secret put ALLOW_AI
 
 ### サイトで接続テスト
 
-[Speakingym 3分ミッション](https://keito0518.github.io/speakingym/mission.html) の「AI自由会話を接続する（開発者向け）」を開き、**Worker URLだけ** 登録してください。Gemini APIキーは入力しません。
+[Speakingym 3分ミッション](https://speakingym.pages.dev/mission.html) の「AI自由会話を接続する（開発者向け）」を開き、**Worker URLだけ** 登録してください。Gemini APIキーは入力しません。
 
 設定URLはそのブラウザにのみ保存されます。**他のユーザーは引き続きルール型分岐モード**です。検証後、全ユーザー向けのデフォルトURLをサイトに設定できます。
 
