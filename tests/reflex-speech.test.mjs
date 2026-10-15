@@ -39,7 +39,7 @@ function app(initialStore={},teacherResponse=null){
   setInterval:fn=>{interval=fn;return 1},clearInterval:()=>{interval=null},
   setTimeout:fn=>{const id=++counter;timeouts.set(id,fn);return id},
   clearTimeout:id=>timeouts.delete(id),
-  fetch:async (_url,options)=>{apiCalls++;if(!teacherResponse)throw Error("Unexpected API request");return {ok:true,status:200,json:async()=>teacherResponse}},
+  fetch:async (url,options)=>{if(String(url).endsWith("/health"))return {ok:true,status:200,json:async()=>({reflexCoachSupported:true,aiConfigured:true})};apiCalls++;if(!teacherResponse)throw Error("Unexpected API request");return {ok:true,status:200,json:async()=>teacherResponse}},
   AbortController,console,Math
  };
  vm.runInNewContext(script,sandbox,{timeout:3000});
