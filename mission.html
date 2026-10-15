@@ -27,7 +27,13 @@
     <div class="session-head"><div><div class="eyebrow">LIVE MISSION</div><h2 class="heading">英語で注文を直そう</h2></div><div class="timer" id="clock">03:00</div></div>
     <div class="progress-track" role="progressbar" aria-label="経過時間" aria-valuemin="0" aria-valuemax="180" aria-valuenow="0" id="progress"><span id="progressFill"></span></div>
     <div class="stateline"><span class="status-pill" id="engineMode">無料の会話分岐（AI未接続）</span><span class="status-pill" id="progressProblem">① ミスを説明</span><span class="status-pill" id="progressCorrect">② 正しい注文</span><span class="status-pill" id="progressFix">③ 交換に合意</span></div>
-    <div id="chat" class="chat" aria-live="polite" aria-label="英会話"></div>
+    <div id="aiErrorBox" class="hidden" role="alert" style="margin:12px 0;padding:16px;background:#fff7ee;border:1px solid #edc8ac;border-radius:13px">
+<strong style="font-size:14px;color:#86432a">AIの応答が停止しました</strong>
+<p id="aiErrorReason" style="font-size:12px;line-height:1.8;margin:8px 0;color:#6a4634"></p>
+<div class="action"><button class="btn primary small" id="retryAiBtn" type="button">↻ AIに再接続</button><button class="btn ghost small" id="manualModeBtn" type="button">旧式モードで続ける</button></div>
+<p style="font-size:11px;line-height:1.6;margin-top:8px;color:#7d6255">旧式モードでは決められたセリフを使います。自動では切り替わりません。</p>
+</div>
+<div id="chat" class="chat" aria-live="polite" aria-label="英会話"></div>
     <div class="hint-status" id="status" aria-live="polite">店員の話を聞こう。</div>
     <div class="replybox"><label for="reply" class="control-label">あなたの返答（英語）</label><textarea id="reply" placeholder="例: Sorry, I ordered an iced latte, but this one is hot. Could you remake it?" spellcheck="false" autocomplete="off" autocapitalize="sentences"></textarea><div class="input-actions"><button class="btn ghost small" id="micBtn" type="button">🎙 話して入力</button><button class="btn ghost small" id="repeatBtn" type="button">🔊 聞き直す</button><button class="btn primary" id="sendBtn" type="button">返答する →</button></div><p class="keyboard-note" id="recognitionNote">マイクが使えない場合は英文を入力してね。iPhoneのキーボード🎤も利用できます。</p><div class="action"><button class="btn secondary small" id="hintBtn" type="button">💡 ヒントを見る</button><button class="btn ghost small" id="muteBtn" type="button">🔊 音声オン</button><button class="btn ghost small" id="quitBtn" type="button">中断する</button></div><div class="hint hidden" id="hint" aria-live="polite"></div></div>
    </section>
@@ -56,7 +62,7 @@ let stats={attempts:0,clears:0};
 try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');stats={attempts:Number(v.attempts)||0,clears:Number(v.clears)||0};}catch(e){}
 // The URL is public; the Gemini key remains private inside Cloudflare Workers.
 const DEFAULT_AI_ENDPOINT='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
-let endpoint=DEFAULT_AI_ENDPOINT,aiPaused=false;
+let endpoint=DEFAULT_AI_ENDPOINT,aiPaused=false,manualMode=false,aiErrorCode='',aiFailureText='';
 try{const stored=localStorage.getItem('speakingym-survival-endpoint');if(stored!==null)endpoint=stored}catch(e){}
 $('endpoint').value=endpoint;
 let level='standard',remaining=180,timeLimit=180,running=false,ended=false,busy=false,turn=0,round=0,timerId=null,recognition=null,speechTimer=null,activeUtterance=null,speechEpoch=0,voiceOn=true,runId=0,aiActive=false,pendingRequest=null,lastBarista='',lastMissing='',hardPoint=null;
@@ -133,7 +139,7 @@ function say(text,after){
 function barista(text,after){addMessage('Emma',text);say(text,after)}
 function clockString(secs){return String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0')}
 function updateClock(){$('clock').textContent=clockString(remaining);$('clock').classList.toggle('low',remaining<=30);$('progressFill').style.width=((timeLimit-remaining)/timeLimit*100)+'%';$('progress').setAttribute('aria-valuemax',String(timeLimit));$('progress').setAttribute('aria-valuenow',String(timeLimit-remaining))}
-function tick(){if(!running||ended)return;remaining=Math.max(0,remaining-1);updateClock();if(remaining===0)finish(false,'timeout')}
+function tick(){if(!running||ended||aiPaused)return;remaining=Math.max(0,remaining-1);updateClock();if(remaining===0)finish(false,'timeout')}
 function stopRecognizer(){if(recognition){try{recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort()}catch(e){}recognition=null}$('micBtn').textContent='🎙 話して入力'}
 function micAction(){
  if(!running||ended||busy)return;
@@ -152,11 +158,11 @@ function required(){return{iced:true,oat:level!=='easy',fix:true}}
 function successReady(){const x=required();return facts.problem&&facts.iced&&(!x.oat||facts.oat)&&facts.fix}
 function missing(){if(!facts.problem)return 'problem';if(!facts.iced)return 'iced';if(level!=='easy'&&!facts.oat)return 'oat';if(!facts.fix)return 'fix';return 'done'}
 function sync(){
- $('sendBtn').disabled=!running||ended||busy;
- $('micBtn').disabled=!running||ended||busy;
+ $('sendBtn').disabled=!running||ended||busy||(aiPaused&&!manualMode);
+ $('micBtn').disabled=!running||ended||busy||(aiPaused&&!manualMode);
  $('repeatBtn').disabled=!running||ended;
  $('hintBtn').disabled=!running||ended;
- $('reply').disabled=!running||ended;
+ $('reply').disabled=!running||ended||(aiPaused&&!manualMode);
  const pr=facts.problem,co=facts.iced&&(level==='easy'||facts.oat),fi=facts.fix;
  for(const [id,ok] of [['progressProblem',pr],['progressCorrect',co],['progressFix',fi]]){
  const node=$(id);node.classList.toggle('success',ok);
@@ -243,11 +249,11 @@ function applyAiFacts(response){
 async function fromAI(text,currentTurn){
  if(!endpoint||aiPaused)return null;
  const ac=new AbortController();pendingRequest=ac;
- const safety=setTimeout(()=>ac.abort(),12500);
+ const safety=setTimeout(()=>ac.abort(),19000);
  try{
  const resp=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level,goal:'Correct a wrong café order: user ordered iced oat latte, received hot regular latte. Get remake.',userText:text,history:messages.slice(-12),facts:{...facts},remaining}),signal:ac.signal,mode:'cors'});
- if(!resp.ok)throw Error(resp.status===429?'free-quota':'server '+resp.status);
- const data=await resp.json();
+ const data=await resp.json().catch(()=>({error:'invalid_server_json'}));
+ if(!resp.ok)throw Error(typeof data?.error==='string'?data.error:'http_'+resp.status);
  if(!data||typeof data.reply!=='string'||!data.reply.trim()||data.reply.length>850)throw Error('invalid AI reply');
  if(currentTurn!==turn||ended)return null;
  applyAiFacts(data);
@@ -258,26 +264,69 @@ async function fromAI(text,currentTurn){
  }catch(e){
  if(currentTurn===turn&&!ended){
   aiPaused=true;
-  setMessage(e?.message==='free-quota'?'Geminiの無料枠または回数制限に達しました。このミッションは無料の会話分岐で続けます。':'AIに接続できませんでした。このミッションは無料の会話分岐で続けます。');
+  aiErrorCode=String(e?.message||'network_error').slice(0,70);
   updateEndpoint();
  }
  return null
  }finally{clearTimeout(safety);if(pendingRequest===ac)pendingRequest=null}
 }
-async function respond(){
- if(!running||ended||busy)return;
- const text=$('reply').value.trim();if(!text){setStatus('英語で言いたいことを入力するか、マイクで話してね。');return}
- stopRecognizer();$('reply').value='';
- turn++;const current=turn,epoch=runId;addMessage('You',text);successfulPhrases.push(text);
- busy=true;sync();setStatus(endpoint?'AIの返答を待っています…':'発言から注文内容を判定しています…');
- let result=await fromAI(text,current);
- if(!result){if(epoch!==runId||ended)return;result=resolveLocal(text)}
- if(epoch!==runId||ended||current!==turn)return;
+function showAiFailure(){
+ const messages={
+  gemini_quota:'Gemini無料枠・利用回数の上限に達しました。少し時間をおいて試してください。',
+  rate_limited:'短時間のアクセスが多すぎます。1分ほど待ってください。',
+  gemini_auth:'APIキーが拒否されました。管理者の設定確認が必要です。',
+  gemini_model:'利用するAIモデルの設定に問題があります。',
+  gemini_invalid_json:'AIの返答を正しく読み取れませんでした。',
+  invalid_ai_response:'AIの返答を正しく読み取れませんでした。',
+  ai_timeout:'AIからの応答が時間内に届きませんでした。',
+  ai_disabled:'管理者がAIを停止しています。',
+  limits_unconfigured:'サーバーの利用制限設定が不足しています。'
+ };
+ const cause=messages[aiErrorCode]||(aiErrorCode.startsWith('gemini_http_')?'Gemini APIがエラーを返しました。':'通信エラーが発生しました。');
+ $('aiErrorReason').textContent=cause+'（エラーコード: '+aiErrorCode+'）';
+ $('aiErrorBox').classList.remove('hidden');
+ setStatus('AIの応答が停止中です。上のエラーを確認してください。');
+}
+function acceptResult(result,text){
  const won=result.success;
  if(!won&&usedHints===0&&round>=1)failureCheckpoint(text);
  lastMissing=won?'done':result.next||missing();
  round++;
  barista(result.reply,()=>{if(won){finish(true,'success')}else{setStatus('あなたの番。自由に英語で答えてね。');sync()}});
+}
+async function finishCurrentTurn(text,current,epoch){
+ let result=manualMode||!endpoint?resolveLocal(text):await fromAI(text,current);
+ if(epoch!==runId||ended||current!==turn)return;
+ if(!result){
+  aiFailureText=text;busy=false;sync();showAiFailure();return;
+ }
+ aiFailureText='';aiErrorCode='';
+ $('aiErrorBox').classList.add('hidden');
+ acceptResult(result,text);
+}
+async function respond(){
+ if(!running||ended||busy||(aiPaused&&!manualMode))return;
+ const text=$('reply').value.trim();
+ if(!text){setStatus('英語で言いたいことを入力するか、マイクで話してね。');return}
+ stopRecognizer();$('reply').value='';
+ turn++;const current=turn,epoch=runId;addMessage('You',text);successfulPhrases.push(text);
+ busy=true;sync();setStatus(manualMode||!endpoint?'ルール型の返答を作成中…':'AIの返答を待っています…');
+ await finishCurrentTurn(text,current,epoch);
+}
+async function retryFailedAI(){
+ if(!running||ended||busy||!aiFailureText)return;
+ manualMode=false;aiPaused=false;aiErrorCode='';
+ $('aiErrorBox').classList.add('hidden');
+ busy=true;sync();updateEndpoint();setStatus('同じ発言をAIに再送しています…');
+ await finishCurrentTurn(aiFailureText,turn,runId);
+}
+function continueWithLocal(){
+ if(!running||ended||busy||!aiFailureText)return;
+ const text=aiFailureText;
+ manualMode=true;aiPaused=false;aiErrorCode='';aiFailureText='';
+ $('aiErrorBox').classList.add('hidden');updateEndpoint();
+ busy=true;sync();setStatus('ルール型の練習に切り替えました。');
+ acceptResult(resolveLocal(text),text);
 }
 function renderHints(){
  if(!running||ended)return;
@@ -288,7 +337,7 @@ function renderHints(){
  const para=document.createElement('div');para.textContent=example;
  $('hint').append(strong,para);setStatus('ヒントを参考に、あなたの言葉で伝えてみよう。');
 }
-function clearSession(){runId++;turn++;ended=false;running=false;busy=false;aiActive=false;aiPaused=false;stopRecognizer();stopSpeech();if(pendingRequest){pendingRequest.abort();pendingRequest=null}if(timerId!==null){clearInterval(timerId);timerId=null}}
+function clearSession(){runId++;turn++;ended=false;running=false;busy=false;aiActive=false;aiPaused=false;manualMode=false;aiErrorCode='';aiFailureText='';$('aiErrorBox').classList.add('hidden');stopRecognizer();stopSpeech();if(pendingRequest){pendingRequest.abort();pendingRequest=null}if(timerId!==null){clearInterval(timerId);timerId=null}}
 function begin(checkpoint=false){
  clearSession();level=$('level').value;timeLimit=checkpoint?75:180;remaining=timeLimit;running=true;ended=false;round=0;usedHints=0;unknownCount=0;lastAskedKey='';repeatQuestionCount=0;messages=[];successfulPhrases=[];lastMissing='';lastBarista='';facts={problem:false,iced:false,oat:false,fix:false};if(!checkpoint)hardPoint=null;
  if(checkpoint&&hardPoint){facts={...hardPoint.facts};lastMissing=hardPoint.lastMissing||'';}
@@ -320,7 +369,7 @@ function finish(won,reason){
  $('checkpointBtn').disabled=!hardPoint&&!(!won&&round>0);
 }
 function updateEndpoint(){
- $('engineMode').textContent=aiPaused?'無料会話に切替（AI利用停止）':aiActive?'AI返答を利用中':endpoint?'AI自動接続（最初の返答を待機）':'無料の会話分岐（AIオフ）';
+ $('engineMode').textContent=manualMode?'ルール型モード（手動）':aiPaused?'AI接続エラー':aiActive?'AI返答を利用中':endpoint?'AI接続待機中':'ルール型モード（AIオフ）';
  $('endpointStatus').textContent=endpoint?'AIサーバーを設定済みです。最初の返答に成功するとAI使用中と表示されます。':'この端末ではAIをオフにしています。';
  $('endpoint').value=endpoint;
 }
@@ -340,6 +389,8 @@ $('saveEndpoint').addEventListener('click',()=>{
  const value=$('endpoint').value.trim();try{const u=new URL(value);if(u.protocol!=='https:'&&!(['localhost','127.0.0.1'].includes(u.hostname)&&u.protocol==='http:'))throw Error('Use HTTPS');endpoint=u.toString();localStorage.setItem('speakingym-survival-endpoint',endpoint);updateEndpoint()}
  catch(e){$('endpointStatus').textContent='正しいHTTPSのURLを入力してください。APIキーは入力しないでね。'}
 });
+$('retryAiBtn').addEventListener('click',retryFailedAI);
+$('manualModeBtn').addEventListener('click',continueWithLocal);
 $('clearEndpoint').addEventListener('click',()=>{endpoint='';try{localStorage.setItem('speakingym-survival-endpoint','')}catch(e){}updateEndpoint()});
 $('restoreEndpoint').addEventListener('click',()=>{endpoint=DEFAULT_AI_ENDPOINT;try{localStorage.removeItem('speakingym-survival-endpoint')}catch(e){}updateEndpoint()});
 window.addEventListener('beforeunload',()=>{stopSpeech();stopRecognizer();if(timerId!==null)clearInterval(timerId)});
