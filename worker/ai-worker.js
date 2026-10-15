@@ -63,7 +63,7 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true" }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY }, 200, PRIMARY_ORIGIN);
     }
     // Origin checks only restrict browser use. They are not authentication.
     if (!ALLOWED_ORIGINS.has(origin)) {
@@ -77,8 +77,11 @@ export default {
     }
     // AI access is OFF unless explicitly enabled by the site owner.
     // Do not allow a secret upload or a deployment to expose a billable API by accident.
-    if (!env.GEMINI_API_KEY || env.ALLOW_AI !== "true") {
-      return reply({ error: "ai_disabled", message: "AI trial is currently turned off." }, 503, origin);
+    if (env.ALLOW_AI !== "true") {
+      return reply({ error: "ai_disabled", message: "AI is off: ALLOW_AI is not true." }, 503, origin);
+    }
+    if (!env.GEMINI_API_KEY) {
+      return reply({ error: "ai_key_missing", message: "Gemini secret is missing from Worker runtime." }, 503, origin);
     }
     // Required bindings are configured in wrangler.toml.
     // Conservative public demo limits; limits are approximate/per Cloudflare edge location.
