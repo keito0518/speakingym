@@ -3,6 +3,10 @@ main = "ai-worker.js"
 compatibility_date = "2026-10-14"
 workers_dev = true
 
+# Keep dashboard-managed ALLOW_AI after Git-based code deployments.
+# GEMINI_API_KEY stays in encrypted Worker secrets, never in Git.
+keep_vars = true
+
 # Conservative per-minute throttles for a public FREE-tier trial.
 # The rate-limit API uses per-edge, eventually consistent counters.
 [[ratelimits]]
