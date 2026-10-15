@@ -32,6 +32,7 @@
 @media(max-width:800px){.hero{grid-template-columns:1fr;padding-top:42px;padding-bottom:38px;gap:0}.hero h1{font-size:clamp(41px,10vw,57px);letter-spacing:-1.9px}.showcase{min-height:380px;margin-top:16px}.mock{width:min(408px,83%)}.floating{right:2%;bottom:10px}.workouts,.reviews{grid-template-columns:1fr}.workout{min-height:320px}.nav{gap:13px;font-size:11px}.preview{display:none}.dashboard{padding-top:50px;padding-bottom:45px}.concept-inner{display:block}.concept .btn{margin-top:20px}}
 @media(max-width:520px){.site-head{height:64px}.head-inner,.wrapper{padding-left:17px;padding-right:17px}.logo{font-size:22px}.nav a:last-child{display:none}.hero h1{font-size:43px;line-height:1.23}.lead{font-size:14px}.cta-row .btn{flex:1 1 100%}.mock{padding:15px}.showcase{min-height:343px}.workout{padding:24px;min-height:305px}.workout h3{font-size:27px}.review-card,.habit-card{padding:19px}.concept{padding:33px 0}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+.phrase-jump{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 12px;background:#f3f7ef;border:1px solid #d8e6d5;border-radius:10px;color:#25563f;font-size:12px;font-weight:850}.phrase-jump:hover{text-decoration:underline}.phrase-jump span{margin-left:auto;background:#d7e9d8;color:#22533b;border-radius:20px;min-width:24px;text-align:center;font-size:11px;padding:1px 5px}
 </style>
 </head>
 <body>
@@ -91,6 +92,7 @@
    <h3 id="review-heading">自分の言い換え帳</h3>
    <div id="savedWords" aria-live="polite"><p>AI英会話で言い換えを保存すると、ここに表示されるよ。</p></div>
    <div class="review-nav"><span id="wordCounter" class="smallline">この端末に保存</span><button class="plain" id="nextWord" type="button" hidden>次の表現 ↻</button></div>
+   <a class="phrase-jump" href="./reflex.html#phrases">📌 60秒チャレンジの保存フレーズ <span id="sprintPhraseCount">0</span>件を見る →</a>
   </section>
   <section class="habit-card" aria-labelledby="habit-heading">
    <div class="micro-label">YOUR WORKOUT LOG</div>
@@ -116,6 +118,8 @@ const $=id=>document.getElementById(id);
 function getSaved(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch(e){return null}}
 const words=getSaved("speakingym-saved-coaching-v1");
 const safeWords=Array.isArray(words)?words.filter(x=>x&&typeof x.original==="string"&&typeof x.natural==="string"&&x.original.length<600&&x.natural.length<600).slice(0,20):[];
+const sprintPhrases=getSaved("speakingym-reflex-saved-phrases-v1");
+$("sprintPhraseCount").textContent=String(Array.isArray(sprintPhrases)?Math.min(100,sprintPhrases.length):0);
 let wordIndex=0;
 function showWord(){
  const box=$("savedWords");box.replaceChildren();
