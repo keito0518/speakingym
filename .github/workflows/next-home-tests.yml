@@ -3,6 +3,10 @@ on:
   push:
     paths:
       - home-preview.html
+      - index.html
+      - classic.html
+      - account.html
+      - tests/production-home.test.mjs
       - reflex.html
       - tests/next-home.test.mjs
       - tests/reflex-speech.test.mjs
@@ -10,6 +14,10 @@ on:
   pull_request:
     paths:
       - home-preview.html
+      - index.html
+      - classic.html
+      - account.html
+      - tests/production-home.test.mjs
       - reflex.html
       - tests/next-home.test.mjs
       - tests/reflex-speech.test.mjs
@@ -24,4 +32,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/next-home.test.mjs tests/reflex-speech.test.mjs
+      - run: node --test tests/next-home.test.mjs tests/reflex-speech.test.mjs tests/production-home.test.mjs
