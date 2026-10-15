@@ -140,3 +140,60 @@ test("Gemini API errors are classified without leaking upstream text", async (t)
   mock.mock.restore();
  }
 });
+
+test("three approved AI scenes use distinct characters and return their own progress", async (t) => {
+ const cases = [
+  ["hotel","Sophie","check in"],
+  ["airport","Jordan","suitcase"],
+  ["smalltalk","Mia","language exchange"]
+ ];
+ const prompts = [];
+ const mock = t.mock.method(globalThis,"fetch",async (_url,opts)=>{
+  const body=JSON.parse(opts.body);
+  prompts.push(body.systemInstruction.parts[0].text);
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{
+   text:JSON.stringify({reply:"That makes sense. What would you like to do next?",progress:{step1:true,step2:false,step3:true}})
+  }]}}]}),{status:200,headers:{"content-type":"application/json"}});
+ });
+ for(const [sceneId,character,subject] of cases){
+  const response=await worker.fetch(request({...payload,sceneId,progress:{step1:false,step2:false,step3:false}}),enabled());
+  assert.equal(response.status,200);
+  const data=await response.json();
+  assert.equal(data.sceneId,sceneId);
+  assert.deepEqual(data.progress,{step1:true,step2:false,step3:true});
+  assert.ok(data.reply.length>0);
+  assert.match(prompts.at(-1),new RegExp(character,"i"));
+  assert.match(prompts.at(-1),new RegExp(subject,"i"));
+ }
+ assert.equal(mock.mock.callCount(),3);
+});
+
+test("previously completed goals persist even if Gemini forgets them",async t=>{
+ t.mock.method(globalThis,"fetch",async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{
+  text:JSON.stringify({reply:"Welcome! Do you have a reservation?",progress:{step1:false,step2:false,step3:false}})
+ }]}}]}),{status:200}));
+ const response=await worker.fetch(request({...payload,sceneId:"hotel",progress:{step1:true,step2:false,step3:true}}),enabled());
+ assert.deepEqual((await response.json()).progress,{step1:true,step2:false,step3:true});
+});
+
+test("unknown scene identifiers cannot send requests to Gemini",async t=>{
+ const mock=t.mock.method(globalThis,"fetch",async()=>{throw Error("should not call Gemini")});
+ for(const sceneId of ["freeform","__proto__","constructor", "hotel-wrong"]){
+  const response=await worker.fetch(request({...payload,sceneId}),enabled());
+  assert.equal(response.status,400);
+  assert.equal((await response.json()).error,"unknown_scene");
+ }
+ assert.equal(mock.mock.callCount(),0);
+});
+
+test("old cafe clients receive the original missionState response schema",async t=>{
+ t.mock.method(globalThis,"fetch",async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{
+  text:JSON.stringify({reply:"I am sorry. Let me replace it.",missionState:{problem:true,iced:true,oat:true,fix:true}})
+ }]}}]}),{status:200}));
+ const response=await worker.fetch(request(),enabled());
+ const body=await response.json();
+ assert.equal(response.status,200);
+ assert.equal(body.missionState.problem,true);
+ assert.equal(body.progress,undefined);
+ assert.equal(body.sceneId,undefined);
+});
