@@ -714,6 +714,10 @@ async function requestTeacherFeedback(){
   const timeout=setTimeout(()=>controller.abort(),19000);
   let response;
   try{
+   const healthResponse=await fetch(AI_ENDPOINT+"health",{signal:controller.signal});
+   const health=healthResponse.ok?await healthResponse.json().catch(()=>null):null;
+   if(!health?.reflexCoachSupported)throw Error("teacher_not_deployed");
+   if(!health?.aiConfigured)throw Error("ai_disabled");
    response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({action:"reflex_coach",level:reviewSession.level,attempts:requests}),signal:controller.signal});
   }finally{clearTimeout(timeout)}
@@ -738,6 +742,7 @@ async function requestTeacherFeedback(){
    invalid_coaching_input:"講評用データを読み取れません。",
    gemini_quota:"無料枠の上限に達しました。今日はここまでにして、また後で試してね。",
    rate_limited:"現在混雑しています。少し待ってから試してね。",
+   teacher_not_deployed:"AI先生はまだ準備中です。Cloudflare Workerに新しいコードを反映すると使えるようになります。",
    ai_disabled:"現在AI機能が停止中です。",
    ai_timeout:"AIの返答が間に合いませんでした。",
    invalid_ai_response:"AIから講評データを正常に受け取れませんでした。"
