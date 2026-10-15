@@ -125,7 +125,7 @@ test("successful Gemini JSON response returns conversational reply and facts", a
   const opts = upstream.mock.calls[0].arguments[1];
   assert.equal(opts.headers["x-goog-api-key"], "test-key-not-real");
   assert.match(opts.body, /You are Emma/);
-  assert.match(opts.body, /"maxOutputTokens":900/);
+  assert.match(opts.body, /"maxOutputTokens":1100/);
   assert.match(opts.body, /"thinkingLevel":"minimal"/);
 });
 
@@ -239,4 +239,53 @@ test("easy level still retains accessible core tasks",async t=>{
  assert.match(prompts[0],/front desk/);
  assert.match(prompts[0],/booking name/i);
  assert.doesNotMatch(prompts[0],/prepaid ocean-view booking discrepancy/);
+});
+
+test("coaching is supplied within the SAME Gemini request as a normal scene reply", async t=>{
+ const upstream=t.mock.method(globalThis,"fetch",async (_url,request)=>{
+  const data=JSON.parse(request.body);
+  assert.match(data.systemInstruction.parts[0].text,/latest English user utterance/);
+  assert.match(data.systemInstruction.parts[0].text,/NEVER evaluate actual pronunciation/);
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({
+   reply:"I see, let me look into that.",
+   progress:{step1:true,step2:false,step3:false},
+   coaching:{natural:"Would it be possible to check in early?",tip:"丁寧な疑問文でお願いしよう。",praise:"早くチェックインしたい意図が伝わる英語でした。"}
+  })}]}}]}),{status:200});
+ });
+ const result=await worker.fetch(request({...payload,sceneId:"hotel",userText:"Can I check in early?"}),enabled());
+ assert.equal(result.status,200);
+ const json=await result.json();
+ assert.equal(json.coaching.natural,"Would it be possible to check in early?");
+ assert.match(json.coaching.tip,/丁寧/);
+ assert.equal(upstream.mock.callCount(),1,"extra coaching endpoint must not call Gemini a second time");
+});
+
+test("cafe feedback is optional and never breaks existing clients",async t=>{
+ const upstream=t.mock.method(globalThis,"fetch",async ()=>new Response(JSON.stringify({
+  candidates:[{content:{parts:[{text:JSON.stringify({
+   reply:"Let me fix the coffee.",
+   missionState:{problem:true,iced:true,oat:true,fix:true}
+  })}]}}]
+ }),{status:200}));
+ const response=await worker.fetch(request(),enabled());
+ assert.equal(response.status,200);
+ const data=await response.json();
+ assert.equal(data.missionState.fix,true);
+ assert.deepEqual(data.coaching,{natural:"",tip:"",praise:""});
+ assert.equal(upstream.mock.callCount(),1);
+});
+
+test("coaching output is length-limited and untrusted values cannot break the reply",async t=>{
+ t.mock.method(globalThis,"fetch",async ()=>new Response(JSON.stringify({
+  candidates:[{content:{parts:[{text:JSON.stringify({
+   reply:"Certainly!",progress:{step1:false,step2:false,step3:false},
+   coaching:{natural:"a".repeat(1000),tip:999,praise:{danger:"not a string"}}
+  })}]}}]
+ }),{status:200}));
+ const response=await worker.fetch(request({...payload,sceneId:"smalltalk"}),enabled());
+ const body=await response.json();
+ assert.equal(response.status,200);
+ assert.equal(body.coaching.natural.length,260);
+ assert.equal(body.coaching.tip,"");
+ assert.equal(body.coaching.praise,"");
 });
