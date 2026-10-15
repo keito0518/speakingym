@@ -28,9 +28,21 @@ const request = (data = payload, origin = ORIGIN) =>
 test("health only indicates ready with key AND owner opt-in", async () => {
   const req = new Request(ENDPOINT + "health", { method: "GET" });
   const disabledResult = await worker.fetch(req, { ...enabled(), ALLOW_AI: "false" });
-  assert.equal((await disabledResult.json()).aiConfigured, false);
+  const disabled = await disabledResult.json();
+  assert.equal(disabled.aiConfigured, false);
+  assert.equal(disabled.aiEnabled, false);
+  assert.equal(disabled.keyConfigured, true);
   const readyResult = await worker.fetch(req, enabled());
-  assert.equal((await readyResult.json()).aiConfigured, true);
+  const ready = await readyResult.json();
+  assert.equal(ready.aiConfigured, true);
+  assert.equal(ready.aiEnabled, true);
+  assert.equal(ready.keyConfigured, true);
+});
+
+test("missing Gemini secret has a distinct error code, not a generic AI shutdown", async () => {
+ const response = await worker.fetch(request(), {...enabled(), GEMINI_API_KEY: undefined});
+ assert.equal(response.status, 503);
+ assert.equal((await response.json()).error, "ai_key_missing");
 });
 
 test("Gemini remains disabled by default even when API key exists", async (t) => {
