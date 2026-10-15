@@ -74,7 +74,7 @@ test("counter merging favors max recorded totals and never double-counts repeate
  assert.deepEqual(both,{sessions:12,spoken:33});
 });
 test("every public page exposes the account bar and retains guest-mode training",()=>{
- for(const path of ["index.html","home-preview.html","live.html","scenes.html","reflex.html","mission.html","account.html"]){
+ for(const path of ["index.html","classic.html","home-preview.html","live.html","scenes.html","reflex.html","mission.html","account.html"]){
   const html=text(path);
   assert.match(html,/<script type="module" src="\.\/account-sync\.js"><\/script>/,path);
  }
@@ -99,7 +99,7 @@ test("Firestore rules deny public access and permit only uid-owner allowlisted d
  assert.doesNotMatch(rules,/allow read, write: if true/);
 });
 test("page changes notify the shared account sync only after local writes",()=>{
- for(const path of ["index.html","reflex.html","scenes.html","mission.html"]){
+ for(const path of ["classic.html","reflex.html","scenes.html","mission.html"]){
   assert.match(text(path),/speakingym:changed/,path);
  }
  assert.match(text("firebase-config.js"),/authDomain: "speakingym\.firebaseapp\.com"/);
