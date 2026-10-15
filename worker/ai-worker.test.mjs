@@ -38,6 +38,7 @@ test("health only indicates ready with key AND owner opt-in", async () => {
   assert.equal(ready.aiEnabled, true);
   assert.equal(ready.keyConfigured, true);
   assert.deepEqual(ready.sceneIds,["hotel","airport","smalltalk"]);
+  assert.equal(ready.reflexCoachSupported,true);
 });
 
 test("missing Gemini secret has a distinct error code, not a generic AI shutdown", async () => {
@@ -288,4 +289,68 @@ test("coaching output is length-limited and untrusted values cannot break the re
  assert.equal(body.coaching.natural.length,260);
  assert.equal(body.coaching.tip,"");
  assert.equal(body.coaching.praise,"");
+});
+
+test("opt-in reflex tutor batches learner answers in one Gemini call with contextual teacher feedback",async t=>{
+ const upstream=t.mock.method(globalThis,"fetch",async (_url,options)=>{
+  const prompt=JSON.parse(options.body);
+  assert.match(prompt.systemInstruction.parts[0].text,/experienced English conversation coach/);
+  assert.match(prompt.systemInstruction.parts[0].text,/do not evaluate actual pronunciation/i);
+  const context=JSON.parse(prompt.contents[0].parts[0].text);
+  assert.equal(context.attempts.length,2);
+  assert.equal(context.level,"challenge");
+  assert.equal(context.attempts[0].text,"I want my money back");
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{
+   text:JSON.stringify({feedback:[
+    {index:0,praise:"返金したいという意図が明確に伝わります。",improvement:"丁寧な依頼の形にすると自然です。",improved:"Could I request a refund, please?",why:"request a refund は店舗やホテルでよく使う表現。Could I... で柔らかく聞けます。",practice:"Ask for a refund while explaining a reason."},
+    {index:1,praise:"理由を示す構文が使えています。",improvement:"前置きをより明確にしましょう。",improved:"I understand your point, but I'd suggest a different approach.",why:"I understand your point で相手の意見を認めてから反論できます。",practice:"Disagree politely about a plan."}
+   ]})
+  }]}}]}),{status:200});
+ });
+ const response=await worker.fetch(request({action:"reflex_coach",level:"challenge",attempts:[
+  {index:0,text:"I want my money back",situation:"The hotel room is not available",goal:"Negotiate a refund"},
+  {index:1,text:"I disagree because of cost",situation:"Two colleagues disagree",goal:"Disagree with a reason"}
+ ]}),enabled());
+ assert.equal(response.status,200);
+ const result=await response.json();
+ assert.equal(result.feedback.length,2);
+ assert.match(result.feedback[0].improved,/Could I request/);
+ assert.match(result.feedback[1].praise,/理由/);
+ assert.equal(upstream.mock.callCount(),1);
+});
+test("reflex tutor refuses empty, overlong, and excessive prompts before calling Gemini",async t=>{
+ const gemini=t.mock.method(globalThis,"fetch",async()=>{throw Error("No upstream should be called")});
+ const valid={index:0,text:"I would like a refund",situation:"Hotel room issue",goal:"Ask for a refund"};
+ const bad=[
+  [],Array.from({length:6},(_,i)=>({...valid,index:i})),
+  [{...valid,text:" "}],
+  [{...valid,text:"A".repeat(451)}],
+  [{...valid,situation:"A".repeat(271)}],
+  [{...valid,goal:"A".repeat(331)}],
+  [{...valid,index:7}]
+ ];
+ for(const attempts of bad){
+  const result=await worker.fetch(request({action:"reflex_coach",level:"standard",attempts}),enabled());
+  assert.equal(result.status,400);
+  assert.equal((await result.json()).error,"invalid_coaching_input");
+ }
+ assert.equal(gemini.mock.callCount(),0);
+});
+test("reflex tutor remains disabled when owner has not enabled Gemini",async t=>{
+ const gemini=t.mock.method(globalThis,"fetch",async()=>{throw Error("No upstream allowed")});
+ const body={action:"reflex_coach",level:"easy",attempts:[{index:0,text:"Please slow down",situation:"Fast speaker",goal:"Ask to slow down"}]};
+ const result=await worker.fetch(request(body),{...enabled(),ALLOW_AI:"false"});
+ assert.equal(result.status,503);
+ assert.equal((await result.json()).error,"ai_disabled");
+ assert.equal(gemini.mock.callCount(),0);
+});
+test("invalid teacher responses are rejected and never manufactured locally",async t=>{
+ t.mock.method(globalThis,"fetch",async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{
+  text:JSON.stringify({feedback:[{index:0,praise:"Generic praise"}]})
+ }]}}]}),{status:200}));
+ const result=await worker.fetch(request({action:"reflex_coach",level:"easy",attempts:[
+  {index:0,text:"Could you repeat it?",situation:"Didn't hear",goal:"Ask to repeat"}
+ ]}),enabled());
+ assert.equal(result.status,502);
+ assert.equal((await result.json()).error,"invalid_ai_response");
 });

@@ -5,9 +5,9 @@ import {readFileSync} from "node:fs";
 
 const html=readFileSync(new URL("../reflex.html",import.meta.url),"utf8");
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-function app(initialStore={}){
+function app(initialStore={},teacherResponse=null){
  const elements=new Map(),timeouts=new Map(),storage=new Map(Object.entries(initialStore));
- let counter=0,interval=null;
+ let counter=0,interval=null,apiCalls=0;
  const voicesRead=[];
  const fakeSynth={speak:voice=>voicesRead.push(voice),cancel(){},getVoices(){return [{lang:"en-US",name:"English test voice"}]}};
  class FakeRecognizer{
@@ -39,14 +39,15 @@ function app(initialStore={}){
   setInterval:fn=>{interval=fn;return 1},clearInterval:()=>{interval=null},
   setTimeout:fn=>{const id=++counter;timeouts.set(id,fn);return id},
   clearTimeout:id=>timeouts.delete(id),
-  console,Math
+  fetch:async (url,options)=>{if(String(url).endsWith("/health"))return {ok:true,status:200,json:async()=>({reflexCoachSupported:true,aiConfigured:true})};apiCalls++;if(!teacherResponse)throw Error("Unexpected API request");return {ok:true,status:200,json:async()=>teacherResponse}},
+  AbortController,console,Math
  };
  vm.runInNewContext(script,sandbox,{timeout:3000});
  return {
   click:id=>{const action=makeNode(id).listeners.click;assert.equal(typeof action,"function","Missing control "+id);return action()},
   node:makeNode,FakeRecognizer,voicesRead,
   flush:()=>{const entry=timeouts.entries().next().value;assert.ok(entry,"A restart should be scheduled");timeouts.delete(entry[0]);entry[1]()},
-  tick:()=>interval?.(),storage
+  tick:()=>interval?.(),storage,get apiCalls(){return apiCalls}
  };
 }
 
@@ -213,4 +214,56 @@ test("sprint start header is a branded 1-minute workout rather than a bare 60 ba
  assert.doesNotMatch(html,/class="time-icon"[^>]*>60<\/div>/);
  assert.match(html,/id="openPhrases"/);
  assert.match(html,/id="phrasesPane"/);
+});
+
+test("teacher feedback never calls Gemini automatically and does not display a fabricated personalized assessment",()=>{
+ const ui=app();ui.click("start");ui.click("spoken");ui.click("finishEarly");
+ assert.equal(ui.apiCalls,0);
+ assert.equal(ui.node("teacherFeedback").classList.contains("hidden"),true);
+ assert.equal(ui.node("requestTeacher").classList.contains("hidden"),true,"With no transcript teacher button should be hidden");
+ assert.match(ui.node("teacherStatus").textContent,/英文/);
+});
+
+test("opt-in single batched AI coaching creates personal feedback and caches it for review",async()=>{
+ const feedback={feedback:[{
+  index:0,praise:"Could you で丁寧に尋ねられた点が良いです。",improvement:"少し短くすると伝わりやすくなります。",
+  improved:"Could you speak a little more slowly, please?",
+  why:"Could you を使うと相手にお願いする際に自然です。please は最後に付けられます。",
+  practice:"Ask someone to repeat the key point slowly."
+ }]};
+ const ui=app({},feedback);
+ ui.click("start");ui.node("transcript").value="Could you please speak slow";
+ ui.click("spoken");ui.click("finishEarly");
+ assert.equal(ui.apiCalls,0,"End of session must not auto-send audio transcript");
+ assert.equal(ui.node("requestTeacher").classList.contains("hidden"),false);
+ ui.click("requestTeacher");
+ await new Promise(resolve=>setImmediate(resolve));
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(ui.apiCalls,1,"Teacher assessment is one batch request");
+ assert.equal(ui.node("teacherFeedback").classList.contains("hidden"),false);
+ const text=ui.node("teacherFeedback").children.map(x=>x.textContent).join(" ");
+ assert.match(text,/Could you speak a little more slowly/);
+ assert.match(text,/丁寧に/);
+ const saved=JSON.parse(ui.storage.get("speakingym-reflex-ai-teacher-v1"));
+ assert.equal(saved[0].notes.length,1);
+ assert.equal(saved[0].notes[0].feedback.improved,feedback.feedback[0].improved);
+ const tutorSave=ui.node("teacherFeedback").children.at(-1);
+ tutorSave.listeners.click();
+ const phraseBook=JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1"));
+ assert.equal(phraseBook[0].kind,"teacher");
+ assert.equal(phraseBook[0].text,feedback.feedback[0].improved);
+ ui.click("openHistory");
+ ui.node("historyList").children[0].children[1].listeners.click();
+ assert.equal(ui.node("teacherFeedback").classList.contains("hidden"),false);
+ assert.equal(ui.apiCalls,1,"Replay must not consume Gemini again");
+});
+
+test("teacher coaching failure retains the static correction and phrase saving workflow",async()=>{
+ const ui=app({},null);ui.click("start");ui.node("transcript").value="Can you repeat";
+ ui.click("spoken");ui.click("finishEarly");ui.click("requestTeacher");
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(ui.apiCalls,1);
+ assert.match(ui.node("teacherStatus").textContent,/接続できません/);
+ assert.equal(ui.node("reviewAnswers").children.length,3);
+ assert.equal(ui.node("requestTeacher").disabled,false);
 });
