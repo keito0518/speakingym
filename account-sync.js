@@ -84,7 +84,7 @@ function parsePayload(doc,item){
 }
 async function cloudRead(uid){
  const result={};
- // Fixed maximum of 8 single-document reads on login/explicit sync, no real-time listeners.
+ // Fixed maximum of 9 single-document reads on login/explicit sync, no real-time listeners.
  const all=await Promise.all(SYNC_ITEMS.map(async item=>{
   const record=await dbFns.getDoc(locationFor(uid,item));
   return [item,parsePayload(record,item)];
