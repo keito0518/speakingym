@@ -37,6 +37,7 @@ test("health only indicates ready with key AND owner opt-in", async () => {
   assert.equal(ready.aiConfigured, true);
   assert.equal(ready.aiEnabled, true);
   assert.equal(ready.keyConfigured, true);
+  assert.deepEqual(ready.sceneIds,["hotel","airport","smalltalk"]);
 });
 
 test("missing Gemini secret has a distinct error code, not a generic AI shutdown", async () => {
