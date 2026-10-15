@@ -20,9 +20,9 @@ function decode(encoded){
 function decodeJSON(encoded){
  return JSON.parse(new TextDecoder().decode(decode(encoded)));
 }
-async function keys(){
+async function keys(force=false){
  const now=Date.now();
- if(keysCached&&now<keyExpiry)return keysCached;
+ if(!force&&keysCached&&now<keyExpiry)return keysCached;
  const response=await fetch(JWKS_URL);
  if(!response.ok)throw Error("auth_keys_unavailable");
  const document=await response.json();
@@ -50,7 +50,8 @@ export async function verifyFirebaseIdToken(request){
    !Number.isInteger(body.iat)||body.iat>now||
    !Number.isInteger(body.auth_time)||body.auth_time>now||
    body.iat<0||body.auth_time<0)throw Error("invalid_token");
- const publicKey=(await keys()).find(k=>k.kid===meta.kid&&k.kty==="RSA");
+ let publicKey=(await keys()).find(k=>k.kid===meta.kid&&k.kty==="RSA");
+ if(!publicKey)publicKey=(await keys(true)).find(k=>k.kid===meta.kid&&k.kty==="RSA");
  if(!publicKey)throw Error("invalid_token");
  try{
   const key=await crypto.subtle.importKey("jwk",publicKey,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
