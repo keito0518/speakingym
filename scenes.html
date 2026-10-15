@@ -78,7 +78,7 @@ function stopRecognition(){if(recognition){const old=recognition;recognition=nul
 function updateControls(){const locked=!running||processing||!!pendingText;for(const id of ["reply","send","mic","clear"]){$(id).disabled=locked}$("stopMic").disabled=locked;$("repeat").disabled=!running;$("retry").disabled=processing}
 function showTime(){$("timer").textContent=String(Math.floor(remaining/60)).padStart(2,"0")+":"+String(remaining%60).padStart(2,"0")}
 function stopClock(){if(timer){clearInterval(timer);timer=null}}
-function finish(success,message){running=false;processing=false;pendingText="";stopRecognition();cancelSpeech();stopClock();updateControls();$("result").classList.remove("hidden");$("result").replaceChildren();const title=document.createElement("strong");title.textContent=success?"🎉 ミッション達成！":"今回の練習は終了";const p=document.createElement("p");p.textContent=message;$("result").append(title,p);status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")}
+function finish(success,message){running=false;processing=false;pendingText="";stopRecognition();if(!success)cancelSpeech();stopClock();updateControls();$("result").classList.remove("hidden");$("result").replaceChildren();const title=document.createElement("strong");title.textContent=success?"🎉 ミッション達成！":"今回の練習は終了";const p=document.createElement("p");p.textContent=message;$("result").append(title,p);status(success?"お疲れさま！よく伝わったね。":"また挑戦できるよ！")}
 function clear(){if(!running||processing||pendingText)return;stopRecognition();$("reply").value="";$("mic").textContent="🎙 話して入力";status("入力を消しました。話し直してね。")}
 function microphone(){if(!running||processing||pendingText)return;if(!Recognition){status("このブラウザではマイク認識が使えません。キーボードで入力してね。");return}
  cancelSpeech();stopRecognition();$("reply").value="";
