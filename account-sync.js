@@ -114,6 +114,7 @@ function dashboard(){
   ["60秒チャレンジ",stats.sessions||0],
   ["保存フレーズ",phrases.length+scene.length],
   ["保存した練習",history.length+records.length],
+  ["AI実戦英会話",aiScenes.total||0],
   ["カフェ練習",cafe.attempts||0]
  ]){
   const box=node("div",undefined,"sg-stat");box.append(node("strong",String(number)),node("span",label));root.append(box);
