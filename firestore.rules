@@ -7,7 +7,7 @@ service cloud.firestore {
     function validDoc(key) {
       return key in [
         'reflex_stats','reflex_misses','reflex_history','reflex_teacher',
-        'reflex_phrases','scene_rewrites','cafe_stats','legacy_records'
+        'reflex_phrases','scene_rewrites','scenes_stats','cafe_stats','legacy_records'
       ];
     }
     // Cloud sync uses one doc per allowlisted data category, never public lists.
