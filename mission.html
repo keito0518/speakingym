@@ -37,8 +37,8 @@
    <section class="card"><h2 class="heading">勝ち方は一つじゃない。</h2><p class="sub" style="margin:7px 0 11px">多少文法が違っても、店員に必要な情報が伝われば前に進める。正解文の丸暗記ではなく、英語で困りごとを解決する練習だよ。</p>
    <div class="step" id="step1"><span class="mark">01</span><div><b>何が違うか伝える</b><p>届いたものが熱いこと、注文と違うことを伝えよう。</p></div></div><div class="step" id="step2"><span class="mark">02</span><div><b>本当に欲しいものを伝える</b><p>Iced / Oat milk など。難易度によって必要な情報が増える。</p></div></div><div class="step" id="step3"><span class="mark">03</span><div><b>どうしてほしいか伝える</b><p>交換をお願いするか、店員の交換提案に同意しよう。</p></div></div>
    </section>
-   <section class="card"><h2 class="heading">この試作版について</h2><p class="notice" style="margin-top:9px"><b>無料・すぐに使えるミッション版</b>。今は発言から状況を判断するルール型の会話分岐。自由な文章を生成するAIではないので、複雑な発言は理解しきれないことがあるよ。</p><p class="notice" style="margin-top:8px">ただし、一般的な言い換えや質問には応じるようにしてある。文字入力が最も確実で、マイクの音声認識はブラウザ依存。発音の採点はまだ行わない。</p>
-    <details class="advanced" id="aiSettings"><summary>AI自由会話を接続する（開発者向け）</summary><p>Cloudflare Workers等で保護したHTTPSの接続先を指定すると、そのサーバーで生成した店員の返答を使える。現在は未接続。接続するとあなたの英文・会話履歴が指定先のサーバーに送られます。APIキーはここに入力しないでください。</p><p>※ Geminiの無料枠では、入力された英語・会話履歴がGoogleの製品改善に利用される場合があります。個人情報や秘密情報は入力しないでください。</p><label class="control-label" for="endpoint" style="margin-top:12px">保護済みのAI接続URL</label><input id="endpoint" class="text-input" type="url" placeholder="https://your-worker.workers.dev/" autocomplete="off" spellcheck="false"><div class="action"><button class="btn ghost small" id="saveEndpoint" type="button">接続先を保存</button><button class="btn ghost small" id="clearEndpoint" type="button">接続を解除</button></div><p class="saved" id="endpointStatus">AIは未接続。現在は無料の分岐モードです。</p></details>
+   <section class="card"><h2 class="heading">AI英会話・ベータ版</h2><p class="notice" style="margin-top:9px"><b>AIは自動接続。</b>特別なURL設定は不要です。英語の返答に応じて店員が会話します。無料AIの利用上限や通信障害の際は、ルール型の練習に自動で切り替わります。</p><p class="notice" style="margin-top:8px">現在はカフェの注文ミスを解決する固定シナリオです。発音の採点はまだ行いません。AIとの会話では入力した英語・会話履歴がGoogleに送信され、無料枠では製品改善に利用される可能性があります。個人情報・秘密情報を入力しないでください。</p>
+    <details class="advanced" id="aiSettings"><summary>接続の詳細設定（開発者向け）</summary><p>AIサーバーは標準で設定済みです。通常の利用者は変更不要。開発者だけが別の接続先を指定できます。入力内容と会話履歴は接続先のサーバーに送信されます。APIキーはここに入力しないでください。</p><p>※ Geminiの無料枠では、入力された英語・会話履歴がGoogleの製品改善に利用される場合があります。個人情報や秘密情報は入力しないでください。</p><label class="control-label" for="endpoint" style="margin-top:12px">保護済みのAI接続URL</label><input id="endpoint" class="text-input" type="url" placeholder="https://your-worker.workers.dev/" autocomplete="off" spellcheck="false"><div class="action"><button class="btn ghost small" id="saveEndpoint" type="button">接続先を保存</button><button class="btn ghost small" id="clearEndpoint" type="button">この端末のAIをオフ</button><button class="btn ghost small" id="restoreEndpoint" type="button">標準のAI接続に戻す</button></div><p class="saved" id="endpointStatus">AIは未接続。現在は無料の分岐モードです。</p></details>
    </section>
    <section class="card"><h2 class="heading">ミニ実績</h2><div class="result-line"><span>この端末のクリア回数</span><strong id="clears">0回</strong></div><div class="result-line"><span>この端末の挑戦回数</span><strong id="attempts">0回</strong></div><p class="tiny">端末内のブラウザ保存のみ。ログインやクラウド同期はありません。</p></section>
   </aside>
@@ -54,8 +54,10 @@ const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const KEY='speakingym-survival-stats-v1';
 let stats={attempts:0,clears:0};
 try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');stats={attempts:Number(v.attempts)||0,clears:Number(v.clears)||0};}catch(e){}
-let endpoint='',aiPaused=false;
-try{endpoint=localStorage.getItem('speakingym-survival-endpoint')||''}catch(e){}
+// The URL is public; the Gemini key remains private inside Cloudflare Workers.
+const DEFAULT_AI_ENDPOINT='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
+let endpoint=DEFAULT_AI_ENDPOINT,aiPaused=false;
+try{const stored=localStorage.getItem('speakingym-survival-endpoint');if(stored!==null)endpoint=stored}catch(e){}
 $('endpoint').value=endpoint;
 let level='standard',remaining=180,timeLimit=180,running=false,ended=false,busy=false,turn=0,round=0,timerId=null,recognition=null,speechTimer=null,activeUtterance=null,speechEpoch=0,voiceOn=true,runId=0,aiActive=false,pendingRequest=null,lastBarista='',lastMissing='',hardPoint=null;
 let facts={problem:false,iced:false,oat:false,fix:false},messages=[],usedHints=0,unknownCount=0,successfulPhrases=[],originalStage='start',lastAskedKey='',repeatQuestionCount=0;
@@ -318,8 +320,8 @@ function finish(won,reason){
  $('checkpointBtn').disabled=!hardPoint&&!(!won&&round>0);
 }
 function updateEndpoint(){
- $('engineMode').textContent=aiPaused?'無料会話に切替（AI利用停止）':aiActive?'AI返答を利用中':endpoint?'AI接続先を設定済み（利用前）':'無料の会話分岐（AI未接続）';
- $('endpointStatus').textContent=endpoint?'AI接続先を設定済み（応答成功時のみ使用。失敗時は無料版に戻ります）':'AIは未接続。現在は無料の分岐モードです。';
+ $('engineMode').textContent=aiPaused?'無料会話に切替（AI利用停止）':aiActive?'AI返答を利用中':endpoint?'AI自動接続（最初の返答を待機）':'無料の会話分岐（AIオフ）';
+ $('endpointStatus').textContent=endpoint?'AIサーバーを設定済みです。最初の返答に成功するとAI使用中と表示されます。':'この端末ではAIをオフにしています。';
  $('endpoint').value=endpoint;
 }
 $('level').addEventListener('change',()=>{$('requirements').textContent=requirementText()});
@@ -338,7 +340,8 @@ $('saveEndpoint').addEventListener('click',()=>{
  const value=$('endpoint').value.trim();try{const u=new URL(value);if(u.protocol!=='https:'&&!(['localhost','127.0.0.1'].includes(u.hostname)&&u.protocol==='http:'))throw Error('Use HTTPS');endpoint=u.toString();localStorage.setItem('speakingym-survival-endpoint',endpoint);updateEndpoint()}
  catch(e){$('endpointStatus').textContent='正しいHTTPSのURLを入力してください。APIキーは入力しないでね。'}
 });
-$('clearEndpoint').addEventListener('click',()=>{endpoint='';try{localStorage.removeItem('speakingym-survival-endpoint')}catch(e){}updateEndpoint()});
+$('clearEndpoint').addEventListener('click',()=>{endpoint='';try{localStorage.setItem('speakingym-survival-endpoint','')}catch(e){}updateEndpoint()});
+$('restoreEndpoint').addEventListener('click',()=>{endpoint=DEFAULT_AI_ENDPOINT;try{localStorage.removeItem('speakingym-survival-endpoint')}catch(e){}updateEndpoint()});
 window.addEventListener('beforeunload',()=>{stopSpeech();stopRecognizer();if(timerId!==null)clearInterval(timerId)});
 $('requirements').textContent=requirementText();saveStats();updateEndpoint();
 })();
