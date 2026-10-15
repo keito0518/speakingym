@@ -9,6 +9,7 @@ export const SYNC_ITEMS = Object.freeze([
  { key:"speakingym-reflex-ai-teacher-v1", doc:"reflex_teacher", type:"history", limit:180000 },
  { key:"speakingym-reflex-saved-phrases-v1", doc:"reflex_phrases", type:"phrases", limit:160000 },
  { key:"speakingym-saved-coaching-v1", doc:"scene_rewrites", type:"rewrites", limit:40000 },
+ { key:"speakingym-scenes-stats-v1", doc:"scenes_stats", type:"numbers", limit:4000 },
  { key:"speakingym-survival-stats-v1", doc:"cafe_stats", type:"numbers", limit:4000 },
  { key:"speakingym-v01-records", doc:"legacy_records", type:"records", limit:180000 }
 ]);
