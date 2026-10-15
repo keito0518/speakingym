@@ -328,7 +328,7 @@ window.SPEAKINGYM_SCENES = [
   const CATEGORIES = [{key:'all',name:'すべて'},{key:'smalltalk',name:'雑談'},{key:'daily',name:'日常'},{key:'repair',name:'困ったとき'},{key:'work',name:'仕事'}];
   const LS = 'speakingym-v01-';
   const getStore = (name, fallback) => {try {const v=localStorage.getItem(LS+name);return v?JSON.parse(v):fallback;}catch(_){return fallback;}};
-  const saveStore = (name, value) => {try {localStorage.setItem(LS+name,JSON.stringify(value));}catch(_){toast('保存できませんでした。ブラウザの設定をご確認ください。');}};
+  const saveStore = (name, value) => {try {localStorage.setItem(LS+name,JSON.stringify(value));if(name==='records')window.dispatchEvent?.(new CustomEvent('speakingym:changed',{detail:{key:LS+name}}));}catch(_){toast('保存できませんでした。ブラウザの設定をご確認ください。');}};
   let records = getStore('records',[]);
   if(!Array.isArray(records)) records=[];
   let apiUrl = getStore('api-url','');
@@ -494,5 +494,6 @@ window.SPEAKINGYM_SCENES = [
 })();
 
 </script>
+<script type="module" src="./account-sync.js"></script>
 </body>
 </html>
