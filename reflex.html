@@ -511,6 +511,113 @@ function transcriptObservation(text){
  }
  return "回答の英文を残せているので、お手本と見比べて言い直す練習ができるよ。";
 }
+// The phrase book is independent of session history: bookmarks survive old-history cleanup.
+const PHRASES_MAX=100,PHRASE_KINDS=["quick","natural","polite"];
+let phraseReturnPane="introPane";
+function readSavedPhrases(){
+ const stored=readJSON(PHRASES_KEY,[]);
+ if(!Array.isArray(stored))return [];
+ const list=[];
+ for(const p of stored.slice(0,PHRASES_MAX)){
+  if(!p||typeof p!=="object")continue;
+  if(!cards.some(c=>c.id===p.cardId)||!["easy","standard","challenge"].includes(p.level)||!PHRASE_KINDS.includes(p.kind))continue;
+  if(typeof p.text!=="string"||!p.text.trim()||p.text.length>450)continue;
+  const id=p.cardId+":"+p.level+":"+p.kind;
+  if(list.some(v=>v.id===id))continue;
+  list.push({
+   id,cardId:p.cardId,level:p.level,kind:p.kind,
+   text:p.text.trim(),situation:typeof p.situation==="string"?p.situation.slice(0,240):"",
+   goal:typeof p.goal==="string"?p.goal.slice(0,300):"",
+   tip:typeof p.tip==="string"?p.tip.slice(0,350):""
+  });
+ }
+ return list;
+}
+function updateBookmarkCount(){
+ const count=readSavedPhrases().length;
+ $("savedCount").textContent=String(count);
+ $("phraseTotal").textContent=count+"表現";
+}
+function writeBookmarks(items){
+ try{
+  localStorage.setItem(PHRASES_KEY,JSON.stringify(items.slice(0,PHRASES_MAX)));
+  updateBookmarkCount();return true;
+ }catch(e){
+  $("saveStatus").textContent="保存できませんでした。端末の保存設定・空き容量を確認してね。";
+  return false;
+ }
+}
+function bookmarkRecord(card,level,kind,example,task){
+ return {
+  id:card.id+":"+level+":"+kind,cardId:card.id,level,kind,
+  text:example,situation:task.situation,goal:task.challenge,
+  tip:task.improve
+ };
+}
+function updateBookmarkButton(button,record){
+ const saved=readSavedPhrases().some(x=>x.id===record.id);
+ button.textContent=saved?"✓ 保存済み（解除）":"📌 この表現を保存";
+ button.classList.toggle("saved",saved);
+ button.setAttribute("aria-pressed",String(saved));
+}
+function toggleBookmark(record,button){
+ const items=readSavedPhrases();
+ const present=items.some(x=>x.id===record.id);
+ if(!present&&items.length>=PHRASES_MAX){
+  $("saveStatus").textContent="保存は最大100表現まで。フレーズ帳で使わない表現を整理してね。";
+  return;
+ }
+ const next=present?items.filter(x=>x.id!==record.id):[record,...items];
+ if(!writeBookmarks(next))return;
+ updateBookmarkButton(button,record);
+ $("saveStatus").textContent=present?"保存を解除したよ。":"フレーズ帳に保存したよ！ いつでも復習できる。";
+}
+function showSavedPhrases(source="introPane"){
+ phraseReturnPane=source;
+ renderPhraseBook();
+ pane("phrasesPane");
+}
+function renderPhraseBook(){
+ const items=readSavedPhrases(),root=$("savedPhrasesList");
+ root.replaceChildren();updateBookmarkCount();
+ $("togglePhraseHide").textContent=hideSavedEnglish?"👁 英語を表示":"🙈 英語を隠して練習";
+ $("togglePhraseHide").disabled=items.length===0;
+ if(items.length===0){
+  const p=document.createElement("p");p.className="start-note";
+  p.textContent="まだ保存した表現がないよ。60秒チャレンジの講評で「この表現を保存」を押してみて！";
+  root.append(p);return;
+ }
+ for(const item of items){
+  const container=document.createElement("article");container.className="saved-phrase-card";
+  const badge=document.createElement("div");badge.className="phrase-level";
+  badge.textContent=({easy:"基礎",standard:"標準",challenge:"応用"}[item.level])+" · "+({quick:"QUICK",natural:"NATURAL",polite:"POLITE"}[item.kind]);
+  const title=document.createElement("h3");title.textContent=item.goal;
+  const scenario=document.createElement("div");scenario.className="phrase-meaning";scenario.textContent=item.situation;
+  const expression=document.createElement("p");expression.className="phrase-english";expression.textContent=item.text;
+  const covered=document.createElement("div");covered.className="phrase-hidden";covered.textContent="英文を隠しています。まず声に出してから答えを見よう。";
+  expression.classList.toggle("hidden",hideSavedEnglish);
+  covered.classList.toggle("hidden",!hideSavedEnglish);
+  const explanation=document.createElement("p");explanation.className="phrase-tip";explanation.textContent="💡 "+item.tip;
+  const actions=document.createElement("div");actions.className="phrase-actions";
+  const reveal=document.createElement("button");reveal.type="button";reveal.className="btn";
+  reveal.textContent="👁 答えを見る";reveal.classList.toggle("hidden",!hideSavedEnglish);
+  reveal.addEventListener("click",()=>{
+   expression.classList.remove("hidden");covered.classList.add("hidden");
+   reveal.classList.add("hidden");hear.classList.remove("hidden");
+  });
+  const hear=document.createElement("button");hear.type="button";hear.className="btn";
+  hear.textContent="🔊 音声で聞く";hear.classList.toggle("hidden",hideSavedEnglish);
+  hear.addEventListener("click",()=>speakExample(item.text));
+  const remove=document.createElement("button");remove.type="button";remove.className="btn";
+  remove.textContent="✕ 保存解除";
+  remove.addEventListener("click",()=>{
+   if(writeBookmarks(readSavedPhrases().filter(x=>x.id!==item.id)))renderPhraseBook();
+  });
+  actions.append(reveal,hear,remove);
+  container.append(badge,scenario,title,covered,expression,explanation,actions);
+  root.append(container);
+ }
+}
 function showReview(index){
  const a=reviewSession?.attempts||[];
  if(!a.length){$("reportReview").classList.add("hidden");return}
@@ -539,7 +646,12 @@ function showReview(index){
   const text=document.createElement("p");text.className="answer-text";text.textContent=example;
   const listen=document.createElement("button");listen.className="btn";listen.textContent="🔊 聞く";
   listen.addEventListener("click",()=>speakExample(example));
-  box.append(heading,text,listen);parent.append(box);
+  const kind=featured?"natural":label.startsWith("QUICK")?"quick":"polite";
+  const entry=bookmarkRecord(card,reviewSession.level,kind,example,info);
+  const bookmark=document.createElement("button");bookmark.type="button";bookmark.className="btn save-phrase";
+  updateBookmarkButton(bookmark,entry);
+  bookmark.addEventListener("click",()=>toggleBookmark(entry,bookmark));
+  box.append(heading,text,listen,bookmark);parent.append(box);
  }
  $("reviewPrev").disabled=reviewIndex===0;
  $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
@@ -641,6 +753,10 @@ $("reviewNext").addEventListener("click",()=>{
  if(reviewIndex<(reviewSession?.attempts.length||0)-1)showReview(reviewIndex+1);
  else showHistory();
 });
+$("openPhrases").addEventListener("click",()=>showSavedPhrases("introPane"));
+$("openPhrasesFromReview").addEventListener("click",()=>showSavedPhrases("endPane"));
+$("phrasesBack").addEventListener("click",()=>pane(phraseReturnPane));
+$("togglePhraseHide").addEventListener("click",()=>{hideSavedEnglish=!hideSavedEnglish;renderPhraseBook()});
 $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
@@ -648,6 +764,8 @@ $("clearHistory").addEventListener("click",()=>{
  try{localStorage.removeItem(HISTORY_KEY)}catch(e){}
  showHistory();
 });
+updateBookmarkCount();
+if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
 window.addEventListener("pagehide",()=>{stopTimer();stopListening();cancelReading();});
 })();
 </script>
