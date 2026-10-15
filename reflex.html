@@ -666,7 +666,7 @@ function renderTeacherFeedback(){
  const hasText=!!reviewSession?.attempts?.[reviewIndex]?.transcript?.trim();
  $("requestTeacher").classList.toggle("hidden",!hasText||!!feedback);
  $("requestTeacher").disabled=teacherInFlight;
- if(!hasText){
+ if(!hasText&&!feedback){
   root.classList.add("hidden");
   $("teacherStatus").textContent="個別講評には実際に話した英文が必要です。次回はマイク認識または文字入力を使ってね。";
   return;
