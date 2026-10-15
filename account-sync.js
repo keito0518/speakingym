@@ -6,7 +6,8 @@ import {SYNC_ITEMS,OWNER_KEY,readSnapshot,removeSnapshot,applySnapshot,saveGuest
 const configured=["apiKey","authDomain","projectId","appId"].every(k=>typeof firebaseConfig[k]==="string"&&firebaseConfig[k].trim());
 const $=id=>document.getElementById(id);
 const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
-let auth,db,authFns,dbFns,user=null,ready=false,busy=false,initAuth=false;
+let auth,db,authFns,dbFns,user=null,ready=false,busy=false,initAuth=false,importGuest=false;
+const PENDING_PREFIX="speakingym-account-dirty:";
 const timers=new Map();
 const css=[
 ".sg-accountbar{background:#eaf3eb;border-bottom:1px solid #d2e3d2;color:#1c4832;font:600 12px/1.6 -apple-system,BlinkMacSystemFont,'Hiragino Sans',Meiryo,sans-serif}",
@@ -59,8 +60,22 @@ async function loginNow(){
 }
 async function logoutNow(){
  if(!auth||busy)return;
- try{busy=true;renderControls();await authFns.signOut(auth)}
+ try{
+  if(pendingKeys(user?.uid).length){await syncAll();if(pendingKeys(user?.uid).length){status("未同期の記録があります。通信が回復してからログアウトしてね。");return}}
+  busy=true;renderControls();await authFns.signOut(auth)
+ }
  catch(e){busy=false;renderControls();status(describeError(e))}
+}
+function pendingKeys(uid){
+ try{const v=JSON.parse(localStorage.getItem(PENDING_PREFIX+uid)||"[]");return Array.isArray(v)?v.filter(x=>SYNC_ITEMS.some(i=>i.key===x)):[]}catch{return []}
+}
+function markPending(uid,key){
+ const pending=new Set(pendingKeys(uid));pending.add(key);
+ try{localStorage.setItem(PENDING_PREFIX+uid,JSON.stringify([...pending]))}catch(e){}
+}
+function clearPending(uid,key){
+ const pending=new Set(pendingKeys(uid));pending.delete(key);
+ try{localStorage.setItem(PENDING_PREFIX+uid,JSON.stringify([...pending]))}catch(e){}
 }
 const locationFor=(uid,item)=>dbFns.doc(db,"users",uid,"state",item.doc);
 function parsePayload(doc,item){
@@ -110,18 +125,35 @@ async function syncAll(){
  const uid=user.uid;
  busy=true;renderControls();status("クラウドと学習記録を同期中…");
  try{
-  const remote=await cloudRead(uid);
-  const local=readSnapshot(localStorage);
-  const merged=mergeSnapshots(local,remote);
-  const changeLocal=!snapshotsEqual(local,merged);
+  // The cloud is authoritative unless this device has unsynced edits.
+  // For first login only, consented guest records are merged with cloud data.
+  const remote=await cloudRead(uid),local=readSnapshot(localStorage),dirty=new Set(pendingKeys(uid));
+  const desired={};
+  for(const item of SYNC_ITEMS){
+   const a=local[item.key],b=remote[item.key];
+   if(importGuest&&a!==undefined){
+    const joined=mergeSnapshots({[item.key]:a},{[item.key]:b});
+    if(joined[item.key]!==undefined)desired[item.key]=joined[item.key];
+   }else if(dirty.has(item.key)){
+    if(a!==undefined)desired[item.key]=a;
+    else desired[item.key]=item.type==="numbers"?{}:[];
+   }else if(b!==undefined)desired[item.key]=b;
+   else if(a!==undefined)desired[item.key]=a;
+  }
   const writes=[];
   for(const item of SYNC_ITEMS){
-   const value=merged[item.key];
-   if(value!==undefined&&!snapshotsEqual(value,remote[item.key]))writes.push(cloudWrite(uid,item,value));
+   const value=desired[item.key];
+   if(value===undefined)continue;
+   if(!snapshotsEqual(value,remote[item.key])){
+    const request=cloudWrite(uid,item,value).then(()=>clearPending(uid,item.key));
+    writes.push(request);
+   }else clearPending(uid,item.key);
   }
   await Promise.all(writes);
-  if(changeLocal){
-   removeSnapshot(localStorage);applySnapshot(localStorage,merged);
+  importGuest=false;
+  const changed=!snapshotsEqual(local,desired);
+  if(changed){
+   removeSnapshot(localStorage);applySnapshot(localStorage,desired);
    window.location.reload();return;
   }
   status("✓ 同期しました");
@@ -148,7 +180,10 @@ async function handleAuth(next){
    if(!oldUid)guest=saveGuestSnapshot(localStorage);
    // Never import the previous account's data into another account.
    removeSnapshot(localStorage);
-   if(!oldUid&&Object.keys(guest).length&&window.confirm("この端末のゲスト記録をGoogleアカウントへ引き継ぎますか？"))applySnapshot(localStorage,guest);
+   if(!oldUid&&Object.keys(guest).length&&window.confirm("この端末のゲスト記録をGoogleアカウントへ引き継ぎますか？")){
+    applySnapshot(localStorage,guest);importGuest=true;
+    for(const item of SYNC_ITEMS)if(guest[item.key]!==undefined)markPending(uid,item.key);
+   }
    localStorage.setItem(OWNER_KEY,uid);
   }
  }catch(e){status(describeError(e))}
@@ -159,13 +194,14 @@ async function handleAuth(next){
 function onChanged(event){
  const item=SYNC_ITEMS.find(i=>i.key===event?.detail?.key);
  if(!item||!user||!ready)return;
+ markPending(user.uid,item.key);
  if(timers.has(item.key))clearTimeout(timers.get(item.key));
  timers.set(item.key,setTimeout(async()=>{
   timers.delete(item.key);
   if(!user)return;
   const uid=user.uid,value=readSnapshot(localStorage)[item.key];
-  if(value===undefined)return;
-  try{await cloudWrite(uid,item,value)}
+  const toSave=value===undefined?(item.type==="numbers"?{}:[]):value;
+  try{await cloudWrite(uid,item,toSave);if(snapshotsEqual(readSnapshot(localStorage)[item.key],value))clearPending(uid,item.key)}
   catch(e){status("保存は端末内で完了。クラウド同期は次回再試行するよ。")}
  },350));
 }
