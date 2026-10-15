@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function validDoc(key) {
+      return key in [
+        'reflex_stats','reflex_misses','reflex_history','reflex_teacher',
+        'reflex_phrases','scene_rewrites','scenes_stats','cafe_stats','legacy_records'
+      ];
+    }
+    // Cloud sync uses one doc per allowlisted data category, never public lists.
+    match /users/{uid}/state/{key} {
+      allow get: if isOwner(uid) && validDoc(key);
+      allow list: if false;
+      allow create, update: if isOwner(uid) && validDoc(key)
+        && request.resource.data.keys().hasOnly(['version','payload','updatedAt'])
+        && request.resource.data.keys().hasAll(['version','payload','updatedAt'])
+        && request.resource.data.version == 1
+        && request.resource.data.payload is string
+        && request.resource.data.payload.size() < 900000
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

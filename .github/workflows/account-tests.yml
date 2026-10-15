@@ -1,0 +1,51 @@
+name: Speakingym account safety tests
+on:
+  pull_request:
+    paths:
+      - 'account-sync.js'
+      - 'account-data.mjs'
+      - 'account.html'
+      - 'firebase-config.js'
+      - 'firestore.rules'
+      - 'FIREBASE_SETUP.md'
+      - 'tests/account-sync.test.mjs'
+      - '.github/workflows/account-tests.yml'
+      - 'index.html'
+      - 'home-preview.html'
+      - 'reflex.html'
+      - 'scenes.html'
+      - 'mission.html'
+      - 'live.html'
+  push:
+    paths:
+      - 'account-sync.js'
+      - 'account-data.mjs'
+      - 'account.html'
+      - 'firebase-config.js'
+      - 'firestore.rules'
+      - 'FIREBASE_SETUP.md'
+      - 'tests/account-sync.test.mjs'
+      - '.github/workflows/account-tests.yml'
+      - 'index.html'
+      - 'home-preview.html'
+      - 'reflex.html'
+      - 'scenes.html'
+      - 'mission.html'
+      - 'live.html'
+jobs:
+  account-safety:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript module syntax
+        run: |
+          node --check account-sync.js
+          node --check account-data.mjs
+          node --check firebase-config.js
+      - name: Test free account logic
+        run: node --test tests/account-sync.test.mjs

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f8f1">
+<meta name="description" content="Speakingymのマイページ。Googleアカウントでログインすると、練習記録と保存フレーズをスマホ・PCで同期できます。">
+<title>マイページ | Speakingym</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#1d3e2b;background:#f5f8f1;line-height:1.75}
+*{box-sizing:border-box}body{margin:0;min-width:320px}
+header{background:#1b4e37;color:white;padding:20px}
+.header-inner{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-size:24px;font-weight:950;letter-spacing:-1px;color:white;text-decoration:none}.logo span{color:#f9a27b}
+header a.back{font-size:12px;font-weight:800;color:#e0efe4;text-decoration:none}
+main{max-width:840px;padding:38px 18px 80px;margin:0 auto}
+.kicker{font-size:11px;letter-spacing:2px;font-weight:950;color:#ba6d4c}
+h1{font-size:clamp(31px,6vw,48px);letter-spacing:-1px;margin:11px 0 14px;line-height:1.35}
+.lead{font-size:14px;color:#63786a;max-width:710px}
+.card{background:white;border:1px solid #dfe9dc;border-radius:19px;padding:24px;margin:23px 0}
+.card h2{font-size:22px;margin:0 0 10px}
+.sg-account-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0}
+.sg-stat{padding:17px 13px;background:#f2f7ee;border-radius:13px;text-align:center}
+.sg-stat strong{display:block;font-size:29px;line-height:1.4}.sg-stat span{font-size:12px;color:#53715c}
+.ctas{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.btn{display:flex;align-items:center;justify-content:center;padding:13px 15px;border-radius:11px;min-height:48px;font-size:13px;font-weight:900;text-decoration:none;color:#23513c;background:#f0f6ed;border:1px solid #d7e7d5}
+.btn.primary{background:#1b523a;color:#fff;border-color:#1b523a}
+.note{font-size:12px;color:#697d6e;line-height:1.95}.note strong{color:#234c38}
+ul{padding-left:19px;font-size:13px;color:#536a5b;line-height:2}
+@media(max-width:540px){.ctas{grid-template-columns:1fr}.card{padding:19px}.header-inner{gap:8px}.logo{font-size:21px}}
+</style>
+</head>
+<body>
+<header><div class="header-inner"><a class="logo" href="./home-preview.html">speakin<span>gym.</span></a><a class="back" href="./home-preview.html">← トップページ</a></div></header>
+<main>
+<div class="kicker">YOUR LEARNING, YOUR PACE.</div>
+<h1>続きから、<br>英語を話そう。</h1>
+<p class="lead">Googleログインを使えば、学習履歴や覚えたい表現をユーザーごとに保存できるよ。今はログインせずにゲストとして練習してもOK。</p>
+<section class="card" aria-labelledby="accountTitle">
+ <h2 id="accountTitle">学習ダッシュボード</h2>
+ <p id="sg-account-details" class="note" aria-live="polite">読み込み中…</p>
+ <div id="sg-account-stats" class="sg-account-stats">
+  <div class="sg-stat"><strong>—</strong><span>60秒チャレンジ</span></div>
+  <div class="sg-stat"><strong>—</strong><span>保存フレーズ</span></div>
+  <div class="sg-stat"><strong>—</strong><span>保存した練習</span></div>
+  <div class="sg-stat"><strong>—</strong><span>AI実戦英会話</span></div>
+  <div class="sg-stat"><strong>—</strong><span>カフェ練習</span></div>
+ </div>
+ <div class="ctas">
+  <a href="./reflex.html" class="btn primary">⚡ 60秒チャレンジ</a>
+  <a href="./reflex.html#phrases" class="btn">📌 フレーズ帳</a>
+  <a href="./scenes.html" class="btn">🎙 AI実戦英会話</a>
+  <a href="./home-preview.html" class="btn">🏠 ホームに戻る</a>
+ </div>
+</section>
+<section class="card" aria-labelledby="howTitle">
+ <h2 id="howTitle">記録の保存について</h2>
+ <ul>
+  <li>ゲスト：このブラウザ内だけに保存。スマホとPCの間では同期されない。</li>
+  <li>Googleログイン後：許可した学習記録を、あなた専用のクラウド領域に保存。</li>
+  <li>初回ログイン時：端末内のゲスト記録を引き継ぐか選べる。</li>
+  <li>ログアウト後：アカウントの記録を画面から切り離し、ゲストの記録に戻る。</li>
+  <li>音声ファイル・Googleのパスワード・GeminiのAPIキーは保存しない。</li>
+ </ul>
+ <p class="note"><strong>無料運用：</strong>Firebase Sparkプランで無料枠内のみ使う構成。現在のログイン機能はオーナーによるFirebase初期設定が完了するまで利用できません。Google認証のポップアップが表示されない端末もあるため、公開前にスマホで動作確認します。</p>
+</section>
+</main>
+<script type="module" src="./account-sync.js"></script>
+</body>
+</html>

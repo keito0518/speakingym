@@ -204,7 +204,7 @@ test("saved phrase book supports hide, reveal, audio replay and delete independe
  assert.equal(ui.node("endPane").classList.contains("active"),true);
  ui.click("openHistory");
  ui.click("clearHistory");
- assert.equal(ui.storage.get("speakingym-reflex-history-v1"),undefined);
+ assert.equal(ui.storage.get("speakingym-reflex-history-v1"),"[]");
  assert.equal(JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1")).length,1);
 });
 

@@ -159,7 +159,18 @@ const synth=window.speechSynthesis||null;
 let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0;
 let micWanted=false,micBase="",micCycleFinal="",micCycleInterim="",micSilentStops=0,micRestartTimer=null;
 let coachingHistory=[];
-const REVIEW_KEY="speakingym-saved-coaching-v1";
+const REVIEW_KEY="speakingym-saved-coaching-v1",SCENE_STATS_KEY="speakingym-scenes-stats-v1";
+function saveSceneOutcome(success){
+ try{
+  const old=JSON.parse(localStorage.getItem(SCENE_STATS_KEY)||"{}");
+  const stats=old&&typeof old==="object"&&!Array.isArray(old)?old:{};
+  const key=sceneId+"_"+$("level").value+"_"+(success?"completed":"attempted");
+  stats[key]=Math.max(0,Math.min(999999,(Number(stats[key])||0)+1));
+  stats.total=Math.max(0,Math.min(999999,(Number(stats.total)||0)+1));
+  localStorage.setItem(SCENE_STATS_KEY,JSON.stringify(stats));
+  window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:SCENE_STATS_KEY}}));
+ }catch(e){}
+}
 function status(message){$("status").textContent=message}
 function goals(container,done){container.replaceChildren();container.setAttribute("lang",missionLanguage());task().goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
@@ -243,10 +254,12 @@ function saveCoachReview(){
  try{
   localStorage.setItem(REVIEW_KEY,JSON.stringify([...unique,...saved].slice(0,20).map(x=>({original:x.original,natural:x.natural}))));
   $("saveReview").textContent="✓ この端末に保存しました";$("saveReview").disabled=true;
-  showSavedReview();
+  showSavedReview();window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}));
  }catch(e){$("saveReview").textContent="保存できませんでした（ブラウザ設定をご確認ください）";}
 }
 function finish(success,message){
+ if(!running)return;
+ saveSceneOutcome(success);
  running=false;processing=false;pendingText="";stopRecognition();
  if(!success)cancelSpeech();stopClock();updateControls();
  $("resumeMic").classList.add("hidden");
@@ -378,7 +391,7 @@ $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply
 $("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running)answer(pendingText)});
 $("saveReview").addEventListener("click",saveCoachReview);
 $("clearReview").addEventListener("click",()=>{
- try{localStorage.removeItem(REVIEW_KEY)}catch(e){}
+ try{localStorage.setItem(REVIEW_KEY,"[]");window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}))}catch(e){}
  showSavedReview();
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
@@ -386,5 +399,6 @@ window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancel
 $("level").addEventListener("change",renderAssignment);renderAssignment();showSavedReview();updateControls();
 })();
 </script>
+<script type="module" src="./account-sync.js"></script>
 </body>
 </html>

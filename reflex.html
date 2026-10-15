@@ -483,7 +483,8 @@ function speakExample(text){
  }catch(e){}
 }
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
-function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
+function notifyCloud(key){window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key}}))}
+function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value));notifyCloud(key)}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
 function pane(id){for(const k of ["introPane","playPane","endPane","historyPane","phrasesPane"])$(k).classList.toggle("active",k===id)}
 function clock(){
@@ -565,7 +566,7 @@ function updateBookmarkCount(){
 function writeBookmarks(items){
  try{
   localStorage.setItem(PHRASES_KEY,JSON.stringify(items.slice(0,PHRASES_MAX)));
-  updateBookmarkCount();return true;
+  updateBookmarkCount();notifyCloud(PHRASES_KEY);return true;
  }catch(e){
   $("saveStatus").textContent="保存できませんでした。端末の保存設定・空き容量を確認してね。";
   return false;
@@ -656,7 +657,7 @@ function feedbackFor(index){
 function saveTeacherNotes(sessionDate,notes){
  try{
   const other=readTeacherCache().filter(x=>x.date!==sessionDate);
-  localStorage.setItem(TEACHER_KEY,JSON.stringify([{date:sessionDate,notes},...other].slice(0,20)));
+  localStorage.setItem(TEACHER_KEY,JSON.stringify([{date:sessionDate,notes},...other].slice(0,20)));notifyCloud(TEACHER_KEY);
   return true;
  }catch(e){return false}
 }
@@ -899,7 +900,7 @@ $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
  if(!window.confirm("この端末に保存した60秒チャレンジの履歴をすべて削除しますか？"))return;
- try{localStorage.removeItem(HISTORY_KEY);localStorage.removeItem(TEACHER_KEY);currentTeacherNotes=null}catch(e){}
+ try{localStorage.setItem(HISTORY_KEY,"[]");localStorage.setItem(TEACHER_KEY,"[]");currentTeacherNotes=null;notifyCloud(HISTORY_KEY);notifyCloud(TEACHER_KEY)}catch(e){}
  showHistory();
 });
 updateBookmarkCount();
@@ -907,5 +908,6 @@ if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
 window.addEventListener("pagehide",()=>{teacherEpoch++;stopTimer();stopListening();cancelReading();});
 })();
 </script>
+<script type="module" src="./account-sync.js"></script>
 </body>
 </html>
