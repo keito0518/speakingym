@@ -168,19 +168,74 @@ function barista(text,after){addMessage('Emma',text);say(text,after)}
 function clockString(secs){return String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0')}
 function updateClock(){$('clock').textContent=clockString(remaining);$('clock').classList.toggle('low',remaining<=30);$('progressFill').style.width=((timeLimit-remaining)/timeLimit*100)+'%';$('progress').setAttribute('aria-valuemax',String(timeLimit));$('progress').setAttribute('aria-valuenow',String(timeLimit-remaining))}
 function tick(){if(!running||ended||aiPaused)return;remaining=Math.max(0,remaining-1);updateClock();if(remaining===0)finish(false,'timeout')}
-function stopRecognizer(){if(recognition){try{recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort()}catch(e){}recognition=null}$('micBtn').textContent='🎙 話して入力'}
+function stopRecognizer(){
+ if(recognition){
+  const old=recognition;recognition=null;
+  try{old.onresult=null;old.onend=null;old.onerror=null;old.onstart=null;old.abort()}catch(e){}
+ }
+ $('micBtn').textContent=$('reply').value.trim()?'🎙 もう一度話す':'🎙 話して入力';
+ $('stopMicBtn').classList.add('hidden');
+}
+function clearText(){
+ if(!running||ended||busy)return;
+ stopRecognizer();
+ $('reply').value='';
+ $('micBtn').textContent='🎙 話して入力';
+ setStatus('入力を消したよ。マイクを押して最初から話してね。');
+ setMessage('入力を全消ししました。いつでも話し直せます。');
+ sync();
+}
+function stopMicrophone(){
+ if(!recognition)return;
+ stopRecognizer();
+ setStatus('認識を止めました。文字を直して送信するか、もう一度マイクを押してね。');
+ sync();
+}
 function micAction(){
  if(!running||ended||busy)return;
- if(recognition){try{recognition.stop()}catch(e){}stopRecognizer();setStatus('文字を確認して「返答する」を押してね。');return}
- if(!Recognizer){setMessage('このブラウザは音声認識に未対応。文字入力かiPhoneキーボード🎤を使ってね。');$('reply').focus();return}
+ if(!Recognizer){
+  setMessage('このブラウザは音声認識に未対応。文字入力かiPhoneキーボード🎤を使ってね。');
+  $('reply').focus();return;
+ }
+ // Re-tapping the microphone replaces both in-progress and previous transcripts.
+ stopRecognizer();
+ $('reply').value='';
+ $('micBtn').textContent='🎙 話して入力';
+ setStatus('新しく聞き取りを開始します。英語を話してね。');
  try{
- const rec=new Recognizer();recognition=rec;rec.lang='en-US';rec.interimResults=true;rec.continuous=false;
- rec.onresult=e=>{let final='',partial='';for(let i=0;i<e.results.length;i++){const t=e.results[i]?.[0]?.transcript||'';if(e.results[i].isFinal)final+=' '+t;else partial+=' '+t}const txt=(final+' '+partial).trim();if(txt){$('reply').value=txt;setStatus('✓ 聞き取り中：'+txt)}};
- rec.onerror=e=>{if(recognition!==rec)return;const error=e?.error||'unknown';stopRecognizer();setMessage('音声認識が停止しました（'+error+'）。文字入力を使えるよ。')};
- rec.onend=()=>{if(recognition!==rec)return;stopRecognizer();setStatus('文字起こしを確認して「返答する」を押してね。')};
- rec.onstart=()=>{if(recognition===rec){$('micBtn').textContent='⏹ 認識を止める';setStatus('英語を話してね。聞き取った文字が入力されます。')}};
- rec.start();
- }catch(e){stopRecognizer();setMessage('音声認識を開始できませんでした。文字入力を使ってね。')}
+  const rec=new Recognizer();recognition=rec;rec.lang='en-US';rec.interimResults=true;rec.continuous=false;
+  rec.onresult=e=>{
+   if(recognition!==rec)return;
+   let final='',partial='';
+   for(let i=0;i<e.results.length;i++){
+    const text=e.results[i]?.[0]?.transcript||'';
+    if(e.results[i].isFinal)final+=' '+text;else partial+=' '+text;
+   }
+   const recognized=(final+' '+partial).trim();
+   if(recognized){$('reply').value=recognized;setStatus('✓ 聞き取り中：'+recognized)}
+  };
+  rec.onerror=e=>{
+   if(recognition!==rec)return;
+   const error=e?.error||'unknown';
+   stopRecognizer();
+   setMessage('音声認識が停止しました（'+error+'）。マイクで再試行、または文字入力で続けてね。');
+  };
+  rec.onend=()=>{
+   if(recognition!==rec)return;
+   stopRecognizer();
+   setStatus('文字起こしを確認して「返答する」を押してね。違えばマイクで話し直せるよ。');
+  };
+  rec.onstart=()=>{
+   if(recognition!==rec)return;
+   $('micBtn').textContent='🔁 最初から話す';
+   $('stopMicBtn').classList.remove('hidden');
+   setStatus('英語を話してね。マイクをもう一度押すと認識結果を消してやり直せます。');
+  };
+  rec.start();
+ }catch(e){
+  stopRecognizer();
+  setMessage('音声認識を開始できませんでした。もう一度マイクを押すか、文字入力を使ってね。');
+ }
 }
 function required(){return{iced:true,oat:level!=='easy',fix:true}}
 function successReady(){const x=required();return facts.problem&&facts.iced&&(!x.oat||facts.oat)&&facts.fix}
@@ -188,6 +243,8 @@ function missing(){if(!facts.problem)return 'problem';if(!facts.iced)return 'ice
 function sync(){
  $('sendBtn').disabled=!running||ended||busy||(aiPaused&&!manualMode);
  $('micBtn').disabled=!running||ended||busy||(aiPaused&&!manualMode);
+ $('clearTextBtn').disabled=!running||ended||busy||(aiPaused&&!manualMode);
+ $('stopMicBtn').disabled=!running||ended||busy||(aiPaused&&!manualMode);
  $('repeatBtn').disabled=!running||ended;
  $('hintBtn').disabled=!running||ended;
  $('reply').disabled=!running||ended||(aiPaused&&!manualMode);
@@ -373,7 +430,7 @@ function begin(checkpoint=false){
  if(checkpoint&&hardPoint){facts={...hardPoint.facts};lastMissing=hardPoint.lastMissing||'';}
  stats.attempts++;saveStats();
  $('setupCard').classList.add('hidden');$('resultCard').classList.add('hidden');$('gameCard').classList.remove('hidden');
- $('chat').replaceChildren();$('reply').value='';$('hint').classList.add('hidden');$('hint').textContent='';updateClock();sync();
+ $('chat').replaceChildren();$('reply').value='';$('micBtn').textContent='🎙 話して入力';$('hint').classList.add('hidden');$('hint').textContent='';updateClock();sync();
  timerId=setInterval(tick,1000);setStatus('店員が話し終わるまで待ってね。');
  const intro=checkpoint?({problem:"Let's try again. What was wrong with the drink?",iced:variants[level].askIced,oat:variants[level].askOat,fix:variants[level].askFix,done:INTRO[level]})[missing()]:INTRO[level];
  barista(intro,()=>setStatus('あなたの番！ 注文を直すために話しかけよう。'));
@@ -408,6 +465,12 @@ $('startBtn').addEventListener('click',()=>begin(false));
 $('sendBtn').addEventListener('click',respond);
 $('reply').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();respond()}});
 $('micBtn').addEventListener('click',micAction);
+$('clearTextBtn').addEventListener('click',clearText);
+$('stopMicBtn').addEventListener('click',stopMicrophone);
+$('voiceChoice').addEventListener('change',()=>{
+ voicePreference=$('voiceChoice').value;
+ try{localStorage.setItem(VOICE_KEY,voicePreference)}catch(e){}
+});
 $('repeatBtn').addEventListener('click',()=>{if(ended||!lastBarista)return;stopRecognizer();stopSpeech();say(lastBarista,()=>setStatus('あなたの番！ 返事を考えてね。'))});
 $('hintBtn').addEventListener('click',renderHints);
 $('muteBtn').addEventListener('click',()=>{voiceOn=!voiceOn;$('muteBtn').textContent=voiceOn?'🔊 音声オン':'🔇 音声オフ';if(!voiceOn){stopSpeech();busy=false;sync()}});
