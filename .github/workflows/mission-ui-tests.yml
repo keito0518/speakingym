@@ -1,0 +1,23 @@
+name: Speakingym mission UI checks
+on:
+  push:
+    paths:
+      - mission.html
+      - tests/survival-ui.test.mjs
+      - .github/workflows/mission-ui-tests.yml
+  pull_request:
+    paths:
+      - mission.html
+      - tests/survival-ui.test.mjs
+      - .github/workflows/mission-ui-tests.yml
+jobs:
+  ui-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/survival-ui.test.mjs
