@@ -144,3 +144,15 @@ test("advanced question content is authored in English and all 24 cards change w
  assert.match(script,/reviewSession\.level==="challenge"/);
 });
 
+
+test("home preview links to the saved sprint phrase book with an accurate count",()=>{
+ const app=fakeDocument({
+  "speakingym-reflex-saved-phrases-v1":JSON.stringify([
+   {id:"repair1:standard:natural",text:"Could you repeat that?",level:"standard",cardId:"repair1",kind:"natural"},
+   {id:"hold1:easy:quick",text:"Let me think.",level:"easy",cardId:"hold1",kind:"quick"}
+  ])
+ });
+ app.run(home);
+ assert.match(home,/href="\.\/reflex\.html#phrases"/);
+ assert.equal(app.element("sprintPhraseCount").textContent,"2");
+});
