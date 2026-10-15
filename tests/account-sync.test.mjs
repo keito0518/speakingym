@@ -61,7 +61,7 @@ test("cloud merge preserves both bookmarks and session history when importing gu
 test("written snapshots do not include unauthorized or oversized fields",()=>{
  const browser=storage({
   "speakingym-saved-coaching-v1":JSON.stringify([{original:"hello",natural:"Hello!"}]),
-  "speakingym-reflex-history-v1":JSON.stringify(Array.from({length:20},()=>({date:"2026",utterance:"x".repeat(50000)}))),
+  "speakingym-reflex-history-v1":JSON.stringify(Array.from({length:20},(_,i)=>({date:"2026-"+String(i).padStart(2,"0"),utterance:"x".repeat(50000)}))),
   "random-secret":"private"
  });
  const data=readSnapshot(browser);
