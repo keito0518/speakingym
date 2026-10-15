@@ -243,7 +243,7 @@ function saveCoachReview(){
  try{
   localStorage.setItem(REVIEW_KEY,JSON.stringify([...unique,...saved].slice(0,20).map(x=>({original:x.original,natural:x.natural}))));
   $("saveReview").textContent="✓ この端末に保存しました";$("saveReview").disabled=true;
-  showSavedReview();
+  showSavedReview();window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}));
  }catch(e){$("saveReview").textContent="保存できませんでした（ブラウザ設定をご確認ください）";}
 }
 function finish(success,message){
@@ -378,7 +378,7 @@ $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply
 $("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running)answer(pendingText)});
 $("saveReview").addEventListener("click",saveCoachReview);
 $("clearReview").addEventListener("click",()=>{
- try{localStorage.removeItem(REVIEW_KEY)}catch(e){}
+ try{localStorage.setItem(REVIEW_KEY,"[]");window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}))}catch(e){}
  showSavedReview();
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
@@ -386,5 +386,6 @@ window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancel
 $("level").addEventListener("change",renderAssignment);renderAssignment();showSavedReview();updateControls();
 })();
 </script>
+<script type="module" src="./account-sync.js"></script>
 </body>
 </html>
