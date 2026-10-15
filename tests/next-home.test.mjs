@@ -82,7 +82,14 @@ test("reflex uses twenty-four unique practical reactions and has no network requ
  assert.equal((sprint.match(/\{id:"(?:repair|hold|bound|connect)/g)||[]).length,24);
  assert.doesNotMatch(jsOf(sprint),/\bfetch\s*\(/);
  assert.doesNotMatch(jsOf(sprint),/\bXMLHttpRequest\b/);
- assert.doesNotMatch(jsOf(sprint),/\bSpeechRecognition\b/);
+ assert.match(jsOf(sprint),/window\.SpeechRecognition\|\|window\.webkitSpeechRecognition/);
+ assert.match(sprint,/id="micBtn"/);
+ assert.match(sprint,/id="resumeMic"/);
+ assert.match(sprint,/id="stopMic"/);
+ assert.match(sprint,/id="transcript"/);
+ assert.match(sprint,/id="hearSample"/);
+ assert.match(sprint,/id="sampleQuick"/);
+ assert.match(sprint,/id="samplePolite"/);
  assert.match(sprint,/@media\(max-width:550px\)/);
 });
 
@@ -119,4 +126,12 @@ test("timer finishes session at zero and no fabricated score is calculated",()=>
  assert.equal(app.element("total").textContent,"0");
  assert.equal(app.element("wins").textContent,"0");
  assert.equal(app.interval(),null);
+});
+
+test("all 24 reflex questions have three English examples and a usage tip",()=>{
+ const quick=(jsOf(sprint).match(/(?:repair|hold|bound|connect)[1-6]:\{quick:/g)||[]);
+ assert.equal(quick.length,24);
+ assert.match(jsOf(sprint),/EXTRA_ANSWERS\[current\.id\]/);
+ assert.match(jsOf(sprint),/options\.tip/);
+ assert.equal((jsOf(sprint).match(/await fetch\(/g)||[]).length,0);
 });
