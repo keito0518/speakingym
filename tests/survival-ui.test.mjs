@@ -25,3 +25,12 @@ test("AI errors pause the mission and can be retried without duplicating user te
  assert.match(script, /await finishCurrentTurn\(aiFailureText,turn,runId\)/);
  assert.match(script, /\$\('sendBtn'\)\.disabled=.*aiPaused/);
 });
+
+test("cafe mission displays Gemini coaching only after completed run, without another API call",()=>{
+ assert.match(html,/id="missionCoachReport"/);
+ assert.match(script,/function drawMissionCoaching\(/);
+ assert.match(script,/missionCoaching\.push\(item\)/);
+ assert.match(script,/drawMissionCoaching\(\)/);
+ assert.match(script,/result\.coaching&&typeof result\.coaching==='object'/);
+ assert.equal((script.match(/await fetch\(/g)||[]).length,1);
+});
