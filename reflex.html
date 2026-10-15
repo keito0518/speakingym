@@ -22,6 +22,34 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .info{padding:16px 3px;font-size:12px;color:#788779;line-height:1.9;text-align:center}.info a{text-decoration:underline}
 @media(max-width:550px){.shell{padding-top:23px}.board{padding:18px}.three{grid-template-columns:1fr;gap:7px}.mini{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 15px}.mini strong{font-size:22px;margin:0}.prompt{min-height:280px;padding:18px}.prompt h2{font-size:28px}.button-row{gap:8px}.btn{padding:12px 10px;font-size:13px}.summary{gap:6px}.end-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.bar-fill{transition:none}}
+
+.privacy-opt{display:flex;gap:8px;align-items:center;margin-top:16px;font-size:12px;font-weight:680;color:#4f6e56}.privacy-opt input{width:18px;height:18px;accent-color:#22513c}
+.prompt{min-height:220px!important;padding:23px!important;background:#f0f6eb!important;border:2px solid #bfd6bc!important;display:flex;flex-direction:column;justify-content:center}
+.prompt-scene{font-size:clamp(15px,3vw,18px)!important;font-weight:750!important;color:#3d6248!important;margin:8px 0 16px!important}
+.prompt-cue{font-size:12px;letter-spacing:.3px;color:#a05a43;font-weight:950}
+.prompt h2{font-size:clamp(27px,5.5vw,40px)!important;line-height:1.38!important;margin:5px 0 0!important;letter-spacing:-.7px!important}
+.prompt[data-level="challenge"] .prompt-scene,.prompt[data-level="challenge"] h2{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+.report-review{border-top:2px solid #dfe9de;margin-top:24px;padding-top:23px;text-align:left}
+.report-progress{font-size:11px;font-weight:950;letter-spacing:1px;color:#aa6045}
+.report-review h3{font-size:clamp(22px,4vw,29px);line-height:1.4;margin:5px 0 14px}
+.review-situation{font-size:13px;color:#69816e;margin-top:13px;line-height:1.65}
+.review-result{display:inline-block;background:#e7f4e8;color:#2b6849;padding:5px 10px;border-radius:99px;font-size:12px;font-weight:900}
+.review-you{background:#f5f7f1;padding:14px;border-radius:11px;font-size:14px;color:#274934;margin:13px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.review-point{margin-top:13px;padding:14px;border:1px solid #e1e9dc;background:#f9fbf8;border-radius:12px}
+.review-point strong{font-size:11px;color:#6a906f;letter-spacing:.8px}
+.review-point p{font-size:13px;color:#365640;line-height:1.75;margin:6px 0 0}
+.answer-set{display:grid;gap:9px;margin-top:14px}
+.answer-set .answer-card{padding:11px 13px;border-radius:12px;border:1px solid #e1ebdf;background:#fff}
+.answer-set .answer-card.featured{background:#ebf7ea;border-color:#bcdcc4}
+.answer-set .answer-label{font-size:11px;font-weight:950;color:#aa6448}
+.answer-set .answer-text{font-size:15px;font-weight:850;margin:6px 0;color:#264b36;line-height:1.6}
+.answer-set .answer-card button{font-size:11px;min-height:36px;padding:6px 11px}
+.review-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:19px}
+.history-head h2{font-size:26px;margin:0 0 8px}.history-head p{font-size:12px;color:#748576}
+.history-row{border:1px solid #e1e9df;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;margin:9px 0}
+.history-row .details{font-size:12px;color:#637466;margin-top:4px}
+.history-row strong{font-size:14px}
+@media(max-width:550px){.prompt{padding:19px!important}.prompt h2{font-size:clamp(27px,7vw,34px)!important}.review-nav .btn{padding:11px 8px;font-size:12px}.report-review{margin-top:20px}}
 </style>
 </head>
 <body>
@@ -31,17 +59,17 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 <div class="board">
  <section class="pane active" id="introPane" aria-label="60秒ドリルの設定">
   <div class="time-icon" aria-hidden="true">60</div>
-  <div class="three"><div class="mini"><strong>①</strong>お題を見る</div><div class="mini"><strong>②</strong>英語で声に出す</div><div class="mini"><strong>③</strong>自分で判定</div></div>
-  <label class="mode-label" for="mode">今日の練習</label>
+  <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>全問講評</div><div class="mini"><strong>③</strong>履歴で復習</div></div>
+  <label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
   <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option></select>
-  <button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button>
-  <p class="start-note">マイクなしで遊べるよ。音声入力は任意・追加のAI課金なし。<br>評価は自己判定。文字起こしや発音の正しさを自動採点しません。</p>
+  <label class="privacy-opt"><input type="checkbox" id="saveTranscripts"> 自分が話した英文も、この端末の履歴に保存する（任意）</label><button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button><button class="btn block" type="button" id="openHistory" style="margin-top:9px">📚 過去の練習履歴を見る</button>
+  <p class="start-note">回答例は60秒終了まで非表示。1問ずつ講評してから復習できるよ。<br>追加AI料金なし・自己評価方式。英文の履歴保存は選択制。</p>
  </section>
  <section class="pane" id="playPane" aria-label="英語の瞬発力チャレンジ">
   <div class="top-meter"><div><span class="kicker" style="letter-spacing:1px">REMAINING</span><div id="time" class="remain" aria-label="残り時間">01:00</div></div><div class="reps" id="count" aria-live="polite">0 問チャレンジ中</div></div>
   <div class="bar" aria-hidden="true"><div class="bar-fill" id="progress"></div></div>
-  <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">会話が止まったら</div><p class="prompt-scene" id="situation"></p><h2 id="challenge"></h2><p class="instruction" id="hint"></p></div>
-  <p class="voice-reminder">まずは自力で声に出そう！音声入力は任意・自動採点なし。</p>
+  <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">60 SECOND CHALLENGE</div><p class="prompt-scene" id="situation"></p><div id="promptCue" class="prompt-cue">あなたなら英語で何と言う？</div><h2 id="challenge"></h2></div>
+  <p class="voice-reminder" id="roundNote">例文は終了後の講評で公開。まずは自分の英語を！</p>
 <div class="speech-panel" id="speechPanel">
  <div class="speech-actions"><button class="btn" id="micBtn" type="button">🎙 英語を話して入力</button><button class="btn hidden" id="stopMic" type="button">⏹ 認識停止</button><button class="btn hidden" id="resumeMic" type="button">＋ 続きを話す</button><button class="btn" id="clearSpeech" type="button">✕ 全消し</button></div>
  <label for="transcript">聞き取った英語（手入力・修正もOK）</label>
@@ -64,7 +92,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
    <button class="btn" type="button" id="stuck">↻ 詰まった</button>
   </div>
   <button class="btn orange block hidden" id="next" type="button">次のお題へ →</button>
-  <div class="skip-row"><button class="text-link" id="showSample" type="button">💡 例文を見る</button><button class="text-link" id="finishEarly" type="button">ここで終了</button></div>
+  <div class="skip-row"><span class="meta">✨ 回答例・講評は終了後にまとめて確認</span><button class="text-link" id="finishEarly" type="button">ここで終了</button></div>
  </section>
  <section class="pane end" id="endPane" aria-live="polite">
   <div class="trophy" aria-hidden="true">⚡</div>
@@ -72,17 +100,17 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
-  <div id="missedList" class="missed-list hidden"><h3>次にもう一度言ってみたい表現</h3><div id="missedItems"></div></div>
+  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
- </section>
+ </section><section class="pane" id="historyPane" aria-label="60秒チャレンジの練習履歴"><div class="history-head"><h2>📚 練習履歴</h2><p>保存された各セッションの講評を、もう一度確認できるよ。最新20回を端末内に保存。</p></div><div id="historyList"></div><div class="end-actions"><button class="btn" id="historyBack" type="button">← 設定へ戻る</button><button class="btn" id="clearHistory" type="button">履歴を全削除</button></div></section>
 </div>
-<div class="info">Gemini API・有料の音声サービスは使用しません。マイクは任意で、ブラウザによっては音声が認識サービスへ送られます。<br>認識した英文は画面に表示するだけで保存せず、練習回数・自己評価・苦手カードIDのみ端末内に保存します。<a href="./index.html">旧トップを見る</a></div>
+<div class="info">このドリルではGemini API・有料の音声サービスは不使用。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
 </main>
 <script>
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
-const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1";
+const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1";
 const cards=[
  {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してもらう",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
  {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一度だけ言ってもらう",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
@@ -138,7 +166,7 @@ const EXTRA_ANSWERS={
 };
 
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group);
-let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[];
+let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false;
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const speaker=window.speechSynthesis||null;
 let recognition=null,listenWanted=false,baseSpeech="",finalSpeech="",interimSpeech="",restartCount=0,restartTimer=null;
