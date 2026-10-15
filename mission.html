@@ -279,7 +279,8 @@ function showAiFailure(){
   gemini_invalid_json:'AIの返答を正しく読み取れませんでした。',
   invalid_ai_response:'AIの返答を正しく読み取れませんでした。',
   ai_timeout:'AIからの応答が時間内に届きませんでした。',
-  ai_disabled:'管理者がAIを停止しています。',
+  ai_disabled:'AIの起動設定（ALLOW_AI）がオフ、または再デプロイ時に解除されています。管理者の再設定が必要です。',
+  ai_key_missing:'Cloudflare側にGemini APIキーが設定されていません。管理者による再登録が必要です。',
   limits_unconfigured:'サーバーの利用制限設定が不足しています。'
  };
  const cause=messages[aiErrorCode]||(aiErrorCode.startsWith('gemini_http_')?'Gemini APIがエラーを返しました。':'通信エラーが発生しました。');
