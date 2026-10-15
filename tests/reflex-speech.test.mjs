@@ -5,8 +5,8 @@ import {readFileSync} from "node:fs";
 
 const html=readFileSync(new URL("../reflex.html",import.meta.url),"utf8");
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-function app(){
- const elements=new Map(),timeouts=new Map(),storage=new Map();
+function app(initialStore={}){
+ const elements=new Map(),timeouts=new Map(),storage=new Map(Object.entries(initialStore));
  let counter=0,interval=null;
  const voicesRead=[];
  const fakeSynth={speak:voice=>voicesRead.push(voice),cancel(){},getVoices(){return [{lang:"en-US",name:"English test voice"}]}};
@@ -34,7 +34,7 @@ function app(){
  };
  const sandbox={
   document:{getElementById:makeNode,createElement:()=>makeNode("node-"+elements.size)},
-  window:{SpeechRecognition:FakeRecognizer,speechSynthesis:fakeSynth,SpeechSynthesisUtterance:class{constructor(text){this.text=text}},addEventListener(){}},
+  window:{SpeechRecognition:FakeRecognizer,speechSynthesis:fakeSynth,SpeechSynthesisUtterance:class{constructor(text){this.text=text}},location:{hash:""},confirm(){return true},addEventListener(){}},
   localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)},
   setInterval:fn=>{interval=fn;return 1},clearInterval:()=>{interval=null},
   setTimeout:fn=>{const id=++counter;timeouts.set(id,fn);return id},
@@ -147,4 +147,70 @@ test("end of sixty seconds safely stops any active microphone capture",()=>{
  assert.equal(rec.aborted,true);
  assert.equal(ui.node("endPane").classList.contains("active"),true);
  assert.equal(ui.node("transcript").value,"");
+});
+
+test("every review variant has an individual bookmark toggle and saved words persist across reloads",()=>{
+ const ui=app();ui.click("start");ui.click("spoken");ui.click("finishEarly");
+ const answers=ui.node("reviewAnswers").children;
+ assert.equal(answers.length,3);
+ for(const entry of answers){
+  assert.match(entry.children[3].textContent,/この表現を保存/);
+ }
+ const favorite=answers[1].children[3];
+ favorite.listeners.click();
+ assert.match(favorite.textContent,/保存済み/);
+ assert.equal(ui.node("savedCount").textContent,"1");
+ const stored=JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1"));
+ assert.equal(stored.length,1);
+ assert.equal(stored[0].kind,"natural");
+ assert.equal(stored[0].level,"standard");
+ assert.equal(stored[0].text,answers[1].children[1].textContent);
+ assert.equal(stored[0].transcript,undefined,"Only curated expressions may be bookmarked");
+ const reopened=app(Object.fromEntries(ui.storage));
+ assert.equal(reopened.node("savedCount").textContent,"1");
+ reopened.click("openPhrases");
+ assert.equal(reopened.node("phrasesPane").classList.contains("active"),true);
+ assert.equal(reopened.node("savedPhrasesList").children.length,1);
+ favorite.listeners.click();
+ assert.equal(ui.node("savedCount").textContent,"0");
+ assert.equal(JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1")).length,0);
+});
+
+test("saved phrase book supports hide, reveal, audio replay and delete independently of session history",()=>{
+ const ui=app();ui.click("start");ui.node("saveTranscripts").checked=false;
+ ui.node("transcript").value="a speech transcript that should not be kept";
+ ui.click("spoken");ui.click("finishEarly");
+ ui.node("reviewAnswers").children[0].children[3].listeners.click();
+ ui.node("reviewAnswers").children[2].children[3].listeners.click();
+ ui.click("openPhrasesFromReview");
+ assert.equal(ui.node("savedPhrasesList").children.length,2);
+ assert.equal(ui.node("phraseTotal").textContent,"2表現");
+ assert.equal(ui.node("phrasesPane").classList.contains("active"),true);
+ ui.click("togglePhraseHide");
+ const phrase=ui.node("savedPhrasesList").children[0];
+ assert.equal(phrase.children[4].classList.contains("hidden"),true);
+ const actions=phrase.children[6];
+ actions.children[0].listeners.click();
+ assert.equal(phrase.children[4].classList.contains("hidden"),false);
+ actions.children[1].listeners.click();
+ assert.equal(ui.voicesRead.length,1);
+ actions.children[2].listeners.click();
+ assert.equal(ui.node("savedPhrasesList").children.length,1);
+ const stored=JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1"));
+ assert.equal(stored.length,1);
+ assert.doesNotMatch(JSON.stringify(stored),/speech transcript that should not be kept/);
+ ui.click("phrasesBack");
+ assert.equal(ui.node("endPane").classList.contains("active"),true);
+ ui.click("openHistory");
+ ui.click("clearHistory");
+ assert.equal(ui.storage.get("speakingym-reflex-history-v1"),undefined);
+ assert.equal(JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1")).length,1);
+});
+
+test("sprint start header is a branded 1-minute workout rather than a bare 60 badge",()=>{
+ assert.match(html,/1 MINUTE <em>SPRINT<\/em>/);
+ assert.match(html,/QUICK REACTION WORKOUT/);
+ assert.doesNotMatch(html,/class="time-icon"[^>]*>60<\/div>/);
+ assert.match(html,/id="openPhrases"/);
+ assert.match(html,/id="phrasesPane"/);
 });
