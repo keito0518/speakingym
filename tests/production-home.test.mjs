@@ -33,7 +33,7 @@ test("classic practice remains available and its saved data keys stay in place",
  assert.match(classic,/<title>従来のトレーニング（クラシック版） \| Speakingym<\/title>/);
  assert.match(classic,/class="practice"/);
  assert.match(classic,/speakingym:changed/);
- assert.match(classic,/speakingym-v01-records/);
+ assert.match(classic,/saveStore\(\x27records\x27/);
  assert.match(classic,/href="\.\/index\.html"/);
  assert.match(classic,/<meta name="robots" content="noindex,follow">/);
 });
