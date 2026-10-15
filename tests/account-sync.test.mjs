@@ -102,9 +102,9 @@ test("page changes notify the shared account sync only after local writes",()=>{
  for(const path of ["index.html","reflex.html","scenes.html","mission.html"]){
   assert.match(text(path),/speakingym:changed/,path);
  }
- assert.match(text("firebase-config.js"),/authDomain: "speakingym\\.firebaseapp\\.com"/);
+ assert.match(text("firebase-config.js"),/authDomain: "speakingym\.firebaseapp\.com"/);
  assert.match(text("firebase-config.js"),/projectId: "speakingym"/);
- assert.doesNotMatch(text("firebase-config.js"),/serviceAccount:\\s*\\{/);
- assert.doesNotMatch(text("firebase-config.js"),/private_key\\s*:/);
+ assert.doesNotMatch(text("firebase-config.js"),/serviceAccount:\s*\{/);
+ assert.doesNotMatch(text("firebase-config.js"),/private_key\s*:/);
  assert.match(text("FIREBASE_SETUP.md"),/Spark/);
 });
