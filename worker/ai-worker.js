@@ -3,7 +3,8 @@
  * Never place your Gemini API key in the frontend, Git, or wrangler.toml.
  * Free-tier ONLY: do not link Gemini API project to a billing account.
  */
-const ALLOWED_ORIGIN = "https://keito0518.github.io";
+const PRIMARY_ORIGIN = "https://speakingym.pages.dev";
+const ALLOWED_ORIGINS = new Set([PRIMARY_ORIGIN, "https://keito0518.github.io"]);
 const MODEL = "gemini-3.5-flash-lite";
 const SYSTEM = [
   "You are Emma, a friendly but realistic barista in a Melbourne cafe.",
@@ -62,10 +63,10 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true" }, 200, ALLOWED_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true" }, 200, PRIMARY_ORIGIN);
     }
     // Origin checks only restrict browser use. They are not authentication.
-    if (origin !== ALLOWED_ORIGIN) {
+    if (!ALLOWED_ORIGINS.has(origin)) {
       return new Response("Origin not allowed", { status: 403 });
     }
     if (request.method === "OPTIONS") {
