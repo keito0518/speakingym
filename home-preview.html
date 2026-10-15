@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f8f3">
+<meta name="description" content="Speakingymの新しいホーム画面試作。AIと自由に話す実戦トレーニング、AIを使わない60秒瞬発力ドリル、あなたの言い換え復習。">
+<title>Speakingym NEXT — 新ホームプレビュー</title>
+<style>
+:root{--ink:#18372b;--muted:#657669;--bg:#f6f8f3;--green:#1b4f39;--line:#e2e9df;--orange:#f47c58;--cream:#fdf4e8;--white:#fff;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;line-height:1.65;color:var(--ink)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:var(--bg)}button,a{touch-action:manipulation}button{font:inherit;cursor:pointer}a{text-decoration:none;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid #fa987c;outline-offset:3px}
+.site-head{height:75px;background:#fff;border-bottom:1px solid var(--line)}.head-inner{max-width:1170px;height:100%;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-size:25px;font-weight:950;letter-spacing:-1.5px;line-height:1}.logo span{color:var(--orange)}.nav{display:flex;gap:28px;font-size:13px;font-weight:750;align-items:center}.nav a:hover{text-decoration:underline}.preview{color:#47725a;font-size:11px;font-weight:900;padding:6px 10px;border:1px solid #cce1d1;border-radius:100px;letter-spacing:.4px}
+.wrapper{max-width:1170px;margin:auto;padding:0 24px}.hero{display:grid;grid-template-columns:1.04fr .96fr;gap:32px;padding-top:70px;padding-bottom:72px;align-items:center}
+.eyebrow{font-weight:950;color:#bf654a;letter-spacing:2.1px;font-size:12px;text-transform:uppercase}.hero h1{font-size:clamp(41px,5.4vw,68px);line-height:1.17;letter-spacing:-2.5px;margin:18px 0 25px;font-weight:950}.hero h1 em{font-style:normal;color:#e76f4e}.lead{font-size:16px;color:#5a6b5c;line-height:2;max-width:530px}.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:29px 0 20px}
+.btn{border:1px solid #d4e1d3;border-radius:14px;padding:13px 20px;font-size:14px;display:inline-flex;gap:11px;justify-content:center;align-items:center;font-weight:900;background:#fff;color:#244935;transition:transform .15s ease,box-shadow .15s ease}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px #15382517}.btn.primary{background:var(--green);color:white;border-color:var(--green)}.btn.orange{background:var(--orange);color:#fff;border-color:var(--orange)}
+.smallline{color:#829083;font-size:12px;font-weight:650}.micro-label{font-size:10px;font-weight:950;color:#7d8d80;letter-spacing:1px;text-transform:uppercase}
+.showcase{position:relative;min-height:480px;display:flex;justify-content:center;align-items:center}
+.orb{position:absolute;width:93%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 55% 36%,#e9f3dc 3%,#d5e8d9 49%,#f2f3ec 74%);opacity:.96}
+.mock{position:relative;width:min(408px,94%);background:#fff;border:1px solid #dce7da;border-radius:26px;padding:19px;box-shadow:0 36px 80px #2146321c;transform:rotate(-2deg)}
+.mock-head{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:13px}.avatar{border-radius:14px;width:42px;height:42px;display:grid;place-items:center;background:#e5f2e8;font-size:23px}.mock-name{font-weight:850;font-size:14px}.mock-note{font-size:11px;color:#738375}.status-bubble{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;margin-top:16px;max-width:89%;background:#eff5eb}
+.user-bubble{background:#ffebdf;margin-left:auto;text-align:left}.mock-footer{margin-top:20px;border-top:1px solid var(--line);display:flex;gap:8px;padding-top:13px}.wave{height:31px;flex:1;border-radius:99px;background:#f0f3ee;display:flex;align-items:center;justify-content:center;gap:4px}.wave i{width:3px;border-radius:4px;background:#7da994;height:11px}.wave i:nth-child(2),.wave i:nth-child(6){height:23px}.wave i:nth-child(3),.wave i:nth-child(5){height:16px}.wave i:nth-child(4){height:27px}.mock-send{height:31px;border-radius:100px;background:var(--orange);font-size:12px;font-weight:900;color:#fff;display:grid;place-items:center;padding:0 15px}
+.floating{position:absolute;z-index:2;font-size:12px;border:1px solid #f3d5c3;background:#fff9ee;box-shadow:0 12px 35px #233c2922;padding:10px 13px;border-radius:13px;font-weight:850;right:-10px;bottom:31px;transform:rotate(3deg)}
+.section-top{margin-bottom:24px}.section-top h2{font-size:clamp(26px,3.6vw,37px);letter-spacing:-.8px;line-height:1.4;margin:9px 0 7px}.section-top p{color:var(--muted);font-size:14px;margin:0}
+.workouts{display:grid;grid-template-columns:1.15fr .85fr;gap:20px}.workout{border-radius:25px;padding:29px;display:flex;flex-direction:column;min-height:380px;position:relative;overflow:hidden}.workout>*{position:relative;z-index:1}.workout h3{font-size:30px;letter-spacing:-1px;margin:13px 0 12px}.workout p{font-size:14px;line-height:1.9;margin:0;max-width:440px}.workout .tag{align-self:flex-start;font-size:11px;font-weight:850;border:1px solid currentColor;border-radius:30px;padding:5px 11px;opacity:.82}.workout .workout-link{align-self:flex-start;margin-top:auto;padding-top:23px;font-size:14px;font-weight:950}.workout-dark{background:#1c503a;color:#fff}.workout-dark:after{content:'✳';position:absolute;font-size:240px;color:#ffffff0c;top:-44px;right:-10px}.workout-light{background:#ffede0;color:#513a2f;border:1px solid #f2dcc9}.workout-light:after{content:'↗';position:absolute;font-size:275px;color:#f1b59335;top:-104px;right:-26px}
+.workout .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:21px}.workout .chip{font-size:11px;font-weight:800;background:#ffffff25;border:1px solid #ffffff19;padding:5px 9px;border-radius:99px}.workout-light .chip{background:#fff9f1;border-color:#f1d7c7}
+.dashboard{padding-top:78px;padding-bottom:80px}
+.reviews{display:grid;grid-template-columns:.95fr 1.05fr;gap:18px}.review-card,.habit-card{border:1px solid var(--line);background:#fff;border-radius:22px;padding:24px;min-height:215px}.review-card .number{font-size:42px;letter-spacing:-2px;font-weight:950;line-height:1.2}.review-card h3,.habit-card h3{margin:6px 0 10px;font-size:19px}.review-card p,.habit-card p{font-size:13px;color:var(--muted);line-height:1.8}
+.rewrite-box{background:#f2f6ef;border-radius:12px;padding:15px;margin-top:14px}.rewrite-box .old{font-size:12px;color:#65776a}.rewrite-box .new{font-size:14px;font-weight:850;color:#1b6140;margin-top:8px}.review-nav{display:flex;justify-content:space-between;align-items:center;margin-top:13px}.plain{border:0;background:transparent;font-size:12px;font-weight:900;color:#21593f;padding:7px 0}
+.habit-stat{display:flex;gap:14px;margin-top:22px}.stat{flex:1;background:#f4f6f1;border-radius:13px;padding:17px 13px}.stat strong{display:block;font-size:27px;line-height:1.2}.stat span{color:#66786a;font-size:11px;font-weight:800}
+.concept{background:#eaf2e8;border-block:1px solid #d8e7d7;padding:49px 0}.concept-inner{display:flex;justify-content:space-between;align-items:center;gap:28px}.concept h2{font-size:25px;margin:0 0 12px}.concept p{max-width:680px;font-size:13px;color:#526b59;line-height:2;margin:0}.footer{padding:29px 24px;text-align:center;font-size:11px;color:#7a8a7c}.footer a{text-decoration:underline}
+@media(max-width:800px){.hero{grid-template-columns:1fr;padding-top:42px;padding-bottom:38px;gap:0}.hero h1{font-size:clamp(41px,10vw,57px);letter-spacing:-1.9px}.showcase{min-height:380px;margin-top:16px}.mock{width:min(408px,83%)}.floating{right:2%;bottom:10px}.workouts,.reviews{grid-template-columns:1fr}.workout{min-height:320px}.nav{gap:13px;font-size:11px}.preview{display:none}.dashboard{padding-top:50px;padding-bottom:45px}.concept-inner{display:block}.concept .btn{margin-top:20px}}
+@media(max-width:520px){.site-head{height:64px}.head-inner,.wrapper{padding-left:17px;padding-right:17px}.logo{font-size:22px}.nav a:last-child{display:none}.hero h1{font-size:43px;line-height:1.23}.lead{font-size:14px}.cta-row .btn{flex:1 1 100%}.mock{padding:15px}.showcase{min-height:343px}.workout{padding:24px;min-height:305px}.workout h3{font-size:27px}.review-card,.habit-card{padding:19px}.concept{padding:33px 0}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+</style>
+</head>
+<body>
+<header class="site-head"><div class="head-inner">
+ <a class="logo" href="./home-preview.html" aria-label="Speakingym Next">speakin<span>gym.</span></a>
+ <nav class="nav" aria-label="メインメニュー"><a href="#workouts">WORKOUTS</a><a href="#your-words">MY WORDS</a><a href="./index.html">旧トップ ↗</a></nav>
+ <span class="preview">NEW HOME · PREVIEW</span>
+</div></header>
+<main>
+<section class="wrapper hero">
+ <div>
+  <div class="eyebrow">MAKE ENGLISH A REFLEX.</div>
+  <h1>考える前に、<br><em>ひと言</em>が出る。</h1>
+  <p class="lead">暗記だけでは、会話は続かない。<br>AIと話す「実戦」と、とっさの一言を鍛える「瞬発力」。<br>2つのワークアウトで、英語が口から出る自分へ。</p>
+  <div class="cta-row">
+   <a class="btn primary" href="./scenes.html">AIと実戦英会話 <span aria-hidden="true">↗</span></a>
+   <a class="btn" href="./reflex.html">60秒スプリントを試す <span aria-hidden="true">→</span></a>
+  </div>
+  <p class="smallline">無料ベータ版・会員登録不要。AIの利用上限あり／決済機能なし。</p>
+ </div>
+ <div class="showcase" aria-label="AI会話ワークアウトのイメージ">
+  <div class="orb" aria-hidden="true"></div>
+  <div class="mock">
+   <div class="mock-head"><span class="avatar" aria-hidden="true">🏨</span><div><div class="mock-name">Sophie <span class="micro-label">· Reception</span></div><div class="mock-note">ADVANCED · Hotel check-in</div></div></div>
+   <div class="status-bubble">I’m sorry, but the ocean-view room you booked isn’t available tonight.</div>
+   <div class="status-bubble user-bubble">I understand, but I paid extra for that room. Could we discuss an alternative?</div>
+   <div class="status-bubble">Of course. What would be a fair solution for you?</div>
+   <div class="mock-footer"><div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="mock-send">SPEAK →</div></div>
+  </div>
+  <div class="floating">✦ 会話後には、自然な言い換えも</div>
+ </div>
+</section>
+<section class="wrapper" id="workouts">
+ <div class="section-top"><div class="eyebrow">TWO DIFFERENT WORKOUTS</div><h2>使う英語と、とっさの英語。</h2><p>どちらも話す練習。でも鍛える力は違う。</p></div>
+ <div class="workouts">
+  <a class="workout workout-dark" href="./scenes.html" aria-label="AI実戦英会話を始める">
+   <span class="tag">01 / REAL CONVERSATION</span>
+   <h3>AIと、本番を<br>やってみる。</h3>
+   <p>ホテルでの交渉、空港のトラブル、ちょっと深い雑談。あなたの発言で会話が変わる。終わったら自然な言い換えを復習。</p>
+   <div class="chip-row"><span class="chip">3つの場面</span><span class="chip">難易度3段階</span><span class="chip">AI添削</span></div>
+   <span class="workout-link">会話のミッションを選ぶ ↗</span>
+  </a>
+  <a class="workout workout-light" href="./reflex.html" aria-label="60秒スプリントを始める">
+   <span class="tag">02 / QUICK REACTION</span>
+   <h3>60秒で、<br>口を動かす。</h3>
+   <p>「聞き返す」「時間を稼ぐ」「丁寧に断る」。会話が止まりそうな瞬間を想定した、短い切り返しドリル。AI不要でサクッと。</p>
+   <div class="chip-row"><span class="chip">1分で完了</span><span class="chip">切り返し特化</span><span class="chip">API利用なし</span></div>
+   <span class="workout-link">瞬発力スプリントへ →</span>
+  </a>
+ </div>
+</section>
+<section class="wrapper dashboard" id="your-words">
+ <div class="section-top"><div class="eyebrow">MAKE IT STICK</div><h2>話しっぱなしにしない。</h2><p>昨日つまずいた表現が、明日は口から出るように。</p></div>
+ <div class="reviews">
+  <section class="review-card" aria-labelledby="review-heading">
+   <div class="micro-label">MY WORDS · LOCAL REVIEW</div>
+   <h3 id="review-heading">自分の言い換え帳</h3>
+   <div id="savedWords" aria-live="polite"><p>AI英会話で言い換えを保存すると、ここに表示されるよ。</p></div>
+   <div class="review-nav"><span id="wordCounter" class="smallline">この端末に保存</span><button class="plain" id="nextWord" type="button" hidden>次の表現 ↻</button></div>
+  </section>
+  <section class="habit-card" aria-labelledby="habit-heading">
+   <div class="micro-label">YOUR WORKOUT LOG</div>
+   <h3 id="habit-heading">今日の一歩が、次につながる。</h3>
+   <p>瞬発力トレーニングの記録は、この端末内に保存。正確な英語力の採点ではなく、自分の「言えた」を積み重ねよう。</p>
+   <div class="habit-stat">
+    <div class="stat"><strong id="totalRuns">0</strong><span>スプリント回数</span></div>
+    <div class="stat"><strong id="totalSpoken">0</strong><span>自分で「言えた」回数</span></div>
+   </div>
+  </section>
+ </div>
+</section>
+<section class="concept"><div class="wrapper concept-inner">
+ <div><h2>英語は、知識だけじゃない。</h2><p>Speakingymは、正解を眺めるためのサイトではなく、言葉が出てこないあの数秒を減らすための場所。間違えたら言い直していい。まずは声に出してみよう。</p></div>
+ <a class="btn primary" href="./scenes.html">実戦英会話を始める ↗</a>
+</div></section>
+</main>
+<footer class="footer">Speakingym NEXT · ホームページ試作　<a href="./index.html">現在のホームに戻る</a>　<a href="./mission.html">カフェミッション</a></footer>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+function getSaved(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch(e){return null}}
+const words=getSaved("speakingym-saved-coaching-v1");
+const safeWords=Array.isArray(words)?words.filter(x=>x&&typeof x.original==="string"&&typeof x.natural==="string"&&x.original.length<600&&x.natural.length<600).slice(0,20):[];
+let wordIndex=0;
+function showWord(){
+ const box=$("savedWords");box.replaceChildren();
+ if(!safeWords.length){
+  const p=document.createElement("p");p.textContent="まだ保存した表現はないよ。AI英会話で添削を受け、使いたい表現を保存してみよう。";box.append(p);$("nextWord").hidden=true;$("wordCounter").textContent="未保存";return;
+ }
+ const word=safeWords[wordIndex%safeWords.length];
+ const panel=document.createElement("div");panel.className="rewrite-box";
+ const original=document.createElement("div");original.className="old";original.textContent="YOU SAID: "+word.original;
+ const improved=document.createElement("div");improved.className="new";improved.textContent="NEXT TIME: "+word.natural;
+ panel.append(original,improved);box.append(panel);
+ $("wordCounter").textContent=(wordIndex%safeWords.length+1)+" / "+safeWords.length+" 表現";
+ $("nextWord").hidden=safeWords.length<2;
+}
+$("nextWord").addEventListener("click",()=>{wordIndex++;showWord()});
+const log=getSaved("speakingym-reflex-stats-v1");
+if(log&&typeof log==="object"){
+ $("totalRuns").textContent=String(Math.max(0,Math.min(99999,Number(log.sessions)||0)));
+ $("totalSpoken").textContent=String(Math.max(0,Math.min(99999,Number(log.spoken)||0)));
+}
+showWord();
+})();
+</script>
+</body>
+</html>
