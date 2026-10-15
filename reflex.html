@@ -144,7 +144,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
  <section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
   <div class="teacher-head"><span aria-hidden="true">👩‍🏫</span><div><strong>英会話教師からのアドバイス</strong><p>あなたが話した英文を、良かった点・改善する表現・練習課題まで丁寧にフィードバック。</p></div></div>
-  <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini無料枠を1回使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
+  <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini1回だけ無料枠のAPIリクエストを使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
   <button class="btn primary block" type="button" id="requestTeacher">✨ AI先生に個別講評してもらう</button>
   <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
   <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
@@ -664,7 +664,8 @@ function renderTeacherFeedback(){
  const root=$("teacherFeedback");root.replaceChildren();
  const feedback=feedbackFor(reviewIndex);
  const hasText=!!reviewSession?.attempts?.[reviewIndex]?.transcript?.trim();
- $("requestTeacher").classList.toggle("hidden",!hasText||!!feedback);
+ const alreadyAsked=!!readTeacherCache().find(x=>x.date===reviewSession?.date)||currentTeacherNotes?.date===reviewSession?.date;
+ $("requestTeacher").classList.toggle("hidden",!hasText||alreadyAsked||!!feedback);
  $("requestTeacher").disabled=teacherInFlight;
  if(!hasText&&!feedback){
   root.classList.add("hidden");
@@ -673,7 +674,7 @@ function renderTeacherFeedback(){
  }
  if(!feedback){
   root.classList.add("hidden");
-  if(!teacherInFlight)$("teacherStatus").textContent="現在は教材ベースの講評です。ボタンを押すと、実際の回答を基に詳しいアドバイスを生成します。";
+  if(!teacherInFlight)$("teacherStatus").textContent=alreadyAsked?"無料枠を節約するため、このセッションの個別添削は最大5問までです。他の問題は教材の解説を見て復習しよう。":"現在は教材ベースの講評です。ボタンを押すと、実際の回答を基に詳しいアドバイスを生成します。";
   return;
  }
  $("teacherStatus").textContent="✨ あなたの英文を踏まえたAI個別講評";
@@ -691,7 +692,7 @@ function renderTeacherFeedback(){
  root.append(bookmark);
 }
 async function requestTeacherFeedback(){
- if(teacherInFlight||!reviewSession?.date)return;
+ if(teacherInFlight||!reviewSession?.date||readTeacherCache().some(x=>x.date===reviewSession.date)||currentTeacherNotes?.date===reviewSession.date)return;
  const requests=[],mapping=[];
  for(const [index,item] of reviewSession.attempts.entries()){
   if(requests.length>=5)break;
@@ -893,7 +894,7 @@ $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
  if(!window.confirm("この端末に保存した60秒チャレンジの履歴をすべて削除しますか？"))return;
- try{localStorage.removeItem(HISTORY_KEY)}catch(e){}
+ try{localStorage.removeItem(HISTORY_KEY);localStorage.removeItem(TEACHER_KEY);currentTeacherNotes=null}catch(e){}
  showHistory();
 });
 updateBookmarkCount();
