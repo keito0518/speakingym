@@ -82,6 +82,21 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .saved-phrase-card .phrase-actions .btn{font-size:12px;min-height:39px;padding:8px 13px}
 @media(max-width:550px){.sprint-identity{padding:16px 13px;gap:10px}.sprint-lightning{font-size:24px;flex-basis:43px;width:43px;height:43px;border-radius:12px}.sprint-overline{font-size:8px;letter-spacing:.8px}.sprint-duration{font-size:9px;padding:5px 7px}.sprint-caption{font-size:10px}.intro-shortcuts{gap:7px}.intro-shortcuts .btn{padding:9px 6px;font-size:11px}}
 
+
+.teacher-panel{background:linear-gradient(150deg,#f0f7ed,#fff9f1);border:1px solid #c9dcc9;border-radius:15px;padding:17px;margin:17px 0 10px;text-align:left}
+.teacher-head{display:flex;align-items:center;gap:11px}
+.teacher-head>span{background:#deefdf;width:46px;height:46px;display:grid;place-items:center;border-radius:13px;font-size:25px;flex-shrink:0}
+.teacher-head strong{font-size:16px;color:#18402e}
+.teacher-head p{font-size:12px;color:#54715b;line-height:1.65;margin:3px 0}
+.teacher-privacy{font-size:11px;line-height:1.7;color:#6f806e;margin:14px 0}
+.teacher-status{font-size:12px;color:#536c59;margin:10px 0;line-height:1.65;min-height:18px}
+.teacher-feedback{border-top:1px solid #d6e7d5;margin-top:15px;padding-top:16px}
+.teacher-feedback .feedback-title{font-weight:900;color:#20553b;font-size:12px;margin-top:10px}
+.teacher-feedback p{font-size:14px;line-height:1.8;margin:5px 0 11px;color:#2d4936;overflow-wrap:anywhere}
+.teacher-feedback .personal-rewrite{font-size:17px;color:#1d704d;font-weight:850;background:#fff;border:1px solid #bed7c5;border-radius:10px;padding:11px 13px}
+.teacher-feedback .teacher-link{font-size:11px;margin-top:7px}
+.teacher-feedback button{font-size:12px}
+@media(max-width:550px){.teacher-panel{padding:14px}.teacher-head strong{font-size:15px}}
 </style>
 </head>
 <body>
@@ -126,7 +141,14 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
-  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
+  <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><div class="review-point"><strong>✓ GOOD POINT</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ NEXT TIME</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
+ <section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
+  <div class="teacher-head"><span aria-hidden="true">👩‍🏫</span><div><strong>英会話教師からのアドバイス</strong><p>あなたが話した英文を、良かった点・改善する表現・練習課題まで丁寧にフィードバック。</p></div></div>
+  <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini無料枠を1回使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
+  <button class="btn primary block" type="button" id="requestTeacher">✨ AI先生に個別講評してもらう</button>
+  <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
+  <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
+ </section><div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./home-preview.html">新ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a></div>
  </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
   <div class="history-head"><div class="kicker">MY EXPRESSION BOOK</div><h2>📌 自分のフレーズ帳</h2><p>講評から保存した英語を、何度でも声に出そう。英語を隠す練習もできるよ。すべてこの端末内に保存。</p></div>
@@ -135,13 +157,14 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <div class="end-actions"><button type="button" class="btn" id="phrasesBack">← 設定へ戻る</button></div>
  </section><section class="pane" id="historyPane" aria-label="60秒チャレンジの練習履歴"><div class="history-head"><h2>📚 練習履歴</h2><p>保存された各セッションの講評を、もう一度確認できるよ。最新20回を端末内に保存。</p></div><div id="historyList"></div><div class="end-actions"><button class="btn" id="historyBack" type="button">← 設定へ戻る</button><button class="btn" id="clearHistory" type="button">履歴を全削除</button></div></section>
 </div>
-<div class="info">このドリルではGemini API・有料の音声サービスは不使用。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
+<div class="info">このドリル本体ではGemini API・有料の音声サービスは不使用。講評画面の「AI先生」を希望して押した場合に限り、無料枠のGeminiへ最大5問の英文を1回送信します。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./index.html">旧トップを見る</a></div>
 </main>
 <script>
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
-const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1",PHRASES_KEY="speakingym-reflex-saved-phrases-v1";
+const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1",PHRASES_KEY="speakingym-reflex-saved-phrases-v1",TEACHER_KEY="speakingym-reflex-ai-teacher-v1";
+const AI_ENDPOINT="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
 const cards=[
  {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してもらう",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
  {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一度だけ言ってもらう",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
@@ -512,8 +535,9 @@ function transcriptObservation(text){
  return "回答の英文を残せているので、お手本と見比べて言い直す練習ができるよ。";
 }
 // The phrase book is independent of session history: bookmarks survive old-history cleanup.
-const PHRASES_MAX=100,PHRASE_KINDS=["quick","natural","polite"];
+const PHRASES_MAX=100,PHRASE_KINDS=["quick","natural","polite","teacher"];
 let phraseReturnPane="introPane";
+let teacherInFlight=false,teacherEpoch=0;
 function readSavedPhrases(){
  const stored=readJSON(PHRASES_KEY,[]);
  if(!Array.isArray(stored))return [];
@@ -590,7 +614,7 @@ function renderPhraseBook(){
  for(const item of items){
   const container=document.createElement("article");container.className="saved-phrase-card";
   const badge=document.createElement("div");badge.className="phrase-level";
-  badge.textContent=({easy:"基礎",standard:"標準",challenge:"応用"}[item.level])+" · "+({quick:"QUICK",natural:"NATURAL",polite:"POLITE"}[item.kind]);
+  badge.textContent=({easy:"基礎",standard:"標準",challenge:"応用"}[item.level])+" · "+({quick:"QUICK",natural:"NATURAL",polite:"POLITE",teacher:"AI TEACHER"}[item.kind]);
   const title=document.createElement("h3");title.textContent=item.goal;
   const scenario=document.createElement("div");scenario.className="phrase-meaning";scenario.textContent=item.situation;
   const expression=document.createElement("p");expression.className="phrase-english";expression.textContent=item.text;
@@ -618,6 +642,111 @@ function renderPhraseBook(){
   root.append(container);
  }
 }
+// AI feedback is never generated automatically; only a deliberate click sends user text.
+function readTeacherCache(){
+ const data=readJSON(TEACHER_KEY,[]);
+ if(!Array.isArray(data))return [];
+ return data.filter(x=>x&&typeof x==="object"&&typeof x.date==="string"&&Array.isArray(x.notes)).slice(0,20);
+}
+function feedbackFor(index){
+ const entry=readTeacherCache().find(x=>x.date===reviewSession?.date);
+ const found=(currentTeacherNotes?.date===reviewSession?.date?currentTeacherNotes:entry)?.notes?.find(x=>x.attemptIndex===index);
+ return found?.feedback||null;
+}
+function saveTeacherNotes(sessionDate,notes){
+ try{
+  const other=readTeacherCache().filter(x=>x.date!==sessionDate);
+  localStorage.setItem(TEACHER_KEY,JSON.stringify([{date:sessionDate,notes},...other].slice(0,20)));
+  return true;
+ }catch(e){return false}
+}
+function renderTeacherFeedback(){
+ const root=$("teacherFeedback");root.replaceChildren();
+ const feedback=feedbackFor(reviewIndex);
+ const hasText=!!reviewSession?.attempts?.[reviewIndex]?.transcript?.trim();
+ $("requestTeacher").classList.toggle("hidden",!hasText||!!feedback);
+ $("requestTeacher").disabled=teacherInFlight;
+ if(!hasText){
+  root.classList.add("hidden");
+  $("teacherStatus").textContent="個別講評には実際に話した英文が必要です。次回はマイク認識または文字入力を使ってね。";
+  return;
+ }
+ if(!feedback){
+  root.classList.add("hidden");
+  if(!teacherInFlight)$("teacherStatus").textContent="現在は教材ベースの講評です。ボタンを押すと、実際の回答を基に詳しいアドバイスを生成します。";
+  return;
+ }
+ $("teacherStatus").textContent="✨ あなたの英文を踏まえたAI個別講評";
+ root.classList.remove("hidden");
+ for(const [label,key] of [["✓ ここが良かった","praise"],["↗ 次に直すところ","improvement"],["より自然な言い換え","improved"],["📖 先生の解説","why"],["🎯 次の練習","practice"]]){
+  const title=document.createElement("div");title.className="feedback-title";title.textContent=label;
+  const p=document.createElement("p");p.textContent=feedback[key];if(key==="improved")p.className="personal-rewrite";
+  root.append(title,p);
+ }
+ const item=reviewSession.attempts[reviewIndex],card=cards.find(x=>x.id===item.cardId),task=taskFor(card,reviewSession.level);
+ const entry=bookmarkRecord(card,reviewSession.level,"teacher",feedback.improved,task);
+ const bookmark=document.createElement("button");bookmark.type="button";bookmark.className="btn save-phrase";
+ updateBookmarkButton(bookmark,entry);
+ bookmark.addEventListener("click",()=>toggleBookmark(entry,bookmark));
+ root.append(bookmark);
+}
+async function requestTeacherFeedback(){
+ if(teacherInFlight||!reviewSession?.date)return;
+ const requests=[],mapping=[];
+ for(const [index,item] of reviewSession.attempts.entries()){
+  if(requests.length>=5)break;
+  const text=typeof item.transcript==="string"?item.transcript.trim():"";
+  const card=cards.find(c=>c.id===item.cardId);
+  if(!card||!text)continue;
+  const task=taskFor(card,reviewSession.level);
+  requests.push({index:requests.length,text:text.slice(0,450),situation:task.situation.slice(0,270),goal:task.challenge.slice(0,330)});
+  mapping.push(index);
+ }
+ if(!requests.length){
+  $("teacherStatus").textContent="英文がないため個別講評は作れません。次回は音声認識または文字入力で回答を残してね。";return;
+ }
+ const date=reviewSession.date,epoch=++teacherEpoch;
+ teacherInFlight=true;$("requestTeacher").disabled=true;
+ $("teacherStatus").textContent="AI先生が英文を読み、良い点と改善案を考えています…";
+ try{
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),19000);
+  let response;
+  try{
+   response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"reflex_coach",level:reviewSession.level,attempts:requests}),signal:controller.signal});
+  }finally{clearTimeout(timeout)}
+  const body=await response.json().catch(()=>({error:"invalid_json"}));
+  if(!response.ok)throw Error(String(body.error||"server_unavailable"));
+  if(!Array.isArray(body.feedback)||body.feedback.length!==requests.length)throw Error("invalid_ai_response");
+  const keys=["praise","improvement","improved","why","practice"];
+  const notes=body.feedback.map((item,i)=>{
+   if(item.index!==i||keys.some(k=>typeof item[k]!=="string"||!item[k].trim()))throw Error("invalid_ai_response");
+   const clean=Object.fromEntries(keys.map(k=>[k,item[k].trim().slice(0,450)]));
+   return {attemptIndex:mapping[i],feedback:clean};
+  });
+  saveTeacherNotes(date,notes);
+  // Keep feedback working within the current tab even if browser storage is disabled.
+  currentTeacherNotes={date,notes};
+  if(epoch===teacherEpoch&&reviewSession?.date===date)renderTeacherFeedback();
+ }catch(e){
+  if(epoch!==teacherEpoch)return;
+  const code=String(e?.message||"unknown");
+  const errors={
+   invalid_utterance:"通信形式を確認してください。",
+   invalid_coaching_input:"講評用データを読み取れません。",
+   gemini_quota:"無料枠の上限に達しました。今日はここまでにして、また後で試してね。",
+   rate_limited:"現在混雑しています。少し待ってから試してね。",
+   ai_disabled:"現在AI機能が停止中です。",
+   ai_timeout:"AIの返答が間に合いませんでした。",
+   invalid_ai_response:"AIから講評データを正常に受け取れませんでした。"
+  };
+  $("teacherStatus").textContent=(errors[code]||"AI先生に接続できませんでした。AIサーバーの更新がまだの場合があります。")+" 既存の解説と保存フレーズはそのまま使えます。";
+ }finally{
+  if(epoch===teacherEpoch){teacherInFlight=false;$("requestTeacher").disabled=false;}
+ }
+}
+let currentTeacherNotes=null;
 function showReview(index){
  const a=reviewSession?.attempts||[];
  if(!a.length){$("reportReview").classList.add("hidden");return}
@@ -654,6 +783,7 @@ function showReview(index){
   box.append(heading,text,listen,bookmark);parent.append(box);
  }
  $("saveStatus").textContent="使いたい表現は📌で保存して、フレーズ帳でいつでも復習できるよ。";
+ renderTeacherFeedback();
  $("reviewPrev").disabled=reviewIndex===0;
  $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
 }
@@ -758,6 +888,7 @@ $("openPhrases").addEventListener("click",()=>showSavedPhrases("introPane"));
 $("openPhrasesFromReview").addEventListener("click",()=>showSavedPhrases("endPane"));
 $("phrasesBack").addEventListener("click",()=>pane(phraseReturnPane));
 $("togglePhraseHide").addEventListener("click",()=>{hideSavedEnglish=!hideSavedEnglish;renderPhraseBook()});
+$("requestTeacher").addEventListener("click",requestTeacherFeedback);
 $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
@@ -767,7 +898,7 @@ $("clearHistory").addEventListener("click",()=>{
 });
 updateBookmarkCount();
 if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
-window.addEventListener("pagehide",()=>{stopTimer();stopListening();cancelReading();});
+window.addEventListener("pagehide",()=>{teacherEpoch++;stopTimer();stopListening();cancelReading();});
 })();
 </script>
 </body>
