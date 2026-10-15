@@ -119,7 +119,7 @@ function requirementText(){
 }
 function setStatus(txt){$('status').textContent=txt;}
 function setMessage(text){$('recognitionNote').textContent=text;}
-function saveStats(){try{localStorage.setItem(KEY,JSON.stringify(stats))}catch(e){}$('attempts').textContent=stats.attempts+'回';$('clears').textContent=stats.clears+'回'}
+function saveStats(){try{localStorage.setItem(KEY,JSON.stringify(stats));window.dispatchEvent?.(new CustomEvent('speakingym:changed',{detail:{key:KEY}}))}catch(e){}$('attempts').textContent=stats.attempts+'回';$('clears').textContent=stats.clears+'回'}
 function addMessage(who,text){
  messages.push({role:who==='You'?'user':'assistant',content:String(text||'')});
  if(messages.length>22)messages.splice(0,messages.length-22);
@@ -524,5 +524,6 @@ window.addEventListener('beforeunload',()=>{stopSpeech();stopRecognizer();if(tim
 $('requirements').textContent=requirementText();saveStats();updateEndpoint();
 })();
 </script>
+<script type="module" src="./account-sync.js"></script>
 </body>
 </html>
