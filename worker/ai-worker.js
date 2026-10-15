@@ -1,3 +1,4 @@
+import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
  * Never place your Gemini API key in the frontend, Git, or wrangler.toml.
@@ -244,7 +245,7 @@ function headersFor(origin) {
     "Cache-Control": "no-store",
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Vary": "Origin",
     "X-Content-Type-Options": "nosniff"
   };
@@ -273,7 +274,7 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB }, 200, PRIMARY_ORIGIN);
     }
     // Origin checks only restrict browser use. They are not authentication.
     if (!ALLOWED_ORIGINS.has(origin)) {
@@ -281,6 +282,22 @@ export default {
     }
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: headersFor(origin) });
+    }
+    if (planEnabled(env) && (path === "/entitlement" || path === "/sessions")) {
+      if (!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
+      let uid;
+      try{uid=await verifyFirebaseIdToken(request)}
+      catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      try{
+        if(path==="/entitlement" && request.method==="GET"){
+          return reply(await getEntitlement(env.PLAN_DB,uid),200,origin);
+        }
+        if(path==="/sessions" && request.method==="POST"){
+          const session=await startSession(env.PLAN_DB,uid);
+          return session?reply(session,200,origin):reply({error:"daily_session_limit"},429,origin);
+        }
+      }catch{return reply({error:"plans_unavailable"},503,origin)}
+      return reply({error:"not_found"},404,origin);
     }
     if (path !== "/" || request.method !== "POST") {
       return reply({ error: "not_found" }, 404, origin);
@@ -315,7 +332,33 @@ export default {
     }
     let body;
     try { body = await request.json(); } catch { return reply({ error: "invalid_json" }, 400, origin); }
-    if (body?.action === "reflex_coach") return runReflexCoaching(body, env, origin);
+    // The authenticated D1 guard is the actual subscription/usage boundary.
+    // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
+    let planUid=null,teacherReservation=null;
+    if(planEnabled(env)){
+      if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
+      try{planUid=await verifyFirebaseIdToken(request)}
+      catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      try{
+        if(body?.action==="reflex_coach"){
+          // Validate before spending a daily AI teacher request.
+          if(!validateReflexCoaching(body?.attempts) || !["easy","standard","challenge"].includes(body?.level))
+            return reply({error:"invalid_coaching_input"},400,origin);
+          teacherReservation=await consumeTeacher(env.PLAN_DB,planUid);
+          if(!teacherReservation)return reply({error:"daily_teacher_limit"},429,origin);
+        }else{
+          if(!await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId))
+            return reply({error:"session_not_active"},403,origin);
+        }
+      }catch{return reply({error:"plans_unavailable"},503,origin)}
+    }
+    if(body?.action === "reflex_coach"){
+      const result=await runReflexCoaching(body,env,origin);
+      if(result.status!==200&&teacherReservation){
+        try{await refundTeacher(env.PLAN_DB,planUid,teacherReservation.id)}catch{}
+      }
+      return result;
+    }
     const text = typeof body?.userText === "string" ? body.userText.trim() : "";
     if (!text || text.length > 450) {
       return reply({ error: "invalid_utterance" }, 400, origin);
