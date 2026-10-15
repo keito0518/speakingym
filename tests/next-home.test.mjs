@@ -80,7 +80,8 @@ test("saved AI rewrites appear on home, and can cycle without network requests",
 
 test("reflex uses twenty-four unique practical reactions and has no network request",()=>{
  assert.equal((sprint.match(/\{id:"(?:repair|hold|bound|connect)/g)||[]).length,24);
- assert.doesNotMatch(jsOf(sprint),/\bfetch\s*\(/);
+ assert.match(jsOf(sprint),/function requestTeacherFeedback\(/);
+ assert.match(jsOf(sprint),/if\(teacherInFlight\|\|!reviewSession\?\.date\)return/);
  assert.doesNotMatch(jsOf(sprint),/\bXMLHttpRequest\b/);
  assert.match(jsOf(sprint),/window\.SpeechRecognition\|\|window\.webkitSpeechRecognition/);
  assert.match(sprint,/id="micBtn"/);
@@ -133,7 +134,7 @@ test("all 24 reflex questions have three English examples and a usage tip",()=>{
  assert.equal(quick.length,24);
  assert.match(jsOf(sprint),/EXTRA_ANSWERS\[card\.id\]/);
  assert.match(jsOf(sprint),/function showReview\(/);
- assert.equal((jsOf(sprint).match(/await fetch\(/g)||[]).length,0);
+ assert.equal((jsOf(sprint).match(/await fetch\(/g)||[]).length,1,"Only explicit teacher request uses Gemini");
 });
 test("advanced question content is authored in English and all 24 cards change with level",()=>{
  const script=jsOf(sprint);
