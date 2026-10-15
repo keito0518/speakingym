@@ -429,6 +429,84 @@ function clock(){
  $("progress").style.width=(seconds/60*100)+"%";
  $("count").textContent=rated+" 問チャレンジ";
 }
+
+const HISTORY_LIMIT=20;
+function historySessions(){
+ const all=readJSON(HISTORY_KEY,[]);
+ if(!Array.isArray(all))return [];
+ return all.filter(x=>x&&typeof x==="object"&&Array.isArray(x.attempts)).slice(0,HISTORY_LIMIT).map(x=>({
+  date:typeof x.date==="string"?x.date.slice(0,35):"",
+  level:["easy","standard","challenge"].includes(x.level)?x.level:"standard",
+  attempts:x.attempts.slice(0,60).filter(a=>a&&cards.some(c=>c.id===a.cardId)).map(a=>({
+   cardId:a.cardId,outcome:["spoken","stuck","unanswered"].includes(a.outcome)?a.outcome:"unanswered",
+   transcript:typeof a.transcript==="string"?a.transcript.slice(0,450):""
+  }))
+ }));
+}
+function saveSession(session){
+ const saved={date:session.date,level:session.level,attempts:session.attempts.slice(0,60).map(a=>({
+  cardId:a.cardId,outcome:a.outcome,transcript:saveWords?a.transcript.slice(0,450):""
+ }))};
+ saveJSON(HISTORY_KEY,[saved,...historySessions()].slice(0,HISTORY_LIMIT));
+}
+function openReview(session,fromHistory=false){
+ reviewSession=session;reviewIndex=0;
+ $("total").textContent=String(session.attempts.filter(x=>x.outcome!=="unanswered").length);
+ $("wins").textContent=String(session.attempts.filter(x=>x.outcome==="spoken").length);
+ $("misses").textContent=String(session.attempts.filter(x=>x.outcome==="stuck").length);
+ $("endMessage").textContent=fromHistory?"保存した練習を1問ずつ復習しよう。":"自分の回答とお手本を比べて、1問ずつ復習しよう。";
+ pane("endPane");showReview(0);
+}
+function showReview(index){
+ const a=reviewSession?.attempts||[];
+ if(!a.length){$("reportReview").classList.add("hidden");return}
+ reviewIndex=Math.max(0,Math.min(index,a.length-1));
+ const item=a[reviewIndex],card=cards.find(c=>c.id===item.cardId);
+ if(!card)return;
+ const info=taskFor(card,reviewSession.level);
+ $("reportReview").classList.remove("hidden");
+ $("reviewCounter").textContent="REVIEW "+(reviewIndex+1)+" / "+a.length+" · "+reviewSession.level.toUpperCase();
+ $("reviewSituation").textContent=info.situation;
+ $("reviewChallenge").textContent=info.challenge;
+ const lang=reviewSession.level==="challenge"?"en":"ja";
+ $("reviewSituation").setAttribute("lang",lang);$("reviewChallenge").setAttribute("lang",lang);
+ $("reviewResult").textContent=item.outcome==="spoken"?"✓ 自己評価：言えた":item.outcome==="stuck"?"↻ 自己評価：詰まった":"⌛ 時間切れ・未回答";
+ $("reviewYou").textContent=item.transcript?"YOUR WORDS · "+item.transcript:"YOUR WORDS · 記録なし（マイク未使用、または英文保存オフ）";
+ const intro=item.outcome==="spoken"?"英語を口に出して挑戦できたのは良い一歩。":item.outcome==="stuck"?"詰まったことに気付けたのが次への手掛かり。":"次回は短い一言から始めてみよう。";
+ $("reviewGood").textContent=intro+info.good;
+ $("reviewImprove").textContent=info.improve;
+ $("reviewTip").textContent=EXTRA_ANSWERS[card.id].tip;
+ const parent=$("reviewAnswers");parent.replaceChildren();
+ for(const [label,example,featured] of [
+  ["QUICK · 短く",info.quick,false],["NATURAL · 自然に",info.sample,true],["POLITE · 丁寧に",info.polite,false]
+ ]){
+  const box=document.createElement("div");box.className="answer-card"+(featured?" featured":"");
+  const heading=document.createElement("div");heading.className="answer-label";heading.textContent=label;
+  const text=document.createElement("p");text.className="answer-text";text.textContent=example;
+  const listen=document.createElement("button");listen.className="btn";listen.textContent="🔊 聞く";
+  listen.addEventListener("click",()=>speakExample(example));
+  box.append(heading,text,listen);parent.append(box);
+ }
+ $("reviewPrev").disabled=reviewIndex===0;
+ $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
+}
+function showHistory(){
+ const parent=$("historyList");parent.replaceChildren();
+ const sessions=historySessions();
+ if(!sessions.length){const p=document.createElement("p");p.textContent="まだ履歴はありません。60秒プレイするとここに保存されます。";parent.append(p)}
+ for(const session of sessions){
+  const row=document.createElement("div");row.className="history-row";
+  const title=document.createElement("strong");
+  const date=new Date(session.date),display=Number.isNaN(date.getTime())?"過去の練習":date.toLocaleDateString("ja-JP");
+  title.textContent=display+" · "+({easy:"基礎",standard:"標準",challenge:"応用"}[session.level]);
+  const details=document.createElement("div");details.className="details";details.textContent=session.attempts.length+"問 / 言えた "+session.attempts.filter(a=>a.outcome==="spoken").length+"問";
+  const info=document.createElement("div");info.append(title,details);
+  const btn=document.createElement("button");btn.className="btn";btn.textContent="講評を見る →";btn.addEventListener("click",()=>openReview(session,true));
+  row.append(info,btn);parent.append(row);
+ }
+ pane("historyPane");
+}
+
 function start(onlyMissed=false){
  stopListening();cancelReading();stopTimer();rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";missedIds=[];missedPrompts=[];solvedIds=[];
  const existingMisses=readJSON(MISSES_KEY,[]);
