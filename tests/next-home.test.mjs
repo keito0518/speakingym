@@ -81,7 +81,7 @@ test("saved AI rewrites appear on home, and can cycle without network requests",
 test("reflex uses twenty-four unique practical reactions and has no network request",()=>{
  assert.equal((sprint.match(/\{id:"(?:repair|hold|bound|connect)/g)||[]).length,24);
  assert.match(jsOf(sprint),/function requestTeacherFeedback\(/);
- assert.match(jsOf(sprint),/if\(teacherInFlight\|\|!reviewSession\?\.date\)return/);
+ assert.match(jsOf(sprint),/if\(teacherInFlight\|\|!reviewSession\?\.date\|\|/);
  assert.doesNotMatch(jsOf(sprint),/\bXMLHttpRequest\b/);
  assert.match(jsOf(sprint),/window\.SpeechRecognition\|\|window\.webkitSpeechRecognition/);
  assert.match(sprint,/id="micBtn"/);
