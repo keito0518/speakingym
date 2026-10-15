@@ -144,14 +144,14 @@ function scenarioInstruction(scene, level) {
 
 const COACHING_INSTRUCTION = [
  "Alongside the dialogue reply, quietly assess ONLY the latest English user utterance for learning feedback.",
- "Return a field coaching with keys natural, tip, praise (strings).",
+ "Always return a coaching object with keys natural, tip, praise (all strings). If the sentence needs no improvement, natural must be empty.",
  "natural: a concise, better or more idiomatic English way to express the SAME intent, preserving facts, tone, tense and negation. If the user's phrasing is already natural, return an empty string.",
  "tip: one brief concrete learning explanation in Japanese (under 85 Japanese characters). Do not nitpick harmless variations or invent an error.",
  "praise: one specific encouraging observation in Japanese (under 65 Japanese characters), tied to what the user actually said. Avoid generic praise.",
  "Keep these coaching fields OUTSIDE the spoken barista/roleplay reply. Do not lecture during the conversation.",
  "You are grading transcribed text only. NEVER evaluate actual pronunciation, fluency, speech clarity or accent.",
  "Keep coaching concise and grounded in the latestUserText; no invented user quotes.",
- "Format the response as a single JSON object with required reply and roleplay goal fields PLUS optional coaching.",
+ "Return ONE JSON object with the required reply, roleplay goal fields, and the required coaching object. Keep feedback very brief so the dialogue remains the priority.",
 ].join("\n");
 function normalizeCoaching(input) {
  const item=input&&typeof input==="object"?input:{};
