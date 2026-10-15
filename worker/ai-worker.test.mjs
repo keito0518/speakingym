@@ -90,7 +90,7 @@ test("free-tier quota exhaustion pauses AI without retries", async (t) => {
   ));
   const result = await worker.fetch(request(), enabled());
   assert.equal(result.status, 429);
-  assert.equal((await result.json()).error, "ai_limit_reached");
+  assert.equal((await result.json()).error, "gemini_quota");
   assert.equal(upstream.mock.callCount(), 1);
 });
 
@@ -112,4 +112,19 @@ test("successful Gemini JSON response returns conversational reply and facts", a
   const opts = upstream.mock.calls[0].arguments[1];
   assert.equal(opts.headers["x-goog-api-key"], "test-key-not-real");
   assert.match(opts.body, /You are Emma/);
+  assert.match(opts.body, /"maxOutputTokens":900/);
+  assert.match(opts.body, /"thinkingLevel":"minimal"/);
+});
+
+test("Gemini API errors are classified without leaking upstream text", async (t) => {
+ for (const [status, expected] of [[400,"gemini_http_400"],[401,"gemini_auth"],[403,"gemini_auth"],[404,"gemini_model"],[503,"gemini_http_503"]]) {
+  const mock = t.mock.method(globalThis,"fetch",async ()=>new Response(JSON.stringify({
+   error:{message:"Private Gemini key must not be sent back"}
+  }),{status,headers:{"content-type":"application/json"}}));
+  const response = await worker.fetch(request(),enabled());
+  const body = await response.json();
+  assert.equal(body.error,expected);
+  assert.equal(JSON.stringify(body).includes("Private Gemini key"),false);
+  mock.mock.restore();
+ }
 });
