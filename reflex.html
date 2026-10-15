@@ -43,7 +43,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">会話が止まったら</div><p class="prompt-scene" id="situation"></p><h2 id="challenge"></h2><p class="instruction" id="hint"></p></div>
   <p class="voice-reminder">まずは自力で声に出そう！音声入力は任意・自動採点なし。</p>
 <div class="speech-panel" id="speechPanel">
- <div class="speech-actions"><button class="btn" id="micBtn" type="button">🎙 英語を話して入力</button><button class="btn hidden" id="stopMic" type="button">⏹ 認識停止</button><button class="btn hidden" id="resumeMic" type="button">＋ 続きを話す</button></div>
+ <div class="speech-actions"><button class="btn" id="micBtn" type="button">🎙 英語を話して入力</button><button class="btn hidden" id="stopMic" type="button">⏹ 認識停止</button><button class="btn hidden" id="resumeMic" type="button">＋ 続きを話す</button><button class="btn" id="clearSpeech" type="button">✕ 全消し</button></div>
  <label for="transcript">聞き取った英語（手入力・修正もOK）</label>
  <textarea id="transcript" rows="2" maxlength="450" placeholder="マイクを押して英語を話そう。何も入力せず練習してもOK。" spellcheck="false" autocapitalize="sentences"></textarea>
  <p class="speech-status" id="micStatus" role="status">マイクをもう一度押すと、前の文章を消して最初から話せるよ。</p>
