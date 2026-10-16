@@ -242,6 +242,18 @@ test("easy level still retains accessible core tasks",async t=>{
  assert.doesNotMatch(prompts[0],/prepaid ocean-view booking discrepancy/);
 });
 
+test("role-play prompt protects conversation continuity across scenes", async () => {
+ const source = await import("node:fs/promises");
+ const workerSource = await source.readFile(new URL("./ai-worker.js", import.meta.url), "utf8");
+ for (const instruction of [
+  "Remember choices and corrections already stated in recent dialogue",
+  "Goals are checkpoints, not a fixed script",
+  "Give context-specific replies rather than repeating a stock question",
+  "Never ignore an unexpected but reasonable comment",
+  "Goals to evaluate cumulatively based ONLY on the user's dialogue"
+ ]) assert.ok(workerSource.includes(instruction), "missing continuity rule: " + instruction);
+});
+
 test("coaching is supplied within the SAME Gemini request as a normal scene reply", async t=>{
  const upstream=t.mock.method(globalThis,"fetch",async (_url,request)=>{
   const data=JSON.parse(request.body);
