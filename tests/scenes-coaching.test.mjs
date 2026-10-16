@@ -51,7 +51,7 @@ test("AI report appears from the existing conversation request and saves review 
   tip:"Could I より丁寧な依頼として伝わります。",
   praise:"早く到着した事情を伝えられました。"
  });
- ui.click("start");ui.get("reply").value="I want check in early";
+ await ui.click("start");ui.get("reply").value="I want check in early";
  ui.click("send");await wait();await wait();
  assert.equal(ui.count,1,"No extra API call is allowed for feedback");
  const report=ui.get("coachReport");
@@ -67,7 +67,7 @@ test("AI report appears from the existing conversation request and saves review 
 
 test("no coaching from Gemini means no invented report",async()=>{
  const ui=mockScene(null);
- ui.click("start");ui.get("reply").value="Can I check in?";
+ await ui.click("start");ui.get("reply").value="Can I check in?";
  ui.click("send");await wait();await wait();
  assert.equal(ui.count,1);
  assert.equal(ui.get("coachReport").classList.contains("hidden"),true);
