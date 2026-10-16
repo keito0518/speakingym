@@ -445,7 +445,7 @@ export default {
     };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 16000);
+    const timer = setTimeout(() => controller.abort(), 20000);
     try {
       const upstream = await fetch(
         "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent",
