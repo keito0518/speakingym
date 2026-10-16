@@ -456,7 +456,7 @@ export default {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: (scene ? scenarioInstruction(scene, level) : SYSTEM) + "\n" + COACHING_INSTRUCTION }] },
             contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
-            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1100, thinkingConfig: { thinkingLevel: "minimal" } }
+            generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000, thinkingConfig: { thinkingLevel: "minimal" } }
           })
         }
       );
@@ -476,7 +476,7 @@ export default {
       const result = await upstream.json();
       const rawText = result?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
       let data;
-      try { data = JSON.parse(rawText); } catch { return aiFailure({ error: "gemini_invalid_json" }, 502); }
+      try { data = JSON.parse(rawText); } catch { return aiFailure({ error: "gemini_invalid_json", reason: result?.candidates?.[0]?.finishReason === "MAX_TOKENS" ? "output_truncated" : "malformed_response" }, 502); }
       if (typeof data?.reply !== "string" || !data.reply.trim() || data.reply.length > 850) {
         return aiFailure({ error: "invalid_ai_response" }, 502);
       }
