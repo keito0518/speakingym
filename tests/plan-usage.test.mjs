@@ -10,6 +10,10 @@ async function evaluate(data, signedIn = true) {
     hidden: true,
     getAttribute: name => name === "data-sg-quota-exhausted" ? kind : null
   }));
+  const proNotes = ["sessions", "teacher"].map(kind => ({
+    hidden: true,
+    getAttribute: name => name === "data-sg-pro-exhausted" ? kind : null
+  }));
   const handlers = {};
   const window = {
     speakingymAccount: { getIdToken: async () => signedIn ? "signed-token" : null },
@@ -17,7 +21,8 @@ async function evaluate(data, signedIn = true) {
   };
   const document = {
     querySelectorAll: selector => selector === "[data-sg-quota]" ? [badge] :
-      selector === "[data-sg-quota-exhausted]" ? notes : []
+      selector === "[data-sg-quota-exhausted]" ? notes :
+      selector === "[data-sg-pro-exhausted]" ? proNotes : []
   };
   let calls = 0;
   const fetch = async (url, options) => {
@@ -29,7 +34,8 @@ async function evaluate(data, signedIn = true) {
   };
   new Function("window", "document", "fetch", code)(window, document, fetch);
   await window.speakingymQuota.refresh();
-  return { badge: badge.textContent, sessions: !notes[0].hidden, teacher: !notes[1].hidden, handlers, calls };
+  return { badge: badge.textContent, sessions: !notes[0].hidden, teacher: !notes[1].hidden,
+    proSessions: !proNotes[0].hidden, proTeacher: !proNotes[1].hidden, handlers, calls };
 }
 
 test("Free shows warnings only for categories at zero", async () => {
@@ -50,10 +56,16 @@ test("Free with remaining usage never shows exhausted warnings", async () => {
   assert.deepEqual([value.sessions, value.teacher], [false, false]);
 });
 
-test("Pro never displays Free exhausted warnings", async () => {
-  const value = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null }, used: { sessions: 20, teacher: 10 } });
+test("Pro shows monthly remaining without Free exhausted warnings", async () => {
+  const value = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null, monthlyTurns: 600, monthlyTeacher: 20 },
+    used: { sessions: 20, teacher: 10, monthlyTurns: 300, monthlyTeacher: 5 } });
   assert.match(value.badge, /Pro/);
-  assert.deepEqual([value.sessions, value.teacher], [false, false]);
+  assert.match(value.badge, /300\/600/);
+  assert.match(value.badge, /15\/20/);
+  assert.deepEqual([value.sessions, value.teacher, value.proSessions, value.proTeacher], [false, false, false, false]);
+  const exhausted = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null, monthlyTurns: 600, monthlyTeacher: 20 },
+    used: { sessions: 12, teacher: 1, monthlyTurns: 600, monthlyTeacher: 20 } });
+  assert.deepEqual([exhausted.sessions, exhausted.teacher, exhausted.proSessions, exhausted.proTeacher], [false, false, true, true]);
 });
 
 test("guest does not call a quota endpoint", async () => {
