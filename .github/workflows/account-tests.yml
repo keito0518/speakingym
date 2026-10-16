@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'account-sync.js'
+      - 'plan-usage.js'
+      - 'plans.html'
+      - 'tests/plan-usage.test.mjs'
       - 'dashboard-data.mjs'
       - 'tests/dashboard-ui.test.mjs'
       - 'account-data.mjs'
@@ -22,6 +25,9 @@ on:
   push:
     paths:
       - 'account-sync.js'
+      - 'plan-usage.js'
+      - 'plans.html'
+      - 'tests/plan-usage.test.mjs'
       - 'dashboard-data.mjs'
       - 'tests/dashboard-ui.test.mjs'
       - 'account-data.mjs'
@@ -55,4 +61,4 @@ jobs:
           node --check dashboard-data.mjs
           node --check firebase-config.js
       - name: Test free account logic
-        run: node --test tests/account-sync.test.mjs tests/dashboard-ui.test.mjs
+        run: node --test tests/account-sync.test.mjs tests/dashboard-ui.test.mjs tests/plan-usage.test.mjs
