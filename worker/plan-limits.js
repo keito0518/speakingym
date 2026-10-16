@@ -7,9 +7,11 @@ const PROJECT_ID="speakingym";
 const JWKS_URL="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const ISSUER="https://securetoken.google.com/"+PROJECT_ID;
 export const PLAN_LIMITS=Object.freeze({
+ // Keep the current public Free beta unchanged until a separate launch decision.
  free:Object.freeze({sessions:5,teacher:3}),
- // null = no daily cap. Abuse throttles, per-session duration and upstream API quota still apply.
- pro:Object.freeze({sessions:null,teacher:null})
+ // Pro beta: no daily cap, but monthly cap per Firebase user (JST calendar month).
+ // Each AI-request consumes a turn. Gemini/API errors can still consume that turn.
+ pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:20})
 });
 let keysCached=null,keyExpiry=0;
 function decode(encoded){
@@ -63,36 +65,54 @@ export async function verifyFirebaseIdToken(request){
 }
 export const planEnabled=env=>env.ENFORCE_PLANS==="true";
 export const tokyoDay=(time=Date.now())=>new Date(time+9*3600000).toISOString().slice(0,10);
+export function tokyoMonthBounds(time=Date.now()){
+ const day=tokyoDay(time),year=Number(day.slice(0,4)),month=Number(day.slice(5,7));
+ return {start:day.slice(0,7)+"-01",end:new Date(Date.UTC(year,month,1)).toISOString().slice(0,10)};
+}
 export const publicLimits=(tier,used)=>({
  plan:tier,limits:PLAN_LIMITS[tier]||PLAN_LIMITS.free,
- used:{sessions:Number(used?.sessions)||0,teacher:Number(used?.teacher)||0},
- day:tokyoDay()
+ used:{sessions:Number(used?.sessions)||0,teacher:Number(used?.teacher)||0,
+       monthlyTurns:Number(used?.monthlyTurns)||0,monthlyTeacher:Number(used?.monthlyTeacher)||0},
+ day:tokyoDay(),month:tokyoDay().slice(0,7)
 });
 export async function getPlan(db,uid){
  const row=await db.prepare("SELECT tier FROM account_plans WHERE uid = ?").bind(uid).first();
  return row?.tier==="pro"?"pro":"free";
 }
-async function usage(db,uid,day){
+async function usage(db,uid,day,tier){
  const row=await db.prepare(
  "SELECT (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) AS sessions, "+
  "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) AS teacher"
  ).bind(uid,day,uid,day).first();
- return {sessions:Number(row?.sessions)||0,teacher:Number(row?.teacher)||0};
+ const used={sessions:Number(row?.sessions)||0,teacher:Number(row?.teacher)||0};
+ if(tier==="pro"){
+  const month=tokyoMonthBounds();
+  const monthly=await db.prepare(
+   "SELECT (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTurns, "+
+   "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTeacher"
+  ).bind(uid,month.start,month.end,uid,month.start,month.end).first();
+  used.monthlyTurns=Number(monthly?.monthlyTurns)||0;
+  used.monthlyTeacher=Number(monthly?.monthlyTeacher)||0;
+ }
+ return used;
 }
 export async function getEntitlement(db,uid){
  const tier=await getPlan(db,uid);
- const used=await usage(db,uid,tokyoDay());
+ const used=await usage(db,uid,tokyoDay(),tier);
  return publicLimits(tier,used);
 }
 export async function startSession(db,uid){
  const tier=await getPlan(db,uid);
  const max=PLAN_LIMITS[tier].sessions;
  const day=tokyoDay(),id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
- // Free quotas are checked and recorded atomically; Pro has no daily quota.
+ // Free daily quotas are checked atomically. Pro uses the current JST month's turn total.
+ const month=tokyoMonthBounds();
  const row=tier==="pro"
   ? await db.prepare(
-     "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) VALUES (?,?,?,?,?,0) RETURNING id"
-    ).bind(id,uid,day,now,now+7*60).first()
+     "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) "+
+     "SELECT ?,?,?,?,?,0 WHERE (SELECT COALESCE(SUM(turns),0) FROM ai_sessions "+
+     "WHERE uid = ? AND day >= ? AND day < ?) < ? RETURNING id"
+    ).bind(id,uid,day,now,now+7*60,uid,month.start,month.end,PLAN_LIMITS.pro.monthlyTurns).first()
   : await db.prepare(
      "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) "+
      "SELECT ?,?,?,?,?,0 WHERE (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) < ? RETURNING id"
@@ -101,18 +121,33 @@ export async function startSession(db,uid){
 }
 export async function consumeSessionTurn(db,uid,id){
  if(typeof id!=="string"||!/^[0-9a-f-]{36}$/.test(id))return false;
+ const tier=await getPlan(db,uid),now=Math.floor(Date.now()/1000);
+ if(tier==="pro"){
+  const month=tokyoMonthBounds();
+  // Single SQLite statement enforces monthly total even for concurrent requests.
+  // A session started in the prior month cannot consume next month's allowance.
+  const row=await db.prepare(
+   "UPDATE ai_sessions SET turns=turns+1 WHERE id = ? AND uid = ? AND expires_at > ? "+
+   "AND turns < 20 AND day >= ? AND day < ? "+
+   "AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) < ? RETURNING turns"
+  ).bind(id,uid,now,month.start,month.end,uid,month.start,month.end,PLAN_LIMITS.pro.monthlyTurns).first();
+  return !!row;
+ }
  const row=await db.prepare(
   "UPDATE ai_sessions SET turns=turns+1 WHERE id = ? AND uid = ? AND expires_at > ? AND turns < 20 RETURNING turns"
- ).bind(id,uid,Math.floor(Date.now()/1000)).first();
+ ).bind(id,uid,now).first();
  return !!row;
 }
 export async function consumeTeacher(db,uid){
  const tier=await getPlan(db,uid);
  const day=tokyoDay(),now=Math.floor(Date.now()/1000),id=crypto.randomUUID();
+ const month=tokyoMonthBounds();
  const row=tier==="pro"
   ? await db.prepare(
-     "INSERT INTO teacher_uses (id,uid,day,created_at) VALUES (?,?,?,?) RETURNING id"
-    ).bind(id,uid,day,now).first()
+     "INSERT INTO teacher_uses (id,uid,day,created_at) "+
+     "SELECT ?,?,?,? WHERE (SELECT COUNT(*) FROM teacher_uses "+
+     "WHERE uid = ? AND day >= ? AND day < ?) < ? RETURNING id"
+    ).bind(id,uid,day,now,uid,month.start,month.end,PLAN_LIMITS.pro.monthlyTeacher).first()
   : await db.prepare(
      "INSERT INTO teacher_uses (id,uid,day,created_at) "+
      "SELECT ?,?,?,? WHERE (SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) < ? RETURNING id"
