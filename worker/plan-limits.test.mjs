@@ -87,10 +87,13 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  const {token,jwk}=await signer();const db=fakeD1();
  const a=await token("test_student_A"),b=await token("test_student_B");
  let aiCalls=0;
- t.mock.method(globalThis,"fetch",async url=>{
+ t.mock.method(globalThis,"fetch",async (url,options)=>{
   if(String(url).includes("/service_accounts/v1/jwk/"))return new Response(JSON.stringify({keys:[jwk]}),{status:200,headers:{"cache-control":"max-age=3600"}});
   aiCalls++;
-  return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({reply:"Sure!",progress:{step1:false,step2:false,step3:false}})}]}}]}),{status:200});
+  const requestData=JSON.parse(options.body);
+  const isTeacher=requestData?.contents?.[0]?.parts?.[0]?.text?.includes('"attempts"');
+  const data=isTeacher?{feedback:[{index:0,praise:"意図が伝わります。",improvement:"より丁寧に伝えましょう。",improved:"Could you repeat that, please?",why:"丁寧な依頼表現です。",practice:"Ask again politely."}]}:{reply:"Sure!",progress:{step1:false,step2:false,step3:false}};
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(data)}]}}]}),{status:200});
  });
  const config=env(db);
  const health=await (await worker.fetch(request("health","GET"),config)).json();
@@ -119,6 +122,17 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  const pro=await worker.fetch(request("sessions","POST",b),config);
  assert.equal(pro.status,200);
  assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).limits.sessions,20);
+ const teacher={action:"reflex_coach",level:"standard",attempts:[{index:0,text:"Can you repeat?",situation:"You did not hear.",goal:"Ask politely to repeat."}]};
+ const firstTeacher=await worker.fetch(request("","POST",a,teacher),config);
+ assert.equal(firstTeacher.status,200);
+ assert.equal((await firstTeacher.json()).feedback.length,1);
+ const secondTeacher=await worker.fetch(request("","POST",a,teacher),config);
+ assert.equal(secondTeacher.status,429);
+ assert.equal((await secondTeacher.json()).error,"daily_teacher_limit");
+ assert.equal((await (await worker.fetch(request("entitlement","GET",a),config)).json()).used.teacher,1);
+ assert.equal(aiCalls,2,"Blocked teacher use and session replay must not call Gemini");
+ const proTeacher=await worker.fetch(request("","POST",b,teacher),config);
+ assert.equal(proTeacher.status,200,"Operator-granted Pro should have a higher teacher quota");
 });
 test("missing D1 binding rejects requests without invoking Gemini when plans are enabled",async t=>{
  const {token}=await signer();
