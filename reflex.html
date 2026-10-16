@@ -144,7 +144,8 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
   <div class="teacher-head"><span aria-hidden="true">👩‍🏫</span><div><strong>英会話教師からのアドバイス</strong><p>あなたが話した英文を、良かった点・改善する表現・練習課題まで丁寧にフィードバック。</p></div></div>
   <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini1回だけ無料枠のAPIリクエストを使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
-  <button class="btn primary block" type="button" id="requestTeacher">✨ AI先生に個別講評してもらう</button>
+  <p id="teacherQuota" class="teacher-status" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</p>
+   <button class="btn primary block" type="button" id="requestTeacher">✨ AI先生に個別講評してもらう</button>
   <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
   <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
  </section><div class="review-point"><strong>📘 お題の学習ポイント（共通）</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ お題のヒント（共通）</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
@@ -738,12 +739,14 @@ async function requestTeacherFeedback(){
    return {attemptIndex:mapping[i],feedback:clean};
   });
   saveTeacherNotes(date,notes);
+   void window.speakingymQuota?.refresh();
   // Keep feedback working within the current tab even if browser storage is disabled.
   currentTeacherNotes={date,notes};
   if(epoch===teacherEpoch&&reviewSession?.date===date)renderTeacherFeedback();
  }catch(e){
   if(epoch!==teacherEpoch)return;
   const code=String(e?.message||"unknown");
+   if(code==="daily_teacher_limit")void window.speakingymQuota?.refresh();
   const errors={
    invalid_utterance:"通信形式を確認してください。",
    invalid_coaching_input:"講評用データを読み取れません。",
@@ -918,6 +921,7 @@ if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
 window.addEventListener("pagehide",()=>{teacherEpoch++;stopTimer();stopListening();cancelReading();});
 })();
 </script>
+<script src="./plan-usage.js"></script>
 <script type="module" src="./account-sync.js"></script>
 </body>
 </html>
