@@ -37,7 +37,7 @@ test("health only indicates ready with key AND owner opt-in", async () => {
   assert.equal(ready.aiConfigured, true);
   assert.equal(ready.aiEnabled, true);
   assert.equal(ready.keyConfigured, true);
-  assert.deepEqual(ready.sceneIds,["hotel","airport","smalltalk"]);
+  assert.deepEqual(ready.sceneIds,["cafe","restaurant","shopping","hotel","airport","smalltalk"]);
   assert.equal(ready.reflexCoachSupported,true);
 });
 
