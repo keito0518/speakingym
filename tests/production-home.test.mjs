@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const file=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const current=file("index.html"),classic=file("classic.html"),preview=file("home-preview.html");
-const nav=["account.html","reflex.html","scenes.html","mission.html","classic.html"];
+const nav=["account.html","reflex.html","scenes.html","scenes.html","classic.html"];
 const mainScript=html=>html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||"";
 
 test("modern production home has brand, SEO, useful routes, no paid checkout and honest beta copy",()=>{
