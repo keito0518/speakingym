@@ -30,4 +30,8 @@ binding = "PLAN_DB"
 database_name = "speakingym-plans"
 database_id = "62419d42-703c-4e41-af47-736fd1738d7e"
 
-# Keep ENFORCE_PLANS unset/false until live login and quota tests are ready.
+# Enable server-side Free quotas: 5 AI sessions and 3 AI teacher uses per JST day.
+# Requires Firebase sign-in and the bound PLAN_DB database.
+# To roll back, set ENFORCE_PLANS = "false" and redeploy.
+[vars]
+ENFORCE_PLANS = "true"
