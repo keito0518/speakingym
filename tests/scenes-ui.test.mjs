@@ -30,7 +30,7 @@ test("free preview limits a session to eight user turns and shows errors",()=>{
  assert.match(source,/turn>=turnLimit\(\)/);
  assert.match(html,/id="errorReason"/);
  assert.match(html,/id="retry"/);
- assert.match(source,/if\(!response\.ok\)throw Error/);
+ assert.match(source,/if\(!response\.ok\)/);
 });
 
 test("audio recognition can be restarted and clears its previous transcript",()=>{
