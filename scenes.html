@@ -452,7 +452,7 @@ $("clearReview").addEventListener("click",()=>{
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
-$("level").addEventListener("change",renderAssignment);if(new URLSearchParams(window.location?.search||"").get("scene")==="cafe")select("cafe");renderAssignment();showSavedReview();updateControls();
+$("level").addEventListener("change",renderAssignment);if(/(?:^|[?&])scene=cafe(?:&|$)/.test(window.location?.search||""))select("cafe");renderAssignment();showSavedReview();updateControls();
 })();
 </script>
 <script src="./plan-usage.js"></script>
