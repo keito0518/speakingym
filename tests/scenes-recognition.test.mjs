@@ -44,7 +44,7 @@ function app(){
    createElement:t=>node("anon-"+String(elements.size)+"-"+t),
    querySelectorAll:s=>s==="[data-scene]"?["hotel","airport","smalltalk"].map(x=>node("button-"+x)):[],
   },
-  window:{SpeechRecognition:FakeRecognition,speechSynthesis:null,addEventListener(){}},
+  window:{SpeechRecognition:FakeRecognition,speechSynthesis:null,speakingymAccount:{getIdToken:async()=>"mock-token"},addEventListener(){}},
   setTimeout(fn){const id=nextTimer++;scheduled.set(id,fn);return id},
   clearTimeout(id){scheduled.delete(id)},
   setInterval(){return ++nextTimer},clearInterval(){},
