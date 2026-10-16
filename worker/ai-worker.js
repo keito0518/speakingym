@@ -294,7 +294,9 @@ export default {
         }
         if(path==="/sessions" && request.method==="POST"){
           const session=await startSession(env.PLAN_DB,uid);
-          return session?reply(session,200,origin):reply({error:"daily_session_limit"},429,origin);
+          if(session)return reply(session,200,origin);
+          const entitlement=await getEntitlement(env.PLAN_DB,uid);
+          return reply({error:entitlement.plan==="pro"?"monthly_turn_limit":"daily_session_limit"},429,origin);
         }
       }catch{return reply({error:"plans_unavailable"},503,origin)}
       return reply({error:"not_found"},404,origin);
@@ -345,10 +347,17 @@ export default {
           if(!validateReflexCoaching(body?.attempts) || !["easy","standard","challenge"].includes(body?.level))
             return reply({error:"invalid_coaching_input"},400,origin);
           teacherReservation=await consumeTeacher(env.PLAN_DB,planUid);
-          if(!teacherReservation)return reply({error:"daily_teacher_limit"},429,origin);
+          if(!teacherReservation){
+            const entitlement=await getEntitlement(env.PLAN_DB,planUid);
+            return reply({error:entitlement.plan==="pro"?"monthly_teacher_limit":"daily_teacher_limit"},429,origin);
+          }
         }else{
-          if(!await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId))
+          if(!await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId)){
+            const entitlement=await getEntitlement(env.PLAN_DB,planUid);
+            if(entitlement.plan==="pro" && entitlement.used.monthlyTurns>=entitlement.limits.monthlyTurns)
+              return reply({error:"monthly_turn_limit"},429,origin);
             return reply({error:"session_not_active"},403,origin);
+          }
         }
       }catch{return reply({error:"plans_unavailable"},503,origin)}
     }
