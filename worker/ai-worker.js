@@ -334,6 +334,14 @@ export default {
     }
     let body;
     try { body = await request.json(); } catch { return reply({ error: "invalid_json" }, 400, origin); }
+    // Reject malformed conversation requests before reserving a paid/limited AI turn.
+    // Teacher requests are validated separately before their quota reservation.
+    if(body?.action!=="reflex_coach"){
+      const utterance=typeof body?.userText==="string"?body.userText.trim():"";
+      if(!utterance||utterance.length>450)return reply({error:"invalid_utterance"},400,origin);
+      const sceneId=typeof body?.sceneId==="string"?body.sceneId:"";
+      if(sceneId&&!Object.hasOwn(EXTRA_SCENES,sceneId))return reply({error:"unknown_scene"},400,origin);
+    }
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
     let planUid=null,teacherReservation=null;
