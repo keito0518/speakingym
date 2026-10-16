@@ -140,6 +140,12 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  const blocked=await worker.fetch(request("sessions","POST",a),config);
  assert.equal(blocked.status,429);
  assert.equal((await blocked.json()).error,"daily_session_limit");
+ const beforeInvalid=db.sessions.find(x=>x.id===starts[0]).turns;
+ for(const invalid of [{sceneId:"hotel",userText:"   ",sessionId:starts[0]},{sceneId:"does-not-exist",userText:"Hi!",sessionId:starts[0]},{sceneId:"hotel",userText:"x".repeat(451),sessionId:starts[0]}]){
+  const rejected=await worker.fetch(request("", "POST",a,invalid),config);
+  assert.equal(rejected.status,400,"malformed AI requests must be rejected before spending quota");
+ }
+ assert.equal(db.sessions.find(x=>x.id===starts[0]).turns,beforeInvalid,"invalid input must not consume AI turns");
  const ownTurn=await worker.fetch(request("", "POST",a,{sceneId:"hotel",level:"easy",userText:"Hi!",sessionId:starts[0]}),config);
  assert.equal(ownTurn.status,200);
  const crossAccount=await worker.fetch(request("", "POST",b,{sceneId:"hotel",level:"easy",userText:"Hi!",sessionId:starts[0]}),config);
