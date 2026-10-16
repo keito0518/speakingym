@@ -31,6 +31,36 @@ const SYSTEM = [
 
 
 const EXTRA_SCENES = {
+  cafe: {
+    name:"Cafe order",character:"Alex, a friendly barista at a busy cafe",
+    situation:"A customer is ordering a drink. Ask one natural follow-up at a time; do not assume their choices.",
+    goals:["step1: the customer orders a drink","step2: the customer specifies a drink size","step3: the customer specifies dine-in or takeaway"],
+    opener:"Hi there! What can I get for you today?",
+    variants:{
+      standard:{situation:"The customer wants to change the milk type after ordering. Ask about the order and respond realistically to a modification request.",goals:["step1: the customer orders a drink","step2: the customer requests a specific change to the drink","step3: the customer asks whether the change costs extra"]},
+      challenge:{situation:"The customer ordered an iced oat-milk latte but received a hot dairy latte. The cafe is busy. Apologize and work out a realistic fix without instantly completing the task.",goals:["step1: the customer explains the difference between the ordered and received drink","step2: the customer politely asks for the correct drink","step3: the customer confirms when or how the problem will be resolved"]}
+    }
+  },
+  restaurant: {
+    name:"Restaurant order",character:"Sam, a helpful restaurant server",
+    situation:"A guest wants to choose a meal and drink. Give realistic menu recommendations but avoid inventing medical guarantees.",
+    goals:["step1: the guest asks for a recommendation","step2: the guest orders a meal","step3: the guest orders a drink"],
+    opener:"Welcome! Are you ready to order?",
+    variants:{
+      standard:{situation:"The guest wants to check whether a dish contains nuts. Do not guarantee allergen safety; suggest checking with the kitchen if necessary.",goals:["step1: the guest asks about a specific dish","step2: the guest checks whether it contains nuts","step3: the guest chooses a dish to order"]},
+      challenge:{situation:"The guest booked a table for four but the restaurant cannot find the reservation. The guest must leave in an hour. Negotiate a feasible solution without immediately promising a table.",goals:["step1: the guest explains the reservation and party size","step2: the guest asks for a workable alternative","step3: the guest confirms waiting time or seating arrangements"]}
+    }
+  },
+  shopping: {
+    name:"Shopping for clothes",character:"Taylor, a helpful clothing shop assistant",
+    situation:"A shopper is looking for clothing. Ask about what they need, sizes and trying items on.",
+    goals:["step1: the shopper describes the item they want","step2: the shopper asks about a size or colour","step3: the shopper asks to try it on"],
+    opener:"Hi! Can I help you find anything?",
+    variants:{
+      standard:{situation:"The shopper tried on an item but the size does not fit. Help them ask for another size and decide what to do.",goals:["step1: the shopper explains the fit problem","step2: the shopper asks whether another size is available","step3: the shopper says whether they want to try or buy it"]},
+      challenge:{situation:"The shopper bought a jacket yesterday but the zipper is broken. They have a receipt. Store policy normally offers exchanges first. Respond politely and realistically.",goals:["step1: the shopper describes the purchase and fault","step2: the shopper asks for an exchange or refund","step3: the shopper confirms the agreed solution and any conditions"]}
+    }
+  },
   hotel: {
     name: "Hotel check-in",
     character: "Sophie, a friendly front desk receptionist in Melbourne",
