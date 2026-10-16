@@ -79,3 +79,11 @@ test("a feedback-less AI response never invents an improvement or score",()=>{
  assert.match(source,/if\(!coachingHistory\.length\)\{root\.classList\.add\("hidden"\);return\}/);
  assert.match(source,/音声の発音・流暢さは評価していません/);
 });
+
+test("six scene cards have matching practice configuration and all three levels",()=>{
+ for(const id of ["hotel","airport","smalltalk","cafe","restaurant","shopping"]){
+  assert.match(html,new RegExp('data-scene="'+id+'"'));
+  assert.match(source,new RegExp("\\b"+id+":\\{"));
+ }
+ for(const level of ["easy","standard","challenge"])assert.match(html,new RegExp('value="'+level+'"'));
+});
