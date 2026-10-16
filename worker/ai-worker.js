@@ -1,4 +1,4 @@
-import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
+import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
  * Never place your Gemini API key in the frontend, Git, or wrangler.toml.
@@ -344,7 +344,7 @@ export default {
     }
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
-    let planUid=null,teacherReservation=null;
+    let planUid=null,teacherReservation=null,turnReservation=null;
     if(planEnabled(env)){
       if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
       try{planUid=await verifyFirebaseIdToken(request)}
@@ -360,7 +360,8 @@ export default {
             return reply({error:entitlement.plan==="pro"?"monthly_teacher_limit":"daily_teacher_limit"},429,origin);
           }
         }else{
-          if(!await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId)){
+          turnReservation=await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId);
+           if(!turnReservation){
             const entitlement=await getEntitlement(env.PLAN_DB,planUid);
             if(entitlement.plan==="pro" && entitlement.used.monthlyTurns>=entitlement.limits.monthlyTurns)
               return reply({error:"monthly_turn_limit"},429,origin);
@@ -403,6 +404,12 @@ export default {
       latestUserText: text,
       instructions: "Speak as Emma. Evaluate the cumulative user dialogue and confirmed facts. Keep it natural."
     };
+    // Refund failed Gemini requests only when no later request has consumed this session.
+    // This is a conservative, race-safe rollback; a full per-request ledger is a future improvement.
+    const aiFailure=async (error,status)=>{
+      if(turnReservation){try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}}
+      return reply(error,status,origin);
+    };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 16000);
@@ -421,29 +428,29 @@ export default {
         }
       );
       if (upstream.status === 429) {
-        return reply({ error: "gemini_quota", message: "Gemini free quota or rate limit was reached." }, 429, origin);
+        return aiFailure({ error: "gemini_quota", message: "Gemini free quota or rate limit was reached." }, 429);
       }
       if (upstream.status === 401 || upstream.status === 403) {
-        return reply({ error: "gemini_auth", message: "Gemini rejected the API key or access rights." }, 502, origin);
+        return aiFailure({ error: "gemini_auth", message: "Gemini rejected the API key or access rights." }, 502);
       }
       if (upstream.status === 404) {
-        return reply({ error: "gemini_model", message: "The configured Gemini model could not be found." }, 502, origin);
+        return aiFailure({ error: "gemini_model", message: "The configured Gemini model could not be found." }, 502);
       }
       if (!upstream.ok) {
         // Provide the HTTP category, never upstream text (which may contain sensitive details).
-        return reply({ error: "gemini_http_" + upstream.status, message: "Gemini API returned an error." }, 502, origin);
+        return aiFailure({ error: "gemini_http_" + upstream.status, message: "Gemini API returned an error." }, 502);
       }
       const result = await upstream.json();
       const rawText = result?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
       let data;
-      try { data = JSON.parse(rawText); } catch { return reply({ error: "gemini_invalid_json" }, 502, origin); }
+      try { data = JSON.parse(rawText); } catch { return aiFailure({ error: "gemini_invalid_json" }, 502); }
       if (typeof data?.reply !== "string" || !data.reply.trim() || data.reply.length > 850) {
-        return reply({ error: "invalid_ai_response" }, 502, origin);
+        return aiFailure({ error: "invalid_ai_response" }, 502);
       }
       if (scene) {
         // A scene uses general-purpose goal signals. The original cafe mission is unchanged.
         if (!data.progress || typeof data.progress !== "object") {
-          return reply({ error: "invalid_ai_response" }, 502, origin);
+          return aiFailure({ error: "invalid_ai_response" }, 502);
         }
         const completed = normalizeProgress(data.progress);
         for (const key of Object.keys(completed)) completed[key] ||= progress[key];
@@ -456,7 +463,7 @@ export default {
       }
       return reply({ reply: data.reply.trim(), missionState, coaching: normalizeCoaching(data.coaching) }, 200, origin);
     } catch {
-      return reply({ error: "ai_timeout", message: "Gemini API timed out." }, 504, origin);
+      return aiFailure({ error: "ai_timeout", message: "Gemini API timed out." }, 504);
     } finally {
       clearTimeout(timer);
     }
