@@ -4,17 +4,21 @@
   const API = "https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
   const badges = [...document.querySelectorAll("[data-sg-quota]")];
   const exhaustionNotes = [...document.querySelectorAll("[data-sg-quota-exhausted]")];
+  const proNotes = [...document.querySelectorAll("[data-sg-pro-exhausted]")];
   if (!badges.length) return;
   let requestSequence = 0;
 
   function show(message) {
     for (const badge of badges) badge.textContent = message;
   }
-  function showExhaustion(remaining) {
+  function showExhaustion(remaining, tier) {
     for (const note of exhaustionNotes) {
       const kind = note.getAttribute("data-sg-quota-exhausted");
-      // "hidden" is respected regardless of page-specific styles.
-      note.hidden = !(remaining && remaining[kind] === 0);
+      note.hidden = !(tier === "free" && remaining && remaining[kind] === 0);
+    }
+    for (const note of proNotes) {
+      const kind = note.getAttribute("data-sg-pro-exhausted");
+      note.hidden = !(tier === "pro" && remaining && remaining[kind] === 0);
     }
   }
 
@@ -42,7 +46,18 @@
       const data = await response.json();
       if (seq !== requestSequence) return;
       if (data?.plan === "pro") {
-        show("Pro · AI英会話・AI先生は日ごとの回数上限なし（通信・AI提供元の制限あり）");
+        const maxTurns = data?.limits?.monthlyTurns;
+        const maxTeacher = data?.limits?.monthlyTeacher;
+        const usedTurns = data?.used?.monthlyTurns;
+        const usedTeacher = data?.used?.monthlyTeacher;
+        if (![maxTurns, maxTeacher, usedTurns, usedTeacher].every(n => Number.isInteger(n) && n >= 0) || !maxTurns || !maxTeacher) {
+          throw Error("invalid_entitlement");
+        }
+        const remaining = { sessions: Math.max(0,maxTurns-usedTurns), teacher: Math.max(0,maxTeacher-usedTeacher) };
+        show("Pro · 今月の残り：AI英会話 " + remaining.sessions + "/" + maxTurns +
+          " 往復 · AI先生 " + remaining.teacher + "/" + maxTeacher +
+          " 回（日本時間・毎月1日更新）");
+        showExhaustion(remaining, "pro");
         return;
       }
       const sessions = data?.limits?.sessions;
@@ -62,7 +77,7 @@
         " セッション · AI先生 " +
         remaining.teacher + "/" + teacher +
         " 回（日本時間0時更新）");
-      showExhaustion(remaining);
+      showExhaustion(remaining, "free");
     } catch {
       if (seq === requestSequence) {
         showExhaustion(null);
