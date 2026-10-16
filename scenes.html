@@ -23,12 +23,15 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <body>
 <header><div class="top"><a class="brand" href="./index.html">speakin<span>gym.</span></a><a class="back" href="./index.html">← トップに戻る</a></div></header>
 <main>
-<section class="intro"><div class="eyebrow">AI CONVERSATION · SCENE WORKOUT</div><h1>覚えた英語を、<br>本番の会話で使おう。</h1><p>毎回同じセリフではなく、あなたの答え方でAIの反応が変わる。3つの新しい場面で、3つの目標達成に挑戦！</p></section>
+<section class="intro"><div class="eyebrow">AI CONVERSATION · SCENE WORKOUT</div><h1>覚えた英語を、<br>本番の会話で使おう。</h1><p>毎回同じセリフではなく、あなたの答え方でAIの反応が変わる。6つの場面から選んで、3つの目標達成に挑戦！</p></section>
 <div class="notice">無料のAIベータ版です。会話文は外部のGemini AIへ送信され、無料枠では製品改善に使われる場合があります。実名・予約番号・住所などは入力せず、架空の情報を使ってください。無料枠が混雑・終了した場合はAIを停止します。</div>
 <section class="scenes" id="scenes" aria-label="練習するシーン">
 <button type="button" class="scene" data-scene="hotel" aria-pressed="true"><span class="emoji">🏨</span><strong>ホテルでチェックイン</strong><small>予約を伝えて、Wi-Fiや部屋について質問しよう。</small><span class="tag">旅行英会話 · ★★☆</span></button>
 <button type="button" class="scene" data-scene="airport" aria-pressed="false"><span class="emoji">🧳</span><strong>空港で荷物がない！</strong><small>スーツケースの特徴を説明し、次の対応を聞こう。</small><span class="tag">トラブル対応 · ★★★</span></button>
 <button type="button" class="scene" data-scene="smalltalk" aria-pressed="false"><span class="emoji">🗣️</span><strong>初対面の人と雑談</strong><small>話題を広げながら、質問を返してみよう。</small><span class="tag">日常英会話 · ★☆☆</span></button>
+<button type="button" class="scene" data-scene="cafe" aria-pressed="false"><span class="emoji">☕</span><strong>カフェで注文する</strong><small>飲み物を注文して、サイズや持ち帰りを伝えよう。</small><span class="tag">旅行・日常 · ★☆☆</span></button>
+<button type="button" class="scene" data-scene="restaurant" aria-pressed="false"><span class="emoji">🍽️</span><strong>レストランで注文</strong><small>おすすめを聞いて、料理を選ぼう。</small><span class="tag">旅行・食事 · ★★☆</span></button>
+<button type="button" class="scene" data-scene="shopping" aria-pressed="false"><span class="emoji">🛍️</span><strong>お店で買い物</strong><small>サイズや色を聞いて、買うか決めよう。</small><span class="tag">旅行・買い物 · ★★☆</span></button>
 </section>
 <section class="card" id="setup">
 <div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
@@ -63,6 +66,24 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 const $=id=>document.getElementById(id);
 const API="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
 const SCENES={
+ cafe:{
+  speaker:"Alex · Barista",
+  easy:{name:"カフェで注文",headline:"好きな飲み物を注文しよう",story:"カフェに入ったよ。飲み物を選んで注文してみよう。",mission:"飲み物・サイズ・店内か持ち帰りかを伝えよう。",intro:"Hi there! What can I get for you today?",goals:["飲み物を注文する","サイズを伝える","店内か持ち帰りかを伝える"]},
+  standard:{name:"カフェで注文",headline:"注文した飲み物を変えたい",story:"注文したあとで、ミルクの種類を変えたくなった。店員に相談しよう。",mission:"注文を伝えて、変更をお願いし、料金を確認しよう。",intro:"Hi! What would you like to order?",goals:["飲み物を注文する","ミルクなどの変更をお願いする","追加料金があるか確認する"]},
+  challenge:{name:"Cafe order issue",headline:"Your drink isn't what you ordered",story:"You ordered an iced oat-milk latte, but received a hot dairy latte. The cafe is busy.",mission:"Explain the mistake politely, request the correct drink, and confirm the solution.",intro:"Hi there! Is everything okay with your drink?",goals:["Explain what you ordered and what arrived","Politely ask for the correct drink","Confirm when or how the issue will be fixed"]}
+ },
+ restaurant:{
+  speaker:"Sam · Server",
+  easy:{name:"レストランで注文",headline:"食べたい料理を頼もう",story:"レストランに入ったよ。おすすめを聞いて注文しよう。",mission:"おすすめを聞き、料理を選び、飲み物も注文しよう。",intro:"Welcome! Are you ready to order?",goals:["おすすめの料理を聞く","料理を注文する","飲み物を注文する"]},
+  standard:{name:"レストランで注文",headline:"食べられない食材がある",story:"気になる料理があるけれど、ナッツが入っていないか心配。店員に確認しよう。",mission:"材料を確認して、食べられる料理を選び、注文しよう。",intro:"Good evening! Can I help you choose something?",goals:["気になる料理について質問する","ナッツが入っているか確認する","注文する料理を決める"]},
+  challenge:{name:"Restaurant reservation mix-up",headline:"Your table isn't ready",story:"You booked a table for four, but the restaurant has no record of it. You need to leave within an hour.",mission:"Explain the reservation, negotiate an alternative, and confirm the timing.",intro:"I'm sorry, I can't find your reservation. Could you tell me more?",goals:["Explain the reservation and group size","Ask for a practical alternative","Confirm the waiting time or seating arrangement"]}
+ },
+ shopping:{
+  speaker:"Taylor · Shop assistant",
+  easy:{name:"お店で買い物",headline:"欲しい服を探そう",story:"洋服屋さんに来たよ。サイズや色を店員に聞こう。",mission:"探しているものを伝え、サイズを聞いて、試着をお願いしよう。",intro:"Hi! Can I help you find anything?",goals:["探している商品を伝える","サイズや色について聞く","試着できるか聞く"]},
+  standard:{name:"お店で買い物",headline:"別のサイズが欲しい",story:"気に入った服があるけれど、サイズが合わない。店員に別のサイズを探してもらおう。",mission:"サイズの問題を説明し、在庫を聞いて、次の行動を決めよう。",intro:"How did that fit? Do you need another size?",goals:["サイズが合わないと伝える","別のサイズの在庫を聞く","試着または購入するか伝える"]},
+  challenge:{name:"Return a faulty item",headline:"A purchase has a problem",story:"You bought a jacket yesterday, but the zipper is broken. You have a receipt, and the store offers exchanges before refunds.",mission:"Describe the fault, request a fair solution, and confirm the store's policy.",intro:"Hello! What seems to be the problem with the jacket?",goals:["Describe the purchase and the fault","Request an exchange or refund politely","Confirm the agreed solution and any conditions"]}
+ },
  hotel:{
   speaker:"Sophie · Reception",
   easy:{
