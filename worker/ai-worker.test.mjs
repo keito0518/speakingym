@@ -354,3 +354,12 @@ test("invalid teacher responses are rejected and never manufactured locally",asy
  assert.equal(result.status,502);
  assert.equal((await result.json()).error,"invalid_ai_response");
 });
+
+test("all six scenes accept roleplay requests without unknown_scene", async (t) => {
+ const upstream=t.mock.method(globalThis,"fetch",async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({reply:"Sure! What would you like?",progress:{step1:false,step2:false,step3:false}})}]}}]}),{status:200,headers:{"Content-Type":"application/json"}}));
+ for(const sceneId of ["cafe","restaurant","shopping","hotel","airport","smalltalk"]){
+  const result=await worker.fetch(request({...payload,sceneId,progress:{step1:false,step2:false,step3:false}}),enabled());
+  assert.notEqual((await result.json()).error,"unknown_scene",sceneId+" should be recognized");
+ }
+ assert.equal(upstream.mock.callCount(),6);
+});
