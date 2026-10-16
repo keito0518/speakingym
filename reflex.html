@@ -867,7 +867,7 @@ function showReview(index){
  const intro=item.outcome==="spoken"?"英語を口に出して挑戦できたのは良い一歩。":item.outcome==="stuck"?"詰まったことに気付けたのが次への手掛かり。":"次回は短い一言から始めてみよう。";
  $("reviewGood").textContent=intro+transcriptObservation(item.transcript)+info.good;
  $("reviewImprove").textContent=info.improve;
- $("reviewTip").textContent=EXTRA_ANSWERS[card.id].tip;
+ $("reviewTip").textContent=(EXTRA_ANSWERS[card.id]?.tip||"短く自然な表現を声に出して練習しよう。");
  const parent=$("reviewAnswers");parent.replaceChildren();
  for(const [label,example,featured] of [
   ["QUICK · 短く",info.quick,false],["NATURAL · 自然に",info.sample,true],["POLITE · 丁寧に",info.polite,false]
