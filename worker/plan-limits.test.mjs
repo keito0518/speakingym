@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "./ai-worker.js";
-import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay} from "./plan-limits.js";
+import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds} from "./plan-limits.js";
 
 const ORIGIN="https://speakingym.pages.dev";
 const API="https://speakingym-worker-test.example/";
@@ -15,19 +15,47 @@ function fakeD1(){
     async first(){
      if(sql.startsWith("SELECT tier"))return plans.has(args[0])?{tier:plans.get(args[0])}:null;
      if(sql.startsWith("SELECT (SELECT COUNT"))return{sessions:sessions.filter(x=>x.uid===args[0]&&x.day===args[1]).length,teacher:teachers.filter(x=>x.uid===args[2]&&x.day===args[3]).length};
+     if(sql.startsWith("SELECT (SELECT COALESCE"))return {
+      monthlyTurns:sessions.filter(x=>x.uid===args[0]&&x.day>=args[1]&&x.day<args[2]).reduce((n,x)=>n+x.turns,0),
+      monthlyTeacher:teachers.filter(x=>x.uid===args[3]&&x.day>=args[4]&&x.day<args[5]).length
+     };
      if(sql.startsWith("INSERT INTO ai_sessions")){
-      const [id,uid,day,started,expires,checkUid,checkDay,max]=args;
-      if(!sql.includes(" VALUES ")&&sessions.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
+      const [id,uid,day,started,expires]=args;
+      if(!sql.includes(" VALUES ")){
+       if(args.length===9){
+        const [, , , , ,checkUid,from,to,max]=args;
+        const total=sessions.filter(x=>x.uid===checkUid&&x.day>=from&&x.day<to).reduce((n,x)=>n+x.turns,0);
+        if(total>=max)return null;
+       }else{
+        const checkUid=args[5],checkDay=args[6],max=args[7];
+        if(sessions.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
+       }
+      }
       sessions.push({id,uid,day,started,expires,turns:0});return{id};
      }
      if(sql.startsWith("UPDATE ai_sessions")){
       const [id,uid,time]=args;
       const row=sessions.find(x=>x.id===id&&x.uid===uid&&x.expires>time&&x.turns<20);
-      if(!row)return null;row.turns++;return{turns:row.turns};
+      if(!row)return null;
+      if(args.length===9){
+       const [, , ,from,to,checkUid,checkFrom,checkTo,max]=args;
+       if(row.day<from||row.day>=to)return null;
+       const total=sessions.filter(x=>x.uid===checkUid&&x.day>=checkFrom&&x.day<checkTo).reduce((n,x)=>n+x.turns,0);
+       if(total>=max)return null;
+      }
+      row.turns++;return{turns:row.turns};
      }
      if(sql.startsWith("INSERT INTO teacher_uses")){
-      const[id,uid,day,created,checkUid,checkDay,max]=args;
-      if(!sql.includes(" VALUES ")&&teachers.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
+      const[id,uid,day,created]=args;
+      if(!sql.includes(" VALUES ")){
+       if(args.length===8){
+        const checkUid=args[4],from=args[5],to=args[6],max=args[7];
+        if(teachers.filter(x=>x.uid===checkUid&&x.day>=from&&x.day<to).length>=max)return null;
+       }else{
+        const checkUid=args[4],checkDay=args[5],max=args[6];
+        if(teachers.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
+       }
+      }
       teachers.push({id,uid,day,created});return{id};
      }
      throw Error("Unexpected query: "+sql);
@@ -66,9 +94,12 @@ const request=(path,method="POST",token=null,body=null)=>{
 };
 test("free/pro limits are explicit and reset by Japan day",()=>{
  assert.deepEqual(PLAN_LIMITS.free,{sessions:5,teacher:3});
- assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null});
+ assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:20});
  assert.equal(tokyoDay(Date.parse("2026-10-15T14:59:59Z")),"2026-10-15");
  assert.equal(tokyoDay(Date.parse("2026-10-15T15:00:00Z")),"2026-10-16");
+ assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T14:59:59Z")),{start:"2026-10-01",end:"2026-11-01"});
+ assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T15:00:00Z")),{start:"2026-11-01",end:"2026-12-01"});
+ assert.deepEqual(tokyoMonthBounds(Date.parse("2026-12-31T15:00:00Z")),{start:"2027-01-01",end:"2027-02-01"});
 });
 test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid signature are rejected",async t=>{
  const {jwk,token}=await signer();
@@ -121,6 +152,7 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  db.plans.set("test_student_B","pro");
  const pro=await worker.fetch(request("sessions","POST",b),config);
  assert.equal(pro.status,200);
+ const proSessionId=(await pro.json()).sessionId;
  assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).limits.sessions,null);
  for(let i=0;i<25;i++)assert.equal((await worker.fetch(request("sessions","POST",b),config)).status,200,"Pro has no daily session cap");
  assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).used.sessions,26);
@@ -136,9 +168,34 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal((await (await worker.fetch(request("entitlement","GET",a),config)).json()).used.teacher,3);
  assert.equal(aiCalls,4,"Blocked teacher use and session replay must not call Gemini");
  const proTeacher=await worker.fetch(request("","POST",b,teacher),config);
- assert.equal(proTeacher.status,200,"Operator-granted Pro should have no teacher cap");
- for(let k=0;k<12;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"Pro teacher quota has no daily limit");
- assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).limits.teacher,null);
+ assert.equal(proTeacher.status,200,"Operator-granted Pro allows month quota");
+ for(let k=1;k<20;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"20 monthly teacher uses allowed");
+ const blockedProTeacher=await worker.fetch(request("","POST",b,teacher),config);
+ assert.equal(blockedProTeacher.status,429);
+ assert.equal((await blockedProTeacher.json()).error,"monthly_teacher_limit");
+ const teacherUsage=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
+ assert.equal(teacherUsage.limits.teacher,null);
+ assert.equal(teacherUsage.limits.monthlyTeacher,20);
+ assert.equal(teacherUsage.used.monthlyTeacher,20);
+ // Seed prior completed sessions so only one monthly AI turn remains.
+ const now=Math.floor(Date.now()/1000),day=tokyoDay();
+ for(let k=0;k<30;k++)db.sessions.push({id:crypto.randomUUID(),uid:"test_student_B",day,started:now-100,expires:now+100,turns:k===29?19:20});
+ let entitlement=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
+ assert.equal(entitlement.used.monthlyTurns,599);
+ const conversation={sceneId:"hotel",level:"easy",userText:"Hi!",sessionId:proSessionId};
+ const lastTurn=await worker.fetch(request("","POST",b,conversation),config);
+ assert.equal(lastTurn.status,200,"the 600th AI request is allowed");
+ const aiCallsBefore=aiCalls;
+ const overTurn=await worker.fetch(request("","POST",b,conversation),config);
+ assert.equal(overTurn.status,429);
+ assert.equal((await overTurn.json()).error,"monthly_turn_limit");
+ const blockedProSession=await worker.fetch(request("sessions","POST",b),config);
+ assert.equal(blockedProSession.status,429);
+ assert.equal((await blockedProSession.json()).error,"monthly_turn_limit");
+ assert.equal(aiCalls,aiCallsBefore,"quota-blocked requests cannot call Gemini");
+ entitlement=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
+ assert.equal(entitlement.limits.monthlyTurns,600);
+ assert.equal(entitlement.used.monthlyTurns,600);
 });
 test("missing D1 binding rejects requests without invoking Gemini when plans are enabled",async t=>{
  const {token}=await signer();
