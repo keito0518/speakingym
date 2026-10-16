@@ -13,7 +13,7 @@ test("modern production home has brand, SEO, useful routes, no paid checkout and
  assert.match(current,/<link rel="canonical" href="https:\/\/speakingym.pages.dev\/">/);
  assert.match(current,/練習メニュー/);
  for(const path of nav)assert.match(current,new RegExp('href="\\./'+path.replaceAll(".","\\.")+'"'),"missing "+path);
- assert.match(current,/60秒チャレンジは回数制限なし/);
+ assert.match(current,/60秒チャレンジはログイン不要・回数制限なし/);
  assert.match(current,/AI機能には利用上限があります/);
  assert.match(current,/現在、有料プラン・決済機能はありません/);
  assert.doesNotMatch(current,/NEW HOME · PREVIEW/);
