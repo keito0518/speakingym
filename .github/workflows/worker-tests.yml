@@ -21,4 +21,4 @@ jobs:
         with:
           node-version: "22"
       - name: Test the no-billing fallback and AI bridge
-        run: node --test worker/ai-worker.test.mjs
+        run: node --test worker/ai-worker.test.mjs worker/plan-limits.test.mjs

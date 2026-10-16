@@ -71,7 +71,7 @@ test("AI coaching report and browser-only review are available with no second fe
  assert.match(source,/recordCoaching\(text,data\.coaching\)/);
  assert.match(source,/renderCoachReport\(\)/);
  assert.match(source,/localStorage\.setItem\(REVIEW_KEY/);
- assert.equal((source.match(/await fetch\(/g)||[]).length,1);
+ assert.equal((source.match(/await fetch\(/g)||[]).length,3,"Capability check, optional authenticated session start, then one AI request per turn");
  assert.doesNotMatch(source,/innerHTML\s*=/);
 });
 

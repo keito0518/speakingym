@@ -33,7 +33,7 @@ function mockScene(coaching){
   localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},
   setInterval:()=>1,clearInterval(){},
   setTimeout:()=>1,clearTimeout(){},AbortController,URL,console,
-  fetch:async ()=>{count++;return {
+  fetch:async url=>{if(String(url).endsWith("/health"))return {ok:true,status:200,json:async()=>({plansEnabled:false})};count++;return {
    ok:true,status:200,json:async()=>({
     sceneId:"hotel",reply:"I understand. Let me check that for you.",
     progress:{step1:true,step2:true,step3:true},

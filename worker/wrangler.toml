@@ -22,3 +22,10 @@ namespace_id = "98102"
   [ratelimits.simple]
   limit = 30
   period = 60
+
+# Future D1 Free plan-quota binding; add only after database exists:
+# [[d1_databases]]
+# binding = "PLAN_DB"
+# database_name = "speakingym-plans"
+# database_id = "REPLACE_WITH_REAL_DATABASE_UUID"
+# Keep ENFORCE_PLANS unset/false until D1 migrations and binding are verified.
