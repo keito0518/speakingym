@@ -29,7 +29,7 @@ function mockScene(coaching){
    createElement:()=>makeElement(),
    querySelectorAll:()=>["hotel","airport","smalltalk"].map(x=>get("selector-"+x))
   },
-  window:{speechSynthesis:null,SpeechRecognition:null,addEventListener(){}},
+  window:{speechSynthesis:null,SpeechRecognition:null,speakingymAccount:{getIdToken:async()=>"mock-token"},addEventListener(){}},
   localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},
   setInterval:()=>1,clearInterval(){},
   setTimeout:()=>1,clearTimeout(){},AbortController,URL,console,
