@@ -169,15 +169,15 @@ const $=id=>document.getElementById(id);
 const STATS_KEY="speakingym-reflex-stats-v1",MISSES_KEY="speakingym-reflex-misses-v1",HISTORY_KEY="speakingym-reflex-history-v1",PHRASES_KEY="speakingym-reflex-saved-phrases-v1",TEACHER_KEY="speakingym-reflex-ai-teacher-v1";
 const AI_ENDPOINT="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
 const cards=[
- {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してもらう",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
- {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一度だけ言ってもらう",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
- {id:"repair3",group:"repair",category:"CLARIFY",situation:"相手が知らない単語を使った",challenge:"その言葉の意味を聞き返す",hint:"“What do you mean by ...?”を使ってもいい。",sample:"What do you mean by that word?"},
- {id:"repair4",group:"repair",category:"REPHRASE",situation:"自分の言ったことが伝わらない",challenge:"別の言い方で説明し直す",hint:"言い直す前のクッション表現。",sample:"Let me put it another way."},
+ {id:"repair1",group:"repair",category:"HEAR IT AGAIN",situation:"相手の話すスピードが速すぎる",challenge:"もう少しゆっくり話してほしい",hint:"失礼にならないように聞いてみて。",sample:"Could you say that a little more slowly?"},
+ {id:"repair2",group:"repair",category:"HEAR IT AGAIN",situation:"相手の最後の一言を聞き逃した",challenge:"もう一回言ってほしい",hint:"短い表現でOK。",sample:"Sorry, could you say that again?"},
+ {id:"repair3",group:"repair",category:"CLARIFY",situation:"相手が知らない単語を使った",challenge:"その言葉ってどういう意味？",hint:"“What do you mean by ...?”を使ってもいい。",sample:"What do you mean by that word?"},
+ {id:"repair4",group:"repair",category:"REPHRASE",situation:"自分の言ったことが伝わらない",challenge:"別の言い方で説明したい",hint:"言い直す前のクッション表現。",sample:"Let me put it another way."},
  {id:"repair5",group:"repair",category:"CORRECT",situation:"相手があなたの意図を誤解した",challenge:"やんわり「そういう意味じゃない」と伝える",hint:"否定だけでなく言い直しにつなげて。",sample:"Sorry, that's not quite what I meant."},
  {id:"repair6",group:"repair",category:"CONFIRM",situation:"相手が言った日時に自信がない",challenge:"金曜の午後3時で合っているか確認",hint:"確認のために繰り返すと自然。",sample:"Just to confirm, you said Friday at three, right?"},
- {id:"hold1",group:"hold",category:"BUY TIME",situation:"突然意見を聞かれて答えに詰まった",challenge:"少し考える時間をもらう",hint:"沈黙を会話に変えるひと言。",sample:"That's a good question. Let me think for a second."},
- {id:"hold2",group:"hold",category:"BUY TIME",situation:"答えはあるけど英語にするのに時間がいる",challenge:"一瞬待ってもらう",hint:"短く一言でOK。",sample:"Give me a moment to find the right words."},
- {id:"hold3",group:"hold",category:"THINK OUT LOUD",situation:"複雑な話をする前に頭を整理したい",challenge:"最初に結論から話すと宣言する",hint:"“First of all...”以外の表現に挑戦。",sample:"Let me start with the main point."},
+ {id:"hold1",group:"hold",category:"BUY TIME",situation:"突然意見を聞かれて答えに詰まった",challenge:"ちょっと考えさせて！",hint:"沈黙を会話に変えるひと言。",sample:"That's a good question. Let me think for a second."},
+ {id:"hold2",group:"hold",category:"BUY TIME",situation:"答えはあるけど英語にするのに時間がいる",challenge:"ちょっと待ってほしい",hint:"短く一言でOK。",sample:"Give me a moment to find the right words."},
+ {id:"hold3",group:"hold",category:"THINK OUT LOUD",situation:"複雑な話をする前に頭を整理したい",challenge:"まず結論から話したい",hint:"“First of all...”以外の表現に挑戦。",sample:"Let me start with the main point."},
  {id:"hold4",group:"hold",category:"THINK OUT LOUD",situation:"質問の答えが一つに決まらない",challenge:"状況による、と前置きする",hint:"理由を続けやすい表現。",sample:"I think it really depends on the situation."},
  {id:"hold5",group:"hold",category:"THINK OUT LOUD",situation:"相手の質問が少し広すぎる",challenge:"具体的に何を知りたいか聞く",hint:"質問に質問で返しても大丈夫。",sample:"Could you be a bit more specific?"},
  {id:"hold6",group:"hold",category:"BUY TIME",situation:"会話の途中で話が脱線してしまった",challenge:"元の話題に戻す",hint:"自然なつなぎ言葉がポイント。",sample:"Anyway, getting back to what we were saying..."},
@@ -257,7 +257,7 @@ const LEVEL_TASKS={
   challenge:["A meeting has been moved across time zones, and the email lists two different times.","Ask which time zone is official and confirm the equivalent time in Japan.","The email lists two times. Could you confirm the official time zone and what time that will be in Japan?","Which time zone should we use?","Could you clarify the meeting's official time zone and confirm the corresponding time in Japan?","時差の問題を先に明確にすると、複数の日時があっても混乱しにくい。","corresponding time は別のタイムゾーンの対応する時刻を表せる。"]
  },
  hold1:{
-  easy:["突然質問された","少し考える時間をもらう"],
+  easy:["突然質問された","ちょっと考えさせて！"],
   standard:["面接で意外な質問を受けた","少し考える時間をもらい、答え始める","That's an interesting question. Let me think for a moment. I'd say...","Let me think about that.","That's a thoughtful question. May I take a moment to consider it?","考える時間を作りながら会話を止めない技術。","Let me think... に続けて自分の意見を言い始めるとより自然。"],
   challenge:["During a presentation, you're asked to compare two approaches you haven't fully analyzed.","Buy a few seconds, acknowledge the limitations, and offer an initial perspective.","That's worth considering. I haven't compared them in depth yet, but my initial view is that...","My initial thought is...","That's a valuable question. I haven't assessed both options fully, but I can share a preliminary view.","未検討の点を正直に認めた上で暫定的な意見を出せると信頼につながる。","preliminary view は「暫定的な見解」。断定を避けるのに便利。"]
  },
@@ -283,7 +283,7 @@ const LEVEL_TASKS={
  },
  hold6:{
   easy:["話が脱線した","元の話題に戻す"],
-  standard:["会議で別の話が続いている","今日の主要議題に戻そうと提案","That makes sense. Could we get back to today's main topic?","Back to the main topic...","If everyone's ready, could we return to the main item on the agenda?","相手を遮らず自然に話を戻せると議論が進む。","get back to / return to は、話題に戻る際の便利な動詞。"],
+  standard:["会議で別の話が続いている","今日のメインの話に戻したい","That makes sense. Could we get back to today's main topic?","Back to the main topic...","If everyone's ready, could we return to the main item on the agenda?","相手を遮らず自然に話を戻せると議論が進む。","get back to / return to は、話題に戻る際の便利な動詞。"],
   challenge:["Your team has spent ten minutes debating a side issue while a decision is due.","Acknowledge the concern and redirect the group to the urgent decision.","That's a valid concern, but we need to finalize today's decision. Could we return to the proposal?","Can we get back to the decision?","I appreciate that point. Given our limited time, could we refocus on the decision we need today?","相手の懸念を認めて優先順位を伝えると、角が立ちにくい。","Given our limited time は時間制約を理由として示せる。"]
  },
 bound1:{
