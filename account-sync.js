@@ -113,7 +113,10 @@ async function updateQuotaUi(){
   if(!response.ok)throw Error("quota");
   const data=await response.json();
   if(data.plan==="pro"){
-   el.textContent="Pro · AI英会話・AI先生は1日の回数上限なし（混雑・不正利用防止・AI提供元の制限はあり）";
+   const remainingTurns=Math.max(0,(data?.limits?.monthlyTurns||0)-(data?.used?.monthlyTurns||0));
+   const remainingTeacher=Math.max(0,(data?.limits?.monthlyTeacher||0)-(data?.used?.monthlyTeacher||0));
+   if(!Number.isInteger(data?.limits?.monthlyTurns)||!Number.isInteger(data?.limits?.monthlyTeacher))throw Error("quota");
+   el.textContent="Pro · 今月の残り：AI英会話 "+remainingTurns+" 往復／AI先生 "+remainingTeacher+" 回（日本時間の毎月1日に更新）";
   }else{
    const n=Math.max(0,(data?.limits?.sessions||0)-(data?.used?.sessions||0));
    const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
