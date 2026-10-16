@@ -7,8 +7,9 @@ const PROJECT_ID="speakingym";
 const JWKS_URL="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const ISSUER="https://securetoken.google.com/"+PROJECT_ID;
 export const PLAN_LIMITS=Object.freeze({
- free:Object.freeze({sessions:3,teacher:1}),
- pro:Object.freeze({sessions:20,teacher:10})
+ free:Object.freeze({sessions:5,teacher:3}),
+ // null = no daily cap. Abuse throttles, per-session duration and upstream API quota still apply.
+ pro:Object.freeze({sessions:null,teacher:null})
 });
 let keysCached=null,keyExpiry=0;
 function decode(encoded){
@@ -87,11 +88,15 @@ export async function startSession(db,uid){
  const tier=await getPlan(db,uid);
  const max=PLAN_LIMITS[tier].sessions;
  const day=tokyoDay(),id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
- // The SELECT and INSERT happen atomically as one SQLite statement.
- const row=await db.prepare(
-  "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) "+
-  "SELECT ?,?,?,?,?,0 WHERE (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) < ? RETURNING id"
- ).bind(id,uid,day,now,now+7*60,uid,day,max).first();
+ // Free quotas are checked and recorded atomically; Pro has no daily quota.
+ const row=tier==="pro"
+  ? await db.prepare(
+     "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) VALUES (?,?,?,?,?,0) RETURNING id"
+    ).bind(id,uid,day,now,now+7*60).first()
+  : await db.prepare(
+     "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) "+
+     "SELECT ?,?,?,?,?,0 WHERE (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) < ? RETURNING id"
+    ).bind(id,uid,day,now,now+7*60,uid,day,max).first();
  return row?{sessionId:id,plan:tier,limits:PLAN_LIMITS[tier]}:null;
 }
 export async function consumeSessionTurn(db,uid,id){
@@ -104,10 +109,14 @@ export async function consumeSessionTurn(db,uid,id){
 export async function consumeTeacher(db,uid){
  const tier=await getPlan(db,uid);
  const day=tokyoDay(),now=Math.floor(Date.now()/1000),id=crypto.randomUUID();
- const row=await db.prepare(
-  "INSERT INTO teacher_uses (id,uid,day,created_at) "+
-  "SELECT ?,?,?,? WHERE (SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) < ? RETURNING id"
- ).bind(id,uid,day,now,uid,day,PLAN_LIMITS[tier].teacher).first();
+ const row=tier==="pro"
+  ? await db.prepare(
+     "INSERT INTO teacher_uses (id,uid,day,created_at) VALUES (?,?,?,?) RETURNING id"
+    ).bind(id,uid,day,now).first()
+  : await db.prepare(
+     "INSERT INTO teacher_uses (id,uid,day,created_at) "+
+     "SELECT ?,?,?,? WHERE (SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) < ? RETURNING id"
+    ).bind(id,uid,day,now,uid,day,PLAN_LIMITS[tier].teacher).first();
  return row?{id,plan:tier}:null;
 }
 export async function refundTeacher(db,uid,id){
