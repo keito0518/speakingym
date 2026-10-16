@@ -21,7 +21,7 @@
    <section class="card" id="setupCard"><div class="heading">準備しよう</div><p class="sub">難易度を選んでスタート。自由に英文を入力できるほか、対応ブラウザではマイク入力も使えるよ。</p>
     <div class="setting-grid"><div><label class="control-label" for="level">練習レベル</label><select class="select" id="level"><option value="easy">基礎｜短い英語で伝える</option><option value="standard" selected>標準｜説明して交換する</option><option value="challenge">応用｜追加条件も伝える</option></select></div><div><label class="control-label" for="speed">相手の話す速さ</label><select class="select" id="speed"><option value="auto" selected>レベルに合わせる</option><option value="slow">ゆっくり（0.8倍）</option><option value="normal">普通（1.0倍）</option><option value="fast">速め（1.15倍）</option></select></div><div><label class="control-label" for="voiceChoice">店員の声（端末内・無料）</label><select class="select" id="voiceChoice"><option value="">自動（端末の英語音声）</option></select><p class="keyboard-note">端末にある英語音声を選べます。声の自然さは端末・ブラウザによって異なります。</p></div></div>
     <div class="scenario"><div class="scenario-title">YOUR ORDER / 注文内容</div><div class="order-row"><span>あなたの注文</span><strong>🧊 Iced Oat Latte</strong></div><div class="order-row wrong"><span>届いた飲み物</span><strong>🔥 Hot Regular Latte</strong></div><div class="order-row"><span>クリア条件</span><strong id="requirements">冷たいラテへの交換を伝える</strong></div></div>
-    <div class="action"><button class="btn primary wide" id="startBtn">▶ 3分ミッションを開始</button></div><p class="keyboard-note">マイクを使わなくても文字入力だけで最後までプレイできます。</p>
+    <p class="keyboard-note" id="missionQuota" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</p><div class="action"><button class="btn primary wide" id="startBtn">▶ 3分ミッションを開始</button></div><p class="keyboard-note">マイクを使わなくても文字入力だけで最後までプレイできます。</p>
    </section>
    <section class="card hidden" id="gameCard" aria-label="会話トレーニング">
     <div class="session-head"><div><div class="eyebrow">LIVE MISSION</div><h2 class="heading">英語で注文を直そう</h2></div><div class="timer" id="clock">03:00</div></div>
@@ -349,9 +349,10 @@ async function missionAIHeaders(){
  if(!serverSessionId){
   const response=await fetch(endpoint+'sessions',{method:'POST',headers:{Authorization:'Bearer '+idToken}});
   const value=await response.json().catch(()=>({}));
-  if(!response.ok)throw Error(value.error||'plans_unavailable');
+  if(!response.ok){if(value.error==='daily_session_limit')void window.speakingymQuota?.refresh();throw Error(value.error||'plans_unavailable');}
   if(typeof value.sessionId!=='string')throw Error('plans_unavailable');
   serverSessionId=value.sessionId;
+   void window.speakingymQuota?.refresh();
  }
  return {headers,sessionId:serverSessionId};
 }
@@ -552,6 +553,7 @@ window.addEventListener('beforeunload',()=>{stopSpeech();stopRecognizer();if(tim
 $('requirements').textContent=requirementText();saveStats();updateEndpoint();
 })();
 </script>
+<script src="./plan-usage.js"></script>
 <script type="module" src="./account-sync.js"></script>
 </body>
 </html>
