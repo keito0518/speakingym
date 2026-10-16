@@ -57,8 +57,8 @@ function app(){
  return {node,click,flush,FakeRecognition};
 }
 
-test("short pause restarts the recognition engine without losing or repeating earlier words",()=>{
- const ui=app();ui.click("start");ui.click("mic");
+test("short pause restarts the recognition engine without losing or repeating earlier words",async()=>{
+ const ui=app();await ui.click("start");ui.click("mic");
  const first=ui.FakeRecognition.sessions[0];
  assert.equal(first.continuous,true,"request continuous listening where supported");
  first.heard("I booked a room",true);
@@ -74,8 +74,8 @@ test("short pause restarts the recognition engine without losing or repeating ea
  assert.equal(second.aborted,true);
 });
 
-test("interim speech survives stopping, and resume appends rather than erasing",()=>{
- const ui=app();ui.click("start");ui.click("mic");
+test("interim speech survives stopping, and resume appends rather than erasing",async()=>{
+ const ui=app();await ui.click("start");ui.click("mic");
  const rec=ui.FakeRecognition.sessions[0];
  rec.heard("Could you please",false);
  ui.click("stopMic");
@@ -85,8 +85,8 @@ test("interim speech survives stopping, and resume appends rather than erasing",
  assert.equal(ui.node("reply").value,"Could you please check the fee");
 });
 
-test("manual rerecord still clears an incorrect transcript",()=>{
- const ui=app();ui.click("start");ui.click("mic");
+test("manual rerecord still clears an incorrect transcript",async()=>{
+ const ui=app();await ui.click("start");ui.click("mic");
  const rec=ui.FakeRecognition.sessions[0];rec.heard("wrong phrase");
  ui.click("mic");
  assert.equal(ui.node("reply").value,"");
