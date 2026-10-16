@@ -112,9 +112,13 @@ async function updateQuotaUi(){
   const response=await fetch(api+"entitlement",{headers:{"Authorization":"Bearer "+idToken}});
   if(!response.ok)throw Error("quota");
   const data=await response.json();
-  const n=Math.max(0,(data?.limits?.sessions||0)-(data?.used?.sessions||0));
-  const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
-  el.textContent=(data.plan==="pro"?"Pro":"Free")+" · 本日の残り：AI英会話 "+n+" セッション／AI先生 "+t+" 回（日本時間の午前0時に更新）";
+  if(data.plan==="pro"){
+   el.textContent="Pro · AI英会話・AI先生は1日の回数上限なし（混雑・不正利用防止・AI提供元の制限はあり）";
+  }else{
+   const n=Math.max(0,(data?.limits?.sessions||0)-(data?.used?.sessions||0));
+   const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
+   el.textContent="Free · 本日の残り：AI英会話 "+n+" セッション／AI先生 "+t+" 回（日本時間の午前0時に更新）";
+  }
  }catch{el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
  finally{quotaLookup=false}
 }
