@@ -10,7 +10,7 @@ export const PLAN_LIMITS=Object.freeze({
  // Keep the current public Free beta unchanged until a separate launch decision.
  free:Object.freeze({sessions:5,teacher:3}),
  // Pro beta: no daily cap, but monthly cap per Firebase user (JST calendar month).
- // Each AI-request consumes a turn. Gemini/API errors can still consume that turn.
+ // Each AI request reserves a turn; failed requests are refunded when safe.
  pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:20})
 });
 let keysCached=null,keyExpiry=0;
@@ -131,11 +131,18 @@ export async function consumeSessionTurn(db,uid,id){
    "AND turns < 20 AND day >= ? AND day < ? "+
    "AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) < ? RETURNING turns"
   ).bind(id,uid,now,month.start,month.end,uid,month.start,month.end,PLAN_LIMITS.pro.monthlyTurns).first();
-  return !!row;
+  return row?{turn:Number(row.turns),sessionId:id}:null;
  }
  const row=await db.prepare(
   "UPDATE ai_sessions SET turns=turns+1 WHERE id = ? AND uid = ? AND expires_at > ? AND turns < 20 RETURNING turns"
  ).bind(id,uid,now).first();
+ return row?{turn:Number(row.turns),sessionId:id}:null;
+}
+/** Conservative atomic rollback: never decrement a turn if a newer turn exists. */
+export async function refundSessionTurn(db,uid,reservation){
+ if(!reservation||!Number.isInteger(reservation.turn)||reservation.turn<1||typeof reservation.sessionId!=="string")return false;
+ const row=await db.prepare("UPDATE ai_sessions SET turns=turns-1 WHERE id = ? AND uid = ? AND turns = ? AND turns > 0 RETURNING turns")
+  .bind(reservation.sessionId,uid,reservation.turn).first();
  return !!row;
 }
 export async function consumeTeacher(db,uid){
