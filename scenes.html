@@ -42,7 +42,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="notice hidden" id="loginPrompt" role="status" aria-live="polite">AI英会話はGoogleログイン後に利用できます。<a href="./account.html" style="text-decoration:underline;font-weight:850">マイページで無料ログインする →</a></div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
 <details class="review-saved"><summary>📚 保存した言い換えを復習</summary><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
-<div class="muted">☕ 別モードの練習（通常のAI英会話とは別ページ）：<a href="./mission.html" style="text-decoration:underline">カフェで注文ミスを解決する3分ミッション →</a></div>
+
 </section>
 <section class="card hidden" id="practice">
 <div class="row" style="justify-content:space-between"><div><span class="eyebrow" id="sceneLabel">AI CONVERSATION</span><h2 id="sceneTitle" style="margin:2px 0;font-size:20px">シーン練習</h2></div><span class="pill" id="timer">03:00</span></div>
@@ -452,7 +452,7 @@ $("clearReview").addEventListener("click",()=>{
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
-$("level").addEventListener("change",renderAssignment);renderAssignment();showSavedReview();updateControls();
+$("level").addEventListener("change",renderAssignment);if(new URLSearchParams(location.search).get("scene")==="cafe")select("cafe");renderAssignment();showSavedReview();updateControls();
 })();
 </script>
 <script src="./plan-usage.js"></script>
