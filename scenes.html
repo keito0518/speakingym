@@ -33,6 +33,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <section class="card" id="setup">
 <div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
 <div class="assignment" id="setupAssignment" aria-live="polite"></div><div class="goals" id="setupGoals" aria-live="polite"></div>
+<div class="muted" id="scenesQuota" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
 <details class="review-saved"><summary>📚 保存した言い換えを復習</summary><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 <div class="muted">☕ こんな練習もできるよ：<a href="./mission.html" style="text-decoration:underline">カフェで注文ミスを解決する3分ミッション →</a></div>
@@ -383,9 +384,10 @@ async function prepareAIRequest(){
  if(!serverSessionId){
   const response=await fetch(API+"sessions",{method:"POST",headers:{Authorization:"Bearer "+token}});
   const body=await response.json().catch(()=>({}));
-  if(!response.ok)throw Error(body.error||"plans_unavailable");
+  if(!response.ok){if(body.error==="daily_session_limit")void window.speakingymQuota?.refresh();throw Error(body.error||"plans_unavailable");}
   if(typeof body.sessionId!=="string")throw Error("plans_unavailable");
   serverSessionId=body.sessionId;
+   void window.speakingymQuota?.refresh();
  }
  return {headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},sessionId:serverSessionId};
 }
@@ -419,6 +421,7 @@ window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancel
 $("level").addEventListener("change",renderAssignment);renderAssignment();showSavedReview();updateControls();
 })();
 </script>
+<script src="./plan-usage.js"></script>
 <script type="module" src="./account-sync.js"></script>
 </body>
 </html>
