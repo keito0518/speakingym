@@ -428,7 +428,7 @@ async function prepareAIRequest(){
  }
  return {headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},sessionId:serverSessionId};
 }
-async function answer(text){const requestToken=runToken;const requestStartedAt=performance.now();processing=true;updateControls();status("AIが返答を考えています…（混雑時は15〜20秒ほどかかる場合があります）");$("error").classList.add("hidden");
+async function answer(text){const requestToken=runToken;const requestStartedAt=Date.now();processing=true;updateControls();status("AIが返答を考えています…（混雑時は15〜20秒ほどかかる場合があります）");$("error").classList.add("hidden");
  const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),30000);
  try{const access=await prepareAIRequest();const response=await fetch(API,{method:"POST",headers:access.headers,body:JSON.stringify({sceneId,level:$("level").value,userText:text,history:history.slice(-10),progress,sessionId:access.sessionId}),signal:controller.signal});
  const data=await response.json().catch(()=>({error:"invalid_json"}));
@@ -438,8 +438,8 @@ async function answer(text){const requestToken=runToken;const requestStartedAt=p
  progress={step1:progress.step1||data.progress.step1===true,step2:progress.step2||data.progress.step2===true,step3:progress.step3||data.progress.step3===true};
  recordCoaching(text,data.coaching);const spoken=data.reply.trim();lastReply=spoken;history.push({role:"assistant",content:spoken});addMessage(SCENES[sceneId].speaker,spoken);say(spoken);goals($("progress"),true);
  pendingText="";processing=false;updateControls();
- if(Object.values(progress).every(Boolean)){finish(true,"3つの目標をクリア！言いたいことを英語で伝えられたよ。")}else if(turn>=turnLimit()){finish(false,"今回の発言回数に達したよ！別の言い方でも挑戦してみよう。")}else status("いい感じ！会話を続けよう。（応答 "+((performance.now()-requestStartedAt)/1000).toFixed(1)+"秒）");
- }catch(e){if(!running||requestToken!==runToken)return;processing=false;const code=(e?.name==="AbortError"?"ai_timeout":String(e?.message||"network_error")).slice(0,60);$("errorReason").textContent=errorMessage(code)+" 応答待ち："+((performance.now()-requestStartedAt)/1000).toFixed(1)+"秒";$("error").classList.remove("hidden");$("error").scrollIntoView?.({block:"nearest",behavior:"smooth"});status("返答に失敗したため、会話を一時停止しています。");updateControls();
+ if(Object.values(progress).every(Boolean)){finish(true,"3つの目標をクリア！言いたいことを英語で伝えられたよ。")}else if(turn>=turnLimit()){finish(false,"今回の発言回数に達したよ！別の言い方でも挑戦してみよう。")}else status("いい感じ！会話を続けよう。（応答 "+((Date.now()-requestStartedAt)/1000).toFixed(1)+"秒）");
+ }catch(e){if(!running||requestToken!==runToken)return;processing=false;const code=(e?.name==="AbortError"?"ai_timeout":String(e?.message||"network_error")).slice(0,60);$("errorReason").textContent=errorMessage(code)+" 応答待ち："+((Date.now()-requestStartedAt)/1000).toFixed(1)+"秒";$("error").classList.remove("hidden");$("error").scrollIntoView?.({block:"nearest",behavior:"smooth"});status("返答に失敗したため、会話を一時停止しています。");updateControls();
  }finally{clearTimeout(safety);if(requestController===controller)requestController=null}}
 function send(){if(!running||processing||pendingText)return;const text=$("reply").value.trim();if(!text){status("英語で何か話してみてね。");return}if(text.length>450){status("450文字以内で入力してね。");return}
  stopRecognition();cancelSpeech();$("reply").value="";pendingText=text;turn++;addMessage("You",text);history.push({role:"user",content:text});updateControls();answer(text)}
