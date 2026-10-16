@@ -35,6 +35,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="assignment" id="setupAssignment" aria-live="polite"></div><div class="goals" id="setupGoals" aria-live="polite"></div>
 <div class="muted" id="scenesQuota" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</div>
 <div class="notice" data-sg-quota-exhausted="sessions" hidden role="status">今日はAI英会話を5セッション使い切ったよ。日本時間の午前0時に回復するよ！ その間も <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
+<div class="notice" data-sg-pro-exhausted="sessions" hidden role="status">今月のProのAI英会話枠600往復を使い切ったよ。次の日本時間1日に回復するよ！ その間は <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
 <details class="review-saved"><summary>📚 保存した言い換えを復習</summary><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 <div class="muted">☕ こんな練習もできるよ：<a href="./mission.html" style="text-decoration:underline">カフェで注文ミスを解決する3分ミッション →</a></div>
@@ -371,7 +372,7 @@ function stopMicrophone(){
 }
 function leave(){runToken++;running=false;processing=false;pendingText="";stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("coachReport").classList.add("hidden");$("saveReview").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
 function start(){serverSessionId="";plansActive=null;leave();running=true;turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};coachingHistory=[];lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText||micWanted)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"3分経過。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
-function errorMessage(code){const known={login_required:"AI会話を使うにはGoogleログインが必要です。マイページからログインしてね。",daily_session_limit:"本日のAI英会話の無料枠を使い切りました。明日また使えるよ。",session_not_active:"AI会話の制限時間に達しました。もう一度、新しい練習を始めてね。",plans_not_ready:"利用回数制限の初期設定中です。",plans_unavailable:"利用回数を確認できませんでした。あとで試してね。",server_unavailable:"AIサーバーに接続できませんでした。",gemini_quota:"無料枠の上限に達しました。しばらく待ってください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が不正な形式でした。",invalid_ai_response:"AIの返答内容を読み取れませんでした。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
+function errorMessage(code){const known={login_required:"AI会話を使うにはGoogleログインが必要です。マイページからログインしてね。",daily_session_limit:"本日のAI英会話の無料枠を使い切りました。明日また使えるよ。",monthly_turn_limit:"今月のProのAI英会話600往復を使い切りました。日本時間の来月1日に回復します。",session_not_active:"AI会話の制限時間に達しました。もう一度、新しい練習を始めてね。",plans_not_ready:"利用回数制限の初期設定中です。",plans_unavailable:"利用回数を確認できませんでした。あとで試してね。",server_unavailable:"AIサーバーに接続できませんでした。",gemini_quota:"無料枠の上限に達しました。しばらく待ってください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が不正な形式でした。",invalid_ai_response:"AIの返答内容を読み取れませんでした。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
 async function prepareAIRequest(){
  if(plansActive===null){
   const healthResponse=await fetch(API+"health");
@@ -389,6 +390,7 @@ async function prepareAIRequest(){
   if(typeof body.sessionId!=="string")throw Error("plans_unavailable");
   serverSessionId=body.sessionId;
    void window.speakingymQuota?.refresh();
+   void window.speakingymQuota?.refresh();
  }
  return {headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},sessionId:serverSessionId};
 }
@@ -396,7 +398,7 @@ async function answer(text){const requestToken=runToken;processing=true;updateCo
  const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),19500);
  try{const access=await prepareAIRequest();const response=await fetch(API,{method:"POST",headers:access.headers,body:JSON.stringify({sceneId,level:$("level").value,userText:text,history:history.slice(-10),progress,sessionId:access.sessionId}),signal:controller.signal});
  const data=await response.json().catch(()=>({error:"invalid_json"}));
- if(!response.ok)throw Error(typeof data.error==="string"?data.error:"http_"+response.status);
+ if(!response.ok){if(data.error==="monthly_turn_limit")void window.speakingymQuota?.refresh();throw Error(typeof data.error==="string"?data.error:"http_"+response.status);}
  if(typeof data.reply!=="string"||!data.reply.trim()||data.reply.length>850||!data.progress||data.sceneId!==sceneId)throw Error("invalid_ai_response");
  if(!running||requestToken!==runToken)return;
  progress={step1:progress.step1||data.progress.step1===true,step2:progress.step2||data.progress.step2===true,step3:progress.step3||data.progress.step3===true};
