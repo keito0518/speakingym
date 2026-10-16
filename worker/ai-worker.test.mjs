@@ -126,7 +126,7 @@ test("successful Gemini JSON response returns conversational reply and facts", a
   const opts = upstream.mock.calls[0].arguments[1];
   assert.equal(opts.headers["x-goog-api-key"], "test-key-not-real");
   assert.match(opts.body, /You are Emma/);
-  assert.match(opts.body, /"maxOutputTokens":1100/);
+  assert.match(opts.body, /"maxOutputTokens":2000/);
   assert.match(opts.body, /"thinkingLevel":"minimal"/);
 });
 
