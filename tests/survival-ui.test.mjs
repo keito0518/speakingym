@@ -32,5 +32,5 @@ test("cafe mission displays Gemini coaching only after completed run, without an
  assert.match(script,/missionCoaching\.push\(item\)/);
  assert.match(script,/drawMissionCoaching\(\)/);
  assert.match(script,/result\.coaching&&typeof result\.coaching==='object'/);
- assert.equal((script.match(/await fetch\(/g)||[]).length,1);
+ assert.equal((script.match(/await fetch\(/g)||[]).length,3,"One optional plan status request, one session start, one AI request per turn");
 });
