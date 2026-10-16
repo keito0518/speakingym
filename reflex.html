@@ -146,6 +146,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini1回だけ無料枠のAPIリクエストを使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
   <p id="teacherQuota" class="teacher-status" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</p>
    <p class="teacher-status" data-sg-quota-exhausted="teacher" hidden role="status">AI先生は今日の3回を使い切ったよ。日本時間の午前0時に回復するよ。それまでは無料の問題解説や<a href="./reflex.html#phrases" style="text-decoration:underline">保存したフレーズ</a>で復習しよう！</p>
+   <p class="teacher-status" data-sg-pro-exhausted="teacher" hidden role="status">今月のProのAI先生20回を使い切ったよ。日本時間の来月1日に回復するよ。無料の問題解説・フレーズ復習は引き続き使えるよ！</p>
    <button class="btn primary block" type="button" id="requestTeacher">✨ AI先生に個別講評してもらう</button>
   <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
   <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
@@ -747,7 +748,7 @@ async function requestTeacherFeedback(){
  }catch(e){
   if(epoch!==teacherEpoch)return;
   const code=String(e?.message||"unknown");
-   if(code==="daily_teacher_limit")void window.speakingymQuota?.refresh();
+   if(code==="daily_teacher_limit"||code==="monthly_teacher_limit")void window.speakingymQuota?.refresh();
   const errors={
    invalid_utterance:"通信形式を確認してください。",
    invalid_coaching_input:"講評用データを読み取れません。",
@@ -755,6 +756,7 @@ async function requestTeacherFeedback(){
    rate_limited:"現在混雑しています。少し待ってから試してね。",
    login_required:"AI先生の個別講評にはGoogleログインが必要だよ。マイページからログインしてね。",
    daily_teacher_limit:"本日のAI先生の利用回数を使い切ったよ。明日また利用できるよ。",
+    monthly_teacher_limit:"今月のProのAI先生20回を使い切ったよ。日本時間の来月1日に回復するよ。",
    plans_not_ready:"利用制限の初期設定中です。",
    plans_unavailable:"利用回数を確認できませんでした。あとで試してね。",
    teacher_not_deployed:"AI先生はまだ準備中です。Cloudflare Workerに新しいコードを反映すると使えるようになります。",
