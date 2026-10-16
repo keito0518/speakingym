@@ -17,7 +17,7 @@ function fakeD1(){
      if(sql.startsWith("SELECT (SELECT COUNT"))return{sessions:sessions.filter(x=>x.uid===args[0]&&x.day===args[1]).length,teacher:teachers.filter(x=>x.uid===args[2]&&x.day===args[3]).length};
      if(sql.startsWith("INSERT INTO ai_sessions")){
       const [id,uid,day,started,expires,checkUid,checkDay,max]=args;
-      if(sessions.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
+      if(!sql.includes(" VALUES ")&&sessions.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
       sessions.push({id,uid,day,started,expires,turns:0});return{id};
      }
      if(sql.startsWith("UPDATE ai_sessions")){
@@ -27,7 +27,7 @@ function fakeD1(){
      }
      if(sql.startsWith("INSERT INTO teacher_uses")){
       const[id,uid,day,created,checkUid,checkDay,max]=args;
-      if(teachers.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
+      if(!sql.includes(" VALUES ")&&teachers.filter(x=>x.uid===checkUid&&x.day===checkDay).length>=max)return null;
       teachers.push({id,uid,day,created});return{id};
      }
      throw Error("Unexpected query: "+sql);
@@ -65,8 +65,8 @@ const request=(path,method="POST",token=null,body=null)=>{
  return new Request(API+path,{method,headers,body:body?JSON.stringify(body):undefined});
 };
 test("free/pro limits are explicit and reset by Japan day",()=>{
- assert.deepEqual(PLAN_LIMITS.free,{sessions:3,teacher:1});
- assert.deepEqual(PLAN_LIMITS.pro,{sessions:20,teacher:10});
+ assert.deepEqual(PLAN_LIMITS.free,{sessions:5,teacher:3});
+ assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null});
  assert.equal(tokyoDay(Date.parse("2026-10-15T14:59:59Z")),"2026-10-15");
  assert.equal(tokyoDay(Date.parse("2026-10-15T15:00:00Z")),"2026-10-16");
 });
@@ -102,7 +102,7 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal((await worker.fetch(request("sessions"),config)).status,401);
  assert.equal((await worker.fetch(request("entitlement","GET"),config)).status,401);
  const starts=[];
- for(let i=0;i<3;i++){
+ for(let i=0;i<5;i++){
   const r=await worker.fetch(request("sessions","POST",a),config);assert.equal(r.status,200);
   starts.push((await r.json()).sessionId);
  }
@@ -116,23 +116,29 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal((await crossAccount.json()).error,"session_not_active");
  assert.equal(aiCalls,1,"invalid and over-limit requests must not call Gemini");
  const usage=(await (await worker.fetch(request("entitlement","GET",a),config)).json());
- assert.equal(usage.plan,"free");assert.equal(usage.used.sessions,3);
- assert.equal(usage.limits.sessions,3);
+ assert.equal(usage.plan,"free");assert.equal(usage.used.sessions,5);
+ assert.equal(usage.limits.sessions,5);
  db.plans.set("test_student_B","pro");
  const pro=await worker.fetch(request("sessions","POST",b),config);
  assert.equal(pro.status,200);
- assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).limits.sessions,20);
+ assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).limits.sessions,null);
+ for(let i=0;i<25;i++)assert.equal((await worker.fetch(request("sessions","POST",b),config)).status,200,"Pro has no daily session cap");
+ assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).used.sessions,26);
  const teacher={action:"reflex_coach",level:"standard",attempts:[{index:0,text:"Can you repeat?",situation:"You did not hear.",goal:"Ask politely to repeat."}]};
- const firstTeacher=await worker.fetch(request("","POST",a,teacher),config);
- assert.equal(firstTeacher.status,200);
- assert.equal((await firstTeacher.json()).feedback.length,1);
- const secondTeacher=await worker.fetch(request("","POST",a,teacher),config);
- assert.equal(secondTeacher.status,429);
- assert.equal((await secondTeacher.json()).error,"daily_teacher_limit");
- assert.equal((await (await worker.fetch(request("entitlement","GET",a),config)).json()).used.teacher,1);
- assert.equal(aiCalls,2,"Blocked teacher use and session replay must not call Gemini");
+ for(let k=0;k<3;k++){
+  const firstTeacher=await worker.fetch(request("","POST",a,teacher),config);
+  assert.equal(firstTeacher.status,200);
+  assert.equal((await firstTeacher.json()).feedback.length,1);
+ }
+ const fourthTeacher=await worker.fetch(request("","POST",a,teacher),config);
+ assert.equal(fourthTeacher.status,429);
+ assert.equal((await fourthTeacher.json()).error,"daily_teacher_limit");
+ assert.equal((await (await worker.fetch(request("entitlement","GET",a),config)).json()).used.teacher,3);
+ assert.equal(aiCalls,4,"Blocked teacher use and session replay must not call Gemini");
  const proTeacher=await worker.fetch(request("","POST",b,teacher),config);
- assert.equal(proTeacher.status,200,"Operator-granted Pro should have a higher teacher quota");
+ assert.equal(proTeacher.status,200,"Operator-granted Pro should have no teacher cap");
+ for(let k=0;k<12;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"Pro teacher quota has no daily limit");
+ assert.equal((await (await worker.fetch(request("entitlement","GET",b),config)).json()).limits.teacher,null);
 });
 test("missing D1 binding rejects requests without invoking Gemini when plans are enabled",async t=>{
  const {token}=await signer();
