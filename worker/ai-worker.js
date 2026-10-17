@@ -263,6 +263,7 @@ async function runReflexCoaching(body,env,origin){
   if(upstream.status===404)return reply({error:"gemini_model"},502,origin);
   if(!upstream.ok)return reply({error:"gemini_http_"+upstream.status},502,origin);
   const result=await upstream.json();
+  logGeminiUsage(result,"reflex_coach");
   const raw=result?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
   let parsed;
   try{parsed=JSON.parse(raw)}catch{return reply({error:"gemini_invalid_json"},502,origin)}
@@ -271,6 +272,25 @@ async function runReflexCoaching(body,env,origin){
   return reply({feedback},200,origin);
  }catch{return reply({error:"ai_timeout"},504,origin)}
  finally{clearTimeout(timer)}
+}
+// Cost telemetry: usage metadata only. Never log prompts, replies, API keys or user IDs.
+// USD rates are estimates; update after verifying the model's current billed rates.
+function logGeminiUsage(result,kind){
+ try{
+  const m=result?.usageMetadata||{};
+  const input=Number(m.promptTokenCount),output=Number(m.candidatesTokenCount);
+  const thinking=Number(m.thoughtsTokenCount)||0;
+  const total=Number(m.totalTokenCount);
+  if(!Number.isFinite(input)||!Number.isFinite(output)||input<0||output<0)return;
+  const estimatedUsd=(input*0.30+(output+thinking)*2.50)/1000000;
+  console.log(JSON.stringify({
+   event:"speakingym_gemini_usage_v1",kind,model:MODEL,
+   inputTokens:input,outputTokens:output,thinkingTokens:thinking,
+   totalTokens:Number.isFinite(total)?total:null,
+   estimatedUsd:Number(estimatedUsd.toFixed(8)),
+   finishReason:result?.candidates?.[0]?.finishReason||"unknown"
+  }));
+ }catch{}
 }
 function headersFor(origin) {
   return {
@@ -474,6 +494,7 @@ export default {
         return aiFailure({ error: "gemini_http_" + upstream.status, message: "Gemini API returned an error." }, 502);
       }
       const result = await upstream.json();
+      logGeminiUsage(result,"conversation");
       const rawText = result?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
       let data;
       try { data = JSON.parse(rawText); } catch { return aiFailure({ error: "gemini_invalid_json", reason: result?.candidates?.[0]?.finishReason === "MAX_TOKENS" ? "output_truncated" : "malformed_response" }, 502); }
