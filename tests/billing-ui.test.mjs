@@ -41,3 +41,14 @@ test('an active subscription without Pro is not falsely reported as fully entitl
  assert.match(a.node('sg-billing-status').textContent,/支払い確認/);
  assert.equal(a.node('sg-checkout').disabled,true);
 });
+
+test('active but ineligible sandbox subscription shows non-sensitive diagnostic code',async()=>{
+ const a=await ui({data:{status:'active',pro:false,entitlementReason:'invoice_missing',periodEnd:1800000000}});
+ assert.match(a.node('sg-billing-status').textContent,/診断コード：invoice_missing/);
+ assert.equal(a.node('sg-checkout').disabled,true);
+});
+test('unknown reasons are never interpolated into status text',async()=>{
+ const a=await ui({data:{status:'active',pro:false,entitlementReason:'secret customer identifier',periodEnd:1800000000}});
+ assert.match(a.node('sg-billing-status').textContent,/診断コード：unknown/);
+ assert.doesNotMatch(a.node('sg-billing-status').textContent,/secret customer identifier/);
+});

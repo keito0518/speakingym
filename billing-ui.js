@@ -34,7 +34,9 @@
      quantity_invalid:'契約数量が一致しません',items_invalid:'契約明細を確認できません',
      collection_paused:'支払いの回収が停止されています',multiple_subscriptions:'契約の重複を確認する必要があります',
      mode_mismatch:'テスト環境の設定が一致しません'};
-    status.textContent+=' 確認内容：'+(reasons[data.entitlementReason]||'契約内容を確認中です')+'。再購入せず運営者へ連絡してください。';
+    const known=Object.hasOwn(reasons,data.entitlementReason);
+    status.textContent+=' 確認内容：'+(known?reasons[data.entitlementReason]:'契約内容を確認中です')+
+     '。診断コード：'+(known?data.entitlementReason:'unknown')+'。再購入せず運営者へ連絡してください。';
    }
    if(new URLSearchParams(location.search).get('billing')==='success'&&!data.pro)status.textContent+=' 決済後の反映には時間がかかる場合があります。再確認してください。';
    if(data.periodEnd)date.textContent=(data.cancelAtPeriodEnd?'利用終了予定日：':'課金期間終了日：')+new Date(data.periodEnd*1000).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})+'（日本時間）。利用枠は毎月1日更新です。';
