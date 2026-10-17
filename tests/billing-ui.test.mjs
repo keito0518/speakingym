@@ -27,3 +27,10 @@ test('portal date and active state come from server; no client plan update',asyn
 test('untrusted checkout URL is never followed',async()=>{
  const a=await ui({data:{status:'none',url:'https://evil.example/'}});await a.node('sg-checkout').listeners.click();assert.equal(a.redirects.length,0);
 });
+
+test('failed unauthorized checkout cannot re-enable the disabled Pro button',async()=>{
+ const a=await ui({ok:false,data:{error:'sandbox_invite_required'}});
+ assert.equal(a.node('sg-checkout').disabled,true);
+ await a.node('sg-checkout').listeners.click();
+ assert.equal(a.node('sg-checkout').disabled,true);
+});

@@ -125,7 +125,7 @@ test('ambiguous checkout retries keep idempotency key, old unresolved operations
  const key=f.db.sqlite.prepare('SELECT checkout_key FROM billing_accounts').get().checkout_key;
  f.state.failCreate=false;assert.equal((await f.call('checkout')).status,200);
  assert.equal(f.db.sqlite.prepare('SELECT checkout_key FROM billing_accounts').get().checkout_key,key);
- f.db.sqlite.prepare('UPDATE billing_accounts SET checkout_id=NULL,checkout_started=?').run(time()-24*3600);
+ f.db.sqlite.prepare('UPDATE billing_accounts SET checkout_id=NULL,checkout_started=?,checkout_expires=?').run(time()-24*3600,time()-1);
  assert.equal((await (await f.call('checkout')).json()).error,'billing_manual_review');
 });
 test('portal customer is selected from authenticated account mapping only',async t=>{
@@ -152,4 +152,16 @@ test('Stripe failure cannot acknowledge or record webhook; retry succeeds',async
 test('simultaneous checkout calls create at most one open session',async t=>{
  const f=await fixture(t);const results=await Promise.all([f.call('checkout'),f.call('checkout')]);
  assert.ok(results.some(r=>r.status===200));assert.ok(results.every(r=>[200,409].includes(r.status)));assert.equal(f.state.sessions.size,1);
+});
+
+test('expired ambiguous Checkout is stopped before another Stripe create attempt',async t=>{
+ const f=await fixture(t);f.state.failCreate=true;
+ assert.equal((await f.call('checkout')).status,503);
+ f.state.failCreate=false;
+ f.db.sqlite.prepare('UPDATE billing_accounts SET checkout_expires=?').run(time()-1);
+ const before=f.state.calls.filter(([u])=>u.endsWith('/checkout/sessions')).length;
+ const response=await f.call('checkout');
+ assert.equal(response.status,503);
+ assert.equal((await response.json()).error,'billing_manual_review');
+ assert.equal(f.state.calls.filter(([u])=>u.endsWith('/checkout/sessions')).length,before);
 });

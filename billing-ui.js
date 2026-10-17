@@ -4,7 +4,7 @@
  const API='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/billing/';
  const $=id=>document.getElementById(id);
  const buy=$('sg-checkout'),portal=$('sg-portal'),status=$('sg-billing-status'),date=$('sg-billing-date');
- let busy=false,sequence=0;
+ let busy=false,sequence=0,checkoutAllowed=false;
  const messages={billing_disabled:'テスト決済は準備中です。無料プランは引き続き利用できます。',
  login_required:'Googleログイン後に、テスト登録の利用可否を確認できます。',
  sandbox_invite_required:'現在は指定テスター限定です。一般向けの有料登録はまだ開始していません。',
@@ -20,10 +20,11 @@
  }
  function error(e){status.textContent=messages[e.message]||'契約情報を確認できませんでした。少し待って再確認してください。決済操作を繰り返す必要はありません。'}
  async function refresh(){
-  const seq=++sequence;buy.disabled=true;portal.hidden=true;date.textContent='';
+  const seq=++sequence;checkoutAllowed=false;buy.disabled=true;portal.hidden=true;date.textContent='';
   try{
    const data=await api('status');if(seq!==sequence)return;
-   buy.disabled=busy||!['none','canceled','incomplete_expired'].includes(data.status);
+   checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
+   buy.disabled=busy||!checkoutAllowed;
    buy.textContent=data.pro?'テストProを利用中':'Proにテスト登録（月680円・実請求なし）';portal.hidden=!data.hasCustomer;
    const states={active:'契約有効',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
    status.textContent='サンドボックス：'+(data.pro?'Pro権限を確認しました。':states[data.status]||'契約状態を確認中です。');
@@ -36,7 +37,7 @@
   try{const data=await api(action,'POST');const url=new URL(data.url);
    const host=action==='checkout'?'checkout.stripe.com':'billing.stripe.com';
    if(url.protocol!=='https:'||url.hostname!==host)throw Error('invalid_redirect');location.assign(url.href);
-  }catch(e){error(e)}finally{busy=false;portal.disabled=false;buy.disabled=false}
+  }catch(e){error(e)}finally{busy=false;portal.disabled=false;buy.disabled=!checkoutAllowed}
  }
  buy.addEventListener('click',()=>redirect('checkout'));portal.addEventListener('click',()=>redirect('portal'));
  $('sg-billing-refresh').addEventListener('click',refresh);

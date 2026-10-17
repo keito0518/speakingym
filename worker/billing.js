@@ -109,7 +109,11 @@ async function checkout(env,row,token){
   }else if(session.status==='expired'){row={...row,checkout_key:null,checkout_id:null}}
   else throw fail('billing_busy',409);
  }
- if(row.checkout_key&&!row.checkout_id&&row.checkout_started<now()-23*3600)throw fail('billing_manual_review');
+ if(row.checkout_key&&!row.checkout_id&&row.checkout_expires<=now()){
+  // The first Stripe attempt may have created a session. Replaying an expired
+  // expires_at with the same idempotency key is unsafe/invalid: review manually.
+  throw fail('billing_manual_review');
+ }
  if(!row.checkout_key){
   row={...row,checkout_key:'sg-checkout-'+crypto.randomUUID(),checkout_started:now(),checkout_expires:now()+1800};
   await ownedUpdate(db,row.uid,token,'checkout_key=?,checkout_started=?,checkout_expires=?,checkout_id=NULL',row.checkout_key,row.checkout_started,row.checkout_expires);
