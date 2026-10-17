@@ -11,7 +11,7 @@ export const PLAN_LIMITS=Object.freeze({
  free:Object.freeze({sessions:5,teacher:3}),
  // Pro beta: no daily cap, but monthly cap per Firebase user (JST calendar month).
  // Each AI request reserves a turn; failed requests are refunded when safe.
- pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:20})
+ pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:100})
 });
 let keysCached=null,keyExpiry=0;
 function decode(encoded){
