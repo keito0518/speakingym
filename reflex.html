@@ -434,9 +434,251 @@ const EASY_WORDING={
  connect1:"旅行の感想を聞く",connect2:"趣味を始めた時期を聞く",connect3:"仕事の感想を聞く",
  connect4:"映画の魅力を聞く",connect5:"共通点を伝えて質問",connect6:"自然に話題を変える"
 };
+const SPRINT_EXTRA_VARIANTS={
+ "repair11": {
+  "quick": "The first part, please?",
+  "polite": "Could you repeat the first part of what you said?"
+ },
+ "repair12": {
+  "quick": "A little louder, please?",
+  "polite": "Would you mind speaking a little louder?"
+ },
+ "repair13": {
+  "quick": "You're cutting out.",
+  "polite": "I'm sorry, the connection is breaking up. Could you say that again?"
+ },
+ "repair14": {
+  "quick": "How do you spell that?",
+  "polite": "Could you spell your name for me, please?"
+ },
+ "repair15": {
+  "quick": "What was that place called?",
+  "polite": "Could you remind me of the name of that place?"
+ },
+ "repair16": {
+  "quick": "Tomorrow, right?",
+  "polite": "Just to confirm, did you mean tomorrow?"
+ },
+ "repair17": {
+  "quick": "What's that short for?",
+  "polite": "Could you tell me what that abbreviation stands for?"
+ },
+ "repair18": {
+  "quick": "In simpler words, please?",
+  "polite": "Would you mind explaining that in simpler terms?"
+ },
+ "repair19": {
+  "quick": "Fifteen or fifty?",
+  "polite": "Sorry, could you confirm whether you said fifteen or fifty?"
+ },
+ "repair20": {
+  "quick": "What are we talking about?",
+  "polite": "Sorry, could you remind me what we were discussing?"
+ },
+ "repair21": {
+  "quick": "Like what?",
+  "polite": "Could you give me a specific example?"
+ },
+ "repair22": {
+  "quick": "What do I need to do?",
+  "polite": "Just to make sure I've understood, what would you like me to do?"
+ },
+ "repair23": {
+  "quick": "Left or right?",
+  "polite": "Sorry, could you confirm whether I should turn left or right?"
+ },
+ "repair24": {
+  "quick": "Oh, now I get it.",
+  "polite": "Ah, thank you. I understand what you meant now."
+ },
+ "repair25": {
+  "quick": "Did I get that right?",
+  "polite": "Could you confirm that I've understood you correctly?"
+ },
+ "hold11": {
+  "quick": "One second.",
+  "polite": "Could you give me a moment to think about that?"
+ },
+ "hold12": {
+  "quick": "First things first.",
+  "polite": "Let me go through this step by step, if that's okay."
+ },
+ "hold13": {
+  "quick": "How can I say this?",
+  "polite": "Let me find the right words to explain what I mean."
+ },
+ "hold14": {
+  "quick": "Good question.",
+  "polite": "That's a thoughtful question. Let me think for a moment."
+ },
+ "hold15": {
+  "quick": "Just a minute.",
+  "polite": "Would it be okay if I took a little more time to decide?"
+ },
+ "hold16": {
+  "quick": "Let me check.",
+  "polite": "Would you mind waiting while I check my calendar?"
+ },
+ "hold17": {
+  "quick": "I don't quite remember.",
+  "polite": "I'm sorry, I can't recall the exact details right now."
+ },
+ "hold18": {
+  "quick": "Oh, I remember!",
+  "polite": "Actually, something just came back to me. May I add it?"
+ },
+ "hold19": {
+  "quick": "In short,",
+  "polite": "To give you the short version,"
+ },
+ "hold20": {
+  "quick": "Here's the key point.",
+  "polite": "I'd like to start with the most important point."
+ },
+ "hold21": {
+  "quick": "I'm not sure, but...",
+  "polite": "I can't say for certain, but my understanding is that..."
+ },
+ "hold22": {
+  "quick": "Can I reply later?",
+  "polite": "Would it be alright if I got back to you later?"
+ },
+ "hold23": {
+  "quick": "That caught me off guard.",
+  "polite": "I wasn't expecting that question, so let me think."
+ },
+ "hold24": {
+  "quick": "There are two ways.",
+  "polite": "I can see two possible options we could consider."
+ },
+ "hold25": {
+  "quick": "A little background first.",
+  "polite": "Would it help if I explained the background first?"
+ },
+ "boundaries11": {
+  "quick": "Not today, sorry.",
+  "polite": "Thanks for asking, but I'm afraid I can't make it today."
+ },
+ "boundaries12": {
+  "quick": "Tomorrow's better.",
+  "polite": "If it works for you, tomorrow would be more convenient for me."
+ },
+ "boundaries13": {
+  "quick": "Not right now.",
+  "polite": "I'm sorry, but I won't be able to take care of that right now."
+ },
+ "boundaries14": {
+  "quick": "Can we move it?",
+  "polite": "Would it be possible to reschedule for a different time?"
+ },
+ "boundaries15": {
+  "quick": "I'm swamped.",
+  "polite": "I'm afraid my workload is quite heavy at the moment."
+ },
+ "boundaries16": {
+  "quick": "I need a breather.",
+  "polite": "Would you mind if I took a short break?"
+ },
+ "boundaries17": {
+  "quick": "Let's try something else.",
+  "polite": "Could we consider a different approach instead?"
+ },
+ "boundaries18": {
+  "quick": "No need to rush.",
+  "polite": "I'd prefer to take a little more time to get this right."
+ },
+ "boundaries19": {
+  "quick": "That's too expensive for me.",
+  "polite": "I'm afraid that would be outside my budget."
+ },
+ "boundaries20": {
+  "quick": "Something else, please.",
+  "polite": "Thank you, but I'd prefer to order something different."
+ },
+ "boundaries21": {
+  "quick": "I'd rather not say.",
+  "polite": "I hope you understand, but I'd prefer not to discuss that right now."
+ },
+ "boundaries22": {
+  "quick": "By Friday works.",
+  "polite": "I could take care of that as long as Friday is an acceptable deadline."
+ },
+ "boundaries23": {
+  "quick": "I see it differently.",
+  "polite": "I understand your point, but I have a slightly different perspective."
+ },
+ "boundaries24": {
+  "quick": "A bit later, maybe?",
+  "polite": "Would it be possible for us to meet a little later?"
+ },
+ "boundaries25": {
+  "quick": "That's not my field.",
+  "polite": "I'm afraid I don't have much expertise in that area."
+ },
+ "connect11": {
+  "quick": "What was the best bit?",
+  "polite": "Which part of your trip did you enjoy the most?"
+ },
+ "connect12": {
+  "quick": "How's work?",
+  "polite": "How have you been finding your new job so far?"
+ },
+ "connect13": {
+  "quick": "Was it good?",
+  "polite": "I'd love to hear what you thought of the movie."
+ },
+ "connect14": {
+  "quick": "What's the recipe?",
+  "polite": "Would you mind telling me how you made that dish?"
+ },
+ "connect15": {
+  "quick": "What else happened?",
+  "polite": "Did you get up to anything else over the weekend?"
+ },
+ "connect16": {
+  "quick": "How's Japan?",
+  "polite": "How has your experience in Japan been so far?"
+ },
+ "connect17": {
+  "quick": "Since when?",
+  "polite": "How long have you been interested in that hobby?"
+ },
+ "connect18": {
+  "quick": "What's its name?",
+  "polite": "What's your dog's name, if you don't mind me asking?"
+ },
+ "connect19": {
+  "quick": "How's the new place?",
+  "polite": "Are you settling into your new neighborhood okay?"
+ },
+ "connect20": {
+  "quick": "What should I order?",
+  "polite": "Is there anything in particular you'd recommend trying there?"
+ },
+ "connect21": {
+  "quick": "That's great news!",
+  "polite": "That's wonderful news. I'm really happy for you!"
+ },
+ "connect22": {
+  "quick": "You okay?",
+  "polite": "You seem a little down. Is everything alright?"
+ },
+ "connect23": {
+  "quick": "Go on!",
+  "polite": "That sounds fascinating. I'd love to hear more."
+ },
+ "connect24": {
+  "quick": "Who's coming?",
+  "polite": "Who are you planning to travel with?"
+ },
+ "connect25": {
+  "quick": "Anything new?",
+  "polite": "Has anything interesting happened to you recently?"
+ }
+};
 function taskFor(card,level){
  const data=LEVEL_TASKS[card.id];
- if(!data){const extra=EXTRA_ANSWERS[card.id]||{};return {situation:level==="challenge"?({repair:"You need to clarify something in a conversation.",hold:"You need a moment to think before responding.",bound:"You need to set a polite boundary or negotiate.",connect:"You want to keep the conversation going."}[card.group]):card.situation,challenge:level==="challenge"?({repair:"Ask for clarification in a natural way.",hold:"Respond naturally while organizing your thoughts.",bound:"State your preference or limitation politely.",connect:"Respond warmly or ask a relevant follow-up question."}[card.group]):card.challenge,sample:card.sample,quick:extra.quick||card.sample,polite:extra.polite||card.sample,good:"相手に伝わる短い表現を声に出して練習できた。",improve:extra.tip||"例文は一例。自分の言葉でも伝わればOK。"};}
+ if(!data){const extra=SPRINT_EXTRA_VARIANTS[card.id]||EXTRA_ANSWERS[card.id]||{};return {situation:level==="challenge"?({repair:"You need to clarify something in a conversation.",hold:"You need a moment to think before responding.",bound:"You need to set a polite boundary or negotiate.",connect:"You want to keep the conversation going."}[card.group]):card.situation,challenge:level==="challenge"?({repair:"Ask for clarification in a natural way.",hold:"Respond naturally while organizing your thoughts.",bound:"State your preference or limitation politely.",connect:"Respond warmly or ask a relevant follow-up question."}[card.group]):card.challenge,sample:card.sample,quick:extra.quick||card.sample,polite:extra.polite||card.sample,good:"相手に伝わる短い表現を声に出して練習できた。",improve:extra.tip||"例文は一例。自分の言葉でも伝わればOK。"};}
  if(level==="easy"){
   const easy=data.easy;
   return {situation:easy?.[0]||card.situation,challenge:EASY_WORDING[card.id]||easy?.[1]||card.challenge,
@@ -556,13 +798,20 @@ function clearSpeech(){
  $("resumeMic").classList.add("hidden");
  $("micStatus").textContent="英文を全消ししました。新しく話してみよう。";
 }
-function speakExample(text){
- if(!speaker||!window.SpeechSynthesisUtterance)return;
+function speakExample(text,button){
+ if(!speaker||!window.SpeechSynthesisUtterance){if(button)button.textContent="音声非対応";return;}
  try{
-  cancelReading();const u=new window.SpeechSynthesisUtterance(text);
+  cancelReading();
+  const u=new window.SpeechSynthesisUtterance(text);
   const voices=speaker.getVoices(),voice=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
-  if(voice)u.voice=voice;u.lang=voice?.lang||"en-US";u.rate=.92;speaker.speak(u);
- }catch(e){}
+  if(voice)u.voice=voice;
+  u.lang=voice?.lang||"en-US";u.rate=.92;
+  if(button){button.textContent="🔊 再生中…";button.setAttribute("aria-live","polite");}
+  u.onend=()=>{if(button)button.textContent="🔊 もう一度聞く";};
+  u.onerror=()=>{if(button)button.textContent="音声を再試行 ↻";};
+  speaker.speak(u);
+  if(speaker.paused)speaker.resume();
+ }catch(e){if(button)button.textContent="音声を再試行 ↻";}
 }
 function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return value??fallback}catch(e){return fallback}}
 function notifyCloud(key){window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key}}))}
@@ -876,7 +1125,7 @@ function showReview(index){
   const heading=document.createElement("div");heading.className="answer-label";heading.textContent=label;
   const text=document.createElement("p");text.className="answer-text";text.textContent=example;
   const listen=document.createElement("button");listen.className="btn";listen.textContent="🔊 聞く";
-  listen.addEventListener("click",()=>speakExample(example));
+  listen.addEventListener("click",()=>speakExample(example,listen));
   const kind=featured?"natural":label.startsWith("QUICK")?"quick":"polite";
   const entry=bookmarkRecord(card,reviewSession.level,kind,example,info);
   const bookmark=document.createElement("button");bookmark.type="button";bookmark.className="btn save-phrase";
