@@ -4,10 +4,20 @@ on:
   pull_request:
     paths:
       - "worker/**"
+      - "billing-ui.js"
+      - "plans.html"
+      - "tests/billing-ui.test.mjs"
+      - "tests/reflex-content.test.mjs"
+      - "reflex.html"
       - ".github/workflows/worker-tests.yml"
   push:
     paths:
       - "worker/**"
+      - "billing-ui.js"
+      - "plans.html"
+      - "tests/billing-ui.test.mjs"
+      - "tests/reflex-content.test.mjs"
+      - "reflex.html"
       - ".github/workflows/worker-tests.yml"
 
 jobs:
@@ -21,4 +31,4 @@ jobs:
         with:
           node-version: "22"
       - name: Test the no-billing fallback and AI bridge
-        run: node --test worker/ai-worker.test.mjs worker/plan-limits.test.mjs
+        run: node --test worker/*.test.mjs tests/billing-ui.test.mjs tests/reflex-content.test.mjs

@@ -94,7 +94,7 @@ const request=(path,method="POST",token=null,body=null)=>{
 };
 test("free/pro limits are explicit and reset by Japan day",()=>{
  assert.deepEqual(PLAN_LIMITS.free,{sessions:5,teacher:3});
- assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:20});
+ assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:100});
  assert.equal(tokyoDay(Date.parse("2026-10-15T14:59:59Z")),"2026-10-15");
  assert.equal(tokyoDay(Date.parse("2026-10-15T15:00:00Z")),"2026-10-16");
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T14:59:59Z")),{start:"2026-10-01",end:"2026-11-01"});
@@ -175,14 +175,14 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal(aiCalls,4,"Blocked teacher use and session replay must not call Gemini");
  const proTeacher=await worker.fetch(request("","POST",b,teacher),config);
  assert.equal(proTeacher.status,200,"Operator-granted Pro allows month quota");
- for(let k=1;k<20;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"20 monthly teacher uses allowed");
+ for(let k=1;k<100;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"100 monthly teacher uses allowed");
  const blockedProTeacher=await worker.fetch(request("","POST",b,teacher),config);
  assert.equal(blockedProTeacher.status,429);
  assert.equal((await blockedProTeacher.json()).error,"monthly_teacher_limit");
  const teacherUsage=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
  assert.equal(teacherUsage.limits.teacher,null);
- assert.equal(teacherUsage.limits.monthlyTeacher,20);
- assert.equal(teacherUsage.used.monthlyTeacher,20);
+ assert.equal(teacherUsage.limits.monthlyTeacher,100);
+ assert.equal(teacherUsage.used.monthlyTeacher,100);
  // Seed prior completed sessions so only one monthly AI turn remains.
  const now=Math.floor(Date.now()/1000),day=tokyoDay();
  for(let k=0;k<30;k++)db.sessions.push({id:crypto.randomUUID(),uid:"test_student_B",day,started:now-100,expires:now+100,turns:k===29?19:20});

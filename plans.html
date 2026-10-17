@@ -8,7 +8,7 @@
 <title>料金・利用プラン | Speakingym</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;background:#f8f9f5;color:#173d31;line-height:1.7}
-*{box-sizing:border-box}body{margin:0;min-width:320px}a{color:inherit}a:focus-visible{outline:3px solid #54b58d;outline-offset:4px}header{background:#173d31;color:#fff}.top{max-width:960px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;gap:12px}.brand{font-size:23px;font-weight:950;letter-spacing:-1px;text-decoration:none}.brand span{color:#ffa386}.top a:last-child{font-size:12px;text-decoration:none}
+*{box-sizing:border-box}body{margin:0;min-width:320px}a{color:inherit}button{font:inherit;cursor:pointer;border:0;width:100%}button:disabled{opacity:.6;cursor:not-allowed}[hidden]{display:none!important}button:focus-visible,a:focus-visible{outline:3px solid #54b58d;outline-offset:4px}header{background:#173d31;color:#fff}.top{max-width:960px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;gap:12px}.brand{font-size:23px;font-weight:950;letter-spacing:-1px;text-decoration:none}.brand span{color:#ffa386}.top a:last-child{font-size:12px;text-decoration:none}
 main{max-width:960px;margin:auto;padding:42px 18px 75px}.eyebrow{font-size:11px;letter-spacing:2px;font-weight:900;color:#b15d41}.hero h1{font-size:clamp(30px,6vw,45px);line-height:1.32;letter-spacing:-1.4px;margin:9px 0}.hero h1 em{font-style:normal;color:#d56d4f}.hero p{max-width:690px;color:#54675b;font-size:14px;margin:0}.beta{margin-top:20px;border:1px solid #d5e5d4;background:#eaf4e7;border-radius:12px;padding:12px 15px;font-size:12px;color:#395b43}
 .plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px;margin:30px 0}.plan{background:#fff;border:1px solid #dfe8df;border-radius:18px;padding:26px;min-width:0;box-shadow:0 10px 32px #173d310a}.plan.free{border:2px solid #2b7251}.plan-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.plan h2{font-size:23px;margin:0}.tag{font-size:11px;padding:5px 10px;border-radius:99px;background:#e9f3e7;color:#276244;font-weight:850}.tag.wait{background:#f5f0e8;color:#895e37}.price{font-size:33px;font-weight:950;line-height:1.35;letter-spacing:-1px;margin:21px 0 7px}.price small{font-size:12px;color:#6e7a70;font-weight:600;letter-spacing:0}.plan p{font-size:12px;color:#68786c;margin:0 0 17px;min-height:43px}.plan ul{list-style:none;margin:0;padding:0}.plan li{padding:11px 0;border-top:1px solid #ebf0ea;font-size:13px}.plan li::before{content:"✓";color:#31805a;font-weight:900;margin-right:10px}.btn{display:block;text-align:center;margin-top:22px;padding:12px 14px;border-radius:11px;text-decoration:none;font-size:13px;font-weight:900;background:#f47553;color:#fff}.muted-cta{margin-top:22px;padding:12px 14px;border-radius:11px;text-align:center;background:#f3f4f0;color:#657569;font-weight:850;font-size:13px}
 h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #dfe8df;border-radius:17px;padding:24px}.detail-row{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:10px;padding:13px 0;border-bottom:1px solid #eef1ec;align-items:start;font-size:13px}.detail-row:last-child{border:0}.detail-row:first-of-type{color:#59715e;font-weight:850}.detail-row span:last-child{color:#756f64}.notes{font-size:12px;color:#69786c;line-height:1.85;margin-top:18px}.faq{margin-top:28px}.faq details{background:#fff;border:1px solid #e0e8df;border-radius:12px;margin-bottom:9px;padding:13px 16px}.faq summary{font-weight:800;cursor:pointer;font-size:13px}.faq p{font-size:12px;color:#526759;margin:9px 0 0}footer{text-align:center;font-size:11px;color:#829083;padding:0 18px 25px}
@@ -23,7 +23,7 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
  <h1>英語の練習を、<br><em>自分のペースで。</em></h1>
  <p>Speakingymは現在、無料ベータ版を公開中。60秒チャレンジは何度でも練習できるよ。AI機能には無料の利用枠があるけれど、クレジットカードの登録は必要ありません。</p>
 </section>
-<div class="beta" role="note"><strong>現在、有料会員の募集・決済は行っていません。</strong> Proは月額680円（税込）・AI講評月100回のプランをテスト準備中です。現在は決済を受け付けていません。</div>
+<div class="beta" role="note"><strong>現在、有料会員の募集・決済は行っていません。</strong> Proは月額680円（税込）・AI講評月100回のプランをテスト準備中です。指定したテスターのみ、Stripeサンドボックスで登録・解約を検証できます。実際の請求は発生しません。</div>
 <section class="plans" aria-label="プランの比較">
  <article class="plan free">
   <div class="plan-head"><h2>Free</h2><span class="tag">利用可能</span></div>
@@ -43,12 +43,17 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
   <div class="price">¥680 <small>/ 月・税込予定（テスト準備中）</small></div>
   <p>AIとの実戦練習をもっと増やしたい人に向けて、内容を検討中。</p>
   <ul>
-   <li>AI英会話：月600リクエスト（往復想定・予定）</li>
+   <li>AI英会話：月600往復（AIへのリクエスト数）</li>
    <li>AI先生の個別講評：月100回（予定）</li>
    <li>60秒チャレンジ・復習は引き続き利用可能</li>
    <li>日次回数制限なし・月間上限で管理（予定）</li>
   </ul>
-  <div class="muted-cta">現在はお申し込みできません</div>
+  <button class="btn" id="sg-checkout" type="button" disabled>テスト登録の利用可否を確認中…</button>
+  <button class="muted-cta" id="sg-portal" type="button" hidden>契約・支払い方法を管理</button>
+  <button class="muted-cta" id="sg-billing-refresh" type="button">契約状態を再確認</button>
+  <p id="sg-billing-status" role="status" aria-live="polite"></p>
+  <p id="sg-billing-date"></p>
+  <p>利用枠は日本時間の毎月1日午前0時にリセットされます。月額料金は登録日を基準に更新され、利用枠の更新日とは異なります。未使用分の繰り越しはありません。</p>
  </article>
 </section>
 <section class="details">
@@ -68,5 +73,7 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
 </section>
 </main>
 <footer>Speakingym · 知ってる英語を、話せる英語に。　<a href="./index.html">トップへ</a>　<a href="./account.html">マイページ</a></footer>
+<script type="module" src="./account-sync.js"></script>
+<script src="./billing-ui.js" defer></script>
 </body>
 </html>
