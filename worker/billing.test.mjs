@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import worker from './ai-worker.js';
 import {getPlan} from './plan-limits.js';
-import {billingConfigured,verifyStripeSignature,subscriptionAccess,withAccountLock} from './billing.js';
+import {billingConfigured,verifyStripeSignature,subscriptionAccess,subscriptionAccessReason,withAccountLock} from './billing.js';
 const time=()=>Math.floor(Date.now()/1000);
 const origin='https://speakingym.pages.dev';
 function database(){
@@ -28,11 +28,12 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},failCreate:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   state.calls.push([url,opt]);const path=new URL(url).pathname.replace('/v1/','');let result;
   if(path==='prices/price_test')result=state.price;
+  else if(path==='invoices/in_test')result=state.invoice;
   else if(path==='customers')result={id:'cus_test',livemode:false};
   else if(path==='subscriptions')result={data:state.subscriptions,has_more:false};
   else if(path.startsWith('subscriptions/'))result=state.subscriptions.find(s=>s.id===path.split('/')[1]);
@@ -164,4 +165,34 @@ test('expired ambiguous Checkout is stopped before another Stripe create attempt
  assert.equal(response.status,503);
  assert.equal((await response.json()).error,'billing_manual_review');
  assert.equal(f.state.calls.filter(([u])=>u.endsWith('/checkout/sessions')).length,before);
+});
+
+test('Stripe invoice string is fetched and authenticated before granting Pro',async t=>{
+ const f=await fixture(t);await f.call('checkout');
+ f.state.subscriptions=[{...active(),latest_invoice:'in_test'}];
+ assert.equal((await f.event('invoice.paid','evt_expanded')).status,200);
+ assert.equal((await getPlan(f.db,'student',f.env)),'pro');
+ const status=await (await f.call('status','GET')).json();
+ assert.equal(status.pro,true);
+ assert.equal(status.entitlementReason,'ok');
+ assert.ok(f.state.calls.some(([url])=>url.endsWith('/invoices/in_test')));
+});
+test('a string invoice for a different customer never grants entitlement',async t=>{
+ const f=await fixture(t);await f.call('checkout');
+ f.state.subscriptions=[{...active(),latest_invoice:'in_test'}];
+ f.state.invoice.customer='cus_unrelated';
+ assert.equal((await f.event('invoice.paid','evt_wrong_customer')).status,503);
+ assert.equal((await getPlan(f.db,'student',f.env)),'free');
+ assert.equal(f.db.sqlite.prepare('SELECT id FROM billing_events WHERE id=?').get('evt_wrong_customer'),undefined);
+});
+test('active but unpaid invoice has a safe reason and remains Free',async t=>{
+ const f=await fixture(t);await f.call('checkout');
+ f.state.subscriptions=[{...active(),latest_invoice:{status:'open',paid:false}}];
+ const response=await f.call('status','GET');
+ const body=await response.json();
+ assert.equal(response.status,200);
+ assert.equal(body.status,'active');
+ assert.equal(body.pro,false);
+ assert.equal(body.entitlementReason,'invoice_unpaid');
+ assert.equal(subscriptionAccessReason(f.state.subscriptions[0],'price_test'),'invoice_unpaid');
 });

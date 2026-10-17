@@ -26,8 +26,16 @@
    checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
    buy.disabled=busy||!checkoutAllowed;
    buy.textContent=data.pro?'テストProを利用中':'Proにテスト登録（月680円・実請求なし）';portal.hidden=!data.hasCustomer;
-   const states={active:'契約有効',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
+   const states={active:'契約は有効ですが、Pro権限の確認が未完了です。',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
    status.textContent='サンドボックス：'+(data.pro?'Pro権限を確認しました。':states[data.status]||'契約状態を確認中です。');
+   if(data.status==='active'&&!data.pro){
+    const reasons={invoice_missing:'請求書情報が取得できていません',invoice_unpaid:'Stripeの支払い確認が完了していません',
+     period_invalid:'契約の有効期限を確認できません',price_mismatch:'契約の価格IDが一致しません',
+     quantity_invalid:'契約数量が一致しません',items_invalid:'契約明細を確認できません',
+     collection_paused:'支払いの回収が停止されています',multiple_subscriptions:'契約の重複を確認する必要があります',
+     mode_mismatch:'テスト環境の設定が一致しません'};
+    status.textContent+=' 確認内容：'+(reasons[data.entitlementReason]||'契約内容を確認中です')+'。再購入せず運営者へ連絡してください。';
+   }
    if(new URLSearchParams(location.search).get('billing')==='success'&&!data.pro)status.textContent+=' 決済後の反映には時間がかかる場合があります。再確認してください。';
    if(data.periodEnd)date.textContent=(data.cancelAtPeriodEnd?'利用終了予定日：':'課金期間終了日：')+new Date(data.periodEnd*1000).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})+'（日本時間）。利用枠は毎月1日更新です。';
   }catch(e){if(seq!==sequence)return;buy.textContent='Proテスト登録（準備中・招待制）';error(e)}

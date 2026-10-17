@@ -44,14 +44,25 @@ async function ownedUpdate(db,uid,token,sql,...args){
  const row=await stmt(db,`UPDATE billing_accounts SET ${sql} WHERE uid=? AND lock_token=? AND lock_until > ? RETURNING uid`,...args,uid,token,now()).first();
  if(!row)throw fail('billing_busy',409);
 }
-export function subscriptionAccess(sub,priceId,time=now()){
+// Return only non-sensitive rule codes for invited sandbox testers.
+export function subscriptionAccessReason(sub,priceId,time=now()){
  const items=sub?.items?.data||[];
  const item=items.length===1?items[0]:null;
  const end=item?.current_period_end??sub?.current_period_end;
  const invoice=sub?.latest_invoice;
- return sub?.livemode===false && sub.status==='active' && !sub.pause_collection &&
- item?.price?.id===priceId && item.quantity===1 && end>time &&
- invoice && typeof invoice==='object' && invoice.status==='paid' && invoice.paid===true;
+ if(sub?.livemode!==false)return 'mode_mismatch';
+ if(sub.status!=='active')return 'subscription_not_active';
+ if(sub.pause_collection)return 'collection_paused';
+ if(!item)return 'items_invalid';
+ if(item.price?.id!==priceId)return 'price_mismatch';
+ if(item.quantity!==1)return 'quantity_invalid';
+ if(!Number.isInteger(end)||end<=time)return 'period_invalid';
+ if(!invoice||typeof invoice!=='object')return 'invoice_missing';
+ if(invoice.status!=='paid'||invoice.paid!==true)return 'invoice_unpaid';
+ return 'ok';
+}
+export function subscriptionAccess(sub,priceId,time=now()){
+ return subscriptionAccessReason(sub,priceId,time)==='ok';
 }
 async function reconcile(env,row,token,eventId){
  const db=env.PLAN_DB;
@@ -61,8 +72,20 @@ async function reconcile(env,row,token,eventId){
  if(list.has_more)throw fail('billing_manual_review');
  if(list.data.some(s=>s.livemode!==false))throw fail('billing_mode_mismatch');
  const current=list.data.filter(s=>!['canceled','incomplete_expired'].includes(s.status));
+ // Stripe allows expandable invoice references to be strings. Verify the exact
+ // invoice server-side rather than falsely treating an active paid subscription
+ // as Free. Only a single current subscription is eligible, never duplicates.
+ if(current.length===1 && typeof current[0].latest_invoice==='string'){
+  const id=current[0].latest_invoice;
+  if(!/^in_[a-zA-Z0-9]+$/.test(id))throw fail('billing_invoice_invalid');
+  const invoice=await stripe(env,'invoices/'+encodeURIComponent(id));
+  if(invoice?.id!==id||invoice?.livemode!==false||invoice?.customer!==row.customer_id)
+   throw fail('billing_invoice_mismatch');
+  current[0]={...current[0],latest_invoice:invoice};
+ }
  const sub=current.find(s=>subscriptionAccess(s,env.STRIPE_PRICE_ID))||current[0]||null;
- const entitled=current.length===1&&subscriptionAccess(sub,env.STRIPE_PRICE_ID);
+ const entitlementReason=current.length>1?'multiple_subscriptions':current.length===0?'no_subscription':subscriptionAccessReason(sub,env.STRIPE_PRICE_ID);
+ const entitled=entitlementReason==='ok';
  const end=sub?.items?.data?.[0]?.current_period_end??sub?.current_period_end??null;
  const status=current.length>1?'duplicate_review':sub?.status||'canceled';
  const time=now();
@@ -72,7 +95,7 @@ async function reconcile(env,row,token,eventId){
  if(eventId)statements.push(stmt(db,'INSERT OR IGNORE INTO billing_events (id,processed_at) SELECT ?,? FROM billing_accounts WHERE uid=? AND lock_token=? AND lock_until>?',eventId,time,row.uid,token,time));
  const results=await db.batch(statements);
  if(!results[0].meta.changes)throw fail('billing_busy',409);
- return {...row,subscription_id:sub?.id||null,status,period_end:end,cancel_at_period_end:sub?.cancel_at_period_end?1:0,synced_at:time,entitled,hasSubscription:current.length>0};
+ return {...row,subscription_id:sub?.id||null,status,period_end:end,cancel_at_period_end:sub?.cancel_at_period_end?1:0,synced_at:time,entitled,entitlementReason,hasSubscription:current.length>0};
 }
 export async function refreshBillingIfNeeded(env,uid){
  if(!billingConfigured(env)||!isTester(env,uid))return;
@@ -165,7 +188,8 @@ export async function handleBilling(request,env,reply,origin){
    if(path==='/billing/status'){
     const synced=await reconcile(env,row,token);
     return {mode:'test',status:synced.status,pro:synced.entitled===true,hasCustomer:!!synced.customer_id,
-     periodEnd:synced.period_end,cancelAtPeriodEnd:!!synced.cancel_at_period_end};
+     periodEnd:synced.period_end,cancelAtPeriodEnd:!!synced.cancel_at_period_end,
+     entitlementReason:synced.entitlementReason||'no_subscription'};
    }
    throw fail('not_found',404);
   });
