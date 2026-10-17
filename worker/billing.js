@@ -58,7 +58,10 @@ export function subscriptionAccessReason(sub,priceId,time=now()){
  if(item.quantity!==1)return 'quantity_invalid';
  if(!Number.isInteger(end)||end<=time)return 'period_invalid';
  if(!invoice||typeof invoice!=='object')return 'invoice_missing';
- if(invoice.status!=='paid'||invoice.paid!==true)return 'invoice_unpaid';
+ // Stripe 2025-03-31.basil removed Invoice.paid. The authoritative invoice
+ // payment state is Invoice.status === 'paid'. Preserve fail-closed behavior
+ // for an explicit contradictory legacy paid=false value when it is present.
+ if(invoice.status!=='paid'||(invoice.paid!==undefined&&invoice.paid!==true))return 'invoice_unpaid';
  return 'ok';
 }
 export function subscriptionAccess(sub,priceId,time=now()){

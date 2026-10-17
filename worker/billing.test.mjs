@@ -67,6 +67,41 @@ test('webhook verifies raw body, timestamp, multiple signatures and rejects tamp
  assert.equal(await verifyStripeSignature(raw,await signature(raw,time()-301),'whsec_fixture'),false);
  assert.equal(await verifyStripeSignature(raw,sig+',t='+time(),'whsec_fixture'),false);
 });
+
+test('Basil invoice without removed paid boolean grants Pro only for status paid',async t=>{
+ const f=await fixture(t);
+ await f.call('checkout');
+ // In Stripe 2025-03-31.basil+ invoice.paid has been removed.
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',customer:'cus_test',livemode:false,status:'paid'}}];
+ assert.equal(subscriptionAccessReason(f.state.subscriptions[0],'price_test'),'ok');
+ const result=await f.call('status','GET');
+ assert.equal(result.status,200);
+ const response=await result.json();
+ assert.equal(response.pro,true);
+ assert.equal(response.entitlementReason,'ok');
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+});
+test('Basil invoice in non-paid status never grants Pro',async t=>{
+ const f=await fixture(t);
+ await f.call('checkout');
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',customer:'cus_test',livemode:false,status:'open'}}];
+ const result=await f.call('status','GET');
+ assert.equal(result.status,200);
+ assert.equal((await result.json()).pro,false);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+});
+test('explicitly contradictory legacy paid false fails closed',()=>{
+ assert.equal(subscriptionAccessReason({...active(),latest_invoice:{status:'paid',paid:false}},'price_test'),'invoice_unpaid');
+});
+test('Basil invoice returned by Stripe ID can be verified as paid',async t=>{
+ const f=await fixture(t);
+ await f.call('checkout');
+ f.state.invoice={id:'in_test',livemode:false,customer:'cus_test',status:'paid'};
+ f.state.subscriptions=[{...active(),latest_invoice:'in_test'}];
+ assert.equal((await f.event('invoice.paid','evt_basil_invoice')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+});
+
 test('entitlement requires active paid current exact price and no pause',()=>{
  assert.equal(subscriptionAccess(active(),'price_test'),true);
  for(const changes of [{status:'past_due'},{status:'unpaid'},{status:'canceled'},{status:'trialing'},{livemode:true},{pause_collection:{}},{latest_invoice:{paid:false,status:'open'}}])assert.equal(subscriptionAccess({...active(),...changes},'price_test'),false);
