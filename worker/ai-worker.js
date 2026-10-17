@@ -1,3 +1,5 @@
+import {MODEL,logGeminiUsage} from "./cost-telemetry.js";
+import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
@@ -6,7 +8,6 @@ import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSes
  */
 const PRIMARY_ORIGIN = "https://speakingym.pages.dev";
 const ALLOWED_ORIGINS = new Set([PRIMARY_ORIGIN, "https://keito0518.github.io"]);
-const MODEL = "gemini-3.5-flash-lite";
 const SYSTEM = [
   "You are Emma, a friendly but realistic barista in a Melbourne cafe.",
   "The user is practising spoken English. They ordered an iced oat milk latte (medium size).",
@@ -273,25 +274,6 @@ async function runReflexCoaching(body,env,origin){
  }catch{return reply({error:"ai_timeout"},504,origin)}
  finally{clearTimeout(timer)}
 }
-// Cost telemetry: usage metadata only. Never log prompts, replies, API keys or user IDs.
-// USD rates are estimates; update after verifying the model's current billed rates.
-function logGeminiUsage(result,kind){
- try{
-  const m=result?.usageMetadata||{};
-  const input=Number(m.promptTokenCount),output=Number(m.candidatesTokenCount);
-  const thinking=Number(m.thoughtsTokenCount)||0;
-  const total=Number(m.totalTokenCount);
-  if(!Number.isFinite(input)||!Number.isFinite(output)||input<0||output<0)return;
-  const estimatedUsd=(input*0.30+(output+thinking)*2.50)/1000000;
-  console.log(JSON.stringify({
-   event:"speakingym_gemini_usage_v1",kind,model:MODEL,
-   inputTokens:input,outputTokens:output,thinkingTokens:thinking,
-   totalTokens:Number.isFinite(total)?total:null,
-   estimatedUsd:Number(estimatedUsd.toFixed(8)),
-   finishReason:result?.candidates?.[0]?.finishReason||"unknown"
-  }));
- }catch{}
-}
 function headersFor(origin) {
   return {
     "Content-Type": "application/json; charset=utf-8",
@@ -327,8 +309,10 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-20-v1" }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
     }
+    // Stripe server callbacks have no browser Origin; signature verification is mandatory.
+    if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
     // Origin checks only restrict browser use. They are not authentication.
     if (!ALLOWED_ORIGINS.has(origin)) {
       return new Response("Origin not allowed", { status: 403 });
@@ -336,19 +320,21 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: headersFor(origin) });
     }
+    if(path.startsWith("/billing/"))return handleBilling(request,env,reply,origin);
     if (planEnabled(env) && (path === "/entitlement" || path === "/sessions")) {
       if (!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
       let uid;
       try{uid=await verifyFirebaseIdToken(request)}
       catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
       try{
+        await refreshBillingIfNeeded(env,uid);
         if(path==="/entitlement" && request.method==="GET"){
-          return reply(await getEntitlement(env.PLAN_DB,uid),200,origin);
+          return reply(await getEntitlement(env.PLAN_DB,uid,env),200,origin);
         }
         if(path==="/sessions" && request.method==="POST"){
-          const session=await startSession(env.PLAN_DB,uid);
+          const session=await startSession(env.PLAN_DB,uid,env);
           if(session)return reply(session,200,origin);
-          const entitlement=await getEntitlement(env.PLAN_DB,uid);
+          const entitlement=await getEntitlement(env.PLAN_DB,uid,env);
           return reply({error:entitlement.plan==="pro"?"monthly_turn_limit":"daily_session_limit"},429,origin);
         }
       }catch{return reply({error:"plans_unavailable"},503,origin)}
@@ -403,19 +389,20 @@ export default {
       try{planUid=await verifyFirebaseIdToken(request)}
       catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
       try{
+        await refreshBillingIfNeeded(env,planUid);
         if(body?.action==="reflex_coach"){
           // Validate before spending a daily AI teacher request.
           if(!validateReflexCoaching(body?.attempts) || !["easy","standard","challenge"].includes(body?.level))
             return reply({error:"invalid_coaching_input"},400,origin);
-          teacherReservation=await consumeTeacher(env.PLAN_DB,planUid);
+          teacherReservation=await consumeTeacher(env.PLAN_DB,planUid,env);
           if(!teacherReservation){
-            const entitlement=await getEntitlement(env.PLAN_DB,planUid);
+            const entitlement=await getEntitlement(env.PLAN_DB,planUid,env);
             return reply({error:entitlement.plan==="pro"?"monthly_teacher_limit":"daily_teacher_limit"},429,origin);
           }
         }else{
-          turnReservation=await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId);
+          turnReservation=await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId,env);
            if(!turnReservation){
-            const entitlement=await getEntitlement(env.PLAN_DB,planUid);
+            const entitlement=await getEntitlement(env.PLAN_DB,planUid,env);
             if(entitlement.plan==="pro" && entitlement.used.monthlyTurns>=entitlement.limits.monthlyTurns)
               return reply({error:"monthly_turn_limit"},429,origin);
             return reply({error:"session_not_active"},403,origin);
