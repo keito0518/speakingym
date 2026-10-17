@@ -34,3 +34,10 @@ test('failed unauthorized checkout cannot re-enable the disabled Pro button',asy
  await a.node('sg-checkout').listeners.click();
  assert.equal(a.node('sg-checkout').disabled,true);
 });
+
+test('an active subscription without Pro is not falsely reported as fully entitled',async()=>{
+ const a=await ui({data:{status:'active',pro:false,entitlementReason:'invoice_unpaid',periodEnd:1800000000}});
+ assert.match(a.node('sg-billing-status').textContent,/Pro権限の確認が未完了/);
+ assert.match(a.node('sg-billing-status').textContent,/支払い確認/);
+ assert.equal(a.node('sg-checkout').disabled,true);
+});
