@@ -35,3 +35,13 @@ database_id = "62419d42-703c-4e41-af47-736fd1738d7e"
 # To roll back, set ENFORCE_PLANS = "false" and redeploy.
 [vars]
 ENFORCE_PLANS = "true"
+
+# Worker Previews run code from feature branches, with no production bindings or keys.
+# AI and billing intentionally remain OFF in this preview. Do not bind the production
+# D1 database to previews. For end-to-end Stripe sandbox testing, create a distinct
+# test D1 database and configure preview-only secrets/bindings separately.
+# See https://developers.cloudflare.com/workers/previews/configuration/
+[previews.vars]
+ENFORCE_PLANS = "false"
+ALLOW_AI = "false"
+BILLING_MODE = "disabled"
