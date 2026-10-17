@@ -86,3 +86,7 @@ Copy that destination's signing secret directly into Cloudflare Secrets. Redeplo
 - Receive the owner's explicit permission before enabling actual charges.
 
 References: https://docs.stripe.com/webhooks ; https://docs.stripe.com/api/idempotent_requests ; https://docs.stripe.com/api/checkout/sessions/create ; https://docs.stripe.com/billing/testing
+
+## Stripe 2025-03-31.basil+ invoice compatibility
+
+Stripe removed the `Invoice.paid` boolean in the Basil API family; an invoice's `status: 'paid'` indicates successful payment. Entitlement requires the matching active/test subscription, price, quantity and current term, plus a paid invoice. An explicitly contradictory legacy `paid: false` must still fail closed. Never enable entitlement based only on a Checkout success URL or the subscription's active status. Real sandbox invoice + entitlement should be rechecked after this code change.
