@@ -10,6 +10,7 @@ test('Worker feature-branch previews cannot call AI, grant Pro or use production
  for(const [key,value] of Object.entries({ENFORCE_PLANS:'false',ALLOW_AI:'false',BILLING_MODE:'disabled'})){
   assert.match(preview,new RegExp('^'+key+'\\s*=\\s*"'+value+'"\\s*$','m'));
  }
- assert.doesNotMatch(preview,/\\[\\[previews\\.(?:d1_databases|ratelimits)\\]\\]/,'Preview must not reuse production resources');
+ assert.equal(preview.includes('[[previews.d1_databases]]'),false,'Preview D1 must not use production data');
+ assert.equal(preview.includes('[[previews.ratelimits]]'),false,'Preview must not use production rate-limit namespaces');
  assert.match(cfg.slice(0,previewStart),/ENFORCE_PLANS = "true"/,'Production quota must remain unchanged');
 });
