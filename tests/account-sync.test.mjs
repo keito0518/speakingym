@@ -108,3 +108,11 @@ test("page changes notify the shared account sync only after local writes",()=>{
  assert.doesNotMatch(text("firebase-config.js"),/private_key\s*:/);
  assert.match(text("FIREBASE_SETUP.md"),/Spark/);
 });
+
+test("account page distinguishes sandbox checkout from unreleased public billing",()=>{
+ const html=text("account.html");
+ assert.match(html,/指定テスター向けにStripeサンドボックス/);
+ assert.match(html,/一般向けの有料登録はまだ開始していません/);
+ assert.doesNotMatch(html,/まだ決済機能はありません/);
+ assert.match(html,/id="sg-plan-info"/);
+});

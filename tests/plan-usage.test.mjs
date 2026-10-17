@@ -57,14 +57,14 @@ test("Free with remaining usage never shows exhausted warnings", async () => {
 });
 
 test("Pro shows monthly remaining without Free exhausted warnings", async () => {
-  const value = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null, monthlyTurns: 600, monthlyTeacher: 20 },
+  const value = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null, monthlyTurns: 600, monthlyTeacher: 100 },
     used: { sessions: 20, teacher: 10, monthlyTurns: 300, monthlyTeacher: 5 } });
   assert.match(value.badge, /Pro/);
   assert.match(value.badge, /300\/600/);
-  assert.match(value.badge, /15\/20/);
+  assert.match(value.badge, /95\/100/);
   assert.deepEqual([value.sessions, value.teacher, value.proSessions, value.proTeacher], [false, false, false, false]);
-  const exhausted = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null, monthlyTurns: 600, monthlyTeacher: 20 },
-    used: { sessions: 12, teacher: 1, monthlyTurns: 600, monthlyTeacher: 20 } });
+  const exhausted = await evaluate({ plan: "pro", limits: { sessions: null, teacher: null, monthlyTurns: 600, monthlyTeacher: 100 },
+    used: { sessions: 12, teacher: 1, monthlyTurns: 600, monthlyTeacher: 100 } });
   assert.deepEqual([exhausted.sessions, exhausted.teacher, exhausted.proSessions, exhausted.proTeacher], [false, false, true, true]);
 });
 
