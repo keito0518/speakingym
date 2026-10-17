@@ -231,3 +231,89 @@ test('active but unpaid invoice has a safe reason and remains Free',async t=>{
  assert.equal(body.entitlementReason,'invoice_unpaid');
  assert.equal(subscriptionAccessReason(f.state.subscriptions[0],'price_test'),'invoice_unpaid');
 });
+
+
+// These tests use mocked Stripe with a new, in-memory Firebase user and D1.
+// They never mutate the already-canceled-at-period-end live sandbox test account.
+test('failed renewal revokes Pro and old paid events cannot restore it; successful retry restores Pro',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',status:'paid'}}];
+ assert.equal((await f.event('invoice.paid','evt_initial_success')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ assert.equal((await (await f.call('status','GET')).json()).pro,true);
+ const created=f.state.sessions.size;
+
+ // Stripe's latest unpaid invoice and past_due status are authoritative, not
+ // an older, valid paid invoice or checkout success_url.
+ f.state.subscriptions=[{...active(),status:'past_due',latest_invoice:{id:'in_renewal',status:'open'}}];
+ assert.equal((await f.event('invoice.payment_failed','evt_renewal_failed')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ const failed=await (await f.call('status','GET')).json();
+ assert.equal(failed.status,'past_due');
+ assert.equal(failed.pro,false);
+ assert.equal(failed.entitlementReason,'subscription_not_active');
+ assert.equal((await f.call('checkout')).status,409);
+ assert.equal(f.state.sessions.size,created);
+
+ // Resending the same failure is idempotent, and a late PAID event must not
+ // override the CURRENT failed subscription.
+ assert.equal((await f.event('invoice.payment_failed','evt_renewal_failed')).status,200);
+ assert.equal((await f.event('invoice.paid','evt_initial_paid_delayed',{customer:'cus_test'})).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+
+ // A paid renewal, fetched from Stripe and verified, is the only path back.
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_renewal',status:'paid'}}];
+ assert.equal((await f.event('invoice.paid','evt_renewal_recovered')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ assert.equal((await (await f.call('status','GET')).json()).entitlementReason,'ok');
+});
+test('active status with an unpaid latest renewal invoice still revokes Pro',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_initial',status:'paid'}}];
+ assert.equal((await f.event('invoice.paid','evt_first_paid')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_new',status:'open'}}];
+ assert.equal((await f.event('invoice.payment_failed','evt_unpaid_while_active')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ const status=await (await f.call('status','GET')).json();
+ assert.equal(status.status,'active');
+ assert.equal(status.pro,false);
+ assert.equal(status.entitlementReason,'invoice_unpaid');
+});
+test('scheduled cancellation preserves paid access then expiration revokes it without relying on webhook',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',status:'paid'},cancel_at_period_end:true}];
+ assert.equal((await f.event('customer.subscription.updated','evt_cancel_scheduled')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ const before=await (await f.call('status','GET')).json();
+ assert.equal(before.cancelAtPeriodEnd,true);
+ assert.equal(before.pro,true);
+
+ // A term that has elapsed cannot grant Pro, even if a delayed webhook says
+ // active and the older invoice remains paid.
+ f.state.subscriptions[0].items.data[0].current_period_end=time()-5;
+ const expired=await (await f.call('status','GET')).json();
+ assert.equal(expired.pro,false);
+ assert.equal(expired.entitlementReason,'period_invalid');
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ f.state.subscriptions[0].status='canceled';
+ assert.equal((await f.event('customer.subscription.deleted','evt_cancel_final')).status,200);
+ assert.equal((await f.event('invoice.paid','evt_stale_payment')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+});
+test('stale cached test Pro expires closed and can be refreshed without a second Checkout',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',status:'paid'}}];
+ assert.equal((await f.event('invoice.paid','evt_initial_pro')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ f.db.sqlite.prepare('UPDATE billing_accounts SET synced_at=?').run(time()-121);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ const status=await (await f.call('status','GET')).json();
+ assert.equal(status.pro,true);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ assert.equal(f.state.sessions.size,1);
+});
