@@ -391,6 +391,10 @@ export default {
     }
     let body;
     try { body = await request.json(); } catch { return reply({ error: "invalid_json" }, 400, origin); }
+    // Misconfigured replay must fail closed even if someone disables plan checks.
+    // Otherwise Gemini might be called without an authenticated quota guard.
+    if(env.AI_REPLAY_MODE==="enabled" && !replayMode(env))
+      return reply({error:"replay_not_ready"},503,origin);
     // Reject malformed conversation requests before reserving a paid/limited AI turn.
     // Teacher requests are validated separately before their quota reservation.
     if(body?.action!=="reflex_coach"){
