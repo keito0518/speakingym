@@ -64,11 +64,20 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   assert.equal(typeof data.turnLedgerEnabled,'boolean','Ledger switch status must be available');
   assert.equal(typeof data.turnLedgerSchemaReady,'boolean','D1 ledger migration status must be available');
   if(data.turnLedgerEnabled)assert.equal(data.turnLedgerSchemaReady,true,'Ledger must not run before D1 migration');
+  assert.equal(typeof data.aiReplayRequested,'boolean','Replay request switch must be available');
+  assert.equal(typeof data.aiReplayEnabled,'boolean','Replay activation state must be available');
+  assert.equal(typeof data.aiReplaySchemaReady,'boolean','Atomic replay bridge must be verifiable');
+  if(data.aiReplayRequested){
+   assert.equal(data.aiReplayEnabled,true,'Replay cannot be on without plan and turn ledger enforcement');
+   assert.equal(data.aiReplaySchemaReady,true,'Replay cannot be on before all three D1 migrations');
+  }
   assert.ok(Array.isArray(data.sceneIds)&&new Set(data.sceneIds).size>=16,'16 unique Worker scenes required');
   assert.ok(['test','disabled'].includes(data.billingMode),'Live billing must stay disabled');
   return {status:data.status,scenes:data.sceneIds.length,model:data.model,
    aiConfigured:data.aiConfigured,billingMode:data.billingMode,
-   turnLedgerEnabled:data.turnLedgerEnabled,turnLedgerSchemaReady:data.turnLedgerSchemaReady};
+   turnLedgerEnabled:data.turnLedgerEnabled,turnLedgerSchemaReady:data.turnLedgerSchemaReady,
+   aiReplayRequested:data.aiReplayRequested,aiReplayEnabled:data.aiReplayEnabled,
+   aiReplaySchemaReady:data.aiReplaySchemaReady};
  });
  const guest=await fetcher(API+'entitlement',{headers:{Origin:SITE.slice(0,-1)},cache:'no-store',signal:AbortSignal.timeout(12000)});
  assert.equal(guest.status,401,'Unauthenticated entitlement must return HTTP 401');
