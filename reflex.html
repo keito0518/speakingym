@@ -160,7 +160,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <div class="end-actions"><button type="button" class="btn" id="phrasesBack">← 設定へ戻る</button></div>
  </section><section class="pane" id="historyPane" aria-label="60秒チャレンジの練習履歴"><div class="history-head"><h2>📚 練習履歴</h2><p>保存された各セッションの講評を、もう一度確認できるよ。最新20回を端末内に保存。</p></div><div id="historyList"></div><div class="end-actions"><button class="btn" id="historyBack" type="button">← 設定へ戻る</button><button class="btn" id="clearHistory" type="button">履歴を全削除</button></div></section>
 </div>
-<div class="info">このドリル本体ではGemini API・有料の音声サービスは不使用。 📌 既存の教材解説は全員共通。AI先生を押すと、実際に話した英文への個別講評が表示されます。講評画面の「AI先生」を希望して押した場合に限り、無料枠のGeminiへ最大5問の英文を1回送信します。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./classic.html">従来の練習ツールを見る</a></div>
+<div class="info">このドリル本体ではGemini API・有料の音声サービスは不使用。 📌 既存の教材解説は全員共通。AI先生を押すと、実際に話した英文への個別講評が表示されます。講評画面の「AI先生」を希望して押した場合に限り、Gemini APIへ最大5問の英文を1回送信します。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./classic.html">従来の練習ツールを見る</a></div>
 </main>
 <script src="./speech-settings.js"></script>
 <script src="./phrasebook.js"></script>
@@ -1107,7 +1107,7 @@ async function requestTeacherFeedback(){
   const errors={
    invalid_utterance:"通信形式を確認してください。",
    invalid_coaching_input:"講評用データを読み取れません。",
-   gemini_quota:"無料枠の上限に達しました。今日はここまでにして、また後で試してね。",
+   gemini_quota:"AI提供元の利用上限に達したため、講評を取得できませんでした。プランの残り回数とは別の制限です。時間をおいて再試行してね。",
    rate_limited:"現在混雑しています。少し待ってから試してね。",
    login_required:"AI先生の個別講評にはGoogleログインが必要だよ。マイページからログインしてね。",
    daily_teacher_limit:"本日のAI先生の利用回数を使い切ったよ。明日また利用できるよ。",
