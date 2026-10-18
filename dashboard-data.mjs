@@ -74,7 +74,7 @@ export function buildLearningDashboard(snapshot={},now=new Date()){
    spoke:asArray(s.attempts).filter(a=>a?.outcome==="spoken").length
   }));
  const sprintCount=count(reflexStats.sessions);
- const phraseCount=reflexPhrases.filter(p=>truncate(p?.text)).length+scenePhrases.filter(p=>truncate(p?.natural)).length;
+ const phraseCount=new Set([...reflexPhrases.map(p=>truncate(p?.text,450)),...scenePhrases.map(p=>truncate(p?.natural,450))].filter(Boolean).map(t=>t.normalize("NFKC").toLowerCase().replace(/’/g,"'").replace(/\s+/g," "))).size;
  const aiCount=count(sceneStats.total);
  const cafeCount=count(cafeStats.attempts);
  return {
@@ -83,7 +83,7 @@ export function buildLearningDashboard(snapshot={},now=new Date()){
   phrases:phrases.slice(0,3),
   recentTeacher:recentTeacher.slice(0,2),
   recentSessions,
-  nextAction:phraseCount>0?{title:"保存した英語を、自分の言葉に。",subtitle:"集めたフレーズを声に出して復習しよう",href:"./reflex.html#phrases",label:"フレーズを復習する"}
+  nextAction:phraseCount>0?{title:"保存した英語を、自分の言葉に。",subtitle:"集めたフレーズを声に出して復習しよう",href:"./phrasebook.html",label:"フレーズを復習する"}
    :sprintCount>0?{title:"昨日の自分より、あと一言。",subtitle:"今日も60秒、英語の瞬発力を鍛えよう",href:"./reflex.html",label:"60秒を始める"}
    :{title:"最初の60秒から、始めよう。",subtitle:"まずは短いフレーズを声に出してみよう",href:"./reflex.html",label:"60秒を始める"}
  };

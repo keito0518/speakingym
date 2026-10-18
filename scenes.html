@@ -41,7 +41,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="notice" data-sg-pro-exhausted="sessions" hidden role="status">今月のProのAI英会話枠600往復を使い切ったよ。次の日本時間1日に回復するよ！ その間は <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
 <div class="notice hidden" id="loginPrompt" role="status" aria-live="polite">AI英会話はGoogleログイン後に利用できます。<a href="./account.html" style="text-decoration:underline;font-weight:850">マイページで無料ログインする →</a></div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
-<details class="review-saved"><summary>📚 保存した言い換えを復習</summary><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
+<details class="review-saved"><summary>📚 保存した言い換えを復習</summary><a href="./phrasebook.html">すべての保存表現を共通フレーズ帳で復習 →</a><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 
 </section>
 <section class="card hidden" id="practice">
@@ -60,6 +60,8 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="actions"><button class="btn" type="button" id="back">← シーン選択に戻る</button><button class="btn" type="button" id="again">🔁 もう一度</button></div>
 </section>
 </main>
+<script src="./speech-settings.js"></script>
+<script src="./phrasebook.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -200,7 +202,7 @@ function saveSceneOutcome(success){
 function status(message){$("status").textContent=message}
 function goals(container,done){container.replaceChildren();container.setAttribute("lang",missionLanguage());task().goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
-function addMessage(who,text){const bubble=document.createElement("div");bubble.className="bubble"+(who==="You"?" me":"");const label=document.createElement("strong");label.textContent=who;const body=document.createElement("span");body.textContent=text;bubble.append(label,body);$("chat").append(bubble);$("chat").scrollTop=$("chat").scrollHeight}
+function addMessage(who,text){const bubble=document.createElement("div");bubble.className="bubble"+(who==="You"?" me":"");const label=document.createElement("strong");label.textContent=who;const body=document.createElement("span");body.textContent=text;bubble.append(label,body);if(who!=="You"&&window.speakingymPhrases)bubble.append(window.speakingymPhrases.button({text,source:"AI英会話の表現",sceneId,level:$("level").value,hint:task().headline}));$("chat").append(bubble);$("chat").scrollTop=$("chat").scrollHeight}
 function voiceRate(){return $("speed").value==="slow"?.82:$("speed").value==="fast"?1.12:.98}
 function say(text){
  lastSpoken=text;
@@ -216,7 +218,7 @@ function say(text){
   const voices=typeof synth.getVoices==="function"?synth.getVoices():[];
   const v=voices.find(x=>/^en-AU/i.test(x.lang))||voices.find(x=>/^en-GB/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang));
   if(v)u.voice=v;
-  u.lang=v?.lang||"en-AU";u.rate=voiceRate();u.pitch=1;
+  u.lang=v?.lang||"en-AU";u.rate=voiceRate();u.pitch=1;window.speakingymSpeech?.apply(u);
   u.onend=u.onerror=()=>{if(activeSpeech===u&&speechToken===id)activeSpeech=null};
   synth.speak(u);
   if(synth.paused&&typeof synth.resume==="function")synth.resume();
@@ -288,6 +290,7 @@ function renderCoachReport(){
    const para=document.createElement("div");para.className=cls;para.textContent=value;
    box.append(tag,para);
   }
+  if(window.speakingymPhrases)box.append(window.speakingymPhrases.button({text:item.natural,source:"AIの言い換え",sceneId,level:$("level").value,hint:item.original,tip:item.tip}));
   root.append(box);
  }
  const observations=coachingHistory.filter(x=>x.tip||x.praise).slice(-5).reverse();
@@ -301,7 +304,8 @@ function saveCoachReview(){
  const saved=safeReviewData();
  const unique=items.filter(x=>!saved.some(y=>y.original===x.original&&y.natural===x.natural));
  try{
-  localStorage.setItem(REVIEW_KEY,JSON.stringify([...unique,...saved].slice(0,20).map(x=>({original:x.original,natural:x.natural}))));
+  if(saved.length+unique.length>20)throw Error("full");
+  localStorage.setItem(REVIEW_KEY,JSON.stringify([...unique.map(x=>({...x,source:"AIの言い換え",level:$("level").value,category:sceneId})),...saved]));
   $("saveReview").textContent="✓ この端末に保存しました";$("saveReview").disabled=true;
   showSavedReview();window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}));
  }catch(e){$("saveReview").textContent="保存できませんでした（ブラウザ設定をご確認ください）";}
@@ -473,6 +477,7 @@ $("clearReview").addEventListener("click",()=>{
  showSavedReview();
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
+window.addEventListener("speakingym:before-speech",()=>{stopRecognition();cancelSpeech()});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
 $("level").addEventListener("change",renderAssignment);const requestedScene=/(?:^|[?&])scene=([a-z]+)(?:&|$)/.exec(window.location?.search||"")?.[1];if(Object.hasOwn(SCENES,requestedScene))select(requestedScene);renderAssignment();showSavedReview();updateControls();
 })();

@@ -162,6 +162,8 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 </div>
 <div class="info">このドリル本体ではGemini API・有料の音声サービスは不使用。 📌 既存の教材解説は全員共通。AI先生を押すと、実際に話した英文への個別講評が表示されます。講評画面の「AI先生」を希望して押した場合に限り、無料枠のGeminiへ最大5問の英文を1回送信します。マイクは任意（音声はブラウザ提供元で処理される場合があります）。<br>練習の日時・お題・自己評価は端末内のみ保存。認識した英文の保存は事前に同意したときだけ。講評は教材として用意したもので、AIによる文法・発音採点ではありません。<a href="./classic.html">従来の練習ツールを見る</a></div>
 </main>
+<script src="./speech-settings.js"></script>
+<script src="./phrasebook.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -824,7 +826,7 @@ function speakExample(text,button){
   activeReading=u;
   const voices=speaker.getVoices(),voice=voices.find(v=>/^en-AU/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
   if(voice)u.voice=voice;
-  u.lang=voice?.lang||"en-US";u.rate=.92;
+  u.lang=voice?.lang||"en-US";u.rate=.92;window.speakingymSpeech?.apply(u);
   if(button){button.textContent="🔊 再生中…";button.setAttribute("aria-live","polite");}
   u.onend=()=>{if(activeReading!==u)return;activeReading=null;if(button)button.textContent="🔊 もう一度聞く";};
   u.onerror=()=>{if(activeReading!==u)return;activeReading=null;if(button)button.textContent="音声を再試行 ↻";};
@@ -930,12 +932,13 @@ function bookmarkRecord(card,level,kind,example,task){
  };
 }
 function updateBookmarkButton(button,record){
- const saved=readSavedPhrases().some(x=>x.id===record.id);
+ const saved=window.speakingymPhrases?window.speakingymPhrases.list().some(x=>x.id===window.speakingymPhrases.fingerprint(record.text)):readSavedPhrases().some(x=>x.id===record.id);
  button.textContent=saved?"✓ 保存済み（解除）":"📌 この表現を保存";
  button.classList.toggle("saved",saved);
  button.setAttribute("aria-pressed",String(saved));
 }
 function toggleBookmark(record,button){
+ if(window.speakingymPhrases?.list().some(p=>p.id===window.speakingymPhrases.fingerprint(record.text))){try{window.speakingymPhrases.remove(window.speakingymPhrases.fingerprint(record.text));updateBookmarkCount();updateBookmarkButton(button,record);$("saveStatus").textContent="保存を解除したよ。"}catch{$("saveStatus").textContent="保存を解除できませんでした。"}return;}
  const items=readSavedPhrases();
  const present=items.some(x=>x.id===record.id);
  if(!present&&items.length>=PHRASES_MAX){
@@ -948,6 +951,7 @@ function toggleBookmark(record,button){
  $("saveStatus").textContent=present?"保存を解除したよ。":"フレーズ帳に保存したよ！ いつでも復習できる。";
 }
 function showSavedPhrases(source="introPane"){
+ if(window.speakingymPhrases){window.location.href="./phrasebook.html";return;}
  phraseReturnPane=source;
  renderPhraseBook();
  pane("phrasesPane");
@@ -1268,6 +1272,7 @@ $("clearHistory").addEventListener("click",()=>{
 });
 updateBookmarkCount();
 if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
+window.addEventListener("speakingym:before-speech",()=>{stopListening();cancelReading()});
 window.addEventListener("pagehide",()=>{teacherEpoch++;stopTimer();stopListening();cancelReading();});
 })();
 </script>
