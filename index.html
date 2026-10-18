@@ -112,7 +112,7 @@
    <h3 id="review-heading">自分の言い換え帳</h3>
    <div id="savedWords" aria-live="polite"><p>AI英会話で言い換えを保存すると、ここに表示されるよ。</p></div>
    <div class="review-nav"><span id="wordCounter" class="smallline">保存した表現</span><button class="plain" id="nextWord" type="button" hidden>次の表現 ↻</button></div>
-   <a class="phrase-jump" href="./phrasebook.html">📌 60秒チャレンジの保存フレーズ <span id="sprintPhraseCount">0</span>件を見る →</a>
+   <a class="phrase-jump" href="./phrasebook.html">📌 Speakingymの共通フレーズ帳 <span id="sprintPhraseCount">0</span>件を見る →</a>
   </section>
   <section class="habit-card" aria-labelledby="habit-heading">
    <div class="micro-label">YOUR WORKOUT LOG</div>
@@ -144,7 +144,7 @@ let wordIndex=0;
 function showWord(){
  const box=$("savedWords");box.replaceChildren();
  if(!safeWords.length){
-  const p=document.createElement("p");p.textContent="まだ保存した表現はないよ。AI英会話で添削を受け、使いたい表現を保存してみよう。";box.append(p);$("nextWord").hidden=true;$("wordCounter").textContent="未保存";return;
+  const p=document.createElement("p");p.textContent="まだ保存した表現はないよ。60秒チャレンジやAI英会話で、使いたい表現を保存してみよう。";box.append(p);$("nextWord").hidden=true;$("wordCounter").textContent="未保存";return;
  }
  const word=safeWords[wordIndex%safeWords.length];
  const panel=document.createElement("div");panel.className="rewrite-box";
