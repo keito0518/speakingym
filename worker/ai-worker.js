@@ -1,6 +1,6 @@
-import {MODEL,logGeminiUsage} from "./cost-telemetry.js";
+import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
-import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
+import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
  * Never place your Gemini API key in the frontend, Git, or wrangler.toml.
@@ -358,10 +358,22 @@ export default {
     if (!env.USER_LIMIT || !env.GLOBAL_LIMIT) {
       return reply({ error: "limits_unconfigured" }, 503, origin);
     }
+    // Opt-in account-isolated rate pools, only AFTER verified Firebase auth.
+    // These separate app-level counters, NOT Gemini project-level capacity.
+    let poolUid=null,poolTier=null;
+    if(env.AI_TIER_POOLS==="true" && planEnabled(env)){
+      if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
+      try{poolUid=await verifyFirebaseIdToken(request)}
+      catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      try{await refreshBillingIfNeeded(env,poolUid);poolTier=await getPlan(env.PLAN_DB,poolUid,env)}
+      catch{return reply({error:"plans_unavailable"},503,origin)}
+    }
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const userKey=poolUid?"member:"+poolUid:ip;
+    const poolKey=poolUid?"speakingym-survival-"+poolTier:"speakingym-survival-public";
     const [perUser, global] = await Promise.all([
-      env.USER_LIMIT.limit({ key: ip }),
-      env.GLOBAL_LIMIT.limit({ key: "speakingym-survival-public" })
+      env.USER_LIMIT.limit({ key: userKey }),
+      env.GLOBAL_LIMIT.limit({ key: poolKey })
     ]);
     if (!perUser.success || !global.success) {
       return reply({ error: "rate_limited", message: "Free trial is busy; try again in a minute." }, 429, origin);
@@ -385,13 +397,16 @@ export default {
     }
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
-    let planUid=null,teacherReservation=null,turnReservation=null;
+    const requestStartedAt=Date.now();
+    let planUid=poolUid,teacherReservation=null,turnReservation=null;
     if(planEnabled(env)){
       if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
-      try{planUid=await verifyFirebaseIdToken(request)}
-      catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      if(!planUid){
+        try{planUid=await verifyFirebaseIdToken(request)}
+        catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      }
       try{
-        await refreshBillingIfNeeded(env,planUid);
+        if(!poolUid)await refreshBillingIfNeeded(env,planUid);
         if(body?.action==="reflex_coach"){
           // Validate before spending a daily AI teacher request.
           if(!validateReflexCoaching(body?.attempts) || !["easy","standard","challenge"].includes(body?.level))
@@ -417,6 +432,8 @@ export default {
       if(result.status!==200&&teacherReservation){
         try{await refundTeacher(env.PLAN_DB,planUid,teacherReservation.id)}catch{}
       }
+      logAiOutcome({kind:"teacher",plan:teacherReservation?.plan,status:result.status,
+        code:result.ok?"ok":"teacher_unavailable",durationMs:Date.now()-requestStartedAt});
       return result;
     }
     const text = typeof body?.userText === "string" ? body.userText.trim() : "";
@@ -450,6 +467,8 @@ export default {
     // This is a conservative, race-safe rollback; a full per-request ledger is a future improvement.
     const aiFailure=async (error,status)=>{
       if(turnReservation){try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}}
+      logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status,
+        code:error.error,durationMs:Date.now()-requestStartedAt});
       return reply(error,status,origin);
     };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
@@ -497,6 +516,8 @@ export default {
         }
         const completed = normalizeProgress(data.progress);
         for (const key of Object.keys(completed)) completed[key] ||= progress[key];
+        logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
+          code:"ok",durationMs:Date.now()-requestStartedAt});
         return reply({ reply: data.reply.trim(), progress: completed, sceneId: requestedId, coaching: normalizeCoaching(data.coaching) }, 200, origin);
       }
       const missionState = normalizeFacts(data.missionState);
@@ -504,6 +525,8 @@ export default {
       for (const key of Object.keys(missionState)) {
         missionState[key] = missionState[key] || facts[key];
       }
+      logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
+        code:"ok",durationMs:Date.now()-requestStartedAt});
       return reply({ reply: data.reply.trim(), missionState, coaching: normalizeCoaching(data.coaching) }, 200, origin);
     } catch {
       return aiFailure({ error: "ai_timeout", message: "Gemini API timed out." }, 504);

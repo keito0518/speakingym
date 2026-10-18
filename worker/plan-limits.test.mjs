@@ -211,3 +211,26 @@ test("missing D1 binding rejects requests without invoking Gemini when plans are
  assert.equal(r.status,503);
  assert.equal((await r.json()).error,"plans_not_ready");
 });
+
+test("opt-in tier pools use signed account IDs and isolate Free/Pro limiter keys without charging Gemini",async t=>{
+ const {jwk,token}=await signer(),db=fakeD1();
+ db.plans.set("paid_account","pro");
+ const requested=[];
+ t.mock.method(globalThis,"fetch",async url=>{
+  assert.match(String(url),/googleapis.com\/service_accounts/);
+  return Response.json({keys:[jwk]});
+ });
+ const config={...env(db),AI_TIER_POOLS:"true",USER_LIMIT:{limit:async({key})=>{requested.push(['user',key]);return{success:true}}},GLOBAL_LIMIT:{limit:async({key})=>{requested.push(['pool',key]);return{success:false}}}};
+ const freeToken=await token("free_account"),paidToken=await token("paid_account");
+ const payload={sceneId:"hotel",userText:"Hello"};
+ const free=await worker.fetch(request("","POST",freeToken,payload),config);
+ const paid=await worker.fetch(request("","POST",paidToken,payload),config);
+ assert.equal(free.status,429);assert.equal(paid.status,429);
+ assert.deepEqual(requested,[
+  ['user','member:free_account'],['pool','speakingym-survival-free'],
+  ['user','member:paid_account'],['pool','speakingym-survival-pro']
+ ]);
+ const bad=await worker.fetch(request("","POST",null,payload),config);
+ assert.equal(bad.status,401);
+ assert.equal(requested.length,4,"guest access must not consume the paid rate pool");
+});

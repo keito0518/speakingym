@@ -64,6 +64,17 @@ export async function verifyFirebaseIdToken(request){
  return body.sub;
 }
 export const planEnabled=env=>env.ENFORCE_PLANS==="true";
+// Optional sandbox-only grace for a previously VERIFIED paid entitlement.
+// Disabled by default. Never extends a paid period or revives a revoked grant.
+export function billingGraceSeconds(env={}) {
+ const value=Number(env.BILLING_GRACE_SECONDS);
+ return env.BILLING_MODE==="test" && Number.isInteger(value) && value>0 ? Math.min(value,600) : 0;
+}
+export function verifiedBillingEntitlement(row,env={},time=Math.floor(Date.now()/1000)) {
+ const seconds=120+billingGraceSeconds(env);
+ return row?.entitled===1 && Number.isInteger(row?.period_end) && row.period_end>time &&
+  Number.isInteger(row?.synced_at) && row.synced_at<=time && row.synced_at>=time-seconds;
+}
 export const tokyoDay=(time=Date.now())=>new Date(time+9*3600000).toISOString().slice(0,10);
 export function tokyoMonthBounds(time=Date.now()){
  const day=tokyoDay(time),year=Number(day.slice(0,4)),month=Number(day.slice(5,7));
@@ -81,7 +92,7 @@ export async function getPlan(db,uid,env={}){
  if(env.BILLING_MODE==='test' && String(env.BILLING_TEST_UIDS||'').split(',').map(x=>x.trim()).includes(uid)){
   if(!/^sk_test_/.test(env.STRIPE_SECRET_KEY||''))return 'free';
   const billing=await db.prepare('SELECT entitled,period_end,synced_at FROM billing_accounts WHERE uid = ? AND customer_id IS NOT NULL').bind(uid).first();
-  if(billing)return billing.entitled===1&&billing.period_end>Math.floor(Date.now()/1000)&&billing.synced_at>=Math.floor(Date.now()/1000)-120?'pro':'free';
+  if(billing)return verifiedBillingEntitlement(billing,env)?'pro':'free';
  }
  const row=await db.prepare("SELECT tier FROM account_plans WHERE uid = ?").bind(uid).first();
  return row?.tier==="pro"?"pro":"free";
@@ -138,12 +149,12 @@ export async function consumeSessionTurn(db,uid,id,env={}){
    "AND turns < 20 AND day >= ? AND day < ? "+
    "AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) < ? RETURNING turns"
   ).bind(id,uid,now,month.start,month.end,uid,month.start,month.end,PLAN_LIMITS.pro.monthlyTurns).first();
-  return row?{turn:Number(row.turns),sessionId:id}:null;
+  return row?{turn:Number(row.turns),sessionId:id,plan:tier}:null;
  }
  const row=await db.prepare(
   "UPDATE ai_sessions SET turns=turns+1 WHERE id = ? AND uid = ? AND expires_at > ? AND turns < 20 RETURNING turns"
  ).bind(id,uid,now).first();
- return row?{turn:Number(row.turns),sessionId:id}:null;
+ return row?{turn:Number(row.turns),sessionId:id,plan:tier}:null;
 }
 /** Conservative atomic rollback: never decrement a turn if a newer turn exists. */
 export async function refundSessionTurn(db,uid,reservation){

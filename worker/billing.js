@@ -1,5 +1,5 @@
 /** Sandbox-only Stripe bridge. No raw Stripe errors, tokens or bodies are logged. */
-import {verifyFirebaseIdToken} from './plan-limits.js';
+import {verifyFirebaseIdToken,billingGraceSeconds,verifiedBillingEntitlement} from './plan-limits.js';
 const SITE='https://speakingym.pages.dev';
 const API_VERSION='2025-06-30.basil';
 const now=()=>Math.floor(Date.now()/1000);
@@ -104,7 +104,15 @@ export async function refreshBillingIfNeeded(env,uid){
  if(!billingConfigured(env)||!isTester(env,uid))return;
  const row=await stmt(env.PLAN_DB,'SELECT * FROM billing_accounts WHERE uid=?',uid).first();
  if(row?.customer_id&&(row.synced_at<now()-60 || (row.period_end&&row.period_end<=now()))){
-  await withAccountLock(env.PLAN_DB,uid,(r,t)=>reconcile(env,r,t));
+  try {
+   await withAccountLock(env.PLAN_DB,uid,(r,t)=>reconcile(env,r,t));
+  } catch(error) {
+   // Only transient provider/rate failures may use a previously paid, unexpired
+   // sandbox entitlement. A failed invoice, expiry, missing mapping, D1 problem,
+   // ambiguous customer, or old/unknown result must still fail closed.
+   if(!['billing_provider_error','billing_busy'].includes(error?.message) ||
+      !billingGraceSeconds(env) || !verifiedBillingEntitlement(row,env))throw error;
+  }
  }
 }
 async function checkout(env,row,token){
