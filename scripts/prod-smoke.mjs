@@ -61,6 +61,9 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   assert.equal(data.keyConfigured,true);
   assert.equal(data.plansEnabled,true);
   assert.equal(data.plansReady,true);
+  assert.equal(typeof data.turnLedgerEnabled,'boolean','Ledger switch status must be available');
+  assert.equal(typeof data.turnLedgerSchemaReady,'boolean','D1 ledger migration status must be available');
+  if(data.turnLedgerEnabled)assert.equal(data.turnLedgerSchemaReady,true,'Ledger must not run before D1 migration');
   assert.ok(Array.isArray(data.sceneIds)&&new Set(data.sceneIds).size>=16,'16 unique Worker scenes required');
   assert.ok(['test','disabled'].includes(data.billingMode),'Live billing must stay disabled');
   return {status:data.status,scenes:data.sceneIds.length,model:data.model,
