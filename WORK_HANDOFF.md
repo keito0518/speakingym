@@ -70,3 +70,14 @@ PR #26 has been merged. Start by checking latest main and the new production CI/
 - These checks prove reachable published static assets, configuration and guest auth rejection; they do NOT verify signed-in Firebase synchronization, real AI outputs, iPhone Safari sound, parallel load, consumer charge success or correct refund under concurrent errors.
 - No additional owner decisions were made: Stripe live remains off, Gemini paid billing remains unenabled, Free/Pro quotas and D1/Firestore records unchanged, `AI_TIER_POOLS` and `BILLING_GRACE_SECONDS` remain disabled. The next step needing careful design is idempotent quota reservations and failed-turn recovery with migration and adversarial concurrency tests. Also measure real upstream quotas/costs and decide separately whether to buy capacity; never claim 600 reliable monthly turns from /health alone.
 - A documentation-only commit records this status. Confirm all GitHub checks on that final commit if resuming.
+
+
+## Atomic turn ledger staged implementation — 2026-10-18
+- PR #29 MERGED with squash SHA `81067222dac5af303d6c1a81257dccff02a5e601`: https://github.com/keito0518/speakingym/pull/29.
+- `worker/turn-ledger.js` and additive **UNAPPLIED** migration `worker/migrations/0002-ai-turn-ledger.sql` enable per-request atomic reservation/complete/refund with an AFTER INSERT/AFTER UPDATE SQLite trigger, preserving existing `ai_sessions.turns` historic accounting.
+- `TURN_LEDGER_MODE=enabled` requires `ENFORCE_PLANS=true`; the new code path defaults OFF. Existing Free 5/day sessions, Free teacher 3/day, Pro 600 turns/100 teacher per JST month and JPY680 are unchanged. No D1 SQL, Cloudflare Secrets, Firebase records, Gemini paid API or live Stripe settings were modified.
+- Node/SQLite real-engine and signed-JWT Worker-with-mocked-Gemini tests cover success+delayed failure, reverse completion, duplicate refund, cross-user safety, 20-turn and 600-turn boundaries, prior-month/session expiry, legacy rows, stale recovery. PR branch launch-qa **174 tests passed / 0 failed**.
+- The Worker public `/health` now exposes a non-sensitive `turnLedgerEnabled` indicator for explicit operator activation checks. Do not infer actual migration readiness from this boolean alone.
+- Detailed activation checklist, backup/staging/prod rollout and acknowledged edge cases: `worker/AI_TURN_LEDGER_ROLLOUT_2026-10-18.md`.
+- Important blockers still exist: real D1 concurrency + staging migration tests; D1 backup and operator review before enabling; Free first-attempt session-start refund; end-to-end idempotency for a browser retry after the server completed a response but the reply was lost in transit; real Gemini production quota/cost and phone QA.
+- Verify post-merge main GitHub checks and production GET-only smoke. NEVER claim new ledger is live until flag explicitly enabled following an authorized D1 migration.
