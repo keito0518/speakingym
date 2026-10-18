@@ -15,7 +15,7 @@ test("modern production home has brand, SEO, useful routes, no paid checkout and
  for(const path of nav)assert.match(current,new RegExp('href="\\./'+path.replaceAll(".","\\.")+'"'),"missing "+path);
  assert.match(current,/60秒チャレンジはログイン不要・回数制限なし/);
  assert.match(current,/AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで/);
- assert.match(current,/現在、有料プラン・決済機能はありません/);
+ assert.match(current,/Proの一般向け有料登録はまだ開始していません/);
  assert.doesNotMatch(current,/NEW HOME · PREVIEW/);
  assert.doesNotMatch(current,/data-action="switch-plan"/);
  assert.doesNotMatch(current,/<a [^>]+href="\.\/home-preview\.html"/);

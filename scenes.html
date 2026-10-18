@@ -474,7 +474,7 @@ $("clearReview").addEventListener("click",()=>{
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
-$("level").addEventListener("change",renderAssignment);if(/(?:^|[?&])scene=cafe(?:&|$)/.test(window.location?.search||""))select("cafe");renderAssignment();showSavedReview();updateControls();
+$("level").addEventListener("change",renderAssignment);const requestedScene=/(?:^|[?&])scene=([a-z]+)(?:&|$)/.exec(window.location?.search||"")?.[1];if(Object.hasOwn(SCENES,requestedScene))select(requestedScene);renderAssignment();showSavedReview();updateControls();
 })();
 </script>
 <script src="./plan-usage.js"></script>
