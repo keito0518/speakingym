@@ -32,7 +32,7 @@ test('Worker opt-in ledger settles concurrent AI success and delayed provider fa
  sqlite.prepare('INSERT INTO account_plans(uid,tier,updated_at) VALUES (?,?,?)').run('paid-test','pro',time());
  const env={ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',PLAN_DB:d1,ALLOW_AI:'true',
   GEMINI_API_KEY:'fixture-only',USER_LIMIT:limit,GLOBAL_LIMIT:limit};
- const request=(path,body)=>new Request(ROOT+path,{method:'POST',
+ const request=(path,body)=>new Request(ROOT+path,{method:path==='entitlement'?'GET':'POST',
   headers:{Origin:ORIGIN,Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},
   body:body?JSON.stringify(body):undefined});
  const calls=[];
@@ -72,10 +72,9 @@ test('Worker opt-in ledger settles concurrent AI success and delayed provider fa
  const usage=await allowed.json();
  assert.equal(usage.plan,'pro');assert.equal(usage.used.monthlyTurns,1);
 });
-test('ledger flag is off by default and cannot use the missing migration without a safe error',async()=>{
+test('ledger migration installs both atomic counter triggers and its rollback table',()=>{
  const {sqlite}=database();
- sqlite.exec('DROP TRIGGER ai_turn_reservation_count_insert');
- // A bad installation must never grant additional quota or reach an upstream model.
- const query=sqlite.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name='ai_turn_reservation_count_insert'").get();
- assert.equal(query,undefined);
+ const names=sqlite.prepare("SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name").all().map(row=>row.name);
+ assert.deepEqual(names,['ai_turn_reservation_count_insert','ai_turn_reservation_count_refund']);
+ assert.ok(sqlite.prepare("SELECT name FROM sqlite_master WHERE name='ai_turn_reservations'").get());
 });
