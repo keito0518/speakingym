@@ -139,7 +139,7 @@ function getSaved(key){try{return JSON.parse(localStorage.getItem(key)||"null")}
 const words=getSaved("speakingym-saved-coaching-v1");
 const safeWords=Array.isArray(words)?words.filter(x=>x&&typeof x.original==="string"&&typeof x.natural==="string"&&x.original.length<600&&x.natural.length<600).slice(0,20):[];
 const sprintPhrases=getSaved("speakingym-reflex-saved-phrases-v1");
-$("sprintPhraseCount").textContent=String(Array.isArray(sprintPhrases)?Math.min(100,sprintPhrases.length):0);
+$("sprintPhraseCount").textContent=String(new Set([...(Array.isArray(sprintPhrases)?sprintPhrases.map(p=>p?.text):[]),...safeWords.map(p=>p.natural)].filter(t=>typeof t==="string"&&t.trim()).map(t=>t.normalize("NFKC").trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," "))).size);
 let wordIndex=0;
 function showWord(){
  const box=$("savedWords");box.replaceChildren();

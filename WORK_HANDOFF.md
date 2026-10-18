@@ -8,11 +8,11 @@ Stripe remains sandbox-only. No real billing activation, Secrets changes, Fireba
 - Shared phrasebook: `phrasebook.html` reads both existing allow-listed phrase keys without moving/deleting data. Explicit save/remove, deduplication, source/difficulty/category filtering, hidden-English revision and playback. AI reply and individual coaching buttons added; existing sprint and teacher save buttons retained. No automatic conversation storage. Cloud rules and key allow-list unchanged.
 - Voice settings: device-only English voice choice, natural/premium preference where available, four speeds, stop/preview, asynchronous voice discovery and fallback. Applied to sprint and scene utterances; microphone cancellation and strong utterance references retained. No external TTS API.
 - Content: 100 -> 151 sprint prompts, 16 practical topic filters; 6 -> 16 AI scenes with three distinct situations/goals per scene. Worker uses existing quota/refund/telemetry path. Added full answer-set duplication and scene parity tests.
-- Full Node regression: 153 pass, 0 fail. Existing billing, auth, quotas, refunds, costs and account isolation tests included.
+- Full Node regression: 156 pass, 0 fail. Existing billing, auth, quotas, refunds, costs and account isolation tests included.
 - Existing cost simulation rerun unchanged: at assumed USDJPY150 and existing token assumptions, maximum monthly Free usage costs ~401 JPY typical / ~2697 JPY heavy in paid-rate equivalent. Not observed billing; real usage averages/p95 and actual provider bill remain unverified.
 
 ## Changed files
-account.html, account-sync.js, dashboard-data.mjs, index.html, reflex.html, scenes.html, phrasebook.html (new), phrasebook.js (new), speech-settings.js (new), worker/ai-worker.js; tests/dashboard-ui.test.mjs, tests/production-home.test.mjs, tests/reflex-content.test.mjs, tests/phrasebook.test.mjs (new), tests/scene-catalog.test.mjs (new), worker/ai-worker.test.mjs; tests/browser-qa.cjs and .github/workflows/launch-qa.yml (new).
+account.html, account-sync.js, dashboard-data.mjs, index.html, reflex.html, scenes.html, phrasebook.html (new), phrasebook.js (new), speech-settings.js (new), worker/ai-worker.js; tests/dashboard-ui.test.mjs, tests/production-home.test.mjs, tests/reflex-content.test.mjs, tests/phrasebook.test.mjs (new), tests/scene-catalog.test.mjs (new), worker/ai-worker.test.mjs; tests/browser-qa.cjs, tests/speech-settings.test.mjs and .github/workflows/launch-qa.yml (new).
 
 ## Branch / commits / PR
 Branch: `improve/launch-readiness-20261018`. Starting main: `0e9db5f6474443c52757ba5ec3c4570d6756a97f`.
@@ -21,11 +21,11 @@ PR: https://github.com/keito0518/speakingym/pull/26 — draft at this checkpoint
 Git push is not authenticated in this executor; GitHub Git Data API successfully saves commits and advances the branch with expected-head checks. Local commit hashes differ from GitHub hashes. Verify the remote head, never force push local history.
 
 ## Validation and deployment
-- Local: `node --test tests/*.test.mjs worker/*.test.mjs` => 153/153; `git diff --check` passes.
+- Local: `node --test tests/*.test.mjs worker/*.test.mjs` => 156/156; `git diff --check` passes.
 - GitHub Actions: all existing workflows passed at `8a69bc3`.
 - Cloudflare Pages and Worker preview builds succeeded at `8a69bc3`. Pages preview: https://e99027f0.speakingym.pages.dev/.
-- New browser workflow added for 390px/1280px layouts, guest sprint, phrase filters/hide/delete and voice preferences. Await execution and fix any failures before merging.
-- Local browser installation blocked by incomplete downloads; browser QA must be completed in Actions/cloud browser. Do not describe Node DOM mocks as real-browser tests.
+- Browser workflow PASSED at dbdc651b62c746b4116dc43b98ff3da4fb5def45 for 390px/1280px layouts, guest sprint, phrase filters/hide/delete and voice preferences. Run: https://github.com/keito0518/speakingym/actions/runs/39086702757. The initial assertion omitted the existing STANDARD label; corrected after inspecting the failure.
+- Local browser installation blocked by incomplete downloads; browser QA was completed in Actions/cloud browser. Do not describe Node DOM mocks as real-browser tests.
 - Production deployment not yet confirmed at this checkpoint.
 
 ## Remaining / not fully verified
