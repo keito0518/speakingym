@@ -12,7 +12,7 @@ test('new user speech gets one UUID and ambiguous retries retain it',()=>{
  assert.match(html,/\$\("retry"\)\.addEventListener\("click",\(\)=>\{if\(pendingText&&!processing&&running\)answer\(pendingText\)\}/);
 });
 test('confirmed HTTP errors rotate ID while network errors preserve ID, successes clear it',()=>{
- assert.match(html,/if\(!response\.ok\)\{pendingRequestId=""/);
+ assert.match(html,/if\(!response\.ok\)\{if\(!\["request_pending","request_uncertain","request_result_expired"\]\.includes\(data\.error\)\)pendingRequestId=""/);
  assert.match(html,/async function answer\(text\)\{if\(!pendingRequestId\)pendingRequestId=globalThis\.crypto\?\.randomUUID\?\.\(\)\|\|""/);
  assert.match(html,/pendingText="";pendingRequestId="";processing=false/);
  assert.match(html,/function leave\(\)\{runToken\+\+;running=false;processing=false;pendingText="";pendingRequestId=""/);
