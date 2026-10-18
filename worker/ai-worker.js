@@ -243,7 +243,7 @@ function sanitizeTeacherResult(input,size) {
  }
  return normalized;
 }
-async function runReflexCoaching(body,env,origin){
+async function runReflexCoaching(body,env,origin,plan){
  const attempts=validateReflexCoaching(body?.attempts);
  if(!attempts || !["easy","standard","challenge"].includes(body?.level)){
   return reply({error:"invalid_coaching_input"},400,origin);
@@ -267,7 +267,7 @@ async function runReflexCoaching(body,env,origin){
   if(upstream.status===404)return reply({error:"gemini_model"},502,origin);
   if(!upstream.ok)return reply({error:"gemini_http_"+upstream.status},502,origin);
   const result=await upstream.json();
-  logGeminiUsage(result,"reflex_coach");
+  logGeminiUsage(result,"reflex_coach",plan);
   const raw=result?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
   let parsed;
   try{parsed=JSON.parse(raw)}catch{return reply({error:"gemini_invalid_json"},502,origin)}
@@ -430,7 +430,7 @@ export default {
       }catch{return reply({error:"plans_unavailable"},503,origin)}
     }
     if(body?.action === "reflex_coach"){
-      const result=await runReflexCoaching(body,env,origin);
+      const result=await runReflexCoaching(body,env,origin,teacherReservation?.plan);
       if(result.status!==200&&teacherReservation){
         try{await refundTeacher(env.PLAN_DB,planUid,teacherReservation.id)}catch{}
       }
@@ -508,7 +508,7 @@ export default {
         return aiFailure({ error: "gemini_http_" + upstream.status, message: "Gemini API returned an error." }, 502);
       }
       const result = await upstream.json();
-      logGeminiUsage(result,"conversation");
+      logGeminiUsage(result,"conversation",turnReservation?.plan);
       const rawText = result?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
       let data;
       try { data = JSON.parse(rawText); } catch { return aiFailure({ error: "gemini_invalid_json", reason: result?.candidates?.[0]?.finishReason === "MAX_TOKENS" ? "output_truncated" : "malformed_response" }, 502); }
