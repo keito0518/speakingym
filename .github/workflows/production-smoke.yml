@@ -1,0 +1,17 @@
+name: Production GET-only smoke
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  production-http:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify public Pages and Worker /health without AI calls
+        run: node scripts/prod-smoke.mjs
