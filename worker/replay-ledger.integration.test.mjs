@@ -179,3 +179,30 @@ test('receipt + turn trigger changes rollback together when attached reservation
  assert.equal(f.receipts()[0].state,'pending','receipt update must rollback atomically');
  assert.equal(f.turns(session),0);
 });
+
+test('scheduled handler is OFF by default and purges only expired reply data when activated',async t=>{
+ const f=await fixture(t),session=await f.start(),p=f.payload(session);
+ const response=await worker.fetch(f.request('',p),f.env);
+ assert.equal(response.status,200);
+ const originalTurns=f.turns(session);
+ assert.ok(f.receipts()[0].response_json);
+ f.sqlite.prepare('UPDATE ai_request_receipts SET response_expires_at=?,expires_at=?')
+  .run(time()-1,time()+3600);
+ await worker.scheduled(null,{...f.env,AI_REPLAY_MODE:'disabled'});
+ assert.ok(f.receipts()[0].response_json,'OFF: no D1 mutation');
+ await worker.scheduled(null,f.env);
+ assert.equal(f.receipts()[0].response_json,null,'expired content must be redacted');
+ assert.equal(f.turns(session),originalTurns,'cleanup cannot touch quota');
+ f.sqlite.prepare('UPDATE ai_request_receipts SET expires_at=?').run(time()-1);
+ await worker.scheduled(null,f.env);
+ assert.equal(f.receipts().length,0,'expired receipt tombstone is removed');
+ assert.equal(f.turns(session),originalTurns);
+});
+test('misconfigured replay with plan enforcement disabled fails closed',async t=>{
+ const f=await fixture(t),session=await f.start(),p=f.payload(session);
+ const blocked=await worker.fetch(f.request('',p),{...f.env,ENFORCE_PLANS:'false'});
+ assert.equal(blocked.status,503);
+ assert.equal((await blocked.json()).error,'replay_not_ready');
+ assert.equal(f.counters.model,0);
+ assert.equal(f.turns(session),0);
+});
