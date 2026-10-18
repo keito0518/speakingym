@@ -181,7 +181,7 @@ function sessionSeconds(){return $("level").value==="challenge"?300:$("level").v
 function turnLimit(){return $("level").value==="challenge"?12:$("level").value==="standard"?10:8}
 const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 const synth=window.speechSynthesis||null;
-let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0;
+let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0,activeSpeech=null;
 let serverSessionId="",plansActive=null;
 let micWanted=false,micBase="",micCycleFinal="",micCycleInterim="",micSilentStops=0,micRestartTimer=null;
 let coachingHistory=[];
@@ -202,12 +202,31 @@ function goals(container,done){container.replaceChildren();container.setAttribut
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
 function addMessage(who,text){const bubble=document.createElement("div");bubble.className="bubble"+(who==="You"?" me":"");const label=document.createElement("strong");label.textContent=who;const body=document.createElement("span");body.textContent=text;bubble.append(label,body);$("chat").append(bubble);$("chat").scrollTop=$("chat").scrollHeight}
 function voiceRate(){return $("speed").value==="slow"?.82:$("speed").value==="fast"?1.12:.98}
-function say(text){lastSpoken=text;if(!synth||!window.SpeechSynthesisUtterance)return;try{
- synth.cancel();const u=new SpeechSynthesisUtterance(text);const voices=synth.getVoices();
- const v=voices.find(x=>/^en-AU/i.test(x.lang))||voices.find(x=>/^en-GB/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang));
- if(v)u.voice=v;u.lang=v?.lang||"en-AU";u.rate=voiceRate();u.pitch=1;synth.speak(u);
-}catch(e){}}
-function cancelSpeech(){if(synth)try{synth.cancel()}catch(e){}}
+function say(text){
+ lastSpoken=text;
+ if(!synth||!window.SpeechSynthesisUtterance)return;
+ // Mobile browsers may cut off speech if recognition still owns the audio session.
+ // Keep the utterance referenced through playback (particularly on WebKit).
+ stopRecognition();
+ cancelSpeech();
+ try{
+  const id=++speechToken;
+  const u=new window.SpeechSynthesisUtterance(text);
+  activeSpeech=u;
+  const voices=typeof synth.getVoices==="function"?synth.getVoices():[];
+  const v=voices.find(x=>/^en-AU/i.test(x.lang))||voices.find(x=>/^en-GB/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang));
+  if(v)u.voice=v;
+  u.lang=v?.lang||"en-AU";u.rate=voiceRate();u.pitch=1;
+  u.onend=u.onerror=()=>{if(activeSpeech===u&&speechToken===id)activeSpeech=null};
+  synth.speak(u);
+  if(synth.paused&&typeof synth.resume==="function")synth.resume();
+ }catch(e){activeSpeech=null}
+}
+function cancelSpeech(){
+ speechToken++;
+ if(synth)try{synth.cancel()}catch(e){}
+ activeSpeech=null;
+}
 function joinSpeech(left,right){return [String(left||"").trim(),String(right||"").trim()].filter(Boolean).join(" ").trim().slice(0,450)}
 function stopRecognition(){
  micWanted=false;
