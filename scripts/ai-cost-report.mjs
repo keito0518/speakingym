@@ -52,7 +52,7 @@ export function analyzeAiLogs(contents,{usdJpy=USDJPY_FALLBACK}={}){
   }
  }
  const summary={basis:'paid-tier-equivalent, NOT an actual invoice',assumedUsdJpy:usdJpy,
-  recognized,ignored,groups:{},fullUseProEstimate:null};
+  recognized,ignored,groups:{},fullUseProEstimate:null,decision:'insufficient_real_usage_data'};
  for(const [key,g] of groups){
   const avg=g.calls?g.estimatedUsd/g.calls:null;
   summary.groups[key]={modelCalls:g.calls,costJpy:round(g.estimatedUsd*usdJpy,2),
@@ -64,7 +64,9 @@ export function analyzeAiLogs(contents,{usdJpy=USDJPY_FALLBACK}={}){
  const proConv=groups.get('conversation:pro'),proTeacher=groups.get('teacher:pro');
  if(proConv?.calls&&proTeacher?.calls){
   const projectedUsd=600*proConv.estimatedUsd/proConv.calls + 100*proTeacher.estimatedUsd/proTeacher.calls;
-  summary.fullUseProEstimate={sampledProConversationRequests:proConv.calls,sampledProTeacherRequests:proTeacher.calls,
+  const adequateSample=proConv.calls>=30 && proTeacher.calls>=10;
+  summary.decision=adequateSample?'review_measured_cost_and_free_burden':'insufficient_real_usage_data';
+  summary.fullUseProEstimate={sampleSufficientForReview:adequateSample,sampledProConversationRequests:proConv.calls,sampledProTeacherRequests:proTeacher.calls,
    aiJpyAt600TurnsAnd100Teacher:round(projectedUsd*usdJpy,2),
    after680JpyAndIllustrative4_3PctStripe:round(680-680*.043-projectedUsd*usdJpy,2),
    note:'Sample-based projection. Excludes Free costs, taxes, Cloudflare, refunds, support and FX volatility.'};
