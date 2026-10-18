@@ -1,4 +1,5 @@
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
+import {ledgerMode} from "./turn-ledger.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
@@ -311,7 +312,7 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", turnLedgerEnabled: ledgerMode(env), billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
     }
     // Stripe server callbacks have no browser Origin; signature verification is mandatory.
     if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
