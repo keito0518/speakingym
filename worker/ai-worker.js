@@ -1,6 +1,6 @@
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
-import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
+import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
  * Never place your Gemini API key in the frontend, Git, or wrangler.toml.
@@ -358,10 +358,22 @@ export default {
     if (!env.USER_LIMIT || !env.GLOBAL_LIMIT) {
       return reply({ error: "limits_unconfigured" }, 503, origin);
     }
+    // Opt-in account-isolated rate pools, only AFTER verified Firebase auth.
+    // These separate app-level counters, NOT Gemini project-level capacity.
+    let poolUid=null,poolTier=null;
+    if(env.AI_TIER_POOLS==="true" && planEnabled(env)){
+      if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
+      try{poolUid=await verifyFirebaseIdToken(request)}
+      catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      try{await refreshBillingIfNeeded(env,poolUid);poolTier=await getPlan(env.PLAN_DB,poolUid,env)}
+      catch{return reply({error:"plans_unavailable"},503,origin)}
+    }
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const userKey=poolUid?"member:"+poolUid:ip;
+    const poolKey=poolUid?"speakingym-survival-"+poolTier:"speakingym-survival-public";
     const [perUser, global] = await Promise.all([
-      env.USER_LIMIT.limit({ key: ip }),
-      env.GLOBAL_LIMIT.limit({ key: "speakingym-survival-public" })
+      env.USER_LIMIT.limit({ key: userKey }),
+      env.GLOBAL_LIMIT.limit({ key: poolKey })
     ]);
     if (!perUser.success || !global.success) {
       return reply({ error: "rate_limited", message: "Free trial is busy; try again in a minute." }, 429, origin);
@@ -386,13 +398,15 @@ export default {
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
     const requestStartedAt=Date.now();
-    let planUid=null,teacherReservation=null,turnReservation=null;
+    let planUid=poolUid,teacherReservation=null,turnReservation=null;
     if(planEnabled(env)){
       if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
-      try{planUid=await verifyFirebaseIdToken(request)}
-      catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      if(!planUid){
+        try{planUid=await verifyFirebaseIdToken(request)}
+        catch(e){return reply({error:e?.message==="auth_keys_unavailable"?"auth_temporarily_unavailable":"login_required"},401,origin)}
+      }
       try{
-        await refreshBillingIfNeeded(env,planUid);
+        if(!poolUid)await refreshBillingIfNeeded(env,planUid);
         if(body?.action==="reflex_coach"){
           // Validate before spending a daily AI teacher request.
           if(!validateReflexCoaching(body?.attempts) || !["easy","standard","challenge"].includes(body?.level))
