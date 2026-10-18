@@ -60,9 +60,9 @@ export async function receiptSchemaReady(db){
 export async function replayBridgeReady(db){
  if(!await receiptSchemaReady(db))return false;
  try{
-  const result=await db.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name IN ('ai_request_receipt_complete_turn','ai_request_receipt_fail_turn')").all();
+  const result=await db.prepare("SELECT name FROM sqlite_master WHERE (type='trigger' AND name IN ('ai_request_receipt_complete_turn','ai_request_receipt_fail_turn')) OR (type='index' AND name='idx_ai_request_receipt_turn_unique')").all();
   const names=new Set((result?.results||result||[]).map(row=>row.name));
-  return names.has('ai_request_receipt_complete_turn')&&names.has('ai_request_receipt_fail_turn');
+  return names.has('ai_request_receipt_complete_turn')&&names.has('ai_request_receipt_fail_turn')&&names.has('idx_ai_request_receipt_turn_unique');
  }catch{return false}
 }
 /** Bind an already-reserved turn to its sole authenticated request ID.
