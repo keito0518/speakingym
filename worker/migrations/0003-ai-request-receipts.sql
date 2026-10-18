@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS ai_request_receipts (
   turn_reservation_id TEXT,
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL,
+  response_expires_at INTEGER NOT NULL,
   PRIMARY KEY(uid,session_id,request_id)
 );
 CREATE INDEX IF NOT EXISTS idx_ai_request_receipts_expiry
