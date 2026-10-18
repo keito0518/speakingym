@@ -1,4 +1,4 @@
-import {MODEL,logGeminiUsage} from "./cost-telemetry.js";
+import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
@@ -385,6 +385,7 @@ export default {
     }
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
+    const requestStartedAt=Date.now();
     let planUid=null,teacherReservation=null,turnReservation=null;
     if(planEnabled(env)){
       if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
@@ -417,6 +418,8 @@ export default {
       if(result.status!==200&&teacherReservation){
         try{await refundTeacher(env.PLAN_DB,planUid,teacherReservation.id)}catch{}
       }
+      logAiOutcome({kind:"teacher",plan:teacherReservation?.plan,status:result.status,
+        code:result.ok?"ok":"teacher_unavailable",durationMs:Date.now()-requestStartedAt});
       return result;
     }
     const text = typeof body?.userText === "string" ? body.userText.trim() : "";
@@ -450,6 +453,8 @@ export default {
     // This is a conservative, race-safe rollback; a full per-request ledger is a future improvement.
     const aiFailure=async (error,status)=>{
       if(turnReservation){try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}}
+      logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status,
+        code:error.error,durationMs:Date.now()-requestStartedAt});
       return reply(error,status,origin);
     };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
@@ -497,6 +502,8 @@ export default {
         }
         const completed = normalizeProgress(data.progress);
         for (const key of Object.keys(completed)) completed[key] ||= progress[key];
+        logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
+          code:"ok",durationMs:Date.now()-requestStartedAt});
         return reply({ reply: data.reply.trim(), progress: completed, sceneId: requestedId, coaching: normalizeCoaching(data.coaching) }, 200, origin);
       }
       const missionState = normalizeFacts(data.missionState);
@@ -504,6 +511,8 @@ export default {
       for (const key of Object.keys(missionState)) {
         missionState[key] = missionState[key] || facts[key];
       }
+      logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
+        code:"ok",durationMs:Date.now()-requestStartedAt});
       return reply({ reply: data.reply.trim(), missionState, coaching: normalizeCoaching(data.coaching) }, 200, origin);
     } catch {
       return aiFailure({ error: "ai_timeout", message: "Gemini API timed out." }, 504);
