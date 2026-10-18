@@ -25,3 +25,12 @@ test('operational AI outcome strips untrusted content and records latency withou
  assert.equal(suspicious.latencyMs,0);assert.equal(suspicious.success,true);
  assert.equal(aiOutcomeRecord({kind:'secret',status:200}),null);
 });
+
+test('token costs can be segmented by authoritative tier without logging identifiers',()=>{
+ const result={uid:'private-123',usageMetadata:{promptTokenCount:1000,candidatesTokenCount:200,thoughtsTokenCount:50}};
+ const pro=usageRecord(result,'conversation','pro');
+ assert.equal(pro.plan,'pro');
+ assert.equal(usageRecord(result,'reflex_coach','free').plan,'free');
+ assert.equal(usageRecord(result,'conversation','untrusted-uid').plan,'legacy');
+ assert.doesNotMatch(JSON.stringify(pro),/private-123|untrusted-uid/);
+});
