@@ -462,7 +462,7 @@ async function prepareAIRequest(){
  }
  return {headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},sessionId:serverSessionId};
 }
-async function answer(text){const requestToken=runToken;const requestStartedAt=Date.now();processing=true;updateControls();status("AIが返答を考えています…（混雑時は15〜20秒ほどかかる場合があります）");$("error").classList.add("hidden");
+async function answer(text){if(!pendingRequestId)pendingRequestId=globalThis.crypto?.randomUUID?.()||"";const requestToken=runToken;const requestStartedAt=Date.now();processing=true;updateControls();status("AIが返答を考えています…（混雑時は15〜20秒ほどかかる場合があります）");$("error").classList.add("hidden");
  const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),30000);
  try{const access=await prepareAIRequest();const response=await fetch(API,{method:"POST",headers:access.headers,body:JSON.stringify({sceneId,level:$("level").value,userText:text,history:history.slice(-10),progress,sessionId:access.sessionId,requestId:pendingRequestId||undefined}),signal:controller.signal});
  const data=await response.json().catch(()=>({error:"invalid_json"}));
