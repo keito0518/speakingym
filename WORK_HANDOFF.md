@@ -31,7 +31,7 @@ Git push is not authenticated in this executor; GitHub Git Data API successfully
 ## Remaining / not fully verified
 1. iPhone Safari real audible quality, microphone->speech switching, screen lock/resume and voice download availability. No guarantee of human voice quality.
 2. Real Gemini conversation quality/repetition across new scenes. No billable AI requests were made; model requests are mocked in regression tests.
-3. New 51 prompts are authored per situation, but the existing 76 supplemental prompts still use generic advanced-mode situation text. Full editorial polish of all legacy levels remains, not a release-quality guarantee.
+3. New 51 prompts are authored per situation. The 76 legacy supplemental advanced prompts now also have individually written English situations/instructions. Full human editorial review of all answer variants is still outstanding.
 4. Existing storage caps retained: 100 sprint/teacher phrases and 20 AI phrases. Full AI store now refuses new saves without evicting existing entries. Increasing caps requires reviewing sync normalization/limits; not silently expanded.
 5. Live multi-device Firebase sync and actual iPhone sign-in not exercised; existing isolation tests pass. Read-through view avoids migrations.
 6. Existing refund tests cover failed AI turns/teacher calls. A Free session starts before the first AI response and remains a session if an entire attempt fails; changing that policy safely needs separate session-start reservation design.

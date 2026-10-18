@@ -4,7 +4,7 @@
 const key='speakingym-device-voice-v1',synth=window.speechSynthesis;
 let prefs={voice:'',rate:.92},active=null,epoch=0;
 try{const v=JSON.parse(localStorage.getItem(key));if(v&&typeof v.voice==='string')prefs.voice=v.voice;if([.75,.92,1,1.12].includes(v?.rate))prefs.rate=v.rate}catch{}
-function voices(){try{return (synth?.getVoices()||[]).filter(v=>/^en(?:-|_)/i.test(v.lang)).sort((a,b)=>rank(b)-rank(a))}catch{return []}}
+function voices(){try{return (synth?.getVoices()||[]).filter(v=>/^en(?:-|_|$)/i.test(v.lang)).sort((a,b)=>rank(b)-rank(a))}catch{return []}}
 function rank(v){return (/natural|premium|enhanced|neural/i.test(v.name)?20:0)+(/Samantha|Ava|Daniel|Google|Microsoft/i.test(v.name)?5:0)+(v.localService?1:0)}
 function apply(u){const list=voices(),voice=list.find(v=>(v.voiceURI||v.name)===prefs.voice)||list[0];if(voice)u.voice=voice;u.lang=voice?.lang||'en-US';u.rate=prefs.rate;u.pitch=1;return u}
 function save(){try{localStorage.setItem(key,JSON.stringify(prefs))}catch{}}

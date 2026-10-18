@@ -13,7 +13,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
    if(path.startsWith('scenes')){assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-scene]').count(),16)}
    await page.screenshot({path:'qa-screenshots/'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
-  await page.selectOption('#mode','カフェ');await page.click('#start');assert.equal(await page.locator('#category').textContent(),'カフェ');
+  await page.selectOption('#mode','カフェ');await page.click('#start');assert.match(await page.locator('#category').textContent(),/^カフェ \/ STANDARD$/);
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
   await page.evaluate(()=>{localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([{id:'repair1:easy:quick',cardId:'repair1',kind:'quick',text:'Could you repeat that?',level:'easy',goal:'聞き返す'}]));window.speakingymPhrases.toggle({text:'Could I have oat milk?',sceneId:'cafe',level:'standard',source:'AIの言い換え'});window.dispatchEvent(new Event('speakingym:account-ready'))});
   assert.equal(await page.locator('#phrases article').count(),2);await page.click('#hide');assert.equal(await page.locator('.english:visible').count(),0);await page.getByRole('button',{name:'答えを見る'}).first().click();assert.equal(await page.locator('.english:visible').count(),1);
