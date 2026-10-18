@@ -9,6 +9,16 @@ function tokyoBounds(time){
  return {start:iso.slice(0,7)+'-01',end:new Date(Date.UTC(y,m,1)).toISOString().slice(0,10)};
 }
 export function ledgerMode(env={}) {return env.TURN_LEDGER_MODE === 'enabled' && env.ENFORCE_PLANS === 'true'}
+/** Only SQLite schema metadata is read. No user, billing, or quota rows are touched. */
+export async function ledgerSchemaReady(db) {
+ if(!db)return false;
+ try {
+  const names=await db.prepare("SELECT name FROM sqlite_master WHERE (type='table' AND name='ai_turn_reservations') OR (type='trigger' AND name IN ('ai_turn_reservation_count_insert','ai_turn_reservation_count_refund'))").all();
+  const actual=new Set((names?.results||names||[]).map(row=>row.name));
+  return ['ai_turn_reservations','ai_turn_reservation_count_insert','ai_turn_reservation_count_refund'].every(name=>actual.has(name));
+ } catch {return false}
+}
+
 export async function reserveTurn(db,{uid,sessionId,tier,time=Date.now()}){
  if(typeof uid!=='string'||uid.length<1||uid.length>128||typeof sessionId!=='string'||!UUID.test(sessionId)||!['free','pro'].includes(tier))return null;
  const id=crypto.randomUUID(),now=Math.floor(time/1000),mon=tokyoBounds(time);
