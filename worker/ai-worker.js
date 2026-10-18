@@ -1,6 +1,6 @@
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {ledgerMode,ledgerSchemaReady} from "./turn-ledger.js";
-import {replayMode,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt} from "./request-receipts.js";
+import {replayMode,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt,purgeReceipts} from "./request-receipts.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
@@ -592,5 +592,12 @@ export default {
     } finally {
       clearTimeout(timer);
     }
+  },
+  async scheduled(_event,env){
+    // The separate Cloudflare Cron trigger must be configured during activation;
+    // merely deploying this function schedules nothing and changes no current data.
+    if(!replayMode(env)||!env.PLAN_DB)return;
+    if(!await ledgerSchemaReady(env.PLAN_DB)||!await replayBridgeReady(env.PLAN_DB))return;
+    await purgeReceipts(env.PLAN_DB);
   }
 };
