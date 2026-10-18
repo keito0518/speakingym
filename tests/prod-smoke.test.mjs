@@ -5,7 +5,7 @@ import {runSmoke} from '../scripts/prod-smoke.mjs';
 const site='https://speakingym.pages.dev/';
 const api='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
 const silent={log(){},warn(){}};
-function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerReady=false}={}){
+function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerReady=false,replayRequested=false,replayReady=false}={}){
  const requests=[];
  const pages=new Map([
   ['', '<title>Speakingym</title>60秒チャレンジ'],
@@ -25,7 +25,7 @@ function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerRead
   }
   if(url===api+'health')return Response.json({status:'ok',quotaVersion:'pro-monthly-600-100-v2',
    aiEnabled:ready,aiConfigured:ready,keyConfigured:ready,plansEnabled:true,plansReady:true,
-   billingMode,turnLedgerEnabled:ledgerEnabled,turnLedgerSchemaReady:ledgerReady,model:'gemini-3.5-flash-lite',
+   billingMode,turnLedgerEnabled:ledgerEnabled,turnLedgerSchemaReady:ledgerReady,aiReplayRequested:replayRequested,aiReplayEnabled:replayRequested&&ledgerEnabled,aiReplaySchemaReady:replayReady,model:'gemini-3.5-flash-lite',
    sceneIds:Array.from({length:16},(_,i)=>'scene'+i)});
   if(url.startsWith(site)&&pages.has(url.slice(site.length)))return new Response(pages.get(url.slice(site.length)),{status:200});
   throw Error('Unexpected request '+url);
@@ -57,4 +57,15 @@ test('production guard rejects enabling turn ledger before database migration',a
  const ready=fakeFetch({ledgerEnabled:true,ledgerReady:true});
  const result=await runSmoke(ready.fetcher,{maxAttempts:1,retryDelayMs:0,logger:silent});
  assert.equal(result.health.status,'ok');
+});
+
+test('production fails when replay is set but its atomic D1 bridge is not ready',async()=>{
+ const {fetcher}=fakeFetch({replayRequested:true,ledgerEnabled:true,ledgerReady:true,replayReady:false});
+ await assert.rejects(runSmoke(fetcher,{maxAttempts:1,retryDelayMs:0,logger:silent}),/Production smoke failed.*health/);
+});
+test('production accepts replay only with turn ledger and D1 replay triggers ready',async()=>{
+ const {fetcher}=fakeFetch({replayRequested:true,ledgerEnabled:true,ledgerReady:true,replayReady:true});
+ const result=await runSmoke(fetcher,{maxAttempts:1,retryDelayMs:0,logger:silent});
+ assert.equal(result.health.aiReplayEnabled,true);
+ assert.equal(result.health.aiReplaySchemaReady,true);
 });
