@@ -160,8 +160,7 @@ function dashboard(){
  const stats=[
   ["⚡",view.totals.sprint,"60秒チャレンジ","REFLEX WORKOUT"],
   ["↗",view.totals.phrases,"保存フレーズ","YOUR PHRASEBOOK"],
-  ["◉",view.totals.ai,"AI実戦英会話","ROLEPLAY SESSIONS"],
-  ["☕",view.totals.cafe,"カフェ練習","CAFÉ CHALLENGE"]
+  ["◉",view.totals.ai,"AI実戦英会話","ROLEPLAY SESSIONS"]
  ];
  for(const [icon,count,label,english] of stats){
   const card=node("div",undefined,"sg-stat");
@@ -178,7 +177,7 @@ function dashboard(){
  const phraseRoot=$("sg-saved-list");
  if(phraseRoot){
   phraseRoot.replaceChildren();
-  if(view.phrases.length===0)emptySection(phraseRoot,"まだ保存フレーズがないよ。","気に入った英文は、講評からワンタップで保存できる。","60秒チャレンジへ ↗","./reflex.html");
+  if(view.phrases.length===0)emptySection(phraseRoot,"まだ保存フレーズがないよ。","60秒チャレンジの回答例、AI英会話の表現や講評を保存して、まとめて復習しよう。","60秒チャレンジへ ↗","./reflex.html");
   for(const p of view.phrases){
    const row=node("article",undefined,"saved-item");
    row.append(node("div",p.source,"saved-source"),node("div",p.english,"saved-text"));

@@ -39,6 +39,7 @@
 @media(max-width:520px){.site-head{height:64px}.head-inner,.wrapper{padding-left:17px;padding-right:17px}.logo{font-size:22px}.nav a:nth-child(2){display:none}.hero h1{font-size:43px;line-height:1.23}.lead{font-size:14px}.cta-row .btn{flex:1 1 100%}.mock{padding:15px}.showcase{min-height:343px}.workout{padding:24px;min-height:305px}.workout h3{font-size:27px}.review-card,.habit-card{padding:19px}.concept{padding:33px 0}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 .phrase-jump{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 12px;background:#f3f7ef;border:1px solid #d8e6d5;border-radius:10px;color:#25563f;font-size:12px;font-weight:850}.phrase-jump:hover{text-decoration:underline}.phrase-jump span{margin-left:auto;background:#d7e9d8;color:#22533b;border-radius:20px;min-width:24px;text-align:center;font-size:11px;padding:1px 5px}
+.scene-workout{background:#fff;border:1px solid var(--line);min-height:0}.scene-previews{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:18px}.scene-preview{display:flex;flex-direction:column;gap:7px;padding:14px 11px;border:1px solid #dce6d8;border-radius:14px;background:#f5f8f0}.scene-preview:nth-child(2){background:#fff4e9}.scene-preview:nth-child(3){background:#eef5f6}.scene-preview>span{font-size:24px}.scene-preview small{font-size:11px;line-height:1.6}.scene-preview b{font-size:11px;margin-top:auto}.scene-preview:hover{border-color:#568268}@media(max-width:600px){.scene-previews{grid-template-columns:1fr}.scene-preview{padding:16px}.scene-preview>span{font-size:22px}}
 </style>
 </head>
 <body>
@@ -57,7 +58,7 @@
    <a class="btn primary" href="./reflex.html">無料で60秒チャレンジ <span aria-hidden="true">↗</span></a>
    <a class="btn" href="./scenes.html">AIと実戦英会話 <span aria-hidden="true">→</span></a>
   </div>
-  <p class="smallline">無料ベータ版。60秒チャレンジはログイン不要・回数制限なし。AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで。現在、有料プラン・決済機能はありません。</p>
+  <p class="smallline">無料ベータ版。60秒チャレンジはログイン不要・回数制限なし。AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで。Proの一般向け有料登録はまだ開始していません。</p>
  </div>
  <div class="showcase" aria-label="AI会話ワークアウトのイメージ">
   <div class="orb" aria-hidden="true"></div>
@@ -75,8 +76,8 @@
  <div class="start-guide-inner">
   <h2 id="start-guide-title">はじめての人は、ここから。</h2>
   <div class="start-steps">
-   <div class="start-step"><strong>① まずは60秒</strong>ログインなしでスタート。100問の中から、英語でひと言返す練習をしよう。</div>
-   <div class="start-step"><strong>② AI英会話に挑戦</strong>Googleでログインして、カフェ・ホテルなど6つの場面から選ぼう。</div>
+   <div class="start-step"><strong>① まずは60秒</strong>ログインなしでスタート。151問の中から、英語でひと言返す練習をしよう。</div>
+   <div class="start-step"><strong>② AI英会話に挑戦</strong>Googleでログインして、カフェ・ホテルなど16の場面から選ぼう。</div>
    <div class="start-step"><strong>③ 振り返ってもう一度</strong>詰まった表現や言い換えを見直して、次は声に出してみよう。</div>
   </div>
   <p class="start-guide-note">※ AI英会話は無料でも利用回数に制限があります。音声認識はブラウザや端末によって使えない場合があり、文字入力でも練習できます。</p>
@@ -85,13 +86,15 @@
 <section class="wrapper" id="workouts">
  <div class="section-top"><div class="eyebrow">TWO DIFFERENT WORKOUTS</div><h2>使う英語と、とっさの英語。</h2><p>どちらも話す練習。でも鍛える力は違う。</p></div>
  <div class="workouts">
-  <a class="workout workout-dark" href="./scenes.html" aria-label="AI実戦英会話を始める">
+  <section class="workout scene-workout" aria-label="AI実戦英会話を始める">
    <span class="tag">01 / REAL CONVERSATION</span>
-   <h3>AIと、本番を<br>やってみる。</h3>
-   <p>カフェ・レストラン・買い物・ホテル・空港・雑談。あなたの発言で会話が変わる。終わったら自然な言い換えを復習。</p>
-   <div class="chip-row"><span class="chip">3つの場面</span><span class="chip">難易度3段階</span><span class="chip">AI添削</span></div>
-   <span class="workout-link">会話のミッションを選ぶ ↗</span>
-  </a>
+   <h3>今日、どこで英語を使う？</h3>
+   <p>相手はAI。注文も、相談も、間違えて大丈夫。場面を選んで、あなたの言葉で会話しよう。</p>
+   <div class="scene-previews">
+<a class="scene-preview" href="./scenes.html?scene=cafe"><span aria-hidden="true">☕</span><strong>カフェ</strong><small>飲み物を注文・カスタマイズ</small><small>基礎・標準・応用</small><b>今すぐ練習する →</b></a>
+<a class="scene-preview" href="./scenes.html?scene=hotel"><span aria-hidden="true">🏨</span><strong>ホテル</strong><small>チェックイン・困りごとを相談</small><small>基礎・標準・応用</small><b>今すぐ練習する →</b></a>
+<a class="scene-preview" href="./scenes.html?scene=restaurant"><span aria-hidden="true">🍽</span><strong>レストラン</strong><small>おすすめや食材を確認</small><small>基礎・標準・応用</small><b>今すぐ練習する →</b></a>
+</div><a class="workout-link" href="./scenes.html">すべての会話シーンを見る ↗</a></section>
   <a class="workout workout-light" href="./reflex.html" aria-label="60秒スプリントを始める">
    <span class="tag">02 / QUICK REACTION</span>
    <h3>60秒で、<br>口を動かす。</h3>
@@ -109,7 +112,7 @@
    <h3 id="review-heading">自分の言い換え帳</h3>
    <div id="savedWords" aria-live="polite"><p>AI英会話で言い換えを保存すると、ここに表示されるよ。</p></div>
    <div class="review-nav"><span id="wordCounter" class="smallline">保存した表現</span><button class="plain" id="nextWord" type="button" hidden>次の表現 ↻</button></div>
-   <a class="phrase-jump" href="./reflex.html#phrases">📌 60秒チャレンジの保存フレーズ <span id="sprintPhraseCount">0</span>件を見る →</a>
+   <a class="phrase-jump" href="./phrasebook.html">📌 Speakingymの共通フレーズ帳 <span id="sprintPhraseCount">0</span>件を見る →</a>
   </section>
   <section class="habit-card" aria-labelledby="habit-heading">
    <div class="micro-label">YOUR WORKOUT LOG</div>
@@ -136,12 +139,12 @@ function getSaved(key){try{return JSON.parse(localStorage.getItem(key)||"null")}
 const words=getSaved("speakingym-saved-coaching-v1");
 const safeWords=Array.isArray(words)?words.filter(x=>x&&typeof x.original==="string"&&typeof x.natural==="string"&&x.original.length<600&&x.natural.length<600).slice(0,20):[];
 const sprintPhrases=getSaved("speakingym-reflex-saved-phrases-v1");
-$("sprintPhraseCount").textContent=String(Array.isArray(sprintPhrases)?Math.min(100,sprintPhrases.length):0);
+$("sprintPhraseCount").textContent=String(new Set([...(Array.isArray(sprintPhrases)?sprintPhrases.map(p=>p?.text):[]),...safeWords.map(p=>p.natural)].filter(t=>typeof t==="string"&&t.trim()).map(t=>t.normalize("NFKC").trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," "))).size);
 let wordIndex=0;
 function showWord(){
  const box=$("savedWords");box.replaceChildren();
  if(!safeWords.length){
-  const p=document.createElement("p");p.textContent="まだ保存した表現はないよ。AI英会話で添削を受け、使いたい表現を保存してみよう。";box.append(p);$("nextWord").hidden=true;$("wordCounter").textContent="未保存";return;
+  const p=document.createElement("p");p.textContent="まだ保存した表現はないよ。60秒チャレンジやAI英会話で、使いたい表現を保存してみよう。";box.append(p);$("nextWord").hidden=true;$("wordCounter").textContent="未保存";return;
  }
  const word=safeWords[wordIndex%safeWords.length];
  const panel=document.createElement("div");panel.className="rewrite-box";

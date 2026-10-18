@@ -40,7 +40,7 @@ test("new dashboard displays real records with meaningful call to action",()=>{
  assert.match(result.recentTeacher[0].praise,/Could you/);
  assert.equal(result.recentSessions.length,3);
  assert.equal(result.recentSessions[0].spoke,1);
- assert.equal(result.nextAction.href,"./reflex.html#phrases");
+ assert.equal(result.nextAction.href,"./phrasebook.html");
 });
 test("brand-new guests see honest zero state rather than invented skill, streak or teacher feedback",()=>{
  const result=buildLearningDashboard({},now);
@@ -76,7 +76,7 @@ test("dashboard contains responsive sections, meaningful links, privacy accordio
  ]){
   assert.match(html,new RegExp('id="'+id+'"'),"Missing UI region "+id);
  }
- for(const dest of ["./reflex.html#phrases","./scenes.html","./mission.html","./index.html"])
+ for(const dest of ["./phrasebook.html","./scenes.html","./scenes.html?scene=cafe","./index.html"])
   assert.ok(html.includes(dest),"Missing working navigation "+dest);
  assert.match(html,/class="privacy-info"/);
  assert.match(html,/<details class="privacy-info">/);
