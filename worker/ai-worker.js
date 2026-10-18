@@ -1,6 +1,6 @@
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
-import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
+import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
  * Never place your Gemini API key in the frontend, Git, or wrangler.toml.
@@ -471,6 +471,10 @@ export default {
         code:error.error,durationMs:Date.now()-requestStartedAt});
       return reply(error,status,origin);
     };
+    const completeSuccessfulTurn=async()=>{
+      try{return await completeSessionTurn(env.PLAN_DB,planUid,turnReservation)}
+      catch{return false}
+    };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
@@ -516,6 +520,8 @@ export default {
         }
         const completed = normalizeProgress(data.progress);
         for (const key of Object.keys(completed)) completed[key] ||= progress[key];
+        if(!await completeSuccessfulTurn())
+          return aiFailure({error:"quota_commit_failed"},503);
         logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
           code:"ok",durationMs:Date.now()-requestStartedAt});
         return reply({ reply: data.reply.trim(), progress: completed, sceneId: requestedId, coaching: normalizeCoaching(data.coaching) }, 200, origin);
@@ -525,6 +531,8 @@ export default {
       for (const key of Object.keys(missionState)) {
         missionState[key] = missionState[key] || facts[key];
       }
+      if(!await completeSuccessfulTurn())
+        return aiFailure({error:"quota_commit_failed"},503);
       logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
         code:"ok",durationMs:Date.now()-requestStartedAt});
       return reply({ reply: data.reply.trim(), missionState, coaching: normalizeCoaching(data.coaching) }, 200, origin);
