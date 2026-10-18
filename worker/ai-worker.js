@@ -1,5 +1,6 @@
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {ledgerMode,ledgerSchemaReady} from "./turn-ledger.js";
+import {replayMode,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt} from "./request-receipts.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
@@ -313,7 +314,8 @@ export default {
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
       const turnLedgerSchemaReady=await ledgerSchemaReady(env.PLAN_DB);
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
+      const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
     }
     // Stripe server callbacks have no browser Origin; signature verification is mandatory.
     if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
@@ -400,7 +402,7 @@ export default {
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
     const requestStartedAt=Date.now();
-    let planUid=poolUid,teacherReservation=null,turnReservation=null;
+    let planUid=poolUid,teacherReservation=null,turnReservation=null,receiptClaim=null;
     if(planEnabled(env)){
       if(!env.PLAN_DB)return reply({error:"plans_not_ready"},503,origin);
       if(!planUid){
@@ -419,12 +421,46 @@ export default {
             return reply({error:entitlement.plan==="pro"?"monthly_teacher_limit":"daily_teacher_limit"},429,origin);
           }
         }else{
+          // Off by default. A replay requires BOTH the ledger and receipt-bridge
+          // schemas and the authenticated user; never silently fall back if
+          // replay was explicitly requested but cannot be enforced safely.
+          if(env.AI_REPLAY_MODE==="enabled"){
+            if(!replayMode(env)||!await ledgerSchemaReady(env.PLAN_DB)||
+               !await replayBridgeReady(env.PLAN_DB))
+              return reply({error:"replay_not_ready"},503,origin);
+            if(!validReceiptKey({uid:planUid,sessionId:body?.sessionId,requestId:body?.requestId}))
+              return reply({error:"invalid_request_id"},400,origin);
+            const claimed=await claimReceipt(env.PLAN_DB,{
+              uid:planUid,sessionId:body.sessionId,requestId:body.requestId,body
+            });
+            if(claimed.kind==="replay")return reply(claimed.payload,200,origin);
+            if(claimed.kind==="pending")
+              return reply({error:"request_pending",retryAfterSeconds:2},409,origin);
+            if(claimed.kind==="uncertain")return reply({error:"request_uncertain"},409,origin);
+            if(claimed.kind==="expired")return reply({error:"request_result_expired"},410,origin);
+            if(claimed.kind==="conflict")return reply({error:"request_id_conflict"},409,origin);
+            if(claimed.kind==="failed")return reply({error:"request_failed"},503,origin);
+            if(claimed.kind==="invalid")return reply({error:"invalid_request_id"},400,origin);
+            if(claimed.kind!=="new")return reply({error:"session_not_active"},403,origin);
+            receiptClaim={uid:planUid,sessionId:body.sessionId,requestId:body.requestId,digest:claimed.digest};
+          }
           turnReservation=await consumeSessionTurn(env.PLAN_DB,planUid,body?.sessionId,env);
-           if(!turnReservation){
+          if(!turnReservation){
             const entitlement=await getEntitlement(env.PLAN_DB,planUid,env);
-            if(entitlement.plan==="pro" && entitlement.used.monthlyTurns>=entitlement.limits.monthlyTurns)
-              return reply({error:"monthly_turn_limit"},429,origin);
-            return reply({error:"session_not_active"},403,origin);
+            const monthly=entitlement.plan==="pro" && entitlement.used.monthlyTurns>=entitlement.limits.monthlyTurns;
+            const status=monthly?429:403;
+            if(receiptClaim)try{await failReceipt(env.PLAN_DB,{...receiptClaim,status})}catch{}
+            return reply({error:monthly?"monthly_turn_limit":"session_not_active"},status,origin);
+          }
+          if(receiptClaim){
+            let linked=false;
+            try{linked=await linkReceiptTurn(env.PLAN_DB,{...receiptClaim,reservationId:turnReservation.id})}
+            catch{}
+            if(!linked){
+              try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}
+              try{await failReceipt(env.PLAN_DB,{...receiptClaim,status:503})}catch{}
+              return reply({error:"replay_link_failed"},503,origin);
+            }
           }
         }
       }catch{return reply({error:"plans_unavailable"},503,origin)}
@@ -468,14 +504,21 @@ export default {
     // Refund failed Gemini requests only when no later request has consumed this session.
     // This is a conservative, race-safe rollback; a full per-request ledger is a future improvement.
     const aiFailure=async (error,status)=>{
-      if(turnReservation){try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}}
+      if(turnReservation){
+        try{
+          if(receiptClaim)await failReceipt(env.PLAN_DB,{...receiptClaim,status});
+          else await refundSessionTurn(env.PLAN_DB,planUid,turnReservation);
+        }catch{}
+      }
       logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status,
         code:error.error,durationMs:Date.now()-requestStartedAt});
       return reply(error,status,origin);
     };
-    const completeSuccessfulTurn=async()=>{
-      try{return await completeSessionTurn(env.PLAN_DB,planUid,turnReservation)}
-      catch{return false}
+    const completeSuccessfulTurn=async(payload)=>{
+      try{
+        if(receiptClaim)return await completeReceipt(env.PLAN_DB,{...receiptClaim,payload});
+        return await completeSessionTurn(env.PLAN_DB,planUid,turnReservation);
+      }catch{return false}
     };
     // Gemini Free tier should be selected in AI Studio; never enable auto paid billing.
     const controller = new AbortController();
@@ -522,22 +565,24 @@ export default {
         }
         const completed = normalizeProgress(data.progress);
         for (const key of Object.keys(completed)) completed[key] ||= progress[key];
-        if(!await completeSuccessfulTurn())
+        const payload={reply:data.reply.trim(),progress:completed,sceneId:requestedId,coaching:normalizeCoaching(data.coaching)};
+        if(!await completeSuccessfulTurn(payload))
           return aiFailure({error:"quota_commit_failed"},503);
         logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
           code:"ok",durationMs:Date.now()-requestStartedAt});
-        return reply({ reply: data.reply.trim(), progress: completed, sceneId: requestedId, coaching: normalizeCoaching(data.coaching) }, 200, origin);
+        return reply(payload,200,origin);
       }
       const missionState = normalizeFacts(data.missionState);
       // Preserve previously established facts even if model forgets them.
       for (const key of Object.keys(missionState)) {
         missionState[key] = missionState[key] || facts[key];
       }
-      if(!await completeSuccessfulTurn())
+      const payload={reply:data.reply.trim(),missionState,coaching:normalizeCoaching(data.coaching)};
+      if(!await completeSuccessfulTurn(payload))
         return aiFailure({error:"quota_commit_failed"},503);
       logAiOutcome({kind:"conversation",plan:turnReservation?.plan,status:200,
         code:"ok",durationMs:Date.now()-requestStartedAt});
-      return reply({ reply: data.reply.trim(), missionState, coaching: normalizeCoaching(data.coaching) }, 200, origin);
+      return reply(payload,200,origin);
     } catch {
       return aiFailure({ error: "ai_timeout", message: "Gemini API timed out." }, 504);
     } finally {
