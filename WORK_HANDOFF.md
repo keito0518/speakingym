@@ -98,3 +98,13 @@ PR #26 has been merged. Start by checking latest main and the new production CI/
 - Tests: `tests/ai-cost-report.test.mjs`, `tests/scene-request-ids.test.mjs`, `worker/cost-telemetry.test.mjs`. Branch QA 186 tests passed and 0 failed, plus GitHub Checks success. Ops notes: `worker/COST_AND_RETRY_READINESS_2026-10-18.md`.
 - No Stripe live, Gemini paid API, Cloudflare variables, D1 migration, quotas or Firebase data changed. `TURN_LEDGER_MODE` still OFF and D1 migration still unapplied until operator-authorized backup and testing.
 - Next candidate feature: actual server-verified request ID idempotency with privacy/retention review, atomic link to D1 ledger settlement and response-loss recovery; staged with a new migration only after reviewing data model/consent. Then actual Gemini and Cloudflare project traffic/cost measurement and iPhone Safari testing.
+
+
+## Safe server-side request-replay receipt prototype — 2026-10-18
+- PR #32 MERGED to main as `a34b95bf3b75843ef36584b9c85f3bccd280ca2c`: https://github.com/keito0518/speakingym/pull/32.
+- New **UNAPPLIED** `worker/migrations/0003-ai-request-receipts.sql` contains a short-lived receipt table keyed by authenticated UID + session UUID + client request UUID and hashed request body, with 10-minute cached reply expiry and 7-day tombstone expiry.
+- New standalone `worker/request-receipts.js` supports duplicate claim/replay with matching digest, concurrent pending result, mismatch conflict, owner isolation, exact pending-to-completed/failed transition and manual cleanup helper.
+- The module is **NOT imported or invoked by ai-worker.js**; no production answer content is cached by this feature, no production D1 migration was run, no Cloudflare Cron configured, and nothing is enabled. This is deliberately staging-only until privacy/retention consent, Cron cleanup and atomic integration with opt-in 0002 turn ledger are designed and verified.
+- `worker/request-receipts.test.mjs` uses real SQLite to validate concurrent duplication, account isolation, expiry, legacy session ownership, same-payload replay and privacy-safe fingerprinting. GitHub Actions on PR branch showed **197 tests passed, 0 failed**.
+- Review `worker/REQUEST_REPLAY_STAGING_2026-10-18.md` before any activation. Remaining blockers are atomic turn+receipt settlement after Gemini success, browser UX for a pending receipt, consent to temporary assistant-response storage, scheduled deletion, real Cloudflare D1 concurrency, Free session-start failure, actual provider costs and iPhone QA.
+- No change to Stripe LIVE (remains disabled/test), paid Gemini tier, Pro 680JPY price, Free/Pro quotas, D1 production rows, Firebase data, or environment secrets.
