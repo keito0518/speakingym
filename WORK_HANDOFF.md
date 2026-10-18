@@ -46,3 +46,15 @@ PR #26 has been merged. Start by checking latest main and the new production CI/
 - On that exact merged commit, all 10 GitHub checks finished `success`, including Cloudflare Pages, Workers Builds, Pages deploy job, launch-qa browser tests, account safety, UI, and Worker tests.
 - Follow-up change to this handoff is documentation only; the application behavior was not modified after the merge. A new CI/deploy run may be triggered by this documentation edit; verify its result before marking the entire rollout closed.
 - Screenshots of the earlier Work UI transcript showed its browser QA and final branch updates; the GitHub checks and workflow handoff file were used as the authoritative evidence. No Stripe real-payment switch was touched.
+
+
+## Paid-readiness reliability continuation — 2026-10-18
+- New PR: https://github.com/keito0518/speakingym/pull/27 on `feature/pro-reliability-cost-guard-20261018` (based on main `f8cd4f53742f1c6e97ae027688645262aafdd84a`).
+- Implemented a **disabled-by-default**, max-600-second Stripe sandbox outage grace for previously confirmed paid subscriptions; on unpaid/revoked/expired accounts or non-transient failures it remains fail-closed. New tests in `worker/billing.test.mjs`.
+- Implemented a **disabled-by-default** option for server-verified Free/Pro per-UID application rate-limit pools. Distinct counter keys are NOT reserved Gemini capacity. New tests in `worker/plan-limits.test.mjs`.
+- Added structured, privacy-safe `speakingym_ai_outcome_v1` latency/success/failure metrics; kept existing token/cost telemetry. Tests in `worker/cost-telemetry.test.mjs`.
+- Added `scripts/prod-smoke.mjs` + `.github/workflows/production-smoke.yml`: automatic GET-only production home/Worker-health checks on main pushes, with no billable AI calls or user data.
+- Detailed manual review/activation safety gates: `worker/PRO_RELIABILITY_ROLLOUT_2026-10-18.md`.
+- **No changes to live Stripe billing, Gemini paid tier, Cloudflare Secrets, D1 tables/data, existing Free 5 sessions/day, Pro 600 turns/100 coaching, or published 680 JPY price.**
+- Deployment/testing: inspect PR #27 head checks, fix any failures, then merge if clean. After merge, verify the new production GET-only workflow and capture whether public health reports `aiEnabled` and `billingMode`. Do not assert real-user AI chat passed from /health alone. Keep both feature flags OFF until provider capacity/paid billing and customer policy are explicitly approved.
+- Remaining blockers: real Gemini production cost p95 and AI Studio project quotas, isolated paid upstream capacity and billing budget, client-safe per-request idempotency and D1 migration for failed turn refunds, Free-plan product-policy decision, real iPhone/multidevice QA, live Stripe sandbox renewal/failure test and final **explicit** authorization for actual charges.
