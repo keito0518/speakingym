@@ -28,9 +28,10 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
+  if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
   state.calls.push([url,opt]);const path=new URL(url).pathname.replace('/v1/','');let result;
   if(path==='prices/price_test')result=state.price;
   else if(path==='invoices/in_test')result=state.invoice;
@@ -316,4 +317,28 @@ test('stale cached test Pro expires closed and can be refreshed without a second
  assert.equal(status.pro,true);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
  assert.equal(f.state.sessions.size,1);
+});
+
+test('opt-in brief Stripe outage grace keeps only a previously paid unexpired Pro account working',async t=>{
+ const f=await fixture(t);
+ await f.call('checkout');
+ f.state.subscriptions=[active()];
+ assert.equal((await (await f.call('status','GET')).json()).pro,true);
+ f.db.sqlite.prepare("UPDATE billing_accounts SET synced_at=? WHERE uid='student'").run(time()-130);
+ f.state.stripeUnavailable=true;
+ const id=await f.token();
+ const entitlement=()=>worker.fetch(new Request('https://worker.example/entitlement',{headers:{Origin:origin,Authorization:'Bearer '+id}}),f.env);
+ // No implicit grace: existing fail-closed behavior remains unchanged.
+ assert.equal((await entitlement()).status,503);
+ f.env.BILLING_GRACE_SECONDS='300';
+ const usable=await entitlement();
+ assert.equal(usable.status,200);
+ assert.equal((await usable.json()).plan,'pro');
+ // The grace never revives a revoked grant or a paid period past its real expiry.
+ f.db.sqlite.prepare("UPDATE billing_accounts SET entitled=0 WHERE uid='student'").run();
+ assert.equal((await entitlement()).status,503);
+ f.db.sqlite.prepare("UPDATE billing_accounts SET entitled=1,period_end=? WHERE uid='student'").run(time()-1);
+ assert.equal((await entitlement()).status,503);
+ f.db.sqlite.prepare("UPDATE billing_accounts SET period_end=?,synced_at=? WHERE uid='student'").run(time()+3600,time()-900);
+ assert.equal((await entitlement()).status,503);
 });
