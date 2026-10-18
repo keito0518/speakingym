@@ -5,6 +5,9 @@
  * before opting in. Never log raw bodies, response_json, user IDs or hashes.
  */
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Replay is doubly gated; turning this on requires 0002, 0003 and 0004 first.
+export const replayMode=env=>env?.AI_REPLAY_MODE==='enabled' && env?.TURN_LEDGER_MODE==='enabled' && env?.ENFORCE_PLANS==='true';
+
 const MAX_JSON=8192;
 const RECEIPT_SECONDS=7*24*3600;
 const REPLY_SECONDS=10*60;
@@ -52,6 +55,30 @@ export async function receiptSchemaReady(db){
    'response_json','turn_reservation_id','created_at','expires_at','response_expires_at']
    .every(name=>columns.has(name));
  }catch{return false}
+}
+/** Checks the exact schema needed for atomic receipt + quota settlement. */
+export async function replayBridgeReady(db){
+ if(!await receiptSchemaReady(db))return false;
+ try{
+  const result=await db.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name IN ('ai_request_receipt_complete_turn','ai_request_receipt_fail_turn')").all();
+  const names=new Set((result?.results||result||[]).map(row=>row.name));
+  return names.has('ai_request_receipt_complete_turn')&&names.has('ai_request_receipt_fail_turn');
+ }catch{return false}
+}
+/** Bind an already-reserved turn to its sole authenticated request ID.
+ * On crash before this step, the older ledger's stale-turn refund provides
+ * conservative recovery. The caller must never issue Gemini before linkage.
+ */
+export async function linkReceiptTurn(db,{uid,sessionId,requestId,digest,reservationId}){
+ if(!validReceiptKey({uid,sessionId,requestId})||!UUID.test(reservationId||'')||
+  !/^[a-f0-9]{64}$/.test(digest||''))return false;
+ const row=await db.prepare(
+  "UPDATE ai_request_receipts SET turn_reservation_id=? WHERE uid=? AND session_id=? "+
+  "AND request_id=? AND body_sha256=? AND state='pending' AND turn_reservation_id IS NULL "+
+  "AND EXISTS(SELECT 1 FROM ai_turn_reservations WHERE id=? AND uid=? AND session_id=? AND state='reserved') "+
+  "RETURNING request_id"
+ ).bind(reservationId,uid,sessionId,requestId,digest,reservationId,uid,sessionId).first();
+ return !!row;
 }
 function receiptOutcome(row,digest,now){
  if(row.body_sha256!==digest)return {kind:'conflict'};
