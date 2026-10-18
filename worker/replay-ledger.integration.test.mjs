@@ -155,7 +155,7 @@ test('receipt settles its own reserved turn, rejects missing link and refuses cr
  assert.ok(reservation);assert.equal(f.turns(id),1);
  const args={uid:'u',sessionId:id,requestId:rid,digest:receipt.digest};
  assert.equal(await linkReceiptTurn(f.d1,{...args,uid:'other',reservationId:reservation.id}),false);
- assert.equal(await completeReceipt(f.d1,{...args,payload:{reply:'hello'}}),false);
+ await assert.rejects(completeReceipt(f.d1,{...args,payload:{reply:'hello'}}),/receipt_turn_not_reserved/);
  assert.equal(f.states()[0],'reserved');
  assert.equal(await linkReceiptTurn(f.d1,{...args,reservationId:reservation.id}),true);
  assert.equal(await linkReceiptTurn(f.d1,{...args,reservationId:reservation.id}),false);
