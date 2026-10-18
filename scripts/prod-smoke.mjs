@@ -67,7 +67,8 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   assert.ok(Array.isArray(data.sceneIds)&&new Set(data.sceneIds).size>=16,'16 unique Worker scenes required');
   assert.ok(['test','disabled'].includes(data.billingMode),'Live billing must stay disabled');
   return {status:data.status,scenes:data.sceneIds.length,model:data.model,
-   aiConfigured:data.aiConfigured,billingMode:data.billingMode};
+   aiConfigured:data.aiConfigured,billingMode:data.billingMode,
+   turnLedgerEnabled:data.turnLedgerEnabled,turnLedgerSchemaReady:data.turnLedgerSchemaReady};
  });
  const guest=await fetcher(API+'entitlement',{headers:{Origin:SITE.slice(0,-1)},cache:'no-store',signal:AbortSignal.timeout(12000)});
  assert.equal(guest.status,401,'Unauthenticated entitlement must return HTTP 401');
