@@ -3,6 +3,7 @@
  * document is allowed to elevate a user's tier. Free-tier Cloudflare D1 only.
  * ENFORCE_PLANS=true activates these checks after D1 setup is complete.
  */
+import {ledgerMode,reserveTurn,finishTurn,refundTurn,expireStaleTurns} from "./turn-ledger.js";
 const PROJECT_ID="speakingym";
 const JWKS_URL="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const ISSUER="https://securetoken.google.com/"+PROJECT_ID;
@@ -140,6 +141,10 @@ export async function startSession(db,uid,env={}){
 export async function consumeSessionTurn(db,uid,id,env={}){
  if(typeof id!=="string"||!/^[0-9a-f-]{36}$/.test(id))return false;
  const tier=await getPlan(db,uid,env),now=Math.floor(Date.now()/1000);
+ if(ledgerMode(env)){
+  await expireStaleTurns(db,uid);
+  return reserveTurn(db,{uid,sessionId:id,tier});
+ }
  if(tier==="pro"){
   const month=tokyoMonthBounds();
   // Single SQLite statement enforces monthly total even for concurrent requests.
@@ -156,8 +161,14 @@ export async function consumeSessionTurn(db,uid,id,env={}){
  ).bind(id,uid,now).first();
  return row?{turn:Number(row.turns),sessionId:id,plan:tier}:null;
 }
-/** Conservative atomic rollback: never decrement a turn if a newer turn exists. */
+/** Complete only this exact ledger reservation after validated AI success. */
+export async function completeSessionTurn(db,uid,reservation){
+ if(!reservation?.ledger)return true;
+ return finishTurn(db,uid,reservation);
+}
+/** Legacy conservative rollback; new opt-in ledger refunds by exact ID. */
 export async function refundSessionTurn(db,uid,reservation){
+ if(reservation?.ledger)return refundTurn(db,uid,reservation);
  if(!reservation||!Number.isInteger(reservation.turn)||reservation.turn<1||typeof reservation.sessionId!=="string")return false;
  const row=await db.prepare("UPDATE ai_sessions SET turns=turns-1 WHERE id = ? AND uid = ? AND turns = ? AND turns > 0 RETURNING turns")
   .bind(reservation.sessionId,uid,reservation.turn).first();
