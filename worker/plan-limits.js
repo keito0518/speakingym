@@ -149,12 +149,12 @@ export async function consumeSessionTurn(db,uid,id,env={}){
    "AND turns < 20 AND day >= ? AND day < ? "+
    "AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) < ? RETURNING turns"
   ).bind(id,uid,now,month.start,month.end,uid,month.start,month.end,PLAN_LIMITS.pro.monthlyTurns).first();
-  return row?{turn:Number(row.turns),sessionId:id}:null;
+  return row?{turn:Number(row.turns),sessionId:id,plan:tier}:null;
  }
  const row=await db.prepare(
   "UPDATE ai_sessions SET turns=turns+1 WHERE id = ? AND uid = ? AND expires_at > ? AND turns < 20 RETURNING turns"
  ).bind(id,uid,now).first();
- return row?{turn:Number(row.turns),sessionId:id}:null;
+ return row?{turn:Number(row.turns),sessionId:id,plan:tier}:null;
 }
 /** Conservative atomic rollback: never decrement a turn if a newer turn exists. */
 export async function refundSessionTurn(db,uid,reservation){
