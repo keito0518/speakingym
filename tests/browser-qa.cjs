@@ -1,17 +1,17 @@
 // Run against local HTTP server; external APIs are blocked, no real users or quotas.
-const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');
+const {chromium,webkit,devices}=require('playwright');const engine=process.env.SPEAKINGYM_BROWSER_ENGINE||'chromium';const assert=require('node:assert/strict');const fs=require('node:fs');
 (async()=>{
- const browser=await chromium.launch({headless:true});fs.mkdirSync('qa-screenshots',{recursive:true});const results=[];
+ assert.ok(['chromium','webkit'].includes(engine),'Only offline Chromium/WebKit QA is allowed');const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});fs.mkdirSync('qa-screenshots',{recursive:true});const results=[];
  try{for(const width of [390,1280]){
-  const context=await browser.newContext({viewport:{width,height:900}});
+  const context=await browser.newContext(engine==='webkit'&&width===390?{...devices['iPhone 13'],viewport:{width,height:900}}:{viewport:{width,height:900}});
   await context.route('https://**/*',r=>r.abort());
   await context.addInitScript(()=>{const listeners={};window.__spoken=[];window.SpeechSynthesisUtterance=class{constructor(text){this.text=text}};Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{name:'Basic',lang:'en-US',voiceURI:'basic',localService:true},{name:'Natural English',lang:'en-GB',voiceURI:'natural'}],addEventListener:(n,f)=>listeners[n]=f,speak:u=>window.__spoken.push({text:u.text,voice:u.voice?.voiceURI,rate:u.rate}),cancel(){},paused:false}})});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  for(const path of ['index.html','account.html','phrasebook.html','scenes.html?scene=taxi','reflex.html']){
+  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','reflex.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
    if(path.startsWith('scenes')){assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-scene]').count(),16)}
-   await page.screenshot({path:'qa-screenshots/'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
+   await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
   await page.selectOption('#mode','カフェ');await page.click('#start');assert.match(await page.locator('#category').textContent(),/^カフェ \/ STANDARD$/);
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
@@ -23,5 +23,5 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   await page.selectOption('#source','AIの言い換え');assert.equal(await page.locator('#phrases article').count(),1);await page.getByRole('button',{name:'保存解除',exact:true}).click();assert.equal(await page.evaluate(()=>window.speakingymPhrases.list().length),1);
   assert.deepEqual(errors,[]);await context.close();
  }}finally{await browser.close()}
- console.log(JSON.stringify({results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
+ console.log(JSON.stringify({engine,results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});
