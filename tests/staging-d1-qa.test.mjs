@@ -81,7 +81,7 @@ test('reject expired or disabled token before any D1 access', async()=>{
     });
     await assert.rejects(db.verify(),/token status is not active/);
     assert.equal(calls.length,1);
-    assert.match(calls[0],/user\\/tokens\\/verify/);
+    assert.ok(calls[0].includes('/user/tokens/verify'));
     assert.equal(db.verified,false);
   }
 });
