@@ -17,7 +17,7 @@ const section = (text,start,end) => {
 };
 
 test('staging Worker has a distinct name, entry point and D1 database',()=>{
-  assert.equal(key(staging,'name'),'speakingym-survival-ai-staging');
+  assert.equal(key(section(staging,'# Separate Worker','[[ratelimits]]'),'name'),'speakingym-survival-ai-staging');
   assert.equal(key(staging,'main'),'ai-worker.js');
   assert.equal(key(staging,'database_name'),'speakingym-plans-staging');
   assert.equal(key(staging,'database_id'),'c608774e-3bc5-4527-be8d-f640e386f504');
@@ -49,7 +49,7 @@ test('staging throttling uses isolated namespaces distinct from production',()=>
 });
 
 test('existing production deployment configuration remains on its own database',()=>{
-  assert.equal(key(production,'name'),'speakingym-survival-ai');
+  assert.equal(key(section(production,'name =','[[ratelimits]]'),'name'),'speakingym-survival-ai');
   assert.equal(key(production,'database_name'),'speakingym-plans');
   assert.equal(key(production,'database_id'),'62419d42-703c-4e41-af47-736fd1738d7e');
   assert.notEqual(key(production,'database_id'),key(staging,'database_id'));
