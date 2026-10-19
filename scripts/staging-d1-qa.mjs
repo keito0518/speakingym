@@ -62,6 +62,18 @@ export class StagingD1 {
     return json.result;
   }
   async verify() {
+    // Auth is verified separately, without opening any D1 database or writing data.
+    // Return safe categories only; never print token contents or account/user data.
+    let tokenStatus;
+    try {
+      tokenStatus = await this.call('https://api.cloudflare.com/client/v4/user/tokens/verify', 'GET');
+    } catch (error) {
+      throw new Error('STOP: API token verification failed (' + error.message +
+        '). Check the staging-d1 GitHub secret, token expiration, and IP restrictions. No D1 write attempted.');
+    }
+    if (tokenStatus?.status !== 'active') {
+      throw new Error('STOP: Cloudflare token status is not active. No D1 write attempted.');
+    }
     const db = await this.call(ROOT, 'GET');
     validateStagingIdentity(db);
     const objects = await this.queryUnverified('SELECT name FROM sqlite_master WHERE name IN (' +
