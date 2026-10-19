@@ -16,6 +16,7 @@ function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerRead
   ['plans.html','料金・利用プラン 680円'],
   ['speech-settings.js','window.speakingymSpeech = {}; window.speechSynthesis'],
   ['phrasebook.js','window.speakingymPhrases = {}; localStorage'],
+  ['analytics-events.js','window.speakingymAnalytics = {}; sg_ai_first_reply'],
   ['robots.txt','User-agent: *\nAllow: /\nSitemap: https://speakingym.pages.dev/sitemap.xml'],
   ['sitemap.xml','<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://speakingym.pages.dev/scenes.html</loc></url></urlset>']
  ]);
@@ -35,11 +36,11 @@ function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerRead
  };
  return {fetcher,requests};
 }
-test('read-only smoke covers 10 public assets, 16 scenes, production readiness and authentication',async()=>{
+test('read-only smoke covers 11 public assets, 16 scenes, production readiness and authentication',async()=>{
  const {fetcher,requests}=fakeFetch();
  const result=await runSmoke(fetcher,{maxAttempts:1,retryDelayMs:0,logger:silent});
- assert.equal(result.pages,10);assert.equal(result.health.billingMode,'test');
- assert.equal(requests.length,13);
+ assert.equal(result.pages,11);assert.equal(result.health.billingMode,'test');
+ assert.equal(requests.length,14);
  assert.equal(requests.some(x=>x.init.method==='POST'),false);
  assert.equal(requests.some(x=>x.url.includes('gemini')),false);
  const guest=requests.find(x=>x.url===api+'entitlement'&&x.init.method!=='OPTIONS');
