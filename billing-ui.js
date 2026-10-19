@@ -25,9 +25,12 @@
    const data=await api('status');if(seq!==sequence)return;
    checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
    buy.disabled=busy||!checkoutAllowed;
-   buy.textContent=data.pro?'テストProを利用中':'Proにテスト登録（月680円・実請求なし）';portal.hidden=!data.hasCustomer;
+   const live=data.mode==='live';
+   buy.textContent=data.pro?'Proを利用中':(live?'Proに申し込む（月680円・税込）':'Proにテスト登録（月680円・実請求なし）');portal.hidden=!data.hasCustomer;
    const states={active:'契約は有効ですが、Pro権限の確認が未完了です。',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
-   status.textContent='サンドボックス：'+(data.pro?'Pro権限を確認しました。':states[data.status]||'契約状態を確認中です。');
+   status.textContent=(live?'有料プラン：':'サンドボックス：')+(data.pro?'Pro権限を確認しました。':states[data.status]||'契約状態を確認中です。');
+   const badge=$('sg-pro-availability');
+   if(badge&&live){badge.textContent='申込受付中';badge.classList.remove('wait')}
    if(data.status==='active'&&!data.pro){
     const reasons={invoice_missing:'請求書情報が取得できていません',invoice_unpaid:'Stripeの支払い確認が完了していません',
      period_invalid:'契約の有効期限を確認できません',price_mismatch:'契約の価格IDが一致しません',
