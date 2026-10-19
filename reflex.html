@@ -168,6 +168,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 </main>
 <script src="./speech-settings.js"></script>
 <script src="./phrasebook.js"></script>
+<script src="./analytics-events.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -1195,6 +1196,7 @@ function start(onlyMissed=false){
  const old=readJSON(MISSES_KEY,[]);
  const choice=onlyMissed&&Array.isArray(old)?cards.filter(c=>old.includes(c.id)):deck();
  activePool=choice.length?choice:deck();pile=shuffle(activePool);
+ window.speakingymAnalytics?.track("sg_sprint_start",{mode:onlyMissed?"weak_review":"standard"});
  pane("playPane");clock();nextCard();
  ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);
 }
@@ -1249,6 +1251,7 @@ function finish(early){
  $("weakOnly").hidden=!updated.length;
  const session={date:new Date().toISOString(),level:chosenLevel,attempts:attempts.map(x=>({...x}))};
  saveSession(session);
+ window.speakingymAnalytics?.track("sg_sprint_complete",{result:early?"early":"timer"});
  openReview(session);
 }
 $("micBtn").addEventListener("click",()=>microphone(true));
