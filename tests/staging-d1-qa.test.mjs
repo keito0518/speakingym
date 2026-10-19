@@ -86,6 +86,44 @@ test('reject expired or disabled token before any D1 access', async()=>{
   }
 });
 
+test('account-owned token gets its own documented verification endpoint before staging DB', async()=>{
+  const calls=[];
+  const db=new StagingD1('mock-account-token',async url=>{
+    calls.push(url);
+    if (url.endsWith('/user/tokens/verify')) {
+      return {ok:false,status:400,json:async()=>({errors:[{code:1011,message:'REDACT ME'}]})};
+    }
+    if (url.endsWith('/accounts/324c7361cbbaecd8240688b8bd588ef3/tokens/verify')) {
+      return {ok:true,json:async()=>({success:true,result:{status:'active'}})};
+    }
+    if (url.endsWith('/database/c608774e-3bc5-4527-be8d-f640e386f504')) {
+      return {ok:true,json:async()=>({success:true,result:{name:STAGING_NAME,uuid:STAGING_DATABASE_ID}})};
+    }
+    return {ok:true,json:async()=>({success:true,result:[{success:true,results:objects}]})};
+  });
+  await db.verify();
+  assert.equal(db.verified,true);
+  assert.equal(calls.length,4);
+  assert.ok(calls[0].endsWith('/user/tokens/verify'));
+  assert.ok(calls[1].endsWith('/accounts/324c7361cbbaecd8240688b8bd588ef3/tokens/verify'));
+  assert.ok(calls[2].includes(STAGING_DATABASE_ID));
+});
+
+test('both verification endpoints reject: report only numeric codes and never touch D1', async()=>{
+  const calls=[];
+  const db=new StagingD1('mock-secret-unprinted',async url=>{
+    calls.push(url);
+    return {ok:false,status:400,json:async()=>({errors:[{code:1012,message:'very sensitive message mock-secret-unprinted'}]})};
+  });
+  await assert.rejects(db.verify(),e=>
+    e.message.includes('HTTP 400 (codes 1012)')
+    && !e.message.includes('mock-secret-unprinted')
+    && !e.message.includes('very sensitive message'));
+  assert.equal(calls.length,2);
+  assert.ok(calls.every(url=>url.endsWith('/tokens/verify')));
+  assert.equal(db.verified,false);
+});
+
 // Exercise the *actual QA runner* with SQLite, not just its guards. Real remote
 // Cloudflare D1 remains a separately gated workflow_dispatch check.
 test('complete staging QA runner verifies invariants and removes only its fake users',async()=>{
