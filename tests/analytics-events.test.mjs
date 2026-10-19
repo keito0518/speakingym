@@ -7,7 +7,7 @@ const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const adapter=source('analytics-events.js');
 function load(gtag){
   const window={};
-  if(gtag!==undefined)window.gtag=gtag;
+  if(gtag!==undefined){window.gtag=gtag;window.SPEAKINGYM_GA4_READY=true;}
   vm.runInNewContext(adapter,{window});
   return window;
 }
@@ -34,6 +34,11 @@ test('only approved events and enum parameters can reach gtag; arbitrary PII is 
   ['event','sg_ai_scene_start',{}],
   ['event','sg_ai_first_reply',{}]
  ]);
+});
+test('foreign analytics tags never receive speakingym events without explicit site activation',()=>{
+ const window={gtag(){throw Error('unexpected vendor')},SPEAKINGYM_GA4_READY:false};
+ vm.runInNewContext(adapter,{window});
+ assert.equal(window.speakingymAnalytics.track('sg_sprint_start',{mode:'standard'}),false);
 });
 test('gtag failure cannot interrupt practice',()=>{
  const win=load(()=>{throw Error('analytics unavailable')});
