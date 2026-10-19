@@ -108,6 +108,8 @@
     renderSettings();
     const yes = doc.getElementById?.("sg-analytics-accept");
     const no = doc.getElementById?.("sg-analytics-decline");
+    if (yes) yes.disabled = false;
+    if (no) no.disabled = false;
     yes?.addEventListener("click", accept);
     no?.addEventListener("click", function () {
       const wasActive = root.SPEAKINGYM_GA4_READY === true;
