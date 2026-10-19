@@ -41,6 +41,8 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   ['speech-settings.js','speech',/window\.speakingymSpeech/,/speechSynthesis/],
   ['phrasebook.js','phrases',/window\.speakingymPhrases/,/localStorage/],
   ['analytics-events.js','analytics',/speakingymAnalytics/,/sg_ai_first_reply/],
+  ['analytics-config.js','ga4-config',/SPEAKINGYM_GA4_ID/,/Empty means OFF/],
+  ['analytics-loader.js','ga4-loader',/SPEAKINGYM_GA4_READY/,/www.googletagmanager.com/],
   ['robots.txt','robots',/User.agent:/,/Sitemap:/],
   ['sitemap.xml','sitemap',/urlset/,/scenes.html/]
  ];
