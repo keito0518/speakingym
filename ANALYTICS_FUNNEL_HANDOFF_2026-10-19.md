@@ -1,10 +1,19 @@
 # Speakingym Free beta: conversion analytics preparation (2026-10-19)
 
+## Optional analytics consent — safety follow-up
+- Added **explicit per-browser opt-in** before loading the Google Analytics script if and only if the Speakingym-specific ID is set. No ID or no visitor consent means zero GA4 script loading and zero practice event sending.
+- A small dismissible choice banner is shown on supported pages only after a valid ID is set. Both "同意する" and "同意しない" preserve full access to Free practice; refusal is recorded only in local browser storage.
+- Consent can be changed at `privacy.html#analytics-settings`. Revoking from the privacy page disables the custom event bridge immediately and reloads to unload GA4; users can clear prior GA4 cookies via browser site data.
+- Reworked tests cover unknown, refused, previously accepted, revocation, localStorage errors, unrelated pre-existing gtag and new privacy controls.
+- The GA4 ID remains **blank** in `analytics-config.js`. The visitor consent feature is likewise dormant until the owner supplies and approves an ID. Do not claim that GA4 is collecting visitors now.
+- This choice mechanism addresses optional analytics only. The essential Firebase login, Cloudflare security and user-requested AI inference are not affected.
+
+
 ## Default-off GA4 loader — 2026-10-19 follow-up
 - New `analytics-config.js` is `window.SPEAKINGYM_GA4_ID = ""` (**OFF**).
-- New `analytics-loader.js` is included on 12 user-facing pages and loads GA4 only if a valid, explicitly set Speakingym-specific `G-...` measurement ID exists. No third-party analytics SDK/cookie/network request occurs with the empty default value.
+- New `analytics-loader.js` is included on 12 user-facing pages and loads GA4 only if a valid, explicitly set Speakingym-specific `G-...` measurement ID exists **and the visitor has opted in**. No third-party analytics SDK/cookie/network request occurs with the empty default value.
 - `analytics-events.js` now requires `SPEAKINGYM_GA4_READY === true` in addition to `gtag`; an unrelated pre-existing tag is insufficient. Only the fixed five event names and enum parameters are allowed.
-- Valid IDs will load Google Analytics and send **page view data** in addition to the allowlisted event milestones. Google Analytics may process device/browser data and set cookies, so update `privacy.html`, verify the legal basis and regional consent requirements, and obtain owner confirmation **before** filling the ID.
+- Valid IDs trigger the consent interface; **only users who opt in** load Google Analytics and send page views and the allowlisted event milestones. Google Analytics may process device/browser data and set cookies, so update `privacy.html`, verify the legal basis and regional consent requirements, and obtain owner confirmation **before** filling the ID.
 - Google signals and ad personalization are explicitly disabled in the app's GA4 configuration; this does **not** make GA4 cookieless.
 - No repository contents, connected Gmail search, or connector discovery yielded an existing Speakingym GA4 measurement ID. **Do not reuse** an ID for another website. Ownership of Cloudflare dashboard-managed Web Analytics also remains unverified.
 - Setup after owner provides a proper Speakingym stream ID: update privacy disclosure, set `analytics-config.js`, review changes/tests, merge, confirm production realtime visitors and individual event counts. A stream ID is public configuration, **not an API secret**.
