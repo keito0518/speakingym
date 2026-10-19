@@ -1,5 +1,5 @@
 /**
- * Staging-only idempotency receipt primitives. NOT called from ai-worker.js.
+ * Opt-in idempotency receipt primitives, integrated with ai-worker.js.
  * Database migration 0003, consent to short-lived AI response storage,
  * automatic cleanup scheduling, and 0002 turn-ledger rollout are mandatory
  * before opting in. Never log raw bodies, response_json, user IDs or hashes.

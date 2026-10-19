@@ -64,6 +64,13 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   assert.equal(typeof data.turnLedgerEnabled,'boolean','Ledger switch status must be available');
   assert.equal(typeof data.turnLedgerSchemaReady,'boolean','D1 ledger migration status must be available');
   if(data.turnLedgerEnabled)assert.equal(data.turnLedgerSchemaReady,true,'Ledger must not run before D1 migration');
+  assert.equal(typeof data.freeSessionRequested,'boolean');
+  assert.equal(typeof data.freeSessionEnabled,'boolean');
+  assert.equal(typeof data.freeSessionSchemaReady,'boolean');
+  if(data.freeSessionRequested){
+   assert.equal(data.freeSessionEnabled,true,'Free session recovery requires turn ledger enforcement');
+   assert.equal(data.freeSessionSchemaReady,true,'Free session recovery requires migration 0005');
+  }
   assert.equal(typeof data.aiReplayRequested,'boolean','Replay request switch must be available');
   assert.equal(typeof data.aiReplayEnabled,'boolean','Replay activation state must be available');
   assert.equal(typeof data.aiReplaySchemaReady,'boolean','Atomic replay bridge must be verifiable');
@@ -76,6 +83,7 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   return {status:data.status,scenes:data.sceneIds.length,model:data.model,
    aiConfigured:data.aiConfigured,billingMode:data.billingMode,
    turnLedgerEnabled:data.turnLedgerEnabled,turnLedgerSchemaReady:data.turnLedgerSchemaReady,
+   freeSessionRequested:data.freeSessionRequested,freeSessionEnabled:data.freeSessionEnabled,freeSessionSchemaReady:data.freeSessionSchemaReady,
    aiReplayRequested:data.aiReplayRequested,aiReplayEnabled:data.aiReplayEnabled,
    aiReplaySchemaReady:data.aiReplaySchemaReady};
  });

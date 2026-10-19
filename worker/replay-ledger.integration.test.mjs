@@ -190,7 +190,7 @@ test('scheduled handler is OFF by default and purges only expired reply data whe
   .run(time()-1,time()+3600);
  await worker.scheduled(null,{...f.env,AI_REPLAY_MODE:'disabled'});
  assert.ok(f.receipts()[0].response_json,'OFF: no D1 mutation');
- await worker.scheduled(null,f.env);
+ await worker.scheduled(null,{...f.env,AI_REPLAY_MODE:'disabled',REPLAY_CLEANUP_MODE:'enabled'});
  assert.equal(f.receipts()[0].response_json,null,'expired content must be redacted');
  assert.equal(f.turns(session),originalTurns,'cleanup cannot touch quota');
  f.sqlite.prepare('UPDATE ai_request_receipts SET expires_at=?').run(time()-1);

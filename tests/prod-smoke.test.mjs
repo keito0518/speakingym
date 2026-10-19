@@ -5,7 +5,7 @@ import {runSmoke} from '../scripts/prod-smoke.mjs';
 const site='https://speakingym.pages.dev/';
 const api='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
 const silent={log(){},warn(){}};
-function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerReady=false,replayRequested=false,replayReady=false}={}){
+function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerReady=false,replayRequested=false,replayReady=false,freeRequested=false,freeReady=false}={}){
  const requests=[];
  const pages=new Map([
   ['', '<title>Speakingym</title>60秒チャレンジ'],
@@ -25,6 +25,7 @@ function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerRead
   }
   if(url===api+'health')return Response.json({status:'ok',quotaVersion:'pro-monthly-600-100-v2',
    aiEnabled:ready,aiConfigured:ready,keyConfigured:ready,plansEnabled:true,plansReady:true,
+   freeSessionRequested:freeRequested,freeSessionEnabled:freeRequested&&ledgerEnabled,freeSessionSchemaReady:freeReady,
    billingMode,turnLedgerEnabled:ledgerEnabled,turnLedgerSchemaReady:ledgerReady,aiReplayRequested:replayRequested,aiReplayEnabled:replayRequested&&ledgerEnabled,aiReplaySchemaReady:replayReady,model:'gemini-3.5-flash-lite',
    sceneIds:Array.from({length:16},(_,i)=>'scene'+i)});
   if(url.startsWith(site)&&pages.has(url.slice(site.length)))return new Response(pages.get(url.slice(site.length)),{status:200});
@@ -68,4 +69,12 @@ test('production accepts replay only with turn ledger and D1 replay triggers rea
  const result=await runSmoke(fetcher,{maxAttempts:1,retryDelayMs:0,logger:silent});
  assert.equal(result.health.aiReplayEnabled,true);
  assert.equal(result.health.aiReplaySchemaReady,true);
+});
+
+test('Free session recovery requires ledger and migration; flag off is compatible',async()=>{
+ for(const options of [{freeRequested:true},{freeRequested:true,ledgerEnabled:true,ledgerReady:true}]){
+  await assert.rejects(runSmoke(fakeFetch(options).fetcher,{maxAttempts:1,logger:silent}),/Production smoke failed/);
+ }
+ const result=await runSmoke(fakeFetch({freeRequested:true,freeReady:true,ledgerEnabled:true,ledgerReady:true}).fetcher,{maxAttempts:1,logger:silent});
+ assert.equal(result.health.freeSessionEnabled,true);
 });

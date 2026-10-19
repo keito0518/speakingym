@@ -1,6 +1,7 @@
+import {freeSessionMode,freeSessionSchemaReady} from "./free-session-reservations.js";
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {ledgerMode,ledgerSchemaReady} from "./turn-ledger.js";
-import {replayMode,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt,purgeReceipts} from "./request-receipts.js";
+import {replayMode,receiptSchemaReady,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt,purgeReceipts} from "./request-receipts.js";
 import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
@@ -315,7 +316,7 @@ export default {
     if (path === "/health" && request.method === "GET") {
       const turnLedgerSchemaReady=await ledgerSchemaReady(env.PLAN_DB);
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
     }
     // Stripe server callbacks have no browser Origin; signature verification is mandatory.
     if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
@@ -395,6 +396,8 @@ export default {
     // Otherwise Gemini might be called without an authenticated quota guard.
     if(env.AI_REPLAY_MODE==="enabled" && !replayMode(env))
       return reply({error:"replay_not_ready"},503,origin);
+    if(env.FREE_SESSION_MODE==="enabled" && !freeSessionMode(env))
+      return reply({error:"free_sessions_not_ready"},503,origin);
     // Reject malformed conversation requests before reserving a paid/limited AI turn.
     // Teacher requests are validated separately before their quota reservation.
     if(body?.action!=="reflex_coach"){
@@ -505,8 +508,8 @@ export default {
       latestUserText: text,
       instructions: "Speak as Emma. Evaluate the cumulative user dialogue and confirmed facts. Keep it natural."
     };
-    // Refund failed Gemini requests only when no later request has consumed this session.
-    // This is a conservative, race-safe rollback; a full per-request ledger is a future improvement.
+    // Ledger refunds settle this exact turn; optional Free-session triggers release its first-attempt slot.
+    // Only the legacy path uses conservative counter rollback.
     const aiFailure=async (error,status)=>{
       if(turnReservation){
         try{
@@ -596,8 +599,9 @@ export default {
   async scheduled(_event,env){
     // The separate Cloudflare Cron trigger must be configured during activation;
     // merely deploying this function schedules nothing and changes no current data.
-    if(!replayMode(env)||!env.PLAN_DB)return;
-    if(!await ledgerSchemaReady(env.PLAN_DB)||!await replayBridgeReady(env.PLAN_DB))return;
+    if((!replayMode(env)&&env.REPLAY_CLEANUP_MODE!=='enabled')||!env.PLAN_DB)return;
+    // Cleanup can remain on during replay rollback; it never changes quota rows.
+    if(!await receiptSchemaReady(env.PLAN_DB))return;
     await purgeReceipts(env.PLAN_DB);
   }
 };

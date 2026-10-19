@@ -14,12 +14,12 @@ test("new dashboard displays real records with meaningful call to action",()=>{
   "speakingym-scenes-stats-v1":{total:4,hotel_standard_completed:2},
   "speakingym-survival-stats-v1":{attempts:10,clears:5},
   "speakingym-reflex-history-v1":[
-   {date:"2026-10-15T01:00:00Z",level:"challenge",attempts:[{outcome:"spoken"},{outcome:"stuck"}]},
-   {date:"2026-10-14T12:00:00Z",level:"easy",attempts:[{outcome:"spoken"}]},
-   {date:"2026-10-11T04:00:00Z",level:"standard",attempts:[{outcome:"stuck"}]}
+   {date:new Date(2026,9,15,10).toISOString(),level:"challenge",attempts:[{outcome:"spoken"},{outcome:"stuck"}]},
+   {date:new Date(2026,9,14,10).toISOString(),level:"easy",attempts:[{outcome:"spoken"}]},
+   {date:new Date(2026,9,11,10).toISOString(),level:"standard",attempts:[{outcome:"stuck"}]}
   ],
   "speakingym-reflex-ai-teacher-v1":[{
-   date:"2026-10-15T01:00:00Z",
+   date:new Date(2026,9,15,10).toISOString(),
    notes:[{attemptIndex:0,feedback:{
     praise:"Could you を使えていて丁寧です。",
     improvement:"少し短くすると自然です。",
@@ -59,7 +59,7 @@ test("malformed histories and future activity cannot give bogus streak or AI gra
   "speakingym-reflex-history-v1":[
    {date:"bad",attempts:[]},
    {date:"2031-12-09T00:00:00Z",attempts:[]},
-   {date:"2026-10-15T03:30:00Z",level:"standard",attempts:[{outcome:"unanswered"}]}
+   {date:new Date(2026,9,15,10).toISOString(),level:"standard",attempts:[{outcome:"unanswered"}]}
   ],
   "speakingym-reflex-ai-teacher-v1":[{date:"2026-10-15",notes:[{feedback:{praise:null,improvement:null}}]}]
  },now);
