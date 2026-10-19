@@ -1,5 +1,7 @@
 /** Stripe bridge. Live mode stays OFF until a separate explicit owner activation. No secret/body logs. */
 import {verifyFirebaseIdToken,billingGraceSeconds,verifiedBillingEntitlement} from './plan-limits.js';
+import {billingMode,billingUserEligible} from './billing-mode.js';
+export {billingMode};
 const SITE='https://speakingym.pages.dev';
 const API_VERSION='2025-06-30.basil';
 const now=()=>Math.floor(Date.now()/1000);
@@ -7,28 +9,8 @@ const fail=(code,status=503)=>Object.assign(new Error(code),{status});
 const stmt=(db,sql,...args)=>db.prepare(sql).bind(...args);
 // Live uses distinct credentials and tables. Nothing defaults to live, even if
 // a Stripe live key is accidentally present in Cloudflare secrets.
-export function billingMode(env={}) {
- if(env.ENFORCE_PLANS!=='true'||!env.PLAN_DB)return 'disabled';
- if(env.BILLING_MODE==='test' &&
-   /^sk_test_/.test(env.STRIPE_SECRET_KEY||'') &&
-   /^whsec_/.test(env.STRIPE_WEBHOOK_SECRET||'') &&
-   /^price_/.test(env.STRIPE_PRICE_ID||'') && !!env.BILLING_TEST_UIDS?.trim())return 'test';
- if(env.BILLING_MODE==='live' && env.LIVE_BILLING_ENABLED==='enabled' &&
-   env.TURN_LEDGER_MODE==='enabled' &&
-   /^sk_live_/.test(env.STRIPE_LIVE_SECRET_KEY||'') &&
-   /^whsec_/.test(env.STRIPE_LIVE_WEBHOOK_SECRET||'') &&
-   /^price_/.test(env.STRIPE_LIVE_PRICE_ID||'') &&
-   (env.BILLING_LIVE_AUDIENCE==='public' ||
-     (env.BILLING_LIVE_AUDIENCE==='invited' && !!env.BILLING_LIVE_UIDS?.trim())))return 'live';
- return 'disabled';
-}
 export const billingConfigured=env=>billingMode(env)!=='disabled';
-export const isTester=(env,uid)=>{
- if(billingMode(env)==='live')
-  return env.BILLING_LIVE_AUDIENCE==='public' ||
-   String(env.BILLING_LIVE_UIDS||'').split(',').map(x=>x.trim()).includes(uid);
- return String(env.BILLING_TEST_UIDS||'').split(',').map(x=>x.trim()).includes(uid);
-};
+export const isTester=(env,uid)=>billingUserEligible(env,uid);
 const liveMode=env=>billingMode(env)==='live';
 const expectedLive=env=>liveMode(env);
 const priceId=env=>liveMode(env)?env.STRIPE_LIVE_PRICE_ID:env.STRIPE_PRICE_ID;
