@@ -1,0 +1,40 @@
+name: Staging D1 automated safety QA
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/staging-d1-qa.mjs'
+      - 'tests/staging-d1-qa.test.mjs'
+      - '.github/workflows/staging-d1-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Staging safety checks without any credentials
+        run: node --test tests/staging-d1-qa.test.mjs worker/free-session-reservations.test.mjs worker/turn-ledger.test.mjs
+  real-staging-d1:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: offline-guards
+    runs-on: ubuntu-latest
+    environment: staging-d1
+    concurrency:
+      group: speakingym-real-staging-d1
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify ONLY staging D1 and run isolated concurrent QA
+        env:
+          SPEAKINGYM_D1_STAGING_TOKEN: ${{ secrets.SPEAKINGYM_D1_STAGING_TOKEN }}
+        run: node scripts/staging-d1-qa.mjs
