@@ -56,6 +56,6 @@ test('AI scene and sprint metadata are correct, nonduplicated and canonical',()=
   assert.deepEqual(links,[origin+'/'+file]);
  }
  assert.match(source('scenes.html'),/content="Speakingymの無料AI英会話。[^"]*16シーン/);
- assert.doesNotMatch(source('scenes.html'),/content="[^"]*6シーン/);
+ assert.doesNotMatch(source('scenes.html'),/の6シーンで/);
  assert.match(source('reflex.html'),/151問から練習/);
 });
