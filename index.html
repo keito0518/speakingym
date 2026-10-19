@@ -61,8 +61,8 @@
   <h1>考える前に、<br><em>ひと言</em>が出る。</h1>
   <p class="lead">暗記だけでは、会話は続かない。<br>AIと話す「実戦」と、とっさの一言を鍛える「瞬発力」。<br>2つのワークアウトで、英語が口から出る自分へ。</p>
   <div class="cta-row">
-   <a class="btn primary" href="./reflex.html">無料で60秒チャレンジ <span aria-hidden="true">↗</span></a>
-   <a class="btn" href="./scenes.html">AIと実戦英会話 <span aria-hidden="true">→</span></a>
+   <a class="btn primary" href="./reflex.html" data-sg-cta="sprint">無料で60秒チャレンジ <span aria-hidden="true">↗</span></a>
+   <a class="btn" href="./scenes.html" data-sg-cta="ai">AIと実戦英会話 <span aria-hidden="true">→</span></a>
   </div>
   <p class="smallline">無料ベータ版。60秒チャレンジはログイン不要・回数制限なし。AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで。Proの一般向け有料登録はまだ開始していません。</p>
  </div>
@@ -137,9 +137,11 @@
 </div></section>
 </main>
 <footer class="footer">© Speakingym · 知ってる英語を、話せる英語に。　<a href="./account.html">マイページ</a>　<a href="./plans.html">利用プラン</a>　<a href="./scenes.html?scene=cafe">カフェでAI英会話</a>　<a href="./classic.html">旧版の練習ツール</a>　<a href="./privacy.html">プライバシー</a>　<a href="./terms.html">利用条件</a>　<a href="./contact.html">お問い合わせ</a></footer>
+<script src="./analytics-events.js"></script>
 <script>
 (()=>{
 "use strict";
+document.querySelectorAll("[data-sg-cta]").forEach(link=>link.addEventListener("click",()=>window.speakingymAnalytics?.track("sg_home_cta",{destination:link.dataset.sgCta})));
 const $=id=>document.getElementById(id);
 function getSaved(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch(e){return null}}
 const words=getSaved("speakingym-saved-coaching-v1");
