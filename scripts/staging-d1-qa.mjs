@@ -80,7 +80,7 @@ export class StagingD1 {
     } catch (userError) {
       // Account-owned API tokens use a different official verification endpoint.
       // Only retry on HTTP 400: do not silently bypass authorization errors.
-      if (!/HTTP 400(?:\\D|$)/.test(userError.message)) {
+      if (!userError.message.includes('HTTP 400')) {
         throw new Error('STOP: user token verification failed (' + userError.message +
           '). Check GitHub secret, token permissions, expiry and IP restrictions. No D1 write attempted.');
       }
