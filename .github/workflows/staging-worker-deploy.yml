@@ -1,0 +1,70 @@
+name: Deploy isolated Speakingym staging Worker (manual only)
+
+# No push, PR, schedule or automatic deployment trigger.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY_STAGING_ONLY (never deploy production)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speakingym-staging-worker-only
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    # Manual main-only execution with an exact confirmation phrase.
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY_STAGING_ONLY'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate independent staging name, database, flags and smoke tests
+        run: node --test worker/staging-worker-config.test.mjs tests/staging-worker-smoke.test.mjs tests/staging-worker-deploy-workflow.test.mjs
+      - name: Dry-run staging config only (no credentials, no deployment)
+        run: npx --yes wrangler@4.151.1 deploy --config worker/wrangler.staging.toml --dry-run
+
+  deploy:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Create/protect this GitHub environment first; no inherited staging-d1 token.
+    environment: staging-worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.SPEAKINGYM_STAGING_WORKER_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SPEAKINGYM_STAGING_WORKER_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed without dedicated staging deploy credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" || -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo '::error::Missing dedicated staging-worker API token/account ID; do not reuse revoked staging-d1 token.'
+            exit 1
+          fi
+      - name: Recheck staging-only config before deployment
+        run: node --test worker/staging-worker-config.test.mjs tests/staging-worker-smoke.test.mjs
+      - name: Deploy ONLY the pinned isolated staging Worker and verify /health
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.151.1 deploy --config worker/wrangler.staging.toml 2>&1 | tee "$RUNNER_TEMP/staging-worker-deploy.log"
+          # Only a staging Workers.dev URL is accepted by the GET-only smoke script.
+          STAGING_URL="$(grep -Eo 'https://speakingym-survival-ai-staging\.[a-z0-9-]+\.workers\.dev' "$RUNNER_TEMP/staging-worker-deploy.log" | tail -n 1 || true)"
+          if [[ -z "$STAGING_URL" ]]; then
+            echo '::error::Staging deployment URL not found; manual verification required.'
+            exit 1
+          fi
+          node scripts/staging-worker-smoke.mjs "$STAGING_URL"
