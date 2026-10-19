@@ -35,13 +35,14 @@ test('do not access query/write endpoint before verifying staging identity',asyn
   let requests=0;
   const db=new StagingD1('not-a-secret-token',async()=>{
     requests++;
-    return {ok:true,json:async()=>({success:true,result:{name:'speakingym-plans'}})};
+    return {ok:true,json:async()=>({success:true,result: requests === 1
+      ? {status:'active'} : {name:'speakingym-plans'}})};
   });
   await assert.rejects(db.query('DELETE FROM ai_sessions'),/not verified/);
   await assert.rejects(db.clean(fixtureUid),/not verified/);
   assert.equal(requests,0);
   await assert.rejects(db.verify(),/STOP/);
-  assert.equal(requests,1);
+  assert.equal(requests,2);
   assert.equal(db.verified,false);
 });
 
@@ -49,16 +50,18 @@ test('verify staging identity before only querying sqlite_master with bound para
   const calls=[];
   const mock=async (url,init)=>{
     calls.push({url,init});
-    return {ok:true,json:async()=>({success:true,result:init.method==='GET'
+    return {ok:true,json:async()=>({success:true,result:url.endsWith('/tokens/verify')
+      ? {status:'active'} : init.method==='GET'
       ? {name:STAGING_NAME,uuid:STAGING_DATABASE_ID}
       : [{success:true,results:objects}]})};
   };
   const db=new StagingD1('test-only',mock);
   await db.verify();
   assert.equal(db.verified,true);
-  assert.equal(calls.length,2);
-  assert.ok(calls.every(c=>c.url.includes(STAGING_DATABASE_ID) && !c.url.includes('62419d42-703c-4e41-af47-736fd1738d7e')));
-  const body=JSON.parse(calls[1].init.body);
+  assert.equal(calls.length,3);
+  assert.ok(calls[0].url.endsWith('/user/tokens/verify'));
+  assert.ok(calls.slice(1).every(c=>c.url.includes(STAGING_DATABASE_ID) && !c.url.includes('62419d42-703c-4e41-af47-736fd1738d7e')));
+  const body=JSON.parse(calls[2].init.body);
   assert.match(body.sql,/sqlite_master/);
   assert.deepEqual(body.params,objects.map(x=>x.name));
 });
@@ -67,6 +70,20 @@ test('Cloudflare API errors are sanitized and never include token values',async(
   const mock=async()=>({ok:false,status:403});
   const db=new StagingD1('test-value-never-in-errors',mock);
   await assert.rejects(db.verify(),e=>/HTTP 403/.test(e.message) && !e.message.includes('test-value'));
+});
+
+test('reject expired or disabled token before any D1 access', async()=>{
+  for (const status of ['disabled','expired']) {
+    const calls=[];
+    const db=new StagingD1('local-test-token',async url=>{
+      calls.push(url);
+      return {ok:true,json:async()=>({success:true,result:{status}})};
+    });
+    await assert.rejects(db.verify(),/token status is not active/);
+    assert.equal(calls.length,1);
+    assert.ok(calls[0].includes('/user/tokens/verify'));
+    assert.equal(db.verified,false);
+  }
 });
 
 // Exercise the *actual QA runner* with SQLite, not just its guards. Real remote
@@ -84,7 +101,8 @@ test('complete staging QA runner verifies invariants and removes only its fake u
     }
     const mock=async (url,init)=>{
       if (init.method==='GET') return {ok:true,json:async()=>({success:true,
-        result:{name:STAGING_NAME,uuid:STAGING_DATABASE_ID}})};
+        result:url.endsWith('/tokens/verify') ? {status:'active'}
+          : {name:STAGING_NAME,uuid:STAGING_DATABASE_ID}})};
       const payload=JSON.parse(init.body);
       let result;
       try {result=sqlite.prepare(payload.sql).all(...(payload.params||[]));}
