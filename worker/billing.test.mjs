@@ -16,8 +16,8 @@ function database(){
 }
 const config=db=>({PLAN_DB:db,ENFORCE_PLANS:'true',BILLING_MODE:'test',STRIPE_SECRET_KEY:'sk_test_fixture',STRIPE_WEBHOOK_SECRET:'whsec_fixture',STRIPE_PRICE_ID:'price_test',BILLING_TEST_UIDS:'student'});
 const active=()=>({id:'sub_test',customer:'cus_test',livemode:false,status:'active',items:{data:[{quantity:1,price:{id:'price_test'},current_period_end:time()+3600}]},latest_invoice:{status:'paid',paid:true}});
-async function signature(raw,ts=time()){
- const key=await crypto.subtle.importKey('raw',new TextEncoder().encode('whsec_fixture'),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+async function signature(raw,ts=time(),secret='whsec_fixture'){
+ const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  return 't='+ts+',v1='+Buffer.from(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(ts+'.'+raw))).toString('hex');
 }
 async function fixture(t){
@@ -28,20 +28,20 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
   state.calls.push([url,opt]);const path=new URL(url).pathname.replace('/v1/','');let result;
   if(path==='prices/price_test')result=state.price;
   else if(path==='invoices/in_test')result=state.invoice;
-  else if(path==='customers')result={id:'cus_test',livemode:false};
+  else if(path==='customers')result={id:'cus_test',livemode:state.live};
   else if(path==='subscriptions')result={data:state.subscriptions,has_more:false};
   else if(path.startsWith('subscriptions/'))result=state.subscriptions.find(s=>s.id===path.split('/')[1]);
   else if(path==='checkout/sessions'){
    if(state.failCreate)throw Error('lost connection');
    const key=opt.headers['Idempotency-Key'];
-   if(!state.sessions.has(key))state.sessions.set(key,{id:'cs_test_'+state.sessions.size,livemode:false,customer:'cus_test',status:'open',url:'https://checkout.stripe.com/c/pay/test'});
+   if(!state.sessions.has(key))state.sessions.set(key,{id:'cs_test_'+state.sessions.size,livemode:state.live,customer:'cus_test',status:'open',url:'https://checkout.stripe.com/c/pay/test'});
    result=state.sessions.get(key);
   }else if(path.startsWith('checkout/sessions/'))result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2]);
   else if(path==='billing_portal/sessions')result={url:'https://billing.stripe.com/p/session/test'};
@@ -52,7 +52,7 @@ async function fixture(t){
  async function call(path,method='POST',bearer=auth,requestOrigin=origin){return worker.fetch(new Request('https://worker.example/billing/'+path,{method,headers:{Origin:requestOrigin,...(bearer?{Authorization:'Bearer '+bearer}:{})}}),env)}
  async function event(type='invoice.paid',id=crypto.randomUUID(),object={customer:'cus_test'},livemode=false){
   const raw=JSON.stringify({id,type,livemode,created:1,data:{object}});
-  return worker.fetch(new Request('https://worker.example/billing/webhook',{method:'POST',headers:{'stripe-signature':await signature(raw)},body:raw}),env);
+  return worker.fetch(new Request('https://worker.example/billing/webhook',{method:'POST',headers:{'stripe-signature':await signature(raw,time(),env.BILLING_MODE==='live'?env.STRIPE_LIVE_WEBHOOK_SECRET:env.STRIPE_WEBHOOK_SECRET)},body:raw}),env);
  }
  return {db,env,state,call,event,token};
 }
@@ -341,4 +341,70 @@ test('opt-in brief Stripe outage grace keeps only a previously paid unexpired Pr
  assert.equal((await entitlement()).status,503);
  f.db.sqlite.prepare("UPDATE billing_accounts SET period_end=?,synced_at=? WHERE uid='student'").run(time()+3600,time()-900);
  assert.equal((await entitlement()).status,503);
+});
+
+test('live billing is disabled until approved and refuses to touch sandbox rows',async t=>{
+ const f=await fixture(t);
+ Object.assign(f.env,{
+  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'disabled',TURN_LEDGER_MODE:'enabled',
+  STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
+  STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
+ });
+ assert.equal(billingConfigured(f.env),false);
+ assert.equal((await f.call('checkout')).status,503);
+ assert.equal(f.state.calls.length,0);
+ f.env.LIVE_BILLING_ENABLED='enabled';
+ const missing=await f.call('checkout');
+ assert.equal(missing.status,503);
+ assert.equal((await missing.json()).error,'billing_schema_not_ready');
+ assert.equal(f.state.calls.length,0);
+});
+
+test('separately configured live mode isolates customer records and grants only a paid invoice',async t=>{
+ const f=await fixture(t);
+ f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
+ Object.assign(f.env,{
+  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
+  STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
+ });
+ f.state.live=true;
+ f.state.price.livemode=true;
+ const first=await f.call('checkout');
+ assert.equal(first.status,200,JSON.stringify(await first.clone().json()));
+ assert.match((await first.json()).url,/checkout\.stripe\.com/);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_accounts').get().n,0);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_live_accounts').get().n,1);
+ assert.equal((await f.call('status','GET')).status,200);
+ assert.equal((await (await f.call('status','GET')).json()).mode,'live');
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ const activeLive={...active(),livemode:true,latest_invoice:{id:'in_test',livemode:true,customer:'cus_test',status:'paid'}};
+ f.state.subscriptions=[activeLive];
+ const paid=await f.event('invoice.paid','evt_live_paid');
+ assert.equal(paid.status,200,JSON.stringify(await paid.clone().json()));
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_events').get().n,0);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_live_events').get().n,1);
+ // An unpaid renewal removes the grant, even if an older invoice was paid.
+ f.state.subscriptions=[{...activeLive,latest_invoice:{id:'in_renew',status:'open'}}];
+ assert.equal((await f.event('invoice.payment_failed','evt_live_failed')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ // Turning the LIVE switch off does not create a fallback Pro grant.
+ f.env.LIVE_BILLING_ENABLED='disabled';
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+});
+
+test('live billing rejects sandbox-mode Stripe objects before any paid entitlement',async t=>{
+ const f=await fixture(t);
+ f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
+ Object.assign(f.env,{
+  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
+  STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
+ });
+ // Stripe mocks stay sandbox-only. A correct live key cannot accept test price objects.
+ const result=await f.call('checkout');
+ assert.equal(result.status,503);
+ assert.equal((await result.json()).error,'billing_price_invalid');
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
 });
