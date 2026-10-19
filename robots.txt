@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://speakingym.pages.dev/sitemap.xml
