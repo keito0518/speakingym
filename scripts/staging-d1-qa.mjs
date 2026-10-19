@@ -56,7 +56,17 @@ export class StagingD1 {
       ...(body ? {body: JSON.stringify(body)} : {}),
       signal: AbortSignal.timeout(25000),
     });
-    if (!response.ok) throw new Error(`Cloudflare API returned HTTP ${response.status}`);
+    if (!response.ok) {
+      // Only numeric error codes; Cloudflare's message/body might contain secrets.
+      let codes = [];
+      try {
+        const payload = await response.json();
+        codes = (Array.isArray(payload?.errors) ? payload.errors : [])
+          .map(error => Number(error?.code)).filter(Number.isSafeInteger).slice(0, 3);
+      } catch { /* Unparseable error bodies are deliberately not logged. */ }
+      throw new Error(`Cloudflare API returned HTTP ${response.status}` +
+        (codes.length ? ` (codes ${codes.join(',')})` : ''));
+    }
     const json = await response.json();
     if (!json.success) throw new Error('Cloudflare API rejected a staging request');
     return json.result;
@@ -67,9 +77,20 @@ export class StagingD1 {
     let tokenStatus;
     try {
       tokenStatus = await this.call('https://api.cloudflare.com/client/v4/user/tokens/verify', 'GET');
-    } catch (error) {
-      throw new Error('STOP: API token verification failed (' + error.message +
-        '). Check the staging-d1 GitHub secret, token expiration, and IP restrictions. No D1 write attempted.');
+    } catch (userError) {
+      // Account-owned API tokens use a different official verification endpoint.
+      // Only retry on HTTP 400: do not silently bypass authorization errors.
+      if (!/HTTP 400(?:\\D|$)/.test(userError.message)) {
+        throw new Error('STOP: user token verification failed (' + userError.message +
+          '). Check GitHub secret, token permissions, expiry and IP restrictions. No D1 write attempted.');
+      }
+      try {
+        tokenStatus = await this.call(`https://api.cloudflare.com/client/v4/accounts/${STAGING_ACCOUNT_ID}/tokens/verify`, 'GET');
+      } catch (accountError) {
+        throw new Error('STOP: user token verification: ' + userError.message +
+          '; account token verification: ' + accountError.message +
+          '. Check token type, secret value, expiry and IP restrictions. No D1 write attempted.');
+      }
     }
     if (tokenStatus?.status !== 'active') {
       throw new Error('STOP: Cloudflare token status is not active. No D1 write attempted.');
