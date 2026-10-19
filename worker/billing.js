@@ -22,8 +22,8 @@ const billingDb=env=>{
  const db=env.PLAN_DB;
  if(!liveMode(env))return db;
  return {
-  prepare(sql){return db.prepare(sql.replace(/\\bbilling_accounts\\b/g,'billing_live_accounts')
-   .replace(/\\bbilling_events\\b/g,'billing_live_events'))},
+  prepare(sql){return db.prepare(sql.replaceAll('billing_accounts','billing_live_accounts')
+   .replaceAll('billing_events','billing_live_events'))},
   batch(statements){return db.batch(statements)}
  };
 };
