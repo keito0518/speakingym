@@ -1,5 +1,5 @@
 /* Speakingym conversion events. No SDK, cookies, storage, or network requests.
- * Events are sent ONLY when an approved analytics integration defines window.gtag.
+ * Events are sent ONLY after the site-specific GA4 integration is enabled.
  * Never add free-text responses, tokens, user identifiers, URLs, or query strings.
  */
 (function (root) {
@@ -13,7 +13,7 @@
   });
   function track(name, properties) {
     if (!Object.prototype.hasOwnProperty.call(EVENTS, name)) return false;
-    if (typeof root.gtag !== "function") return false;
+    if (root.SPEAKINGYM_GA4_READY !== true || typeof root.gtag !== "function") return false;
     const allowed = EVENTS[name];
     const safe = {};
     if (properties && typeof properties === "object") {
