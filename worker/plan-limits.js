@@ -1,3 +1,4 @@
+import {freeSessionMode,requireFreeSessionReady,startFreeSession,confirmedFreeSessions,recoverFreeSessions} from "./free-session-reservations.js";
 /**
  * Server-authoritative beta plans. No payment API, customer input or Firestore
  * document is allowed to elevate a user's tier. Free-tier Cloudflare D1 only.
@@ -116,14 +117,22 @@ async function usage(db,uid,day,tier){
  return used;
 }
 export async function getEntitlement(db,uid,env={}){
+ await requireFreeSessionReady(db,env);
  const tier=await getPlan(db,uid,env);
+ if(freeSessionMode(env)&&tier==="free")await recoverFreeSessions(db,uid);
  const used=await usage(db,uid,tokyoDay(),tier);
+ if(freeSessionMode(env)&&tier==="free")used.sessions=await confirmedFreeSessions(db,uid,tokyoDay());
  return publicLimits(tier,used);
 }
 export async function startSession(db,uid,env={}){
+ await requireFreeSessionReady(db,env);
  const tier=await getPlan(db,uid,env);
  const max=PLAN_LIMITS[tier].sessions;
  const day=tokyoDay(),id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
+ if(tier==="free"&&freeSessionMode(env)){
+  const created=await startFreeSession(db,{uid,day,id,now});
+  return created?{sessionId:id,plan:tier,limits:PLAN_LIMITS[tier]}:null;
+ }
  // Free daily quotas are checked atomically. Pro uses the current JST month's turn total.
  const month=tokyoMonthBounds();
  const row=tier==="pro"
@@ -139,6 +148,7 @@ export async function startSession(db,uid,env={}){
  return row?{sessionId:id,plan:tier,limits:PLAN_LIMITS[tier]}:null;
 }
 export async function consumeSessionTurn(db,uid,id,env={}){
+ await requireFreeSessionReady(db,env);
  if(typeof id!=="string"||!/^[0-9a-f-]{36}$/.test(id))return false;
  const tier=await getPlan(db,uid,env),now=Math.floor(Date.now()/1000);
  if(ledgerMode(env)){
