@@ -380,14 +380,14 @@ test('separately configured live mode isolates customer records and grants only 
  assert.equal(await getPlan(f.db,'student',f.env),'free');
  const activeLive={...active(),livemode:true,latest_invoice:{id:'in_test',livemode:true,customer:'cus_test',status:'paid'}};
  f.state.subscriptions=[activeLive];
- const paid=await f.event('invoice.paid','evt_live_paid');
+ const paid=await f.event('invoice.paid','evt_live_paid',{customer:'cus_test'},true);
  assert.equal(paid.status,200,JSON.stringify(await paid.clone().json()));
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
  assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_events').get().n,0);
  assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_live_events').get().n,1);
  // An unpaid renewal removes the grant, even if an older invoice was paid.
  f.state.subscriptions=[{...activeLive,latest_invoice:{id:'in_renew',status:'open'}}];
- assert.equal((await f.event('invoice.payment_failed','evt_live_failed')).status,200);
+ assert.equal((await f.event('invoice.payment_failed','evt_live_failed',{customer:'cus_test'},true)).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free');
  // Turning the LIVE switch off does not create a fallback Pro grant.
  f.env.LIVE_BILLING_ENABLED='disabled';
