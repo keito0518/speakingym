@@ -24,8 +24,8 @@ test("modern production home has brand, SEO, useful routes, no paid checkout and
  assert.match(current,/<script type="module" src="\.\/account-sync\.js"><\/script>/);
 });
 test("trial CTA is the free 60-second sprint and the real AI experience is discoverable",()=>{
- assert.match(current,/<a class="btn primary" href="\.\/reflex\.html">無料で60秒チャレンジ/);
- assert.match(current,/<a class="btn" href="\.\/scenes\.html">AIと実戦英会話/);
+ assert.match(current,/<a class="btn primary" href="\.\/reflex\.html"[^>]*>無料で60秒チャレンジ/);
+ assert.match(current,/<a class="btn" href="\.\/scenes\.html"[^>]*>AIと実戦英会話/);
  assert.match(current,/href="\.\/phrasebook\.html"/);
  assert.doesNotMatch(current,/href="\.\/index\.html">旧トップ/);
 });
