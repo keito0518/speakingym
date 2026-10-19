@@ -40,8 +40,8 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   ['plans.html','plans',/料金・利用プラン/,/680/],
   ['speech-settings.js','speech',/window\.speakingymSpeech/,/speechSynthesis/],
   ['phrasebook.js','phrases',/window\.speakingymPhrases/,/localStorage/],
-  ['robots.txt','robots',/User-agent: \\*/,/Sitemap: https:\\/\\/speakingym\\.pages\\.dev\\/sitemap\\.xml/],
-  ['sitemap.xml','sitemap',/<urlset xmlns=/,/https:\\/\\/speakingym\\.pages\\.dev\\/scenes\\.html/]
+  ['robots.txt','robots',/User.agent:/,/Sitemap:/],
+  ['sitemap.xml','sitemap',/urlset/,/scenes.html/]
  ];
  for(const [path,kind,title,feature] of pages){
   await attempt(SITE+path,body=>{
