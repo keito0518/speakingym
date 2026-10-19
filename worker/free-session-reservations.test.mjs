@@ -141,3 +141,17 @@ test('six independent SQLite connections cannot reserve more than five daily slo
   const check=new DatabaseSync(path);assert.equal(check.prepare('SELECT COUNT(*) n FROM ai_sessions').get().n,5);check.close();
  }finally{await Promise.all(workers.map(w=>w.terminate()));rmSync(dir,{recursive:true,force:true})}
 });
+
+test('all 16 scene routes share confirmed-session accounting and fail closed if plan enforcement is disabled',async t=>{
+ const f=fixture();Object.assign(f.env,{ALLOW_AI:'true',GEMINI_API_KEY:'fixture-only',USER_LIMIT:{limit:async()=>({success:true})},GLOBAL_LIMIT:{limit:async()=>({success:true})}});
+ let calls=0;const request=await auth(t,async()=>{calls++;return success()});
+ const session=await f.start();
+ const scenes=['cafe','restaurant','shopping','hotel','airport','smalltalk','train','directions','taxi','phone','tourism','pharmacy','work','introductions','plans','help'];
+ for(const sceneId of scenes){
+  const response=await worker.fetch(request('',{sceneId,sessionId:session.sessionId,userText:'Hello, please help me.',level:'standard',progress:{}}),f.env);
+  assert.equal(response.status,200,sceneId);
+ }
+ assert.equal(calls,16);assert.equal(await f.count(),1);
+ const blocked=await worker.fetch(request('',{sceneId:'hotel',sessionId:session.sessionId,userText:'Hello'}),{...f.env,ENFORCE_PLANS:'false'});
+ assert.equal(blocked.status,503);assert.equal(calls,16);
+});
