@@ -1,0 +1,44 @@
+# Separate Worker, NOT an environment or preview of the production Worker.
+# Deploy only with: cd worker && npx wrangler deploy --config wrangler.staging.toml
+# IMPORTANT: NEVER deploy this worker using the default wrangler.toml.
+name = "speakingym-survival-ai-staging"
+main = "ai-worker.js"
+compatibility_date = "2026-10-14"
+workers_dev = true
+
+# Staging must not retain dashboard flags that could bypass safe defaults.
+# Wrangler deployments always preserve encrypted secrets.
+keep_vars = false
+
+# Dedicated rate-limit namespaces: production uses 98101 and 98102.
+[[ratelimits]]
+name = "USER_LIMIT"
+namespace_id = "98111"
+  [ratelimits.simple]
+  limit = 6
+  period = 60
+
+[[ratelimits]]
+name = "GLOBAL_LIMIT"
+namespace_id = "98112"
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+# STAGING ONLY. Never point this binding at speakingym-plans.
+[[d1_databases]]
+binding = "PLAN_DB"
+database_name = "speakingym-plans-staging"
+database_id = "c608774e-3bc5-4527-be8d-f640e386f504"
+
+[vars]
+# Schema 0002 and 0005 were tested on this isolated staging D1.
+ENFORCE_PLANS = "true"
+TURN_LEDGER_MODE = "enabled"
+
+# Safest first deploy: no AI provider calls, paid-plan testing or replay.
+ALLOW_AI = "false"
+FREE_SESSION_MODE = "disabled"
+AI_REPLAY_MODE = "disabled"
+REPLAY_CLEANUP_MODE = "disabled"
+BILLING_MODE = "disabled"
