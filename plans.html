@@ -23,7 +23,7 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
  <h1>英語の練習を、<br><em>自分のペースで。</em></h1>
  <p>Speakingymは現在、無料ベータ版を公開中。60秒チャレンジは何度でも練習できるよ。AI機能には無料の利用枠があるけれど、クレジットカードの登録は必要ありません。</p>
 </section>
-<div class="beta" role="note"><strong>現在、有料会員の募集・決済は行っていません。</strong> Proは月額680円（税込）・AI講評月100回のプランをテスト準備中です。指定したテスターのみ、Stripeサンドボックスで登録・解約を検証できます。実際の請求は発生しません。</div>
+<div class="beta" id="sg-pro-sale-notice" role="note"><strong>Proの登録状況はログイン後に確認できます。</strong> 一般向けの有料会員募集は現在準備中です。テスト決済の場合は実際の請求はありません。請求の有無と料金は、申し込み前に表示されます。</div>
 <section class="plans" aria-label="プランの比較">
  <article class="plan free">
   <div class="plan-head"><h2>Free</h2><span class="tag">利用可能</span></div>
@@ -39,14 +39,14 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
   <a class="btn" href="./reflex.html">無料でトレーニングする →</a>
  </article>
  <article class="plan">
-  <div class="plan-head"><h2>Pro</h2><span class="tag wait" id="sg-pro-availability">開発中</span></div>
-  <div class="price">¥680 <small>/ 月・税込予定（テスト準備中）</small></div>
-  <p>AIとの実戦練習をもっと増やしたい人に向けて、内容を検討中。</p>
+  <div class="plan-head"><h2>Pro</h2><span class="tag wait" id="sg-pro-availability">登録状況確認中</span></div>
+  <div class="price">¥680 <small id="sg-pro-price-caption">/ 月・税込（登録状況を確認中）</small></div>
+  <p>英会話の練習とAI先生の講評を増やしたい人向け。会員登録や決済の可否はログイン後に確認できます。</p>
   <ul>
    <li>AI英会話：月600往復（AIへのリクエスト数）</li>
-   <li>AI先生の個別講評：月100回（予定）</li>
+   <li id="sg-pro-teacher-limit">AI先生の個別講評：月100回（公開準備中）</li>
    <li>60秒チャレンジ・復習は引き続き利用可能</li>
-   <li>日次回数制限なし・月間上限で管理（予定）</li>
+   <li id="sg-pro-daily-limit">日次回数制限なし・月間上限で管理（公開準備中）</li>
   </ul>
   <button class="btn" id="sg-checkout" type="button" disabled>テスト登録の利用可否を確認中…</button>
   <button class="muted-cta" id="sg-portal" type="button" hidden>契約・支払い方法を管理</button>
@@ -58,18 +58,18 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
 </section>
 <section class="details">
  <h3>今の利用条件を比較</h3>
- <div class="detail-row"><span>機能</span><span>Free</span><span>Pro（予定）</span></div>
- <div class="detail-row"><span>AI実戦英会話</span><span>5セッション／日</span><span>月600往復（予定）</span></div>
- <div class="detail-row"><span>AI先生の講評</span><span>3回／日</span><span>月100回（予定）</span></div>
- <div class="detail-row"><span>60秒チャレンジ</span><span>回数制限なし</span><span>回数制限なし（予定）</span></div>
- <div class="detail-row"><span>支払い登録</span><span>不要</span><span>未提供</span></div>
+ <div class="detail-row"><span>機能</span><span>Free</span><span id="sg-pro-compare-heading">Pro（公開準備中）</span></div>
+ <div class="detail-row"><span>AI実戦英会話</span><span>5セッション／日</span><span id="sg-pro-compare-turns">月600往復（準備中）</span></div>
+ <div class="detail-row"><span>AI先生の講評</span><span>3回／日</span><span id="sg-pro-compare-teacher">月100回（準備中）</span></div>
+ <div class="detail-row"><span>60秒チャレンジ</span><span>回数制限なし</span><span id="sg-pro-compare-sprint">回数制限なし（準備中）</span></div>
+ <div class="detail-row"><span>支払い登録</span><span>不要</span><span id="sg-pro-payment-status">申込受付状況を確認中</span></div>
  <p class="notes">AI機能の利用にはGoogleログインが必要です。Freeの1日あたりの回数は日本時間の午前0時に更新されます。通信状況やAI提供元の無料枠・レート制限により、残り回数があっても一時的に利用できない場合があります。</p>
 </section>
 <section class="faq">
  <h3>よくある質問</h3>
  <details><summary>無料のままでも使い続けられる？</summary><p>現在のベータ版では無料で使えます。60秒チャレンジと保存したフレーズの復習に日ごとの利用回数制限はありません。AI機能にはFreeの上限があります。</p></details>
  <details><summary>AI英会話の「1セッション」とは？</summary><p>AIシーンやカフェミッションでAIとの会話を開始すると1セッションとして数えられます。現在の会話セッションには最大7分・20ターンのサーバー側制限があります。</p></details>
- <details><summary>Proはいつ申し込める？</summary><p>Proは月680円（税込）でテスト準備中です。決済の一般公開時期はまだ未定です。</p></details>
+ <details><summary>Proはいつ申し込める？</summary><p id="sg-pro-faq-availability">Proは月680円（税込）の予定です。ログイン後に受付状況を確認できます。現時点で一般公開日は未定です。</p></details>
 </section>
 </main>
 <footer>Speakingym · 知ってる英語を、話せる英語に。　<a href="./index.html">トップへ</a>　<a href="./account.html">マイページ</a></footer>
