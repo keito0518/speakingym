@@ -30,12 +30,11 @@ export function validateSandboxInputs({apiKey,priceId,webhookUrl}={}){
  if(endpoint.protocol!=='https:'||endpoint.pathname!=='/billing/webhook'||
     endpoint.search||endpoint.hash||endpoint.username||endpoint.password)
   fail('invalid_staging_webhook_url');
- const forbidden=new Set([
-  'speakingym-survival-ai.keitokeitokeito0518.workers.dev',
-  'speakingym.pages.dev','api.stripe.com'
- ]);
- if(forbidden.has(endpoint.hostname.toLowerCase()))
-  fail('production_webhook_not_allowed_for_sandbox_preflight');
+ // A test key is insufficient: accidentally sending sandbox webhooks to
+ // production (or to a lookalike hostname) must fail closed.
+ if(endpoint.hostname.toLowerCase()!=='speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev'||
+   endpoint.port||endpoint.origin!=='https://speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev')
+  fail('exact_staging_webhook_required');
  return {apiKey,priceId,webhookUrl:endpoint.href};
 }
 const checkList=(value,label)=>{
