@@ -115,6 +115,7 @@ export function analyzeAiLogs(contents,{usdJpy=USDJPY_FALLBACK}={}){
   warnings:[
    'No personal speech, UID, IP or API keys are used or emitted by this report.',
    'Sampled or disabled Cloudflare logs can miss calls. Usage metadata may be absent on failed requests.',
+   'p95 is NOT a maximum-cost cap; extreme expensive calls above p95 can materially affect profit even if most calls are cheap.',
    'Costs shown are paid-tier-equivalent estimates, not actual Google charges. Free users and tax/hosting are excluded from Pro revenue margins.'
   ]};
  for(const [key,g] of groups){
