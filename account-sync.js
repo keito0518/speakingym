@@ -286,15 +286,25 @@ async function handleAuth(next){
 function onChanged(event){
  const item=SYNC_ITEMS.find(i=>i.key===event?.detail?.key);
  if(!item||!user||!ready)return;
- markPending(user.uid,item.key);
+ // Bind the delayed write to the account that actually made the edit.
+ // Auth state can change during the 350 ms debounce (or during a Firestore
+ // request). Never read another account's local data or clear its dirty flag.
+ const uid=user.uid;
+ if(localStorage.getItem(OWNER_KEY)!==uid)return;
+ markPending(uid,item.key);
  if(timers.has(item.key))clearTimeout(timers.get(item.key));
  timers.set(item.key,setTimeout(async()=>{
   timers.delete(item.key);
-  if(!user)return;
-  const uid=user.uid,value=readSnapshot(localStorage)[item.key];
+  if(user?.uid!==uid||localStorage.getItem(OWNER_KEY)!==uid)return;
+  const value=readSnapshot(localStorage)[item.key];
   const toSave=value===undefined?(item.type==="numbers"?{}:[]):value;
-  try{await cloudWrite(uid,item,toSave);if(snapshotsEqual(readSnapshot(localStorage)[item.key],value))clearPending(uid,item.key)}
-  catch(e){status("保存は端末内で完了。クラウド同期は次回再試行するよ。")}
+  try{
+   await cloudWrite(uid,item,toSave);
+   if(user?.uid===uid&&localStorage.getItem(OWNER_KEY)===uid&&
+      snapshotsEqual(readSnapshot(localStorage)[item.key],value))clearPending(uid,item.key);
+  }catch(e){
+   if(user?.uid===uid)status("保存は端末内で完了。クラウド同期は次回再試行するよ。");
+  }
  },350));
 }
 function initDashboard(){dashboard();}
