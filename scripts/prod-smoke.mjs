@@ -37,7 +37,7 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
   ['reflex.html','sprint',/60秒スプリント|60秒チャレンジ/,/id="start"/],
   ['scenes.html','scenes',/AIシーン練習/,/id="start"/],
   ['phrasebook.html','phrasebook',/共通フレーズ帳/,/id="phrases"/],
-  ['plans.html','plans',/料金・利用プラン/,/680/],
+  ['plans.html','plans',/料金・利用プラン/,/1,480/],
   ['speech-settings.js','speech',/window\.speakingymSpeech/,/speechSynthesis/],
   ['phrasebook.js','phrases',/window\.speakingymPhrases/,/localStorage/],
   ['analytics-events.js','analytics',/speakingymAnalytics/,/sg_ai_first_reply/],
@@ -60,7 +60,7 @@ export async function runSmoke(fetcher=fetch,{maxAttempts=8,retryDelayMs=8000,lo
  const health=await attempt(API+'health',body=>{
   const data=JSON.parse(body);
   assert.equal(data.status,'ok');
-  assert.equal(data.quotaVersion,'pro-monthly-600-100-v2');
+  assert.equal(data.quotaVersion,'pro-monthly-1000-150-v3');
   assert.equal(data.aiEnabled,true,'AI kill switch is OFF: paid users cannot chat');
   assert.equal(data.aiConfigured,true,'Gemini API key or enable flag missing');
   assert.equal(data.keyConfigured,true);
