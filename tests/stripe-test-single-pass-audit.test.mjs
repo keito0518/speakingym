@@ -11,7 +11,7 @@ const price={object:'price',id:'price_1480test',product:product.id,active:true,l
 const events=['checkout.session.completed','customer.subscription.created','customer.subscription.updated',
  'customer.subscription.deleted','invoice.paid','invoice.payment_failed','invoice.payment_action_required'];
 const portal={object:'billing_portal.configuration',livemode:false,active:true,is_default:true,
- features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:true}}};
+ features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:true},subscription_update:{enabled:false}}};
 const modern={object:'v2.core.event_destination',livemode:false,status:'enabled',type:'webhook_endpoint',
  enabled_events:events,event_payload:'snapshot',snapshot_api_version:'2026-09-30.endive',
  events_from:['@self'],webhook_endpoint:{url:STAGING_WEBHOOK}};
