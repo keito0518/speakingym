@@ -12,6 +12,7 @@
  subscription_exists:'すでに契約があります。「契約状態を再確認」から確認し、契約管理をご利用ください。',
  billing_busy:'別の処理を確認中です。少し待って再確認してください。',
  billing_manual_review:'契約情報の確認が必要です。再購入せず運営者にお問い合わせください。',
+ billing_checkout_review:'以前の購入画面の内容を確認する必要があります。再購入せず運営者にお問い合わせください。',
  no_subscription:'管理できる契約がありません。',billing_price_invalid:'料金の設定を確認中です。'};
  async function api(action,method='GET'){
   const token=await window.speakingymAccount?.getIdToken?.();
@@ -26,7 +27,7 @@
  function showUnverifiedMode(){
   verifiedMode='disabled';checkoutAllowed=false;
   buy.disabled=true;buy.textContent='Proの登録状況を確認してください';
-  portal.hidden=true;review.hidden=true;accept.checked=false;proceed.disabled=true;
+  portal.hidden=true;portal.disabled=true;review.hidden=true;accept.checked=false;proceed.disabled=true;
   date.textContent='';
   const copy=(id,message)=>{const node=$(id);if(node)node.textContent=message};
   const badge=$('sg-pro-availability');
@@ -74,7 +75,7 @@
    checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
    buy.disabled=busy||!checkoutAllowed;
    const live=data.mode==='live';
-   buy.textContent=data.pro?'Proを利用中':(live?'Proに申し込む（月1,480円・税込）':'Proにテスト登録（月1,480円・実請求なし）');portal.hidden=!data.hasCustomer;
+   buy.textContent=data.pro?'Proを利用中':(live?'Proに申し込む（月1,480円・税込）':'Proにテスト登録（月1,480円・実請求なし）');portal.hidden=!data.hasCustomer;portal.disabled=busy||!data.hasCustomer;
    const states={active:'契約は有効ですが、Pro権限の確認が未完了です。',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:live?'登録できます。':'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
    status.textContent=(live?'有料プラン：':'サンドボックス：')+(data.pro?'Pro権限を確認しました。':states[data.status]||'契約状態を確認中です。');
    showVerifiedMode(data.mode);
