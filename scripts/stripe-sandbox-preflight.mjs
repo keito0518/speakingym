@@ -62,7 +62,7 @@ export function verifiedStripeWebhookDestinations(v1,v2,webhookUrl){
  const candidates=[
   ...older.filter(w=>w?.url===webhookUrl).map(w=>({
    version:'v1',enabled:w.object==='webhook_endpoint'&&w.status==='enabled'&&
-     w.connect!==true&&w.application==null&&
+     w.connect!==true&&w.application===null&&
      [LEGACY_WORKER_API_VERSION,STABLE_EVENT_API_VERSION].includes(w.api_version),
    snapshot:true,events:w.enabled_events
   })),
