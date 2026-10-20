@@ -347,6 +347,8 @@ test('live billing is disabled until approved and refuses to touch sandbox rows'
  const f=await fixture(t);
  Object.assign(f.env,{
   BILLING_MODE:'live',LIVE_BILLING_ENABLED:'disabled',TURN_LEDGER_MODE:'enabled',
+  LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+  LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
   STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
   STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
  });
@@ -365,6 +367,8 @@ test('separately configured live mode isolates customer records and grants only 
  f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
  Object.assign(f.env,{
   BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+  LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
   STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
   STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
  });
@@ -399,6 +403,8 @@ test('live billing rejects sandbox-mode Stripe objects before any paid entitleme
  f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
  Object.assign(f.env,{
   BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+  LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
   STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
   STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
  });
