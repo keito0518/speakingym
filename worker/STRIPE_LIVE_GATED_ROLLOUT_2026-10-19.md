@@ -24,6 +24,10 @@
 
 ### LIVEで必要な環境値（※値をチャットやGitHubに貼らない）
 - `ENFORCE_PLANS=true`, `TURN_LEDGER_MODE=enabled`（既存を維持）
+- `LIVE_LEGAL_READY=verified`：消費者庁の通信販売広告・最終確認画面の表示項目を、運営者実情報、税込価格、決済日、更新、解約、返金、提供時期まで公開サイトとStripe Checkoutで確認済み。架空の氏名・住所・電話は絶対に設定しない。
+- `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified`：モックでなく実Stripeテストモードで初回決済、署名Webhook、権限付与、更新成功/失敗、重複、解約、終了、Portal、Firebaseログインを実施・結果を保存済み。
+- `LIVE_UNIT_ECONOMICS_REVIEWED=verified`：Cloudflare実利用（失敗率・p95含む）、Googleの請求・有料プランの供給上限、Stripe実手数料、税・無料ユーザー負担を検討し、採算・停止基準を運営者が明示的に承認。
+  これら3フラグは **デフォルトOFF**。上記の証跡が揃わない間は `verified` にしない。いずれか欠ければ `billingMode` は disabled、ライブ決済APIを受け付けない。
 - `BILLING_MODE=live`, `LIVE_BILLING_ENABLED=enabled`
 - `STRIPE_LIVE_SECRET_KEY` = Cloudflare Secret（ライブキー）
 - `STRIPE_LIVE_WEBHOOK_SECRET` = Cloudflare Secret（本番Webhook署名シークレット）
