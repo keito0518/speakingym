@@ -45,7 +45,7 @@ test('contact page has a private request link and does not send claimants to pub
 
 test('price page links legal disclosure but unverified content cannot authorize Live charges',()=>{
  assert.ok(plans.includes('href="./tokusho.html"'));
- assert.match(workerMode,/env\\.LIVE_LEGAL_READY==='verified'/);
- assert.match(workerMode,/env\\.LIVE_STRIPE_SANDBOX_E2E_PASSED==='verified'/);
- assert.match(workerMode,/env\\.LIVE_UNIT_ECONOMICS_REVIEWED==='verified'/);
+ assert.ok(workerMode.includes("env.LIVE_LEGAL_READY==='verified'"), 'Live gate LIVE_LEGAL_READY must remain required');
+ assert.ok(workerMode.includes("env.LIVE_STRIPE_SANDBOX_E2E_PASSED==='verified'"), 'Live gate LIVE_STRIPE_SANDBOX_E2E_PASSED must remain required');
+ assert.ok(workerMode.includes("env.LIVE_UNIT_ECONOMICS_REVIEWED==='verified'"), 'Live gate LIVE_UNIT_ECONOMICS_REVIEWED must remain required');
 });
