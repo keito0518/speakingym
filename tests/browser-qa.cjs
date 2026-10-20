@@ -64,6 +64,13 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   }
   assert.equal(googleRequests.length,requestsAfterRevoke,'refused visits must not request Google analytics');
   await page.selectOption('#mode','カフェ');await page.click('#start');assert.match(await page.locator('#category').textContent(),/^カフェ \/ STANDARD$/);
+  assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),false,'model hint hidden until learner requests it');
+  await page.locator('#hintPanel summary').click();
+  assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),true);
+  const cue=await page.locator('#hintText').textContent();
+  assert.ok(cue.trim().length>=16,'a helpful learning cue should be visible');
+  await page.locator('#spoken').click();
+  assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),false,'hint must close on the next question');
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
   await page.evaluate(()=>{localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([{id:'repair1:easy:quick',cardId:'repair1',kind:'quick',text:'Could you repeat that?',level:'easy',goal:'聞き返す'}]));window.speakingymPhrases.toggle({text:'Could I have oat milk?',sceneId:'cafe',level:'standard',source:'AIの言い換え'});window.dispatchEvent(new Event('speakingym:account-ready'))});
   assert.equal(await page.locator('#phrases article').count(),2);await page.click('#hide');assert.equal(await page.locator('.english:visible').count(),0);await page.getByRole('button',{name:'答えを見る'}).first().click();assert.equal(await page.locator('.english:visible').count(),1);
