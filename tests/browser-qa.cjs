@@ -78,6 +78,47 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   await page.locator('.sg-voice-settings summary').click();await page.getByLabel('英語の声',{exact:true}).selectOption('basic');await page.getByLabel('読み上げ速度').selectOption('0.75');
   await page.reload();await page.locator('.sg-voice-settings summary').click();assert.equal(await page.getByLabel('英語の声',{exact:true}).inputValue(),'basic');assert.equal(await page.getByLabel('読み上げ速度').inputValue(),'0.75');
   await page.selectOption('#source','AIの言い換え');assert.equal(await page.locator('#phrases article').count(),1);await page.getByRole('button',{name:'保存解除',exact:true}).click();assert.equal(await page.evaluate(()=>window.speakingymPhrases.list().length),1);
+  // Emulate an API fetch that ignores abort and settles after the learner leaves.
+  // Old practice generations must not reuse the next practice's session or send AI calls.
+  await page.goto('http://127.0.0.1:8765/scenes.html?scene=cafe');
+  await page.evaluate(()=>{
+   window.speakingymAccount={isLoggedIn:()=>true,getIdToken:async()=> 'synthetic-browser-qa-token'};
+   const endpoint='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
+   const originalFetch=window.fetch.bind(window);
+   let healthCalls=0;
+   window.__qaAIRequests=[];
+   window.fetch=(resource,init={})=>{
+    const url=String(resource?.url||resource);
+    if(url===endpoint+'health'){
+     healthCalls++;
+     if(healthCalls===1)return new Promise(resolve=>{
+      window.__qaReleaseStaleHealth=()=>resolve(Response.json({plansEnabled:true}));
+     });
+     return Promise.resolve(Response.json({plansEnabled:true}));
+    }
+    if(url===endpoint+'sessions')
+     return Promise.resolve(Response.json({sessionId:'synthetic-session'}));
+    if(url===endpoint){
+     const request=JSON.parse(init.body);
+     window.__qaAIRequests.push(request.userText);
+     return Promise.resolve(Response.json({reply:'Thanks, I can help.',sceneId:request.sceneId,progress:{step1:false,step2:false,step3:false}}));
+    }
+    return originalFetch(resource,init);
+   };
+  });
+  await page.locator('#start').click();
+  await page.locator('#reply').fill('old practice text');
+  await page.locator('#send').click();
+  await page.waitForFunction(()=>typeof window.__qaReleaseStaleHealth==='function');
+  await page.locator('#back').click();
+  await page.locator('#start').click();
+  await page.locator('#reply').fill('new practice text');
+  await page.locator('#send').click();
+  await page.waitForFunction(()=>window.__qaAIRequests.length===1);
+  await page.evaluate(()=>window.__qaReleaseStaleHealth());
+  await page.waitForTimeout(100);
+  assert.deepEqual(await page.evaluate(()=>window.__qaAIRequests),['new practice text'],
+   'old aborted practice must not send an AI request against a newly started session');
   assert.deepEqual(errors,[]);await context.close();
  }}finally{await browser.close()}
  console.log(JSON.stringify({engine,results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
