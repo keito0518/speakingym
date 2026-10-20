@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {inspectStripeSandbox,validateSandboxInputs} from '../scripts/stripe-sandbox-preflight.mjs';
+import {inspectStripeSandbox,validateSandboxInputs,verifiedStripeWebhookDestinations}
+ from '../scripts/stripe-sandbox-preflight.mjs';
 
 const key=['sk','test','fixtureForReadOnlyChecks'].join('_');
 const priceId='price_Test1480';
@@ -14,15 +15,24 @@ const endpoint=()=>({id:'we_test',url:webhookUrl,livemode:false,status:'enabled'
  'customer.subscription.deleted','invoice.paid','invoice.payment_failed','invoice.payment_action_required']});
 const portal=()=>({id:'bpc_test',livemode:false,is_default:true,active:true,
  features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:true}}});
+const v2destination=()=>({
+ id:'ed_test_fixture',object:'v2.core.event_destination',
+ webhook_endpoint:{url:webhookUrl,signing_secret:null},type:'webhook_endpoint',
+ livemode:false,status:'enabled',event_payload:'snapshot',
+ snapshot_api_version:'2026-09-30.endive',events_from:['@self'],
+ enabled_events:endpoint().enabled_events
+});
+const modern=(data=[])=>({data,next_page_url:null,previous_page_url:null});
 function scenario(edits={}){
  const records={price:price(),webhooks:{data:[endpoint()],has_more:false},
-  portals:{data:[portal()],has_more:false},...edits};
+  modernDestinations:modern(),portals:{data:[portal()],has_more:false},...edits};
  const calls=[];
  const fetcher=async(url,options)=>{
   calls.push({url,options});
   const path=new URL(url).pathname;
   const value=path.includes('/prices/')?records.price:
    path.endsWith('/webhook_endpoints')?records.webhooks:
+   path.endsWith('/event_destinations')?records.modernDestinations:
    path.endsWith('/billing_portal/configurations')?records.portals:undefined;
   if(!value)throw Error('Unexpected endpoint');
   return {status:200,json:async()=>value};
@@ -35,12 +45,12 @@ test('read-only sandbox inspection checks monthly ¥1,480 tax-inclusive, events 
  assert.equal(result.mode,'test');
  assert.equal(result.priceJPY,1480);
  assert.equal(result.portalCancelAtPeriodEnd,true);
- assert.equal(f.calls.length,3);
+ assert.equal(f.calls.length,4);
  for(const {url,options} of f.calls){
   assert.equal(options.method,'GET');
   assert.equal(options.headers.Authorization,'Bearer '+key);
   assert.equal(options.cache,'no-store');
-  assert.ok(url.startsWith('https://api.stripe.com/v1/'));
+  assert.ok(url.startsWith('https://api.stripe.com/v1/')||url.startsWith('https://api.stripe.com/v2/'));
   assert.doesNotMatch(url,/\/(?:checkout\/sessions|customers|invoices|payment_intents)/);
  }
  const display=JSON.stringify(result);
@@ -110,4 +120,42 @@ test('pagination, Stripe HTTP errors, transport failure never pass',async()=>{
  await assert.rejects(inspectStripeSandbox(invalid,inputs),/stripe_sandbox_api_http_401/);
  const offline=async()=>{throw Error('network path might accidentally include secret')};
  await assert.rejects(inspectStripeSandbox(offline,inputs),/stripe_sandbox_api_unavailable/);
+});
+
+test('2026 Workbench v2 snapshot event destination counts as exactly one verified staging webhook',async()=>{
+ const f=scenario({webhooks:{has_more:false,data:[]},
+  modernDestinations:modern([v2destination()])});
+ const result=await inspectStripeSandbox(f.fetcher,inputs);
+ assert.equal(result.passed,true);
+ assert.equal(f.calls.filter(x=>x.url.includes('/v2/core/event_destinations')).length,1);
+ assert.ok(f.calls.some(x=>x.url.includes('include%5B0%5D=webhook_endpoint.url')));
+ const modernCall=f.calls.find(x=>x.url.includes('/v2/core/event_destinations'));
+ assert.equal(modernCall.options.headers['Stripe-Version'],'2026-09-30.endive');
+ for(const call of f.calls)assert.equal(call.options.method,'GET');
+});
+test('a duplicate old + modern destination can never pass',async()=>{
+ const f=scenario({modernDestinations:modern([v2destination()])});
+ await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/staging_webhook_not_uniquely_enabled/);
+});
+test('modern Stripe destinations fail closed if preview, thin, wrong source or wrong target',async()=>{
+ for(const changes of [
+  {event_payload:'thin'},{snapshot_api_version:'2026-10-07.preview'},
+  {snapshot_api_version:null},{events_from:['@accounts']},{status:'disabled'},
+  {type:'amazon_eventbridge'},{enabled_events:['invoice.paid']},
+  {livemode:true},{webhook_endpoint:{url:'https://speakingym.pages.dev/billing/webhook'}}
+ ]){
+  const f=scenario({webhooks:{has_more:false,data:[]},
+   modernDestinations:modern([{...v2destination(),...changes}])});
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/mode_mismatch|not_uniquely_enabled|missing_subscription_events/,JSON.stringify(changes));
+ }
+});
+test('modern Stripe event destinations require complete unpaginated JSON',async()=>{
+ for(const response of [
+  {data:[v2destination()],next_page_url:'/v2/core/event_destinations?page=more',previous_page_url:null},
+  {data:[v2destination()],next_page_url:null},
+  {data:'unexpected',next_page_url:null,previous_page_url:null}
+ ]){
+  const f=scenario({webhooks:{has_more:false,data:[]},modernDestinations:response});
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/event_destinations_v2_incomplete/);
+ }
 });
