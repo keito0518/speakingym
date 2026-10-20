@@ -32,7 +32,7 @@ test('staging Worker has a distinct name, entry point and D1 database',()=>{
 test('staging deploy defaults to disabled AI, Free rescue, replay and billing',()=>{
   const vars=section(staging,'[vars]');
   for(const [name,val] of Object.entries({
-    ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',ALLOW_AI:'false',
+    ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',STAGING_HEALTH_ONLY:'true',ALLOW_AI:'false',
     FREE_SESSION_MODE:'disabled',AI_REPLAY_MODE:'disabled',
     REPLAY_CLEANUP_MODE:'disabled',BILLING_MODE:'disabled',
   }))assert.equal(key(vars,name),val);
