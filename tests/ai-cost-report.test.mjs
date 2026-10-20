@@ -103,7 +103,7 @@ test('Free production-like samples provide explicitly labeled Pro proxy, never c
  assert.ok(report.groups['conversation:free'].maxCostJpy>=report.groups['conversation:free'].p95CostJpy);
  assert.match(report.provenance,/NOT independently verified/);
  assert.match(report.freeAsProProxyEstimate.note,/not observed Pro costs/);
- assert.match(report.warnings.join(' '),/NOT actual Google charges/);
+ assert.match(report.warnings.join(' '),/not actual Google charges/i);
 });
 
 test('a few Free samples or only one AI feature never justify paid release',()=>{
