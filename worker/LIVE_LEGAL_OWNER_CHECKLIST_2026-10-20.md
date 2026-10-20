@@ -1,6 +1,8 @@
 # Speakingym 10/31 Stripe Live — legal disclosure & final-checkout release gate (2026-10-20)
 
-**STATUS: BLOCKED / NOT LEGALLY READY.** This file is an owner-only checklist, not the legal notice offered to consumers. Do **not** set `LIVE_LEGAL_READY=verified` merely because this template or CI exists. Current `terms.html` describes beta-only and must not be presented as final paid terms.
+**STATUS: BLOCKED / NOT LEGALLY READY.** This file is an owner-only checklist, not the legal notice offered to consumers. Do **not** set `LIVE_LEGAL_READY=verified` merely because this template or CI exists.
+
+**Operator scope confirmed 2026-10-20:** owner plans to run Speakingym as an individual side business rather than an incorporated company. Use the individual-operator legal disclosure plan in [`INDIVIDUAL_OPERATOR_TOKUSHO_PLAN_2026-10-20.md`](./INDIVIDUAL_OPERATOR_TOKUSHO_PLAN_2026-10-20.md). Do not assume an individual business opening notification has been filed, an unregistered site name is a legally sufficient seller identity, or home address/telephone must be displayed unconditionally: the Consumer Affairs Agency allows request-based omission subject to actual timely pre-purchase disclosure. Keep all actual identity/address/telephone values out of repository and chat unless owner explicitly chooses disclosure. Current `terms.html` describes beta-only and must not be presented as final paid terms.
 
 ## Public-facing display needed BEFORE any real invitation or payment
 
@@ -33,7 +35,7 @@ All three new `verified` flags default OFF. **NEVER** set these to `verified` un
 - Evidence of real sandbox lifecycle, Gemini usage/cost ceiling and backup restore validation.
 
 **Official sources (reviewed 2026-10-20):**
-- Consumer Affairs Agency 特商法の通信販売広告表示: https://www.no-trouble.caa.go.jp/what/mailorder/advertising.htmljp
+- Consumer Affairs Agency 特商法の通信販売広告表示: https://www.no-trouble.caa.go.jp/what/mailorder/advertising.html-5
 - Consumer Affairs Agency omission FAQ: https://www.no-trouble.caa.go.jp/qa/advertising.html-2
 - Consumer Affairs Agency final-order-confirmation guidance: https://www.caa.go.jp/policies/policy/consumer_transaction/amendment/2021/notice03
 - Stripe subscription testing: https://docs.stripe.com/billing/testing
