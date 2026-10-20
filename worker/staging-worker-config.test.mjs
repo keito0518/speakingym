@@ -53,4 +53,5 @@ test('existing production deployment configuration remains on its own database',
   assert.equal(key(production,'database_name'),'speakingym-plans');
   assert.equal(key(production,'database_id'),'62419d42-703c-4e41-af47-736fd1738d7e');
   assert.notEqual(key(production,'database_id'),key(staging,'database_id'));
+  assert.doesNotMatch(production,/^STAGING_HEALTH_ONLY\s*=/m,'production config must never enable staging GET-only gate');
 });
