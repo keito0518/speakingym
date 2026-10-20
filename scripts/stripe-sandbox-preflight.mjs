@@ -58,13 +58,13 @@ export function verifiedStripeWebhookDestinations(v1,v2,webhookUrl){
   fail('webhook_endpoints_test_mode_required');
  const candidates=[
   ...older.filter(w=>w?.url===webhookUrl).map(w=>({
-   version:'v1',enabled:w.status==='enabled',
+   version:'v1',enabled:w.status==='enabled'&&w.connect!==true,
    snapshot:true,events:w.enabled_events
   })),
   ...validateV2EventDestinations(v2,webhookUrl).map(d=>({
    version:'v2',enabled:d.status==='enabled'&&d.type==='webhook_endpoint'&&
      d.event_payload==='snapshot'&&
-     Array.isArray(d.events_from)&&d.events_from.includes('@self')&&
+     Array.isArray(d.events_from)&&d.events_from.length===1&&d.events_from[0]==='@self'&&
      d.snapshot_api_version===STABLE_EVENT_API_VERSION,
    snapshot:d.event_payload==='snapshot',events:d.enabled_events
   }))
@@ -128,6 +128,10 @@ export async function inspectStripeSandbox(fetcher=fetch,options={}){
   fail('sandbox_portal_period_end_cancellation_disabled');
  if(portal.features?.payment_method_update?.enabled!==true)
   fail('sandbox_portal_payment_method_update_disabled');
+ // A subscription-price or quantity change in Customer Portal would make the
+ // exact-price entitlement contract ambiguous; it must be explicitly disabled.
+ if(portal.features?.subscription_update?.enabled!==false)
+  fail('sandbox_portal_subscription_switching_not_disabled');
  // Sanitized result only: never print Stripe keys, customer IDs, Price ID,
  // webhook URL, endpoint/account ID, or raw provider responses.
  return {
