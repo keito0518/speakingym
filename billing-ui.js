@@ -20,6 +20,28 @@
   const data=await res.json();if(!res.ok)throw Error(data.error||'unavailable');return data;
  }
  function error(e){status.textContent=messages[e.message]||'契約情報を確認できませんでした。少し待って再確認してください。決済操作を繰り返す必要はありません。'}
+ // An earlier confirmed LIVE status is no longer trustworthy once the account
+ // changes or a status request fails. Never leave "申込受付中" on screen when
+ // checkout has become disabled, including on sign-out and fetch errors.
+ function showUnverifiedMode(){
+  verifiedMode='disabled';checkoutAllowed=false;
+  buy.disabled=true;buy.textContent='Proの登録状況を確認してください';
+  portal.hidden=true;review.hidden=true;accept.checked=false;proceed.disabled=true;
+  date.textContent='';
+  const copy=(id,message)=>{const node=$(id);if(node)node.textContent=message};
+  const badge=$('sg-pro-availability');
+  if(badge){badge.textContent='受付状況を確認中';badge.classList.toggle('wait',true)}
+  copy('sg-pro-sale-notice','Proの申込受付状況を確認できません。ログイン後に契約状態を再確認してください。確認できるまでは決済できません。');
+  copy('sg-pro-price-caption','/ 月・税込（受付状況を確認中）');
+  copy('sg-pro-teacher-limit','AI先生の個別講評：月100回（公開準備中）');
+  copy('sg-pro-daily-limit','日次回数制限なし・月間上限で管理（公開準備中）');
+  copy('sg-pro-compare-heading','Pro（公開準備中）');
+  copy('sg-pro-compare-turns','月600往復（準備中）');
+  copy('sg-pro-compare-teacher','月100回（準備中）');
+  copy('sg-pro-compare-sprint','回数制限なし（準備中）');
+  copy('sg-pro-payment-status','申込受付状況を確認中');
+  copy('sg-pro-faq-availability','Proは月680円（税込）の予定です。申込受付状況の確認が必要です。');
+ }
  // Only a successful, signed-in response from our own Worker is allowed to
  // show real payment availability. Never infer it from URL or browser state.
  function showVerifiedMode(mode){
@@ -45,12 +67,12 @@
    :'一般向けの申し込みはまだ受け付けていません。テスト資格のあるアカウントのみ無請求で検証できます。');
  }
  async function refresh(){
-  const seq=++sequence;checkoutAllowed=false;verifiedMode='disabled';buy.disabled=true;portal.hidden=true;review.hidden=true;accept.checked=false;proceed.disabled=true;date.textContent='';
+  const seq=++sequence;showUnverifiedMode();status.textContent='契約状況を確認しています…';
   try{
    const data=await api('status');if(seq!==sequence)return;
+   if(data.mode!=='live'&&data.mode!=='test')throw Error('billing_disabled');
    checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
    buy.disabled=busy||!checkoutAllowed;
-   if(data.mode!=='live'&&data.mode!=='test')throw Error('billing_disabled');
    const live=data.mode==='live';
    buy.textContent=data.pro?'Proを利用中':(live?'Proに申し込む（月680円・税込）':'Proにテスト登録（月680円・実請求なし）');portal.hidden=!data.hasCustomer;
    const states={active:'契約は有効ですが、Pro権限の確認が未完了です。',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:live?'登録できます。':'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
@@ -68,7 +90,7 @@
    }
    if(new URLSearchParams(location.search).get('billing')==='success'&&!data.pro)status.textContent+=' 決済後の反映には時間がかかる場合があります。再確認してください。';
    if(data.periodEnd)date.textContent=(data.cancelAtPeriodEnd?'利用終了予定日：':'課金期間終了日：')+new Date(data.periodEnd*1000).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})+'（日本時間）。利用枠は毎月1日更新です。';
-  }catch(e){if(seq!==sequence)return;buy.disabled=true;checkoutAllowed=false;buy.textContent='Proの登録状況を確認してください';error(e)}
+  }catch(e){if(seq!==sequence)return;showUnverifiedMode();error(e)}
  }
  async function redirect(action){
   if(busy)return;busy=true;sequence++;buy.disabled=true;portal.disabled=true;
