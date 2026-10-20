@@ -2,7 +2,7 @@ import {freeSessionMode,freeSessionSchemaReady} from "./free-session-reservation
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
 import {ledgerMode,ledgerSchemaReady} from "./turn-ledger.js";
 import {replayMode,receiptSchemaReady,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt,purgeReceipts} from "./request-receipts.js";
-import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
+import {handleBilling,billingMode,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
@@ -319,7 +319,7 @@ export default {
     if (path === "/health" && request.method === "GET") {
       const turnLedgerSchemaReady=await ledgerSchemaReady(env.PLAN_DB);
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingMode(env) }, 200, PRIMARY_ORIGIN);
     }
     // An isolated staging Worker starts in inspection-only mode. No quota/session/AI
     // writes or billing/webhook handling, even with a valid Firebase token.
