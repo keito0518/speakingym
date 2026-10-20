@@ -50,8 +50,8 @@ async function fixture(t){
  });
  const auth=await token();
  async function call(path,method='POST',bearer=auth,requestOrigin=origin){return worker.fetch(new Request('https://worker.example/billing/'+path,{method,headers:{Origin:requestOrigin,...(bearer?{Authorization:'Bearer '+bearer}:{})}}),env)}
- async function event(type='invoice.paid',id=crypto.randomUUID(),object={customer:'cus_test'},livemode=false){
-  const raw=JSON.stringify({id,type,livemode,created:1,data:{object}});
+ async function event(type='invoice.paid',id=crypto.randomUUID(),object={customer:'cus_test'},livemode=false,apiVersion='2025-06-30.basil'){
+  const raw=JSON.stringify({id,type,livemode,api_version:apiVersion,created:1,data:{object}});
   return worker.fetch(new Request('https://worker.example/billing/webhook',{method:'POST',headers:{'stripe-signature':await signature(raw,time(),env.BILLING_MODE==='live'?env.STRIPE_LIVE_WEBHOOK_SECRET:env.STRIPE_WEBHOOK_SECRET)},body:raw}),env);
  }
  return {db,env,state,call,event,token};
@@ -69,6 +69,19 @@ test('webhook verifies raw body, timestamp, multiple signatures and rejects tamp
  assert.equal(await verifyStripeSignature(raw,sig+',t='+time(),'whsec_fixture'),false);
 });
 
+// Models the stable 2026 Workbench Event destinations v2 SNAPSHOT envelope.
+ // It does not substitute for a real Stripe event delivery test.
+test('stable 2026 Workbench snapshot invoice event with valid signature reconciles server-side',async t=>{
+ const f=await fixture(t);
+ await f.call('checkout');
+ f.state.subscriptions=[active()];
+ const response=await f.event('invoice.paid','evt_stable_endive',{customer:'cus_test'},false,'2026-09-30.endive');
+ assert.equal(response.status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ const repeated=await f.event('invoice.paid','evt_stable_endive',{customer:'cus_test'},false,'2026-09-30.endive');
+ assert.equal(repeated.status,200);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_events').get().n,1);
+});
 test('Basil invoice without removed paid boolean grants Pro only for status paid',async t=>{
  const f=await fixture(t);
  await f.call('checkout');
