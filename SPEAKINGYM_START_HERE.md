@@ -53,3 +53,14 @@
 - **検証された事実:** #67のGitHub CIで Node **309/309成功**、Chromium/WebKit成功、AI Worker安全性テスト成功。**これはStripe APIに実接続した証拠ではない**。この実行環境にはStripeアカウント接続も独立staging Workerの実デプロイ証拠もなかったため、本物のStripe sandbox Checkout→署名Webhook→Pro権限→更新成功/失敗→Portal解約→期限満了は全て未検証。
 - **次の本当の作業:** StripeテストアカウントとCloudflareの独立staging Worker/D1の安全な認証済み接続を用意し、まずGET-onlyプリフライトを実行。次にモックでないStripe sandbox E2Eを実施。キー・UID・決済情報を会話、GitHub、CIログに投稿しない。実sandbox E2Eまでは `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified` を絶対に設定しない。
 - 本番課金、D1 migration、Gemini有料化、Proプラン価格・利用枠、一般公開の承認は一切変更なし。正式公開目標は10/31のままだが、法令・原価・Stripe実E2E・運営者承認のNO-GO条件を優先する。
+
+## 2026-10-20追加：月680円Pro採算・Freeとの差別化
+
+- 決済の実操作は**利用者帰宅後まで保留**。GitHubで実装・検証できる採算・販売説明の安全改善を先行した。
+- [PR #69](https://github.com/keito0518/speakingym/pull/69) を **DRAFT PR #62の統合ブランチにマージ済み**（確認head `6760a665c07fa45b7888de3c439ef14a90e69726`）。**main未マージ・本番未デプロイ、価格/Free/Pro枠/D1/Stripe Live未変更**。
+- `scripts/pro680-economics.mjs` と `tests/pro680-economics.test.mjs` に Gemini 3.5 Flash-Lite Standard公式価格、Stripe日本の標準決済3.6%+Billing0.7%、為替・AIリトライ・Freeユーザー数/利用量・ホスティング・税の仮定を明示した原価モデル追加。モデルの **実Gemini原価/実会員数/実請求データは入手できていない**。`worker/PRO_VALUE_MARGIN_REVIEW_2026-10-20.md` を参照。
+- 例示だけ：$1=¥160、Pro毎月600会話+100講評を使い切ると標準トークン仮定でAI約138.56円/Pro、重いトークン仮定で約644.80円/Pro。Stripe仮29.24円で残り512.20円対5.96円（税・Free・Hosting除外）。**利益保証ではない**。Freeの使用分も有償になると赤字リスク。
+- Free 5セッション/日×最大20ターン×30日＝理論最大3000ターン、Pro600ターン/月。Free講評3回/日×30日＝90回、Pro100回/月。**Proは必ずFreeよりたくさん話せるわけではない**。現時点の強みは日次セッション枠なしで週末等に集中できる柔軟性。`plans.html`に正直な比較FAQを追加したが、それだけで支払い意欲が高まった事実はない。
+- #69のCI: **318/318 Node tests成功、Worker・アカウント安全性CI、Chromium/WebKitブラウザQA成功**。Firebase JWT署名改ざんテスト末尾の非正準base64url書換えで偶発的に同じバイト列となるテスト不具合も、重要な署名先頭を改変するよう修正。認証実装は未変更。
+- **公開NO-GO**：Cloudflareの匿名化Gemini実ログ・Google実請求・Free負担・Stripe手数料・Pro利用価値の確認を行うまでは `LIVE_UNIT_ECONOMICS_REVIEWED=verified` 禁止。Stripe sandbox E2E、法令/返金条件、Cloudflare staging・D1、本人の別途明示承認も必要。
+
