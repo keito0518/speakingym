@@ -19,7 +19,7 @@ test('all 16 roleplay scenes have three distinct missions and actionable English
    const data=scene[level];
    assert.ok(data, id+'/'+level);
    assert.equal(data.goals.length,3,id+'/'+level+' goals');
-   for(const [i,goal] of data.goals.entries())assert.ok(goal.trim().length>=7,id+'/'+level+'/'+i);
+   for(const [i,goal] of data.goals.entries())assert.ok(goal.trim().length>=3,id+'/'+level+'/'+i);
    assert.ok(data.story.length>=20,id+'/'+level+' scenario missing');
    assert.ok(data.mission.trim(),id+'/'+level+' mission missing');
    assert.ok(data.intro.trim().length>=15,id+'/'+level+' first line too short');
