@@ -390,7 +390,14 @@ function startRecognitionCycle(){
    const text=$("reply").value;
    stopRecognition();
    $("resumeMic").classList.remove("hidden");
-   status("音声認識が停止しました（"+code+"）。文章は保存したよ。続けるなら「続きを話す」を押してね。");
+   const guidance=(code==="not-allowed"||code==="service-not-allowed")?
+    "マイクが許可されていません。サイトのマイク権限を確認するか、英文を手入力してね。":
+    code==="audio-capture"?
+    "マイクに接続できません。端末のマイクを確認するか、英文を手入力してね。":
+    code==="network"?
+    "音声認識の通信が途切れました。文章を残したので、通信を確認して続きを話してね。":
+    "音声認識が停止しました。文章を残したので、続きを話すか手入力で修正してね。";
+   status(guidance);
    $("reply").value=text;
   };
   rec.onend=()=>{
