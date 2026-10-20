@@ -375,3 +375,62 @@ test("all sixteen scenes accept roleplay requests without unknown_scene", async 
  }
  assert.equal(upstream.mock.callCount(),16);
 });
+
+
+test("latest learner utterance reaches Gemini once, while prior turns remain in conversation context",async t=>{
+ const seen=[];
+ t.mock.method(globalThis,"fetch",async(_url,opts)=>{
+  const requestBody=JSON.parse(opts.body);
+  seen.push({
+   system:requestBody.systemInstruction.parts[0].text,
+   context:JSON.parse(requestBody.contents[0].parts[0].text)
+  });
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{
+   text:JSON.stringify({reply:"Certainly, how may I help?",progress:{step1:false,step2:false,step3:false},missionState:{problem:false,iced:false,oat:false,fix:false}})
+  }]}}]}),{status:200,headers:{"Content-Type":"application/json"}});
+ });
+ const dialogue=[
+  {role:"assistant",content:"Welcome to the hotel."},
+  {role:"user",content:"Hello, I have a reservation."},
+  {role:"assistant",content:"Of course. What do you need?"},
+  {role:"user",content:"Could I check in?"}
+ ];
+ const result=await worker.fetch(request({...payload,sceneId:"hotel",userText:"Could I check in?",history:dialogue}),enabled());
+ assert.equal(result.status,200);
+ const {context,system}=seen[0];
+ assert.equal(context.latestUserText,"Could I check in?");
+ assert.deepEqual(context.recentDialogue,dialogue.slice(0,-1),"only redundant final utterance should be dropped");
+ assert.match(system,/Treat it as ONE conversational turn, not two/);
+ assert.match(system,/Do NOT add or change names, prices, quantities, times, dates/);
+ // Legitimate prior repeated lines are history, even if the latest user repeats them.
+ const repeated=[
+  {role:"user",content:"Could I check in?"},
+  {role:"assistant",content:"Yes, do you have a booking?"},
+  {role:"user",content:"Could I check in?"}
+ ];
+ const second=await worker.fetch(request({...payload,sceneId:"hotel",userText:"Could I check in?",history:repeated}),enabled());
+ assert.equal(second.status,200);
+ assert.deepEqual(seen[1].context.recentDialogue,repeated.slice(0,-1));
+ const nonDuplicate=await worker.fetch(request({...payload,sceneId:"hotel",userText:"Could I check in?",history:[{role:"assistant",content:"One moment, please."}]}),enabled());
+ assert.equal(nonDuplicate.status,200);
+ assert.deepEqual(seen[2].context.recentDialogue,[{role:"assistant",content:"One moment, please."}]);
+ assert.equal(seen.length,3,"Mocked upstream only; no real Gemini usage");
+});
+
+test("coaching prompt protects learner meaning, questions, uncertainty and transcribed speech",async t=>{
+ let instruction="";
+ t.mock.method(globalThis,"fetch",async(_url,opts)=>{
+  instruction=JSON.parse(opts.body).systemInstruction.parts[0].text;
+  return new Response(JSON.stringify({candidates:[{content:{parts:[{
+   text:JSON.stringify({reply:"I can help with that.",progress:{step1:false,step2:false,step3:false}})
+  }]}}]}),{status:200});
+ });
+ const response=await worker.fetch(request({...payload,sceneId:"cafe"}),enabled());
+ assert.equal(response.status,200);
+ for(const rule of [
+  "preserving facts, tone, tense and negation",
+  "Do not turn a question into a claim",
+  "Ignore punctuation, capitalisation",
+  "When intent is ambiguous from transcription"
+ ])assert.ok(instruction.includes(rule),rule);
+});

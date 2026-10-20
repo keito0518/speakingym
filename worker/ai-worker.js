@@ -167,6 +167,7 @@ function scenarioInstruction(scene, level) {
   "This is a spoken English practice role-play. React to the MEANING of the latest user statement, and to earlier dialogue, not to keywords.",
   "Never ignore an unexpected but reasonable comment, and never repeat the same question verbatim.",
   "Remember choices and corrections already stated in recent dialogue. Do not contradict them, reset the situation, or ask again for information already provided.",
+  "The latest user utterance is supplied separately from recentDialogue. Treat it as ONE conversational turn, not two, and answer its real question or request before checking remaining goals.",
   "Follow the learner\u0027s latest intent first, including changes of mind and relevant side questions. Goals are checkpoints, not a fixed script or mandatory question order.",
   "Give context-specific replies rather than repeating a stock question or inventing previous requests, prices, reservations or completed actions.",
   "Keep the conversation natural; use 1-2 short English sentences with at most ONE question. Never lecture about English grammar mid-scene.",
@@ -186,6 +187,8 @@ const COACHING_INSTRUCTION = [
  "Alongside the dialogue reply, quietly assess ONLY the latest English user utterance for learning feedback.",
  "Always return a coaching object with keys natural, tip, praise (all strings). If the sentence needs no improvement, natural must be empty.",
  "natural: a concise, better or more idiomatic English way to express the SAME intent, preserving facts, tone, tense and negation. If the user's phrasing is already natural, return an empty string.",
+ "Do NOT add or change names, prices, quantities, times, dates, requests, uncertainty, or whether something is denied. Do not turn a question into a claim. When intent is ambiguous from transcription, explain the uncertainty in the tip instead of inventing a confident rewrite.",
+ "Ignore punctuation, capitalisation, and other formatting-only differences in transcripts. If there is no meaningful improvement, natural must be an empty string.",
  "tip: one brief concrete learning explanation in Japanese (under 85 Japanese characters). Do not nitpick harmless variations or invent an error.",
  "praise: one specific encouraging observation in Japanese (under 65 Japanese characters), tied to what the user actually said. Avoid generic praise.",
  "Keep these coaching fields OUTSIDE the spoken barista/roleplay reply. Do not lecture during the conversation.",
@@ -494,6 +497,10 @@ export default {
     const facts = normalizeFacts(body.facts);
     const progress = normalizeProgress(body.progress);
     const history = validHistory(body.history);
+    // The browser already appends the current utterance to history before sending.
+    // Keep the request unchanged for replay/ledger consistency, but do not present
+    // its final user entry twice to Gemini (recentDialogue + latestUserText).
+    if(history.at(-1)?.role === "user" && history.at(-1).content.trim() === text) history.pop();
     const context = scene ? {
       scene: requestedId,
       difficulty: level,

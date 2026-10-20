@@ -282,11 +282,16 @@ function showSavedReview(){
  }
  saved.append(list);
 }
+// Punctuation and capitalisation are not speaking improvements.
+function meaningfulRewrite(original,natural){
+ const spoken=s=>String(s||"").trim().toLowerCase().replace(/[.,!?;:，。！？；：“”"()]/g,"").replace(/\s+/g," ").trim();
+ return !!String(natural||"").trim() && spoken(original)!==spoken(natural);
+}
 function recordCoaching(original,raw){
  if(!raw||typeof raw!=="object")return;
  const cap=(v,n)=>typeof v==="string"?v.trim().slice(0,n):"";
  const item={original:cap(original,450),natural:cap(raw.natural,260),tip:cap(raw.tip,240),praise:cap(raw.praise,200)};
- if(!item.original||!(item.natural||item.tip||item.praise))return;
+ if(!item.original||!(meaningfulRewrite(item.original,item.natural)||item.tip||item.praise))return;
  coachingHistory.push(item);
  if(coachingHistory.length>12)coachingHistory.shift();
 }
@@ -300,7 +305,7 @@ function renderCoachReport(){
  root.append(title,lead);
  const praise=[...coachingHistory].reverse().find(item=>item.praise);
  if(praise){const p=document.createElement("p");p.className="coach-praise";p.textContent="✓ "+praise.praise;root.append(p)}
- const corrections=coachingHistory.filter(item=>item.natural&&item.natural.trim().toLowerCase()!==item.original.trim().toLowerCase()).slice(-5).reverse();
+ const corrections=coachingHistory.filter(item=>meaningfulRewrite(item.original,item.natural)).slice(-5).reverse();
  const summary=document.createElement("p");summary.className="coach-summary";summary.textContent="今回の発言："+coachingHistory.length+"回 ／ 言い換え候補："+corrections.length+"件。発音・流暢さの評価ではなく、入力された英語の振り返りです。";root.append(summary);
  if(!corrections.length){const p=document.createElement("p");p.className="coach-tip";p.textContent="今回は大きな言い換え候補はありません。伝わった表現を次のシーンでも使ってみよう。";root.append(p)}
  for(const item of corrections){
@@ -316,11 +321,13 @@ function renderCoachReport(){
  }
  const observations=coachingHistory.filter(x=>x.tip||x.praise).slice(-5).reverse();
  if(observations.length){const h=document.createElement("h4");h.textContent="発言ごとのアドバイス";root.append(h);for(const item of observations){const box=document.createElement("div");box.className="coach-point";const quote=document.createElement("div");quote.className="coach-original";quote.textContent="“"+item.original+"”";box.append(quote);if(item.praise){const good=document.createElement("p");good.className="coach-praise";good.textContent="✓ "+item.praise;box.append(good)}if(item.tip){const tip=document.createElement("p");tip.className="coach-tip";tip.textContent="改善のヒント："+item.tip;box.append(tip)}root.append(box)}}
- const practice=document.createElement("p");practice.className="coach-summary";practice.textContent="次の練習：上の言い換えから1つ選び、見ずに声に出してから同じシーンに再挑戦しよう。";root.append(practice);
+ const practice=document.createElement("p");practice.className="coach-summary";practice.textContent=corrections.length
+  ?"次の練習：上の言い換えから1つ選び、見ずに声に出してから同じシーンに再挑戦しよう。"
+  :"次の練習：今回伝わった表現を使って、次の質問に自分の言葉でもう一度答えてみよう。";root.append(practice);
  if(corrections.length)save.classList.remove("hidden");
 }
 function saveCoachReview(){
- const items=coachingHistory.filter(x=>x.natural&&x.natural.toLowerCase()!==x.original.toLowerCase()).slice(-3);
+ const items=coachingHistory.filter(x=>meaningfulRewrite(x.original,x.natural)).slice(-3);
  if(!items.length)return;
  const saved=safeReviewData();
  const unique=items.filter(x=>!saved.some(y=>y.original===x.original&&y.natural===x.natural));
