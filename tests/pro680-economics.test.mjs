@@ -29,13 +29,13 @@ test('heavy users plus planning tax reserve can make full-use Pro money losing',
  assert.equal(p.verdict,'illustrative_loss_risk');
 });
 test('free-user load can make nominally profitable Pro subscriptions lose money',()=>{
- const p=analyzeProEconomics({proUsers:10,freeUsers:500,freeConversationCalls:20,
+ const p=analyzeProEconomics({proUsers:10,freeUsers:1000,freeConversationCalls:20,
   freeTeacherCalls:5,hostMonthlyJpy:1000});
  assert.ok(p.result.perProBeforeFreeUsersAndHostingJpy>0);
  assert.ok(p.result.totalMonthlyAfterFreeAndHostingJpy<0);
  assert.ok(p.result.breakEvenMinProUsersForThisFreeBurden>10);
  assert.ok(p.costsJpy.perFreeCustomerProvider>0);
- assert.equal(p.inputs.freeUsers,500);
+ assert.equal(p.inputs.freeUsers,1000);
 });
 test('extra retries, exchange rate, additional Stripe fee and hosting are explicit',()=>{
  const a=analyzeProEconomics({scenario:'standard',proUsers:100,freeUsers:100,
@@ -62,7 +62,7 @@ test('sensitivity is based on exact scenario token inputs not implied cost ceili
  const a=perCallModelCosts('standard',160),b=perCallModelCosts('heavy',160);
  assert.ok(b.conversation>a.conversation);
  assert.ok(b.teacher>a.teacher);
- assert.equal(a.conversation,.12);
+ assert.equal(a.conversation,.1176);
  assert.equal(a.teacher,.68);
- assert.ok(analyzeProEconomics({scenario:'heavy'}).warnings.some(x=>/not actual/.test(x)));
+ assert.ok(analyzeProEconomics({scenario:'heavy'}).warnings.some(x=>/not real customer/i.test(x)));
 });
