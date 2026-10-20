@@ -70,15 +70,26 @@ npx wrangler@4 deploy --config wrangler.staging-billing.toml
 
 Never run plain `wrangler deploy`. Check staging `/health`: `billingMode=test`, `stagingBillingOnly=true`, `stagingHealthOnly=false`, plans/ledger/schema ready, and AI disabled. If billingMode is `disabled`, stop; a required test-only secret/allowlist is missing. Do not work around this guard by changing production. If testing is paused, redeploy with `wrangler.staging.toml` to return to safe health-only mode.
 
-## 5. Still-required genuine sandbox E2E
+## 5. Local Stripe TEST-only QA page (code + browser mocks ready; real billing NOT activated)
 
-The production `plans.html` uses production endpoints; **do not use it as a staging checkout test** or redirect it to production billing. Use a separately hosted authorized staging test frontend or an explicitly approved safe test harness.
+- New files: `stripe-staging-qa.html`, `stripe-staging-qa.js`, `scripts/serve-stripe-staging-qa.mjs` and `scripts/Windows_Start_Stripe_Staging_QA.cmd`.
+- On Windows the launcher downloads pinned, reviewed draft code, runs localhost safety tests, starts a Node.js HTTP server on **127.0.0.1:8765**, and automatically opens `http://localhost:8765/stripe-staging-qa.html`. The server serves only those two QA files plus the public `firebase-config.js`; never the repository, D1, keys or any production API. Stop the local server by closing its terminal. The script is for staging **only**.
+- Alternatively from repo root: `node scripts/serve-stripe-staging-qa.mjs --open` (Windows) or omit `--open` and open the localhost page yourself.
+- Checkout and Portal return to this **exact localhost QA page** only when `STAGING_BILLING_ONLY=true` and `BILLING_MODE=test`. Default/prod return URLs remain `https://speakingym.pages.dev/plans.html`; browser-supplied return URLs are never accepted.
+- Localhost requests are accepted only from the exact `http://localhost:8765` origin when the separate staging Worker is in Stripe TEST billing-only mode. Signed Firebase token, one invited test UID, Stripe price and webhook signature still required.
+- If Google popup reports `auth/unauthorized-domain`, a Firebase administrator must separately approve `localhost` as an Authentication authorized domain. **Do not** alter production Firebase settings or authorize arbitrary origins without approval. This limitation is not an E2E pass.
+- UI forbids Checkout until `/health` proves billing-only, test mode, both billing schema tables, ledger ready, no AI and no Free-session processing. Test Stripe Checkout URL must be exactly `checkout.stripe.com`; Portal must be exactly `billing.stripe.com`. The completion URL alone never sets Pro.
+- The **fake browser E2E** runs in Chromium/WebKit via `tests/stripe-staging-browser-qa.cjs`; it is a mocked CI safety test, **not proof of real Stripe behavior**. A separate read-only check `node scripts/staging-stripe-readiness.mjs` confirms current deployed stage readiness once real Stripe TEST configuration is complete; it intentionally fails until then.
+
+## 6. Still-required genuine sandbox E2E
+
+The production `plans.html` uses production endpoints; **do not use it as a staging checkout test**. The local QA page above is ready in draft, but requires the actual TEST-only staging secrets and a Firebase QA identity before real browser E2E can begin.
 
 Test actual Checkout with a Stripe-documented test card; verify signed webhook→staging D1 `billing_accounts` only→Pro entitlement **1,000 turns / 150 coaching**. Test no entitlement on forged success URL, wrong Firebase UID, mismatched price, unpaid invoices, duplicate/out-of-order events, renewal success/failure, cancellation at term end, and eventual removal of Pro. Stripe Test Clocks can simulate renewals; they do not substitute for asserting the Firebase entitlement via the staging Worker.
 
 **Current blockers:** sandbox Price/portal/webhook not yet independently verified, staging-specific authenticated checkout client/test user not yet verified, real full Stripe E2E not executed. These are gates, not successes.
 
-## 6. Production gate
+## 7. Production gate
 
 Do NOT merge/deploy the draft to production or activate Stripe Live, production D1 changes, or paid Gemini access without separate explicit approval after real sandbox E2E, legal display and cost review.
 
