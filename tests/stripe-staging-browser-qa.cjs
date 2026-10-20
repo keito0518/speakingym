@@ -24,7 +24,7 @@ async function testBrowser(engine){
  try{
   const page=await browser.newPage();
   const outbound=[];
-  let safe=true,mode='free';
+  let safe=true,mode='free',unexpectedReplay=false;
   page.on('request',req=>{if(req.url().includes(prod))outbound.push(req.url())});
   await page.route('https://www.gstatic.com/firebasejs/11.10.0/**',route=>{
    const app=route.request().url().endsWith('/firebase-app.js');
@@ -46,7 +46,11 @@ async function testBrowser(engine){
     status:'ok',stagingHealthOnly:!safe,stagingBillingOnly:safe,
     stagingBillingSchemaReady:safe,billingMode:safe?'test':'disabled',
     aiEnabled:false,plansEnabled:true,plansReady:true,turnLedgerEnabled:true,
-    turnLedgerSchemaReady:true,freeSessionRequested:false});
+    turnLedgerSchemaReady:true,freeSessionSchemaReady:true,
+    freeSessionRequested:false,freeSessionEnabled:false,
+    aiReplayRequested:false,aiReplayEnabled:unexpectedReplay,
+    quotaVersion:'pro-monthly-1000-150-v3',
+    sceneIds:Array.from({length:16},(_,i)=>'scene'+i)});
    if(!safe)return json({error:'billing_disabled'},503);
    if(!req.headers().authorization?.startsWith('Bearer fixture-jwt-not-real'))
     return json({error:'login_required'},401);
@@ -82,6 +86,15 @@ async function testBrowser(engine){
   await page.click('#qa-portal');
   await page.waitForURL(/billing\.stripe\.com\/p\/session\/qa-stub/);
 
+  // A staging Worker must remain blocked if unrelated replay AI can run,
+  // even when billing mode and the Stripe TEST schema appear ready.
+  unexpectedReplay=true;
+  await page.goto('http://localhost:8765/stripe-staging-qa.html');
+  await page.waitForFunction(()=>document.querySelector('#qa-health')?.textContent?.includes('STOP'));
+  assert.equal(await page.locator('#qa-checkout').isDisabled(),true);
+  assert.equal(await page.locator('#qa-portal').isDisabled(),true);
+
+  unexpectedReplay=false;
   safe=false;
   await page.goto('http://localhost:8765/stripe-staging-qa.html');
   await page.waitForFunction(()=>document.querySelector('#qa-health')?.textContent?.includes('STOP'));
