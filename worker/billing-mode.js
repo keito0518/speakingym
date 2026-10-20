@@ -18,7 +18,7 @@ export function billingMode(env={}) {
    /^sk_live_/.test(env.STRIPE_LIVE_SECRET_KEY||'') &&
    /^whsec_/.test(env.STRIPE_LIVE_WEBHOOK_SECRET||'') &&
    /^price_/.test(env.STRIPE_LIVE_PRICE_ID||'') &&
-   (env.BILLING_LIVE_AUDIENCE==='public' ||
+   ((env.BILLING_LIVE_AUDIENCE==='public' && env.LIVE_PUBLIC_RELEASE_APPROVED==='approved') ||
      (env.BILLING_LIVE_AUDIENCE==='invited' && !!env.BILLING_LIVE_UIDS?.trim())))return 'live';
  return 'disabled';
 }

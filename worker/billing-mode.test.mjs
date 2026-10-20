@@ -35,8 +35,11 @@ test('live billing requires exact, explicitly authorized activation',()=>{
 test('live access is invited-only unless intentionally switched to public',()=>{
  assert.equal(billingUserEligible(live,'qa-user'),true);
  assert.equal(billingUserEligible(live,'customer'),false);
- assert.equal(billingMode({...live,BILLING_LIVE_AUDIENCE:'public',BILLING_LIVE_UIDS:''}),'live');
- assert.equal(billingUserEligible({...live,BILLING_LIVE_AUDIENCE:'public'},'customer'),true);
+ assert.equal(billingMode({...live,BILLING_LIVE_AUDIENCE:'public',BILLING_LIVE_UIDS:''}),'disabled',
+  'Pilot permission must not authorize selling publicly');
+ assert.equal(billingUserEligible({...live,BILLING_LIVE_AUDIENCE:'public'},'customer'),false);
+ assert.equal(billingMode({...live,BILLING_LIVE_AUDIENCE:'public',BILLING_LIVE_UIDS:'',LIVE_PUBLIC_RELEASE_APPROVED:'approved'}),'live');
+ assert.equal(billingUserEligible({...live,BILLING_LIVE_AUDIENCE:'public',LIVE_PUBLIC_RELEASE_APPROVED:'approved'},'customer'),true);
  assert.equal(billingUserEligible({...live,LIVE_BILLING_ENABLED:'disabled'},'qa-user'),false);
 });
 test('test keys cannot unlock live mode and sandbox eligibility stays unchanged',()=>{
