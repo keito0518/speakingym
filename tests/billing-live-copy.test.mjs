@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const html=readFileSync(new URL('../plans.html',import.meta.url),'utf8');
 const js=readFileSync(new URL('../billing-ui.js',import.meta.url),'utf8');
+const tokusho=readFileSync(new URL('../tokusho.html',import.meta.url),'utf8');
 const targets=[
  'sg-pro-sale-notice','sg-pro-price-caption','sg-pro-teacher-limit',
  'sg-pro-daily-limit','sg-pro-compare-heading','sg-pro-compare-turns',
@@ -40,6 +41,16 @@ async function ui(serverData,hasToken=true) {
  for(let i=0;i<4;i++)await new Promise(resolve=>setImmediate(resolve));
  return {get,fetches};
 }
+
+test('individual-operator commerce notice exists but explicitly remains unverified before payment launch',()=>{
+ assert.match(html,/href="\.\/tokusho\.html"/,'Live review must visibly link commerce notice');
+ assert.match(tokusho,/特定商取引法に基づく表記/);
+ assert.match(tokusho,/noindex,nofollow/,'Unverified legal draft must never be indexed');
+ assert.match(tokusho,/販売開始前の草案です/);
+ assert.match(tokusho,/正式販売は開始しません/);
+ assert.match(tokusho,/確認中|方針策定中/);
+ assert.doesNotMatch(tokusho,/id="sg-checkout"|mode="subscription"/,'Draft notice must not initiate any payment');
+});
 
 test('all copy that changes with live billing has an actual target',()=>{
  for(const id of targets)assert.match(html,new RegExp('id="'+id+'"'),id);
