@@ -32,7 +32,7 @@ function unpackExport(item,ignored,depth=0){
  }
  if(Array.isArray(item))return item.flatMap(v=>unpackExport(v,ignored,depth+1));
  if(item&&typeof item==='object'){
-  if(Object.hasOwn(item,'event'))return [item];
+  if(EVENTS.has(item.event))return [item];
   // These are data-only envelope keys used by Cloudflare exports/tail logs.
   // Do not read arbitrary keys such as request, headers, user or exceptions.
   const keys=['message','logs','entries','events','records','results','data','line'];
