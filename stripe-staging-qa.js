@@ -1,0 +1,133 @@
+/* Strictly local, test-only Stripe Checkout/Portal QA client.
+ * No production API calls, Firestore, Gemini or real card collection.
+ * Only signed Firebase JWTs are sent to the isolated staging Worker.
+ */
+import {firebaseConfig} from './firebase-config.js';
+
+export const STAGE='https://speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev';
+const $=id=>document.getElementById(id);
+let auth,authLib,user=null,ready=false,busy=false,subStatus=null;
+const safeError=code=>({
+  sandbox_invite_required:'テスト対象アカウントが許可リストにありません。開発者がstagingだけで登録してください。',
+  login_required:'Googleでログインしてください。',
+  billing_disabled:'Stripeテスト決済はまだ無効です。実施せず設定完了を待ってください。',
+  billing_price_invalid:'テスト価格が月額1,480円（税込）と一致しません。設定を修正してください。',
+  billing_busy:'処理中です。少し待ってから再確認してください。',
+  no_subscription:'まだ管理できるテスト契約がありません。',
+  billing_manual_review:'Stripeのテスト契約に調査が必要です。重複購入しないでください。',
+  subscription_exists:'すでにテスト契約があります。契約状態を再確認してください。',
+}[code]||'テスト通信に失敗しました。新しい決済は実行しないでください。');
+const show=(id,message)=>{$(id).textContent=message};
+export function validStagingHealth(data){
+ return !!data&&data.status==='ok'&&data.stagingHealthOnly===false&&
+  data.stagingBillingOnly===true&&data.stagingBillingSchemaReady===true&&
+  data.billingMode==='test'&&data.aiEnabled===false&&
+  data.plansEnabled===true&&data.plansReady===true&&
+  data.turnLedgerEnabled===true&&data.turnLedgerSchemaReady===true&&
+  data.freeSessionRequested===false;
+}
+export function approvedStripeRedirect(url,kind){
+ let parsed;
+ try{parsed=new URL(url)}catch{return false}
+ return parsed.protocol==='https:'&&!parsed.username&&!parsed.password&&
+  (kind==='checkout'?parsed.hostname==='checkout.stripe.com':
+    kind==='portal'?parsed.hostname==='billing.stripe.com':false);
+}
+function paint(){
+ $('qa-login').disabled=!auth||busy||!!user;
+ $('qa-logout').disabled=!user||busy;
+ $('qa-refresh').disabled=!ready||!user||busy;
+ $('qa-checkout').disabled=!ready||!user||busy||!subStatus||
+  subStatus.mode!=='test'||!['none','canceled','incomplete_expired'].includes(subStatus.status);
+ $('qa-portal').disabled=!ready||!user||busy||subStatus?.hasCustomer!==true;
+}
+async function health(){
+ ready=false;subStatus=null;paint();
+ try{
+  const res=await fetch(STAGE+'/health',{method:'GET',cache:'no-store',signal:AbortSignal.timeout(16000)});
+  const data=res.ok?await res.json():null;
+  if(!validStagingHealth(data))throw Error('not_ready');
+  ready=true;
+  show('qa-health','✓ 独立staging / D1 / 1,480円Pro設定を確認。実決済なし・AI呼び出し無効。Stripeテストのみ利用可能。');
+ }catch{show('qa-health','STOP：テスト用Workerの設定がまだそろっていません。決済操作を禁止します。');}
+ paint();
+ if(ready&&user)await refresh();
+}
+async function api(action,method='GET'){
+ if(!ready||!auth||!user)throw Error('login_required');
+ const token=await authLib.getIdToken(user);
+ const res=await fetch(STAGE+'/billing/'+action,{method,
+  headers:{Authorization:'Bearer '+token},cache:'no-store',
+  signal:AbortSignal.timeout(20000)});
+ let data;try{data=await res.json()}catch{throw Error('invalid_response')}
+ if(!res.ok)throw Error(data?.error||'unavailable');
+ return data;
+}
+async function refresh(){
+ if(busy||!ready||!user)return;
+ busy=true;paint();
+ show('qa-subscription','Stripeテスト契約を照合中…');
+ try{
+  const data=await api('status');
+  if(data.mode!=='test')throw Error('billing_disabled');
+  subStatus=data;
+  const status=String(data.status||'none');
+  const plan=data.pro===true?'Pro（テスト権限あり）':'Free（テスト権限なし）';
+  const canceled=data.cancelAtPeriodEnd===true?'・期間末で解約予定':'';
+  show('qa-subscription',plan+'\nStripe状態：'+(status==='none'?'未契約':status)+canceled+
+   '\n※更新成功URLだけでProとは判定しません。');
+ }catch(e){subStatus=null;show('qa-subscription',safeError(e.message));}
+ finally{busy=false;paint();}
+}
+async function begin(action,kind){
+ if(busy||!ready||!user)return;
+ if(action==='checkout'&&(!subStatus||!['none','canceled','incomplete_expired'].includes(subStatus.status)))return;
+ if(action==='portal'&&subStatus?.hasCustomer!==true)return;
+ busy=true;paint();show('qa-subscription','Stripeのテスト画面へ移動する準備中…');
+ try{
+  const data=await api(action,'POST');
+  if(!approvedStripeRedirect(data?.url,kind))throw Error('invalid_redirect');
+  location.assign(data.url);
+ }catch(e){show('qa-subscription',safeError(e.message));busy=false;paint();}
+}
+async function loadFirebase(){
+ try{
+  const base='https://www.gstatic.com/firebasejs/11.10.0/';
+  const [appLib,lib]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js')]);
+  const app=appLib.initializeApp(firebaseConfig,'stripe-staging-qa');
+  authLib=lib;auth=lib.getAuth(app);
+  // Only this browser tab; do not keep a QA Google session in localStorage.
+  await lib.setPersistence(auth,lib.browserSessionPersistence);
+  lib.onAuthStateChanged(auth,async next=>{
+   user=next;subStatus=null;
+   show('qa-account',next?'✓ Googleテストログイン済み。登録したstagingテスターだけ決済できます。':'未ログイン（テスト専用アカウントを使ってください）。');
+   paint();
+   if(next&&ready)await refresh();
+  },()=>{show('qa-account','Firebaseログイン状態を確認できません。');paint();});
+  paint();
+ }catch{show('qa-account','Firebase認証を開始できませんでした。stagingでの購入は行えません。');}
+}
+$('qa-login').addEventListener('click',async()=>{
+ if(!auth||busy)return;
+ busy=true;paint();
+ try{await authLib.signInWithPopup(auth,new authLib.GoogleAuthProvider());}
+ catch(e){
+  const unauthorized=String(e?.code||'').includes('unauthorized-domain');
+  show('qa-account',unauthorized?'Firebase Authの承認済みドメインにlocalhostがありません。テスト環境の設定を確認してください。':'Googleログインできませんでした。テスト用アカウントを使用してください。');
+ }
+ finally{busy=false;paint();}
+});
+$('qa-logout').addEventListener('click',async()=>{
+ if(!auth||busy)return;
+ busy=true;paint();
+ try{await authLib.signOut(auth);}catch{show('qa-account','ログアウトに失敗しました。');}
+ finally{busy=false;paint();}
+});
+$('qa-check-health').addEventListener('click',health);
+$('qa-refresh').addEventListener('click',refresh);
+$('qa-checkout').addEventListener('click',()=>begin('checkout','checkout'));
+$('qa-portal').addEventListener('click',()=>begin('portal','portal'));
+const outcome=new URLSearchParams(location.search).get('billing');
+if(outcome==='success')show('qa-return','StripeのテストCheckoutから戻りました。Googleテストログイン後、必ず「Pro権限を再確認」を押してください。');
+else if(outcome==='cancel')show('qa-return','テストCheckoutをキャンセルしました。請求はありません。');
+await Promise.all([health(),loadFirebase()]);
