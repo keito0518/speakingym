@@ -3,4 +3,3 @@
  * Owner-approved GA4 property; analytics-loader.js still requires visitor opt-in.
  */
 window.SPEAKINGYM_GA4_ID = "G-DRH440861Y";
-
