@@ -53,7 +53,12 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="muted" id="scenesQuota" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</div>
 <div class="notice" data-sg-quota-exhausted="sessions" hidden role="status">今日はAI英会話を5セッション使い切ったよ。日本時間の午前0時に回復するよ！ その間も <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
 <div class="notice" data-sg-pro-exhausted="sessions" hidden role="status">今月のProのAI英会話枠600往復を使い切ったよ。次の日本時間1日に回復するよ！ その間は <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
-<div class="notice hidden" id="loginPrompt" role="status" aria-live="polite">AI英会話はGoogleログイン後に利用できます。<a href="./account.html" style="text-decoration:underline;font-weight:850">マイページで無料ログインする →</a></div>
+<div class="notice hidden" id="loginPrompt" role="status" aria-live="polite">
+ <strong>AI英会話にはGoogleログインが必要です。</strong> このシーンを離れずに無料ログインできます。
+ <div class="actions"><button class="btn primary" id="inlineGoogleLogin" type="button">Googleで無料ログインする →</button></div>
+ <p id="inlineLoginHelp">ログイン後は、この画面で「このシーンを始める」をもう一度押してね。</p>
+ <a href="./account.html" style="text-decoration:underline;font-weight:850">ログインできない場合はマイページへ →</a>
+</div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
 <details class="review-saved"><summary>📚 保存した言い換えを復習</summary><a href="./phrasebook.html">すべての保存表現を共通フレーズ帳で復習 →</a><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 
@@ -483,7 +488,33 @@ async function answer(text){if(!pendingRequestId)pendingRequestId=globalThis.cry
  }finally{clearTimeout(safety);if(requestController===controller)requestController=null}}
 function send(){if(!running||processing||pendingText)return;const text=$("reply").value.trim();if(!text){status("英語で何か話してみてね。");return}if(text.length>450){status("450文字以内で入力してね。");return}
  stopRecognition();cancelSpeech();$("reply").value="";pendingText=text;pendingRequestId=globalThis.crypto?.randomUUID?.()||"";turn++;addMessage("You",text);history.push({role:"user",content:text});updateControls();answer(text)}
-$("scenes").addEventListener("click",e=>{const button=e.target.closest("[data-scene]");if(button)select(button.dataset.scene)});
+$("scenes").addEventListener("click",e=>{
+ const button=e.target.closest("[data-scene]");if(!button||!Object.hasOwn(SCENES,button.dataset.scene))return;
+ select(button.dataset.scene);
+ // Firebase can reload the page after the first account sync. Preserve the chosen scene in the URL.
+ const url=new URL(window.location.href);
+ if(url.searchParams.get("scene")!==button.dataset.scene){
+  url.searchParams.set("scene",button.dataset.scene);
+  window.history?.replaceState?.(null,"",url.pathname+url.search+url.hash);
+ }
+});
+$("inlineGoogleLogin").addEventListener("click",()=>{
+ const accountButton=$("sg-login");
+ if(accountButton&&!accountButton.hidden&&!accountButton.disabled){
+  $("inlineLoginHelp").textContent="Googleログインを開きます。完了したら「このシーンを始める」を押してね。";
+  accountButton.click();return;
+ }
+ if(window.speakingymAccount?.isLoggedIn?.()){
+  $("loginPrompt").classList.add("hidden");$("start").focus();return;
+ }
+ $("inlineLoginHelp").textContent="ログインを準備中です。少し待ってからもう一度押すか、マイページからログインしてね。";
+});
+window.addEventListener("speakingym:account-ready",()=>{
+ if(!window.speakingymAccount?.isLoggedIn?.()||$("loginPrompt").classList.contains("hidden"))return;
+ $("loginPrompt").classList.add("hidden");
+ status("ログイン完了！「このシーンを始める」を押してね。");
+ $("start").focus();
+});
 $("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
 $("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",stopMicrophone);$("resumeMic").addEventListener("click",resumeMicrophone);
 $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply||lastSpoken)});

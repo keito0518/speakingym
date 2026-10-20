@@ -29,7 +29,37 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','reflex.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
-   if(path.startsWith('scenes')){assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-scene]').count(),16)}
+   if(path.startsWith('scenes')){
+    assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');
+    assert.equal(await page.locator('[data-scene]').count(),16);
+    await page.locator('#start').click();
+    await page.locator('#loginPrompt').waitFor({state:'visible'});
+    assert.equal(await page.locator('#inlineGoogleLogin').count(),1,'direct login CTA should appear without leaving scene');
+    assert.equal(await page.locator('#practice').isVisible(),false,'guest must not enter paid AI practice');
+    await page.locator('#inlineGoogleLogin').click();
+    assert.match(await page.locator('#inlineLoginHelp').textContent(),/ログインを準備中|Googleログインを開きます/);
+    await page.evaluate(()=>{
+     const accountButton=document.getElementById('sg-login');
+     if(accountButton){
+      window.__inlineLoginTriggered=false;
+      accountButton.disabled=false;
+      accountButton.addEventListener('click',()=>{window.__inlineLoginTriggered=true});
+     }
+    });
+    assert.equal(await page.locator('#sg-login').count(),1,'existing account login bar is reused');
+    await page.locator('#inlineGoogleLogin').click();
+    assert.equal(await page.evaluate(()=>window.__inlineLoginTriggered),true,'same-page login button forwards a real user click');
+    await page.evaluate(()=>{
+     window.speakingymAccount={isLoggedIn:()=>true,getIdToken:async()=>null};
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    assert.equal(await page.locator('#loginPrompt').isVisible(),false);
+    assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true','selected scene preserved');
+    await page.locator('[data-scene="hotel"]').click();
+    assert.equal(new URL(page.url()).searchParams.get('scene'),'hotel','selection must be reflected in URL');
+    await page.reload();
+    assert.equal(await page.locator('[data-scene="hotel"]').getAttribute('aria-pressed'),'true','Firebase sync reload must retain selected scene');
+   }
    await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
   assert.equal(googleRequests.length,requestsAfterRevoke,'refused visits must not request Google analytics');
