@@ -32,4 +32,7 @@ test('selected AI scene remains a local selection when login prompt is shown',()
  assert.match(scenes,/Object\.hasOwn\(SCENES,requestedScene\)\)select\(requestedScene\)/);
  const handler=scenes.slice(scenes.indexOf('$("inlineGoogleLogin").addEventListener("click"'),scenes.indexOf('$("start").addEventListener("click"'));
  assert.doesNotMatch(handler,/location\.href|location\.assign|location\.replace|select\(|location\.reload/);
+ assert.match(scenes,/url\.searchParams\.set\("scene",button\.dataset\.scene\)/);
+ assert.match(scenes,/window\.history\?\.replaceState\?\./);
+ assert.match(scenes,/Object\.hasOwn\(SCENES,button\.dataset\.scene\)/);
 });
