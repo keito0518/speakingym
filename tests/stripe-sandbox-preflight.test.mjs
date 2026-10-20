@@ -10,7 +10,8 @@ const inputs={apiKey:key,priceId,webhookUrl};
 const price=()=>({object:'price',id:priceId,livemode:false,active:true,
  currency:'jpy',unit_amount:1480,tax_behavior:'inclusive',type:'recurring',
  billing_scheme:'per_unit',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}});
-const endpoint=()=>({id:'we_test',url:webhookUrl,livemode:false,status:'enabled',
+const endpoint=()=>({id:'we_test',object:'webhook_endpoint',api_version:'2025-06-30.basil',
+ application:null,url:webhookUrl,livemode:false,status:'enabled',
  enabled_events:['checkout.session.completed','customer.subscription.created','customer.subscription.updated',
  'customer.subscription.deleted','invoice.paid','invoice.payment_failed','invoice.payment_action_required']});
 const portal=()=>({id:'bpc_test',livemode:false,is_default:true,active:true,
@@ -86,7 +87,10 @@ test('reject incorrect prices, test trial or live-mode Price',async()=>{
 });
 test('webhook must uniquely match stage, be enabled non-live and cover all events',async()=>{
  for(const changes of [
-  {livemode:true},{status:'disabled'},{connect:true},{url:'https://other.test/billing/webhook'}
+  {livemode:true},{status:'disabled'},{connect:true},{application:'ca_other'},
+  {object:'other'},{api_version:null},{api_version:undefined},
+  {api_version:'2026-10-07.preview'},{api_version:'2024-01-01'},
+  {url:'https://other.test/billing/webhook'}
  ]){
   const f=scenario({webhooks:{has_more:false,data:[{...endpoint(),...changes}]}});
   await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),
@@ -98,6 +102,8 @@ test('webhook must uniquely match stage, be enabled non-live and cover all event
  await assert.rejects(inspectStripeSandbox(duplicate.fetcher,inputs),/staging_webhook_not_uniquely/);
  const star=scenario({webhooks:{has_more:false,data:[{...endpoint(),enabled_events:['*']}]}});
  assert.equal((await inspectStripeSandbox(star.fetcher,inputs)).passed,true);
+ const stable=scenario({webhooks:{has_more:false,data:[{...endpoint(),api_version:'2026-09-30.endive'}]}});
+ assert.equal((await inspectStripeSandbox(stable.fetcher,inputs)).passed,true);
 });
 test('default portal requires period-end cancellation and payment-method update',async()=>{
  for(const changes of [
