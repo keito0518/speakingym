@@ -6,6 +6,8 @@ const db={};
 const live={
  PLAN_DB:db,ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',
  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',
+ LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+ LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
  STRIPE_LIVE_SECRET_KEY:'sk_live_dummy_not_real',
  STRIPE_LIVE_WEBHOOK_SECRET:'whsec_dummy_not_real',
  STRIPE_LIVE_PRICE_ID:'price_fixture',
@@ -15,6 +17,9 @@ test('live billing requires exact, explicitly authorized activation',()=>{
  assert.equal(billingMode(live),'live');
  const invalid=[
   {LIVE_BILLING_ENABLED:undefined},{LIVE_BILLING_ENABLED:'true'},
+  {LIVE_LEGAL_READY:undefined},{LIVE_LEGAL_READY:'true'},
+  {LIVE_STRIPE_SANDBOX_E2E_PASSED:undefined},{LIVE_STRIPE_SANDBOX_E2E_PASSED:'true'},
+  {LIVE_UNIT_ECONOMICS_REVIEWED:undefined},{LIVE_UNIT_ECONOMICS_REVIEWED:'true'},
   {BILLING_MODE:'test'},{BILLING_MODE:undefined},
   {ENFORCE_PLANS:'false'},{TURN_LEDGER_MODE:'disabled'},
   {STRIPE_LIVE_SECRET_KEY:'sk_test_wrong'},
