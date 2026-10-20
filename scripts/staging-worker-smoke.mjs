@@ -19,6 +19,7 @@ export function stagingHealthUrl(input) {
 }
 export function assertSafeStagingHealth(data) {
   if (data?.status!=='ok') throw Error('Staging health status is not ok');
+  if(data.stagingHealthOnly!==true)throw Error('Staging must be GET-only /health for first deployment');
   const ready=['plansEnabled','plansReady','turnLedgerEnabled','turnLedgerSchemaReady','freeSessionSchemaReady'];
   const disabled=['aiEnabled','freeSessionRequested','freeSessionEnabled','aiReplayRequested','aiReplayEnabled'];
   for(const key of ready)if(data[key]!==true)throw Error('Staging readiness check failed: '+key);
