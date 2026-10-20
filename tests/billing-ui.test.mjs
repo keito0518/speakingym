@@ -67,6 +67,20 @@ test('successful Stripe redirect keeps purchase controls disabled until a fresh 
  await a.node('sg-checkout').listeners.click();
  assert.equal(a.calls.filter(x=>x.options.method==='POST').length,count);
 });
+test('failed portal operation also needs a verified refresh before retry',async()=>{
+ const a=await ui({data:{mode:'test',status:'active',pro:true,hasCustomer:true},
+  byAction:{portal:{ok:false,data:{error:'billing_busy'}}}});
+ assert.equal(a.node('sg-portal').disabled,false);
+ await a.node('sg-portal').listeners.click();
+ assert.equal(a.node('sg-portal').disabled,true);
+ assert.equal(a.node('sg-portal').hidden,true);
+ const count=a.calls.filter(x=>x.options.method==='POST').length;
+ await a.node('sg-portal').listeners.click();
+ assert.equal(a.calls.filter(x=>x.options.method==='POST').length,count);
+ await a.node('sg-billing-refresh').listeners.click();
+ assert.equal(a.node('sg-portal').hidden,false);
+ assert.equal(a.node('sg-portal').disabled,false);
+});
 test('Stripe redirects reject alternate ports and credential-bearing URLs',async()=>{
  for(const url of ['https://checkout.stripe.com:444/pay/test',
   'https://login@checkout.stripe.com/c/pay/test','https://evil.example/pay']){
