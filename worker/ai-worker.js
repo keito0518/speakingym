@@ -319,11 +319,18 @@ export default {
     if (path === "/health" && request.method === "GET") {
       const turnLedgerSchemaReady=await ledgerSchemaReady(env.PLAN_DB);
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingMode(env) }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingMode(env) }, 200, PRIMARY_ORIGIN);
     }
     // An isolated staging Worker starts in inspection-only mode. No quota/session/AI
     // writes or billing/webhook handling, even with a valid Firebase token.
     if(env.STAGING_HEALTH_ONLY==="true")return reply({error:"staging_health_only"},503,PRIMARY_ORIGIN);
+    // On isolated Stripe staging, block unrelated AI/session endpoints outright.
+    // Unlike the health-only first deployment, this stage permits signed billing
+    // callbacks and authorized subscription/status inspection but never AI calls.
+    if(env.STAGING_BILLING_ONLY==="true" && ![
+      "/billing/webhook","/billing/checkout","/billing/status",
+      "/billing/portal","/entitlement"
+    ].includes(path))return reply({error:"staging_billing_only"},503,PRIMARY_ORIGIN);
     // Stripe server callbacks have no browser Origin; signature verification is mandatory.
     if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
     // Origin checks only restrict browser use. They are not authentication.
