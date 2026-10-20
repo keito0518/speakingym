@@ -40,7 +40,8 @@ TURN_LEDGER_MODE = "enabled"
 
 # Later opt-in ONLY after staging migration and Stripe test-mode secrets are ready.
 # Only billing endpoints and verified GET /entitlement are allowed by runtime gate.
-STAGING_HEALTH_ONLY = "false"\nSTAGING_BILLING_ONLY = "true"
+STAGING_HEALTH_ONLY = "false"
+STAGING_BILLING_ONLY = "true"
 ALLOW_AI = "false"
 FREE_SESSION_MODE = "disabled"
 AI_REPLAY_MODE = "disabled"
