@@ -3,6 +3,15 @@ import {verifyFirebaseIdToken,billingGraceSeconds,verifiedBillingEntitlement} fr
 import {billingMode,billingUserEligible} from './billing-mode.js';
 export {billingMode};
 const SITE='https://speakingym.pages.dev';
+// Exact local QA origin is intentionally separate from the production site.
+// No browser-supplied success_url/return_url is ever accepted by the Worker.
+export const STAGING_QA_ORIGIN='http://localhost:8765';
+export const STAGING_QA_PAGE=STAGING_QA_ORIGIN+'/stripe-staging-qa.html';
+export function billingReturnUrls(env={}){
+ const staging=env.STAGING_BILLING_ONLY==='true' && billingMode(env)==='test';
+ const page=staging?STAGING_QA_PAGE:SITE+'/plans.html';
+ return {success:page+'?billing=success',cancel:page+'?billing=cancel',portal:page};
+}
 const API_VERSION='2025-06-30.basil';
 const now=()=>Math.floor(Date.now()/1000);
 const fail=(code,status=503)=>Object.assign(new Error(code),{status});
@@ -186,7 +195,7 @@ async function checkout(env,row,token){
  }
  const session=await stripe(env,'checkout/sessions','POST',{
   mode:'subscription',customer:row.customer_id,'line_items[0][price]':priceId(env),'line_items[0][quantity]':'1',
-  'payment_method_types[0]':'card',success_url:SITE+'/plans.html?billing=success',cancel_url:SITE+'/plans.html?billing=cancel',
+  'payment_method_types[0]':'card',success_url:billingReturnUrls(env).success,cancel_url:billingReturnUrls(env).cancel,
   client_reference_id:row.uid,'subscription_data[metadata][firebase_uid]':row.uid,
   expires_at:String(row.checkout_expires),locale:'ja'
  },row.checkout_key);
@@ -226,7 +235,7 @@ export async function handleBilling(request,env,reply,origin){
    if(path==='/billing/checkout')return checkout(env,row,token);
    if(path==='/billing/portal'){
     if(!row.customer_id)throw fail('no_subscription',409);
-    const session=await stripe(env,'billing_portal/sessions','POST',{customer:row.customer_id,return_url:SITE+'/plans.html'});
+    const session=await stripe(env,'billing_portal/sessions','POST',{customer:row.customer_id,return_url:billingReturnUrls(env).portal});
     return {url:session.url};
    }
    if(path==='/billing/status'){
