@@ -93,11 +93,25 @@
   }catch(e){if(seq!==sequence)return;showUnverifiedMode();error(e)}
  }
  async function redirect(action){
-  if(busy)return;busy=true;sequence++;buy.disabled=true;portal.disabled=true;
-  try{const data=await api(action,'POST');const url=new URL(data.url);
+  if(busy||!['test','live'].includes(verifiedMode)||
+     (action==='checkout'&&!checkoutAllowed))return;
+  busy=true;sequence++;buy.disabled=true;portal.disabled=true;
+  // A timed-out POST may have already created a Stripe Checkout. Never allow
+  // a second POST from a stale status, even if the redirect itself fails.
+  // Re-check the server's current subscription/session state explicitly.
+  try{
+   const data=await api(action,'POST');
+   const url=new URL(data.url);
    const host=action==='checkout'?'checkout.stripe.com':'billing.stripe.com';
-   if(url.protocol!=='https:'||url.hostname!==host)throw Error('invalid_redirect');location.assign(url.href);
-  }catch(e){error(e)}finally{busy=false;portal.disabled=false;buy.disabled=!checkoutAllowed}
+   if(url.protocol!=='https:'||url.hostname!==host||
+      url.username||url.password||url.port)throw Error('invalid_redirect');
+   location.assign(url.href);
+  }catch(e){
+   showUnverifiedMode();
+   error(e);
+  }finally{
+   busy=false;buy.disabled=true;portal.disabled=true;
+  }
  }
  // For real charges, the user must see recurring terms and actively opt in.
  // Sandbox testing retains its existing path; browser confirmation never grants Pro.
