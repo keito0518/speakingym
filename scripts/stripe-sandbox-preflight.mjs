@@ -37,6 +37,49 @@ export function validateSandboxInputs({apiKey,priceId,webhookUrl}={}){
   fail('exact_staging_webhook_required');
  return {apiKey,priceId,webhookUrl:endpoint.href};
 }
+// Stripe Workbench's current "Event destinations" use the /v2/core API;
+// legacy /v1/webhook_endpoints can coexist in the SAME Stripe sandbox.
+// Read BOTH or an already-created modern destination will look missing.
+const STABLE_EVENT_API_VERSION='2026-09-30.endive';
+export function validateV2EventDestinations(response,webhookUrl){
+ if(!Array.isArray(response?.data)||response.data.length>100||
+   response.next_page_url!==null||response.previous_page_url!==null)
+  fail('event_destinations_v2_incomplete');
+ for(const d of response.data){
+  if(d?.livemode!==false)fail('event_destinations_v2_mode_mismatch');
+ }
+ return response.data.filter(d=>
+  d?.object==='v2.core.event_destination' &&
+  d?.webhook_endpoint?.url===webhookUrl);
+}
+export function verifiedStripeWebhookDestinations(v1,v2,webhookUrl){
+ const older=checkList(v1,'webhook_endpoints');
+ if(older.some(w=>w?.livemode!==false))
+  fail('webhook_endpoints_test_mode_required');
+ const candidates=[
+  ...older.filter(w=>w?.url===webhookUrl).map(w=>({
+   version:'v1',enabled:w.status==='enabled',
+   snapshot:true,events:w.enabled_events
+  })),
+  ...validateV2EventDestinations(v2,webhookUrl).map(d=>({
+   version:'v2',enabled:d.status==='enabled'&&d.type==='webhook_endpoint'&&
+     d.event_payload==='snapshot'&&
+     Array.isArray(d.events_from)&&d.events_from.includes('@self')&&
+     d.snapshot_api_version===STABLE_EVENT_API_VERSION,
+   snapshot:d.event_payload==='snapshot',events:d.enabled_events
+  }))
+ ];
+ // A disabled, thin or preview-version destination with our exact URL is a
+ // configuration error, NOT a reason to silently create a duplicate.
+ if(candidates.length!==1||!candidates[0].enabled)
+  fail('staging_webhook_not_uniquely_enabled');
+ const enabled=candidates[0].events;
+ if(!Array.isArray(enabled)||
+  !REQUIRED_WEBHOOK_EVENTS.every(e=>enabled.includes('*')||enabled.includes(e)))
+  fail('staging_webhook_missing_subscription_events');
+ return candidates[0].version;
+}
+
 const checkList=(value,label)=>{
  if(!Array.isArray(value?.data)||value.has_more!==false)
   fail(label+'_incomplete');
@@ -46,11 +89,13 @@ const checkList=(value,label)=>{
 
 export async function inspectStripeSandbox(fetcher=fetch,options={}){
  const {apiKey,priceId,webhookUrl}=validateSandboxInputs(options);
- async function get(path){
+ async function get(path,{v2=false}={}){
   let response;
   try{
-   response=await fetcher(API+path,{method:'GET',cache:'no-store',
-    headers:{Authorization:'Bearer '+apiKey,'Stripe-Version':VERSION,
+   const base=v2?'https://api.stripe.com/v2/':API;
+   response=await fetcher(base+path,{method:'GET',cache:'no-store',
+    headers:{Authorization:'Bearer '+apiKey,
+     'Stripe-Version':v2?STABLE_EVENT_API_VERSION:VERSION,
      Accept:'application/json'},
     signal:AbortSignal.timeout(15000)});
   }catch{fail('stripe_sandbox_api_unavailable')}
@@ -61,9 +106,10 @@ export async function inspectStripeSandbox(fetcher=fetch,options={}){
   return payload;
  }
  // No POSTs, sessions, customers, invoices, PaymentIntents, or Gemini requests.
- const [price,webhooks,portals]=await Promise.all([
+ const [price,webhooks,modernDestinations,portals]=await Promise.all([
   get('prices/'+encodeURIComponent(priceId)),
   get('webhook_endpoints?limit=100'),
+  get('core/event_destinations?limit=100&include%5B0%5D=webhook_endpoint.url',{v2:true}),
   get('billing_portal/configurations?limit=100')
  ]);
  if(price.id!==priceId||price.object!=='price'||price.livemode!==false||!price.active||
@@ -72,12 +118,7 @@ export async function inspectStripeSandbox(fetcher=fetch,options={}){
    price.recurring?.interval!=='month'||price.recurring?.interval_count!==1||
    price.recurring?.trial_period_days!=null||price.recurring?.usage_type!=='licensed')
   fail('stripe_test_price_not_1480_jpy_inclusive_monthly');
- const endpoints=checkList(webhooks,'webhook_endpoints');
- const candidates=endpoints.filter(w=>w.url===webhookUrl&&w.status==='enabled'&&w.livemode===false);
- if(candidates.length!==1)fail('staging_webhook_not_uniquely_enabled');
- const enabled=candidates[0].enabled_events;
- if(!Array.isArray(enabled)||!REQUIRED_WEBHOOK_EVENTS.every(e=>enabled.includes('*')||enabled.includes(e)))
-  fail('staging_webhook_missing_subscription_events');
+ verifiedStripeWebhookDestinations(webhooks,modernDestinations,webhookUrl);
  const configs=checkList(portals,'portal_configurations');
  const defaults=configs.filter(c=>c.is_default===true&&c.active===true&&c.livemode===false);
  if(defaults.length!==1)fail('sandbox_default_portal_not_ready');
