@@ -41,7 +41,7 @@ const EXTRA_SCENES = {
     goals:["step1: the customer orders a drink","step2: the customer specifies a drink size","step3: the customer specifies dine-in or takeaway"],
     opener:"Hi there! What can I get for you today?",
     variants:{
-      standard:{situation:"The customer wants to change the milk type after ordering. Ask about the order and respond realistically to a modification request.",goals:["step1: the customer orders a drink","step2: the customer requests a specific change to the drink","step3: the customer asks whether the change costs extra"]},
+      standard:{situation:"The customer is ordering a drink and wants to replace regular milk with another milk type. Ask about their drink first, then respond realistically to a requested customization and explain any extra charge only if asked.",goals:["step1: the customer orders a drink","step2: the customer requests a specific change to the drink","step3: the customer asks whether the change costs extra"]},
       challenge:{situation:"The customer ordered an iced oat-milk latte but received a hot dairy latte. The cafe is busy. Apologize and work out a realistic fix without instantly completing the task.",goals:["step1: the customer explains the difference between the ordered and received drink","step2: the customer politely asks for the correct drink","step3: the customer confirms when or how the problem will be resolved"]}
     }
   },
