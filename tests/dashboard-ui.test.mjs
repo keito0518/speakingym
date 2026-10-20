@@ -84,6 +84,8 @@ test("dashboard contains responsive sections, meaningful links, privacy accordio
  assert.match(html,/YOUR SPEAKING SPACE/);
  assert.match(html,/WEEKLY RHYTHM/);
  assert.match(sync,/buildLearningDashboard\(readSnapshot\(localStorage\)\)/);
+ assert.match(sync,/ターン／AI先生/);
+ assert.doesNotMatch(sync,/ 往復／AI先生/);
  assert.match(sync,/textContent=displayName/);
  assert.doesNotMatch(html,/<script[^>]+src="https:\/\/[^"]+chart/i);
 });
