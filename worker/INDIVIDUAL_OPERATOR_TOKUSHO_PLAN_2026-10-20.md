@@ -1,6 +1,8 @@
 # Speakingym 個人運営・特定商取引法表示準備（2026-10-20）
 
-**販売開始判定：未完了／Live課金はNO-GO。** ユーザーの方針は「法人化せず、副業の個人運営」。ただし、税法上の事業所得・雑所得の区分、開業届提出の有無や屋号の登記状況を勝手に断定しない。本メモは実情報の公開を要求するものではなく、本人が公開先を選ぶための設計資料。
+**販売開始判定：未完了／Live課金はNO-GO。** > **2026-10-21 update (draft only):** The owner’s current TARGET is ¥1,480（税込）/month, 1,000 AI conversation turns and 150 teacher feedback sessions. Previous ¥680 / 600 / 100 mentions elsewhere are historical; no production price, D1 migration, Stripe Live change or charge is authorized. All actual compliance and Checkout evidence gates remain NOT READY.
+
+ ユーザーの方針は「法人化せず、副業の個人運営」。ただし、税法上の事業所得・雑所得の区分、開業届提出の有無や屋号の登記状況を勝手に断定しない。本メモは実情報の公開を要求するものではなく、本人が公開先を選ぶための設計資料。
 
 ## 選定した個人情報保護方針（2026-10-20 本人希望）
 - **選択：請求時開示方式を第一候補**。自宅住所・私用電話番号をWebサイトや公開GitHubへ直接掲載しない。法11条ただし書に基づき、購入検討者の請求を受けて申込み判断より十分前に正式な事業者氏名・活動住所・確実な連絡電話番号を遅滞なく電子メール等で案内できる場合にのみ適用する。消費者庁Q15・Q17参照。
@@ -25,8 +27,8 @@
 
 ## Speakingym で確認済み・草案に記載できる項目
 - サービス名：Speakingym Pro
-- 価格：月額680円（税込）**予定**。実Stripe LIVE Price/Japanese taxation settingsは未確認
-- 提供内容：AI英会話600ターン/月、AI先生の講評100回/月（現行コード上のプラン仕様）。FreeはAI英会話5セッション/日、講評3回/日
+- 価格：月額1,480円（税込）**予定**（次期ドラフト。本番未反映）。実Stripe LIVE Price/Japanese taxation settingsは未確認
+- 提供内容：AI英会話1,000ターン/月、AI先生の講評150回/月（ドラフトPR #62上の次期仕様。本番mainは未変更）。FreeはAI英会話5セッション/日、講評3回/日
 - 利用回数の更新：日本時間の毎月1日。料金の更新日は契約日基準で、両者は異なる
 - 機能制限・提供：AI提供元障害や通信状況等で利用不可の場合がある。障害発生時のサポート・返金ポリシーは未確定
 - 一般向け窓口としてコード上確認できる公開メール：`odentabetaina.oden@gmail.com`（実際に受信・返信できるか運営者の確認が必要）
