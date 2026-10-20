@@ -73,3 +73,52 @@ test("no coaching from Gemini means no invented report",async()=>{
  assert.equal(ui.get("coachReport").classList.contains("hidden"),true);
  assert.equal(ui.get("saveReview").classList.contains("hidden"),true);
 });
+
+
+test("case and punctuation-only changes do not create fake speaking corrections",async()=>{
+ const ui=mockScene({natural:"CAN I CHECK IN?!",tip:"",praise:""});
+ await ui.click("start");
+ ui.get("reply").value="Can I check in?";
+ ui.click("send");await wait();await wait();
+ assert.equal(ui.count,1,"The existing single AI turn must remain the only request");
+ assert.equal(ui.get("coachReport").classList.contains("hidden"),true);
+ assert.equal(ui.get("saveReview").classList.contains("hidden"),true);
+});
+
+test("already-natural English receives a useful next practice, not an imaginary rewrite",async()=>{
+ const ui=mockScene({
+  natural:"Can I check in?!",
+  tip:"check in はホテルで到着を伝える表現。",
+  praise:"チェックインしたいことを質問で伝えられました。"
+ });
+ await ui.click("start");
+ ui.get("reply").value="Can I check in?";
+ ui.click("send");await wait();await wait();
+ const report=ui.get("coachReport");
+ assert.equal(report.classList.contains("hidden"),false);
+ assert.equal(ui.get("saveReview").classList.contains("hidden"),true);
+ const text=report.children.map(x=>x.textContent||"").join(" ");
+ assert.match(text,/言い換え候補：0件/);
+ assert.match(text,/今回伝わった表現を使って、次の質問に/);
+ assert.doesNotMatch(text,/上の言い換えから1つ選び/);
+ assert.equal(ui.count,1,"Feedback remains part of the initial AI request");
+});
+
+test("meaningful changes still appear and can be saved for practice",async()=>{
+ const ui=mockScene({
+  natural:"Could I check in, please?",
+  tip:"please を付けると依頼が少し丁寧になります。",
+  praise:"ホテルでの用件を簡潔に伝えられました。"
+ });
+ await ui.click("start");
+ ui.get("reply").value="Can I check in?";
+ ui.click("send");await wait();await wait();
+ const report=ui.get("coachReport");
+ assert.match(report.children.map(x=>x.textContent||"").join(" "),/言い換え候補：1件/);
+ assert.equal(ui.get("saveReview").classList.contains("hidden"),false);
+ ui.click("saveReview");
+ const entries=JSON.parse(ui.store.get("speakingym-saved-coaching-v1"));
+ assert.equal(entries.length,1);
+ assert.equal(entries[0].natural,"Could I check in, please?");
+ assert.equal(ui.count,1);
+});
