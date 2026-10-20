@@ -68,30 +68,19 @@ test('read-only identifies missing product or price but never creates',async()=>
   assert.equal(f.calls.some(c=>c.method==='POST'),false);
  }
 });
-test('explicit apply only creates missing test product and monthly 1480 Price',async()=>{
- for(const options of [{products:[],prices:[]},{products:[product()],prices:[]}]){
+test('previous --apply mode now fails before any Stripe API call to prevent duplicates',async()=>{
+ for(const options of [{products:[],prices:[]},{products:[product()],prices:[]},{products:[product()],prices:[price()]}]){
   const f=service(options);
-  const s=await prepareStripeTestPrice({key,apply:true,request:f.req});
-  assert.equal(s.price,'created');
-  assert.equal(s.mode,'test');
-  assert.equal(s.changed,true);
-  assert.equal(s.priceId,'price_dummy1');
-  const posts=f.calls.filter(c=>c.method==='POST');
-  assert.deepEqual(posts.map(c=>c.path),options.products.length?['/v1/prices']:['/v1/products','/v1/prices']);
-  const params=new URLSearchParams(posts.at(-1).body);
-  assert.equal(params.get('unit_amount'),'1480');
-  assert.equal(params.get('tax_behavior'),'inclusive');
-  assert.equal(params.get('recurring[interval]'),'month');
-  assert.equal(params.get('recurring[usage_type]'),'licensed');
-  assert.equal(posts.some(c=>/(customers|checkout|subscriptions|webhook)/.test(c.path)),false);
+  await assert.rejects(prepareStripeTestPrice({key,apply:true,request:f.req}),/read-only/);
+  assert.equal(f.calls.length,0);
  }
 });
 test('API errors and test-mode mismatches never pass',async()=>{
  const bad=service({overrides:{status:403}});
- await assert.rejects(prepareStripeTestPrice({key,apply:true,request:bad.req}),/HTTP 403/);
+ await assert.rejects(prepareStripeTestPrice({key,request:bad.req}),/HTTP 403/);
  let calls=0;
  const req=async()=>{calls++;return {status:200,json:async()=>list([{...product(),livemode:true}])}};
- await assert.rejects(prepareStripeTestPrice({key,apply:true,request:req}),/non-test Product/);
+ await assert.rejects(prepareStripeTestPrice({key,request:req}),/non-test Product/);
  assert.equal(calls,1);
 });
 
@@ -112,7 +101,7 @@ test('legacy-only ¥680 product must NOT be selected as next ¥1480 price target
  const oldProduct={id:'prod_legacy680',object:'product',livemode:false,active:true,name:'Speakingym Pro'};
  const f=service({products:[oldProduct],prices:[]});
  const state=await prepareStripeTestPrice({key,request:f.req});
- assert.equal(state.product,'create-needed');
+ assert.equal(state.product,'manual-review-needed');
  assert.equal(state.changed,false);
  assert.equal(f.calls.some(c=>c.method==='POST'),false);
 });
