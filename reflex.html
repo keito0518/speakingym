@@ -825,6 +825,19 @@ function stopMicManually(){
  $("resumeMic").classList.remove("hidden");
  $("micStatus").textContent="文字起こしを確認して、自分で『口から出た』か判断しよう。続きも話せるよ。";
 }
+// Manual edits must take precedence over pending speech recognition callbacks.
+// Web Speech can deliver a final/end event after the user has already corrected
+// the text; abort it immediately so no late result overwrites their changes.
+$("transcript").addEventListener("input",()=>{
+ if(!listenWanted&&!recognition)return;
+ const edited=$("transcript").value;
+ stopListening();
+ $("transcript").value=edited;
+ baseSpeech=edited.trim().slice(0,450);
+ finalSpeech="";interimSpeech="";
+ $("resumeMic").classList.remove("hidden");
+ $("micStatus").textContent="手入力の修正を優先して音声認識を停止しました。続きは『続きを話す』で追加できるよ。";
+});
 function clearSpeech(){
  stopListening();$("transcript").value="";baseSpeech="";finalSpeech="";interimSpeech="";
  $("resumeMic").classList.add("hidden");
