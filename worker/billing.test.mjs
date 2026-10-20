@@ -28,7 +28,7 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:680,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
