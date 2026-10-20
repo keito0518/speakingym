@@ -40,7 +40,10 @@ export function validateSandboxInputs({apiKey,priceId,webhookUrl}={}){
 // Stripe Workbench's current "Event destinations" use the /v2/core API;
 // legacy /v1/webhook_endpoints can coexist in the SAME Stripe sandbox.
 // Read BOTH or an already-created modern destination will look missing.
+// A v1 endpoint with a null API version inherits an unknown account default;
+// never treat that as verified snapshot compatibility for this billing worker.
 const STABLE_EVENT_API_VERSION='2026-09-30.endive';
+const LEGACY_WORKER_API_VERSION='2025-06-30.basil';
 export function validateV2EventDestinations(response,webhookUrl){
  if(!Array.isArray(response?.data)||response.data.length>100||
    response.next_page_url!==null||response.previous_page_url!==null)
@@ -58,7 +61,9 @@ export function verifiedStripeWebhookDestinations(v1,v2,webhookUrl){
   fail('webhook_endpoints_test_mode_required');
  const candidates=[
   ...older.filter(w=>w?.url===webhookUrl).map(w=>({
-   version:'v1',enabled:w.status==='enabled'&&w.connect!==true,
+   version:'v1',enabled:w.object==='webhook_endpoint'&&w.status==='enabled'&&
+     w.connect!==true&&w.application==null&&
+     [LEGACY_WORKER_API_VERSION,STABLE_EVENT_API_VERSION].includes(w.api_version),
    snapshot:true,events:w.enabled_events
   })),
   ...validateV2EventDestinations(v2,webhookUrl).map(d=>({
