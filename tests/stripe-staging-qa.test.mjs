@@ -23,6 +23,15 @@ test('sandbox client is isolated from production endpoints and requires server c
  assert.match(js,/stagingBillingSchemaReady===true/);
  assert.match(js,/stagingBillingOnly===true/);
  assert.match(js,/billingMode==='test'/);
+ assert.match(js,/quotaVersion==='pro-monthly-1000-150-v3'/);
+ assert.match(js,/freeSessionSchemaReady===true/);
+ assert.match(js,/freeSessionEnabled===false/);
+ assert.match(js,/aiReplayRequested===false/);
+ assert.match(js,/aiReplayEnabled===false/);
+ assert.match(js,/sceneIds\.length===16/);
+ assert.match(js,/billing_checkout_review/);
+ assert.match(js,/Stripeの1,480円商品・Webhook・実決済はこの確認だけでは未検証/);
+ assert.doesNotMatch(js,/1,480円Pro設定を確認/);
  assert.match(js,/checkout\.stripe\.com/);
  assert.match(js,/billing\.stripe\.com/);
  assert.match(js,/browserSessionPersistence/);
