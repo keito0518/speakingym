@@ -15,6 +15,7 @@ The separate config is `worker/wrangler.staging.toml`. It pins:
 - Isolated `USER_LIMIT` / `GLOBAL_LIMIT` rate limiting namespaces.
 - `ENFORCE_PLANS=true`, `TURN_LEDGER_MODE=enabled`.
 - `ALLOW_AI=false`, `FREE_SESSION_MODE=disabled`, `AI_REPLAY_MODE=disabled`, `REPLAY_CLEANUP_MODE=disabled`, `BILLING_MODE=disabled`.
+- `STAGING_HEALTH_ONLY=true`: initial staging deployment permits only `GET /health`; all other endpoints, including signed-in session creation, Stripe webhook and OPTIONS, return 503 without stateful actions. This is staging-only; main production config omits the flag.
 - `keep_vars=false`, so future deployments reset managed plaintext flags to these safe defaults; Worker secrets are not removed by deployment.
 
 Preflight from a clean checkout with Node 22:
@@ -45,10 +46,10 @@ If health/schema flags differ, **stop**. Do not enable AI or Free-session mode. 
 ## Actual AI and signed-user tests — explicit later gate
 Real provider calls were **not** part of the D1 test or first stage Worker smoke. After /health succeeds and with explicit owner approval:
 1. Set a separate Gemini Free-tier API key as a secret on **staging Worker only**. Check project quotas and no billing enabled. Do not put a secret in the repo, GH Actions, chat or screenshots; do not use a production paid Gemini key.
-2. Configure `ALLOW_AI=true` and `FREE_SESSION_MODE=enabled` **on staging Worker only**, carefully checking the worker name and database binding. Because `keep_vars=false` any subsequent Wrangler deploy resets plaintext flags to OFF. Keep `TURN_LEDGER_MODE=enabled`; do not enable replay, live billing or Stripe.
+2. After a separate explicit staging E2E authorization, set `STAGING_HEALTH_ONLY=false` **on the isolated staging Worker only** (verify the staging Worker name/D1 binding again). Then configure `ALLOW_AI=true` and `FREE_SESSION_MODE=enabled` **on staging Worker only**, carefully checking the worker name and database binding. Because `keep_vars=false` any subsequent Wrangler deploy resets plaintext flags to OFF. Keep `TURN_LEDGER_MODE=enabled`; do not enable replay, live billing or Stripe.
 3. Use a signed-in, authorized dedicated staging Firebase QA account (the auth code currently uses the existing project's issuer) to exercise the Worker endpoints against staging D1. Cover first failure→refund→retry→success, immediate provider failure, timeout, concurrent first turns, 5/day, 20/session, cross-account isolation and retry after expiry. Avoid real customer UID, free-text or actual payment data.
 4. If the stage AI calls are not available due to API project quota, report this as blocked, **not passed**; don't enable paid Gemini to work around it. Verify 20-second provider timeout behavior and error/refund via staging Worker logs without user text/UID.
-5. Restore staging `ALLOW_AI=false` and `FREE_SESSION_MODE=disabled` after QA if it is not under active testing. Preserve D1 fixtures only if needed for investigation and redact any logs.
+5. Restore staging `STAGING_HEALTH_ONLY=true`, `ALLOW_AI=false` and `FREE_SESSION_MODE=disabled` after QA if it is not under active testing. Preserve D1 fixtures only if needed for investigation and redact any logs.
 
 ### Production gate
 The **production** `FREE_SESSION_MODE` remains OFF. A separate fresh production D1 backup and restore integrity check, owner authorization, 0005-only production migration with mode still OFF, health readiness check and explicit production flag enablement are required **after** the staging Worker is validated. Do not migrate 0003/0004, activate `AI_REPLAY_MODE`, change Gemini billing, or Stripe live.
