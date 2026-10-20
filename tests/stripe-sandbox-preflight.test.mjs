@@ -88,6 +88,7 @@ test('reject incorrect prices, test trial or live-mode Price',async()=>{
 test('webhook must uniquely match stage, be enabled non-live and cover all events',async()=>{
  for(const changes of [
   {livemode:true},{status:'disabled'},{connect:true},{application:'ca_other'},
+  {application:undefined},
   {object:'other'},{api_version:null},{api_version:undefined},
   {api_version:'2026-10-07.preview'},{api_version:'2024-01-01'},
   {url:'https://other.test/billing/webhook'}
