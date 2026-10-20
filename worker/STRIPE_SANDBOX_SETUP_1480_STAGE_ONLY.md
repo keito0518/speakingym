@@ -32,18 +32,18 @@ node scripts/staging-billing-schema-gate.mjs --apply
 
 The script first checks local safe config, checks remote D1 name/UUID, checks base tables, applies `worker/migrations/0001-billing.sql` by explicit **staging** name and `wrangler.staging.toml`, and verifies both new tables. It refuses partial schema, unexpected SQL and mismatched target. It never runs 0006, drops tables, changes quotas, or touches production. An authentication/JSON error stops work without claiming success.
 
-## 2. Optional Stripe TEST price automation (not yet executed against the real account)
+## 2. Read-only Stripe TEST catalogue inspection (never create duplicate products)
 
-The draft also includes `scripts/stripe-test-price-bootstrap.mjs`: **read-only by default**; it lists the Stripe TEST product and prices to avoid creating duplicate pricing. Under an explicit `--apply`, with a locally configured `SPEAKINGYM_STRIPE_TEST_KEY=sk_test_...` that is never pasted into chat or GitHub, it creates only a missing **TEST** product and/or **¥1,480 tax-inclusive licensed monthly** Price. It refuses Live keys, incomplete listings and duplicate exact matches. It never creates customers, subscriptions, webhooks, invoices, Charges, or Checkout. The returned Price identifier must be stored privately in the staging Worker; this helper does **not** activate billing.
+The owner's screenshots already show an **active, separate ¥1,480/month test product** alongside the legacy ¥680 product. It is **not necessary to create any product or Price** unless future Stripe API evidence contradicts the screenshots. The existing `scripts/stripe-test-price-bootstrap.mjs` now does **GET requests only** with an optional locally provided `SPEAKINGYM_STRIPE_TEST_KEY=sk_test_...`, distinguishes the new product, and checks that the matching Price is ¥1,480 JPY/month, tax inclusive, licensed with no trial.
 
 ```sh
 node --test tests/stripe-test-price-bootstrap.test.mjs
 node scripts/stripe-test-price-bootstrap.mjs
-# Only when TEST account, Stripe key, and result are independently verified:
-# node scripts/stripe-test-price-bootstrap.mjs --apply
 ```
 
-This does **not** prove the local Windows D1 schema script finished: confirm the staging-only success output or perform a fresh read-only verification in a later authenticated run.
+The prior `--apply` mode has been intentionally removed: **it now fails before making any Stripe API call**, preventing accidental duplicate product/price creation. If the Price is not found because the product name varies or tax behavior differs, it reports **manual review**; do not silently create another price or change the ¥680 plan.
+
+Only GET-only credential handling is supported here. Never paste a Stripe secret, Firebase UID, webhook signing key, or account identifiers in GitHub, chat, screenshots or automation logs. These are local, not yet actual verified Stripe API results.
 
 ## 3. Stripe dashboard — only the TEST/sandbox account
 
