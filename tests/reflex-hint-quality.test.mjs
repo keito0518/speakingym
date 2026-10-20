@@ -17,6 +17,9 @@ test('all 151 challenge cards have unique IDs, useful non-placeholder learning h
   assert.ok(typeof card.hint==='string'&&card.hint.trim().length>=16,card.id+' hint is missing');
   assert.doesNotMatch(card.hint,generic,card.id+' has generic hint');
   assert.ok(typeof card.sample==='string'&&card.sample.trim(),card.id+' sample missing');
+  const norm=x=>x.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+  const fullAnswer=norm(card.sample);
+  if(fullAnswer.length>=12)assert.ok(!norm(card.hint).includes(fullAnswer),card.id+' hint reveals the whole example');
  }
  assert.ok(new Set(cards.map(c=>c.hint)).size>=140,'hints should be specific, not recycled for every question');
 });
