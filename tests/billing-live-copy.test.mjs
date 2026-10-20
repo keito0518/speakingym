@@ -14,7 +14,7 @@ const targets=[
 ];
 
 async function ui(serverData,hasToken=true) {
- const elements=new Map();
+ const elements=new Map(),windowListeners={};
  const make=()=>({
   textContent:'',hidden:false,disabled:false,checked:false,listeners:{},
   classList:{toggle(){},remove(){},add(){}},
@@ -27,19 +27,24 @@ async function ui(serverData,hasToken=true) {
   document:{getElementById:get},
   window:{
    speakingymAccount:{getIdToken:async()=>hasToken?'mock-id-token':null},
-   addEventListener(){}
+   addEventListener(name,fn){windowListeners[name]=fn}
   },
   location:{search:'',assign(){throw Error('Stripe redirect must not happen in a GET status read')}},
   URL,URLSearchParams,AbortSignal,
   fetch:async(url,options)=>{
    fetches.push({url,method:options?.method});
+   if(serverData==='network_error')throw Error('network_offline');
    return serverData?{ok:true,json:async()=>serverData}:{ok:false,json:async()=>({error:'billing_disabled'})};
   }
  };
  vm.runInNewContext(js,sandbox,{timeout:3000});
  // Await the async refresh invoked by the module at page load.
  for(let i=0;i<4;i++)await new Promise(resolve=>setImmediate(resolve));
- return {get,fetches};
+ return {get,fetches,refresh:async(nextData,nextHasToken=hasToken)=>{
+  serverData=nextData;hasToken=nextHasToken;windowListeners.focus();
+  for(let i=0;i<4;i++)await new Promise(resolve=>setImmediate(resolve));
+ }};
+
 }
 
 test('individual-operator commerce notice exists but explicitly remains unverified before payment launch',()=>{
@@ -95,6 +100,31 @@ test('LIVE requires explicit pre-Checkout acceptance; cancel and unchecked attem
  assert.equal(state.fetches.length,2);
  assert.equal(state.fetches.at(-1).method,'POST');
  assert.match(state.fetches.at(-1).url,/\/billing\/checkout$/);
+});
+
+test('Live offer disappears on network error, sign-out and invalid billing mode, and sandbox can recover',async()=>{
+ const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false});
+ assert.equal(state.get('sg-pro-availability').textContent,'申込受付中');
+ assert.equal(state.get('sg-checkout').disabled,false);
+ await state.refresh('network_error');
+ assert.equal(state.get('sg-pro-availability').textContent,'受付状況を確認中');
+ assert.equal(state.get('sg-checkout').disabled,true);
+ assert.equal(state.get('sg-live-review').hidden,true);
+ assert.equal(state.get('sg-pro-payment-status').textContent,'申込受付状況を確認中');
+ assert.doesNotMatch(state.get('sg-pro-sale-notice').textContent,/毎月請求されます|申込受付中/);
+ assert.match(state.get('sg-billing-status').textContent,/契約情報を確認できません/);
+ const count=state.fetches.length;
+ await state.refresh({mode:'live',status:'none',pro:false,hasCustomer:false},false);
+ assert.equal(state.fetches.length,count,'Sign-out must not reuse old identity');
+ assert.equal(state.get('sg-pro-availability').textContent,'受付状況を確認中');
+ assert.equal(state.get('sg-checkout').disabled,true);
+ await state.refresh({mode:'disabled',status:'none',pro:false},true);
+ assert.equal(state.get('sg-pro-availability').textContent,'受付状況を確認中');
+ assert.equal(state.get('sg-checkout').disabled,true);
+ await state.refresh({mode:'test',status:'none',pro:false,hasCustomer:false},true);
+ assert.equal(state.get('sg-pro-availability').textContent,'招待テストのみ');
+ assert.equal(state.get('sg-checkout').disabled,false);
+ assert.equal(state.get('sg-pro-payment-status').textContent,'一般向けの支払受付なし');
 });
 
 test('verified TEST Stripe mode labels sandbox registration as no-charge, never a live purchase',async()=>{
