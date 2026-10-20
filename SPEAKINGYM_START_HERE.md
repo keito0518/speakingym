@@ -45,3 +45,11 @@
 - **[PR #64](https://github.com/keito0518/speakingym/pull/64)**（Pro受付表示の古いLive認証情報が通信失敗/ログアウト/アカウント切替後に残らないようにする）と **[PR #65](https://github.com/keito0518/speakingym/pull/65)**（`scripts/pro-paid-readonly-smoke.mjs`：公開Pages5ページ＋Worker healthのGETのみで商用準備状況をfail-closed確認）を **#62のドラフトブランチにマージ済み**。最終 #65 の CI では **303/303 Nodeテスト、Chromium/WebKitブラウザQA、Worker安全性テスト成功**。
 - 新しい有料公開スモークは読み取り専用。**現在の本番では特商法と利用規約が未確定・Stripe Live無効のため失敗するのが正しい**。テスト合格だけで法律対応・Stripe sandbox E2E・実請求・一般公開を承認できない。実決済/バックアップ/D1/AI原価/公開許可は依然NO-GO。
 - 実装済みの検査はユーザー本人の手動操作を代替しない。独立staging Worker実デプロイ、実Stripe sandbox Checkout→Webhook→更新/失敗/解約、Gemini請求原価、請求時開示メールの実受信返信、法令適合、ユーザーの段階別承認が残る。
+
+## 2026-10-20 追加：Stripe sandbox 実API設定プリフライト
+
+- **最新の決済開発:** [PR #67](https://github.com/keito0518/speakingym/pull/67) はテスト成功後に **DRAFT PR #62のブランチへマージ済み**（#62のhead確認値 `4cb7f19330d351c8b3ff11fa3bc9355c6a3a1801`）。**main未マージ・Cloudflare未デプロイ・Stripe Live未実施。**
+- `scripts/stripe-sandbox-preflight.mjs` は **実StripeテストモードAPIでの読み取り専用GET 3回**（Price・Webhook endpoints・Customer Portal configs）を行う。sk_test_しか受け付けず、本番Worker宛Webhookを拒否。価格¥680税込月次、必要Webhookイベント、Portalの期間末解約・支払方法変更をfail-closed検査する。秘密情報を出力しない。実行用ガイド `worker/STRIPE_TEST_API_PREFLIGHT_2026-10-20.md`。
+- **検証された事実:** #67のGitHub CIで Node **309/309成功**、Chromium/WebKit成功、AI Worker安全性テスト成功。**これはStripe APIに実接続した証拠ではない**。この実行環境にはStripeアカウント接続も独立staging Workerの実デプロイ証拠もなかったため、本物のStripe sandbox Checkout→署名Webhook→Pro権限→更新成功/失敗→Portal解約→期限満了は全て未検証。
+- **次の本当の作業:** StripeテストアカウントとCloudflareの独立staging Worker/D1の安全な認証済み接続を用意し、まずGET-onlyプリフライトを実行。次にモックでないStripe sandbox E2Eを実施。キー・UID・決済情報を会話、GitHub、CIログに投稿しない。実sandbox E2Eまでは `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified` を絶対に設定しない。
+- 本番課金、D1 migration、Gemini有料化、Proプラン価格・利用枠、一般公開の承認は一切変更なし。正式公開目標は10/31のままだが、法令・原価・Stripe実E2E・運営者承認のNO-GO条件を優先する。
