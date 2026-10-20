@@ -9,6 +9,11 @@ export function billingMode(env={}) {
    /^whsec_/.test(env.STRIPE_WEBHOOK_SECRET||'') &&
    /^price_/.test(env.STRIPE_PRICE_ID||'') && !!env.BILLING_TEST_UIDS?.trim())return 'test';
  if(env.BILLING_MODE==='live' && env.LIVE_BILLING_ENABLED==='enabled' &&
+   // Each launch blocker must be independently attested after real evidence review.
+   // These flags default OFF. Code/CI success alone never authorizes live charges.
+   env.LIVE_LEGAL_READY==='verified' &&
+   env.LIVE_STRIPE_SANDBOX_E2E_PASSED==='verified' &&
+   env.LIVE_UNIT_ECONOMICS_REVIEWED==='verified' &&
    env.TURN_LEDGER_MODE==='enabled' &&
    /^sk_live_/.test(env.STRIPE_LIVE_SECRET_KEY||'') &&
    /^whsec_/.test(env.STRIPE_LIVE_WEBHOOK_SECRET||'') &&

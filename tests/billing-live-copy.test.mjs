@@ -15,9 +15,10 @@ const targets=[
 async function ui(serverData,hasToken=true) {
  const elements=new Map();
  const make=()=>({
-  textContent:'',hidden:false,disabled:false,
+  textContent:'',hidden:false,disabled:false,checked:false,listeners:{},
   classList:{toggle(){},remove(){},add(){}},
-  addEventListener(){},
+  scrollIntoView(){},
+  addEventListener(event,fn){this.listeners[event]=fn},
  });
  const get=id=>{if(!elements.has(id))elements.set(id,make());return elements.get(id)};
  const fetches=[];
@@ -60,6 +61,29 @@ test('verified LIVE Stripe mode displays paid recurring terms everywhere, not sa
  assert.equal(state.get('sg-pro-compare-heading').textContent,'Pro');
  assert.doesNotMatch(state.get('sg-pro-sale-notice').textContent,/請求はありません|募集・決済は行っていません/);
  assert.doesNotMatch(state.get('sg-pro-faq-availability').textContent,/一般公開時期はまだ未定/);
+});
+
+test('LIVE requires explicit pre-Checkout acceptance; cancel and unchecked attempts cannot submit payment',async()=>{
+ const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false});
+ assert.equal(state.get('sg-live-review').hidden,true);
+ assert.equal(state.fetches.length,1,'GET status only');
+ state.get('sg-checkout').listeners.click();
+ assert.equal(state.get('sg-live-review').hidden,false);
+ assert.equal(state.get('sg-live-proceed').disabled,true);
+ assert.equal(state.fetches.length,1,'No checkout POST merely by opening the review');
+ await state.get('sg-live-proceed').listeners.click();
+ assert.equal(state.fetches.length,1,'Unacknowledged click must fail closed');
+ state.get('sg-live-cancel').listeners.click();
+ assert.equal(state.get('sg-live-review').hidden,true);
+ assert.equal(state.fetches.length,1,'Cancel must not start checkout');
+ state.get('sg-checkout').listeners.click();
+ state.get('sg-live-accept').checked=true;
+ state.get('sg-live-accept').listeners.change();
+ assert.equal(state.get('sg-live-proceed').disabled,false);
+ await state.get('sg-live-proceed').listeners.click();
+ assert.equal(state.fetches.length,2);
+ assert.equal(state.fetches.at(-1).method,'POST');
+ assert.match(state.fetches.at(-1).url,/\/billing\/checkout$/);
 });
 
 test('verified TEST Stripe mode labels sandbox registration as no-charge, never a live purchase',async()=>{
