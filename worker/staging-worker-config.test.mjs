@@ -68,7 +68,7 @@ test('Stripe staging config cannot switch the Worker, D1, rate limits, or AI on'
  assert.equal(key(stageBilling,'BILLING_MODE'),'test');
  assert.equal(key(staging,'BILLING_MODE'),'disabled');
  assert.doesNotMatch(stageBilling,/STRIPE_(?:SECRET|LIVE)|GEMINI_API_KEY|CF_API_TOKEN/);
- assert.deepEqual([...stageBilling.matchAll(/^namespace_id\\s*=\\s*"(\\d+)"$/gm)].map(m=>m[1]),
-  [...staging.matchAll(/^namespace_id\\s*=\\s*"(\\d+)"$/gm)].map(m=>m[1]));
- assert.equal((stageBilling.match(/^\\[\\[d1_databases\\]\\]$/gm)||[]).length,1);
+ assert.deepEqual([...stageBilling.matchAll(/^namespace_id\s*=\s*"(\d+)"$/gm)].map(m=>m[1]),
+  [...staging.matchAll(/^namespace_id\s*=\s*"(\d+)"$/gm)].map(m=>m[1]));
+ assert.equal((stageBilling.match(/^\[\[d1_databases\]\]$/gm)||[]).length,1);
 });
