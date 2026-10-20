@@ -13,7 +13,7 @@ function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerRead
   ['reflex.html','60秒チャレンジ <button id="start">'],
   ['scenes.html','AIシーン練習 <button id="start">'+Array.from({length:16},(_,i)=>'<button data-scene="'+String.fromCharCode(97+i)+'">').join('')],
   ['phrasebook.html','共通フレーズ帳<div id="phrases">'],
-  ['plans.html','料金・利用プラン 680円'],
+  ['plans.html','料金・利用プラン 1,480円'],
   ['speech-settings.js','window.speakingymSpeech = {}; window.speechSynthesis'],
   ['phrasebook.js','window.speakingymPhrases = {}; localStorage'],
   ['analytics-events.js','window.speakingymAnalytics = {}; sg_ai_first_reply'],
@@ -28,7 +28,7 @@ function fakeFetch({ready=true,billingMode='test',ledgerEnabled=false,ledgerRead
    if(init.method==='OPTIONS')return new Response(null,{status:204,headers:{'access-control-allow-origin':site.slice(0,-1)}});
    return Response.json({error:'login_required'},{status:401});
   }
-  if(url===api+'health')return Response.json({status:'ok',quotaVersion:'pro-monthly-600-100-v2',
+  if(url===api+'health')return Response.json({status:'ok',quotaVersion:'pro-monthly-1000-150-v3',
    aiEnabled:ready,aiConfigured:ready,keyConfigured:ready,plansEnabled:true,plansReady:true,
    freeSessionRequested:freeRequested,freeSessionEnabled:freeRequested&&ledgerEnabled,freeSessionSchemaReady:freeReady,
    billingMode,turnLedgerEnabled:ledgerEnabled,turnLedgerSchemaReady:ledgerReady,aiReplayRequested:replayRequested,aiReplayEnabled:replayRequested&&ledgerEnabled,aiReplaySchemaReady:replayReady,model:'gemini-3.5-flash-lite',

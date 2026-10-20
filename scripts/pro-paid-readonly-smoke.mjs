@@ -37,7 +37,7 @@ export async function verifyPaidLaunchReadOnly(fetcher=fetch, {site=SITE,worker=
   read(site+'contact.html'),
   read(worker+'health')
  ]);
- assert.match(plans,/¥680|680円|680/, 'JPY 680 price must be presented');
+ assert.match(plans,/¥1,480|1,480円|1480/, 'JPY 1480 price must be presented');
  assert.match(plans,/自動更新|毎月請求/, 'Subscription renewal disclosure missing');
  assert.match(plans,/href="\.\/tokusho\.html"/, 'Linked legal disclosure missing');
  assert.match(plans,/href="\.\/terms\.html"/, 'Terms link missing from purchase flow');
@@ -48,7 +48,7 @@ export async function verifyPaidLaunchReadOnly(fetcher=fetch, {site=SITE,worker=
   'UNVERIFIED legal draft may not be presented for live billing');
  assert.doesNotMatch(terms,/有料プランの購入・決済は提供していません|ベータ版/,
   'Outdated free-beta terms must not be used for real recurring charges');
- assert.match(terms,/680|有料|Pro/, 'Paid terms must mention the paid service');
+ assert.match(terms,/1,480|有料|Pro/, 'Paid terms must mention the paid service');
  assert.match(terms,/解約|キャンセル/, 'Cancellation must be explained in terms');
  assert.match(privacy,/Stripe/, 'Privacy notice must mention payment processor');
  assert.match(contact,/mailto:/, 'Customer contact channel missing');
@@ -64,7 +64,7 @@ export async function verifyPaidLaunchReadOnly(fetcher=fetch, {site=SITE,worker=
  assert.equal(health.plansReady,true,'D1 plan binding not ready');
  assert.equal(health.turnLedgerEnabled,true,'AI turn-ledger protection not enabled');
  assert.equal(health.turnLedgerSchemaReady,true,'AI turn-ledger schema missing');
- assert.equal(health.quotaVersion,'pro-monthly-600-100-v2');
+ assert.equal(health.quotaVersion,'pro-monthly-1000-150-v3');
  assert.ok(Array.isArray(health.sceneIds)&&new Set(health.sceneIds).size>=16,'AI scene coverage unexpected');
  return {publicReadOnlyChecks:true,mode:health.billingMode,pagesChecked:5,workerHealthChecked:true,
   note:'Public GET-only evidence. Not a real Stripe checkout/webhook test, legal review, audience check, or authorization to activate subscriptions.'};

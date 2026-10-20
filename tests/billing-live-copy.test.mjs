@@ -69,10 +69,10 @@ test('verified LIVE Stripe mode displays paid recurring terms everywhere, not sa
  assert.equal(state.fetches.length,1);
  assert.equal(state.fetches[0].method,'GET');
  assert.equal(state.get('sg-checkout').disabled,false);
- assert.match(state.get('sg-checkout').textContent,/Proに申し込む（月680円・税込）/);
+ assert.match(state.get('sg-checkout').textContent,/Proに申し込む（月1,480円・税込）/);
  assert.match(state.get('sg-pro-sale-notice').textContent,/毎月請求/);
  assert.match(state.get('sg-pro-price-caption').textContent,/自動更新/);
- assert.equal(state.get('sg-pro-payment-status').textContent,'月680円・税込、自動更新');
+ assert.equal(state.get('sg-pro-payment-status').textContent,'月1,480円・税込、自動更新');
  assert.equal(state.get('sg-pro-availability').textContent,'申込受付中');
  assert.equal(state.get('sg-pro-compare-heading').textContent,'Pro');
  assert.doesNotMatch(state.get('sg-pro-sale-notice').textContent,/請求はありません|募集・決済は行っていません/);

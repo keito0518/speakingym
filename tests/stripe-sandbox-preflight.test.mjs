@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {inspectStripeSandbox,validateSandboxInputs} from '../scripts/stripe-sandbox-preflight.mjs';
 
 const key=['sk','test','fixtureForReadOnlyChecks'].join('_');
-const priceId='price_Test680';
+const priceId='price_Test1480';
 const webhookUrl='https://speakingym-survival-ai-staging.example.workers.dev/billing/webhook';
 const inputs={apiKey:key,priceId,webhookUrl};
 const price=()=>({object:'price',id:priceId,livemode:false,active:true,
- currency:'jpy',unit_amount:680,tax_behavior:'inclusive',type:'recurring',
+ currency:'jpy',unit_amount:1480,tax_behavior:'inclusive',type:'recurring',
  billing_scheme:'per_unit',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}});
 const endpoint=()=>({id:'we_test',url:webhookUrl,livemode:false,status:'enabled',
  enabled_events:['checkout.session.completed','customer.subscription.created','customer.subscription.updated',
@@ -29,11 +29,11 @@ function scenario(edits={}){
  };
  return {calls,fetcher};
 }
-test('read-only sandbox inspection checks monthly ¥680 tax-inclusive, events and cancellation',async()=>{
+test('read-only sandbox inspection checks monthly ¥1,480 tax-inclusive, events and cancellation',async()=>{
  const f=scenario(),result=await inspectStripeSandbox(f.fetcher,inputs);
  assert.equal(result.passed,true);
  assert.equal(result.mode,'test');
- assert.equal(result.priceJPY,680);
+ assert.equal(result.priceJPY,1480);
  assert.equal(result.portalCancelAtPeriodEnd,true);
  assert.equal(f.calls.length,3);
  for(const {url,options} of f.calls){
@@ -69,7 +69,7 @@ test('reject incorrect prices, test trial or live-mode Price',async()=>{
   {active:false},{billing_scheme:'tiered'},{type:'one_time'},{id:'price_other'}
  ]){
   const f=scenario({price:{...price(),...changes}});
-  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/stripe_test_price_not_680/);
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/stripe_test_price_not_1480/);
  }
 });
 test('webhook must uniquely match stage, be enabled non-live and cover all events',async()=>{
