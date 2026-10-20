@@ -1,3 +1,5 @@
+> **New chat? Read [SPEAKINGYM_START_HERE.md](./SPEAKINGYM_START_HERE.md) first, then verify main, PRs and Actions.** This file is a historical log: newest checkpoints supersede older statements.
+
 # Speakingym development handoff — 2026-10-18
 
 ## Safety boundaries
@@ -190,3 +192,15 @@ PR #26 has been merged. Start by checking latest main and the new production CI/
 
 ### Work style
 Owner prefers autonomous GitHub code+CI+PR work with minimal manual requests. Do safe code improvements in dedicated branches, run QA and merge only when CI passes; stop for Cloudflare credentials, schema/data mutations, real charges, new paid AI usage and legal/pricing decisions. Report verified results separately from provider/browser assumptions.
+
+
+## Canonical 2026-10-20 Pro launch and cross-chat handoff (newest checkpoint)
+
+- **Target**: 2026-10-31 public release INCLUDING real recurring Pro billing at JPY 680/mo. This is a target, **not permission** to activate real charges, Stripe Live secrets, production D1 changes or paid Gemini.
+- **Main baseline before this docs PR**: 54c61c57641218e528b976df539d9a68fe4880c7. PR #59 merged to main, adding initial staging GET-/health-only safety. Actual Cloudflare staging Worker deployment is unverified.
+- **Commercial implementation**: old PR #43 remains DRAFT and unmerged, based on old main. PRs #60 and #61 merged to #43 branch ONLY; they enforce real legal, real Stripe sandbox E2E, real cost verification before Live and separate authorization for public activation after invited pilot.
+- **Current preferred integration**: [PR #62](https://github.com/keito0518/speakingym/pull/62), DRAFT, not merged/deployed. Created from latest main, carrying gated billing code, preserving opt-in GA4 and staging/AI safety. Last verified head 4dffc97780c4f4f1fc140a993fd8ff98682677e8: 296/296 Node tests, Chromium/WebKit browser QA, AI Worker and account-safety checks passed.
+- **Operator identity direction**: individual side business, no incorporation planned. User prefers request-based omission of home address/telephone on public site *only if legally compliant*: interested buyers must be able to request and receive the real seller name, actual business address and working telephone by private email in ample time before buying. Do not store personal identifiers in GitHub, chat or CI; there is no confirmation that email receipt/reply service is operational.
+- **Draft on PR #62**: noindex/unverified tokusho.html, contact.html mailto disclosure request, INDIVIDUAL_OPERATOR_TOKUSHO_PLAN_2026-10-20.md and tests/operator-disclosure-request.test.mjs. Legal mode chosen as direction only: LIVE_LEGAL_READY is NOT verified. Actual identity delivery, cancellation/refund, real Stripe sandbox lifecycle and Checkout confirmation, p95 Gemini cost/capacity, production backup/migration verification and Cloudflare deploy still outstanding.
+- **Do not change without separate owner authorization**: prod data, prod 0005/0006 migrations, Pro/Free caps, LIVE Stripe, billed Gemini, owner secrets, and separate invitation/public switch. Prod Free-session mode remains OFF, stage Worker unverified, and original ledger must not be disabled.
+- **Continuity**: read [SPEAKINGYM_START_HERE.md](./SPEAKINGYM_START_HERE.md) before starting any new conversation. This file and code history persist in GitHub but **the chat transcript does not automatically sync**. Update handoff at significant milestones. The user should be able to say just: 「Speakingymの続きをお願い。GitHubのSPEAKINGYM_START_HERE.mdを読んで進めて。」
