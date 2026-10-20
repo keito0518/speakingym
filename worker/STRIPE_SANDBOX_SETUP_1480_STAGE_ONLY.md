@@ -45,6 +45,17 @@ The prior `--apply` mode has been intentionally removed: **it now fails before m
 
 Only GET-only credential handling is supported here. Never paste a Stripe secret, Firebase UID, webhook signing key, or account identifiers in GitHub, chat, screenshots or automation logs. These are local, not yet actual verified Stripe API results.
 
+### One-pass verification (requires an existing local Stripe TEST-only key; no credentials in GitHub)
+
+`scripts/stripe-test-single-pass-audit.mjs` can combine the catalogue audit above and `scripts/stripe-sandbox-preflight.mjs` automatically, with **no manual Price ID lookup or webhook URL input**. It checks the existing ¥1,480 product, matching tax-inclusive monthly Price, old and new TEST webhook destinations, seven event subscriptions, stable snapshot version, and TEST customer portal. All six requests are **GET-only**, never creating a product, subscription or charge.
+
+```sh
+node --test tests/stripe-test-single-pass-audit.test.mjs
+node scripts/stripe-test-single-pass-audit.mjs
+```
+
+The second command requires `SPEAKINGYM_STRIPE_TEST_KEY` already set securely **in that local process environment**. Do not paste the key into ChatGPT, terminal screenshots, GitHub, logs, or a tracked file. If no key is available, leave this check as **not run** and use the Stripe TEST dashboard later. A successful result would still **not** verify signed webhook deliveries or a genuine Checkout subscription.
+
 ## 3. Stripe dashboard — only the TEST/sandbox account
 
 **Do not create another product:** user screenshot already confirms **Speakingym Pro 1480（サンドボックス検証用）** exists in the TEST sandbox alongside a distinct ¥680 legacy product. Reuse the correct ¥1,480 TEST Price after API verification; leave legacy untouched.
