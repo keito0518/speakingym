@@ -125,6 +125,10 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <div class="bar" aria-hidden="true"><div class="bar-fill" id="progress"></div></div>
   <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">60 SECOND CHALLENGE</div><p class="prompt-scene" id="situation"></p><div id="promptCue" class="prompt-cue">あなたなら英語で何と言う？</div><h2 id="challenge"></h2></div>
   <p class="voice-reminder" id="roundNote">例文は終了後の講評で公開。まずは自分の英語を！</p>
+  <details id="hintPanel" style="max-width:650px;margin:8px auto 16px;padding:9px 13px;border:1px solid #dbe7d8;border-radius:10px;background:#f0f7ef;color:#244f38;font-size:13px;line-height:1.7">
+    <summary style="font-weight:850;cursor:pointer;min-height:32px;display:list-item">💡 まず自分で答えて、困ったらヒントを見る</summary>
+    <p id="hintText" style="margin:8px 0 2px"></p>
+  </details>
 <div class="speech-panel" id="speechPanel">
  <div class="speech-actions"><button class="btn" id="micBtn" type="button">🎙 英語を話して入力</button><button class="btn hidden" id="stopMic" type="button">⏹ 認識停止</button><button class="btn hidden" id="resumeMic" type="button">＋ 続きを話す</button><button class="btn" id="clearSpeech" type="button">✕ 全消し</button></div>
  <label for="transcript">聞き取った英語（手入力・修正もOK）</label>
@@ -1215,6 +1219,8 @@ function nextCard(){
  $("promptCue").textContent=chosenLevel==="challenge"?"HOW WOULD YOU RESPOND?":"あなたなら英語で何と言う？";
  $("situation").textContent=problem.situation;
  $("challenge").textContent=problem.challenge;
+ $("hintPanel").open=false;
+ $("hintText").textContent=current.hint;
  $("roundNote").textContent="例文は最後まで非公開！ 自分の英語で答えよう。";
 }
 function recordAttempt(outcome){
