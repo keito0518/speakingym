@@ -11,7 +11,7 @@ test('sales copy distinguishes daily Free caps from monthly Pro caps',()=>{
  assert.equal(PLAN_LIMITS.pro.monthlyTeacher,100);
  assert.match(plans,/Freeは1日5セッション/);
  assert.match(plans,/各セッション最大20ターン/);
- assert.match(plans,/Proは日次のセッション数上限なし/);
+ assert.match(plans,/Proは日次のセッション数制限がなく/);
  assert.match(plans,/月600ターン/);
  assert.match(plans,/AI先生の講評は月100回/);
  assert.match(plans,/Freeを上限近くまで使う方は、月間の会話回数がProを上回る場合/);
