@@ -35,6 +35,15 @@
 - `BILLING_LIVE_AUDIENCE=invited` と `BILLING_LIVE_UIDS` = Cloudflare Secret（初期パイロット。一般公開時のみaudienceをpublic）
 - `LIVE_PUBLIC_RELEASE_APPROVED=approved`：**招待制テストの実請求・返金・解約を確認した後**に、運営者の別承認でpublicへ移行するときだけ設定。`BILLING_LIVE_AUDIENCE=public` 単独ではLive無効。招待制の間は未設定のまま。
 
+## 本番課金用「閲覧のみ」公開直前スモーク（追加 2026-10-20）
+
+- スクリプト：`node scripts/pro-paid-readonly-smoke.mjs`（実際の料金ページ/特商法/規約/プライバシー/問い合わせの公共GETとWorker `GET /health` のみ）。
+- 何も販売しない。Stripe Checkout/Portal/API、Gemini、Firebase認証、D1書き込み、秘密情報、個人の購入情報を使用しない。
+- **実際の招待制Live動作確認に別途明示承認して開始した後**、正式なページ内容が揃っているかを確認する段階で手動実行する。現状は `tokusho.html` が草案・`terms.html` が無料ベータ向け・WorkerはLiveではないため、**不合格になるのが正しい**。合格させるためにチェックを緩めたりフラグを無断で切り替えたりしない。
+- 価格・自動更新・法定表記へのリンク・利用規約・解約案内・プライバシー上のStripe記載・本番WorkerのLive/ledger/AI/schemaと16シーンをチェックする。GitHub CIのローカルHTML確認は本番Webページの代わりにはならない。
+- **重要**：このスモークに合格しても法令適合、実Stripeでの初回課金・Webhook・更新/失敗・解約・返金、メール開示の運用、決済ページの最終確認、収益性、本番一般公開が承認されるわけではない。本人の段階別GO判断と実検証が必須。
+- このスクリプトは旧 `scripts/prod-smoke.mjs` の無料ベータ監視を置き換えない。一般公開時は無料ベータ監視の期待値見直しも別途必要。
+
 ## 諸注意
 - GitHubの main へマージすると既存Workers/Pagesの自動デプロイが動き得る。コードレビューと承認までドラフトPRに置く。
 - 現在の `scripts/prod-smoke.mjs` は `billingMode=test/disabled` のみ受理する。LIVEへの切替直前に商用用チェックを**別途**作り、public paid checkoutと法定ページの正常動作を確認してから切り替える。スモークを単純に弱めない。
