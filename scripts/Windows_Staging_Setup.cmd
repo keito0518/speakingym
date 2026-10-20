@@ -44,7 +44,7 @@ popd
 
 REM Wrangler prints staging workers.dev URL. Verify exact hostname before any GET-only request.
 set "STAGING_URL="
-for /f "usebackq delims=" %%U in (\`powershell.exe -NoProfile -Command "$s=Get-Content -Raw (Join-Path $env:TMPROOT 'deploy-log.txt');$m=[regex]::Match($s,'https://speakingym-survival-ai-staging\.[a-z0-9-]+\.workers\.dev');if($m.Success){$m.Value}"\`) do set "STAGING_URL=%%U"
+for /f "usebackq delims=" %%U in (`powershell.exe -NoProfile -Command "$s=Get-Content -Raw (Join-Path $env:TMPROOT 'deploy-log.txt');$m=[regex]::Match($s,'https://speakingym-survival-ai-staging\.[a-z0-9-]+\.workers\.dev');if($m.Success){$m.Value}"`) do set "STAGING_URL=%%U"
 if not defined STAGING_URL goto :no_url
 echo.
 echo Checking staging /health (GET-only; no real user, AI or Stripe calls)...
