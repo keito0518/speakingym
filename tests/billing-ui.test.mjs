@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const script=readFileSync(new URL('../billing-ui.js',import.meta.url),'utf8');
 async function ui({token='id-token',data={mode:'test',status:'none',pro:false},ok=true}={}){
  const nodes=new Map(),calls=[],redirects=[],listeners={};
- const node=id=>{if(!nodes.has(id))nodes.set(id,{listeners:{},addEventListener(event,fn){this.listeners[event]=fn}});return nodes.get(id)};
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{listeners:{},classList:{toggle(){}},addEventListener(event,fn){this.listeners[event]=fn}});return nodes.get(id)};
  const sandbox={document:{getElementById:node},window:{speakingymAccount:{getIdToken:async()=>token},addEventListener(k,fn){listeners[k]=fn}},location:{search:'?billing=success',assign:url=>redirects.push(url)},URL,URLSearchParams,Date,AbortSignal,
  fetch:async(url,options)=>{calls.push({url,options});return {ok,json:async()=>data}}};
  vm.runInNewContext(script,sandbox);await new Promise(r=>setImmediate(r));return {node,calls,redirects,listeners};
