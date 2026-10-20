@@ -94,3 +94,25 @@ test('API errors and test-mode mismatches never pass',async()=>{
  await assert.rejects(prepareStripeTestPrice({key,apply:true,request:req}),/non-test Product/);
  assert.equal(calls,1);
 });
+
+test('already-listed new ¥1480 sandbox product is reused while legacy ¥680 stays untouched',async()=>{
+ const oldProduct={id:'prod_legacy680',object:'product',livemode:false,active:true,name:'Speakingym Pro'};
+ const newProduct=product();
+ const f=service({products:[oldProduct,newProduct],prices:[price()]});
+ const status=await prepareStripeTestPrice({key,request:f.req});
+ assert.equal(status.product,'verified');
+ assert.equal(status.price,'existing');
+ assert.equal(status.changed,false);
+ assert.equal(status.priceId,price().id);
+ assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ assert.ok(f.calls.some(c=>String(c.path)==='/v1/prices'));
+ assert.match(PLAN.name,/1480/);
+});
+test('legacy-only ¥680 product must NOT be selected as next ¥1480 price target',async()=>{
+ const oldProduct={id:'prod_legacy680',object:'product',livemode:false,active:true,name:'Speakingym Pro'};
+ const f=service({products:[oldProduct],prices:[]});
+ const state=await prepareStripeTestPrice({key,request:f.req});
+ assert.equal(state.product,'create-needed');
+ assert.equal(state.changed,false);
+ assert.equal(f.calls.some(c=>c.method==='POST'),false);
+});
