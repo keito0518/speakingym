@@ -3,6 +3,7 @@
  * no proxying, secret storage or access to production services.
  */
 import {createServer} from 'node:http';
+import {spawn} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
@@ -45,5 +46,12 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   console.log('Speakingym STRIPE SANDBOX QA only: http://localhost:'+PORT+'/stripe-staging-qa.html');
   console.log('Isolated staging Worker only. No production API routes.');
   console.log('Close this window or press Ctrl+C to stop QA server.');
+  if(process.platform==='win32'&&process.argv.includes('--open')){
+   // Fixed localhost URL only. Browser startup is separate from serving data.
+   const ps=spawn('powershell.exe',['-NoProfile','-NonInteractive','-Command',
+    "Start-Process -FilePath 'http://localhost:8765/stripe-staging-qa.html'"],
+    {stdio:'ignore',windowsHide:true});
+   ps.unref();
+  }
  });
 }
