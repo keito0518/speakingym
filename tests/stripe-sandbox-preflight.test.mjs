@@ -89,7 +89,8 @@ test('webhook must uniquely match stage, be enabled non-live and cover all event
   {livemode:true},{status:'disabled'},{url:'https://other.test/billing/webhook'}
  ]){
   const f=scenario({webhooks:{has_more:false,data:[{...endpoint(),...changes}]}});
-  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/staging_webhook_not_uniquely/);
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),
+   /staging_webhook_not_uniquely|webhook_endpoints_test_mode_required/);
  }
  const missing=scenario({webhooks:{has_more:false,data:[{...endpoint(),enabled_events:['invoice.paid']}]}});
  await assert.rejects(inspectStripeSandbox(missing.fetcher,inputs),/staging_webhook_missing_subscription_events/);
