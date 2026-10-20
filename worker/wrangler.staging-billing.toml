@@ -1,5 +1,7 @@
-# Billing-only switch for the SAME isolated staging Worker, NEVER production.\n# Opt-in after isolated staging billing D1 migration, Stripe TEST credentials and\n# a dedicated Firebase tester have been provisioned. No Gemini/AI routes.\n# Use ONLY: npx wrangler deploy --config wrangler.staging-billing.toml
-# Deploy only with: cd worker && npx wrangler deploy --config wrangler.staging.toml
+# Billing-only switch for the SAME isolated staging Worker, NEVER production.
+# Opt-in after isolated staging billing D1 migration, Stripe TEST credentials and
+# a dedicated Firebase tester have been provisioned. No Gemini/AI routes.
+# Use ONLY: npx wrangler deploy --config wrangler.staging-billing.toml
 # IMPORTANT: NEVER deploy this worker using the default wrangler.toml.
 name = "speakingym-survival-ai-staging"
 main = "ai-worker.js"
@@ -36,8 +38,8 @@ database_id = "c608774e-3bc5-4527-be8d-f640e386f504"
 ENFORCE_PLANS = "true"
 TURN_LEDGER_MODE = "enabled"
 
-# Safest first deploy: no AI provider calls, paid-plan testing or replay.
-# First stage deploy is a GET /health inspection only; no session or webhook writes.
+# Later opt-in ONLY after staging migration and Stripe test-mode secrets are ready.
+# Only billing endpoints and verified GET /entitlement are allowed by runtime gate.
 STAGING_HEALTH_ONLY = "false"\nSTAGING_BILLING_ONLY = "true"
 ALLOW_AI = "false"
 FREE_SESSION_MODE = "disabled"
