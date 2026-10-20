@@ -143,7 +143,14 @@ export async function refreshBillingIfNeeded(env,uid){
 async function checkout(env,row,token){
  const db=billingDb(env);
  const price=await stripe(env,'prices/'+encodeURIComponent(priceId(env)));
- if(price.livemode!==expectedLive(env)||!price.active||price.currency!=='jpy'||price.unit_amount!==1480||price.recurring?.interval!=='month'||price.recurring?.interval_count!==1||price.tax_behavior!=='inclusive')throw fail('billing_price_invalid');
+ // Fail closed if the configured Stripe Price isn't the exact approved monthly
+ // flat-price plan: no trials, graduated tiers, or metered quantities.
+ if(price.object!=='price'||price.id!==priceId(env)||price.livemode!==expectedLive(env)||
+    !price.active||price.currency!=='jpy'||price.unit_amount!==1480||
+    price.type!=='recurring'||price.billing_scheme!=='per_unit'||
+    price.tax_behavior!=='inclusive'||price.recurring?.interval!=='month'||
+    price.recurring?.interval_count!==1||price.recurring?.usage_type!=='licensed'||
+    price.recurring?.trial_period_days!=null)throw fail('billing_price_invalid');
  if(!row.customer_id){
   // Stripe only guarantees idempotency retention for 24h. Ambiguous old creates fail closed.
   if(!row.customer_started){await ownedUpdate(db,row.uid,token,'customer_started=?',now());row={...row,customer_started:now()}}
