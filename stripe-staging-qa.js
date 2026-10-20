@@ -15,16 +15,23 @@ const safeError=code=>({
   billing_busy:'処理中です。少し待ってから再確認してください。',
   no_subscription:'まだ管理できるテスト契約がありません。',
   billing_manual_review:'Stripeのテスト契約に調査が必要です。重複購入しないでください。',
+  billing_checkout_review:'保存済みの購入画面の金額・商品・購入者が一致しません。再購入せず開発者に確認してください。',
   subscription_exists:'すでにテスト契約があります。契約状態を再確認してください。',
 }[code]||'テスト通信に失敗しました。新しい決済は実行しないでください。');
 const show=(id,message)=>{$(id).textContent=message};
 export function validStagingHealth(data){
- return !!data&&data.status==='ok'&&data.stagingHealthOnly===false&&
-  data.stagingBillingOnly===true&&data.stagingBillingSchemaReady===true&&
-  data.billingMode==='test'&&data.aiEnabled===false&&
-  data.plansEnabled===true&&data.plansReady===true&&
+ // Match the credential-free server-side readiness gate. A half-configured
+ // Worker must never enable the real Stripe TEST checkout button.
+ return !!data&&data.status==='ok'&&
+  data.quotaVersion==='pro-monthly-1000-150-v3'&&
+  data.stagingHealthOnly===false&&data.stagingBillingOnly===true&&
+  data.stagingBillingSchemaReady===true&&data.billingMode==='test'&&
+  data.aiEnabled===false&&data.plansEnabled===true&&data.plansReady===true&&
   data.turnLedgerEnabled===true&&data.turnLedgerSchemaReady===true&&
-  data.freeSessionRequested===false;
+  data.freeSessionSchemaReady===true&&
+  data.freeSessionRequested===false&&data.freeSessionEnabled===false&&
+  data.aiReplayRequested===false&&data.aiReplayEnabled===false&&
+  Array.isArray(data.sceneIds)&&data.sceneIds.length===16;
 }
 export function approvedStripeRedirect(url,kind){
  let parsed;
@@ -48,7 +55,7 @@ async function health(){
   const data=res.ok?await res.json():null;
   if(!validStagingHealth(data))throw Error('not_ready');
   ready=true;
-  show('qa-health','✓ 独立staging / D1 / 1,480円Pro設定を確認。実決済なし・AI呼び出し無効。Stripeテストのみ利用可能。');
+  show('qa-health','✓ 独立staging Worker・課金用D1・AI無効を確認。Stripeの1,480円商品・Webhook・実決済はこの確認だけでは未検証です。');
  }catch{show('qa-health','STOP：テスト用Workerの設定がまだそろっていません。決済操作を禁止します。');}
  paint();
  if(ready&&user)await refresh();
