@@ -40,11 +40,11 @@ test('contact page has a private request link and does not send claimants to pub
  assert.match(contact,/返信を受け取るメールアドレス以外の住所、電話番号、認証情報は送らない/);
  assert.match(contact,/実際の受付・返信体制が整うまでは有料販売を開始しません/);
  assert.match(contact,/GitHubのIssueは公開されます/);
- assert.match(contact,/href="\\.\\/tokusho\\.html"/);
+ assert.ok(contact.includes('href="./tokusho.html"'));
 });
 
 test('price page links legal disclosure but unverified content cannot authorize Live charges',()=>{
- assert.match(plans,/href="\\.\\/tokusho\\.html"/);
+ assert.ok(plans.includes('href="./tokusho.html"'));
  assert.match(workerMode,/env\\.LIVE_LEGAL_READY==='verified'/);
  assert.match(workerMode,/env\\.LIVE_STRIPE_SANDBOX_E2E_PASSED==='verified'/);
  assert.match(workerMode,/env\\.LIVE_UNIT_ECONOMICS_REVIEWED==='verified'/);
