@@ -122,6 +122,27 @@ test('Checkout refuses trial, metered, tiered and unexpected price objects befor
  }
 });
 
+test('Stripe TEST checkout and portal use only isolated localhost QA return URLs',async testContext=>{
+ const f=await fixture(testContext);
+ f.env.STAGING_BILLING_ONLY='true';
+ f.env.STAGING_HEALTH_ONLY='false';
+ const first=await f.call('checkout');
+ assert.equal(first.status,200);
+ const checkoutCall=f.state.calls.find(([url,options])=>
+  String(url).endsWith('/checkout/sessions')&&options.method==='POST');
+ assert.ok(checkoutCall);
+ const checkoutParams=new URLSearchParams(checkoutCall[1].body);
+ assert.equal(checkoutParams.get('success_url'),'http://localhost:8765/stripe-staging-qa.html?billing=success');
+ assert.equal(checkoutParams.get('cancel_url'),'http://localhost:8765/stripe-staging-qa.html?billing=cancel');
+ const portal=await f.call('portal');
+ assert.equal(portal.status,200);
+ const portalCall=f.state.calls.find(([url,options])=>
+  String(url).endsWith('/billing_portal/sessions')&&options.method==='POST');
+ assert.ok(portalCall);
+ const portalParams=new URLSearchParams(portalCall[1].body);
+ assert.equal(portalParams.get('return_url'),'http://localhost:8765/stripe-staging-qa.html');
+});
+
 test('entitlement requires active paid current exact price and no pause',()=>{
  assert.equal(subscriptionAccess(active(),'price_test'),true);
  for(const changes of [{status:'past_due'},{status:'unpaid'},{status:'canceled'},{status:'trialing'},{livemode:true},{pause_collection:{}},{latest_invoice:{paid:false,status:'open'}}])assert.equal(subscriptionAccess({...active(),...changes},'price_test'),false);
