@@ -1,3 +1,5 @@
+> **LEGACY ¥680 ARCHIVE — DO NOT USE AS THE ¥1,480 SETUP GUIDE (2026-10-21).** This historical note describes the previous TEST price (¥680), legacy webhook-only API and three-call audit. The current code in PR #62 checks **¥1,480**, both legacy v1 and modern v2 destinations, and a strict non-switching Portal. For the current Pro plan, use [STRIPE_SANDBOX_SETUP_1480_STAGE_ONLY.md](./STRIPE_SANDBOX_SETUP_1480_STAGE_ONLY.md) and [STRIPE_NEXT_SESSION_2026-10-20.md](../STRIPE_NEXT_SESSION_2026-10-20.md). Do not recreate the already-existing ¥1,480 sandbox product or alter the ¥680 product. Live Stripe and production Worker/D1 remain forbidden.
+
 # Speakingym Stripe Sandbox — 実Stripe GET-only環境検査 (2026-10-20)
 
 > **Status: PREPARED, NOT EXECUTED AGAINST REAL STRIPE.** テストモードに実際に接続するにはStripeのテスト専用キーと、独立staging Workerが必要。現チャットにはStripe管理画面／鍵への接続がない。CIのNodeテストはStripeレスポンスのモックであり、Stripe sandboxでの本物の取引や更新・解約が成功した証拠ではない。
