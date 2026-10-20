@@ -55,6 +55,10 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     });
     assert.equal(await page.locator('#loginPrompt').isVisible(),false);
     assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true','selected scene preserved');
+    await page.locator('[data-scene="hotel"]').click();
+    assert.equal(new URL(page.url()).searchParams.get('scene'),'hotel','selection must be reflected in URL');
+    await page.reload();
+    assert.equal(await page.locator('[data-scene="hotel"]').getAttribute('aria-pressed'),'true','Firebase sync reload must retain selected scene');
    }
    await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
