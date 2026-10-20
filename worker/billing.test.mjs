@@ -41,8 +41,24 @@ async function fixture(t){
   else if(path==='checkout/sessions'){
    if(state.failCreate)throw Error('lost connection');
    const key=opt.headers['Idempotency-Key'];
-   if(!state.sessions.has(key))state.sessions.set(key,{id:'cs_test_'+state.sessions.size,livemode:state.live,customer:'cus_test',status:'open',url:'https://checkout.stripe.com/c/pay/test'});
+   if(!state.sessions.has(key)){
+    const body=new URLSearchParams(opt.body);
+    const purchasedPrice=body.get('line_items[0][price]');
+    state.sessions.set(key,{
+     id:'cs_test_'+state.sessions.size,object:'checkout.session',livemode:state.live,
+     customer:'cus_test',status:'open',mode:'subscription',
+     url:'https://checkout.stripe.com/c/pay/test',
+     client_reference_id:body.get('client_reference_id'),
+     currency:'jpy',amount_subtotal:1480,amount_total:1480,
+     expires_at:Number(body.get('expires_at')),
+     success_url:body.get('success_url'),cancel_url:body.get('cancel_url'),
+     line_items:{object:'list',data:[{price:{id:purchasedPrice},quantity:1,
+      currency:'jpy',amount_total:1480}],has_more:false}
+    });
+   }
    result=state.sessions.get(key);
+  }else if(path.startsWith('checkout/sessions/')&&path.endsWith('/line_items')){
+   result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2])?.line_items;
   }else if(path.startsWith('checkout/sessions/'))result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2]);
   else if(path==='billing_portal/sessions')result={url:'https://billing.stripe.com/p/session/test'};
   else throw Error('unexpected Stripe endpoint '+path);
@@ -185,6 +201,41 @@ test('double checkout reuses customer and open session; redirect alone never gra
  assert.equal(f.db.sqlite.prepare('SELECT entitled FROM billing_accounts').get().entitled,0);
  assert.equal((await f.call('status','GET')).status,200);
  assert.equal(f.db.sqlite.prepare('SELECT entitled FROM billing_accounts').get().entitled,0);
+});
+test('stored Checkout can be reused only for the exact ¥1480 subscription and signed-in owner',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ assert.equal((await f.call('checkout')).status,200);
+ assert.equal(f.state.sessions.size,1);
+ assert.equal(f.state.calls.filter(([url,opt])=>String(url).endsWith('/checkout/sessions')&&opt.method==='POST').length,1);
+ assert.ok(f.state.calls.some(([url,opt])=>String(url).endsWith('/line_items?limit=10')&&opt.method==='GET'));
+});
+test('stored old or altered Checkout fails closed without opening a second payment session',async t=>{
+ const cases=[
+  ['legacy_680',s=>{s.line_items.data[0].price.id='price_legacy680';}],
+  ['discount_or_wrong_total',s=>{s.amount_total=680;}],
+  ['incorrect_currency',s=>{s.currency='usd';}],
+  ['different_firebase_uid',s=>{s.client_reference_id='other';}],
+  ['unexpected_return_url',s=>{s.success_url='https://evil.example/after';}],
+  ['payment_not_subscription',s=>{s.mode='payment';}],
+  ['wrong_checkout_host',s=>{s.url='https://evil.example/pay';}],
+  ['expired_checkout',s=>{s.expires_at=time()-1;}],
+  ['extra_line_items',s=>{s.line_items.data.push({...s.line_items.data[0]});}],
+  ['different_quantity',s=>{s.line_items.data[0].quantity=2;}],
+  ['missing_complete_line_items',s=>{s.line_items.has_more=true;}],
+ ];
+ for(const [name,mutate] of cases){
+  await t.test(name,async sub=>{
+   const f=await fixture(sub);
+   assert.equal((await f.call('checkout')).status,200);
+   mutate([...f.state.sessions.values()][0]);
+   const response=await f.call('checkout');
+   assert.equal(response.status,503);
+   assert.equal((await response.json()).error,'billing_checkout_review');
+   assert.equal(f.state.sessions.size,1);
+   assert.equal(f.state.calls.filter(([url,opt])=>String(url).endsWith('/checkout/sessions')&&opt.method==='POST').length,1);
+  });
+ }
 });
 test('sandbox webhook purchase, failure, recovery, scheduled cancel and contract end',async t=>{
  const f=await fixture(t);await f.call('checkout');f.state.subscriptions=[active()];
