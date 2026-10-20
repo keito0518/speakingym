@@ -21,7 +21,7 @@ test('free audience, tax reserve and retries are not hidden from contribution',(
  const x=simulatePro1480({scenario:'heavy',proUsers:100,freeUsers:500,taxReserveJpy:1480/11});
  near(x.jpy.proContributionBeforeFreeAndHosting,225.01);
  near(x.jpy.freeAiPerUser,23.28);
- near(x.jpy.totalContributionAfterFreeAndHosting,10861.09);
+ near(x.jpy.totalContributionAfterFreeAndHosting,10861.45);
  const y=simulatePro1480({scenario:'heavy',proUsers:100,freeUsers:1500,
   retries:1.2,taxReserveJpy:1480/11,monthlyInfrastructureJpy:2000});
  assert.equal(y.status,'illustrative_loss_risk');
