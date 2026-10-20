@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {stagingHealthUrl,assertSafeStagingHealth,checkStagingHealth} from '../scripts/staging-worker-smoke.mjs';
 const good={
-  status:'ok',plansEnabled:true,plansReady:true,
+  status:'ok',stagingHealthOnly:true,plansEnabled:true,plansReady:true,
   turnLedgerEnabled:true,turnLedgerSchemaReady:true,freeSessionSchemaReady:true,
   aiEnabled:false,freeSessionRequested:false,freeSessionEnabled:false,
   aiReplayRequested:false,aiReplayEnabled:false,billingMode:'disabled',
@@ -23,6 +23,8 @@ test('allow only HTTPS staging Worker and GET /health with no credentials',()=>{
 });
 test('require staging schema and safety flags fully ready or OFF',()=>{
   assert.equal(assertSafeStagingHealth(good),true);
+  assert.throws(()=>assertSafeStagingHealth({...good,stagingHealthOnly:false}),/GET-only/);
+  assert.throws(()=>assertSafeStagingHealth({...good,stagingHealthOnly:undefined}),/GET-only/);
   for(const field of ['plansEnabled','plansReady','turnLedgerEnabled','turnLedgerSchemaReady','freeSessionSchemaReady']){
     assert.throws(()=>assertSafeStagingHealth({...good,[field]:false}),new RegExp(field));
   }
