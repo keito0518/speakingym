@@ -8,7 +8,10 @@ import {pathToFileURL} from 'node:url';
 
 const API='https://api.stripe.com/v1/';
 const VERSION='2025-06-30.basil';
-export const PLAN={name:'Speakingym Pro',yen:1480,currency:'jpy'};
+// The owner's existing Stripe Sandbox catalogue has TWO distinct products:
+// the legacy ¥680 "Speakingym Pro" and the new ¥1,480 sandbox-only product.
+// Never silently attach the new Price to the legacy product.
+export const PLAN={name:'Speakingym Pro 1480（サンドボックス検証用）',yen:1480,currency:'jpy'};
 export function assertTestKey(key){
  if(typeof key!=='string'||!/^sk_test_[A-Za-z0-9_]+$/.test(key))
   throw Error('STOP: Stripe TEST-only secret key required');
@@ -62,10 +65,16 @@ export async function prepareStripeTestPrice({key,apply=false,request=fetch}={})
  }
  const products=safeList(await api('products?limit=100'));
  if(products.data.some(p=>p.livemode!==false))throw Error('STOP: non-test Product detected');
+ // This app historically had a different ¥680 "Speakingym Pro" product.
+ // The new sandbox-only product must be found by its explicit distinct name.
+ // A missing listing should not trigger creation of another 1480 product
+ // unless the operator explicitly inspected the existing catalogue first.
+ const legacy=products.data.filter(p=>p.name==='Speakingym Pro'&&p.active===true);
+ if(legacy.length>1)throw Error('STOP: ambiguous legacy test products');
  let product=chooseExistingProduct(products);
  if(!product){
   if(!apply)return {mode:'test',changed:false,product:'create-needed',price:'pending-product'};
-  product=await api('products','POST',{name:PLAN.name,description:'Speakingym Pro learning plan (test mode setup)'});
+  product=await api('products','POST',{name:PLAN.name,description:'Speakingym Pro 1480 JPY monthly; Stripe TEST sandbox only'});
   if(product?.object!=='product'||product.livemode!==false||product.name!==PLAN.name||
     product.active!==true||!/^prod_[a-zA-Z0-9]+$/.test(product.id))
    throw Error('STOP: Stripe test product creation not verified');
@@ -83,7 +92,7 @@ export async function prepareStripeTestPrice({key,apply=false,request=fetch}={})
    throw Error('STOP: newly created TEST Price verification failed');
   return {mode:'test',changed:true,product:'verified',price:'created',priceId:price.id};
  }
- return {mode:'test',changed:!!apply&&products.data.every(p=>p.id!==product.id),
+ return {mode:'test',changed:false,
   product:'verified',price:'existing',priceId:price.id};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
