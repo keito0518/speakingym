@@ -37,7 +37,7 @@ ENFORCE_PLANS = "true"
 TURN_LEDGER_MODE = "enabled"
 
 # Safest first deploy: no AI provider calls, paid-plan testing or replay.
-ALLOW_AI = "false"
+# First stage deploy is a GET /health inspection only; no session or webhook writes.\nSTAGING_HEALTH_ONLY = "true"\nALLOW_AI = "false"
 FREE_SESSION_MODE = "disabled"
 AI_REPLAY_MODE = "disabled"
 REPLAY_CLEANUP_MODE = "disabled"
