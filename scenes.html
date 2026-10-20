@@ -544,6 +544,19 @@ $("clearReview").addEventListener("click",()=>{
  try{localStorage.setItem(REVIEW_KEY,"[]");window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}))}catch(e){}
  showSavedReview();
 });
+// The user may fix speech-to-text mistakes while the browser is still listening.
+// Manual input wins; aborting also stops a delayed Web Speech onend from
+// replacing the user's typed corrections with an older transcript.
+$("reply").addEventListener("input",()=>{
+ if(!micWanted&&!recognition)return;
+ const edited=$("reply").value;
+ stopRecognition();
+ $("reply").value=edited;
+ micBase=edited.trim().slice(0,450);
+ micCycleFinal="";micCycleInterim="";
+ $("resumeMic").classList.remove("hidden");
+ status("手入力した文章を優先して音声認識を止めました。必要なら『続きを話す』で追加できるよ。");
+});
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
 window.addEventListener("speakingym:before-speech",()=>{stopRecognition();cancelSpeech()});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
