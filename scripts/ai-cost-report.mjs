@@ -122,7 +122,7 @@ export function analyzeAiLogs(contents,{usdJpy=USDJPY_FALLBACK}={}){
   summary.groups[key]={modelCalls:g.calls,costJpy:round(g.estimatedUsd*usdJpy,2),
    avgCostJpy:avg===null?null:round(avg*usdJpy),
    p95CostJpy:g.calls?round(percentile(g.callCostsUsd,.95)*usdJpy):null,
-   maxCostJpy:g.calls?round(Math.max(...g.callCostsUsd)*usdJpy):null,
+   maxCostJpy:g.calls?round(g.callCostsUsd.reduce((max,n)=>Math.max(max,n),0)*usdJpy):null,
    avgTokens:g.calls?{input:round(g.inputTokens/g.calls,1),output:round(g.outputTokens/g.calls,1),thinking:round(g.thinkingTokens/g.calls,1)}:null,
    outcomes:g.statuses.total,successRatePct:g.statuses.total?round(100*g.statuses.success/g.statuses.total,2):null,
    p95LatencyMs:percentile(g.latencies,0.95),errorCounts:g.errorCounts};
