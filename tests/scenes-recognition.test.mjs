@@ -102,6 +102,31 @@ test("manual rerecord still clears an incorrect transcript",async()=>{
  assert.equal(ui.node("reply").value,"correct phrase");
 });
 
+test("typing while listening cancels stale ASR and preserves manual corrections",async()=>{
+ const ui=app();await ui.click("start");ui.click("mic");
+ const old=ui.FakeRecognition.sessions[0];
+ old.heard("this is incorrect",false);
+ const previousResult=old.onresult,previousEnd=old.onend;
+ ui.node("reply").value="Please change my booking to Friday.";
+ ui.node("reply").handlers.input();
+ assert.equal(old.aborted,true);
+ assert.equal(old.onresult,null);
+ assert.equal(old.onend,null);
+ previousResult?.({results:[Object.assign([{transcript:"stale text"}],{isFinal:true})]});
+ previousEnd?.();
+ assert.equal(ui.node("reply").value,"Please change my booking to Friday.");
+ ui.click("resumeMic");
+ const current=ui.FakeRecognition.sessions[1];
+ current.heard("Would that work?",true);
+ assert.equal(ui.node("reply").value,"Please change my booking to Friday. Would that work?");
+});
+test("manual scene typing without active ASR is not altered",async()=>{
+ const ui=app();await ui.click("start");
+ ui.node("reply").value="An ordinary typed response";
+ ui.node("reply").handlers.input();
+ assert.equal(ui.node("reply").value,"An ordinary typed response");
+ assert.equal(ui.FakeRecognition.sessions.length,0);
+});
 test("challenge task description and all goals are English-only, with distinct difficulty",()=>{
  const ui=app();
  ui.node("level").value="challenge";ui.node("level").handlers.change();
