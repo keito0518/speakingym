@@ -4,7 +4,7 @@ import {inspectStripeSandbox,validateSandboxInputs} from '../scripts/stripe-sand
 
 const key=['sk','test','fixtureForReadOnlyChecks'].join('_');
 const priceId='price_Test1480';
-const webhookUrl='https://speakingym-survival-ai-staging.example.workers.dev/billing/webhook';
+const webhookUrl='https://speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev/billing/webhook';
 const inputs={apiKey:key,priceId,webhookUrl};
 const price=()=>({object:'price',id:priceId,livemode:false,active:true,
  currency:'jpy',unit_amount:1480,tax_behavior:'inclusive',type:'recurring',
@@ -55,6 +55,8 @@ test('reject non-test keys, invalid price, production webhook and non-HTTPS inpu
   {webhookUrl:'http://example.com/billing/webhook'},
   {webhookUrl:'https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/billing/webhook'},
   {webhookUrl:'https://speakingym.pages.dev/billing/webhook'},
+  {webhookUrl:'https://speakingym-survival-ai-staging.example.workers.dev/billing/webhook'},
+  {webhookUrl:'https://not-speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev/billing/webhook'},
   {webhookUrl:'https://other.test/billing/webhook?token=abc'},
   {webhookUrl:'https://other.test/billing/checkout'}
  ])assert.throws(()=>validateSandboxInputs({...inputs,...changes}));
