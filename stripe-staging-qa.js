@@ -115,7 +115,12 @@ $('qa-login').addEventListener('click',async()=>{
   const unauthorized=String(e?.code||'').includes('unauthorized-domain');
   show('qa-account',unauthorized?'Firebase Authの承認済みドメインにlocalhostがありません。テスト環境の設定を確認してください。':'Googleログインできませんでした。テスト用アカウントを使用してください。');
  }
- finally{busy=false;paint();}
+ finally{
+  busy=false;paint();
+  // Firebase may emit onAuthStateChanged before popup completion while busy
+  // is still true. Reconcile immediately after the popup settles as well.
+  if(user&&ready&&!subStatus)await refresh();
+ }
 });
 $('qa-logout').addEventListener('click',async()=>{
  if(!auth||busy)return;
