@@ -3,11 +3,14 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const script=readFileSync(new URL('../billing-ui.js',import.meta.url),'utf8');
-async function ui({token='id-token',data={mode:'test',status:'none',pro:false},ok=true}={}){
+async function ui({token='id-token',data={mode:'test',status:'none',pro:false},ok=true,byAction={}}={}){
  const nodes=new Map(),calls=[],redirects=[],listeners={};
  const node=id=>{if(!nodes.has(id))nodes.set(id,{listeners:{},classList:{toggle(){}},addEventListener(event,fn){this.listeners[event]=fn}});return nodes.get(id)};
  const sandbox={document:{getElementById:node},window:{speakingymAccount:{getIdToken:async()=>token},addEventListener(k,fn){listeners[k]=fn}},location:{search:'?billing=success',assign:url=>redirects.push(url)},URL,URLSearchParams,Date,AbortSignal,
- fetch:async(url,options)=>{calls.push({url,options});return {ok,json:async()=>data}}};
+ fetch:async(url,options)=>{calls.push({url,options});
+  const key=new URL(url).pathname.split('/').at(-1);
+  const response=byAction[key];
+  return {ok:response?.ok??ok,json:async()=>response?.data??data}}};
  vm.runInNewContext(script,sandbox);await new Promise(r=>setImmediate(r));return {node,calls,redirects,listeners};
 }
 test('success URL without server entitlement never claims Pro',async()=>{
@@ -35,6 +38,44 @@ test('failed unauthorized checkout cannot re-enable the disabled Pro button',asy
  assert.equal(a.node('sg-checkout').disabled,true);
 });
 
+test('a failed Stripe Checkout POST never enables another payment attempt without fresh status',async()=>{
+ const a=await ui({byAction:{checkout:{ok:false,data:{error:'billing_busy'}}}});
+ assert.equal(a.node('sg-checkout').disabled,false);
+ await a.node('sg-checkout').listeners.click();
+ assert.equal(a.node('sg-checkout').disabled,true);
+ assert.match(a.node('sg-billing-status').textContent,/別の処理を確認中/);
+ const before=a.calls.filter(x=>x.options.method==='POST').length;
+ await a.node('sg-checkout').listeners.click();
+ assert.equal(a.calls.filter(x=>x.options.method==='POST').length,before);
+ await a.node('sg-billing-refresh').listeners.click();
+ assert.equal(a.node('sg-checkout').disabled,false);
+});
+test('reused checkout mismatch explains the risk and does not allow repeated purchase',async()=>{
+ const a=await ui({byAction:{checkout:{ok:false,data:{error:'billing_checkout_review'}}}});
+ await a.node('sg-checkout').listeners.click();
+ assert.match(a.node('sg-billing-status').textContent,/契約情報の確認|契約情報|確認が必要/);
+ assert.equal(a.node('sg-checkout').disabled,true);
+ assert.equal(a.redirects.length,0);
+});
+test('successful Stripe redirect keeps purchase controls disabled until a fresh server check',async()=>{
+ const a=await ui({byAction:{checkout:{ok:true,data:{url:'https://checkout.stripe.com/c/pay/test'}}}});
+ await a.node('sg-checkout').listeners.click();
+ assert.equal(a.redirects.length,1);
+ assert.equal(a.node('sg-checkout').disabled,true);
+ assert.equal(a.node('sg-portal').disabled,true);
+ const count=a.calls.filter(x=>x.options.method==='POST').length;
+ await a.node('sg-checkout').listeners.click();
+ assert.equal(a.calls.filter(x=>x.options.method==='POST').length,count);
+});
+test('Stripe redirects reject alternate ports and credential-bearing URLs',async()=>{
+ for(const url of ['https://checkout.stripe.com:444/pay/test',
+  'https://login@checkout.stripe.com/c/pay/test','https://evil.example/pay']){
+  const a=await ui({byAction:{checkout:{ok:true,data:{url}}}});
+  await a.node('sg-checkout').listeners.click();
+  assert.equal(a.redirects.length,0,url);
+  assert.equal(a.node('sg-checkout').disabled,true,url);
+ }
+});
 test('an active subscription without Pro is not falsely reported as fully entitled',async()=>{
  const a=await ui({data:{mode:'test',status:'active',pro:false,entitlementReason:'invoice_unpaid',periodEnd:1800000000}});
  assert.match(a.node('sg-billing-status').textContent,/Pro権限の確認が未完了/);
