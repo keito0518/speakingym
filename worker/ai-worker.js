@@ -336,8 +336,13 @@ export default {
     ].includes(path))return reply({error:"staging_billing_only"},503,PRIMARY_ORIGIN);
     // Stripe server callbacks have no browser Origin; signature verification is mandatory.
     if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
+    // Permit exactly one local QA origin ONLY when isolated staging test
+    // billing is active. Firebase signature + staging UID allowlist still gate
+    // every authenticated action. Production never accepts localhost.
+    const stageQaOrigin=origin==="http://localhost:8765" &&
+      env.STAGING_BILLING_ONLY==="true" && billingMode(env)==="test";
     // Origin checks only restrict browser use. They are not authentication.
-    if (!ALLOWED_ORIGINS.has(origin)) {
+    if (!ALLOWED_ORIGINS.has(origin) && !stageQaOrigin) {
       return new Response("Origin not allowed", { status: 403 });
     }
     if (request.method === "OPTIONS") {
