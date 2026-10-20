@@ -25,7 +25,9 @@ test('the draft price and both AI usage caps match across release, site, legal a
  }
  for(const [name,text] of [['site',site],['seller disclosure',disclosure],
   ['legal checklist',legal],['operator legal plan',operator]]){
-  assert.doesNotMatch(text,/(?:月額|¥|JPY\s*|\b)680(?:円|\s|\/|\b)|600\s*(?:ターン|AI\s*conversation)|講評\s*(?:月)?100回/,
+  // Ignore clearly labelled historical notes; CSS font-weight:680 is not a ¥680 offer.
+  const currentCopy=text.split('\n').filter(line=>!line.includes('Previous ¥680 / 600 / 100')).join('\n');
+  assert.doesNotMatch(currentCopy,/(?:月額|¥|JPY\s*)680(?:円|\s|\/|\b)|600\s*(?:ターン|AI\s*conversation)|講評\s*(?:月)?100回/,
    name+' still contains a stale old paid offer (only historical files may do so)');
  }
  assert.match(billing,/unit_amount!==1480/);
