@@ -1,8 +1,9 @@
 /**
- * Stripe TEST product/price bootstrap; never accesses Stripe LIVE.
- * Default READ-ONLY; --apply creates only a TEST product or 1480 JPY/month Price.
+ * Stripe TEST-only catalogue preflight, READ-ONLY and non-mutating.
+ * Owner already has distinct ¥680 and ¥1480 products. Never create duplicates.
+ * A previously published --apply command is now deliberately rejected.
  * Stripe secret key is supplied via local environment, never source or GitHub.
- * No webhook, Customer, subscription, card, invoice, Charge, or Portal changes.
+ * No product/price/webhook/Customer/subscription/card/Charge/Portal writes.
  */
 import {pathToFileURL} from 'node:url';
 
@@ -48,16 +49,11 @@ function safeList(result){
 }
 export async function prepareStripeTestPrice({key,apply=false,request=fetch}={}){
  assertTestKey(key);
- if(typeof apply!=='boolean')throw Error('Invalid mode');
- async function api(path,method='GET',params={}){
-  if(!['GET','POST'].includes(method))throw Error('STOP: unsupported Stripe method');
+ if(apply!==false)throw Error('STOP: read-only; existing Stripe TEST products must not be recreated');
+ async function api(path){
   const endpoint=API+path;
   const headers={Authorization:'Bearer '+key,'Stripe-Version':VERSION,Accept:'application/json'};
-  const payload={method,headers,signal:AbortSignal.timeout(20000)};
-  if(method==='POST'){
-   headers['Content-Type']='application/x-www-form-urlencoded';
-   payload.body=new URLSearchParams(params);
-  }
+  const payload={method:'GET',headers,signal:AbortSignal.timeout(20000)};
   let response;
   try{response=await request(endpoint,payload)}catch{throw Error('STOP: Stripe test API unavailable')}
   if(response.status!==200)throw Error('STOP: Stripe test API HTTP '+Number(response.status));
@@ -73,37 +69,26 @@ export async function prepareStripeTestPrice({key,apply=false,request=fetch}={})
  if(legacy.length>1)throw Error('STOP: ambiguous legacy test products');
  let product=chooseExistingProduct(products);
  if(!product){
-  if(!apply)return {mode:'test',changed:false,product:'create-needed',price:'pending-product'};
-  product=await api('products','POST',{name:PLAN.name,description:'Speakingym Pro 1480 JPY monthly; Stripe TEST sandbox only'});
-  if(product?.object!=='product'||product.livemode!==false||product.name!==PLAN.name||
-    product.active!==true||!/^prod_[a-zA-Z0-9]+$/.test(product.id))
-   throw Error('STOP: Stripe test product creation not verified');
+  return {mode:'test',changed:false,product:'manual-review-needed',price:'not-checked'};
  }
  if(!/^prod_[a-zA-Z0-9]+$/.test(product.id))throw Error('STOP: invalid test Product identifier');
  const prices=safeList(await api('prices?product='+encodeURIComponent(product.id)+'&limit=100'));
  let price=chooseExistingPrice(prices,product.id);
  if(!price){
-  if(!apply)return {mode:'test',changed:false,product:'existing',price:'create-needed'};
-  price=await api('prices','POST',{product:product.id,currency:'jpy',unit_amount:'1480',
-   tax_behavior:'inclusive','recurring[interval]':'month',
-   'recurring[interval_count]':'1','recurring[usage_type]':'licensed',
-   nickname:'Speakingym Pro 1480 JPY / month [TEST ONLY]'});
-  if(!validatePrice(price,product.id))
-   throw Error('STOP: newly created TEST Price verification failed');
-  return {mode:'test',changed:true,product:'verified',price:'created',priceId:price.id};
+  return {mode:'test',changed:false,product:'verified',price:'manual-review-needed'};
  }
  return {mode:'test',changed:false,
   product:'verified',price:'existing',priceId:price.id};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const args=process.argv.slice(2);
- if(args.some(a=>a!=='--apply')){console.error('STOP: unsupported option');process.exit(1)}
- const apply=args.includes('--apply');
+ if(args.length!==0){console.error('STOP: catalogue inspection is READ-ONLY; no --apply mode');process.exit(1)}
+ const apply=false;
  try{
   const output=await prepareStripeTestPrice({key:process.env.SPEAKINGYM_STRIPE_TEST_KEY,apply});
   const {priceId,...status}=output;
   console.log('Stripe TEST price setup: '+JSON.stringify(status));
   if(priceId)console.log('The TEST price ID is available locally. Store it as a staging Worker secret, never in GitHub/chat.');
-  if(!apply)console.log('Read-only run: no Stripe changes were made.');
+  console.log('Read-only run: no Stripe changes were made.');
  }catch(e){console.error(String(e?.message||'STOP: test-price setup failed'));process.exitCode=1}
 }
