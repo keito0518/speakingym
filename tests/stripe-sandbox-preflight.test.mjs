@@ -1,0 +1,111 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {inspectStripeSandbox,validateSandboxInputs} from '../scripts/stripe-sandbox-preflight.mjs';
+
+const key=['sk','test','fixtureForReadOnlyChecks'].join('_');
+const priceId='price_Test680';
+const webhookUrl='https://speakingym-survival-ai-staging.example.workers.dev/billing/webhook';
+const inputs={apiKey:key,priceId,webhookUrl};
+const price=()=>({object:'price',id:priceId,livemode:false,active:true,
+ currency:'jpy',unit_amount:680,tax_behavior:'inclusive',type:'recurring',
+ billing_scheme:'per_unit',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}});
+const endpoint=()=>({id:'we_test',url:webhookUrl,livemode:false,status:'enabled',
+ enabled_events:['checkout.session.completed','customer.subscription.created','customer.subscription.updated',
+ 'customer.subscription.deleted','invoice.paid','invoice.payment_failed','invoice.payment_action_required']});
+const portal=()=>({id:'bpc_test',livemode:false,is_default:true,active:true,
+ features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:true}}});
+function scenario(edits={}){
+ const records={price:price(),webhooks:{data:[endpoint()],has_more:false},
+  portals:{data:[portal()],has_more:false},...edits};
+ const calls=[];
+ const fetcher=async(url,options)=>{
+  calls.push({url,options});
+  const path=new URL(url).pathname;
+  const value=path.includes('/prices/')?records.price:
+   path.endsWith('/webhook_endpoints')?records.webhooks:
+   path.endsWith('/billing_portal/configurations')?records.portals:undefined;
+  if(!value)throw Error('Unexpected endpoint');
+  return {status:200,json:async()=>value};
+ };
+ return {calls,fetcher};
+}
+test('read-only sandbox inspection checks monthly ¥680 tax-inclusive, events and cancellation',async()=>{
+ const f=scenario(),result=await inspectStripeSandbox(f.fetcher,inputs);
+ assert.equal(result.passed,true);
+ assert.equal(result.mode,'test');
+ assert.equal(result.priceJPY,680);
+ assert.equal(result.portalCancelAtPeriodEnd,true);
+ assert.equal(f.calls.length,3);
+ for(const {url,options} of f.calls){
+  assert.equal(options.method,'GET');
+  assert.equal(options.headers.Authorization,'Bearer '+key);
+  assert.equal(options.cache,'no-store');
+  assert.ok(url.startsWith('https://api.stripe.com/v1/'));
+  assert.doesNotMatch(url,/\/(?:checkout\/sessions|customers|invoices|payment_intents)/);
+ }
+ const display=JSON.stringify(result);
+ for(const v of [key,priceId,webhookUrl,'we_test','bpc_test'])
+  assert.equal(display.includes(v),false);
+});
+test('reject non-test keys, invalid price, production webhook and non-HTTPS input',()=>{
+ for(const changes of [
+  {apiKey:['sk','live','prohibited'].join('_')},
+  {apiKey:['rk','test','prohibited'].join('_')},
+  {priceId:'prod_wrong'},{priceId:''},
+  {webhookUrl:'http://example.com/billing/webhook'},
+  {webhookUrl:'https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/billing/webhook'},
+  {webhookUrl:'https://speakingym.pages.dev/billing/webhook'},
+  {webhookUrl:'https://other.test/billing/webhook?token=abc'},
+  {webhookUrl:'https://other.test/billing/checkout'}
+ ])assert.throws(()=>validateSandboxInputs({...inputs,...changes}));
+});
+test('reject incorrect prices, test trial or live-mode Price',async()=>{
+ for(const changes of [
+  {livemode:true},{unit_amount:1000},{currency:'usd'},
+  {tax_behavior:'exclusive'},{tax_behavior:'unspecified'},
+  {recurring:{interval:'year',interval_count:1,trial_period_days:null,usage_type:'licensed'}},
+  {recurring:{interval:'month',interval_count:1,trial_period_days:14,usage_type:'licensed'}},
+  {recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'metered'}},
+  {active:false},{billing_scheme:'tiered'},{type:'one_time'},{id:'price_other'}
+ ]){
+  const f=scenario({price:{...price(),...changes}});
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/stripe_test_price_not_680/);
+ }
+});
+test('webhook must uniquely match stage, be enabled non-live and cover all events',async()=>{
+ for(const changes of [
+  {livemode:true},{status:'disabled'},{url:'https://other.test/billing/webhook'}
+ ]){
+  const f=scenario({webhooks:{has_more:false,data:[{...endpoint(),...changes}]}});
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),/staging_webhook_not_uniquely/);
+ }
+ const missing=scenario({webhooks:{has_more:false,data:[{...endpoint(),enabled_events:['invoice.paid']}]}});
+ await assert.rejects(inspectStripeSandbox(missing.fetcher,inputs),/staging_webhook_missing_subscription_events/);
+ const duplicate=scenario({webhooks:{has_more:false,data:[endpoint(),endpoint()]}});
+ await assert.rejects(inspectStripeSandbox(duplicate.fetcher,inputs),/staging_webhook_not_uniquely/);
+ const star=scenario({webhooks:{has_more:false,data:[{...endpoint(),enabled_events:['*']}]}});
+ assert.equal((await inspectStripeSandbox(star.fetcher,inputs)).passed,true);
+});
+test('default portal requires period-end cancellation and payment-method update',async()=>{
+ for(const changes of [
+  {is_default:false},{active:false},{livemode:true},
+  {features:{subscription_cancel:{enabled:false,mode:'at_period_end'},payment_method_update:{enabled:true}}},
+  {features:{subscription_cancel:{enabled:true,mode:'immediately'},payment_method_update:{enabled:true}}},
+  {features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:false}}}
+ ]){
+  const f=scenario({portals:{has_more:false,data:[{...portal(),...changes}]}});
+  await assert.rejects(inspectStripeSandbox(f.fetcher,inputs));
+ }
+});
+test('pagination, Stripe HTTP errors, transport failure never pass',async()=>{
+ for(const changes of [
+  {webhooks:{has_more:true,data:[endpoint()]}},
+  {portals:{has_more:true,data:[portal()]}}
+ ]){
+  await assert.rejects(inspectStripeSandbox(scenario(changes).fetcher,inputs),/incomplete/);
+ }
+ const invalid=async()=>({status:401,json:async()=>({secret:'x'})});
+ await assert.rejects(inspectStripeSandbox(invalid,inputs),/stripe_sandbox_api_http_401/);
+ const offline=async()=>{throw Error('network path might accidentally include secret')};
+ await assert.rejects(inspectStripeSandbox(offline,inputs),/stripe_sandbox_api_unavailable/);
+});
