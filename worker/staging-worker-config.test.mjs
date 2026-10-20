@@ -58,7 +58,9 @@ test('existing production deployment configuration remains on its own database',
 });
 
 test('Stripe staging config cannot switch the Worker, D1, rate limits, or AI on',()=>{
- for(const field of ['name','main','database_name','database_id','binding','ENFORCE_PLANS',
+ assert.equal(key(section(stageBilling,'name =','[[ratelimits]]'),'name'),
+  key(section(staging,'name =','[[ratelimits]]'),'name'));
+ for(const field of ['main','database_name','database_id','binding','ENFORCE_PLANS',
   'TURN_LEDGER_MODE','ALLOW_AI','FREE_SESSION_MODE','AI_REPLAY_MODE',
   'REPLAY_CLEANUP_MODE'])assert.equal(key(stageBilling,field),key(staging,field),field);
  assert.equal(key(stageBilling,'STAGING_HEALTH_ONLY'),'false');
