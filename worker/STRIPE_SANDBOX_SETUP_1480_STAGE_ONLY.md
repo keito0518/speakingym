@@ -8,7 +8,10 @@
 - Isolated Worker `speakingym-survival-ai-staging` served a valid, safe GET `/health` response under the credential-free GitHub Actions public health check.
 - Isolated D1 `speakingym-plans-staging` (UUID `c608774e-3bc5-4527-be8d-f640e386f504`) has `account_plans`, `ai_sessions`, `ai_turn_reservations`, `free_session_reservations`, and `teacher_uses`.
 - Production Worker: `speakingym-survival-ai`; production D1: `speakingym-plans`. **Neither is for Stripe sandbox E2E.**
-- No claim that Stripe test products, sandbox portal, webhook signing, or genuine subscription E2E have been verified.
+- **New evidence from owner screenshots (2026-10-20):** Stripe SANDBOX product `Speakingym Pro 1480（サンドボックス検証用）` exists, is active, and has a recurring JPY 1,480 monthly Price, no trial displayed, 0 active subscriptions. The legacy `Speakingym Pro` JPY 680 product also exists and must remain untouched. **`tax_behavior=inclusive`, Price ID, Portal config and subscription E2E are NOT verified by screenshots.**
+- Owner completed a SQL paste for both staging billing tables and said it worked, but **7-table count was not independently rechecked**. Treat staging billing migration as **user-reported**, not remote verified.
+- Owner selected seven Stripe sandbox snapshot events in the **new Workbench Event destinations v2 wizard**, with only API versions `2026-09-30.endive` and `2026-10-07.preview` available. **Creation was not confirmed** and prior legacy v1 webhook may exist. **Do not ask owner to duplicate setup before read-only v1+v2 audit.**
+- No claim that the sandbox webhook signing secret, Portal configuration, stage secrets or genuine subscription E2E have been verified.
 
 ## 1. Prepare isolated STAGING billing schema (test DB only)
 
@@ -44,17 +47,18 @@ This does **not** prove the local Windows D1 schema script finished: confirm the
 
 ## 3. Stripe dashboard — only the TEST/sandbox account
 
-Create or reuse a *test* product for **Speakingym Pro** and a **new matching test Price**:
+**Do not create another product:** user screenshot already confirms **Speakingym Pro 1480（サンドボックス検証用）** exists in the TEST sandbox alongside a distinct ¥680 legacy product. Reuse the correct ¥1,480 TEST Price after API verification; leave legacy untouched.
 
 - JPY **1,480**, monthly subscription, tax behavior `inclusive`, exactly one unit, `per_unit` flat pricing, `licensed`, **no trial**.
 - Do not mutate an old ¥680 price/contract. Do not use `sk_live_`, even in staging.
-- Create a webhook event destination in the **same Stripe sandbox**:
+- **First use read-only inspection (both APIs!) to look for an already-existing destination.** Workbench 2026 uses `GET /v2/core/event_destinations?include[0]=webhook_endpoint.url`; older configuration uses `GET /v1/webhook_endpoints`. The sandbox preflight checks BOTH for exact URL, duplicate configuration, event types, snapshot payload, test mode and stable `2026-09-30.endive` version; it intentionally refuses `2026-10-07.preview`. Do not create duplicate destinations.
+- If **neither** has the dedicated stage target, use Stripe sandbox's new Event destinations snapshot wizard with stable `2026-09-30.endive` to create exactly one:
   `https://speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev/billing/webhook`
 - Subscribe to `checkout.session.completed`, `customer.subscription.created`, `.updated`, `.deleted`, `invoice.paid`, `invoice.payment_failed`, `invoice.payment_action_required`.
 - Set the sandbox customer portal default to payment method updates and cancellation at period end (do not allow product/quantity switching).
 - Use a dedicated Firebase **test** identity. Do not paste real Firebase UID, Stripe secret keys, webhook secrets, personal details or access tokens in ChatGPT/GitHub.
 
-If a Stripe test key, Price ID, and destination URL are safely available as local environment variables, run the GET-only preflight `node scripts/stripe-sandbox-preflight.mjs`. It strictly refuses any webhook host other than the exact isolated staging Worker. Passing this preflight is **NOT** an E2E pass.
+If a Stripe test key, the NEW Price ID, and the exact staging webhook URL are safely available as local environment variables, run GET-only `node scripts/stripe-sandbox-preflight.mjs`. It checks legacy v1 and modern v2 destinations, rejects ambiguity, preview, thin events, live mode, and wrong tax behavior. For v2 it deliberately pins the STABLE `2026-09-30.endive` snapshot destination, while the Worker's outgoing API requests remain pinned to `2025-06-30.basil`; these are distinct controls and real signature/webhook processing still requires E2E validation. Passing this preflight is **NOT** an E2E pass.
 
 ## 4. Billing-only Worker activation — after step 1 and real sandbox configuration
 
