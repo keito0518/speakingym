@@ -1,6 +1,8 @@
 # Speakingym 個人運営・特定商取引法表示準備（2026-10-20）
 
-**販売開始判定：未完了／Live課金はNO-GO。** > **2026-10-21 update (draft only):** The owner’s current TARGET is ¥1,480（税込）/month, 1,000 AI conversation turns and 150 teacher feedback sessions. Previous ¥680 / 600 / 100 mentions elsewhere are historical; no production price, D1 migration, Stripe Live change or charge is authorized. All actual compliance and Checkout evidence gates remain NOT READY.
+**販売開始判定：未完了／Live課金はNO-GO。**
+
+> **2026-10-21 update (draft only):** The owner’s current TARGET is ¥1,480（税込）/month, 1,000 AI conversation turns and 150 teacher feedback sessions. Previous ¥680 / 600 / 100 mentions elsewhere are historical; no production price, D1 migration, Stripe Live change or charge is authorized. All actual compliance and Checkout evidence gates remain NOT READY.
 
  ユーザーの方針は「法人化せず、副業の個人運営」。ただし、税法上の事業所得・雑所得の区分、開業届提出の有無や屋号の登記状況を勝手に断定しない。本メモは実情報の公開を要求するものではなく、本人が公開先を選ぶための設計資料。
 
