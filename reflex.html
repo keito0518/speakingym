@@ -777,7 +777,14 @@ function startRecognitionCycle(){
    const text=$("transcript").value;
    stopListening();$("transcript").value=text;
    $("resumeMic").classList.remove("hidden");
-   $("micStatus").textContent="音声認識が止まりました（"+code+"）。文章は残しています。続きを話すか、手入力で修正できます。";
+   const guidance=(code==="not-allowed"||code==="service-not-allowed")?
+    "マイクが許可されていません。ブラウザのサイト設定でマイクを許可するか、英文を手入力してね。":
+    code==="audio-capture"?
+    "マイクが見つからないか利用できません。端末の接続を確認するか、英文を手入力してね。":
+    code==="network"?
+    "音声認識の通信が途切れました。文章は残しています。通信を確認してから続きを話してね。":
+    "音声認識が止まりました。文章は残しています。続きを話すか、手入力で修正できます。";
+   $("micStatus").textContent=guidance;
   };
   rec.onend=()=>{
    if(recognition!==rec)return;
