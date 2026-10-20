@@ -41,6 +41,26 @@ test("health only indicates ready with key AND owner opt-in", async () => {
   assert.equal(ready.reflexCoachSupported,true);
 });
 
+test("staging inspection mode only serves GET /health and makes no AI, D1 or billing writes", async t => {
+ const upstream=t.mock.method(globalThis,"fetch",async()=>{throw Error("No provider request allowed in staging inspection mode");});
+ const stage={...enabled(),STAGING_HEALTH_ONLY:"true",ALLOW_AI:"false",
+   PLAN_DB:{prepare(){throw Error("No D1 write/read allowed beyond health");}},
+ };
+ // Health reads D1 schema, so check this endpoint without a D1 binding.
+ const health=await worker.fetch(new Request(ENDPOINT+"health"),{...stage,PLAN_DB:undefined});
+ assert.equal(health.status,200);
+ assert.equal((await health.json()).stagingHealthOnly,true);
+ for(const [path,method] of [["sessions","POST"],["entitlement","GET"],["billing/webhook","POST"],["","POST"],["sessions","OPTIONS"]]){
+  const req=new Request(ENDPOINT+path,{method,headers:{Origin:ORIGIN,...(method==="POST"?{"Content-Type":"application/json"}:{})},...(method==="POST"?{body:"{}"}:{})});
+  const result=await worker.fetch(req,stage);
+  assert.equal(result.status,503,method+" "+path);
+  assert.equal((await result.json()).error,"staging_health_only");
+ }
+ assert.equal(upstream.mock.callCount(),0);
+ const ordinary=await worker.fetch(new Request(ENDPOINT+"health"),enabled());
+ assert.equal((await ordinary.json()).stagingHealthOnly,false,"production default is not health-only");
+});
+
 test("missing Gemini secret has a distinct error code, not a generic AI shutdown", async () => {
  const response = await worker.fetch(request(), {...enabled(), GEMINI_API_KEY: undefined});
  assert.equal(response.status, 503);

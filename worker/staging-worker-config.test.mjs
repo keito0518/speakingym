@@ -32,7 +32,7 @@ test('staging Worker has a distinct name, entry point and D1 database',()=>{
 test('staging deploy defaults to disabled AI, Free rescue, replay and billing',()=>{
   const vars=section(staging,'[vars]');
   for(const [name,val] of Object.entries({
-    ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',ALLOW_AI:'false',
+    ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',STAGING_HEALTH_ONLY:'true',ALLOW_AI:'false',
     FREE_SESSION_MODE:'disabled',AI_REPLAY_MODE:'disabled',
     REPLAY_CLEANUP_MODE:'disabled',BILLING_MODE:'disabled',
   }))assert.equal(key(vars,name),val);
@@ -53,4 +53,5 @@ test('existing production deployment configuration remains on its own database',
   assert.equal(key(production,'database_name'),'speakingym-plans');
   assert.equal(key(production,'database_id'),'62419d42-703c-4e41-af47-736fd1738d7e');
   assert.notEqual(key(production,'database_id'),key(staging,'database_id'));
+  assert.doesNotMatch(production,/^STAGING_HEALTH_ONLY\s*=/m,'production config must never enable staging GET-only gate');
 });
