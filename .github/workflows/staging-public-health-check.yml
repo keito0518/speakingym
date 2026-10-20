@@ -1,0 +1,28 @@
+# Read-only, credential-free inspection of the isolated staging Worker.
+# Does not deploy, run migrations, invoke Gemini, or exercise Stripe.
+name: Isolated staging Worker public health
+
+on:
+  push:
+    branches:
+      - integration/pro680-latest-main-review-20261020
+    paths:
+      - '.github/workflows/staging-public-health-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout draft branch
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate ONLY the separate staging Worker via GET /health
+        run: node scripts/staging-worker-smoke.mjs "https://speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev"
