@@ -9,7 +9,8 @@ test('scene introduction is consistent with all 16 real practice cards',()=>{
  assert.equal(new Set(ids).size,16);
  assert.match(scenes,/16の場面から選んで、3つの目標達成に挑戦/);
  assert.doesNotMatch(scenes,/6つの場面から選んで/);
- assert.match(scenes,/マイページで無料ログインする/);
+ assert.match(scenes,/Googleで無料ログインする/);
+ assert.match(scenes,/ログインできない場合はマイページへ/);
 });
 
 test('missing route fallback is crawl-safe, responsive and returns to free exercises',()=>{
