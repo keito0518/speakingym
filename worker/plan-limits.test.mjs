@@ -111,7 +111,11 @@ test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid si
  assert.equal(await verifyFirebaseIdToken(request("entitlement","GET",signed)),"student_a");
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",await token("student_b",{aud:"other-project"}))),/invalid_token/);
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",await token("student_b",{iss:"https://securetoken.google.com/other"}))),/invalid_token/);
- await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",signed.slice(0,-2)+"aa")),/invalid_token/);
+ // Mutate a significant base64url signature digit. Tweaking only the
+ // last padding bits can decode to identical bytes and make the test flaky.
+ const pieces=signed.split(".");
+ pieces[2]=(pieces[2][0]==="A"?"B":"A")+pieces[2].slice(1);
+ await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",pieces.join("."))),/invalid_token/);
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET")),/login_required/);
 });
 test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quotas",async t=>{
