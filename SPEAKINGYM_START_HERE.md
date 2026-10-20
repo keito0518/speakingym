@@ -73,3 +73,12 @@
 - 予測の原価はトークンの標準/高負荷**仮定**であって実Gemini請求ではない。高負荷1,480/1000/150でAI推定¥1,056.80、Stripe仮手数料¥63.64、残¥359.56（税・Free・hosting・失敗/再試行・返金前）。仮に税込額の10/110を税相当留保すると残¥225.01。値上げすれば必ず黒字になるという証拠ではない。
 - Free30日理論最大3,000会話ターンに対して1,000Proでも少ない。Proの集中利用・追加の講評価値・学習継続機能等を訴求する必要。未実装機能は宣伝しない。
 - **実際に価格・上限を変える前に**、オーナー選択、Cloudflare/Googleの実原価とFree費用、Stripe sandbox、本番法的表示・決済フォーム更新・旧契約の扱い、個別承認が必要。Stripe実操作は帰宅後に保留中。
+
+## 2026-10-20 最新：ユーザーがPro 1,480円を選択。機能を拡充した（未公開）
+
+- **最新のユーザー判断**：「1,480円にしてみる。その代わり、Proの機能ももっと充実させたい」。従来の680円案は**旧案**。過去の「価格未決定」「680円を維持」の説明はこの日付の決定で上書きされる。ただし**実Stripe価格や本番D1/Workerへの適用許可ではない**。帰宅後のCloudflare/Stripe操作は引き続き保留。
+- [PR #72](https://github.com/keito0518/speakingym/pull/72) を [DRAFT #62](https://github.com/keito0518/speakingym/pull/62) の**開発ブランチにマージ済み**。`pro-study.html`・`pro-study.js`・`pro-study-data.mjs` を追加：Worker `GET /entitlement` が署名済みログインユーザーをProと確認した場合のみ、保存講評/フレーズから日次復習カード最大5枚（回答表示、端末音声、表示中のみチェック）、保存履歴から自己記録の学習レポート。追加Geminiリクエストなし。Proページは**noindex・未公開プレビュー**。実ブラウザでログイン後E2Eは未確認。
+- [PR #73](https://github.com/keito0518/speakingym/pull/73) も DRAFT #62ブランチにマージ済み。**次期Proドラフト仕様は税込月1,480円・月1,000会話ターン・月150 AI講評**、Freeは従来5セッション/日・講評3回/日で変更なし。Stripe Checkoutは厳格に**1,480円**のPriceを要求し、旧680円のStripe Price IDを指定したままなら拒否。ドラフト料金ページ・法定表示草案・プランWorker・テスト/スモークを更新。価格変更だけで旧会員のStripe契約を移行しない。
+- **PR #62最新head確認値：`82c23e596e498c7057d10384ea8affc8bb57a25f`**。依然**DRAFT・main未マージ・Cloudflare未デプロイ**。子PR #73の最後のCIは **326/326 Node tests成功**、Worker・アカウント安全性・NEXT/mission・Chromium/WebKitも成功。次回変更時はGitHubの実状態を必ず再確認。
+- `worker/PRO1480_DRAFT_RELEASE_GATE_2026-10-20.md` に販売を止める条件を記載。新価格・利用枠で**実AI原価は未測定**。高負荷仮定ではProが月1,000+150を使い切るとAI約1,056.80円、Stripe仮4.3%で63.64円、残359.56円（**税・無料ユーザー原価・Cloudflare・リトライ前**）。`scripts/pro1480-economics.mjs` は仮定用。旧 `scripts/pro680-economics.mjs` は比較用の歴史的資料であり、次期販売価格ではない。
+- **次の作業**：本人の帰宅後Workで独立stage Worker/stage D1、実Stripe sandboxで新¥1,480 test Price・Checkout→署名Webhook→Pro→更新成功/失敗→Portal解約→期間満了を検証。匿名化したCloudflare GeminiログとGoogle請求を実測確認。法的な請求時開示/解約返金・利用規約を1,480円に合わせて確定。ステージングの学習画面・マイク・Pro学習スタジオの実ログイン検証。**本番のStripe Live、D1 migration、Gemini有料化、一般公開は独立した運営者の明示承認まで実施しない**。
