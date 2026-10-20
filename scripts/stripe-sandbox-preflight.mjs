@@ -68,11 +68,11 @@ export async function inspectStripeSandbox(fetcher=fetch,options={}){
   get('billing_portal/configurations?limit=100')
  ]);
  if(price.id!==priceId||price.object!=='price'||price.livemode!==false||!price.active||
-   price.currency!=='jpy'||price.unit_amount!==680||price.tax_behavior!=='inclusive'||
+   price.currency!=='jpy'||price.unit_amount!==1480||price.tax_behavior!=='inclusive'||
    price.type!=='recurring'||price.billing_scheme!=='per_unit'||
    price.recurring?.interval!=='month'||price.recurring?.interval_count!==1||
    price.recurring?.trial_period_days!=null||price.recurring?.usage_type!=='licensed')
-  fail('stripe_test_price_not_680_jpy_inclusive_monthly');
+  fail('stripe_test_price_not_1480_jpy_inclusive_monthly');
  const endpoints=checkList(webhooks,'webhook_endpoints');
  const candidates=endpoints.filter(w=>w.url===webhookUrl&&w.status==='enabled'&&w.livemode===false);
  if(candidates.length!==1)fail('staging_webhook_not_uniquely_enabled');
@@ -92,7 +92,7 @@ export async function inspectStripeSandbox(fetcher=fetch,options={}){
  // webhook URL, endpoint/account ID, or raw provider responses.
  return {
   mode:'test',readOnly:true,passed:true,
-  priceJPY:680,taxInclusive:true,period:'month',trial:false,
+  priceJPY:1480,taxInclusive:true,period:'month',trial:false,
   isolatedWebhookEventCoverage:true,
   portalCancelAtPeriodEnd:true,portalPaymentMethodUpdate:true,
   limitations:'Settings inspected via Stripe TEST GET APIs only. Real Checkout, signed webhook, invoice renewal/failure, Firebase entitlement, cancellation and end-of-period must be tested separately.'
