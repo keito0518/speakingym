@@ -13,6 +13,13 @@
 - Owner selected seven Stripe sandbox snapshot events in the **new Workbench Event destinations v2 wizard**, with only API versions `2026-09-30.endive` and `2026-10-07.preview` available. **Creation was not confirmed** and prior legacy v1 webhook may exist. **Do not ask owner to duplicate setup before read-only v1+v2 audit.**
 - No claim that the sandbox webhook signing secret, Portal configuration, stage secrets or genuine subscription E2E have been verified.
 
+## 2026-10-21 verified staging status (read-only real environment check)
+
+- [GitHub Actions public staging GET /health run #39511486395](https://github.com/keito0518/speakingym/actions/runs/39511486395) completed **success** against the actual separately deployed staging Worker: 16 scenes, D1 ledger/Free schemas ready, AI/Free features **off**, billing **disabled**, replay **off**.
+- This confirms **safe health-only staging**, **NOT** billing-only staging. It does not prove the two Stripe billing D1 tables, configured Stripe TEST secrets, ¥1,480 Price, Webhook, Portal or a real purchase.
+- The local QA page's ready text now explicitly distinguishes staging Worker/D1 safety from unverified Stripe settings, and its checkout gate requires the complete staging safety flags.
+- A real billing-only staging deployment is still **not performed**. Continue with isolated stage D1 verification, then read-only Stripe TEST inspection before enabling staging TEST billing; never modify production.
+
 ## 1. Prepare isolated STAGING billing schema (test DB only)
 
 At repository root, with Cloudflare Wrangler already logged in:
