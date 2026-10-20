@@ -14,7 +14,7 @@ const endpoint=()=>({id:'we_test',url:webhookUrl,livemode:false,status:'enabled'
  enabled_events:['checkout.session.completed','customer.subscription.created','customer.subscription.updated',
  'customer.subscription.deleted','invoice.paid','invoice.payment_failed','invoice.payment_action_required']});
 const portal=()=>({id:'bpc_test',livemode:false,is_default:true,active:true,
- features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:true}}});
+ features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:true},subscription_update:{enabled:false}}});
 const v2destination=()=>({
  id:'ed_test_fixture',object:'v2.core.event_destination',
  webhook_endpoint:{url:webhookUrl,signing_secret:null},type:'webhook_endpoint',
@@ -86,7 +86,7 @@ test('reject incorrect prices, test trial or live-mode Price',async()=>{
 });
 test('webhook must uniquely match stage, be enabled non-live and cover all events',async()=>{
  for(const changes of [
-  {livemode:true},{status:'disabled'},{url:'https://other.test/billing/webhook'}
+  {livemode:true},{status:'disabled'},{connect:true},{url:'https://other.test/billing/webhook'}
  ]){
   const f=scenario({webhooks:{has_more:false,data:[{...endpoint(),...changes}]}});
   await assert.rejects(inspectStripeSandbox(f.fetcher,inputs),
@@ -102,9 +102,11 @@ test('webhook must uniquely match stage, be enabled non-live and cover all event
 test('default portal requires period-end cancellation and payment-method update',async()=>{
  for(const changes of [
   {is_default:false},{active:false},{livemode:true},
-  {features:{subscription_cancel:{enabled:false,mode:'at_period_end'},payment_method_update:{enabled:true}}},
-  {features:{subscription_cancel:{enabled:true,mode:'immediately'},payment_method_update:{enabled:true}}},
-  {features:{subscription_cancel:{enabled:true,mode:'at_period_end'},payment_method_update:{enabled:false}}}
+  {features:{...portal().features,subscription_cancel:{enabled:false,mode:'at_period_end'}}},
+  {features:{...portal().features,subscription_cancel:{enabled:true,mode:'immediately'}}},
+  {features:{...portal().features,payment_method_update:{enabled:false}}},
+  {features:{...portal().features,subscription_update:{enabled:true}}},
+  {features:{...portal().features,subscription_update:undefined}}
  ]){
   const f=scenario({portals:{has_more:false,data:[{...portal(),...changes}]}});
   await assert.rejects(inspectStripeSandbox(f.fetcher,inputs));
@@ -141,7 +143,8 @@ test('a duplicate old + modern destination can never pass',async()=>{
 test('modern Stripe destinations fail closed if preview, thin, wrong source or wrong target',async()=>{
  for(const changes of [
   {event_payload:'thin'},{snapshot_api_version:'2026-10-07.preview'},
-  {snapshot_api_version:null},{events_from:['@accounts']},{status:'disabled'},
+  {snapshot_api_version:null},{events_from:['@accounts']},
+  {events_from:['@self','@accounts']},{status:'disabled'},
   {type:'amazon_eventbridge'},{enabled_events:['invoice.paid']},
   {livemode:true},{webhook_endpoint:{url:'https://speakingym.pages.dev/billing/webhook'}}
  ]){
