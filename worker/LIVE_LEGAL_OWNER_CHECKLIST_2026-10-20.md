@@ -22,7 +22,7 @@ Live remains disabled until **all** are satisfied:
 - `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified` — real Stripe sandbox, not mocked CI, passed.
 - `LIVE_UNIT_ECONOMICS_REVIEWED=verified` — privacy-safe real Cloudflare usage, Google AI Studio invoices/capacity and downside loss reserve reviewed; 680 JPY profitability is **not yet proven**.
 
-All three new `verified` flags default OFF. **NEVER** set these to `verified` until underlying factual checks actually pass. Their presence in code is not evidence of passing. Keep live audience `invited` until an expressly approved limited real-charge pilot works. Then get a second explicit authorization for `public` (not merely "10/31 target").
+All three new `verified` flags default OFF. **NEVER** set these to `verified` until underlying factual checks actually pass. Their presence in code is not evidence of passing. Keep live audience `invited` until an expressly approved limited real-charge pilot works. Then get a second explicit authorization for `public` (not merely "10/31 target") and require `LIVE_PUBLIC_RELEASE_APPROVED=approved` alongside `BILLING_LIVE_AUDIENCE=public`. An invited pilot remains separate and never sets the public approval flag.
 
 ## Facts needed from the owner (do not guess and do not insert secrets)
 
