@@ -55,7 +55,7 @@
         }
         const remaining = { sessions: Math.max(0,maxTurns-usedTurns), teacher: Math.max(0,maxTeacher-usedTeacher) };
         show("Pro · 今月の残り：AI英会話 " + remaining.sessions + "/" + maxTurns +
-          " 往復 · AI先生 " + remaining.teacher + "/" + maxTeacher +
+          " ターン · AI先生 " + remaining.teacher + "/" + maxTeacher +
           " 回（日本時間・毎月1日更新）");
         showExhaustion(remaining, "pro");
         return;
