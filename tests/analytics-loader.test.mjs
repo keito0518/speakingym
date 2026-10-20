@@ -45,7 +45,6 @@ function simulate(id, stored = '', options = {}) {
 }
 
 test('blank or invalid GA4 IDs never load Google, write consent, or prompt for cookies', () => {
-  assert.match(read('analytics-config.js'), /window\.SPEAKINGYM_GA4_ID = "";/);
   for (const id of ['', undefined, 'UA-12345', 'G-<script>', 'G-TEST?foo', 'G-notLowercase', 'G-A1']) {
     const r = simulate(id, '');
     assert.equal(r.window.SPEAKINGYM_GA4_READY, undefined);
@@ -134,7 +133,7 @@ test('unrelated site gtag cannot activate analytics without consent', () => {
   assert.equal(calls.length,0);
 });
 
-test('site pages load blank config before loader and event hooks', () => {
+test('site pages load config before loader and event hooks', () => {
   for (const file of [
     'index.html','reflex.html','scenes.html','account.html','phrasebook.html',
     'plans.html','privacy.html','terms.html','contact.html','classic.html','mission.html','live.html'
@@ -152,5 +151,37 @@ test('site pages load blank config before loader and event hooks', () => {
   assert.match(privacy,/id="analytics-settings"/);
   assert.match(privacy,/id="sg-analytics-accept"/);
   assert.match(privacy,/id="sg-analytics-decline"/);
-  assert.match(privacy,/現在、Speakingym用の測定IDは設定しておらず/);
+  assert.match(privacy,/Google LLCが提供するGoogle Analytics 4/);
+  assert.match(privacy,/未選択の場合や「同意しない」を選んだ場合は、このアクセス解析によるデータ送信を行いません/);
+  assert.match(privacy,/完全に匿名の情報であることを保証するものではありません/);
+  assert.match(privacy,/それ以前に送信されたデータは取り消せません/);
+  assert.doesNotMatch(privacy,/測定IDは設定しておらず|計測を準備しています|測定IDが設定されるまでは/);
+});
+
+
+// Exercise the deployed configuration together with consent and event filtering.
+test('production measurement ID remains opt-in through refusal, acceptance and revocation', () => {
+  const configWindow = {};
+  vm.runInNewContext(read('analytics-config.js'), { window: configWindow });
+  const id = configWindow.SPEAKINGYM_GA4_ID;
+  assert.equal(id, 'G-DRH440861Y');
+  const r = simulate(id, '', { settings: true });
+  vm.runInNewContext(read('analytics-events.js'), { window: r.window });
+  assert.equal(r.appended.length, 0);
+  assert.equal(r.window.speakingymAnalytics.track('sg_sprint_start'), false);
+  r.elements['sg-analytics-decline'].onclick();
+  assert.equal(r.appended.length, 0);
+  assert.equal(r.window.speakingymAnalytics.track('sg_sprint_start'), false);
+  r.elements['sg-analytics-accept'].onclick();
+  assert.equal(r.appended.length, 1);
+  assert.equal(r.appended[0].src, 'https://www.googletagmanager.com/gtag/js?id=' + id);
+  assert.equal(r.window.dataLayer[1][1], id);
+  assert.equal(r.window.speakingymAnalytics.track('sg_sprint_start', { mode: 'standard', transcript: 'private' }), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(Array.from(r.window.dataLayer.at(-1)))), ['event', 'sg_sprint_start', { mode: 'standard' }]);
+  r.elements['sg-analytics-decline'].onclick();
+  const count = r.window.dataLayer.length;
+  assert.equal(r.window.speakingymAnalytics.track('sg_sprint_complete'), false);
+  assert.equal(r.window.dataLayer.length, count);
+  assert.equal(r.window.reloadCount, 1);
+  assert.equal(simulate(id, 'no').appended.length, 0);
 });

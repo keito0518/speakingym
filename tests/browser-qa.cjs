@@ -7,12 +7,32 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   await context.route('https://**/*',r=>r.abort());
   await context.addInitScript(()=>{const listeners={};window.__spoken=[];window.SpeechSynthesisUtterance=class{constructor(text){this.text=text}};Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{name:'Basic',lang:'en-US',voiceURI:'basic',localService:true},{name:'Natural English',lang:'en-GB',voiceURI:'natural'}],addEventListener:(n,f)=>listeners[n]=f,speak:u=>window.__spoken.push({text:u.text,voice:u.voice?.voiceURI,rate:u.rate}),cancel(){},paused:false}})});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  // Verify the real consent UI before running guest learning interactions.
+  const googleRequests=[];
+  page.on('request',request=>{if(/google(tagmanager|analytics)\\.com/.test(request.url()))googleRequests.push(request.url())});
+  await page.goto('http://127.0.0.1:8765/privacy.html');
+  assert.equal(await page.getByRole('region',{name:'任意のアクセス解析'}).count(),1);
+  assert.equal(await page.locator('script[data-sg-ga4-loader]').count(),0);
+  assert.equal(googleRequests.length,0);
+  await page.getByRole('button',{name:'同意しない',exact:true}).click();
+  await page.reload();
+  assert.equal(await page.locator('#sg-analytics-consent-status').textContent(),'任意のアクセス解析：拒否中');
+  assert.equal(await page.locator('script[data-sg-ga4-loader]').count(),0);
+  assert.equal(googleRequests.length,0);
+  await page.getByRole('button',{name:'計測に同意する',exact:true}).click();
+  assert.equal(await page.locator('script[data-sg-ga4-loader]').getAttribute('src'),'https://www.googletagmanager.com/gtag/js?id=G-DRH440861Y');
+  assert.equal(await page.locator('#sg-analytics-consent-status').textContent(),'任意のアクセス解析：同意済み');
+  await Promise.all([page.waitForNavigation(),page.getByRole('button',{name:'計測に同意しない',exact:true}).click()]);
+  assert.equal(await page.locator('#sg-analytics-consent-status').textContent(),'任意のアクセス解析：拒否中');
+  assert.equal(await page.locator('script[data-sg-ga4-loader]').count(),0);
+  const requestsAfterRevoke=googleRequests.length;
   for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','reflex.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
    if(path.startsWith('scenes')){assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-scene]').count(),16)}
    await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
+  assert.equal(googleRequests.length,requestsAfterRevoke,'refused visits must not request Google analytics');
   await page.selectOption('#mode','カフェ');await page.click('#start');assert.match(await page.locator('#category').textContent(),/^カフェ \/ STANDARD$/);
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
   await page.evaluate(()=>{localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([{id:'repair1:easy:quick',cardId:'repair1',kind:'quick',text:'Could you repeat that?',level:'easy',goal:'聞き返す'}]));window.speakingymPhrases.toggle({text:'Could I have oat milk?',sceneId:'cafe',level:'standard',source:'AIの言い換え'});window.dispatchEvent(new Event('speakingym:account-ready'))});
