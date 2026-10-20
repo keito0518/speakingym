@@ -174,7 +174,30 @@ async function checkout(env,row,token){
  if(row.checkout_id){
   const session=await stripe(env,'checkout/sessions/'+encodeURIComponent(row.checkout_id));
   if(session.livemode!==expectedLive(env)||session.customer!==row.customer_id)throw fail('billing_mode_mismatch');
-  if(session.status==='open')return {url:session.url};
+  if(session.status==='open'){
+   // A stored open Checkout may predate the new ¥1,480 plan. Never return a
+   // former ¥680 session (or a foreign return URL) without verifying the
+   // exact server-owned purchase details. Refuse uncertainty; do not create
+   // another session while the old checkout remains open.
+   const returns=billingReturnUrls(env);
+   let checkoutUrl;
+   try{checkoutUrl=new URL(session.url)}catch{throw fail('billing_checkout_review')}
+   if(session.id!==row.checkout_id||session.mode!=='subscription'||
+      session.client_reference_id!==row.uid||
+      session.currency!=='jpy'||session.amount_subtotal!==1480||
+      session.amount_total!==1480||!Number.isInteger(session.expires_at)||
+      session.expires_at<=now()||session.success_url!==returns.success||
+      session.cancel_url!==returns.cancel||
+      checkoutUrl.protocol!=='https:'||checkoutUrl.hostname!=='checkout.stripe.com'||
+      checkoutUrl.username||checkoutUrl.password||checkoutUrl.port)
+    throw fail('billing_checkout_review');
+   const lines=await stripe(env,'checkout/sessions/'+encodeURIComponent(row.checkout_id)+'/line_items?limit=10');
+   if(lines?.has_more!==false||!Array.isArray(lines.data)||lines.data.length!==1||
+      lines.data[0].price?.id!==priceId(env)||lines.data[0].quantity!==1||
+      lines.data[0].currency!=='jpy'||lines.data[0].amount_total!==1480)
+    throw fail('billing_checkout_review');
+   return {url:session.url};
+  }
   if(session.status==='complete'){
    // Recheck the exact completed subscription: completion may race the earlier list.
    if(!session.subscription)throw fail("billing_busy",409);
