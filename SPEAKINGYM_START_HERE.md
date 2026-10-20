@@ -1,0 +1,39 @@
+# Speakingym — 新しいチャットはここから（2026-10-20 JST）
+
+> **最初にこのファイル、`WORK_HANDOFF.md` の最後のチェックポイント、現在の GitHub main/PR/Actions を実際に再確認すること。** ここは永続的な引き継ぎの入口であり、GitHub/Cloudflare/Stripe のライブ状態を保証するものではない。内容が古い可能性があるため、日付と一次証拠を照合してから作業する。
+
+## 新しいChatGPTへ最短の依頼文
+**「Speakingymの続きをお願い。GitHub `keito0518/speakingym` の `SPEAKINGYM_START_HERE.md` と `WORK_HANDOFF.md`、最新mainとオープンPRを確認して、安全にできる開発を自律的に進めて。」**
+
+- リポジトリ: https://github.com/keito0518/speakingym
+- 本番Pages: https://speakingym.pages.dev/
+- 現在の開発目標: **2026-10-31 に月額680円のPro実課金を含む正式公開**。これは目標であり、課金の許可・公開GOサインではない。
+- 運営形態: 個人の副業（法人設立を前提としない）。**本人の希望は、法令の要件を満たす場合に自宅住所/電話をサイトに公開せず、購入検討者からの請求時に正式な事業者情報を遅滞なく開示する方式**。運用体制が整っていない間は法的準備完了とは扱わない。氏名/住所/電話をチャット、GitHub、CIに載せない。
+
+## 最終確認済みの技術状態（2026-10-20）
+- **main の最終確認コミット:** `54c61c57641218e528b976df539d9a68fe4880c7`（PR #59を含む）。この資料のマージ後は必ず新しいmain SHAを取得する。
+- PR [#59](https://github.com/keito0518/speakingym/pull/59) mainへマージ済み。独立staging Worker初回は `STAGING_HEALTH_ONLY=true` により `GET /health` のみ許可。実際のstaging Workerデプロイはまだ確認できていない。
+- **Pro決済の本命統合版:** [PR #62](https://github.com/keito0518/speakingym/pull/62) は **DRAFT・main未マージ**。最新mainに基づき、Stripe Live gated実装、GA4明示同意、staging保護を両立。**PR #62 head `4dffc97780c4f4f1fc140a993fd8ff98682677e8` に対して Launch QA 296/296、AI Worker安全性とアカウント安全性、Chromium/WebKit browser QAが成功**。新コミットではテストを改めて確認。
+- [PR #43](https://github.com/keito0518/speakingym/pull/43) は旧mainを基点にした **DRAFT・未マージ**。子PR [#60](https://github.com/keito0518/speakingym/pull/60) / [#61](https://github.com/keito0518/speakingym/pull/61) の安全策は #43 の開発ブランチに反映されているが、**本番mainにマージされていない**。最新mainへの統合は #62を基準とする。
+- #62上で `tokusho.html` の**販売前・noindex草案**、`contact.html` の専用mailto開示請求リンク、`tests/operator-disclosure-request.test.mjs`、`worker/INDIVIDUAL_OPERATOR_TOKUSHO_PLAN_2026-10-20.md` が整備済み。メールの実受信/返信および法的適合は未検証。
+- 本番 `TURN_LEDGER_MODE=enabled` は2026-10-19のGET `/health` で確認した直近記録。本番 `FREE_SESSION_MODE` はOFF、production D1 migration 0005未適用、AI replay OFF。最新のCloudflare反映/稼働状態を新たに観測したわけではない。staging D1の0002+0005 SQL QAは成功、staging Worker実デプロイは未検証。
+- GA4測定ID `G-DRH440861Y` のコード反映と同意後ロードはテスト済み。**GA4イベントの実受信は未確認**。
+- **月680円の実採算は未確定**。実GeminiのCloudflareログ、Google請求データ、free-tier負担、有料API品質は未照合。コード上のシミュレーション値は実原価ではない。
+
+## 不変の安全ゲート
+1. Stripeの**本番課金・実クレジットカード決済、liveキー/Secretsの設定、公開切替、Cloudflare本番へのデプロイ変更、D1本番 migration、Gemini有料枠の有効化は、未検証事項の解消と運営者の個別の明示承認が必要**。2026-10-31という目標設定は承認に代わらない。
+2. Stripeは現在sandboxのみ。本物のStripe test-modeで Checkout→署名Webhook→初回Pro→更新成功/失敗→重複→Portal解約→期限終了を通す。Node mockテストをE2E完了扱いしない。
+3. **商用NO-GOフラグ:** `LIVE_LEGAL_READY=verified`, `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified`, `LIVE_UNIT_ECONOMICS_REVIEWED=verified` は客観的証拠が揃うまで設定しない。招待制実課金パイロットを通しても、公開範囲は別途 `LIVE_PUBLIC_RELEASE_APPROVED=approved` が必要。いずれも現在は未承認。
+4. ユーザーのプラン数値を勝手に変更しない: Free AI 5セッション/日、講評3回/日、Pro AI 600ターン/月、講評100回/月、月680円。**Freeの最大利用量がProと逆転し得る**問題は商品判断が必要。
+5. staging用の独立Worker／D1を本番と混ぜない。本番D1へmigrationを一括実行しない。既存の本番ledgerを無効化しない。Stripe本番顧客/決済データは絶対にテスト環境に流さない。
+
+## 現実的な次の順番
+1. #62と最新mainの差分・GitHub CIを再チェックし、マージ前レビュー／追加回帰テストを進める。ただし#62は法的表示・料金・Stripe実試験のGOまでDRAFTのまま維持。
+2. **個人情報を秘密にした請求時開示の実運用**：メール窓口の受信・返信テスト、購入前に遅滞なく正式な情報を提供する体制、解約/返金など契約条件と最終確認ページを確定。架空の事業者情報で埋めない。
+3. Cloudflareの分離staging Workerの初回ヘルス確認、本物のStripe sandbox E2E、Firebase/iPhone Safari実機QA、Gemini使用量・原価/容量の確認。権限と本人操作が必要な部分だけ運営者へ依頼。
+4. 本番変更は必要なバックアップ/復元検証を行った後、個別の安全なリリース計画とオーナーの明示承認で進める。
+
+## 引き継ぎ運用ルール
+- **チャット内容はGitHubへ常時自動転送されない**。次回から開発マイルストーンごとにこのファイルまたは `WORK_HANDOFF.md` に、検証済み事実・PR/Actionsへのリンク・未完了点をコミットして引き継ぐ。
+- 新しいチャットでは上記の**一文だけ**でも始められるようにする。ただしGitHub連携が無効なら利用者による再接続が必要。過去チャットの完全な自動共有やバックグラウンド実行を約束しない。
+- `WORK_HANDOFF.md` には時系列の詳細がある。古い記載は後続のdated checkpointで上書きされるため、「最新」のセクションとGitHubの実状態を優先する。
