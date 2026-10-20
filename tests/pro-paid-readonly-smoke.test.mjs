@@ -5,12 +5,12 @@ import {verifyPaidLaunchReadOnly} from '../scripts/pro-paid-readonly-smoke.mjs';
 
 const site='https://speakingym.pages.dev/',worker='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
 const fixture=()=>({
- 'plans.html':'<p>Pro 680円 毎月請求 自動更新</p><a href="./tokusho.html">特商法</a><a href="./terms.html">規約</a><input id="sg-live-accept">',
+ 'plans.html':'<p>Pro 1,480円 毎月請求 自動更新</p><a href="./tokusho.html">特商法</a><a href="./terms.html">規約</a><input id="sg-live-accept">',
  'tokusho.html':'<h1>特定商取引法に基づく表記</h1><p>販売事業者・開示請求に対応。利用者の請求に遅滞なく回答する。</p>',
  'terms.html':'<h1>Proの有料規約</h1><p>解約とキャンセルについて</p>',
  'privacy.html':'Stripeが決済情報を処理する。',
  'contact.html':'<p>事業者情報の開示請求</p><a href="mailto:test@example.invalid">お問い合わせ</a>',
- 'health':JSON.stringify({status:'ok',billingMode:'live',quotaVersion:'pro-monthly-600-100-v2',
+ 'health':JSON.stringify({status:'ok',billingMode:'live',quotaVersion:'pro-monthly-1000-150-v3',
   aiEnabled:true,aiConfigured:true,plansEnabled:true,plansReady:true,
   turnLedgerEnabled:true,turnLedgerSchemaReady:true,
   sceneIds:Array.from({length:16},(_,i)=>'scene-'+i)})
@@ -61,7 +61,7 @@ test('disabled/test billing mode, incomplete D1 or stopped Gemini fails closed',
 });
 test('missing privacy payment notice, legal link and recurring confirmation block readiness',async()=>{
  for(const [key,body] of [
-  ['privacy.html','Google Analytics and Cloudflare'],['plans.html','Pro 680円 自動更新'],
+  ['privacy.html','Google Analytics and Cloudflare'],['plans.html','Pro 1,480円 自動更新'],
   ['tokusho.html','未確定: 特定商取引法に基づく表記と開示請求']
  ]){
   const f=setup();f.pages[key]=body;
