@@ -28,7 +28,7 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
@@ -101,6 +101,25 @@ test('Basil invoice returned by Stripe ID can be verified as paid',async t=>{
  f.state.subscriptions=[{...active(),latest_invoice:'in_test'}];
  assert.equal((await f.event('invoice.paid','evt_basil_invoice')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
+});
+
+test('Checkout refuses trial, metered, tiered and unexpected price objects before customer creation',async t=>{
+ const cases=[
+  {recurring:{interval:'month',interval_count:1,trial_period_days:14,usage_type:'licensed'}},
+  {recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'metered'}},
+  {billing_scheme:'tiered'},{type:'one_time'},{object:'coupon'},
+  {id:'price_wrong'},{tax_behavior:'exclusive'}, {unit_amount:680}
+ ];
+ for(const fields of cases){
+  await t.test(Object.keys(fields)[0],async inner=>{
+   const f=await fixture(inner);
+   Object.assign(f.state.price,fields);
+   const response=await f.call('checkout');
+   assert.equal(response.status,503);
+   assert.equal((await response.json()).error,'billing_price_invalid');
+   assert.equal(f.state.calls.some(([url])=>String(url).endsWith('/customers')),false);
+  });
+ }
 });
 
 test('entitlement requires active paid current exact price and no pause',()=>{
