@@ -37,3 +37,11 @@
 - **チャット内容はGitHubへ常時自動転送されない**。次回から開発マイルストーンごとにこのファイルまたは `WORK_HANDOFF.md` に、検証済み事実・PR/Actionsへのリンク・未完了点をコミットして引き継ぐ。
 - 新しいチャットでは上記の**一文だけ**でも始められるようにする。ただしGitHub連携が無効なら利用者による再接続が必要。過去チャットの完全な自動共有やバックグラウンド実行を約束しない。
 - `WORK_HANDOFF.md` には時系列の詳細がある。古い記載は後続のdated checkpointで上書きされるため、「最新」のセクションとGitHubの実状態を優先する。
+
+## 最新の作業追記：2026-10-20 Pro決済表示と公開前スモーク
+
+- **現在のmain（本追記前）:** `a888e3fbde46f20e32cb2e33d4fc58f3b77e6ed1`。これが最新とは限らないため、次の担当者は必ずGitHubへ再確認する。
+- **PR [#62](https://github.com/keito0518/speakingym/pull/62)** は引き続き **DRAFT / main未マージ / 未デプロイ**。現在確認できたhead: `a79ffb90059f56e10b038447bea0de0c7f7f00a3`。
+- **[PR #64](https://github.com/keito0518/speakingym/pull/64)**（Pro受付表示の古いLive認証情報が通信失敗/ログアウト/アカウント切替後に残らないようにする）と **[PR #65](https://github.com/keito0518/speakingym/pull/65)**（`scripts/pro-paid-readonly-smoke.mjs`：公開Pages5ページ＋Worker healthのGETのみで商用準備状況をfail-closed確認）を **#62のドラフトブランチにマージ済み**。最終 #65 の CI では **303/303 Nodeテスト、Chromium/WebKitブラウザQA、Worker安全性テスト成功**。
+- 新しい有料公開スモークは読み取り専用。**現在の本番では特商法と利用規約が未確定・Stripe Live無効のため失敗するのが正しい**。テスト合格だけで法律対応・Stripe sandbox E2E・実請求・一般公開を承認できない。実決済/バックアップ/D1/AI原価/公開許可は依然NO-GO。
+- 実装済みの検査はユーザー本人の手動操作を代替しない。独立staging Worker実デプロイ、実Stripe sandbox Checkout→Webhook→更新/失敗/解約、Gemini請求原価、請求時開示メールの実受信返信、法令適合、ユーザーの段階別承認が残る。
