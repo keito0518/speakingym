@@ -8,6 +8,8 @@ on:
       - integration/pro680-latest-main-review-20261020
     paths:
       - '.github/workflows/staging-public-health-check.yml'
+      - 'scripts/staging-worker-smoke.mjs'
+      - 'tests/staging-worker-smoke.test.mjs'
   workflow_dispatch:
 
 permissions:
