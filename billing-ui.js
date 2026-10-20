@@ -4,7 +4,8 @@
  const API='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/billing/';
  const $=id=>document.getElementById(id);
  const buy=$('sg-checkout'),portal=$('sg-portal'),status=$('sg-billing-status'),date=$('sg-billing-date');
- let busy=false,sequence=0,checkoutAllowed=false;
+ const review=$('sg-live-review'),accept=$('sg-live-accept'),proceed=$('sg-live-proceed');
+ let busy=false,sequence=0,checkoutAllowed=false,verifiedMode='disabled';
  const messages={billing_disabled:'Proの登録は現在利用できません。無料プランは引き続き利用できます。',
  login_required:'Googleログイン後に、Proの登録状況を確認できます。',
  sandbox_invite_required:'このアカウントでは現在Proを登録できません。無料プランは引き続き利用できます。',
@@ -22,6 +23,8 @@
  // Only a successful, signed-in response from our own Worker is allowed to
  // show real payment availability. Never infer it from URL or browser state.
  function showVerifiedMode(mode){
+  verifiedMode=mode;
+  review.hidden=true;accept.checked=false;proceed.disabled=true;
   const live=mode==='live';
   const copy=(id,message)=>{const node=$(id);if(node)node.textContent=message};
   const badge=$('sg-pro-availability');
@@ -42,7 +45,7 @@
    :'一般向けの申し込みはまだ受け付けていません。テスト資格のあるアカウントのみ無請求で検証できます。');
  }
  async function refresh(){
-  const seq=++sequence;checkoutAllowed=false;buy.disabled=true;portal.hidden=true;date.textContent='';
+  const seq=++sequence;checkoutAllowed=false;verifiedMode='disabled';buy.disabled=true;portal.hidden=true;review.hidden=true;accept.checked=false;proceed.disabled=true;date.textContent='';
   try{
    const data=await api('status');if(seq!==sequence)return;
    checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
@@ -74,7 +77,25 @@
    if(url.protocol!=='https:'||url.hostname!==host)throw Error('invalid_redirect');location.assign(url.href);
   }catch(e){error(e)}finally{busy=false;portal.disabled=false;buy.disabled=!checkoutAllowed}
  }
- buy.addEventListener('click',()=>redirect('checkout'));portal.addEventListener('click',()=>redirect('portal'));
+ // For real charges, the user must see recurring terms and actively opt in.
+ // Sandbox testing retains its existing path; browser confirmation never grants Pro.
+ buy.addEventListener('click',()=>{
+  if(busy||buy.disabled||!checkoutAllowed)return;
+  if(verifiedMode==='live'){
+   review.hidden=false;accept.checked=false;proceed.disabled=true;
+   review.scrollIntoView?.({block:'nearest',behavior:'smooth'});
+  }else if(verifiedMode==='test')return redirect('checkout');
+ });
+ accept.addEventListener('change',()=>{
+  proceed.disabled=!accept.checked||busy||!checkoutAllowed||verifiedMode!=='live';
+ });
+ $('sg-live-cancel').addEventListener('click',()=>{review.hidden=true;accept.checked=false;proceed.disabled=true;});
+ proceed.addEventListener('click',()=>{
+  if(!accept.checked||busy||!checkoutAllowed||verifiedMode!=='live'||review.hidden)return;
+  review.hidden=true;accept.checked=false;proceed.disabled=true;
+  return redirect('checkout');
+ });
+ portal.addEventListener('click',()=>redirect('portal'));
  $('sg-billing-refresh').addEventListener('click',refresh);
  window.addEventListener('speakingym:account-ready',refresh);window.addEventListener('focus',refresh);void refresh();
 })();
