@@ -53,7 +53,7 @@ test('a failed Stripe Checkout POST never enables another payment attempt withou
 test('reused checkout mismatch explains the risk and does not allow repeated purchase',async()=>{
  const a=await ui({byAction:{checkout:{ok:false,data:{error:'billing_checkout_review'}}}});
  await a.node('sg-checkout').listeners.click();
- assert.match(a.node('sg-billing-status').textContent,/契約情報の確認|契約情報|確認が必要/);
+ assert.match(a.node('sg-billing-status').textContent,/以前の購入画面の内容を確認/);
  assert.equal(a.node('sg-checkout').disabled,true);
  assert.equal(a.redirects.length,0);
 });
