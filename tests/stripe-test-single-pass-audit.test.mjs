@@ -4,8 +4,8 @@ import {inspectExistingSandbox,STAGING_WEBHOOK} from '../scripts/stripe-test-sin
 import {PLAN} from '../scripts/stripe-test-price-bootstrap.mjs';
 
 const key='sk_test_fixtureNoSecrets';
-const product={object:'product',id:'prod_1480_test',name:PLAN.name,active:true,livemode:false};
-const price={object:'price',id:'price_1480_test',product:product.id,active:true,livemode:false,
+const product={object:'product',id:'prod_1480test',name:PLAN.name,active:true,livemode:false};
+const price={object:'price',id:'price_1480test',product:product.id,active:true,livemode:false,
  currency:'jpy',unit_amount:1480,tax_behavior:'inclusive',billing_scheme:'per_unit',
  type:'recurring',recurring:{interval:'month',interval_count:1,usage_type:'licensed',trial_period_days:null}};
 const events=['checkout.session.completed','customer.subscription.created','customer.subscription.updated',
@@ -29,7 +29,7 @@ function mock({
   let response;
   if(target.pathname==='/v1/products')response={data:catalogue,has_more:false};
   else if(target.pathname==='/v1/prices' && target.searchParams.has('product'))response={data:costs,has_more:false};
-  else if(target.pathname==='/v1/prices/price_1480_test')response=price;
+  else if(target.pathname==='/v1/prices/price_1480test')response=price;
   else if(target.pathname==='/v1/webhook_endpoints')response=webhooks;
   else if(target.pathname==='/v2/core/event_destinations')response=destinations;
   else if(target.pathname==='/v1/billing_portal/configurations')response={data:portals,has_more:false};
