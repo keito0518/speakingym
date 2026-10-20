@@ -33,6 +33,7 @@
 - `STRIPE_LIVE_WEBHOOK_SECRET` = Cloudflare Secret（本番Webhook署名シークレット）
 - `STRIPE_LIVE_PRICE_ID` = Cloudflare Secret/変数（**正しいライブ価格ID**）
 - `BILLING_LIVE_AUDIENCE=invited` と `BILLING_LIVE_UIDS` = Cloudflare Secret（初期パイロット。一般公開時のみaudienceをpublic）
+- `LIVE_PUBLIC_RELEASE_APPROVED=approved`：**招待制テストの実請求・返金・解約を確認した後**に、運営者の別承認でpublicへ移行するときだけ設定。`BILLING_LIVE_AUDIENCE=public` 単独ではLive無効。招待制の間は未設定のまま。
 
 ## 諸注意
 - GitHubの main へマージすると既存Workers/Pagesの自動デプロイが動き得る。コードレビューと承認までドラフトPRに置く。
