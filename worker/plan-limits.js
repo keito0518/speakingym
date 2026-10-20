@@ -5,6 +5,7 @@ import {freeSessionMode,requireFreeSessionReady,startFreeSession,confirmedFreeSe
  * ENFORCE_PLANS=true activates these checks after D1 setup is complete.
  */
 import {ledgerMode,reserveTurn,finishTurn,refundTurn,expireStaleTurns} from "./turn-ledger.js";
+import {billingMode,billingUserEligible} from "./billing-mode.js";
 const PROJECT_ID="speakingym";
 const JWKS_URL="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const ISSUER="https://securetoken.google.com/"+PROJECT_ID;
@@ -89,11 +90,14 @@ export const publicLimits=(tier,used)=>({
  day:tokyoDay(),month:tokyoDay().slice(0,7)
 });
 export async function getPlan(db,uid,env={}){
- // Sandbox entitlements are isolated from operator-granted plans. Disabling
- // billing or removing a tester cannot leave a Stripe-test Pro grant behind.
- if(env.BILLING_MODE==='test' && String(env.BILLING_TEST_UIDS||'').split(',').map(x=>x.trim()).includes(uid)){
-  if(!/^sk_test_/.test(env.STRIPE_SECRET_KEY||''))return 'free';
-  const billing=await db.prepare('SELECT entitled,period_end,synced_at FROM billing_accounts WHERE uid = ? AND customer_id IS NOT NULL').bind(uid).first();
+ // Sandbox and live Stripe customers never share a billing record.
+ // Only a server-verified paid invoice and an explicitly enabled mode grants Pro.
+ const mode=billingMode(env);
+ if((mode==='test'||mode==='live') && billingUserEligible(env,uid)){
+  const table=mode==='live'?'billing_live_accounts':'billing_accounts';
+  const billing=await db.prepare(
+    'SELECT entitled,period_end,synced_at FROM '+table+' WHERE uid = ? AND customer_id IS NOT NULL'
+  ).bind(uid).first();
   if(billing)return verifiedBillingEntitlement(billing,env)?'pro':'free';
  }
  const row=await db.prepare("SELECT tier FROM account_plans WHERE uid = ?").bind(uid).first();
