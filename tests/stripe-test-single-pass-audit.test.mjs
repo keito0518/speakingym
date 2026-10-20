@@ -53,6 +53,20 @@ test('single-pass Stripe audit performs six safe GETs and hides ids and credenti
  for(const secret of [key,price.id,product.id,STAGING_WEBHOOK,'prod_legacy680'])
   assert.equal(serial.includes(secret),false);
 });
+test('one-pass audit reuses an explicitly version-pinned legacy v1 webhook without creating another destination',async()=>{
+ const legacy={object:'webhook_endpoint',api_version:'2025-06-30.basil',
+  application:null,livemode:false,status:'enabled',url:STAGING_WEBHOOK,enabled_events:events};
+ const f=mock({webhooks:{data:[legacy],has_more:false},destinations:{...v2,data:[]}});
+ const result=await inspectExistingSandbox({key,fetcher:f.fetcher});
+ assert.equal(result.status,'PASS');
+ assert.equal(f.calls.length,6);
+ assert.equal(f.calls.every(c=>c.method==='GET'),true);
+ const uncertain=mock({webhooks:{data:[{...legacy,api_version:null}],has_more:false},
+  destinations:{...v2,data:[]}});
+ await assert.rejects(inspectExistingSandbox({key,fetcher:uncertain.fetcher}),
+  /staging_webhook_not_uniquely_enabled/);
+ assert.equal(uncertain.calls.every(c=>c.method==='GET'),true);
+});
 test('missing or incorrectly configured Price never creates or updates existing products',async()=>{
  for(const args of [
   {catalogue:[{...product,id:'prod_legacy680',name:'Speakingym Pro'}]},
