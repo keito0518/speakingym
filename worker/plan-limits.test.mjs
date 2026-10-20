@@ -94,7 +94,7 @@ const request=(path,method="POST",token=null,body=null)=>{
 };
 test("free/pro limits are explicit and reset by Japan day",()=>{
  assert.deepEqual(PLAN_LIMITS.free,{sessions:5,teacher:3});
- assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:100});
+ assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:1000,monthlyTeacher:150});
  assert.equal(tokyoDay(Date.parse("2026-10-15T14:59:59Z")),"2026-10-15");
  assert.equal(tokyoDay(Date.parse("2026-10-15T15:00:00Z")),"2026-10-16");
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T14:59:59Z")),{start:"2026-10-01",end:"2026-11-01"});
@@ -179,22 +179,22 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal(aiCalls,4,"Blocked teacher use and session replay must not call Gemini");
  const proTeacher=await worker.fetch(request("","POST",b,teacher),config);
  assert.equal(proTeacher.status,200,"Operator-granted Pro allows month quota");
- for(let k=1;k<100;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"100 monthly teacher uses allowed");
+ for(let k=1;k<150;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"150 monthly teacher uses allowed");
  const blockedProTeacher=await worker.fetch(request("","POST",b,teacher),config);
  assert.equal(blockedProTeacher.status,429);
  assert.equal((await blockedProTeacher.json()).error,"monthly_teacher_limit");
  const teacherUsage=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
  assert.equal(teacherUsage.limits.teacher,null);
- assert.equal(teacherUsage.limits.monthlyTeacher,100);
- assert.equal(teacherUsage.used.monthlyTeacher,100);
+ assert.equal(teacherUsage.limits.monthlyTeacher,150);
+ assert.equal(teacherUsage.used.monthlyTeacher,150);
  // Seed prior completed sessions so only one monthly AI turn remains.
  const now=Math.floor(Date.now()/1000),day=tokyoDay();
- for(let k=0;k<30;k++)db.sessions.push({id:crypto.randomUUID(),uid:"test_student_B",day,started:now-100,expires:now+100,turns:k===29?19:20});
+ for(let k=0;k<50;k++)db.sessions.push({id:crypto.randomUUID(),uid:"test_student_B",day,started:now-100,expires:now+100,turns:k===49?19:20});
  let entitlement=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
- assert.equal(entitlement.used.monthlyTurns,599);
+ assert.equal(entitlement.used.monthlyTurns,999);
  const conversation={sceneId:"hotel",level:"easy",userText:"Hi!",sessionId:proSessionId};
  const lastTurn=await worker.fetch(request("","POST",b,conversation),config);
- assert.equal(lastTurn.status,200,"the 600th AI request is allowed");
+ assert.equal(lastTurn.status,200,"the 1000th AI request is allowed");
  const aiCallsBefore=aiCalls;
  const overTurn=await worker.fetch(request("","POST",b,conversation),config);
  assert.equal(overTurn.status,429);
@@ -204,8 +204,8 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal((await blockedProSession.json()).error,"monthly_turn_limit");
  assert.equal(aiCalls,aiCallsBefore,"quota-blocked requests cannot call Gemini");
  entitlement=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
- assert.equal(entitlement.limits.monthlyTurns,600);
- assert.equal(entitlement.used.monthlyTurns,600);
+ assert.equal(entitlement.limits.monthlyTurns,1000);
+ assert.equal(entitlement.used.monthlyTurns,1000);
 });
 test("missing D1 binding rejects requests without invoking Gemini when plans are enabled",async t=>{
  const {token}=await signer();
