@@ -54,3 +54,72 @@ test('rejects unrealistic FX and malformed provider numbers instead of silent pr
  assert.equal(report.recognized.usage,0);
  assert.equal(report.ignored.malformed,1);
 });
+
+test('Cloudflare-style exported JSON objects and wrapped console messages are parsed safely',()=>{
+ const a=usageRecord({usageMetadata:{promptTokenCount:1000,candidatesTokenCount:100,thoughtsTokenCount:50}},'conversation','free');
+ const b=aiOutcomeRecord({kind:'conversation',plan:'free',status:200,code:'ok',durationMs:900});
+ const cloudflare=JSON.stringify([
+  {timestamp:'2026-10-20T00:00:00Z',logs:[{level:'log',message:JSON.stringify(a),uid:'PRIVATE USER'}],request:{headers:{Authorization:'SECRET'}}},
+  {message:JSON.stringify(b),userText:'PRIVATE CONVERSATION'},
+  {message:'Unrelated debug statement',ip:'PRIVATE IP'}
+ ],null,2);
+ const report=analyzeAiLogs(cloudflare);
+ assert.deepEqual(report.recognized,{usage:1,outcomes:1});
+ assert.equal(report.groups['conversation:free'].modelCalls,1);
+ assert.equal(report.groups['conversation:free'].p95LatencyMs,900);
+ assert.doesNotMatch(JSON.stringify(report),/PRIVATE USER|PRIVATE CONVERSATION|PRIVATE IP|SECRET/);
+});
+
+test('Cloudflare JSONL messages are recognized with date prefixes, no identity fields leaked',()=>{
+ const x=usageRecord({usageMetadata:{promptTokenCount:550,candidatesTokenCount:90,thoughtsTokenCount:20}},'reflex_coach','free');
+ const lines=[
+  '2026-10-20T00:01:00Z '+JSON.stringify({message:JSON.stringify(x),uid:'sensitive-uid'}),
+  'other console event',
+  '{"message":"no event"}'
+ ].join('\n');
+ const report=analyzeAiLogs(lines);
+ assert.equal(report.recognized.usage,1);
+ assert.equal(report.ignored.other,2);
+ assert.doesNotMatch(JSON.stringify(report),/sensitive-uid/);
+});
+
+test('Free production-like samples provide explicitly labeled Pro proxy, never claims actual Pro invoicing',()=>{
+ const records=[],nConversation=40,nTeacher=15;
+ for(let i=0;i<nConversation;i++)records.push(usageRecord({
+  usageMetadata:{promptTokenCount:i===39?30000:1200,candidatesTokenCount:i===39?8000:90,thoughtsTokenCount:i===39?2000:60}
+ },'conversation','free'));
+ for(let i=0;i<nTeacher;i++)records.push(usageRecord({
+  usageMetadata:{promptTokenCount:i===14?10000:2500,candidatesTokenCount:i===14?2000:1200,thoughtsTokenCount:200}
+ },'reflex_coach','free'));
+ const report=analyzeAiLogs(records.map(line).join('\n'),{usdJpy:160});
+ assert.equal(report.fullUseProEstimate,null,'No Pro subscriptions existed: no fake Pro sample');
+ assert.equal(report.freeAsProProxyEstimate.source,'free_proxy');
+ assert.equal(report.freeAsProProxyEstimate.sampledFreeConversationRequests,nConversation);
+ assert.equal(report.freeAsProProxyEstimate.sampledFreeTeacherRequests,nTeacher);
+ assert.equal(report.freeAsProProxyEstimate.sampledProConversationRequests,0);
+ assert.equal(report.freeAsProProxyEstimate.sampleSufficientForReview,true);
+ assert.equal(report.decision,'review_free_proxy_not_live_profit');
+ assert.ok(report.freeAsProProxyEstimate.aiJpyIfEveryCallMatchedSampleP95>=report.freeAsProProxyEstimate.aiJpyAt600TurnsAnd100Teacher);
+ assert.ok(report.groups['conversation:free'].maxCostJpy>=report.groups['conversation:free'].p95CostJpy);
+ assert.match(report.provenance,/NOT independently verified/);
+ assert.match(report.freeAsProProxyEstimate.note,/not observed Pro costs/);
+ assert.match(report.warnings.join(' '),/NOT actual Google charges/);
+});
+
+test('a few Free samples or only one AI feature never justify paid release',()=>{
+ const one=usageRecord({usageMetadata:{promptTokenCount:1200,candidatesTokenCount:150}},'conversation','free');
+ const small=analyzeAiLogs([one,one,usageRecord({usageMetadata:{promptTokenCount:2500,candidatesTokenCount:1400}},'reflex_coach','free')].map(line).join('\n'));
+ assert.equal(small.decision,'insufficient_real_usage_data');
+ assert.equal(small.freeAsProProxyEstimate.sampleSufficientForReview,false);
+ assert.equal(analyzeAiLogs([one].map(line).join('\n')).freeAsProProxyEstimate,null);
+});
+
+test('a few Pro records cannot imply release-ready or verified profits',()=>{
+ const proConvo=usageRecord({usageMetadata:{promptTokenCount:1200,candidatesTokenCount:150}},'conversation','pro');
+ const proTeacher=usageRecord({usageMetadata:{promptTokenCount:2500,candidatesTokenCount:1200}},'reflex_coach','pro');
+ const report=analyzeAiLogs([proConvo,proTeacher].map(line).join('\n'));
+ assert.equal(report.fullUseProEstimate.source,'pro');
+ assert.equal(report.fullUseProEstimate.sampleSufficientForReview,false);
+ assert.equal(report.decision,'insufficient_real_usage_data');
+ assert.match(report.fullUseProEstimate.note,/NOT an invoice/);
+});
