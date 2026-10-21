@@ -78,3 +78,18 @@ Owner's repeated manual work should be **batched into a single final, minimal li
 - **One timestamp for one entitlement/transaction:** A request straddling **00:00 JST or the first of the month** used to call `Date.now()` multiple times, allowing yesterday's usage to be labeled with today's date or the October session to be checked against the November monthly total. `getEntitlement`, `usage`, `publicLimits`, `startSession`, `consumeTeacher`, and the ledger/non-ledger `consumeSessionTurn` paths now use a consistent operation-time snapshot for Tokyo day, monthly bounds and, where relevant, expiry/reservation time.
 - **Regression:** `worker/plan-limits.test.mjs` tests invalid/null daily and monthly counts, simulated slow D1 response crossing midnight, and simultaneous JST boundary with an already-full next-month Pro session/teacher quota. Tests use a controlled local clock and fake D1 only; not physical staging DB tests.
 - **No behavioral overclaim:** This prevents inconsistent dates *within a request*, not a guarantee that a long request's results reflect a new month that begins after the operation's snapshot. An updated request gets the new month's allowance. No production code, D1 rows, Stripe Live, or old ¥680 contracts were changed.
+
+## 2026-10-21: REAL staging D1 safety QA completed; paid monthly cap E2E still open
+
+**Evidence:** [Manual GitHub Actions run #39607027253](https://github.com/keito0518/speakingym/actions/runs/39607027253), **rerun of failed real-staging-d1 job: SUCCESS** after the owner refreshed ONLY the protected `staging-d1` environment secret with a new Cloudflare API token. This followed an initial 401/code 1000 from both user/account token verification endpoints. Earlier attempts STOPPED before D1 mutation.
+
+The actual Cloudflare **staging database**, never production, passed:
+- Verified expected staging DB name/UUID and required `0002` and `0005` schema objects
+- First failed Free turn refunds its count and daily-session slot; retry reserves, later success settles
+- Concurrent last-session-turn claims: one permitted at the 20-turn ceiling, cross-account use rejected
+- Six simultaneous Free session starts grant exactly five
+- Temporary QA-only `sgqa-UUID` fixtures cleaned and zero-staging-record invariant verified
+
+**Evidence classification:** real Cloudflare staging D1 SQL API, with ephemeral synthetic users, **not a production/staging Worker authenticated Firebase end-to-end session, not a real Gemini call**, and **not an actual Pro 1000-turn/150-review monthly exhaustion test**. Record this gate as **PASS — staged basic SQL count/refund/race/schema**, but retain **NO-GO on remaining paid quota/Stripe lifecycle/physical mic/cost/legal/owner approval gates**.
+
+The safe verification fallback and branch dispatch guard were added in draft in `scripts/staging-d1-qa.mjs`, `tests/staging-d1-qa.test.mjs`, `.github/workflows/staging-d1-qa.yml`; nothing merged into main, and no Stripe Live, production D1/Worker or legacy ¥680 contract changed.
