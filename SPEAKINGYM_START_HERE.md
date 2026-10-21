@@ -92,3 +92,10 @@
 - 強化済み決済UIのキャッシュ更新用に `plans.html` の `billing-ui.js` バージョンを `20261021-account-switch-safety-5` へ更新し、`tests/billing-cache.test.mjs` も同期。
 - 今回変更は **Draftブランチのみ**。本番main・Stripe Live・旧680円商品/契約・Cloudflare本番Worker/D1/Pagesへの操作は一切なし。実Stripe TEST契約更新・支払い失敗/復旧、実staging D1枠消費、実iPhone SafariマイクQA、法的開示/返金・原価、運営者の明示承認は**未完了のGO阻害事項**。
 - コード変更末尾の検証SHA `b6b94342`。最新のCI状態は必ずGitHub Actionsで改めて確認する（ローカルのユニットテストとGitHubの実ブラウザテストを混同しない）。
+
+## 2026-10-21（夕方）：Live手動Proバイパス防止・マイページ利用枠の不正表示対策
+
+- **Draft上のコード修正**: `worker/plan-limits.js` の `getPlan` は、明示承認された `billingMode(env)==='live'` の場合、過去の `account_plans.tier='pro'`（手動付与）からProを推測しなくなった。Live対象外ならFree、Live対象でも `billing_live_accounts` にサーバー検証済みの有効な有料資格がない限りFree。**billing disabled / Stripe TESTの旧ベータ権限ロジックは変更せず、旧記録や旧¥680契約テーブルへの書き込みも行わない**。Stripe Liveは未有効化。
+- `worker/billing.test.mjs` に手動Pro付与とLive請求の混在・Live招待範囲外・未払い更新後の再付与禁止テストを追加。今後のLive公開前に、**旧手動Pro・¥680等の既存有料利用者をどの権利で継続させるか、対象者と移行ポリシーを運営者が確定する必要がある**。勝手に自動移行・一律失効・課金はしない。
+- `account-sync.js` の契約利用枠表示で、欠損・不正な `limits` / `used` を0とみなして「残1,000ターン」等の誤表示をしないよう変更。Pro/Freeとも数値の完全性を検証し、未検証なら「利用回数を読み込めませんでした」とする。`tests/account-quota-switch.test.mjs` に欠損・不正値・正常値テストを追加。
+- **実Stripe TEST更新／失敗請求・回復、実D1枠消費、iPhone実機の音声、実測AI原価、特商法・返金条件の確定は未完了**。ステージング安全ゲートの成功や模擬Node/ブラウザテストはこれらを代替しない。引き続き一般課金GOは禁止。PR #62はDraftのまま、main・本番環境・Stripe Live・旧¥680契約は変更しない。
