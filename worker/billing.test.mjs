@@ -28,7 +28,7 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
@@ -62,7 +62,13 @@ async function fixture(t){
    if(state.failLineItemsOnce){state.failLineItemsOnce=false;return new Response('{}',{status:503});}
    result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2])?.line_items;
   }else if(path.startsWith('checkout/sessions/'))result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2]);
-  else if(path==='billing_portal/sessions')result={url:'https://billing.stripe.com/p/session/test'};
+  else if(path==='billing_portal/sessions'){
+   const body=new URLSearchParams(opt.body);
+   result={id:'bps_test123',object:'billing_portal.session',livemode:state.live,
+    customer:body.get('customer'),return_url:body.get('return_url'),
+    url:'https://billing.stripe.com/p/session/test'};
+   if(typeof state.portalResponseMutator==='function')state.portalResponseMutator(result);
+  }
   else throw Error('unexpected Stripe endpoint '+path);
   return Response.json(result);
  });
@@ -326,6 +332,56 @@ test('portal customer is selected from authenticated account mapping only',async
  const f=await fixture(t);assert.equal((await f.call('portal')).status,409);await f.call('checkout');
  assert.equal((await f.call('portal')).status,200);
  const last=f.state.calls.at(-1);assert.equal(last[1].body.get('customer'),'cus_test');
+});
+test('Stripe Portal refuses a mismatched or malicious returned session before redirect',async t=>{
+ const cases=[
+  ['wrong customer', s=>{s.customer='cus_someone_else'}],
+  ['missing customer', s=>{delete s.customer}],
+  ['wrong mode',s=>{s.livemode=true}],
+  ['missing mode',s=>{delete s.livemode}],
+  ['wrong object',s=>{s.object='checkout.session'}],
+  ['wrong id',s=>{s.id='cs_wrong'}],
+  ['missing id',s=>{delete s.id}],
+  ['unexpected return',s=>{s.return_url='https://evil.example'}],
+  ['missing return',s=>{delete s.return_url}],
+  ['host confusion',s=>{s.url='https://billing.stripe.com.evil.example/'}],
+  ['foreign host',s=>{s.url='https://evil.example/pay'}],
+  ['non-https',s=>{s.url='http://billing.stripe.com/p/session/test'}],
+  ['user-info URL',s=>{s.url='https://bad@billing.stripe.com/p/session/test'}],
+  ['unapproved port',s=>{s.url='https://billing.stripe.com:8443/p/session/test'}],
+  ['missing URL',s=>{delete s.url}],
+ ];
+ for(const [name,mutate] of cases){
+  await t.test(name,async sub=>{
+   const f=await fixture(sub);
+   assert.equal((await f.call('checkout')).status,200);
+   f.state.portalResponseMutator=mutate;
+   const response=await f.call('portal');
+   assert.equal(response.status,503,name);
+   assert.equal((await response.json()).error,'billing_portal_review',name);
+   assert.equal(f.state.calls.filter(([url,opt])=>
+    String(url).endsWith('/billing_portal/sessions') && opt.method==='POST').length,1);
+  });
+ }
+});
+test('Stripe Portal verifies the current live customer and live mode',async t=>{
+ const f=await fixture(t);
+ f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
+ Object.assign(f.env,{
+  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+  LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
+  STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
+  STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
+ });
+ f.state.live=true;f.state.price.livemode=true;
+ assert.equal((await f.call('checkout')).status,200);
+ const portal=await f.call('portal');
+ assert.equal(portal.status,200);
+ assert.match((await portal.json()).url,/^https:\/\/billing\.stripe\.com\//);
+ assert.ok(f.state.calls.some(([url,opt])=>
+  String(url).endsWith('/billing_portal/sessions')&&
+  new URLSearchParams(opt.body).get('return_url')==='https://speakingym.pages.dev/plans.html'));
 });
 test('test entitlements expire and disappear when sandbox or tester authorization is removed',async t=>{
  const f=await fixture(t);await f.call('checkout');f.state.subscriptions=[active()];await f.event();
