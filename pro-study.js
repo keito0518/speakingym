@@ -98,7 +98,16 @@ async function refresh(){
   if(data?.plan!=='pro'){
    lock('Proプラン向けの機能です','現在のアカウントはProとして確認できませんでした。Freeの練習・フレーズ帳は引き続き利用できます。');return;
   }
-  // Read only after a fresh, signed Worker entitlement response.
+  // An auth switch can occur while the previous user's Pro entitlement is
+  // in flight, before account-sync emits its next ready event. Recheck the
+  // signed-in token before reading this device's potentially new-owner data.
+  const latestToken=await window.speakingymAccount?.getIdToken?.();
+  if(current!==epoch)return;
+  if(!latestToken||latestToken!==token){
+   lock('アカウントを再確認中です','ログイン状態が変わりました。現在のアカウントの利用プランを再確認してください。');
+   return;
+  }
+  // Read only after a current, signed Worker entitlement response.
   const snapshot=readSnapshot(localStorage),view=buildProStudyPlan(snapshot);
   showCards(view);showReport(view);
   $('pro-locked').hidden=true;$('pro-content').hidden=false;
