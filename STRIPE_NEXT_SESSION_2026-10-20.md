@@ -1,5 +1,7 @@
 # Speakingym — 2026-10-20 夜 / 次回の最短引き継ぎ
 
+> **2026-10-21 昼前の更新：** 最新の公開可否と安全な作業順序は [SPEAKINGYM_START_HERE.md](SPEAKINGYM_START_HERE.md) を最初に参照。PR #62はDraftのまま。既存の¥1,480 TEST商品と旧¥680商品を重複作成・変更せず、Stripe TEST既存設定の読み取り → staging D1確認 → staging billing-only → 本物のサンドボックスE2Eの順で進める。**実Stripe決済は未検証**、Live/本番変更禁止。
+
 > **2026-10-21 早朝追記：** GitHub上でStripe TEST商品・価格確認ツールを**読み取り専用に変更**。以前の `--apply` オプションは安全上**実行前に拒否**。商品名表記が違っても、既存の1,480円商品や旧680円商品を勝手に作り直さない。現時点でStripeアカウント/APIの実接続は未実施。PR #62は引き続きDraft、本番は触っていない。
 
 ## 大前提
