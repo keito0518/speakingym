@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {analyzeAiLogs} from '../scripts/ai-cost-report.mjs';
 import {usageRecord,aiOutcomeRecord} from '../worker/cost-telemetry.js';
 const line=x=>JSON.stringify(x);
-test('sampled real-shaped Free/Pro logs produce cost and 600+100 projected figures',()=>{
+test('sampled real-shaped Free/Pro logs project current 1000+150 draft offer',()=>{
  const usage=(kind,plan,input,output,thinking)=>usageRecord({
   usageMetadata:{promptTokenCount:input,candidatesTokenCount:output,thoughtsTokenCount:thinking},
   candidates:[{finishReason:'STOP'}]},kind,plan);
@@ -24,7 +24,16 @@ test('sampled real-shaped Free/Pro logs produce cost and 600+100 projected figur
  assert.equal(result.groups['conversation:free'].modelCalls,1);
  assert.equal(result.fullUseProEstimate.sampledProConversationRequests,1);
  assert.equal(result.fullUseProEstimate.sampledProTeacherRequests,1);
- assert.ok(Math.abs(result.fullUseProEstimate.aiJpyAt600TurnsAnd100Teacher-129.9)<.02);
+ assert.equal(result.fullUseProEstimate.projectionPlan,'draft_pro_1480_1000_150');
+ assert.deepEqual(result.draftOffer,{priceJpy:1480,monthlyTurns:1000,monthlyTeacher:150,liveApproved:false});
+ assert.equal(result.fullUseProEstimate.projectedMonthlyPriceJpy,1480);
+ assert.equal(result.fullUseProEstimate.projectedConversationCalls,1000);
+ assert.equal(result.fullUseProEstimate.projectedTeacherCalls,150);
+ assert.ok(result.fullUseProEstimate.after1480JpyAndIllustrative4_3PctStripe<
+  1480,'Stripe costs must be included in any illustrative contribution estimate');
+ assert.equal(Object.hasOwn(result.fullUseProEstimate,'aiJpyAt600TurnsAnd100Teacher'),false,
+  'obsolete 680 yen projection fields must not leak into current decisions');
+ assert.ok(Math.abs(result.fullUseProEstimate.aiJpyAt1000TurnsAnd150Teacher-205.875)<.02);
 });
 test('missing samples never imply profitability and empty logs do not divide by zero',()=>{
  const empty=analyzeAiLogs('nonsense\n{"event":"other"}\nINVALID {x');
@@ -99,7 +108,7 @@ test('Free production-like samples provide explicitly labeled Pro proxy, never c
  assert.equal(report.freeAsProProxyEstimate.sampledProConversationRequests,0);
  assert.equal(report.freeAsProProxyEstimate.sampleSufficientForReview,true);
  assert.equal(report.decision,'review_free_proxy_not_live_profit');
- assert.ok(report.freeAsProProxyEstimate.aiJpyIfEveryCallMatchedSampleP95<report.freeAsProProxyEstimate.aiJpyAt600TurnsAnd100Teacher,'rare very expensive calls can increase the mean while staying beyond p95; neither p95 nor average is a hard cap');
+ assert.ok(report.freeAsProProxyEstimate.aiJpyIfEveryCallMatchedSampleP95<report.freeAsProProxyEstimate.aiJpyAt1000TurnsAnd150Teacher,'rare very expensive calls can increase the mean while staying beyond p95; neither p95 nor average is a hard cap');
  assert.ok(report.groups['conversation:free'].maxCostJpy>=report.groups['conversation:free'].p95CostJpy);
  assert.match(report.provenance,/NOT independently verified/);
  assert.match(report.freeAsProProxyEstimate.note,/not observed Pro costs/);
