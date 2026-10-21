@@ -582,6 +582,39 @@ test('separately configured live mode isolates customer records and grants only 
  assert.equal(await getPlan(f.db,'student',f.env),'free');
 });
 
+test('LIVE never treats legacy manually granted Pro or TEST billing as a paid LIVE subscription',async t=>{
+ const f=await fixture(t);
+ f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
+ // Preserve real beta/legacy records, but never let them authorize a NEW Live subscription.
+ f.db.sqlite.prepare("INSERT INTO account_plans (uid,tier,updated_at) VALUES (?,?,?)").run('student','pro',time());
+ f.db.sqlite.prepare("INSERT INTO account_plans (uid,tier,updated_at) VALUES (?,?,?)").run('outsider','pro',time());
+ assert.equal(await getPlan(f.db,'student',f.env),'pro','manual beta grants remain unchanged in TEST');
+ Object.assign(f.env,{
+  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+  LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
+  STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
+  STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
+ });
+ assert.equal(await getPlan(f.db,'student',f.env),'free',
+  'legacy Pro without paid Live invoice is not a paid entitlement');
+ assert.equal(await getPlan(f.db,'outsider',f.env),'free',
+  'an ineligible user cannot bypass invited-only LIVE with a manual beta grant');
+ // Pro remains available only after independently verified LIVE subscription.
+ f.state.live=true;f.state.price.livemode=true;
+ assert.equal((await f.call('checkout')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free');
+ f.state.subscriptions=[{...active(),livemode:true,latest_invoice:{status:'paid'}}];
+ assert.equal((await f.event('invoice.paid','evt_live_only_paid',{customer:'cus_test'},true)).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ f.state.subscriptions=[{...active(),livemode:true,latest_invoice:{status:'open'}}];
+ assert.equal((await f.event('invoice.payment_failed','evt_live_only_unpaid',{customer:'cus_test'},true)).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'free',
+  'expired or failed Stripe Live cannot be rescued by legacy beta grant');
+ assert.equal(f.db.sqlite.prepare("SELECT tier FROM account_plans WHERE uid='student'").get().tier,'pro',
+  'historical data is left untouched');
+});
+
 test('live billing rejects sandbox-mode Stripe objects before any paid entitlement',async t=>{
  const f=await fixture(t);
  f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
