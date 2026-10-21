@@ -5,13 +5,14 @@ import {readFileSync} from 'node:fs';
 const script=readFileSync(new URL('../billing-ui.js',import.meta.url),'utf8');
 async function ui({token='id-token',data={mode:'test',status:'none',pro:false},ok=true,byAction={}}={}){
  const nodes=new Map(),calls=[],redirects=[],listeners={};
+ let currentToken=token;
  const node=id=>{if(!nodes.has(id))nodes.set(id,{listeners:{},classList:{toggle(){}},addEventListener(event,fn){this.listeners[event]=fn}});return nodes.get(id)};
- const sandbox={document:{getElementById:node},window:{speakingymAccount:{getIdToken:async()=>token},addEventListener(k,fn){listeners[k]=fn}},location:{search:'?billing=success',assign:url=>redirects.push(url)},URL,URLSearchParams,Date,AbortSignal,
+ const sandbox={document:{getElementById:node},window:{speakingymAccount:{getIdToken:async()=>currentToken},addEventListener(k,fn){listeners[k]=fn}},location:{search:'?billing=success',assign:url=>redirects.push(url)},URL,URLSearchParams,Date,AbortSignal,
  fetch:async(url,options)=>{calls.push({url,options});
   const key=new URL(url).pathname.split('/').at(-1);
   const response=byAction[key];
   return {ok:response?.ok??ok,json:async()=>response?.data??data}}};
- vm.runInNewContext(script,sandbox);await new Promise(r=>setImmediate(r));return {node,calls,redirects,listeners};
+ vm.runInNewContext(script,sandbox);await new Promise(r=>setImmediate(r));return {node,calls,redirects,listeners,setToken(value){currentToken=value}};
 }
 test('success URL without server entitlement never claims Pro',async()=>{
  const a=await ui();assert.doesNotMatch(a.node('sg-billing-status').textContent,/Pro権限を確認しました/);assert.match(a.node('sg-billing-status').textContent,/反映/);
@@ -75,12 +76,13 @@ test('account change while Checkout POST is pending never redirects to the forme
  const attempted=a.node('sg-checkout').listeners.click();
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(a.calls.filter(x=>x.options.method==='POST').length,1);
+ a.setToken(null); // simulate actual logout while Stripe POST is still pending
  a.listeners['speakingym:account-ready']();
  finish({url:'https://checkout.stripe.com/c/pay/former-account'});
  await attempted;
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(a.redirects.length,0,'old account Checkout URL cannot survive account change');
- assert.equal(a.node('sg-checkout').disabled,true,'payment button stays locked until new verified action');
+ assert.equal(a.node('sg-checkout').disabled,true,'logged-out account cannot reuse the previous payment button');
 });
 
 test('failed portal operation also needs a verified refresh before retry',async()=>{
