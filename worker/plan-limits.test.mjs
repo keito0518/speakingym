@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "./ai-worker.js";
-import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds,getEntitlement} from "./plan-limits.js";
+import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds,getEntitlement,startSession,consumeTeacher} from "./plan-limits.js";
 
 const ORIGIN="https://speakingym.pages.dev";
 const API="https://speakingym-worker-test.example/";
@@ -163,6 +163,26 @@ test("JST midnight entitlement uses one date and month snapshot even when D1 res
  assert.equal(newMonth.month,"2026-11");
  assert.equal(newMonth.used.monthlyTurns,9);
  assert.equal(newMonth.used.sessions,1);
+});
+test("Pro session and teacher reservations use one JST date snapshot across midnight",async t=>{
+ const october=Date.parse("2026-10-31T14:59:59Z"),november=Date.parse("2026-10-31T15:00:00Z");
+ const uid="pro-date-snapshot";
+ const db=fakeD1();db.plans.set(uid,"pro");
+ // If the first clock read yields October and the next yields November,
+ // the operation must use October BOTH for day and monthly limit.
+ for(let i=0;i<50;i++)db.sessions.push({id:"next-month-"+i,uid,day:"2026-11-01",turns:20});
+ for(let i=0;i<150;i++)db.teachers.push({id:"next-month-teacher-"+i,uid,day:"2026-11-01"});
+ let calls=0;
+ t.mock.method(Date,"now",()=>calls++===0?october:november);
+ const session=await startSession(db,uid);
+ assert.ok(session?.sessionId,"new October session must not be blocked by November usage");
+ const row=db.sessions.find(x=>x.id===session.sessionId);
+ assert.equal(row.day,"2026-10-31");
+ assert.equal(row.turns,0);
+ calls=0;
+ const teacher=await consumeTeacher(db,uid);
+ assert.ok(teacher?.id,"October coaching must not be blocked by November's 150 uses");
+ assert.equal(db.teachers.at(-1).day,"2026-10-31");
 });
 test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid signature are rejected",async t=>{
  const {jwk,token}=await signer();
