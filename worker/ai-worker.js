@@ -318,11 +318,17 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
+      // Only the isolated Stripe TEST QA page may read health cross-origin.
+      // The normal public health endpoint and every production deployment retain
+      // the original production-site CORS policy.
+      const healthOrigin=origin==="http://localhost:8765" &&
+        env.STAGING_BILLING_ONLY==="true" && billingMode(env)==="test"
+        ? origin : PRIMARY_ORIGIN;
       const turnLedgerSchemaReady=await ledgerSchemaReady(env.PLAN_DB);
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
       const stageBillingReady=(env.STAGING_HEALTH_ONLY==="true"||env.STAGING_BILLING_ONLY==="true")
         ? await stagingBillingSchemaReady(env.PLAN_DB) : null;
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingMode(env) }, 200, PRIMARY_ORIGIN);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingMode(env) }, 200, healthOrigin);
     }
     // An isolated staging Worker starts in inspection-only mode. No quota/session/AI
     // writes or billing/webhook handling, even with a valid Firebase token.
