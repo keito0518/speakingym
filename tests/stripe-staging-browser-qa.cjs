@@ -8,12 +8,16 @@ const stage='speakingym-survival-ai-staging.keitokeitokeito0518.workers.dev';
 const prod='speakingym-survival-ai.keitokeitokeito0518.workers.dev';
 const authMock=`
 export const browserSessionPersistence={};
-export class GoogleAuthProvider {}
+export class GoogleAuthProvider {
+ setCustomParameters(params){
+  if(params?.prompt!=='select_account')throw Error('Google QA MUST force account chooser');
+ }
+}
 let listener=()=>{};
 export function getAuth(){return {};}
 export async function setPersistence(){}
 export function onAuthStateChanged(auth,cb){listener=cb;queueMicrotask(()=>cb(null));}
-export async function signInWithPopup(){listener({uid:'local-qa-fixture'});return {};}
+export async function signInWithPopup(){listener({uid:'local-qa-fixture',email:'qa-new@example.test'});return {};}
 export async function signOut(){listener(null);}
 export async function getIdToken(){return 'fixture-jwt-not-real';}
 `;
@@ -73,6 +77,7 @@ async function testBrowser(engine){
   assert.match(await page.locator('#qa-return').innerText(),/再確認/);
   await page.click('#qa-login');
   await page.waitForFunction(()=>document.querySelector('#qa-subscription')?.textContent?.includes('Free（テスト権限なし）'));
+  assert.match(await page.locator('#qa-account').innerText(),/qa-new@example\.test/);
   assert.equal(await page.locator('#qa-checkout').isEnabled(),true);
   await page.click('#qa-checkout');
   await page.waitForURL(/checkout\.stripe\.com\/c\/pay\/qa-stub/);
