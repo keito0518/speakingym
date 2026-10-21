@@ -61,3 +61,13 @@
 - `.github/workflows/stripe-staging-automatic-release-gate.yml`
 
 Owner's repeated manual work should be **batched into a single final, minimal list** once developer-accessible checks are exhausted.
+
+## 2026-10-21 additional critical finding: legacy 600-turn ledger ceiling
+
+**Found in code review, not through real customer usage:** `worker/turn-ledger.js` had a hard-coded `<600` SQL guard when `TURN_LEDGER_MODE=enabled`, although the draft Pro entitlement, session-start and non-ledger paths advertised **1,000 turns**. Users could have been blocked after turn 600. Do not claim this occurred in production, which has not received this draft.
+
+**Draft correction:** `PRO_MONTHLY_TURN_LIMIT=1000` in the ledger module is now the shared source for both reservation SQL (bound parameter) and `PLAN_LIMITS.pro.monthlyTurns`. Thus changes cannot silently strand paying users on two different limits. Existing 20-turn session ceiling, Japanese calendar reset, atomic reserve/refund, Free limits, and per-month teacher 150 remain unchanged.
+
+**Regression evidence:** `worker/turn-ledger.test.mjs` now checks 601st turn with 600 prior turns, exact 1,000th ceiling, concurrent last slot and refund. `worker/turn-ledger.integration.test.mjs` checks `consumeSessionTurn` / `getEntitlement` / `refundSessionTurn` with ledger opt-in and 600→601→1000→refund→1000 boundary. This is SQLite D1 simulation, **not a write or exhaustion test in real staging D1**.
+
+**Release implication:** include this cap inconsistency in future regression gates and communicate quota honestly; do not merge Draft #62, migrate production D1 or change Live without separate operator permission. The prior manually verified Stripe TEST purchase/expiry is unaffected and need not be repeated.
