@@ -230,6 +230,21 @@ async function checkout(env,row,token){
  await ownedUpdate(db,row.uid,token,'checkout_id=?',session.id);
  return verified;
 }
+// Fail closed if Stripe's generated Portal session belongs to a different
+// customer/mode or returns to an untrusted site. Do not accept a browser URL.
+function verifiedPortalRedirect(env,row,session){
+ let url;
+ try{url=new URL(session?.url)}catch{throw fail('billing_portal_review')}
+ if(session?.object!=='billing_portal.session'||
+    typeof session.id!=='string'||!/^bps_[a-zA-Z0-9]+$/.test(session.id)||
+    session.customer!==row.customer_id||
+    session.livemode!==expectedLive(env)||
+    session.return_url!==billingReturnUrls(env).portal||
+    url.protocol!=='https:'||url.hostname!=='billing.stripe.com'||
+    url.username||url.password||url.port)
+  throw fail('billing_portal_review');
+ return {url:session.url};
+}
 async function webhook(request,env){
  if(request.method!=='POST')throw fail('method_not_allowed',405);
  if(Number(request.headers.get('content-length')||0)>262144)throw fail('payload_too_large',413);
@@ -263,7 +278,7 @@ export async function handleBilling(request,env,reply,origin){
    if(path==='/billing/portal'){
     if(!row.customer_id)throw fail('no_subscription',409);
     const session=await stripe(env,'billing_portal/sessions','POST',{customer:row.customer_id,return_url:billingReturnUrls(env).portal});
-    return {url:session.url};
+    return verifiedPortalRedirect(env,row,session);
    }
    if(path==='/billing/status'){
     const synced=await reconcile(env,row,token);
