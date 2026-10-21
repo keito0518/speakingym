@@ -78,6 +78,20 @@ The second command requires `SPEAKINGYM_STRIPE_TEST_KEY` already set securely **
 
 If a Stripe test key, the NEW Price ID, and the exact staging webhook URL are safely available as local environment variables, run GET-only `node scripts/stripe-sandbox-preflight.mjs`. It checks legacy v1 and modern v2 destinations, rejects ambiguity, preview, thin events, live mode, and wrong tax behavior. For v2 it deliberately pins the STABLE `2026-09-30.endive` snapshot destination, while the Worker's outgoing API requests remain pinned to `2025-06-30.basil`; these are distinct controls and real signature/webhook processing still requires E2E validation. Passing this preflight is **NOT** an E2E pass.
 
+## 3A. 独立したテストクロックに新規staging顧客を紐づける（2026-10-21／Draftのみ）
+
+**Stripe実更新・支払い失敗→復旧は引き続き未検証。** [Stripe公式のTest Clock](https://docs.stripe.com/billing/testing/test-clocks/simulate-subscriptions)では、シミュレーションを終了すると関連した顧客・サブスクリプションが削除される場合がある。既存のシミュレーション（2026-10-21のStripe画面に1件）・既存の旧680円契約・過去に完了した1,480円購入→解約試験の顧客は**一切操作しない**。
+
+**画面からシミュレーションを単独作成しても、SpeakingymのFirebase UID ↔ staging D1顧客との対応がなければ課金E2Eの証拠にならない。**
+
+このDraftは、その課題を解消するための**明示的なstaging専用オプション**を `worker/billing.js` に追加した（未デプロイ）。
+- `STRIPE_TEST_CLOCK_ID` が**未設定なら従来どおり**。存在する場合も `STAGING_BILLING_ONLY=true` かつ `BILLING_MODE=test` が認証設定から確定しなければ **503で停止**。形式は `clock_...` のみ。ブラウザ入力や生UIDのパラメータでは設定できない。
+- 新たに**招待許可されたFirebaseテストUID**の顧客が未作成の場合のみ、Stripe TEST `POST /customers` に `test_clock` を付与。Stripeレスポンスの `test_clock` が同じ時計であることを確認してからstaging D1へ顧客IDを記録。Stripeが時計を無視・拒否したらCheckoutを**発行しない**。
+- 既存のstageテスト顧客がある場合は `GET /customers/{id}` で時計の一致を確認。一致しなければ **STOP**。現在の顧客に後から時計を付けたり、新顧客IDへ勝手に移行しない。Stripe Live/旧680円には影響しない。
+- 検証には**新規作成した隔離サンドボックスのテスト時計だけ**を使う。Stripeダッシュボードで既存顧客や契約を対象に「シミュレーション実行」を押さない。時計・UID・Price・Webhook設定の一致を運営者が確認するまで `STRIPE_TEST_CLOCK_ID` を設定しない。
+- **今後の実行順**：Draft CI合格 → 隔離stage専用に安全なデプロイ/設定を明示承認 → 完全に新しいテスト用時計の準備（既存の時計は使わない） → 対応するstage Workerのオプトイン変数設定 → 別の新FirebaseテストUIDで本来のstaging QA Checkout → ステージングとの連携確認 → **同じ契約に限る**更新・請求失敗・回復の順に時計を進める → 検証結果記録。旧契約を使い回さない。
+- コードの自動テストはテスト時計付き顧客、誤環境での禁止、形式不正、既存テスターの移行拒否、Stripeからの時計不一致応答でCheckout遮断を模擬。これが実Stripe APIで成功した証拠とはならない。
+
 ## 4. Billing-only Worker activation — after step 1 and real sandbox configuration
 
 Use the dedicated, separately reviewed config `worker/wrangler.staging-billing.toml`. It refers to the SAME isolated staging Worker/D1, with `BILLING_MODE=test`, `STAGING_HEALTH_ONLY=false`, `STAGING_BILLING_ONLY=true`, `ALLOW_AI=false`. All AI/Free session routes stay disabled, only signed Stripe billing endpoints and Firebase-verified `GET /entitlement` are allowed.
