@@ -122,16 +122,25 @@ async function updateQuotaUi(){
   if(!response.ok)throw Error("quota");
   const data=await response.json();
   if(!stillCurrent())return;
-  if(data.plan==="pro"){
-   const remainingTurns=Math.max(0,(data?.limits?.monthlyTurns||0)-(data?.used?.monthlyTurns||0));
-   const remainingTeacher=Math.max(0,(data?.limits?.monthlyTeacher||0)-(data?.used?.monthlyTeacher||0));
-   if(!Number.isInteger(data?.limits?.monthlyTurns)||!Number.isInteger(data?.limits?.monthlyTeacher))throw Error("quota");
+  // Never replace a missing count with zero. Incomplete or inconsistent
+  // entitlement data must not falsely tell a paying learner that quota remains.
+  const validCounts=values=>values.every(n=>Number.isSafeInteger(n)&&n>=0);
+  if(data?.plan==="pro"){
+   const {monthlyTurns,monthlyTeacher}=data?.limits||{};
+   const usedTurns=data?.used?.monthlyTurns,usedTeacher=data?.used?.monthlyTeacher;
+   if(!validCounts([monthlyTurns,monthlyTeacher,usedTurns,usedTeacher])||
+      monthlyTurns===0||monthlyTeacher===0)throw Error("quota");
+   const remainingTurns=Math.max(0,monthlyTurns-usedTurns);
+   const remainingTeacher=Math.max(0,monthlyTeacher-usedTeacher);
    el.textContent="Pro · 今月の残り：AI英会話 "+remainingTurns+" ターン／AI先生 "+remainingTeacher+" 回（日本時間の毎月1日に更新）";
-  }else{
-   const n=Math.max(0,(data?.limits?.sessions||0)-(data?.used?.sessions||0));
-   const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
+  }else if(data?.plan==="free"){
+   const {sessions,teacher}=data?.limits||{};
+   const usedSessions=data?.used?.sessions,usedTeacher=data?.used?.teacher;
+   if(!validCounts([sessions,teacher,usedSessions,usedTeacher])||
+      sessions===0||teacher===0)throw Error("quota");
+   const n=Math.max(0,sessions-usedSessions),t=Math.max(0,teacher-usedTeacher);
    el.textContent="Free · 本日の残り：AI英会話 "+n+" セッション／AI先生 "+t+" 回（日本時間の午前0時に更新）";
-  }
+  }else throw Error("quota");
  }catch{if(stillCurrent())el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
 }
 function notify(){
