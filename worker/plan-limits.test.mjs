@@ -131,6 +131,39 @@ test("D1 usage counters must be present, valid and integral or signed entitlemen
    "invalid monthly counts must not fabricate remaining Pro quota");
  }
 });
+test("JST midnight entitlement uses one date and month snapshot even when D1 resolves after midnight",async t=>{
+ const october=Date.parse("2026-10-31T14:59:59Z");
+ const november=Date.parse("2026-10-31T15:00:00Z");
+ let current=october;
+ t.mock.method(Date,"now",()=>current);
+ const db=fakeD1(),uid="time-boundary-test";
+ db.plans.set(uid,"pro");
+ db.sessions.push({uid,day:"2026-10-31",turns:4},
+                  {uid,day:"2026-11-01",turns:9});
+ const prepare=db.prepare.bind(db);
+ const delayed={prepare(sql){
+  const statement=prepare(sql);
+  if(!sql.startsWith("SELECT (SELECT COUNT"))return statement;
+  return {bind(...args){
+   const query=statement.bind(...args);
+   return {first:async()=>{
+    const row=await query.first();
+    current=november; // D1 responds after the JST calendar month changes.
+    return row;
+   }};
+  }};
+ }};
+ const oldMonth=await getEntitlement(delayed,uid);
+ assert.equal(oldMonth.day,"2026-10-31");
+ assert.equal(oldMonth.month,"2026-10");
+ assert.equal(oldMonth.used.monthlyTurns,4,"October usage cannot accidentally read November");
+ assert.equal(oldMonth.used.sessions,1);
+ const newMonth=await getEntitlement(delayed,uid);
+ assert.equal(newMonth.day,"2026-11-01");
+ assert.equal(newMonth.month,"2026-11");
+ assert.equal(newMonth.used.monthlyTurns,9);
+ assert.equal(newMonth.used.sessions,1);
+});
 test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid signature are rejected",async t=>{
  const {jwk,token}=await signer();
  t.mock.method(globalThis,"fetch",async url=>{
