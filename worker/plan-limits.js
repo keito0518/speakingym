@@ -108,20 +108,27 @@ export async function getPlan(db,uid,env={}){
  const row=await db.prepare("SELECT tier FROM account_plans WHERE uid = ?").bind(uid).first();
  return row?.tier==="pro"?"pro":"free";
 }
+// COUNT/SUM queries must return a real, nonnegative integer. Treating a
+// missing/invalid result as zero would misleadingly show a full allowance.
+function validQuotaCount(row,key){
+ const count=row?.[key];
+ if(!Number.isSafeInteger(count)||count<0)throw Error("quota_read_invalid");
+ return count;
+}
 async function usage(db,uid,day,tier){
  const row=await db.prepare(
  "SELECT (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) AS sessions, "+
  "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) AS teacher"
  ).bind(uid,day,uid,day).first();
- const used={sessions:Number(row?.sessions)||0,teacher:Number(row?.teacher)||0};
+ const used={sessions:validQuotaCount(row,"sessions"),teacher:validQuotaCount(row,"teacher")};
  if(tier==="pro"){
   const month=tokyoMonthBounds();
   const monthly=await db.prepare(
    "SELECT (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTurns, "+
    "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTeacher"
   ).bind(uid,month.start,month.end,uid,month.start,month.end).first();
-  used.monthlyTurns=Number(monthly?.monthlyTurns)||0;
-  used.monthlyTeacher=Number(monthly?.monthlyTeacher)||0;
+  used.monthlyTurns=validQuotaCount(monthly,"monthlyTurns");
+  used.monthlyTeacher=validQuotaCount(monthly,"monthlyTeacher");
  }
  return used;
 }
