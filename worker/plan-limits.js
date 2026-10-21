@@ -93,12 +93,17 @@ export async function getPlan(db,uid,env={}){
  // Sandbox and live Stripe customers never share a billing record.
  // Only a server-verified paid invoice and an explicitly enabled mode grants Pro.
  const mode=billingMode(env);
+ // When an explicitly approved LIVE Stripe launch is enabled, legacy manual
+ // beta grants must not silently bypass paid invoice verification. Paid access
+ // requires both audience eligibility and an isolated verified live record.
+ // Do not alter legacy manual grants while billing is disabled or in TEST.
+ if(mode==='live' && !billingUserEligible(env,uid))return 'free';
  if((mode==='test'||mode==='live') && billingUserEligible(env,uid)){
   const table=mode==='live'?'billing_live_accounts':'billing_accounts';
   const billing=await db.prepare(
     'SELECT entitled,period_end,synced_at FROM '+table+' WHERE uid = ? AND customer_id IS NOT NULL'
   ).bind(uid).first();
-  if(billing)return verifiedBillingEntitlement(billing,env)?'pro':'free';
+  if(mode==='live'||billing)return billing&&verifiedBillingEntitlement(billing,env)?'pro':'free';
  }
  const row=await db.prepare("SELECT tier FROM account_plans WHERE uid = ?").bind(uid).first();
  return row?.tier==="pro"?"pro":"free";
