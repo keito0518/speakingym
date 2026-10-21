@@ -150,6 +150,23 @@ test("successful Gemini JSON response returns conversational reply and facts", a
   assert.match(opts.body, /"thinkingLevel":"minimal"/);
 });
 
+test("exact recycled AI speech is rejected rather than accepted as a new answer",async t=>{
+ const upstream=t.mock.method(globalThis,"fetch",async()=>Response.json({candidates:[{content:{parts:[{
+  text:JSON.stringify({reply:"Certainly, what would you like to order?",progress:{step1:true,step2:true,step3:true}})
+ }]}}]}));
+ const base={...payload,sceneId:"cafe",userText:"Could I have a coffee?",progress:{step1:false,step2:false,step3:false}};
+ const previous="Certainly, what would you like to order?";
+ for(const repeated of [previous," CERTAINLY, WHAT WOULD YOU LIKE TO ORDER?! "]){
+  const result=await worker.fetch(request({...base,history:[{role:"assistant",content:repeated}]}),enabled());
+  assert.equal(result.status,502);
+  assert.equal((await result.json()).error,"ai_repeated_reply");
+ }
+ assert.equal(upstream.mock.callCount(),2);
+ // New meaningful dialogue is still accepted.
+ const fresh=await worker.fetch(request({...base,history:[{role:"assistant",content:"Welcome, what can I get you?"}]}),enabled());
+ assert.equal(fresh.status,200);
+ assert.equal((await fresh.json()).progress.step1,true);
+});
 test("Gemini API errors are classified without leaking upstream text", async (t) => {
  for (const [status, expected] of [[400,"gemini_http_400"],[401,"gemini_auth"],[403,"gemini_auth"],[404,"gemini_model"],[503,"gemini_http_503"]]) {
   const mock = t.mock.method(globalThis,"fetch",async ()=>new Response(JSON.stringify({
