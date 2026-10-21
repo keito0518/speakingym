@@ -137,3 +137,13 @@
   5. 仮の`sgqa-...`ユーザーと紐づく検証データの削除 **PASS**
   6. **STAGING D1 QA COMPLETE**。実D1で処理した証拠だが、**デプロイ済みstaging Worker経由ではなく、ステージングD1 SQLを直接実行する専用QA**。
 - この成功により **実staging D1のFree枠・基本カウンタ・返却・排他・削除の確認は完了**。一方、**実stagingでPro月1,000ターン/150講評の限界、Stripe TESTの実更新→未払い→回復、実機音声、原価、法定情報** は引き続き未確認。新料金Liveの公開GOではない。
+
+## 2026-10-21：Pro月次1,000ターン・講評150回の実staging D1検証 PASS
+
+**新しい確定証跡**：[GitHub Actions手動実行 #39609280781](https://github.com/keito0518/speakingym/actions/runs/39609280781)（Draftブランチ `f2cc36a3`、`workflow_dispatch`）。`offline-guards` と `real-staging-d1` がともに **SUCCESS**。検証前にstaging DB名/UUIDと必要な0002/0005スキーマが一致することを確認。
+
+- **Pro英会話 月1,000ターン**：専用の仮のUIDに既存使用999ターン相当を作成。同時予約は最後の1枠のみ成功し、1,001ターン目は**別セッションからも拒否**。予約失敗扱いで999に戻り、枠を再取得できること、成功確定後は再度超過できないことを実staging D1で確認。
+- **Pro講評 月150回**：仮の同一UIDに149回を作成。同時予約の片方だけが150回目を取得し、151回目は拒否。実staging D1で確認。
+- **安全性**：検証は `sgqa-...-prolimits` 等の一時ユーザーのみで実施し、Gemini API呼び出しやStripe課金・本番Worker/D1変更なし。全検証用セッション・予約・講評データのクリーンアップも **PASS**。
+- **証拠の限界**：`scripts/staging-d1-qa.mjs` で実staging D1へ**検証用SQLを直接発行**した結果。実Firebaseログイン・デプロイ済みstaging Worker・Gemini通信・Stripe TEST課金の全体E2Eではない。**本番公開はまだNO-GO**。
+- **未完了**：実Stripe TESTの更新成功・未払い→回復、実機iPhoneのマイク/音声認識、実Gemini/Stripe費用、正式な法定情報・解約/返金・連絡体制、公開の明示承認。旧680円契約・main・本番/Stripe Liveの変更禁止を維持。
