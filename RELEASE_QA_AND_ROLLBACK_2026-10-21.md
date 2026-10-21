@@ -93,3 +93,13 @@ The actual Cloudflare **staging database**, never production, passed:
 **Evidence classification:** real Cloudflare staging D1 SQL API, with ephemeral synthetic users, **not a production/staging Worker authenticated Firebase end-to-end session, not a real Gemini call**, and **not an actual Pro 1000-turn/150-review monthly exhaustion test**. Record this gate as **PASS — staged basic SQL count/refund/race/schema**, but retain **NO-GO on remaining paid quota/Stripe lifecycle/physical mic/cost/legal/owner approval gates**.
 
 The safe verification fallback and branch dispatch guard were added in draft in `scripts/staging-d1-qa.mjs`, `tests/staging-d1-qa.test.mjs`, `.github/workflows/staging-d1-qa.yml`; nothing merged into main, and no Stripe Live, production D1/Worker or legacy ¥680 contract changed.
+
+## 2026-10-21: VERIFIED real STAGING Pro 1000/150 SQL quota boundaries
+
+**Actual remote evidence**: [Staging D1 automated safety QA workflow_dispatch run 39609280781](https://github.com/keito0518/speakingym/actions/runs/39609280781), branch `integration/pro680-latest-main-review-20261020`, code head `f2cc36a3`. Both offline guards and real-staging-d1 jobs **SUCCESS**. Actual Cloudflare D1 API results include:
+- `PASS REAL staging Pro monthly 999→1000, concurrent final slot, 1001 blocked, refund/reuse` — 1001st additionally tested in a separate session so this is a *monthly*, not a per-session, check
+- `PASS REAL staging Pro teacher 149→150, concurrent final slot, 151 blocked`
+- Staging DB identity/schema confirmation, Free atomic quota/refund/concurrency and fixture cleanup: **PASS**
+- All writes limited to fresh random `sgqa-...-prolimits`/other `sgqa` fixtures; cleanup completed. Zero Gemini calls, real payments, customer grants, main merges or production D1 changes.
+
+**Classification:** real staging **database** direct SQL checks, not a deployed Worker+Firebase-auth+Gemini+Stripe full E2E. Mark the *real staging D1 Pro SQL quota* gate **PASS**; do not mark end-to-end paid subscription/AI quota behavior passed. Remaining NO-GO: real Stripe TEST renewal/failed invoice recovery, real device mic, provider actual-cost + margin review, legal/refund identity, owner GO. Existing ¥680 contracts, Stripe Live, production services and main remain untouched.
