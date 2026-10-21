@@ -68,3 +68,9 @@
 - **総合CI 実行成功**：run [39557777409](https://github.com/keito0518/speakingym/actions/runs/39557777409)、commit `8db58ab1`、419件テスト PASS、0 FAIL。ChromiumとWebKitの模擬ブラウザQAがPASS。実iPhone実機の音声認識・マイク権限は未検証。
 - `f4ac494e` と `8db58ab1` の差分は `SPEAKINGYM_START_HERE.md` のドキュメントのみ。したがって前者のStripe gate結果は後者の課金コードにも対応する。
 - 有料販売の法定表示、返金方針、実Stripe TEST更新・支払失敗/復旧、実D1上限消費・原価、実機QAは未完了。**本番/Live/mainには触れず、Ownerの明示承認までNO-GO。**
+
+## 2026-10-21 — mainの最新ドキュメントをドラフトへ安全に統合
+
+- main (`bd17136a`) の更新は `SPEAKINGYM_START_HERE.md`、`WORK_HANDOFF.md`、`worker/PRO_PRICING_OPTIONS_2026-10-20.md` の3文書のみ。両ブランチで追加された `SPEAKINGYM_START_HERE.md` の競合は**こちらの10/21最新ステージング実証版を優先**して解消。mainから旧提案・過去履歴ドキュメントは保持。
+- main側の2026-10-20時点の680円案や「Stripe実テスト未実施」は旧記録。10月21日にオーナーが確認した**1,480円Stripe TEST購入→Pro→期限末解約→Free**の実証、および同日確認したGitHub Actionsの最新結果を優先。
+- これは**main→Draftの取り込みのみ**。main側へのマージ、本番反映、Stripe Live設定変更、旧商品・既存契約の変更は行っていない。
