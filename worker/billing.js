@@ -25,6 +25,17 @@ const expectedLive=env=>liveMode(env);
 const priceId=env=>liveMode(env)?env.STRIPE_LIVE_PRICE_ID:env.STRIPE_PRICE_ID;
 const stripeSecret=env=>liveMode(env)?env.STRIPE_LIVE_SECRET_KEY:env.STRIPE_SECRET_KEY;
 const webhookSecret=env=>liveMode(env)?env.STRIPE_LIVE_WEBHOOK_SECRET:env.STRIPE_WEBHOOK_SECRET;
+// Optional and OFF by default: only the isolated billing-only TEST Worker can
+// attach a NEW customer to an explicitly selected simulation clock.
+// No clock is created/advanced and no pre-existing customer is mutated here.
+export function stagingTestClockId(env={}){
+ const value=env.STRIPE_TEST_CLOCK_ID;
+ if(value===undefined||value===null||value==='')return null;
+ if(env.STAGING_BILLING_ONLY!=='true'||billingMode(env)!=='test'||
+    typeof value!=='string'||!/^clock_[a-zA-Z0-9]{8,100}$/.test(value))
+  throw fail('billing_test_clock_invalid');
+ return value;
+}
 // Explicitly translate only the two billing table identifiers, never arbitrary SQL or
 // user input. Keep existing sandbox rows entirely separate from real customers.
 const billingDb=env=>{
@@ -183,12 +194,23 @@ async function checkout(env,row,token){
     price.tax_behavior!=='inclusive'||price.recurring?.interval!=='month'||
     price.recurring?.interval_count!==1||price.recurring?.usage_type!=='licensed'||
     price.recurring?.trial_period_days!=null)throw fail('billing_price_invalid');
+ const stagingClock=stagingTestClockId(env);
+ if(stagingClock&&row.customer_id){
+  // Do not silently enrol a previous test subscriber in this simulation.
+  const existing=await stripe(env,'customers/'+encodeURIComponent(row.customer_id));
+  if(existing?.id!==row.customer_id||existing.livemode!==false||
+     existing.test_clock!==stagingClock)throw fail('billing_test_clock_mismatch');
+ }
  if(!row.customer_id){
   // Stripe only guarantees idempotency retention for 24h. Ambiguous old creates fail closed.
   if(!row.customer_started){await ownedUpdate(db,row.uid,token,'customer_started=?',now());row={...row,customer_started:now()}}
   if(row.customer_started<now()-23*3600)throw fail('billing_manual_review');
-  const customer=await stripe(env,'customers','POST',{'metadata[firebase_uid]':row.uid},row.customer_key);
+  const fields={'metadata[firebase_uid]':row.uid};
+  if(stagingClock)fields.test_clock=stagingClock;
+  const customer=await stripe(env,'customers','POST',fields,row.customer_key);
   if(customer.livemode!==expectedLive(env))throw fail('billing_mode_mismatch');
+  // Never claim a clock-backed subscription if Stripe did not attach the clock.
+  if(stagingClock&&customer.test_clock!==stagingClock)throw fail('billing_test_clock_mismatch');
   await ownedUpdate(db,row.uid,token,'customer_id=?',customer.id);
   row={...row,customer_id:customer.id};
  }
