@@ -28,7 +28,7 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
@@ -57,7 +57,9 @@ async function fixture(t){
     });
    }
    result=state.sessions.get(key);
+   if(typeof state.checkoutCreationMutator==='function')state.checkoutCreationMutator(result);
   }else if(path.startsWith('checkout/sessions/')&&path.endsWith('/line_items')){
+   if(state.failLineItemsOnce){state.failLineItemsOnce=false;return new Response('{}',{status:503});}
    result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2])?.line_items;
   }else if(path.startsWith('checkout/sessions/'))result=[...state.sessions.values()].find(s=>s.id===path.split('/')[2]);
   else if(path==='billing_portal/sessions')result={url:'https://billing.stripe.com/p/session/test'};
@@ -201,6 +203,57 @@ test('double checkout reuses customer and open session; redirect alone never gra
  assert.equal(f.db.sqlite.prepare('SELECT entitled FROM billing_accounts').get().entitled,0);
  assert.equal((await f.call('status','GET')).status,200);
  assert.equal(f.db.sqlite.prepare('SELECT entitled FROM billing_accounts').get().entitled,0);
+});
+// Test-only Stripe API fixtures: new Checkout must never expose an unverified
+// payment URL, even when the configured Price itself is exactly correct.
+test('new Checkout refuses malformed Stripe response before payment redirect',async t=>{
+ const cases=[
+  ['wrong_initial_total',s=>{s.amount_total=680;}],
+  ['wrong_initial_subtotal',s=>{s.amount_subtotal=2000;}],
+  ['wrong_initial_currency',s=>{s.currency='usd';}],
+  ['wrong_initial_customer',s=>{s.customer='cus_other';}],
+  ['wrong_initial_owner',s=>{s.client_reference_id='other';}],
+  ['wrong_initial_price',s=>{s.line_items.data[0].price.id='price_old';}],
+  ['wrong_initial_quantity',s=>{s.line_items.data[0].quantity=2;}],
+  ['wrong_initial_line_item_amount',s=>{s.line_items.data[0].amount_total=2500;}],
+  ['extra_line_item',s=>{s.line_items.data.push({...s.line_items.data[0]});}],
+  ['nonfinal_line_items',s=>{s.line_items.has_more=true;}],
+  ['foreign_checkout_url',s=>{s.url='https://attacker.example/charge';}],
+  ['checkout_with_credentials',s=>{s.url='https://someone@checkout.stripe.com/c/pay/x';}],
+  ['unexpected_return_destination',s=>{s.cancel_url='https://other.example';}],
+  ['already_completed',s=>{s.status='complete';}],
+  ['expired_at_creation',s=>{s.expires_at=time()-30;}],
+  ['wrong_checkout_mode',s=>{s.mode='payment';}],
+  ['wrong_environment',s=>{s.livemode=true;}],
+  ['missing_checkout_id',s=>{s.id=null;}],
+ ];
+ for(const [name,mutate] of cases){
+  await t.test(name,async sub=>{
+   const f=await fixture(sub);
+   f.state.checkoutCreationMutator=mutate;
+   const response=await f.call('checkout');
+   assert.equal(response.status,503,name);
+   assert.equal((await response.json()).error,'billing_checkout_review',name);
+   assert.equal(f.db.sqlite.prepare('SELECT checkout_id FROM billing_accounts').get().checkout_id,null,
+    'never persist an unverified session as a safe redirect');
+   assert.equal(f.state.sessions.size,1,'only one checkout session was created');
+  });
+ }
+});
+test('transient line-item verification failure retries same Stripe Checkout without duplicate session',async t=>{
+ const f=await fixture(t);
+ f.state.failLineItemsOnce=true;
+ const first=await f.call('checkout');
+ assert.equal(first.status,503);
+ assert.equal((await first.json()).error,'billing_provider_error');
+ const row=f.db.sqlite.prepare('SELECT checkout_key,checkout_id FROM billing_accounts').get();
+ assert.equal(row.checkout_id,null);
+ assert.ok(row.checkout_key,'keep idempotency key after ambiguous Stripe result');
+ const second=await f.call('checkout');
+ assert.equal(second.status,200);
+ assert.match((await second.json()).url,/^https:\/\/checkout\.stripe\.com\//);
+ assert.equal(f.state.sessions.size,1);
+ assert.equal(f.db.sqlite.prepare('SELECT checkout_key,checkout_id FROM billing_accounts').get().checkout_key,row.checkout_key);
 });
 test('stored Checkout can be reused only for the exact ¥1480 subscription and signed-in owner',async t=>{
  const f=await fixture(t);
