@@ -127,6 +127,28 @@ test("manual scene typing without active ASR is not altered",async()=>{
  assert.equal(ui.node("reply").value,"An ordinary typed response");
  assert.equal(ui.FakeRecognition.sessions.length,0);
 });
+test("denied microphone permission preserves scene text and guides recovery",async()=>{
+ const ui=app();await ui.click("start");ui.click("mic");
+ const rec=ui.FakeRecognition.sessions[0];
+ rec.heard("Please keep this booking",false);
+ rec.onerror?.({error:"not-allowed"});
+ assert.equal(rec.aborted,true);
+ assert.equal(ui.node("reply").value,"Please keep this booking");
+ assert.match(ui.node("status").textContent,/マイクが許可されていません/);
+ assert.match(ui.node("status").textContent,/サイトのマイク権限/);
+ ui.click("resumeMic");
+ ui.FakeRecognition.sessions[1].heard("until Sunday",true);
+ assert.equal(ui.node("reply").value,"Please keep this booking until Sunday");
+});
+test("scene mic hardware and network failures do not erase drafts",async()=>{
+ for(const [error,msg] of [["audio-capture",/マイクに接続できません/],["network",/通信が途切れました/]]){
+  const ui=app();await ui.click("start");ui.click("mic");
+  const rec=ui.FakeRecognition.sessions[0];rec.heard("Leave this answer",false);
+  rec.onerror?.({error});
+  assert.equal(ui.node("reply").value,"Leave this answer");
+  assert.match(ui.node("status").textContent,msg);
+ }
+});
 test("challenge task description and all goals are English-only, with distinct difficulty",()=>{
  const ui=app();
  ui.node("level").value="challenge";ui.node("level").handlers.change();
