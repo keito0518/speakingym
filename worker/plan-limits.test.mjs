@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "./ai-worker.js";
-import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds} from "./plan-limits.js";
+import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds,getEntitlement} from "./plan-limits.js";
 
 const ORIGIN="https://speakingym.pages.dev";
 const API="https://speakingym-worker-test.example/";
@@ -100,6 +100,36 @@ test("free/pro limits are explicit and reset by Japan day",()=>{
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T14:59:59Z")),{start:"2026-10-01",end:"2026-11-01"});
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T15:00:00Z")),{start:"2026-11-01",end:"2026-12-01"});
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-12-31T15:00:00Z")),{start:"2027-01-01",end:"2027-02-01"});
+});
+test("D1 usage counters must be present, valid and integral or signed entitlement fails closed",async()=>{
+ const base=fakeD1(),uid="reader-test";
+ assert.equal((await getEntitlement(base,uid)).used.sessions,0,"a real zero count is valid");
+ base.plans.set(uid,"pro");
+ assert.equal((await getEntitlement(base,uid)).used.monthlyTurns,0,"a real zero monthly count is valid");
+ const tampered=(match,reply)=>{
+  return {prepare(sql){
+   if(sql.startsWith(match))return {bind(){return {first:async()=>reply}}};
+   return base.prepare(sql);
+  }};
+ };
+ const dailyCases=[
+  null,{sessions:0,teacher:null},{sessions:0,teacher:-1},
+  {sessions:0,teacher:1.5},{sessions:Infinity,teacher:0},
+  {sessions:"0",teacher:0},{sessions:Number.MAX_SAFE_INTEGER+1,teacher:0}
+ ];
+ for(const response of dailyCases){
+  await assert.rejects(getEntitlement(tampered("SELECT (SELECT COUNT",response),uid),/quota_read_invalid/,
+   "invalid daily counts must not be silently reset to zero");
+ }
+ const monthCases=[
+  null,{monthlyTurns:null,monthlyTeacher:0},
+  {monthlyTurns:0,monthlyTeacher:"0"},{monthlyTurns:-1,monthlyTeacher:0},
+  {monthlyTurns:0,monthlyTeacher:NaN}
+ ];
+ for(const response of monthCases){
+  await assert.rejects(getEntitlement(tampered("SELECT (SELECT COALESCE",response),uid),/quota_read_invalid/,
+   "invalid monthly counts must not fabricate remaining Pro quota");
+ }
 });
 test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid signature are rejected",async t=>{
  const {jwk,token}=await signer();
