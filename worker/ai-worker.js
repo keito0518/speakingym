@@ -311,7 +311,7 @@ function repeatsLastAssistantReply(reply,history){
  const last=[...history].reverse().find(entry=>entry.role==="assistant");
  if(!last)return false;
  const norm=value=>String(value||"").normalize("NFKC").toLowerCase()
-  .replace(/[\\p{P}\\p{S}\\s]/gu,"").trim();
+  .replace(/[\p{P}\p{S}\s]/gu,"").trim();
  const a=norm(reply),b=norm(last.content);
  return a.length>=12&&a===b;
 }
