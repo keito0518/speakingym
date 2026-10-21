@@ -1,0 +1,73 @@
+# Automated, credential-free release gate for draft Stripe staging only.
+# Runs existing simulated renewal/failure/expiry/quota scenarios and reads the
+# isolated staging /health endpoint. It NEVER runs real Stripe transactions,
+# uses account credentials, deploys a Worker, edits D1, or merges main.
+name: Stripe staging automated safety gate (NO real charges)
+
+on:
+  push:
+    branches:
+      - integration/pro680-latest-main-review-20261020
+    paths:
+      - '.github/workflows/stripe-staging-automatic-release-gate.yml'
+      - 'worker/billing.js'
+      - 'worker/billing-mode.js'
+      - 'worker/billing.test.mjs'
+      - 'worker/billing-mode.test.mjs'
+      - 'worker/plan-limits.js'
+      - 'worker/plan-limits.test.mjs'
+      - 'worker/staging-billing-qa.test.mjs'
+      - 'worker/ai-worker.js'
+      - 'scripts/staging-stripe-readiness.mjs'
+      - 'tests/staging-stripe-readiness.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/integration/pro680-latest-main-review-20261020'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Billing renewal, failed payment, recovery, 409 retry and expiry — simulated
+        id: billing
+        run: node --test worker/billing.test.mjs worker/billing-mode.test.mjs
+      - name: Monthly 1000-turn/150-feedback limits — simulated
+        id: quotas
+        run: node --test worker/plan-limits.test.mjs
+      - name: Isolated staging-only safety and browser access — simulated
+        id: staging
+        run: node --test worker/staging-billing-qa.test.mjs tests/staging-stripe-readiness.test.mjs
+      - name: Read-only deployed staging /health — actual GET, no credentials
+        id: health
+        run: node scripts/staging-stripe-readiness.mjs
+      - name: Summarize evidence and remaining REAL test requirements
+        if: always()
+        env:
+          BILLING_OUTCOME: ${{ steps.billing.outcome }}
+          QUOTA_OUTCOME: ${{ steps.quotas.outcome }}
+          STAGING_OUTCOME: ${{ steps.staging.outcome }}
+          HEALTH_OUTCOME: ${{ steps.health.outcome }}
+        run: |
+          {
+            echo "## Speakingym ¥1,480 Stripe staging — automated QA"
+            echo ""
+            echo "| Gate | Result | Evidence type |"
+            echo "| --- | --- | --- |"
+            echo "| Renewal/failure/recovery/expiry, webhook 409 retry | ${BILLING_OUTCOME} | Simulated Stripe + in-memory D1 |"
+            echo "| 1,000 AI turns / 150 reviews | ${QUOTA_OUTCOME} | Simulated AI/Firebase + in-memory D1 |"
+            echo "| Isolated staging safety and CORS | ${STAGING_OUTCOME} | Simulated Worker |"
+            echo "| Staging Worker health and billing schema flags | ${HEALTH_OUTCOME} | Actual remote GET /health, read-only |"
+            echo ""
+            echo "**NOT automated or confirmed by this workflow:** real Stripe TEST renewal, real"
+            echo "payment failure and recovery, new signed webhook deliveries, actual staging D1"
+            echo "quota exhaustion, live billing, or production deployment."
+            echo ""
+            echo "No Stripe credentials, Firebase IDs, webhook secrets or customer data are accessed."
+          } >> "$GITHUB_STEP_SUMMARY"
