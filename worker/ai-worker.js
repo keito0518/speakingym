@@ -232,7 +232,7 @@ function validateReflexCoaching(input) {
  }
  return items;
 }
-function sanitizeTeacherResult(input,size) {
+function sanitizeTeacherResult(input,size,attempts) {
  if (!input || !Array.isArray(input.feedback) || input.feedback.length!==size) return null;
  const normalized=[];
  for(let i=0;i<size;i++){
@@ -246,6 +246,14 @@ function sanitizeTeacherResult(input,size) {
    why:raw.why.trim().slice(0,440),
    practice:raw.practice.trim().slice(0,260)
   });
+ }
+ // Distinct learner sentences must not all receive the SAME generic
+ // report. Fail with a refundable teacher error instead of selling identical
+ // boilerplate as individualized feedback.
+ if(size>1 && new Set(attempts.map(x=>x.text.trim().toLowerCase())).size>1){
+  const fingerprint=entry=>[entry.praise,entry.improvement,entry.improved,entry.why,entry.practice]
+   .map(x=>x.normalize("NFKC").toLowerCase().replace(/\s+/g,"")).join("|");
+  if(new Set(normalized.map(fingerprint)).size===1)return null;
  }
  return normalized;
 }
@@ -277,7 +285,7 @@ async function runReflexCoaching(body,env,origin,plan){
   const raw=result?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
   let parsed;
   try{parsed=JSON.parse(raw)}catch{return reply({error:"gemini_invalid_json"},502,origin)}
-  const feedback=sanitizeTeacherResult(parsed,attempts.length);
+  const feedback=sanitizeTeacherResult(parsed,attempts.length,attempts);
   if(!feedback)return reply({error:"invalid_ai_response"},502,origin);
   return reply({feedback},200,origin);
  }catch{return reply({error:"ai_timeout"},504,origin)}
