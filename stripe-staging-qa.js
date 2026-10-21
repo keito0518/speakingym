@@ -17,6 +17,8 @@ const safeError=code=>({
   billing_manual_review:'Stripeのテスト契約に調査が必要です。重複購入しないでください。',
   billing_checkout_review:'保存済みの購入画面の金額・商品・購入者が一致しません。再購入せず開発者に確認してください。',
   subscription_exists:'すでにテスト契約があります。契約状態を再確認してください。',
+  billing_test_clock_invalid:'専用テスト時計の設定に問題があります。購入しないで開発者に連絡してください。',
+  billing_test_clock_mismatch:'このGoogleアカウントは別のテスト顧客に紐づいています。購入せず別の新しいテスターを選んでください。',
 }[code]||'テスト通信に失敗しました。新しい決済は実行しないでください。');
 const show=(id,message)=>{$(id).textContent=message};
 export function validStagingHealth(data){
@@ -107,7 +109,10 @@ async function loadFirebase(){
   await lib.setPersistence(auth,lib.browserSessionPersistence);
   lib.onAuthStateChanged(auth,async next=>{
    user=next;subStatus=null;
-   show('qa-account',next?'✓ Googleテストログイン済み。登録したstagingテスターだけ決済できます。':'未ログイン（テスト専用アカウントを使ってください）。');
+   show('qa-account',next?
+    '✓ 現在のGoogleアカウント：'+(next.email||'メールアドレス未取得')+
+    '\n※以前のテストで使ったアカウントなら、ここでログアウトして別のアカウントを選択してください。':
+    '未ログイン（テスト専用アカウントを使ってください）。');
    paint();
    if(next&&ready)await refresh();
   },()=>{show('qa-account','Firebaseログイン状態を確認できません。');paint();});
@@ -117,7 +122,14 @@ async function loadFirebase(){
 $('qa-login').addEventListener('click',async()=>{
  if(!auth||busy)return;
  busy=true;paint();
- try{await authLib.signInWithPopup(auth,new authLib.GoogleAuthProvider());}
+ // Force Google's account chooser even when the browser remembers a
+ // previously used Oden/QA login. Firebase logout alone does NOT log out
+ // the Google account on accounts.google.com.
+ try{
+  const provider=new authLib.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  await authLib.signInWithPopup(auth,provider);
+ }
  catch(e){
   const unauthorized=String(e?.code||'').includes('unauthorized-domain');
   show('qa-account',unauthorized?'Firebase Authの承認済みドメインにlocalhostがありません。テスト環境の設定を確認してください。':'Googleログインできませんでした。テスト用アカウントを使用してください。');
