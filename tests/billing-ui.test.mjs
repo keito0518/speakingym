@@ -67,6 +67,22 @@ test('successful Stripe redirect keeps purchase controls disabled until a fresh 
  await a.node('sg-checkout').listeners.click();
  assert.equal(a.calls.filter(x=>x.options.method==='POST').length,count);
 });
+test('account change while Checkout POST is pending never redirects to the former account',async()=>{
+ let finish;
+ const stripeResponse=new Promise(resolve=>{finish=resolve});
+ const a=await ui({byAction:{checkout:{ok:true,data:stripeResponse}}});
+ assert.equal(a.node('sg-checkout').disabled,false);
+ const attempted=a.node('sg-checkout').listeners.click();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(a.calls.filter(x=>x.options.method==='POST').length,1);
+ a.listeners['speakingym:account-ready']();
+ finish({url:'https://checkout.stripe.com/c/pay/former-account'});
+ await attempted;
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(a.redirects.length,0,'old account Checkout URL cannot survive account change');
+ assert.equal(a.node('sg-checkout').disabled,true,'payment button stays locked until new verified action');
+});
+
 test('failed portal operation also needs a verified refresh before retry',async()=>{
  const a=await ui({data:{mode:'test',status:'active',pro:true,hasCustomer:true},
   byAction:{portal:{ok:false,data:{error:'billing_busy'}}}});
