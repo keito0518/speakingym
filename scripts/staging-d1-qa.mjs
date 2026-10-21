@@ -78,9 +78,14 @@ export class StagingD1 {
     try {
       tokenStatus = await this.call('https://api.cloudflare.com/client/v4/user/tokens/verify', 'GET');
     } catch (userError) {
-      // Account-owned API tokens use a different official verification endpoint.
-      // Only retry on HTTP 400: do not silently bypass authorization errors.
-      if (!userError.message.includes('HTTP 400')) {
+      // Cloudflare publishes separate user-token and account-token verify URLs.
+      // Some account-owned tokens return HTTP 401/code 1000 from the USER URL.
+      // Try the ACCOUNT verify URL read-only in that exact case; a failed
+      // second verification, wrong staging DB ID or missing schema still STOP.
+      // Never fall back to a write or continue with an unverified token.
+      const accountTokenResponse = userError.message.includes('HTTP 400') ||
+        (userError.message.includes('HTTP 401') && userError.message.includes('codes 1000'));
+      if (!accountTokenResponse) {
         throw new Error('STOP: user token verification failed (' + userError.message +
           '). Check GitHub secret, token permissions, expiry and IP restrictions. No D1 write attempted.');
       }
