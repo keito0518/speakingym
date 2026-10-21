@@ -61,3 +61,10 @@
 - 2026-10-21本人実施の**Stripe TEST購入→Pro付与→解約予約→契約満了→Free復帰は成功**。これを繰り返さず、未実施のStripe TEST更新/支払い失敗/復旧、実利用枠の検証のみに注力。
 - この新自動テストは**模擬ケース**であり、Stripe実決済E2Eを代替しない。Stripe/Cloudflareの直接操作権限がない状態ではTESTイベントを生成したと主張しない。秘密鍵の共有を要求しない。
 - 絶対変更禁止：Stripe Live・旧¥680商品/契約・本番Worker `speakingym-survival-ai`・本番D1 `speakingym-plans`・本番Pages・main。PR #62をマージ/本番デプロイしない。
+
+## 2026-10-21 — 自動テストの実行結果をGitHub APIで再確認
+
+- **Stripe staging automated safety gate 実行成功**：GitHub Actions run [39554153439](https://github.com/keito0518/speakingym/actions/runs/39554153439)、commit `f4ac494e`、2026-10-21 15:13 JST開始。ジョブ `verify` の模擬Stripe更新/失敗/復旧・409再送、月次1,000/150制限、staging安全/CORS、**実stagingに対する読み取り専用GET /health** の各ステップがsuccess。ヘルス実ログは `environment=isolated-staging`, `stripeMode=test`, `schemaReady=true`, `aiDisabled=true`, `passed=true`。実Stripeの更新/失敗/復旧は含まれない。
+- **総合CI 実行成功**：run [39557777409](https://github.com/keito0518/speakingym/actions/runs/39557777409)、commit `8db58ab1`、419件テスト PASS、0 FAIL。ChromiumとWebKitの模擬ブラウザQAがPASS。実iPhone実機の音声認識・マイク権限は未検証。
+- `f4ac494e` と `8db58ab1` の差分は `SPEAKINGYM_START_HERE.md` のドキュメントのみ。したがって前者のStripe gate結果は後者の課金コードにも対応する。
+- 有料販売の法定表示、返金方針、実Stripe TEST更新・支払失敗/復旧、実D1上限消費・原価、実機QAは未完了。**本番/Live/mainには触れず、Ownerの明示承認までNO-GO。**

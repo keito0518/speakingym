@@ -57,3 +57,17 @@ test('Free tier is unchanged and subscription monthly accounting differs from ca
  assert.match(operator,/請求時開示方式/);
  assert.match(disclosure,/購入・Googleログイン・支払いは不要/);
 });
+
+test('consumer-facing cancellation, refund uncertainty and Stripe data handling remain clear before Live',()=>{
+ assert.match(site,/Proはどうやって解約する？/);
+ assert.match(site,/期間末で解約/);
+ assert.match(site,/返金はできる？/);
+ assert.match(site,/返金・日割り精算/);
+ assert.match(disclosure,/サンドボックスでは、契約管理画面から期間末解約/);
+ assert.match(disclosure,/本番販売の解約条件/);
+ assert.match(disclosure,/キャンセル・返金/);
+ const privacy=read('privacy.html');
+ assert.match(privacy,/決済に関する情報（有料プラン準備中）/);
+ assert.match(privacy,/Stripeの顧客・契約識別子/);
+ assert.match(privacy,/一般向けの有料販売は開始していません/);
+});
