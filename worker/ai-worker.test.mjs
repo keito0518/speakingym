@@ -393,6 +393,20 @@ test("reflex tutor remains disabled when owner has not enabled Gemini",async t=>
  assert.equal((await result.json()).error,"ai_disabled");
  assert.equal(gemini.mock.callCount(),0);
 });
+test("teacher refuses identical generic feedback for different English responses",async t=>{
+ t.mock.method(globalThis,"fetch",async()=>Response.json({candidates:[{content:{parts:[{
+  text:JSON.stringify({feedback:[0,1].map(index=>({
+   index,praise:"Nice work.",improvement:"Use more natural English.",
+   improved:"Could you please help me?",why:"This sounds polite.",practice:"Ask again."
+  }))})
+ }]}}]}));
+ const result=await worker.fetch(request({action:"reflex_coach",level:"standard",attempts:[
+  {index:0,text:"My flight is delayed.",situation:"Airport",goal:"Explain delay"},
+  {index:1,text:"I cannot find my passport.",situation:"Airport",goal:"Ask for help"}
+ ]}),enabled());
+ assert.equal(result.status,502);
+ assert.equal((await result.json()).error,"invalid_ai_response");
+});
 test("invalid teacher responses are rejected and never manufactured locally",async t=>{
  t.mock.method(globalThis,"fetch",async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{
   text:JSON.stringify({feedback:[{index:0,praise:"Generic praise"}]})
