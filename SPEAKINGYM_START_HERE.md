@@ -49,3 +49,15 @@
 - [Stripe専用 localhost QA](stripe-staging-qa.html)
 - [読取専用 staging readiness](scripts/staging-stripe-readiness.mjs)
 - [過去の引き継ぎ](STRIPE_NEXT_SESSION_2026-10-20.md)
+
+## 2026-10-21 15:47 JST — 次セッションに最優先で引き継ぐ内容
+
+**ユーザーからの最新希望：PCが使えない。細かな操作依頼・手動テストの繰り返しを避け、可能なことはGitHub連携と自動処理で完了させること。** 必須の外部アカウント操作が不可能なら、その点だけ具体的に短く報告し、勝手に「実テスト成功」としない。
+
+- 最新PR #62 headは `f4ac494eba8d03310cbe8943ac993b2bb23552c0`（確認時点）。Draft/unmerged、mainや本番は変更しない。
+- `worker/billing.test.mjs` に「同時署名Webhookで409 billing_busy → 同じイベントを再送して200 → Proは一回だけ付与」の回帰テストを追加（コミット `7737dc1`）。これは**まだ新HEADで自動テスト合格が未確認**。
+- `.github/workflows/stripe-staging-automatic-release-gate.yml` を新設（コミット `dff9878`）し、PR #62向け `pull_request` トリガーも追加（`f4ac494`）。模擬更新/未払い/復旧/409/枠制御/安全制御と、実staging GET /healthのみを自動照合する設計。**新HEADに紐づくActions workflow runsはGitHub連携から取得できず、走ったかどうか未確認。PASSと主張しない。**
+- 次の担当はまずGitHub Actionsの実行状況/失敗原因を調べ、テスト環境の権限で可能なら自律的に修正・検証する。GitHub Connectorにはこの時点で新規 workflow_dispatch アクションが見当たらない。連携操作できないときにユーザーへPCを要求しない。
+- 2026-10-21本人実施の**Stripe TEST購入→Pro付与→解約予約→契約満了→Free復帰は成功**。これを繰り返さず、未実施のStripe TEST更新/支払い失敗/復旧、実利用枠の検証のみに注力。
+- この新自動テストは**模擬ケース**であり、Stripe実決済E2Eを代替しない。Stripe/Cloudflareの直接操作権限がない状態ではTESTイベントを生成したと主張しない。秘密鍵の共有を要求しない。
+- 絶対変更禁止：Stripe Live・旧¥680商品/契約・本番Worker `speakingym-survival-ai`・本番D1 `speakingym-plans`・本番Pages・main。PR #62をマージ/本番デプロイしない。
