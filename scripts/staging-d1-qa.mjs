@@ -5,6 +5,7 @@
  */
 import {randomUUID} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
+import {PRO_MONTHLY_TURN_LIMIT} from '../worker/turn-ledger.js';
 
 // An immutable allowlist prevents production access even with a broad token.
 export const STAGING_ACCOUNT_ID = '324c7361cbbaecd8240688b8bd588ef3';
@@ -16,7 +17,7 @@ const REQUIRED_OBJECTS = ['ai_sessions', 'ai_turn_reservations', 'free_session_r
   'free_session_turn_guard', 'free_session_turn_settle', 'idx_free_session_account'];
 
 export function assertSafeFixtureUid(uid) {
-  if (!/^sgqa-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-(failure|limits|starts)$/.test(uid)) {
+  if (!/^sgqa-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-(failure|limits|starts|prolimits)$/.test(uid)) {
     throw new Error('Refusing to modify records outside isolated staging QA fixture');
   }
   return uid;
@@ -124,8 +125,11 @@ export class StagingD1 {
     await this.query('DELETE FROM ai_turn_reservations WHERE uid=?', [uid]);
     await this.query('DELETE FROM free_session_reservations WHERE uid=?', [uid]);
     await this.query('DELETE FROM ai_sessions WHERE uid=?', [uid]);
+    await this.query('DELETE FROM teacher_uses WHERE uid=?', [uid]);
     const remains = await this.query('SELECT COUNT(*) AS n FROM ai_sessions WHERE uid=?', [uid]);
-    insist(rowsNumber(remains, 'n') === 0, 'staging QA fixture cleanup');
+    insist(rowsNumber(remains, 'n') === 0, 'staging QA session cleanup');
+    const teacherRemains = await this.query('SELECT COUNT(*) AS n FROM teacher_uses WHERE uid=?', [uid]);
+    insist(rowsNumber(teacherRemains,'n')===0, 'staging QA teacher cleanup');
   }
 }
 
@@ -162,10 +166,93 @@ async function snapshot(db, uid, sessionId) {
   return rows[0];
 }
 
+
+/** Only a fresh sgqa-...-prolimits uid; 49 generated prior sessions and one
+ * active session let us hit 999/1000 with 2 SQL calls, not 1000 Gemini calls.
+ * This exercises the same atomic predicates as the Worker's Pro ledger mode.
+ * No account_plans/billing, real customers, production or Gemini API writes.
+ */
+export async function runStagingProQuotaQA(db,uid,day,log=console.log){
+ assertSafeFixtureUid(uid);
+ if(!uid.endsWith('-prolimits')||!db.verified)throw Error('STOP: Pro quota fixture scope');
+ const yr=Number(day.slice(0,4)),month=Number(day.slice(5,7));
+ const from=day.slice(0,7)+'-01';
+ const through=new Date(Date.UTC(yr,month,1)).toISOString().slice(0,10);
+ const now=timestamp(),expires=String(Number(now)+420);
+ const active=randomUUID();
+ // D1 SQLite recursive CTE inserts only a fixture's 49 sessions of 20
+ // previously consumed turns, with zero provider usage/charges.
+ await db.query(`WITH RECURSIVE seq(i) AS
+   (SELECT 1 UNION ALL SELECT i+1 FROM seq WHERE i<49)
+   INSERT INTO ai_sessions(id,uid,day,started_at,expires_at,turns)
+   SELECT ? || '-seed-' || i,?,?,?,?,20 FROM seq`,
+  [uid,uid,day,now,expires]);
+ await db.query('INSERT INTO ai_sessions(id,uid,day,started_at,expires_at,turns) VALUES(?,?,?,?,?,19)',
+  [active,uid,day,now,expires]);
+ const countTurns=async()=>rowsNumber(await db.query(
+   'SELECT COALESCE(SUM(turns),0) AS n FROM ai_sessions WHERE uid=? AND day>=? AND day<?',
+   [uid,from,through]),'n');
+ insist((await countTurns())===999,'Pro fixture starts at 999 real D1 turns');
+ const reserveLast=async()=>{
+  const id=randomUUID();
+  const rows=await db.query(`INSERT INTO ai_turn_reservations(id,session_id,uid,day,state,created_at)
+ SELECT ?,s.id,s.uid,s.day,'reserved',? FROM ai_sessions s
+ WHERE s.id=? AND s.uid=? AND s.expires_at>? AND s.turns<20
+ AND s.day>=? AND s.day<?
+ AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions
+ WHERE uid=? AND day>=? AND day<?)< ? RETURNING id`,
+ [id,timestamp(),active,uid,timestamp(),from,through,uid,from,through,PRO_MONTHLY_TURN_LIMIT]);
+  return rows.length?id:null;
+ };
+ const outcomes=await Promise.allSettled([reserveLast(),reserveLast()]);
+ insist(outcomes.every(r=>r.status==='fulfilled'),'Pro concurrent 1000th API calls complete');
+ const accepted=outcomes.filter(r=>r.value?.length).map(r=>r.value);
+ insist(accepted.length===1,'Pro last 1000th turn reserved exactly once');
+ insist((await countTurns())===PRO_MONTHLY_TURN_LIMIT,'Pro 1000th turn limit held');
+ insist((await reserveLast())===null,'Pro 1001st turn blocked');
+ await db.query("UPDATE ai_turn_reservations SET state='refunded' WHERE id=? AND uid=? AND state='reserved'",
+ [accepted[0],uid]);
+ insist((await countTurns())===999,'Pro failure returned final reserved turn');
+ const acceptedAfterRefund=await reserveLast();
+ insist(!!acceptedAfterRefund,'Pro final slot available after refund');
+ await db.query("UPDATE ai_turn_reservations SET state='completed' WHERE id=? AND uid=? AND state='reserved'",
+ [acceptedAfterRefund,uid]);
+ insist((await countTurns())===1000 && (await reserveLast())===null,
+  'Pro completed 1000th turn cannot be overspent');
+ log('PASS REAL staging Pro monthly 999→1000, concurrent final slot, 1001 blocked, refund/reuse');
+
+ // 149 teacher uses inserted with one staging-only SQL statement; then use
+ // the SAME atomic 150-use INSERT guard as the Worker. No AI calls.
+ await db.query(`WITH RECURSIVE seq(i) AS
+  (SELECT 1 UNION ALL SELECT i+1 FROM seq WHERE i<149)
+  INSERT INTO teacher_uses(id,uid,day,created_at)
+  SELECT ? || '-teacher-' || i,?,?,? FROM seq`,
+ [uid,uid,day,now]);
+ const countTeachers=async()=>rowsNumber(await db.query(
+ 'SELECT COUNT(*) AS n FROM teacher_uses WHERE uid=? AND day>=? AND day<?',
+ [uid,from,through]),'n');
+ insist((await countTeachers())===149,'Pro teacher fixture starts at 149');
+ const reserveTeacher=async()=>{
+  const id=randomUUID();
+  const rows=await db.query(`INSERT INTO teacher_uses(id,uid,day,created_at)
+ SELECT ?,?,?,? WHERE (SELECT COUNT(*) FROM teacher_uses
+ WHERE uid=? AND day>=? AND day<?)<150 RETURNING id`,
+ [id,uid,day,timestamp(),uid,from,through]);
+  return rows.length?id:null;
+ };
+ const teacherOutcomes=await Promise.allSettled([reserveTeacher(),reserveTeacher()]);
+ insist(teacherOutcomes.every(r=>r.status==='fulfilled'),'Pro concurrent 150th teacher API calls complete');
+ insist(teacherOutcomes.filter(r=>!!r.value).length===1,
+ 'Only one simultaneous 150th Pro teacher use may succeed');
+ insist((await countTeachers())===150 && (await reserveTeacher())===null,
+  'Pro 150th use ceiling held and 151st blocked');
+ log('PASS REAL staging Pro teacher 149→150, concurrent final slot, 151 blocked');
+}
+
 export async function runRemoteStagingQA(db, log = console.log) {
   if (!db.verified) throw new Error('STOP: identity verification required');
-  const users = ['failure', 'limits', 'starts'].map(label => assertSafeFixtureUid(`sgqa-${randomUUID()}-${label}`));
-  const [failUid, limitUid, startUid] = users;
+  const users = ['failure', 'limits', 'starts','prolimits'].map(label => assertSafeFixtureUid(`sgqa-${randomUUID()}-${label}`));
+  const [failUid, limitUid, startUid, proUid] = users;
   const day = todayJst();
   let failed = false;
   try {
@@ -215,6 +302,8 @@ export async function runRemoteStagingQA(db, log = console.log) {
     const count = await db.query('SELECT COUNT(*) AS n FROM ai_sessions WHERE uid=? AND day=?', [startUid,day]);
     insist(rowsNumber(count, 'n') === 5, 'five-session daily ceiling held');
     log('PASS staging six simultaneous starts, five daily slots max');
+
+    await runStagingProQuotaQA(db,proUid,day,log);
   } catch (error) {
     failed = true;
     throw error;
