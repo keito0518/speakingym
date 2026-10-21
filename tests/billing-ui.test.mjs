@@ -85,6 +85,19 @@ test('account change while Checkout POST is pending never redirects to the forme
  assert.equal(a.node('sg-checkout').disabled,true,'logged-out account cannot reuse the previous payment button');
 });
 
+test('account-changing event invalidates an in-flight checkout BEFORE cloud sync completes',async()=>{
+ let finish;const delayed=new Promise(done=>{finish=done});
+ const uiState=await ui({byAction:{checkout:{ok:true,data:delayed}}});
+ const request=uiState.node('sg-checkout').listeners.click();
+ await new Promise(r=>setImmediate(r));
+ assert.equal(uiState.calls.filter(c=>c.options.method==='POST').length,1);
+ uiState.listeners['speakingym:account-changing']();
+ assert.equal(uiState.node('sg-checkout').disabled,true);
+ assert.match(uiState.node('sg-billing-status').textContent,/アカウントを確認中/);
+ finish({url:'https://checkout.stripe.com/c/pay/former-account'});
+ await request;
+ assert.equal(uiState.redirects.length,0);
+});
 test('failed portal operation also needs a verified refresh before retry',async()=>{
  const a=await ui({data:{mode:'test',status:'active',pro:true,hasCustomer:true},
   byAction:{portal:{ok:false,data:{error:'billing_busy'}}}});
