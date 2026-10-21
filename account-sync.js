@@ -101,20 +101,27 @@ async function cloudWrite(uid,item,value){
  if(safe===null)return;
  await dbFns.setDoc(locationFor(uid,item),{version:1,payload:JSON.stringify(safe),updatedAt:dbFns.serverTimestamp()});
 }
-let quotaLookup=null;
+// Every account/refresh has its own read-only quota lookup. A delayed response
+// for the old account must never paint Pro usage onto the new account.
+let quotaUiSeq=0;
 async function updateQuotaUi(){
  const el=$("sg-plan-info");if(!el)return;
- if(!user){el.textContent="GoogleログインするとAIの利用枠が表示されるよ。";return}
- if(quotaLookup)return;
- quotaLookup=true;
+ const seq=++quotaUiSeq,epoch=accountEpoch,uid=user?.uid;
+ const stillCurrent=()=>seq===quotaUiSeq&&epoch===accountEpoch&&user?.uid===uid;
+ if(!uid){el.textContent="GoogleログインするとAIの利用枠が表示されるよ。";return}
+ el.textContent="利用回数を確認中…";
  try{
   const api="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
-  const health=await fetch(api+"health").then(r=>r.ok?r.json():null).catch(()=>null);
+  const health=await fetch(api+"health",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null);
+  if(!stillCurrent())return;
   if(!health?.plansEnabled){el.textContent="無料ベータ期間中。AIは混雑防止の利用制限で提供しています。";return}
   const idToken=await authFns.getIdToken(user);
-  const response=await fetch(api+"entitlement",{headers:{"Authorization":"Bearer "+idToken}});
+  if(!stillCurrent())return;
+  const response=await fetch(api+"entitlement",{headers:{"Authorization":"Bearer "+idToken},cache:"no-store",credentials:"omit"});
+  if(!stillCurrent())return;
   if(!response.ok)throw Error("quota");
   const data=await response.json();
+  if(!stillCurrent())return;
   if(data.plan==="pro"){
    const remainingTurns=Math.max(0,(data?.limits?.monthlyTurns||0)-(data?.used?.monthlyTurns||0));
    const remainingTeacher=Math.max(0,(data?.limits?.monthlyTeacher||0)-(data?.used?.monthlyTeacher||0));
@@ -125,8 +132,7 @@ async function updateQuotaUi(){
    const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
    el.textContent="Free · 本日の残り：AI英会話 "+n+" セッション／AI先生 "+t+" 回（日本時間の午前0時に更新）";
   }
- }catch{el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
- finally{quotaLookup=false}
+ }catch{if(stillCurrent())el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
 }
 function notify(){
  window.dispatchEvent(new Event("speakingym:account-ready"));
