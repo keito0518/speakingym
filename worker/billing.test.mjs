@@ -290,6 +290,33 @@ test('Stripe failure cannot acknowledge or record webhook; retry succeeds',async
  assert.equal(f.db.sqlite.prepare('SELECT id FROM billing_events WHERE id=?').get('evt_retry'),undefined);
  globalThis.fetch=original;assert.equal((await f.event('invoice.paid','evt_retry')).status,200);
 });
+// Regression from the real 2026-10-21 Stripe TEST Checkout: concurrent delivery
+// may receive a transient 409 billing_busy. Stripe must retry the *same* signed
+// event, and the event must be processed once without double entitlement.
+test('concurrent signed webhook returns retryable 409 then succeeds idempotently',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ f.state.subscriptions=[active()];
+ let releaseLock;
+ const lockedUntilReleased=new Promise(resolve=>{releaseLock=resolve});
+ const held=withAccountLock(f.db,'student',()=>lockedUntilReleased);
+ await new Promise(resolve=>setImmediate(resolve));
+ try{
+  const first=await f.event('invoice.paid','evt_stripe_concurrent_retry');
+  assert.equal(first.status,409);
+  assert.equal((await first.json()).error,'billing_busy');
+  assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,0);
+  assert.equal(await getPlan(f.db,'student',f.env),'free');
+ }finally{
+  releaseLock();
+  await held;
+ }
+ assert.equal((await f.event('invoice.paid','evt_stripe_concurrent_retry')).status,200);
+ assert.equal(await getPlan(f.db,'student',f.env),'pro');
+ assert.equal((await f.event('invoice.paid','evt_stripe_concurrent_retry')).status,200);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events WHERE id=?').get('evt_stripe_concurrent_retry').n,1);
+});
+
 test('simultaneous checkout calls create at most one open session',async t=>{
  const f=await fixture(t);const results=await Promise.all([f.call('checkout'),f.call('checkout')]);
  assert.ok(results.some(r=>r.status===200));assert.ok(results.every(r=>[200,409].includes(r.status)));assert.equal(f.state.sessions.size,1);
