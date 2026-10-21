@@ -256,6 +256,12 @@ async function syncAll({reloadOnChange=true}={}){
   }
   await Promise.all(writes);
   if(!stillOwner())return;
+  // While Cloud writes were pending the learner may have typed or saved more.
+  // Do not replace their newer local draft with the older cloud snapshot.
+  if(!snapshotsEqual(readSnapshot(localStorage),local)){
+   syncQueued=true;
+   return;
+  }
   importGuest=false;
   const changed=!snapshotsEqual(local,desired);
   if(changed){
