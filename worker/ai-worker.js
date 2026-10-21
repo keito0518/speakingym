@@ -304,6 +304,17 @@ function validHistory(input) {
     content: typeof entry?.content === "string" ? entry.content.slice(0, 450) : ""
   })).filter((x) => x.content);
 }
+// Do not count an exact recycled AI line as a completed user turn.
+// Do not silently call Gemini a second time: the existing failure path
+// refunds a reserved attempt and lets the learner decide to retry.
+function repeatsLastAssistantReply(reply,history){
+ const last=[...history].reverse().find(entry=>entry.role==="assistant");
+ if(!last)return false;
+ const norm=value=>String(value||"").normalize("NFKC").toLowerCase()
+  .replace(/[\\p{P}\\p{S}\\s]/gu,"").trim();
+ const a=norm(reply),b=norm(last.content);
+ return a.length>=12&&a===b;
+}
 function normalizeFacts(input) {
   const raw = input && typeof input === "object" ? input : {};
   return {
@@ -596,6 +607,8 @@ export default {
       if (typeof data?.reply !== "string" || !data.reply.trim() || data.reply.length > 850) {
         return aiFailure({ error: "invalid_ai_response" }, 502);
       }
+      if(repeatsLastAssistantReply(data.reply,history))
+        return aiFailure({error:"ai_repeated_reply"},502);
       if (scene) {
         // A scene uses general-purpose goal signals. The original cafe mission is unchanged.
         if (!data.progress || typeof data.progress !== "object") {
