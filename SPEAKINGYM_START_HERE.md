@@ -124,3 +124,16 @@
 - **JST月初・午前0時の境界**を1リクエストごとの基準時刻で一貫して扱う。`getEntitlement`、`usage`、`publicLimits`、新規セッション、AI講評、台帳ターン予約の日時を揃えた。DB応答中に月が替わっても、前月の回数を新月扱いしない。
 - `worker/plan-limits.test.mjs` に欠損・異常回数、23:59:59 JST→00:00:00 JSTへのデータベース応答遅延、次月1,000ターン/150講評を既に消費している場合の月末セッション・講評予約の正常性をテスト。
 - 今回の修正は [PR #62](https://github.com/keito0518/speakingym/pull/62) のDraftのみ。実ステージングD1の使い切りや実Stripe TEST更新・支払失敗/回復は未検証のまま。本番・main・Stripe Live・旧¥680契約変更禁止。詳細は [QA・復旧手順](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。
+
+## 2026-10-21：実Cloudflare staging D1検証成功（Owner操作・再試行）
+
+- GitHub Actions [実staging D1実行 #39607027253](https://github.com/keito0518/speakingym/actions/runs/39607027253) は **初回、認証401/code1000でSTOP**。mainでの旧検証 #39606164686 も同じ401で停止。初回はいずれもDBへの書込み無し。
+- Draft PR #62でユーザートークンの認証先が401/code1000を返した場合に、**Cloudflareアカウント用トークンの認証先をGETで試す**安全な分岐を追加（両方拒否なら必ずSTOP）。認証用のテストとDraft専用手動実行を追加。本番main・本番Worker/D1・Stripeへの変更無し。
+- 運営者が**GitHubのstaging-d1環境Secretのみ**有効な検証トークンへ更新後、同じ実行 #39607027253 の**失敗したジョブだけをGitHub Actionsで再実行**し、`real-staging-d1` が成功。ログで以下6件を確認：
+  1. staging D1の識別子・0002/0005の必須スキーマ確認 **PASS**
+  2. 初回AI失敗の原子的返却・Freeセッション枠返却・再試行・成功 **PASS**
+  3. 20ターン最終枠への同時アクセス防止・他ユーザーからの予約拒否 **PASS**
+  4. 6回同時セッション開始時のFree上限5回 **PASS**
+  5. 仮の`sgqa-...`ユーザーと紐づく検証データの削除 **PASS**
+  6. **STAGING D1 QA COMPLETE**。実D1で処理した証拠だが、**デプロイ済みstaging Worker経由ではなく、ステージングD1 SQLを直接実行する専用QA**。
+- この成功により **実staging D1のFree枠・基本カウンタ・返却・排他・削除の確認は完了**。一方、**実stagingでPro月1,000ターン/150講評の限界、Stripe TESTの実更新→未払い→回復、実機音声、原価、法定情報** は引き続き未確認。新料金Liveの公開GOではない。
