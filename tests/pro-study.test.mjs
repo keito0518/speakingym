@@ -69,3 +69,21 @@ test('UI is mobile accessible, signed-entitlement-gated, non-AI and discoverable
  assert.doesNotMatch(js,/checkout\.stripe\.com|payment_intents|generateContent|GEMINI_API_KEY/);
  assert.doesNotMatch(js,/innerHTML\s*=/);
 });
+
+test('Pro review fairly mixes teacher, real AI conversation and saved sprint phrases',()=>{
+ const snap={
+  'speakingym-reflex-ai-teacher-v1':[{notes:Array.from({length:5},(_,i)=>({
+   feedback:{improved:'Teacher example '+(i+1)+'.',improvement:'実際の講評から保存'}
+  }))},{notes:[{feedback:{improved:'Teacher extra example.',improvement:'講評'}}]}],
+  'speakingym-saved-coaching-v1':[{natural:'Could I have a seat?',original:'座っていい？'}],
+  'speakingym-reflex-saved-phrases-v1':[{text:'Please give me a moment.',goal:'少し待って'}]
+ };
+ const result=buildProStudyPlan(snap,utc('2026-10-21'));
+ assert.equal(result.cards.length,5);
+ assert.ok(result.cards.some(x=>x.origin==='AI先生の言い換え'));
+ assert.ok(result.cards.some(x=>x.origin==='AI実践英会話の保存表現'));
+ assert.ok(result.cards.some(x=>x.origin==='60秒チャレンジの保存表現'));
+ assert.equal(new Set(result.cards.map(x=>x.id)).size,5);
+ // The non-AI, no-persistence contract is preserved.
+ assert.equal(result.totalUniqueExpressions,7);
+});
