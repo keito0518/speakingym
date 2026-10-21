@@ -871,6 +871,13 @@ function readJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(
 function notifyCloud(key){window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key}}))}
 function saveJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value));notifyCloud(key)}catch(e){}}
 function shuffle(input){const list=[...input];for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
+// Favor new cards when beginning a session, but keep the entire pool
+// available, including recent cards for later review. No additional storage.
+function orderPracticeDeck(pool,recentIds,randomize=shuffle){
+ const recent=new Set(recentIds);
+ return [...randomize(pool.filter(card=>!recent.has(card.id))),
+         ...randomize(pool.filter(card=>recent.has(card.id)))];
+}
 function pane(id){for(const k of ["introPane","playPane","endPane","historyPane","phrasesPane"])$(k).classList.toggle("active",k===id)}
 function clock(){
  const seconds=Math.max(0,remaining);
@@ -1219,7 +1226,9 @@ function start(onlyMissed=false){
  chosenLevel=$("level").value;saveWords=$("saveTranscripts").checked===true;
  const old=readJSON(MISSES_KEY,[]);
  const choice=onlyMissed&&Array.isArray(old)?cards.filter(c=>old.includes(c.id)):deck();
- activePool=choice.length?choice:deck();pile=shuffle(activePool);
+ activePool=choice.length?choice:deck();
+ const recentIds=onlyMissed?[]:historySessions().flatMap(s=>s.attempts.map(a=>a.cardId)).slice(0,12);
+ pile=onlyMissed?shuffle(activePool):orderPracticeDeck(activePool,recentIds);
  window.speakingymAnalytics?.track("sg_sprint_start",{mode:onlyMissed?"weak_review":"standard"});
  pane("playPane");clock();nextCard();
  ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);
