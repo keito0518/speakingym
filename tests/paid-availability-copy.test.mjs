@@ -15,5 +15,7 @@ test('AI upstream quota errors are distinguished from a paying user monthly limi
  assert.doesNotMatch(reflex,/無料枠のGemini/);
 });
 test('failed roleplay answers refresh authoritative quota balance rather than claiming a free refund',()=>{
- assert.match(scenes,/status\("返答に失敗したため、会話を一時停止しています。"\);void window\.speakingymQuota\?\.refresh\(\)/);
+ assert.match(scenes,/status\(retryBlocked\?/);
+ assert.match(scenes,/void window\.speakingymQuota\?\.refresh\(\);updateControls\(\)/);
+ assert.match(scenes,/契約の残り回数を確認し/);
 });
