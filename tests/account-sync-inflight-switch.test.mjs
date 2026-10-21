@@ -22,7 +22,7 @@ function fixture(){
  const window={dispatchEvent(){},location:{reload(){throw Error('Unexpected page reload')}}};
  const context={
   firebaseConfig:{},SYNC_ITEMS:[{key:KEY,doc:'coaching',type:'records'}],OWNER_KEY:OWNER,
-  localStorage:storage,document,window,
+  localStorage:storage,document,window,Event:class{constructor(name){this.type=name}},
   readSnapshot,
   removeSnapshot:st=>st.removeItem(KEY),
   applySnapshot:(st,snap)=>{if(snap[KEY]!==undefined)st.setItem(KEY,JSON.stringify(snap[KEY]))},
