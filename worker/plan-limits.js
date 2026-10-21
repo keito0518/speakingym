@@ -4,7 +4,7 @@ import {freeSessionMode,requireFreeSessionReady,startFreeSession,confirmedFreeSe
  * document is allowed to elevate a user's tier. Free-tier Cloudflare D1 only.
  * ENFORCE_PLANS=true activates these checks after D1 setup is complete.
  */
-import {ledgerMode,reserveTurn,finishTurn,refundTurn,expireStaleTurns} from "./turn-ledger.js";
+import {PRO_MONTHLY_TURN_LIMIT,ledgerMode,reserveTurn,finishTurn,refundTurn,expireStaleTurns} from "./turn-ledger.js";
 import {billingMode,billingUserEligible} from "./billing-mode.js";
 const PROJECT_ID="speakingym";
 const JWKS_URL="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
@@ -14,7 +14,7 @@ export const PLAN_LIMITS=Object.freeze({
  free:Object.freeze({sessions:5,teacher:3}),
  // Pro beta: no daily cap, but monthly cap per Firebase user (JST calendar month).
  // Each AI request reserves a turn; failed requests are refunded when safe.
- pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:1000,monthlyTeacher:150})
+ pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:PRO_MONTHLY_TURN_LIMIT,monthlyTeacher:150})
 });
 let keysCached=null,keyExpiry=0;
 function decode(encoded){
