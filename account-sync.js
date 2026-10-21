@@ -8,6 +8,9 @@ const configured=["apiKey","authDomain","projectId","appId"].every(k=>typeof fir
 const $=id=>document.getElementById(id);
 const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
 let auth,db,authFns,dbFns,user=null,ready=false,busy=false,initAuth=false,importGuest=false;
+// A previous account's Firestore read/write may finish after account switching.
+// Never let that asynchronous completion replace another user's local learning data.
+let accountEpoch=0,syncInFlight=false,syncQueued=false;
 const PENDING_PREFIX="speakingym-account-dirty:";
 const timers=new Map();
 const css=[
@@ -213,13 +216,17 @@ function dashboard(){
 }
 function refreshUi(){if(user)status("☁ "+(user.displayName||"Googleユーザー")+" · クラウド保存");else status(configured?"ゲスト利用中 · 記録はこの端末に保存":"ゲスト利用中 · ログイン機能は設定待ち");renderControls();notify();}
 async function syncAll({reloadOnChange=true}={}){
- if(!user||busy)return;
- const uid=user.uid;
- busy=true;renderControls();status("クラウドと学習記録を同期中…");
+ if(!user)return;
+ if(syncInFlight||busy){syncQueued=true;return}
+ const uid=user.uid,epoch=accountEpoch;
+ const stillOwner=()=>accountEpoch===epoch&&user?.uid===uid&&localStorage.getItem(OWNER_KEY)===uid;
+ syncInFlight=true;busy=true;renderControls();status("クラウドと学習記録を同期中…");
  try{
-  // The cloud is authoritative unless this device has unsynced edits.
-  // For first login only, consented guest records are merged with cloud data.
-  const remote=await cloudRead(uid),local=readSnapshot(localStorage),dirty=new Set(pendingKeys(uid));
+  // A network read is an asynchronous boundary: signing in to a different
+  // account during it must NOT merge the earlier account into the current one.
+  const remote=await cloudRead(uid);
+  if(!stillOwner())return;
+  const local=readSnapshot(localStorage),dirty=new Set(pendingKeys(uid));
   const desired={};
   for(const item of SYNC_ITEMS){
    const a=local[item.key],b=remote[item.key];
@@ -237,23 +244,41 @@ async function syncAll({reloadOnChange=true}={}){
    const value=desired[item.key];
    if(value===undefined)continue;
    if(!snapshotsEqual(value,remote[item.key])){
-    const request=cloudWrite(uid,item,value).then(()=>clearPending(uid,item.key));
+    const request=cloudWrite(uid,item,value).then(()=>{
+     // A later edit or login must not lose its pending-sync flag.
+     if(stillOwner()&&snapshotsEqual(readSnapshot(localStorage)[item.key],value))
+      clearPending(uid,item.key);
+    });
     writes.push(request);
-   }else clearPending(uid,item.key);
+   }else if(stillOwner()&&snapshotsEqual(readSnapshot(localStorage)[item.key],value)){
+    clearPending(uid,item.key);
+   }
   }
   await Promise.all(writes);
+  if(!stillOwner())return;
   importGuest=false;
   const changed=!snapshotsEqual(local,desired);
   if(changed){
    removeSnapshot(localStorage);applySnapshot(localStorage,desired);
-   if(reloadOnChange){window.location.reload();return;}
+   if(reloadOnChange){window.location.reload();return}
   }
   status("✓ 同期しました");
- }catch(e){status("同期できませんでした。端末の記録は残っています。「同期」で再試行してね。")}
- finally{busy=false;renderControls();notify()}
+ }catch(e){
+  if(stillOwner())status("同期できませんでした。端末の記録は残っています。「同期」で再試行してね。");
+ }finally{
+  syncInFlight=false;busy=false;renderControls();notify();
+  // If a new account attempted to sync while the old request was running,
+  // finish that newer account's initial sync after the old request settles.
+  const nextQueued=syncQueued;
+  syncQueued=false;
+  if((nextQueued||accountEpoch!==epoch)&&user&&
+     localStorage.getItem(OWNER_KEY)===user.uid)
+   void syncAll();
+ }
 }
 async function handleAuth(next){
  if(initAuth)return;
+ accountEpoch++;
  initAuth=true;busy=true;user=next;renderControls();
  const oldUid=localStorage.getItem(OWNER_KEY);
  try{
