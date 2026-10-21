@@ -52,14 +52,21 @@ export function buildProStudyPlan(snapshot={},now=new Date()){
   add(p?.text,p?.goal||p?.situation,'60秒チャレンジの保存表現',2);
  // Rotate each group daily to avoid repeatedly presenting oldest expressions.
  const day=Math.floor(Date.UTC(current.getFullYear(),current.getMonth(),current.getDate())/86400000);
- const selected=[];
- for(const priority of [0,1,2]){
+ // Mix teacher corrections, saved conversation phrases and Sprint
+ // bookmarks when available. An abundant single source must not crowd out
+ // the learner's other saved practice categories.
+ const groups=[0,1,2].map(priority=>{
   const group=entries.filter(p=>p.priority===priority);
-  if(!group.length)continue;
+  if(!group.length)return [];
   const offset=day%group.length;
-  for(let i=0;i<group.length;i++)selected.push(group[(offset+i)%group.length]);
+  return group.map((_,i)=>group[(offset+i)%group.length]);
+ });
+ const cards=[];
+ while(cards.length<5&&groups.some(group=>group.length)){
+  for(const group of groups){
+   if(group.length&&cards.length<5)cards.push(group.shift());
+  }
  }
- const cards=selected.slice(0,5);
  return {
   cards,totalUniqueExpressions:entries.length,
   report:{
