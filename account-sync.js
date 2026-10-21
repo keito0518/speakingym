@@ -370,6 +370,12 @@ async function start(){
  // Never advertise an unavailable Google-login button to ordinary visitors.
  if(!configured && !$("sg-account-stats"))return;
  mount();initDashboard();window.addEventListener("speakingym:changed",onChanged);
+ // A tab may stay open across the JST reset or after a payment in another tab.
+ // Refresh the displayed count on return; the Worker remains authoritative.
+ window.addEventListener("focus",()=>{if(user&&$("sg-plan-info"))void updateQuotaUi()});
+ document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&user&&$("sg-plan-info"))void updateQuotaUi();
+ });
  if(!configured){ready=false;refreshUi();return}
  status("Googleログインの準備中…");
  try{
