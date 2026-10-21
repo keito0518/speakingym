@@ -138,5 +138,12 @@
  });
  portal.addEventListener('click',()=>redirect('portal'));
  $('sg-billing-refresh').addEventListener('click',refresh);
+ // The owner can change before Firestore finishes synchronizing. Revoke
+ // prior-account purchase controls and invalidate pending payment redirects now.
+ window.addEventListener('speakingym:account-changing',()=>{
+  sequence++;
+  showUnverifiedMode();
+  status.textContent='アカウントを確認中です。決済はまだできません。';
+ });
  window.addEventListener('speakingym:account-ready',refresh);window.addEventListener('focus',refresh);void refresh();
 })();
