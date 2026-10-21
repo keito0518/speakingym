@@ -120,6 +120,29 @@ test("typing without an active microphone never erases a user answer",()=>{
  assert.equal(ui.node("transcript").value,"Typed without microphone");
  assert.equal(ui.FakeRecognizer.instances.length,0);
 });
+test("denied microphone permission keeps previous speech and explains how to recover",()=>{
+ const ui=app();ui.click("start");ui.click("micBtn");
+ const rec=ui.FakeRecognizer.instances[0];
+ rec.heard("Please explain again",false);
+ rec.onerror?.({error:"not-allowed"});
+ assert.equal(rec.aborted,true);
+ assert.equal(ui.node("transcript").value,"Please explain again");
+ assert.match(ui.node("micStatus").textContent,/マイクが許可されていません/);
+ assert.match(ui.node("micStatus").textContent,/サイト設定/);
+ ui.click("resumeMic");
+ ui.FakeRecognizer.instances[1].heard("more slowly",true);
+ assert.equal(ui.node("transcript").value,"Please explain again more slowly");
+});
+test("audio-capture and network ASR failures show actionable messages without erasing words",()=>{
+ for(const [error,copy] of [["audio-capture",/マイクが見つからない/],["network",/通信が途切れました/]]){
+  const ui=app();ui.click("start");ui.click("micBtn");
+  const rec=ui.FakeRecognizer.instances[0];
+  rec.heard("Keep my words",false);
+  rec.onerror?.({error});
+  assert.equal(ui.node("transcript").value,"Keep my words");
+  assert.match(ui.node("micStatus").textContent,copy);
+ }
+});
 test("model answers and contextual advice appear only after timed play",()=>{
  const ui=app();ui.click("start");ui.click("stuck");
  assert.equal(ui.node("reportReview").classList.contains("hidden"),true);
