@@ -109,3 +109,11 @@
 - AI実践シーンの携帯向け44pxタップ領域と低モーション配慮、マイページの再表示時の残り回数照合、Free/有料負担の`scripts/pro1480-risk-matrix.mjs`（**仮定であり実原価の証明ではない**）を追加。
 - 実Stripe TESTでの更新成功／失敗→復旧、staging D1の利用枠全件、実iPhone/Androidマイク、実Gemini原価、運営者の法定情報・返金条件、現行680円権利の取扱いは引き続き未確定。**Draft #62のみ、main/本番/Liveを触らない。**
 - **CI証拠（コード最新の前段階）:** [Launch QA #39582799532](https://github.com/keito0518/speakingym/actions/runs/39582799532) は **484/484単体テスト・失敗0件、ChromiumとWebKitの模擬ブラウザQA成功**。後続の文書更新コミットについてはGitHub Actionsで最後のSHAを再確認すること。
+
+## 2026-10-21：Proの月1,000ターンと台帳600ターンの食い違いを修正（Draftのみ）
+
+コードレビューで、`worker/turn-ledger.js` の原子的なProターン予約SQLに**旧600ターン上限**がハードコードされ、新案の月1,000ターンと一致していないことを発見。Draftで共有定数 `PRO_MONTHLY_TURN_LIMIT=1000` とSQLバインドへ修正し、`worker/plan-limits.js` も同一定数を参照するよう変更した。セッション20ターン・講評月150回・Free枠は変更なし。
+
+検証は `worker/turn-ledger.test.mjs` / `worker/turn-ledger.integration.test.mjs` に追加。旧上限を超える**601ターン目**、**1,000ターンの原子的上限**、同時予約、失敗分返却を模擬D1で再現。**実Cloudflare staging D1を1,000回消費したという意味ではない**。今回の修正は本番運用中のPro権限には反映しておらず、PR #62をマージ/Stripe Liveを有効化してはいけない。
+
+詳しくは [12分野QA・復旧手順](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。最新CIの成功・失敗は**修正後SHA**で確認すること。
