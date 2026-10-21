@@ -74,3 +74,12 @@
 - main (`bd17136a`) の更新は `SPEAKINGYM_START_HERE.md`、`WORK_HANDOFF.md`、`worker/PRO_PRICING_OPTIONS_2026-10-20.md` の3文書のみ。両ブランチで追加された `SPEAKINGYM_START_HERE.md` の競合は**こちらの10/21最新ステージング実証版を優先**して解消。mainから旧提案・過去履歴ドキュメントは保持。
 - main側の2026-10-20時点の680円案や「Stripe実テスト未実施」は旧記録。10月21日にオーナーが確認した**1,480円Stripe TEST購入→Pro→期限末解約→Free**の実証、および同日確認したGitHub Actionsの最新結果を優先。
 - これは**main→Draftの取り込みのみ**。main側へのマージ、本番反映、Stripe Live設定変更、旧商品・既存契約の変更は行っていない。
+
+## 2026-10-21 — マージ競合解消・ブラウザ音声QAの追加（次担当へ）
+
+- **Draft PR #62 最新検証ブランチ:** `integration/pro680-latest-main-review-20261020`。mainは `bd17136a`、10月21日にmainの資料更新（3文書）をこのDraftへ**取り込むだけ**のマージコミット `77766b2` を作成。元のconflictは両側で追加された `SPEAKINGYM_START_HERE.md` のみ。現在GitHub判定は `mergeable=true`, `mergeable_state=clean`。**mainへのマージは実行していない**。
+- **携帯UI・音声処理の追加検証:** `tests/browser-qa.cjs` の `ffb1788` に、**擬似SpeechRecognition**による「途中発話→認識停止で文章保持→再開して追記」を追加。ChromiumとiPhone viewport相当のWebKitでブラウザQA成功（[Actions #39562125745](https://github.com/keito0518/speakingym/actions/runs/39562125745)）。その実行で Node `420/420 PASS`, `0 FAIL`。実iPhoneの物理マイク・OS権限・実音声認識精度を確認したわけではない。
+- [Stripe staging安全ゲート #39562132683](https://github.com/keito0518/speakingym/actions/runs/39562132683) は再度成功。模擬課金ロジック・409再送・1,000/150枠・staging安全性がPASS。実stagingへの読み取り専用 `GET /health` もPASS（実Stripe決済・D1利用枠消費の検証とは区別する）。
+- 10月21日のHEAD `ffb1788` に紐づくAI Worker安全性・アカウント安全性・NEXT/missionの各GitHub Actions、Cloudflare previewビルドも成功。これらを本番の動作検証とはしない。
+- **継続NO-GO:** 本物のStripe TEST更新・失敗/復旧と署名Webhook確認、月次枠の実D1反映・原価、iPhone実機、運営者の事業者情報の開示実運用・返金条件・法定表示の確定、公開者の個別明示承認は未完了。接続済みGmailアカウントはサイトに記載された問い合わせ先と別のため、問い合わせメールの実際の受信と返信は未検証。機密メールやIDをGitHubに記載しない。
+- **禁止変更を維持:** Stripe Live、旧680円商品・契約、本番Worker、本番D1、本番Pages、mainへのマージ。Draftブランチのコード・テスト・文書だけ変更した。 
