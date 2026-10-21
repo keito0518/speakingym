@@ -117,3 +117,10 @@
 検証は `worker/turn-ledger.test.mjs` / `worker/turn-ledger.integration.test.mjs` に追加。旧上限を超える**601ターン目**、**1,000ターンの原子的上限**、同時予約、失敗分返却を模擬D1で再現。**実Cloudflare staging D1を1,000回消費したという意味ではない**。今回の修正は本番運用中のPro権限には反映しておらず、PR #62をマージ/Stripe Liveを有効化してはいけない。
 
 詳しくは [12分野QA・復旧手順](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。最新CIの成功・失敗は**修正後SHA**で確認すること。
+
+## 2026-10-21：D1利用回数の読取異常とJST日付切替の安全性（Draftのみ）
+
+- **D1利用回数の不正データ**（欠損・負数・小数・文字列・安全な整数でない値）をサーバーで0回と誤認しないよう `worker/plan-limits.js` を修正。署名付き `/entitlement` は不正値で `plans_unavailable` (503) として失敗させ、Proの利用回数を誇張しない。実DBの `COUNT`/`SUM` の正常な0は表示可能。
+- **JST月初・午前0時の境界**を1リクエストごとの基準時刻で一貫して扱う。`getEntitlement`、`usage`、`publicLimits`、新規セッション、AI講評、台帳ターン予約の日時を揃えた。DB応答中に月が替わっても、前月の回数を新月扱いしない。
+- `worker/plan-limits.test.mjs` に欠損・異常回数、23:59:59 JST→00:00:00 JSTへのデータベース応答遅延、次月1,000ターン/150講評を既に消費している場合の月末セッション・講評予約の正常性をテスト。
+- 今回の修正は [PR #62](https://github.com/keito0518/speakingym/pull/62) のDraftのみ。実ステージングD1の使い切りや実Stripe TEST更新・支払失敗/回復は未検証のまま。本番・main・Stripe Live・旧¥680契約変更禁止。詳細は [QA・復旧手順](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。
