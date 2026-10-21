@@ -149,6 +149,29 @@ export async function refreshBillingIfNeeded(env,uid){
   }
  }
 }
+// Verify actual Checkout content BEFORE returning a payment URL. Validating
+// the configured Stripe Price alone cannot prove the created session's total.
+async function verifiedCheckoutRedirect(env,row,session){
+ const returns=billingReturnUrls(env);
+ let url;
+ try{url=new URL(session?.url)}catch{throw fail('billing_checkout_review')}
+ if(session?.object!=='checkout.session'||typeof session.id!=='string'||!session.id||
+    session.status!=='open'||session.mode!=='subscription'||
+    session.livemode!==expectedLive(env)||session.customer!==row.customer_id||
+    session.client_reference_id!==row.uid||session.currency!=='jpy'||
+    session.amount_subtotal!==1480||session.amount_total!==1480||
+    !Number.isInteger(session.expires_at)||session.expires_at<=now()||
+    session.success_url!==returns.success||session.cancel_url!==returns.cancel||
+    url.protocol!=='https:'||url.hostname!=='checkout.stripe.com'||
+    url.username||url.password||url.port)
+  throw fail('billing_checkout_review');
+ const lines=await stripe(env,'checkout/sessions/'+encodeURIComponent(session.id)+'/line_items?limit=10');
+ if(lines?.has_more!==false||!Array.isArray(lines.data)||lines.data.length!==1||
+    lines.data[0].price?.id!==priceId(env)||lines.data[0].quantity!==1||
+    lines.data[0].currency!=='jpy'||lines.data[0].amount_total!==1480)
+  throw fail('billing_checkout_review');
+ return {url:session.url};
+}
 async function checkout(env,row,token){
  const db=billingDb(env);
  const price=await stripe(env,'prices/'+encodeURIComponent(priceId(env)));
@@ -175,28 +198,9 @@ async function checkout(env,row,token){
   const session=await stripe(env,'checkout/sessions/'+encodeURIComponent(row.checkout_id));
   if(session.livemode!==expectedLive(env)||session.customer!==row.customer_id)throw fail('billing_mode_mismatch');
   if(session.status==='open'){
-   // A stored open Checkout may predate the new ¥1,480 plan. Never return a
-   // former ¥680 session (or a foreign return URL) without verifying the
-   // exact server-owned purchase details. Refuse uncertainty; do not create
-   // another session while the old checkout remains open.
-   const returns=billingReturnUrls(env);
-   let checkoutUrl;
-   try{checkoutUrl=new URL(session.url)}catch{throw fail('billing_checkout_review')}
-   if(session.id!==row.checkout_id||session.mode!=='subscription'||
-      session.client_reference_id!==row.uid||
-      session.currency!=='jpy'||session.amount_subtotal!==1480||
-      session.amount_total!==1480||!Number.isInteger(session.expires_at)||
-      session.expires_at<=now()||session.success_url!==returns.success||
-      session.cancel_url!==returns.cancel||
-      checkoutUrl.protocol!=='https:'||checkoutUrl.hostname!=='checkout.stripe.com'||
-      checkoutUrl.username||checkoutUrl.password||checkoutUrl.port)
-    throw fail('billing_checkout_review');
-   const lines=await stripe(env,'checkout/sessions/'+encodeURIComponent(row.checkout_id)+'/line_items?limit=10');
-   if(lines?.has_more!==false||!Array.isArray(lines.data)||lines.data.length!==1||
-      lines.data[0].price?.id!==priceId(env)||lines.data[0].quantity!==1||
-      lines.data[0].currency!=='jpy'||lines.data[0].amount_total!==1480)
-    throw fail('billing_checkout_review');
-   return {url:session.url};
+   // Apply the same strict safety check to resumed and newly created sessions.
+   if(session.id!==row.checkout_id)throw fail('billing_checkout_review');
+   return verifiedCheckoutRedirect(env,row,session);
   }
   if(session.status==='complete'){
    // Recheck the exact completed subscription: completion may race the earlier list.
@@ -222,9 +226,9 @@ async function checkout(env,row,token){
   client_reference_id:row.uid,'subscription_data[metadata][firebase_uid]':row.uid,
   expires_at:String(row.checkout_expires),locale:'ja'
  },row.checkout_key);
- if(session.livemode!==expectedLive(env))throw fail('billing_mode_mismatch');
+ const verified=await verifiedCheckoutRedirect(env,row,session);
  await ownedUpdate(db,row.uid,token,'checkout_id=?',session.id);
- return {url:session.url};
+ return verified;
 }
 async function webhook(request,env){
  if(request.method!=='POST')throw fail('method_not_allowed',405);
