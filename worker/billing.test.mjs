@@ -28,14 +28,20 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,customerClock:null,customerResponseMutator:null,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
   state.calls.push([url,opt]);const path=new URL(url).pathname.replace('/v1/','');let result;
   if(path==='prices/price_test')result=state.price;
   else if(path==='invoices/in_test')result=state.invoice;
-  else if(path==='customers')result={id:'cus_test',livemode:state.live};
+  else if(path==='customers'){
+   const params=new URLSearchParams(opt.body);
+   state.customerClock=params.get('test_clock');
+   result={id:'cus_test',livemode:state.live,test_clock:state.customerClock};
+   if(state.customerResponseMutator)state.customerResponseMutator(result);
+  }
+  else if(path==='customers/cus_test')result={id:'cus_test',livemode:state.live,test_clock:state.customerClock};
   else if(path==='subscriptions')result={data:state.subscriptions,has_more:false};
   else if(path.startsWith('subscriptions/'))result=state.subscriptions.find(s=>s.id===path.split('/')[1]);
   else if(path==='checkout/sessions'){
@@ -159,6 +165,63 @@ test('Checkout refuses trial, metered, tiered and unexpected price objects befor
  }
 });
 
+test('test-clock opt-in creates only a NEW isolated staging TEST customer on selected Stripe clock',async t=>{
+ const f=await fixture(t);
+ const clock='clock_Speakingym20261021New01';
+ f.env.STAGING_BILLING_ONLY='true';
+ f.env.STAGING_HEALTH_ONLY='false';
+ f.env.STRIPE_TEST_CLOCK_ID=clock;
+ const result=await f.call('checkout');
+ assert.equal(result.status,200);
+ const create=f.state.calls.find(([url,opt])=>String(url).endsWith('/customers')&&opt.method==='POST');
+ assert.ok(create);
+ assert.equal(new URLSearchParams(create[1].body).get('test_clock'),clock);
+ assert.equal(f.state.customerClock,clock);
+ const next=await f.call('checkout');
+ assert.equal(next.status,200);
+ assert.equal(f.state.calls.filter(([url,opt])=>String(url).endsWith('/customers')&&opt.method==='POST').length,1);
+ assert.ok(f.state.calls.some(([url,opt])=>String(url).endsWith('/customers/cus_test')&&opt.method==='GET'),
+  'Existing customer is revalidated on checkout when test clock is selected');
+});
+test('test clock is OFF by default, and cannot activate on production or a malformed ID',async t=>{
+ const valid='clock_Speakingym20261021New01';
+ const f=await fixture(t);
+ f.env.STRIPE_TEST_CLOCK_ID=valid;
+ const blocked=await f.call('checkout');
+ assert.equal(blocked.status,503);
+ assert.equal((await blocked.json()).error,'billing_test_clock_invalid');
+ assert.equal(f.state.calls.some(([url])=>String(url).endsWith('/customers')),false);
+ f.env.STAGING_BILLING_ONLY='true';
+ for(const bad of ['clock_','clock_X_underscores','cus_test','clock_x'.repeat(50)]){
+  f.env.STRIPE_TEST_CLOCK_ID=bad;
+  const response=await f.call('checkout');
+  assert.equal(response.status,503,'bad clock rejected: '+bad.slice(0,12));
+  assert.equal((await response.json()).error,'billing_test_clock_invalid');
+ }
+ assert.equal(f.state.calls.some(([url])=>String(url).endsWith('/customers')),false);
+});
+test('test clock refuses to migrate an EXISTING non-clock sandbox customer',async t=>{
+ const f=await fixture(t);
+ f.env.STAGING_BILLING_ONLY='true';
+ assert.equal((await f.call('checkout')).status,200,'normal TEST checkout');
+ const created=f.state.calls.filter(([url])=>String(url).endsWith('/customers')).length;
+ f.env.STRIPE_TEST_CLOCK_ID='clock_Speakingym20261021New01';
+ const response=await f.call('checkout');
+ assert.equal(response.status,503);
+ assert.equal((await response.json()).error,'billing_test_clock_mismatch');
+ assert.equal(f.state.calls.filter(([url])=>String(url).endsWith('/customers')).length,created);
+});
+test('Stripe ignores new customer test clock field: fail closed before mapping or checkout',async t=>{
+ const f=await fixture(t);
+ f.env.STAGING_BILLING_ONLY='true';
+ f.env.STRIPE_TEST_CLOCK_ID='clock_Speakingym20261021New01';
+ f.state.customerResponseMutator=result=>{result.test_clock=null};
+ const response=await f.call('checkout');
+ assert.equal(response.status,503);
+ assert.equal((await response.json()).error,'billing_test_clock_mismatch');
+ assert.equal(f.db.sqlite.prepare('SELECT customer_id FROM billing_accounts').get().customer_id,null);
+ assert.equal(f.state.calls.filter(([url])=>String(url).endsWith('/checkout/sessions')).length,0);
+});
 test('Stripe TEST checkout and portal use only isolated localhost QA return URLs',async testContext=>{
  const f=await fixture(testContext);
  f.env.STAGING_BILLING_ONLY='true';
