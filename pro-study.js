@@ -116,6 +116,13 @@ async function refresh(){
   lock('Proの確認ができませんでした','通信状態を確認してください。復習データは表示せず、利用プランの再確認が必要です。');
  }
 }
+// Authentication has changed even if Firestore synchronization is unfinished.
+// Clear previously rendered Pro-only local history immediately, not at the next
+// signed entitlement response.
+window.addEventListener('speakingym:account-changing',()=>{
+ epoch++;
+ lock('アカウントを再確認中です','新しいアカウントの利用プランを確認しています。');
+});
 window.addEventListener('speakingym:account-ready',refresh);
 window.addEventListener('speakingym:changed',()=>{
  if(!$('pro-content').hidden)void refresh();
