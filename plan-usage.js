@@ -87,6 +87,13 @@
   }
 
   window.speakingymQuota = { refresh };
+  // An owner change begins before Firebase/Firestore synchronization ends.
+  // Invalidate any old account's in-flight response and its visible quota now.
+  window.addEventListener("speakingym:account-changing", () => {
+    requestSequence++;
+    showExhaustion(null);
+    show("アカウントを確認中…");
+  });
   window.addEventListener("speakingym:account-ready", refresh);
   // Resuming an open tab after midnight or using a second device should refresh
   // the server-provided counts. This never changes the server's quota rules.
