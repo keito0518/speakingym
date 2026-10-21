@@ -34,7 +34,8 @@ async function evaluate(data, signedIn = true) {
   };
   new Function("window", "document", "fetch", code)(window, document, fetch);
   await window.speakingymQuota.refresh();
-  return { badge: badge.textContent, sessions: !notes[0].hidden, teacher: !notes[1].hidden,
+  return { badge: badge.textContent, badgeElement: badge, notes, proNotes,
+    sessions: !notes[0].hidden, teacher: !notes[1].hidden,
     proSessions: !proNotes[0].hidden, proTeacher: !proNotes[1].hidden, handlers, calls };
 }
 
@@ -80,4 +81,17 @@ test("network failure keeps actions server-controlled without false exhaustion d
   const value = await evaluate("offline");
   assert.match(value.badge, /取得できませんでした/);
   assert.deepEqual([value.sessions, value.teacher], [false, false]);
+});
+
+test("account-changing event immediately clears stale Pro usage while auth sync is pending",async()=>{
+ const usage=await evaluate({plan:"pro",limits:{monthlyTurns:1000,monthlyTeacher:150},
+  used:{monthlyTurns:1000,monthlyTeacher:149}});
+ assert.match(usage.badge,/Pro/);
+ assert.equal(usage.proSessions,true);
+ assert.equal(typeof usage.handlers["speakingym:account-changing"],"function");
+ usage.handlers["speakingym:account-changing"]();
+ assert.match(usage.badgeElement.textContent,/アカウントを確認中/);
+ assert.doesNotMatch(usage.badgeElement.textContent,/Pro/);
+ assert.equal(usage.proNotes.every(n=>n.hidden),true);
+ assert.equal(usage.notes.every(n=>n.hidden),true);
 });
