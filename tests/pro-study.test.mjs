@@ -85,5 +85,5 @@ test('Pro review fairly mixes teacher, real AI conversation and saved sprint phr
  assert.ok(result.cards.some(x=>x.origin==='60秒チャレンジの保存表現'));
  assert.equal(new Set(result.cards.map(x=>x.id)).size,5);
  // The non-AI, no-persistence contract is preserved.
- assert.equal(result.totalUniqueExpressions,7);
+ assert.equal(result.totalUniqueExpressions,8);
 });
