@@ -20,6 +20,14 @@ on:
       - 'worker/ai-worker.js'
       - 'scripts/staging-stripe-readiness.mjs'
       - 'tests/staging-stripe-readiness.test.mjs'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/stripe-staging-automatic-release-gate.yml'
+      - 'worker/**'
+      - 'scripts/staging-stripe-readiness.mjs'
+      - 'tests/staging-stripe-readiness.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -27,7 +35,7 @@ permissions:
 
 jobs:
   verify:
-    if: github.ref == 'refs/heads/integration/pro680-latest-main-review-20261020'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/integration/pro680-latest-main-review-20261020') || (github.event_name == 'pull_request' && github.head_ref == 'integration/pro680-latest-main-review-20261020' && github.event.pull_request.head.repo.full_name == 'keito0518/speakingym')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
