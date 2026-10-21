@@ -20,6 +20,8 @@ test('fail closed without a token or when staging identity is wrong', async()=>{
 
 test('never allow deletion of real users or arbitrary test IDs',()=>{
   assert.equal(assertSafeFixtureUid(fixtureUid),fixtureUid);
+  assert.doesNotThrow(()=>assertSafeFixtureUid('sgqa-5d42072b-2564-46d0-935e-e4111f116dd6-prolimits'));
+  assert.throws(()=>assertSafeFixtureUid('sgqa-5d42072b-2564-46d0-935e-e4111f116dd6-production'),/Refusing/);
   for(const uid of ['user@example.com','staging-test-user','sgqa-x-failure','other','']) {
     assert.throws(()=>assertSafeFixtureUid(uid),/Refusing/);
   }
@@ -194,9 +196,12 @@ test('complete staging QA runner verifies invariants and removes only its fake u
     await db.verify();
     const log=[];
     await runRemoteStagingQA(db,message=>log.push(message));
-    assert.equal(log.filter(x=>x.startsWith('PASS')).length,4);
+    assert.equal(log.filter(x=>x.startsWith('PASS')).length,6);
+    assert.ok(log.some(x=>x.includes('Pro monthly 999→1000')));
+    assert.ok(log.some(x=>x.includes('Pro teacher 149→150')));
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM ai_sessions WHERE uid LIKE 'sgqa-%'").get().n,0);
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM ai_turn_reservations WHERE uid LIKE 'sgqa-%'").get().n,0);
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM free_session_reservations WHERE uid LIKE 'sgqa-%'").get().n,0);
+    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM teacher_uses WHERE uid LIKE 'sgqa-%'").get().n,0);
   } finally {sqlite.close();}
 });
