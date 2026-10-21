@@ -83,11 +83,11 @@ export function tokyoMonthBounds(time=Date.now()){
  const day=tokyoDay(time),year=Number(day.slice(0,4)),month=Number(day.slice(5,7));
  return {start:day.slice(0,7)+"-01",end:new Date(Date.UTC(year,month,1)).toISOString().slice(0,10)};
 }
-export const publicLimits=(tier,used)=>({
+export const publicLimits=(tier,used,time=Date.now())=>({
  plan:tier,limits:PLAN_LIMITS[tier]||PLAN_LIMITS.free,
  used:{sessions:Number(used?.sessions)||0,teacher:Number(used?.teacher)||0,
        monthlyTurns:Number(used?.monthlyTurns)||0,monthlyTeacher:Number(used?.monthlyTeacher)||0},
- day:tokyoDay(),month:tokyoDay().slice(0,7)
+ day:tokyoDay(time),month:tokyoDay(time).slice(0,7)
 });
 export async function getPlan(db,uid,env={}){
  // Sandbox and live Stripe customers never share a billing record.
@@ -115,14 +115,14 @@ function validQuotaCount(row,key){
  if(!Number.isSafeInteger(count)||count<0)throw Error("quota_read_invalid");
  return count;
 }
-async function usage(db,uid,day,tier){
+async function usage(db,uid,day,tier,time){
  const row=await db.prepare(
  "SELECT (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) AS sessions, "+
  "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) AS teacher"
  ).bind(uid,day,uid,day).first();
  const used={sessions:validQuotaCount(row,"sessions"),teacher:validQuotaCount(row,"teacher")};
  if(tier==="pro"){
-  const month=tokyoMonthBounds();
+  const month=tokyoMonthBounds(time);
   const monthly=await db.prepare(
    "SELECT (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTurns, "+
    "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTeacher"
@@ -136,21 +136,23 @@ export async function getEntitlement(db,uid,env={}){
  await requireFreeSessionReady(db,env);
  const tier=await getPlan(db,uid,env);
  if(freeSessionMode(env)&&tier==="free")await recoverFreeSessions(db,uid);
- const used=await usage(db,uid,tokyoDay(),tier);
- if(freeSessionMode(env)&&tier==="free")used.sessions=await confirmedFreeSessions(db,uid,tokyoDay());
- return publicLimits(tier,used);
+ // One snapshot prevents mixing yesterday's counts with today's label at JST midnight.
+ const time=Date.now(),day=tokyoDay(time);
+ const used=await usage(db,uid,day,tier,time);
+ if(freeSessionMode(env)&&tier==="free")used.sessions=await confirmedFreeSessions(db,uid,day);
+ return publicLimits(tier,used,time);
 }
 export async function startSession(db,uid,env={}){
  await requireFreeSessionReady(db,env);
  const tier=await getPlan(db,uid,env);
  const max=PLAN_LIMITS[tier].sessions;
- const day=tokyoDay(),id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
+ const time=Date.now(),day=tokyoDay(time),id=crypto.randomUUID(),now=Math.floor(time/1000);
  if(tier==="free"&&freeSessionMode(env)){
   const created=await startFreeSession(db,{uid,day,id,now});
   return created?{sessionId:id,plan:tier,limits:PLAN_LIMITS[tier]}:null;
  }
- // Free daily quotas are checked atomically. Pro uses the current JST month's turn total.
- const month=tokyoMonthBounds();
+ // Free daily quotas are checked atomically. Pro uses the SAME JST date snapshot.
+ const month=tokyoMonthBounds(time);
  const row=tier==="pro"
   ? await db.prepare(
      "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) "+
@@ -166,13 +168,13 @@ export async function startSession(db,uid,env={}){
 export async function consumeSessionTurn(db,uid,id,env={}){
  await requireFreeSessionReady(db,env);
  if(typeof id!=="string"||!/^[0-9a-f-]{36}$/.test(id))return false;
- const tier=await getPlan(db,uid,env),now=Math.floor(Date.now()/1000);
+ const tier=await getPlan(db,uid,env),time=Date.now(),now=Math.floor(time/1000);
  if(ledgerMode(env)){
-  await expireStaleTurns(db,uid);
-  return reserveTurn(db,{uid,sessionId:id,tier});
+  await expireStaleTurns(db,uid,time);
+  return reserveTurn(db,{uid,sessionId:id,tier,time});
  }
  if(tier==="pro"){
-  const month=tokyoMonthBounds();
+  const month=tokyoMonthBounds(time);
   // Single SQLite statement enforces monthly total even for concurrent requests.
   // A session started in the prior month cannot consume next month's allowance.
   const row=await db.prepare(
@@ -202,8 +204,8 @@ export async function refundSessionTurn(db,uid,reservation){
 }
 export async function consumeTeacher(db,uid,env={}){
  const tier=await getPlan(db,uid,env);
- const day=tokyoDay(),now=Math.floor(Date.now()/1000),id=crypto.randomUUID();
- const month=tokyoMonthBounds();
+ const time=Date.now(),day=tokyoDay(time),now=Math.floor(time/1000),id=crypto.randomUUID();
+ const month=tokyoMonthBounds(time);
  const row=tier==="pro"
   ? await db.prepare(
      "INSERT INTO teacher_uses (id,uid,day,created_at) "+
