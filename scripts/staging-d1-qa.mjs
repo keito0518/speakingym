@@ -110,7 +110,7 @@ export class StagingD1 {
   }
   async queryUnverified(sql, params = []) {
     // Query API supports parameter binding; never interpolate a user ID.
-    const results = await this.call(`${ROOT}/query`, 'POST', {sql, params: params.map(String)});
+    const results = await this.call(`${ROOT}/query`, 'POST', {sql, params: params.map(v=>typeof v==='number'&&Number.isSafeInteger(v)?v:String(v))});
     if (!Array.isArray(results) || results.length !== 1 || results[0]?.success !== true) {
       throw new Error('Cloudflare D1 SQL execution did not succeed');
     }
@@ -179,7 +179,7 @@ export async function runStagingProQuotaQA(db,uid,day,log=console.log){
  const from=day.slice(0,7)+'-01';
  const through=new Date(Date.UTC(yr,month,1)).toISOString().slice(0,10);
  const now=timestamp(),expires=String(Number(now)+420);
- const active=randomUUID();
+ const active=randomUUID(),otherActive=randomUUID();
  // D1 SQLite recursive CTE inserts only a fixture's 49 sessions of 20
  // previously consumed turns, with zero provider usage/charges.
  await db.query(`WITH RECURSIVE seq(i) AS
@@ -189,11 +189,15 @@ export async function runStagingProQuotaQA(db,uid,day,log=console.log){
   [uid,uid,day,now,expires]);
  await db.query('INSERT INTO ai_sessions(id,uid,day,started_at,expires_at,turns) VALUES(?,?,?,?,?,19)',
   [active,uid,day,now,expires]);
+ // Keep another valid session for proving the 1000th month cap applies
+ // across DIFFERENT sessions, not merely the 20-turn per-session cap.
+ await db.query('INSERT INTO ai_sessions(id,uid,day,started_at,expires_at,turns) VALUES(?,?,?,?,?,0)',
+ [otherActive,uid,day,now,expires]);
  const countTurns=async()=>rowsNumber(await db.query(
    'SELECT COALESCE(SUM(turns),0) AS n FROM ai_sessions WHERE uid=? AND day>=? AND day<?',
    [uid,from,through]),'n');
  insist((await countTurns())===999,'Pro fixture starts at 999 real D1 turns');
- const reserveLast=async()=>{
+ const reserveLast=async(sessionId=active)=>{
   const id=randomUUID();
   const rows=await db.query(`INSERT INTO ai_turn_reservations(id,session_id,uid,day,state,created_at)
  SELECT ?,s.id,s.uid,s.day,'reserved',? FROM ai_sessions s
@@ -201,7 +205,7 @@ export async function runStagingProQuotaQA(db,uid,day,log=console.log){
  AND s.day>=? AND s.day<?
  AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions
  WHERE uid=? AND day>=? AND day<?)< ? RETURNING id`,
- [id,timestamp(),active,uid,timestamp(),from,through,uid,from,through,PRO_MONTHLY_TURN_LIMIT]);
+ [id,timestamp(),sessionId,uid,timestamp(),from,through,uid,from,through,PRO_MONTHLY_TURN_LIMIT]);
   return rows.length?id:null;
  };
  const outcomes=await Promise.allSettled([reserveLast(),reserveLast()]);
@@ -209,16 +213,17 @@ export async function runStagingProQuotaQA(db,uid,day,log=console.log){
  const accepted=outcomes.filter(r=>r.value?.length).map(r=>r.value);
  insist(accepted.length===1,'Pro last 1000th turn reserved exactly once');
  insist((await countTurns())===PRO_MONTHLY_TURN_LIMIT,'Pro 1000th turn limit held');
- insist((await reserveLast())===null,'Pro 1001st turn blocked');
+ insist((await reserveLast())===null,'Pro original session hit its own 20-turn cap');
+ insist((await reserveLast(otherActive))===null,'Pro 1001st turn in DIFFERENT open session blocked monthly');
  await db.query("UPDATE ai_turn_reservations SET state='refunded' WHERE id=? AND uid=? AND state='reserved'",
  [accepted[0],uid]);
  insist((await countTurns())===999,'Pro failure returned final reserved turn');
- const acceptedAfterRefund=await reserveLast();
+ const acceptedAfterRefund=await reserveLast(otherActive);
  insist(!!acceptedAfterRefund,'Pro final slot available after refund');
  await db.query("UPDATE ai_turn_reservations SET state='completed' WHERE id=? AND uid=? AND state='reserved'",
  [acceptedAfterRefund,uid]);
- insist((await countTurns())===1000 && (await reserveLast())===null,
-  'Pro completed 1000th turn cannot be overspent');
+ insist((await countTurns())===1000 && (await reserveLast())===null && (await reserveLast(otherActive))===null,
+  'Pro completed 1000th turn cannot be overspent across sessions');
  log('PASS REAL staging Pro monthly 999→1000, concurrent final slot, 1001 blocked, refund/reuse');
 
  // 149 teacher uses inserted with one staging-only SQL statement; then use
