@@ -83,3 +83,12 @@
 - 10月21日のHEAD `ffb1788` に紐づくAI Worker安全性・アカウント安全性・NEXT/missionの各GitHub Actions、Cloudflare previewビルドも成功。これらを本番の動作検証とはしない。
 - **継続NO-GO:** 本物のStripe TEST更新・失敗/復旧と署名Webhook確認、月次枠の実D1反映・原価、iPhone実機、運営者の事業者情報の開示実運用・返金条件・法定表示の確定、公開者の個別明示承認は未完了。接続済みGmailアカウントはサイトに記載された問い合わせ先と別のため、問い合わせメールの実際の受信と返信は未検証。機密メールやIDをGitHubに記載しない。
 - **禁止変更を維持:** Stripe Live、旧680円商品・契約、本番Worker、本番D1、本番Pages、mainへのマージ。Draftブランチのコード・テスト・文書だけ変更した。 
+
+## 2026-10-21 追加：アカウント切替時の旧Pro表示・支払導線を即時遮断
+
+- Draft PR #62の2026-10-21最新修正は `account-sync.js`、`plan-usage.js`、`pro-study.js`、`billing-ui.js`。Firebaseのauth owner切替時に `speakingym:account-changing` を発火し、**前のアカウントのPro復習履歴・利用枠表示・決済ボタンを即時無効化**する。Firestoreの同期完了は待たない。
+- 前のアカウントのサーバー応答が遅れても、マイページ利用枠表示では認証epochとリクエスト世代を確認して新しい利用枠を上書きしない。Pro復習はPro確認レスポンス後にも当該ログインのトークンを再確認してから端末内の保存履歴を読む。決済画面では未完了のCheckout POSTレスポンスを破棄し、旧ログインのStripe URLへ遷移しない。
+- 新規 `tests/account-quota-switch.test.mjs`、`tests/pro-study-account-switch.test.mjs` と追加 `tests/plan-usage.test.mjs` / `tests/billing-ui.test.mjs` でアカウント切替・ログアウト・遅延レスポンス・表示即時遮断のモック回帰テストを追加。実Firebaseアカウント・本番D1・Stripe APIを操作しない。
+- 強化済み決済UIのキャッシュ更新用に `plans.html` の `billing-ui.js` バージョンを `20261021-account-switch-safety-5` へ更新し、`tests/billing-cache.test.mjs` も同期。
+- 今回変更は **Draftブランチのみ**。本番main・Stripe Live・旧680円商品/契約・Cloudflare本番Worker/D1/Pagesへの操作は一切なし。実Stripe TEST契約更新・支払い失敗/復旧、実staging D1枠消費、実iPhone SafariマイクQA、法的開示/返金・原価、運営者の明示承認は**未完了のGO阻害事項**。
+- コード変更末尾の検証SHA `b6b94342`。最新のCI状態は必ずGitHub Actionsで改めて確認する（ローカルのユニットテストとGitHubの実ブラウザテストを混同しない）。
