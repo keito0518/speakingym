@@ -96,18 +96,22 @@
  async function redirect(action){
   if(busy||!['test','live'].includes(verifiedMode)||
      (action==='checkout'&&!checkoutAllowed))return;
-  busy=true;sequence++;buy.disabled=true;portal.disabled=true;
+  busy=true;const operationSeq=++sequence;buy.disabled=true;portal.disabled=true;
   // A timed-out POST may have already created a Stripe Checkout. Never allow
   // a second POST from a stale status, even if the redirect itself fails.
   // Re-check the server's current subscription/session state explicitly.
   try{
    const data=await api(action,'POST');
+   // A logout, account switch or refreshed state invalidates the pending
+   // redirect. Never send the new account to the former user's Checkout.
+   if(operationSeq!==sequence)return;
    const url=new URL(data.url);
    const host=action==='checkout'?'checkout.stripe.com':'billing.stripe.com';
    if(url.protocol!=='https:'||url.hostname!==host||
       url.username||url.password||url.port)throw Error('invalid_redirect');
    location.assign(url.href);
   }catch(e){
+   if(operationSeq!==sequence)return; // stale account's error cannot replace the new status
    showUnverifiedMode();
    error(e);
   }finally{
