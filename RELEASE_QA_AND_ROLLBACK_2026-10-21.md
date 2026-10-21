@@ -54,7 +54,7 @@
 ## Evidence links
 
 - [Draft PR #62](https://github.com/keito0518/speakingym/pull/62)
-- [Owner-confirmed initial Stripe TEST handoff](../SPEAKINGYM_START_HERE.md) — if reading at repo root use `SPEAKINGYM_START_HERE.md`
+- [Owner-confirmed initial Stripe TEST handoff](SPEAKINGYM_START_HERE.md)
 - `worker/LIVE_LEGAL_OWNER_CHECKLIST_2026-10-20.md`
 - `worker/PRO1480_DRAFT_RELEASE_GATE_2026-10-20.md`
 - `scripts/pro1480-economics.mjs` and `scripts/pro1480-risk-matrix.mjs`
