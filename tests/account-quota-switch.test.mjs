@@ -62,3 +62,29 @@ test('stale quota request failure does not cover a newer verified Free status',a
  assert.match(ui.quota.textContent,/Free/);
  assert.doesNotMatch(ui.quota.textContent,/読み込めません/);
 });
+
+test('quota records with missing or malformed usage fail closed instead of inventing remaining turns',async t=>{
+ const cases=[
+  ['paid missing usage', {plan:'pro',limits:{monthlyTurns:1000,monthlyTeacher:150},used:{monthlyTeacher:7}}],
+  ['paid fractional usage', {plan:'pro',limits:{monthlyTurns:1000,monthlyTeacher:150},used:{monthlyTurns:0.5,monthlyTeacher:0}}],
+  ['Free missing session usage', {plan:'free',limits:{sessions:5,teacher:3},used:{teacher:0}}],
+  ['Free unexpected string limit', {plan:'free',limits:{sessions:'5',teacher:3},used:{sessions:0,teacher:0}}],
+  ['unknown plan response', {plan:'unknown',limits:{sessions:5,teacher:3},used:{sessions:0,teacher:0}}],
+ ];
+ for(const [name,response] of cases){
+  await t.test(name,async()=>{
+   const ui=fixture();ui.change('tester');
+   const pending=ui.refresh();await settle();
+   ui.pending.get('Bearer token-tester').resolve(response);await pending;
+   assert.match(ui.quota.textContent,/読み込めませんでした/,name);
+   assert.doesNotMatch(ui.quota.textContent,/今月の残り|本日の残り|Pro ·/,name);
+  });
+ }
+});
+test('complete signed Pro quota still shows only server-reported remaining counts',async()=>{
+ const ui=fixture();ui.change('tester');const pending=ui.refresh();await settle();
+ ui.pending.get('Bearer token-tester').resolve(pro);await pending;
+ assert.match(ui.quota.textContent,/Pro/);
+ assert.match(ui.quota.textContent,/998 ターン/);
+ assert.match(ui.quota.textContent,/149 回/);
+});
