@@ -46,6 +46,35 @@ test('localhost Origin is accepted for isolated TEST billing only',async()=>{
   assert.equal((await worker.fetch(req('OPTIONS',origin),sandbox())).status,403,origin);
  }
 });
+test('health CORS permits local QA only in isolated Stripe TEST billing mode',async()=>{
+ const request=(origin)=>new Request('https://staging.example.workers.dev/health',
+  {headers:{Origin:origin}});
+ const local='http://localhost:8765';
+ const allowed=await worker.fetch(request(local),sandbox());
+ assert.equal(allowed.status,200);
+ assert.equal(allowed.headers.get('access-control-allow-origin'),local);
+ const publicOrigin='https://speakingym.pages.dev';
+ for(const overrides of [
+  {STAGING_BILLING_ONLY:'false'},
+  {STAGING_HEALTH_ONLY:'true',STAGING_BILLING_ONLY:'false'},
+  {BILLING_MODE:'disabled'},
+  {STRIPE_SECRET_KEY:'sk_live_fake'},
+  {BILLING_TEST_UIDS:''}
+ ]){
+  const res=await worker.fetch(request(local),sandbox(overrides));
+  assert.equal(res.headers.get('access-control-allow-origin'),publicOrigin,
+   JSON.stringify(overrides));
+ }
+ for(const origin of [
+  'http://127.0.0.1:8765','https://localhost:8765',
+  'http://localhost:8766','https://evil.example','null'
+ ]){
+  const res=await worker.fetch(request(origin),sandbox());
+  assert.equal(res.headers.get('access-control-allow-origin'),publicOrigin,origin);
+ }
+ const prod=await worker.fetch(request(publicOrigin),sandbox());
+ assert.equal(prod.headers.get('access-control-allow-origin'),publicOrigin);
+});
 test('staging billing-only gate rejects all AI/session methods',async()=>{
  const env=sandbox();
  for(const [method,path] of [['POST','/'],['POST','/sessions'],['GET','/scenes']]){
