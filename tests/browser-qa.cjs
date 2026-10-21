@@ -5,7 +5,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
  try{for(const width of [390,1280]){
   const context=await browser.newContext(engine==='webkit'&&width===390?{...devices['iPhone 13'],viewport:{width,height:900}}:{viewport:{width,height:900}});
   await context.route('https://**/*',r=>r.abort());
-  await context.addInitScript(()=>{const listeners={};window.__spoken=[];window.SpeechSynthesisUtterance=class{constructor(text){this.text=text}};Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{name:'Basic',lang:'en-US',voiceURI:'basic',localService:true},{name:'Natural English',lang:'en-GB',voiceURI:'natural'}],addEventListener:(n,f)=>listeners[n]=f,speak:u=>window.__spoken.push({text:u.text,voice:u.voice?.voiceURI,rate:u.rate}),cancel(){},paused:false}})});
+  await context.addInitScript(()=>{const listeners={};window.__spoken=[];window.__qaSpeechRecognizer=null;window.SpeechRecognition=class{constructor(){window.__qaSpeechRecognizer=this;}start(){this.onstart?.()}abort(){}emit(words,isFinal=true){this.onresult?.({results:[Object.assign([{transcript:words}],{isFinal})]})}};window.webkitSpeechRecognition=window.SpeechRecognition;window.SpeechSynthesisUtterance=class{constructor(text){this.text=text}};Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{name:'Basic',lang:'en-US',voiceURI:'basic',localService:true},{name:'Natural English',lang:'en-GB',voiceURI:'natural'}],addEventListener:(n,f)=>listeners[n]=f,speak:u=>window.__spoken.push({text:u.text,voice:u.voice?.voiceURI,rate:u.rate}),cancel(){},paused:false}})});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   // Verify the real consent UI before running guest learning interactions.
   const googleRequests=[];
@@ -69,6 +69,19 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),true);
   const cue=await page.locator('#hintText').textContent();
   assert.ok(cue.trim().length>=16,'a helpful learning cue should be visible');
+  // Browser-level microphone QA uses a synthetic recognition engine. The
+  // iPhone WebKit viewport is tested, but no physical mic/network speech API.
+  await page.locator('#micBtn').click();
+  await page.evaluate(()=>window.__qaSpeechRecognizer.emit('Could you please',false));
+  assert.equal(await page.locator('#transcript').inputValue(),'Could you please');
+  await page.locator('#stopMic').click();
+  assert.equal(await page.locator('#transcript').inputValue(),'Could you please',
+    'stopping speech recognition must preserve an unfinished answer');
+  await page.locator('#resumeMic').click();
+  await page.evaluate(()=>window.__qaSpeechRecognizer.emit('repeat that slowly',true));
+  assert.equal(await page.locator('#transcript').inputValue(),'Could you please repeat that slowly',
+    'resuming microphone must append instead of overwriting');
+  await page.locator('#stopMic').click();
   await page.locator('#spoken').click();
   assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),false,'hint must close on the next question');
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
