@@ -291,6 +291,12 @@ async function syncAll({reloadOnChange=true}={}){
 async function handleAuth(next){
  if(initAuth)return;
  accountEpoch++;
+ quotaUiSeq++;
+ // Immediately hide the old account's Pro/quota UI. Cloud sync can still be
+ // pending, and it must not keep showing a previous owner's paid details.
+ const quota=$("sg-plan-info");
+ if(quota)quota.textContent=next?"利用回数を確認中…":"GoogleログインするとAIの利用枠が表示されるよ。";
+ window.dispatchEvent(new Event("speakingym:account-changing"));
  initAuth=true;busy=true;user=next;renderControls();
  const oldUid=localStorage.getItem(OWNER_KEY);
  try{
