@@ -28,12 +28,17 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,customerClock:null,customerResponseMutator:null,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,customerClock:null,customerResponseMutator:null,clockResponseMutator:null,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
   state.calls.push([url,opt]);const path=new URL(url).pathname.replace('/v1/','');let result;
   if(path==='prices/price_test')result=state.price;
+  else if(path.startsWith('test_helpers/test_clocks/')){
+   result={id:path.split('/')[2],object:'test_helpers.test_clock',livemode:false,status:'ready',
+    frozen_time:time(),deletes_after:time()+7*86400};
+   if(state.clockResponseMutator)state.clockResponseMutator(result);
+  }
   else if(path==='invoices/in_test')result=state.invoice;
   else if(path==='customers'){
    const params=new URLSearchParams(opt.body);
@@ -177,6 +182,8 @@ test('test-clock opt-in creates only a NEW isolated staging TEST customer on sel
  assert.ok(create);
  assert.equal(new URLSearchParams(create[1].body).get('test_clock'),clock);
  assert.equal(f.state.customerClock,clock);
+ assert.ok(f.state.calls.some(([url,opt])=>String(url).endsWith('/test_helpers/test_clocks/'+clock)&&opt.method==='GET'),
+  'The TEST clock must be retrieved read-only from Stripe before creating a Customer');
  const next=await f.call('checkout');
  assert.equal(next.status,200);
  assert.equal(f.state.calls.filter(([url,opt])=>String(url).endsWith('/customers')&&opt.method==='POST').length,1);
@@ -199,6 +206,37 @@ test('test clock is OFF by default, and cannot activate on production or a malfo
   assert.equal((await response.json()).error,'billing_test_clock_invalid');
  }
  assert.equal(f.state.calls.some(([url])=>String(url).endsWith('/customers')),false);
+});
+test('test clock must be ready, live=false, unexpired and identical before any Stripe customer write',async t=>{
+ const cases=[
+  ['advancing',clock=>{clock.status='advancing'},'billing_test_clock_not_ready',409],
+  ['internal_failure',clock=>{clock.status='internal_failure'},'billing_test_clock_not_ready',409],
+  ['wrong id',clock=>{clock.id='clock_other_test123'},'billing_test_clock_invalid',503],
+  ['wrong object',clock=>{clock.object='customer'},'billing_test_clock_invalid',503],
+  ['live object',clock=>{clock.livemode=true},'billing_test_clock_invalid',503],
+  ['expired clock',clock=>{clock.deletes_after=time()-1},'billing_test_clock_invalid',503],
+  ['missing expiry',clock=>{delete clock.deletes_after},'billing_test_clock_invalid',503]
+ ];
+ for(const [name,mutate,reason,status] of cases){
+  await t.test(name,async child=>{
+   const f=await fixture(child);
+   f.env.STAGING_BILLING_ONLY='true';
+   f.env.STRIPE_TEST_CLOCK_ID='clock_Speakingym20261021New01';
+   f.state.clockResponseMutator=mutate;
+   const result=await f.call('checkout');
+   assert.equal(result.status,status);
+   assert.equal((await result.json()).error,reason);
+   assert.equal(f.state.calls.filter(([url])=>String(url).endsWith('/customers')).length,0,
+    'An unready/wrong/deleted clock must not create a test customer');
+   assert.equal(f.state.calls.filter(([url])=>String(url).endsWith('/checkout/sessions')).length,0);
+   assert.equal(f.db.sqlite.prepare('SELECT customer_id FROM billing_accounts').get()?.customer_id||null,null);
+  });
+ }
+});
+test('no Stripe TEST clock lookup occurs unless staging has explicitly opted in',async t=>{
+ const f=await fixture(t);
+ assert.equal((await f.call('checkout')).status,200);
+ assert.equal(f.state.calls.some(([url])=>String(url).includes('/test_helpers/test_clocks/')),false);
 });
 test('test clock refuses to migrate an EXISTING non-clock sandbox customer',async t=>{
  const f=await fixture(t);
