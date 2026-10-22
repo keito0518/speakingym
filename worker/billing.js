@@ -48,6 +48,18 @@ async function verifyStagingTestClock(env,clockId){
   throw fail('billing_test_clock_invalid');
  if(clock.status!=='ready')throw fail('billing_test_clock_not_ready',409);
 }
+// Stripe Customer IDs are the long-lived bridge between a Firebase account and
+// billing. Never persist a malformed or foreign customer returned by an API
+// retry, and never reuse a clock-backed customer without checking its owner.
+function verifyOwnedCustomer(env,row,customer,clockId){
+ if(customer?.object!=='customer'||typeof customer.id!=='string'||
+    !/^cus_[a-zA-Z0-9]+$/.test(customer.id)||
+    customer.livemode!==expectedLive(env)||
+    customer.metadata?.firebase_uid!==row.uid||
+    (row.customer_id&&customer.id!==row.customer_id))
+  throw fail('billing_customer_mismatch');
+ if(clockId&&customer.test_clock!==clockId)throw fail('billing_test_clock_mismatch');
+}
 // Explicitly translate only the two billing table identifiers, never arbitrary SQL or
 // user input. Keep existing sandbox rows entirely separate from real customers.
 const billingDb=env=>{
@@ -129,8 +141,11 @@ async function reconcile(env,row,token,eventId){
  if(!row.customer_id)return row;
  // Retrieve CURRENT state under a per-account lock; event.created is not an ordering key.
  const list=await stripe(env,'subscriptions?'+new URLSearchParams({customer:row.customer_id,status:'all',limit:'100','expand[]':'data.latest_invoice'}));
- if(list.has_more)throw fail('billing_manual_review');
+ if(!Array.isArray(list?.data)||list.has_more!==false)throw fail('billing_manual_review');
  if(list.data.some(s=>s.livemode!==expectedLive(env)))throw fail('billing_mode_mismatch');
+ if(list.data.some(s=>s.customer!==row.customer_id||s.object!=='subscription'||
+     typeof s.id!=='string'||!/^sub_[a-zA-Z0-9]+$/.test(s.id)))
+  throw fail('billing_subscription_mismatch');
  const current=list.data.filter(s=>!['canceled','incomplete_expired'].includes(s.status));
  // Stripe allows expandable invoice references to be strings. Verify the exact
  // invoice server-side rather than falsely treating an active paid subscription
@@ -142,6 +157,16 @@ async function reconcile(env,row,token,eventId){
   if(invoice?.id!==id||invoice?.livemode!==expectedLive(env)||invoice?.customer!==row.customer_id)
    throw fail('billing_invoice_mismatch');
   current[0]={...current[0],latest_invoice:invoice};
+ }
+ // Expanded invoice data is just as important to bind to the exact customer
+ // as the separately fetched string-invoice case. A paid invoice from a
+ // different customer must never elevate this Firebase account.
+ for(const sub of current){
+  const invoice=sub.latest_invoice;
+  if(invoice&&typeof invoice==='object'&&
+     (invoice.object!=='invoice'||invoice.customer!==row.customer_id||
+      invoice.livemode!==expectedLive(env)))
+   throw fail('billing_invoice_mismatch');
  }
  const sub=current.find(s=>subscriptionAccess(s,priceId(env),now(),expectedLive(env)))||current[0]||null;
  const entitlementReason=current.length>1?'multiple_subscriptions':current.length===0?'no_subscription':subscriptionAccessReason(sub,priceId(env),now(),expectedLive(env));
@@ -211,8 +236,7 @@ async function checkout(env,row,token){
  if(stagingClock&&row.customer_id){
   // Do not silently enrol a previous test subscriber in this simulation.
   const existing=await stripe(env,'customers/'+encodeURIComponent(row.customer_id));
-  if(existing?.id!==row.customer_id||existing.livemode!==false||
-     existing.test_clock!==stagingClock)throw fail('billing_test_clock_mismatch');
+  verifyOwnedCustomer(env,row,existing,stagingClock);
  }
  if(!row.customer_id){
   // Stripe only guarantees idempotency retention for 24h. Ambiguous old creates fail closed.
@@ -221,9 +245,7 @@ async function checkout(env,row,token){
   const fields={'metadata[firebase_uid]':row.uid};
   if(stagingClock)fields.test_clock=stagingClock;
   const customer=await stripe(env,'customers','POST',fields,row.customer_key);
-  if(customer.livemode!==expectedLive(env))throw fail('billing_mode_mismatch');
-  // Never claim a clock-backed subscription if Stripe did not attach the clock.
-  if(stagingClock&&customer.test_clock!==stagingClock)throw fail('billing_test_clock_mismatch');
+  verifyOwnedCustomer(env,row,customer,stagingClock);
   await ownedUpdate(db,row.uid,token,'customer_id=?',customer.id);
   row={...row,customer_id:customer.id};
  }

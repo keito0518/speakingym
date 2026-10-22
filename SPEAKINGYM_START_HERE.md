@@ -186,3 +186,13 @@
 - `stripe-staging-qa.js` に時計準備中の分かりやすいメッセージ。`scripts/Windows_Start_Stripe_Staging_QA.cmd` の固定zipコミットを `e0446d7...` に更新し、既存のGoogleアカウント選択強制・ログイン中メール表示・新時計準備エラー対応済みのQA画面を起動できるようにした。ユーザーがすでに開いた古いQAサーバーへは自動反映されない。
 - **変更範囲はDraft PR #62だけ。** 今夜の独立staging Workerは `c9100b58` コードに再デプロイしていないため、実Stripe時計GETの新チェックは**本番・staging実機では未反映**。将来stagingにWrangler再デプロイすると、dashboardに後から入力した `STRIPE_TEST_CLOCK_ID` が `keep_vars=false` の影響で消える可能性がある。**今回のテスト時計を確実に保持する手順を決める前にWranglerを再実行しないこと。**
 - Stripe TESTの新規顧客作成／月額更新／支払失敗→復旧は**未実施**。実験用Googleアカウントの新staging招待も未確認。本番公開はNO-GO、main/Live/¥680契約無変更。GitHub Actionsの最新HEAD結果は実行ログ参照（合格確認前に完了扱いしない）。
+
+## 2026-10-22：Stripe契約の所有者照合を強化（Draftのみ）
+
+- `worker/billing.js` でStripeから作成されたCustomerの `cus_*` ID・Customer型・TEST/LIVEモード・`metadata.firebase_uid` を、D1へ顧客IDを保存する**前に**照合。新時計付きの既存Customer再利用時もFirebase所有者を再照合し、不一致ならCheckoutを発行しない。
+- 定期購入一覧を照合する際、各SubscriptionのID・型・顧客IDと、展開済み／個別取得した最新Invoiceの顧客・型・モードが現在のD1マッピングと一致しなければ処理を停止。異なる顧客の支払いをPro付与に流用しない。署名付きWebhookのイベント重複記録は検証完了まで確定させない。
+- 悪意ある／壊れたStripeレスポンスを再現する回帰試験15ケースを追加し、`node --test tests/*.test.mjs worker/*.test.mjs` で**520件成功・失敗0**（ローカル、2026-10-22）。これはStripe APIをモックしたコード試験であり、実Stripe更新決済の実証ではない。GitHub Actionsの新HEAD CI・Chromium/WebKitはコミット後に改めて確認する。
+- Cloudflare `keep_vars=false` の現行設定を**変更もデプロイもしていない**。Cloudflare公式資料上、Wranglerはダッシュボード追加の通常変数を再デプロイ時に上書き／消去し得るが、暗号化secretは保持される。現在の `STRIPE_TEST_CLOCK_ID` が通常変数かsecretか、値を保全できたかは未確認。**確認までstagingのWrangler再デプロイ禁止**。
+- 新テスターのFirebase UID確認・staging許可リスト、新TEST時計のStripe実照合、新顧客紐付け・更新・失敗→復旧・Webhook実配信は引き続き**未実施**。Odenの完了済みテストを繰り返さない。
+- 原価試算は既存 `scripts/pro1480-risk-matrix.mjs` を再実行。100人のPro会員／500人のFree利用者、満額利用、為替160円の仮定では、標準利用シナリオで月116,800円の限界利益、重い利用と1.5倍再試行では月-34,344円の赤字。**実Gemini請求書・Stripe契約料・税金・ホスティング費が未計測なので、いずれも利益予測ではない**。
+- 公開判定は依然**NO-GO**。`tokusho.html` の事業者開示・返金・更新／解約締切の確定、実原価、実端末ブラウザ音声、旧680円加入者の扱い、別途本人の承認が必須。main・本番Pages/Worker/D1・Stripe Live・旧680円商品／契約は変更なし。

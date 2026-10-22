@@ -15,7 +15,8 @@ function database(){
  async batch(statements){sqlite.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sqlite.exec('COMMIT');return results}catch(e){sqlite.exec('ROLLBACK');throw e}}};
 }
 const config=db=>({PLAN_DB:db,ENFORCE_PLANS:'true',BILLING_MODE:'test',STRIPE_SECRET_KEY:'sk_test_fixture',STRIPE_WEBHOOK_SECRET:'whsec_fixture',STRIPE_PRICE_ID:'price_test',BILLING_TEST_UIDS:'student'});
-const active=()=>({id:'sub_test',customer:'cus_test',livemode:false,status:'active',items:{data:[{quantity:1,price:{id:'price_test'},current_period_end:time()+3600}]},latest_invoice:{status:'paid',paid:true}});
+const invoice=(id='in_test',status='paid',livemode=false)=>({id,object:'invoice',customer:'cus_test',livemode,status});
+const active=()=>({id:'sub_test',object:'subscription',customer:'cus_test',livemode:false,status:'active',items:{data:[{quantity:1,price:{id:'price_test'},current_period_end:time()+3600}]},latest_invoice:{...invoice(),paid:true}});
 async function signature(raw,ts=time(),secret='whsec_fixture'){
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  return 't='+ts+',v1='+Buffer.from(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(ts+'.'+raw))).toString('hex');
@@ -28,7 +29,7 @@ async function fixture(t){
   const data=Buffer.from(JSON.stringify({alg:'RS256',kid:jwk.kid})).toString('base64url')+'.'+Buffer.from(JSON.stringify({aud:'speakingym',iss:'https://securetoken.google.com/speakingym',sub:uid,iat:time()-1,auth_time:time()-1,exp:time()+3600})).toString('base64url');
   return data+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(data))).toString('base64url');
  }
- const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,customerClock:null,customerResponseMutator:null,clockResponseMutator:null,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{id:'in_test',livemode:false,customer:'cus_test',status:'paid',paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
+ const state={subscriptions:[],sessions:new Map(),calls:[],stripeUnavailable:false,live:false,customerClock:null,customerResponseMutator:null,existingCustomerResponseMutator:null,clockResponseMutator:null,price:{object:'price',id:'price_test',active:true,livemode:false,currency:'jpy',unit_amount:1480,type:'recurring',billing_scheme:'per_unit',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1,trial_period_days:null,usage_type:'licensed'}},invoice:{...invoice(),paid:true},failCreate:false,checkoutCreationMutator:null,failLineItemsOnce:false,portalResponseMutator:null};
  t.mock.method(globalThis,'fetch',async(url,opt={})=>{
   if(String(url).includes('googleapis.com'))return Response.json({keys:[jwk]});
   if(state.stripeUnavailable)return new Response('upstream temporary failure',{status:503});
@@ -43,10 +44,13 @@ async function fixture(t){
   else if(path==='customers'){
    const params=new URLSearchParams(opt.body);
    state.customerClock=params.get('test_clock');
-   result={id:'cus_test',livemode:state.live,test_clock:state.customerClock};
+   result={id:'cus_test',object:'customer',livemode:state.live,test_clock:state.customerClock,metadata:{firebase_uid:'student'}};
    if(state.customerResponseMutator)state.customerResponseMutator(result);
   }
-  else if(path==='customers/cus_test')result={id:'cus_test',livemode:state.live,test_clock:state.customerClock};
+  else if(path==='customers/cus_test'){
+   result={id:'cus_test',object:'customer',livemode:state.live,test_clock:state.customerClock,metadata:{firebase_uid:'student'}};
+   if(state.existingCustomerResponseMutator)state.existingCustomerResponseMutator(result);
+  }
   else if(path==='subscriptions')result={data:state.subscriptions,has_more:false};
   else if(path.startsWith('subscriptions/'))result=state.subscriptions.find(s=>s.id===path.split('/')[1]);
   else if(path==='checkout/sessions'){
@@ -121,7 +125,7 @@ test('Basil invoice without removed paid boolean grants Pro only for status paid
  const f=await fixture(t);
  await f.call('checkout');
  // In Stripe 2025-03-31.basil+ invoice.paid has been removed.
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',customer:'cus_test',livemode:false,status:'paid'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice()}];
  assert.equal(subscriptionAccessReason(f.state.subscriptions[0],'price_test'),'ok');
  const result=await f.call('status','GET');
  assert.equal(result.status,200);
@@ -133,7 +137,7 @@ test('Basil invoice without removed paid boolean grants Pro only for status paid
 test('Basil invoice in non-paid status never grants Pro',async t=>{
  const f=await fixture(t);
  await f.call('checkout');
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',customer:'cus_test',livemode:false,status:'open'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice('in_test','open')}];
  const result=await f.call('status','GET');
  assert.equal(result.status,200);
  assert.equal((await result.json()).pro,false);
@@ -145,7 +149,7 @@ test('explicitly contradictory legacy paid false fails closed',()=>{
 test('Basil invoice returned by Stripe ID can be verified as paid',async t=>{
  const f=await fixture(t);
  await f.call('checkout');
- f.state.invoice={id:'in_test',livemode:false,customer:'cus_test',status:'paid'};
+ f.state.invoice=invoice();
  f.state.subscriptions=[{...active(),latest_invoice:'in_test'}];
  assert.equal((await f.event('invoice.paid','evt_basil_invoice')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
@@ -259,6 +263,37 @@ test('Stripe ignores new customer test clock field: fail closed before mapping o
  assert.equal((await response.json()).error,'billing_test_clock_mismatch');
  assert.equal(f.db.sqlite.prepare('SELECT customer_id FROM billing_accounts').get().customer_id,null);
  assert.equal(f.state.calls.filter(([url])=>String(url).endsWith('/checkout/sessions')).length,0);
+});
+test('new Stripe Customer must have the exact Firebase owner and a valid customer identity',async t=>{
+ const cases=[
+  ['foreign firebase owner',c=>{c.metadata.firebase_uid='other'}],
+  ['missing firebase owner',c=>{delete c.metadata}],
+  ['malformed customer id',c=>{c.id='sub_foreign'}],
+  ['wrong object',c=>{c.object='subscription'}],
+  ['wrong Stripe mode',c=>{c.livemode=true}]
+ ];
+ for(const [name,mutate] of cases){
+  await t.test(name,async child=>{
+   const f=await fixture(child);
+   f.state.customerResponseMutator=mutate;
+   const response=await f.call('checkout');
+   assert.equal(response.status,503);
+   assert.equal((await response.json()).error,'billing_customer_mismatch');
+   assert.equal(f.db.sqlite.prepare('SELECT customer_id FROM billing_accounts').get().customer_id,null);
+   assert.equal(f.state.calls.filter(([url])=>String(url).endsWith('/checkout/sessions')).length,0);
+  });
+ }
+});
+test('clock-backed existing customer cannot be reused after Firebase ownership changes',async t=>{
+ const f=await fixture(t);
+ f.env.STAGING_BILLING_ONLY='true';
+ f.env.STRIPE_TEST_CLOCK_ID='clock_Speakingym20261021New01';
+ assert.equal((await f.call('checkout')).status,200);
+ f.state.existingCustomerResponseMutator=customer=>{customer.metadata.firebase_uid='other'};
+ const response=await f.call('checkout');
+ assert.equal(response.status,503);
+ assert.equal((await response.json()).error,'billing_customer_mismatch');
+ assert.equal(f.state.sessions.size,1,'a foreign owner must not create another Checkout');
 });
 test('Stripe TEST checkout and portal use only isolated localhost QA return URLs',async testContext=>{
  const f=await fixture(testContext);
@@ -562,9 +597,47 @@ test('a string invoice for a different customer never grants entitlement',async 
  assert.equal((await getPlan(f.db,'student',f.env)),'free');
  assert.equal(f.db.sqlite.prepare('SELECT id FROM billing_events WHERE id=?').get('evt_wrong_customer'),undefined);
 });
+test('Stripe subscription listing cannot grant another customer Pro',async t=>{
+ const cases=[
+  ['foreign customer',s=>{s.customer='cus_other'}],
+  ['unexpected object',s=>{s.object='invoice'}],
+  ['malformed subscription id',s=>{s.id='cus_other'}]
+ ];
+ for(const [name,mutate] of cases){
+  await t.test(name,async child=>{
+   const f=await fixture(child);
+   assert.equal((await f.call('checkout')).status,200);
+   const sub=active();mutate(sub);f.state.subscriptions=[sub];
+   const response=await f.event('invoice.paid','evt_foreign_sub');
+   assert.equal(response.status,503);
+   assert.equal((await response.json()).error,'billing_subscription_mismatch');
+   assert.equal(await getPlan(f.db,'student',f.env),'free');
+   assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,0);
+  });
+ }
+});
+test('expanded latest invoice must match customer, type and Stripe mode',async t=>{
+ const cases=[
+  ['foreign invoice customer',i=>{i.customer='cus_other'}],
+  ['live invoice in sandbox',i=>{i.livemode=true}],
+  ['unexpected invoice object',i=>{i.object='payment_intent'}]
+ ];
+ for(const [name,mutate] of cases){
+  await t.test(name,async child=>{
+   const f=await fixture(child);
+   assert.equal((await f.call('checkout')).status,200);
+   const sub=active();mutate(sub.latest_invoice);f.state.subscriptions=[sub];
+   const response=await f.event('invoice.paid','evt_foreign_invoice');
+   assert.equal(response.status,503);
+   assert.equal((await response.json()).error,'billing_invoice_mismatch');
+   assert.equal(await getPlan(f.db,'student',f.env),'free');
+   assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,0);
+  });
+ }
+});
 test('active but unpaid invoice has a safe reason and remains Free',async t=>{
  const f=await fixture(t);await f.call('checkout');
- f.state.subscriptions=[{...active(),latest_invoice:{status:'open',paid:false}}];
+ f.state.subscriptions=[{...active(),latest_invoice:{...invoice('in_test','open'),paid:false}}];
  const response=await f.call('status','GET');
  const body=await response.json();
  assert.equal(response.status,200);
@@ -580,7 +653,7 @@ test('active but unpaid invoice has a safe reason and remains Free',async t=>{
 test('failed renewal revokes Pro and old paid events cannot restore it; successful retry restores Pro',async t=>{
  const f=await fixture(t);
  assert.equal((await f.call('checkout')).status,200);
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',status:'paid'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice()}];
  assert.equal((await f.event('invoice.paid','evt_initial_success')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
  assert.equal((await (await f.call('status','GET')).json()).pro,true);
@@ -588,7 +661,7 @@ test('failed renewal revokes Pro and old paid events cannot restore it; successf
 
  // Stripe's latest unpaid invoice and past_due status are authoritative, not
  // an older, valid paid invoice or checkout success_url.
- f.state.subscriptions=[{...active(),status:'past_due',latest_invoice:{id:'in_renewal',status:'open'}}];
+ f.state.subscriptions=[{...active(),status:'past_due',latest_invoice:invoice('in_renewal','open')}];
  assert.equal((await f.event('invoice.payment_failed','evt_renewal_failed')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free');
  const failed=await (await f.call('status','GET')).json();
@@ -605,7 +678,7 @@ test('failed renewal revokes Pro and old paid events cannot restore it; successf
  assert.equal(await getPlan(f.db,'student',f.env),'free');
 
  // A paid renewal, fetched from Stripe and verified, is the only path back.
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_renewal',status:'paid'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice('in_renewal')}];
  assert.equal((await f.event('invoice.paid','evt_renewal_recovered')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
  assert.equal((await (await f.call('status','GET')).json()).entitlementReason,'ok');
@@ -613,10 +686,10 @@ test('failed renewal revokes Pro and old paid events cannot restore it; successf
 test('active status with an unpaid latest renewal invoice still revokes Pro',async t=>{
  const f=await fixture(t);
  assert.equal((await f.call('checkout')).status,200);
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_initial',status:'paid'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice('in_initial')}];
  assert.equal((await f.event('invoice.paid','evt_first_paid')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_new',status:'open'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice('in_new','open')}];
  assert.equal((await f.event('invoice.payment_failed','evt_unpaid_while_active')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free');
  const status=await (await f.call('status','GET')).json();
@@ -627,7 +700,7 @@ test('active status with an unpaid latest renewal invoice still revokes Pro',asy
 test('scheduled cancellation preserves paid access then expiration revokes it without relying on webhook',async t=>{
  const f=await fixture(t);
  assert.equal((await f.call('checkout')).status,200);
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',status:'paid'},cancel_at_period_end:true}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice(),cancel_at_period_end:true}];
  assert.equal((await f.event('customer.subscription.updated','evt_cancel_scheduled')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
  const before=await (await f.call('status','GET')).json();
@@ -649,7 +722,7 @@ test('scheduled cancellation preserves paid access then expiration revokes it wi
 test('stale cached test Pro expires closed and can be refreshed without a second Checkout',async t=>{
  const f=await fixture(t);
  assert.equal((await f.call('checkout')).status,200);
- f.state.subscriptions=[{...active(),latest_invoice:{id:'in_test',status:'paid'}}];
+ f.state.subscriptions=[{...active(),latest_invoice:invoice()}];
  assert.equal((await f.event('invoice.paid','evt_initial_pro')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
  f.db.sqlite.prepare('UPDATE billing_accounts SET synced_at=?').run(time()-121);
@@ -723,7 +796,7 @@ test('separately configured live mode isolates customer records and grants only 
  assert.equal((await f.call('status','GET')).status,200);
  assert.equal((await (await f.call('status','GET')).json()).mode,'live');
  assert.equal(await getPlan(f.db,'student',f.env),'free');
- const activeLive={...active(),livemode:true,latest_invoice:{id:'in_test',livemode:true,customer:'cus_test',status:'paid'}};
+ const activeLive={...active(),livemode:true,latest_invoice:invoice('in_test','paid',true)};
  f.state.subscriptions=[activeLive];
  const paid=await f.event('invoice.paid','evt_live_paid',{customer:'cus_test'},true);
  assert.equal(paid.status,200,JSON.stringify(await paid.clone().json()));
@@ -731,7 +804,7 @@ test('separately configured live mode isolates customer records and grants only 
  assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_events').get().n,0);
  assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) as n FROM billing_live_events').get().n,1);
  // An unpaid renewal removes the grant, even if an older invoice was paid.
- f.state.subscriptions=[{...activeLive,latest_invoice:{id:'in_renew',status:'open'}}];
+ f.state.subscriptions=[{...activeLive,latest_invoice:invoice('in_renew','open',true)}];
  assert.equal((await f.event('invoice.payment_failed','evt_live_failed',{customer:'cus_test'},true)).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free');
  // Turning the LIVE switch off does not create a fallback Pro grant.
@@ -761,10 +834,10 @@ test('LIVE never treats legacy manually granted Pro or TEST billing as a paid LI
  f.state.live=true;f.state.price.livemode=true;
  assert.equal((await f.call('checkout')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free');
- f.state.subscriptions=[{...active(),livemode:true,latest_invoice:{status:'paid'}}];
+ f.state.subscriptions=[{...active(),livemode:true,latest_invoice:invoice('in_test','paid',true)}];
  assert.equal((await f.event('invoice.paid','evt_live_only_paid',{customer:'cus_test'},true)).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'pro');
- f.state.subscriptions=[{...active(),livemode:true,latest_invoice:{status:'open'}}];
+ f.state.subscriptions=[{...active(),livemode:true,latest_invoice:invoice('in_test','open',true)}];
  assert.equal((await f.event('invoice.payment_failed','evt_live_only_unpaid',{customer:'cus_test'},true)).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free',
   'expired or failed Stripe Live cannot be rescued by legacy beta grant');
