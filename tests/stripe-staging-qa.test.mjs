@@ -39,6 +39,7 @@ test('sandbox client is isolated from production endpoints and requires server c
  assert.match(js,/現在のGoogleアカウント/);
  assert.match(js,/next\.email/);
  assert.match(js,/billing_test_clock_mismatch/);
+ assert.match(js,/billing_test_clock_not_ready/);
  assert.match(page,/実請求なし/);
  assert.doesNotMatch(page,/<input[^>]+type="(?:password|email|tel)"/);
  assert.doesNotMatch(page,/https:\/\/speakingym\.pages\.dev/);
