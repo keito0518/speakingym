@@ -36,6 +36,18 @@ export function stagingTestClockId(env={}){
   throw fail('billing_test_clock_invalid');
  return value;
 }
+// Check the actual TEST clock before ever creating a Stripe Customer.
+// A syntactically valid ID can still refer to a deleted/expired/advancing
+// clock; a real Stripe GET is read-only and does not advance simulation time.
+async function verifyStagingTestClock(env,clockId){
+ if(!clockId)return;
+ const clock=await stripe(env,'test_helpers/test_clocks/'+encodeURIComponent(clockId));
+ if(clock?.id!==clockId||clock.object!=='test_helpers.test_clock'||
+    clock.livemode!==false||!Number.isInteger(clock.deletes_after)||
+    clock.deletes_after<=now())
+  throw fail('billing_test_clock_invalid');
+ if(clock.status!=='ready')throw fail('billing_test_clock_not_ready',409);
+}
 // Explicitly translate only the two billing table identifiers, never arbitrary SQL or
 // user input. Keep existing sandbox rows entirely separate from real customers.
 const billingDb=env=>{
@@ -195,6 +207,7 @@ async function checkout(env,row,token){
     price.recurring?.interval_count!==1||price.recurring?.usage_type!=='licensed'||
     price.recurring?.trial_period_days!=null)throw fail('billing_price_invalid');
  const stagingClock=stagingTestClockId(env);
+ await verifyStagingTestClock(env,stagingClock);
  if(stagingClock&&row.customer_id){
   // Do not silently enrol a previous test subscriber in this simulation.
   const existing=await stripe(env,'customers/'+encodeURIComponent(row.customer_id));
