@@ -147,3 +147,32 @@
 - **安全性**：検証は `sgqa-...-prolimits` 等の一時ユーザーのみで実施し、Gemini API呼び出しやStripe課金・本番Worker/D1変更なし。全検証用セッション・予約・講評データのクリーンアップも **PASS**。
 - **証拠の限界**：`scripts/staging-d1-qa.mjs` で実staging D1へ**検証用SQLを直接発行**した結果。実Firebaseログイン・デプロイ済みstaging Worker・Gemini通信・Stripe TEST課金の全体E2Eではない。**本番公開はまだNO-GO**。
 - **未完了**：実Stripe TESTの更新成功・未払い→回復、実機iPhoneのマイク/音声認識、実Gemini/Stripe費用、正式な法定情報・解約/返金・連絡体制、公開の明示承認。旧680円契約・main・本番/Stripe Liveの変更禁止を維持。
+
+
+## 2026-10-22 引き継ぎ：隔離Stripe更新テストの現在地（本人操作は夜に再開）
+
+> 2026-10-22現在の優先記録。この文書の上部にある「自動ゲート未実施」「テスト時計未デプロイ」など過去時点の未実施記述より、直近の実証・CI結果を優先する。ドラフトPR #62の範囲だけ。**main、Live、¥680既存契約、本番Worker/D1/Pagesには触れない。**
+
+### 2026-10-21 本人操作で確認した事実
+
+- **隔離Workerにテスト時計対応コードを実デプロイした。** Windows CMDから `worker/wrangler.staging-billing.toml` で `speakingym-survival-ai-staging` に反映。実デプロイ出力ではstaging D1、`BILLING_MODE=test`、`ALLOW_AI=false` 等の安全な対象であると確認。
+- 実際のlocalhost QA画面が staging `GET /health` の安全チェックでPASS。GitHub ActionsのリモートGETもPASS。**ヘルスチェックは設定された `STRIPE_TEST_CLOCK_ID` の値や実Stripe顧客紐付けまでは検証しない。**
+- Stripe SANDBOXに**新しい別シミュレーション `Speakingym 1480 Renewal Test`** を作成。既存の古い時計は触らない。Cloudflare staging Workerの変数 `STRIPE_TEST_CLOCK_ID` にこの新時計のIDを設定したとオーナーが報告。**実Stripe GETによる時計IDの照合や新規顧客の時計紐付けは未実施。**
+- Googleアカウントが自動的に前のGoogle IDでログインする事象を受け、**Draftコードのlocalhost QA限定**で `GoogleAuthProvider.setCustomParameters({prompt:'select_account'})` を追加。ログイン後、メールアドレスを画面で確認できるよう修正。本人は修正版画面で「ログインかんりょう」と報告したが、そのアカウントが新テスターか、staging許可リスト登録済みか、契約statusが `none` かは**まだ確認できていない**。ユーザーのメール/UIDはGitHubやチャットへ貼らない。
+- Google修正後のDraft HEAD `078536786f6218cb2567e68211a344545ee084af`、[CI #39618982244](https://github.com/keito0518/speakingym/actions/runs/39618982244) **Node 496/496、Chromium/WebKit模擬QAともPASS**。本物のGoogleアカウント選択の成否はユーザー報告でありCIは実ログインを代替しない。
+- **Odenアカウントは以前の購入→Pro→解約→Free試験に使用済み**。今回の新時計に再利用しない。前の時計・顧客・契約・¥680既存契約も操作しない。
+
+### 夜に本人が必要な操作の最短経路
+
+1. localhost QAで今ログイン中のアカウントがOdenと**異なる新テスター**であることを、ブラウザ画面内だけで確認。 `3. Stripeテスト契約` の表示（`Free`/`テスト対象アカウントが許可リストにありません` 等）だけ報告してもらう。ログイン済みなら再ログインさせない。
+2. 新テスターのFirebase UIDをFirebase Consoleで**本人がローカル確認**、Cloudflare **staging Workerのみ** `BILLING_TEST_UIDS` に既存Odenテスターを保全しつつ追加する。**暗号化済みsecretはダッシュボードから再表示できない場合がある**ので、元の値を知らずに上書きしてOdenを失効させない。チャット/CI/GitHubにUIDや鍵を貼らない。追加前に実操作内容を確認。
+3. localhost QAで新テスターが `Free` / `status none` と確認でき、ステージングへの招待も通ることを確認。**まだCheckoutを押さない**。次に公開画面のStripe CHECKOUTに行く前に時計ID・TEST価格/税込/Webhook/安全変数を最終点検。
+4. 明示的に安全条件が整った新テスト顧客だけで **Stripe TEST購入→更新成功→支払い失敗→回復** を一連で検証。シミュレーションはこの新時計だけ進める。Webhook実配信とstaging Entitlement/Free移行を比較し、成功した項目だけ記録。既存の契約・時計やStripe Liveは一切触らない。
+5. 実iPhoneマイク・SafariおよびGA4同意後イベント、販売事業者情報・返金条件・旧¥680継続方針・実Gemini/Stripe費用は別の本番公開GOゲート。本人の最終明示承認まで本番リリースしない。
+
+### 開発者が本人不在でもできる作業
+
+- DraftだけでWebhook/idempotency/同時実行/アカウント切替/課金上限・講評制限・モバイルUIのコードレビューと模擬CI回帰試験、ログサニタイズ、復旧手順の整備。
+- 実staging `GET /health` の**読取専用**再検証。既に実staging D1への合成UIDのSQL QAで1,000ターン・150講評限界はPASS済み。今夜に同じ手動テストを再実施させない。
+- コスト試算と販売法定表示の**下書き**は可能だが、実請求書の確認と運営者自身の住所・事業情報・返金規約の承認は代替できない。
+- **重要：`wrangler.staging-billing.toml` には `keep_vars=false` と `[vars]` があり、ダッシュボードで後から追加した `STRIPE_TEST_CLOCK_ID` が将来のWrangler再デプロイで消える可能性がある。**そのため今夜のQA前に安易に再デプロイしない。追加された時計設定をCloudflare画面で確認し、再デプロイ時は専用設定・secretを安全に保全する計画を先に作成。
