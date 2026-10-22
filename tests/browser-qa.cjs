@@ -132,6 +132,28 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   await page.waitForTimeout(100);
   assert.deepEqual(await page.evaluate(()=>window.__qaAIRequests),['new practice text'],
    'old aborted practice must not send an AI request against a newly started session');
+  // Switching login invalidates active practice and a delayed start token.
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  assert.equal(await page.locator('#practice').isVisible(),false,
+   'an account change closes the previous practice immediately');
+  assert.equal(await page.locator('#chat').locator('*').count(),0,
+   'the old account dialogue must not remain on the new account screen');
+  assert.match(await page.locator('#status').textContent(),/アカウントが切り替わった/);
+  await page.evaluate(()=>{
+   window.speakingymAccount={
+    isLoggedIn:()=>true,
+    getIdToken:()=>new Promise(resolve=>{window.__qaReleaseDelayedToken=resolve})
+   };
+  });
+  await page.locator('#start').click();
+  await page.waitForFunction(()=>typeof window.__qaReleaseDelayedToken==='function');
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  await page.evaluate(()=>window.__qaReleaseDelayedToken('stale-synthetic-account-token'));
+  await page.waitForTimeout(80);
+  assert.equal(await page.locator('#practice').isVisible(),false,
+   'a login change during delayed token lookup must not start an old account practice');
+  assert.equal(await page.locator('#chat').locator('*').count(),0);
+  assert.deepEqual(await page.evaluate(()=>window.__qaAIRequests),['new practice text']);
   assert.deepEqual(errors,[]);await context.close();
  }}finally{await browser.close()}
  console.log(JSON.stringify({engine,results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
