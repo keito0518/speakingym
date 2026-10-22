@@ -167,6 +167,7 @@ function scenarioInstruction(scene, level) {
   "Situation: "+task.situation,
   "This is a spoken English practice role-play. React to the MEANING of the latest user statement, and to earlier dialogue, not to keywords.",
   "Never ignore an unexpected but reasonable comment, and never repeat the same question verbatim.",
+  "If the learner ends the conversation, declines an offer or changes their mind, acknowledge that choice naturally rather than restarting the exercise or asking for the same information.",
   "Remember choices and corrections already stated in recent dialogue. Do not contradict them, reset the situation, or ask again for information already provided.",
   "The latest user utterance is supplied separately from recentDialogue. Treat it as ONE conversational turn, not two, and answer its real question or request before checking remaining goals.",
   "Follow the learner\u0027s latest intent first, including changes of mind and relevant side questions. Goals are checkpoints, not a fixed script or mandatory question order.",
@@ -214,6 +215,8 @@ const REFLEX_TEACHER_SYSTEM = [
  "why: explain in Japanese (about 2 concise sentences) why the revision works and when to use it, with a grammar or pragmatic teaching point as relevant.",
  "practice: a short follow-up English mini-challenge that makes the learner reuse the target expression; do not provide the answer.",
  "If a sentence is already natural and clear, explicitly recognize that and suggest an optional more nuanced alternative; do NOT invent a grammar error.",
+ "For an already-correct answer, the improvement field must label the change as OPTIONAL style or nuance, and the why field must explain that the original was acceptable. Never say a correct utterance was wrong just to fill a field.",
+ "If the user asks a question, the improved sentence must remain a question; preserve negation, tense, names, numbers, and uncertainty. If a transcript is ambiguous, do not silently rewrite its meaning.",
  "If transcription looks broken or ambiguous, say it MAY be a speech recognition problem and give a conditional suggestion; do not assert the learner said a different sentence.",
  "Do not evaluate actual pronunciation, tone, accent or fluency, because only speech-to-text is available.",
  "Be encouraging, but specific and intellectually honest. Never repeat an identical boilerplate across items.",
@@ -307,21 +310,27 @@ function reply(body, status, origin) {
 }
 function validHistory(input) {
   if (!Array.isArray(input)) return [];
-  return input.slice(-10).map((entry) => ({
-    role: entry?.role === "user" ? "user" : "assistant",
-    content: typeof entry?.content === "string" ? entry.content.slice(0, 450) : ""
-  })).filter((x) => x.content);
+  // Never reinterpret unknown roles (including a forged "system" instruction)
+  // as an assistant's prior dialogue. Keep the last ten valid turns only.
+  return input.filter(entry=>entry && (entry.role==="user" || entry.role==="assistant")
+    && typeof entry.content==="string" && entry.content.trim())
+   .slice(-10).map(entry=>({
+    role:entry.role,
+    content:entry.content.slice(0,450)
+   }));
 }
 // Do not count an exact recycled AI line as a completed user turn.
 // Do not silently call Gemini a second time: the existing failure path
 // refunds a reserved attempt and lets the learner decide to retry.
 function repeatsLastAssistantReply(reply,history){
- const last=[...history].reverse().find(entry=>entry.role==="assistant");
- if(!last)return false;
  const norm=value=>String(value||"").normalize("NFKC").toLowerCase()
   .replace(/[\p{P}\p{S}\s]/gu,"").trim();
- const a=norm(reply),b=norm(last.content);
- return a.length>=12&&a===b;
+ const normalized=norm(reply);
+ // Detect two-turn loops as well as immediate repeats. A minimum length
+ // avoids rejecting short, ordinary role-play acknowledgements.
+ if(normalized.length<12)return false;
+ return history.filter(entry=>entry.role==="assistant").slice(-3)
+  .some(entry=>normalized===norm(entry.content));
 }
 function normalizeFacts(input) {
   const raw = input && typeof input === "object" ? input : {};
@@ -543,7 +552,8 @@ export default {
     // The browser already appends the current utterance to history before sending.
     // Keep the request unchanged for replay/ledger consistency, but do not present
     // its final user entry twice to Gemini (recentDialogue + latestUserText).
-    if(history.at(-1)?.role === "user" && history.at(-1).content.trim() === text) history.pop();
+    if(history.at(-1)?.role === "user" &&
+      history.at(-1).content.trim().replace(/\s+/g," ") === text.replace(/\s+/g," ")) history.pop();
     const context = scene ? {
       scene: requestedId,
       difficulty: level,
