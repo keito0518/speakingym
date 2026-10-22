@@ -458,10 +458,13 @@ function stopMicrophone(){
 }
 function leave(){runToken++;running=false;processing=false;pendingText="";pendingRequestId="";retryBlocked=false;stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("coachReport").classList.add("hidden");$("saveReview").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
 async function start(){
+ // Auth changes during token lookup invalidate this start attempt.
+ const authEpoch=runToken;
  const startButton=$("start");
  startButton.disabled=true;
  try{
   const token=await window.speakingymAccount?.getIdToken?.();
+  if(authEpoch!==runToken)return;
   if(!token){$("loginPrompt").classList.remove("hidden");$("loginPrompt").scrollIntoView?.({behavior:"smooth",block:"nearest"});return}
   $("loginPrompt").classList.add("hidden");
  }catch{$("loginPrompt").classList.remove("hidden");return}
@@ -553,6 +556,14 @@ $("inlineGoogleLogin").addEventListener("click",()=>{
   $("loginPrompt").classList.add("hidden");$("start").focus();return;
  }
  $("inlineLoginHelp").textContent="ログインを準備中です。少し待ってからもう一度押すか、マイページからログインしてね。";
+});
+// Abort in-flight AI and clear old-account practice when the login changes.
+window.addEventListener("speakingym:account-changing",()=>{
+ leave();serverSessionId="";plansActive=null;safeReplay=false;
+ history=[];coachingHistory=[];lastReply="";lastSpoken="";
+ $("reply").value="";$("chat").replaceChildren();$("result").replaceChildren();
+ $("coachReport").replaceChildren();
+ status("アカウントが切り替わったため練習を終了しました。ログイン後に新しく開始してください。");
 });
 window.addEventListener("speakingym:account-ready",()=>{
  if(!window.speakingymAccount?.isLoggedIn?.()||$("loginPrompt").classList.contains("hidden"))return;
