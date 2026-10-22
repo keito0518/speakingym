@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 title Speakingym STRIPE TEST - localhost only
 set "PATH=C:\Program Files\nodejs;%PATH%"
-set "SHA=d537d25922c66f51299b6123309236bfa1fa2246"
+set "SHA=e0446d7f419b3f9832c861c08231ca7562230ba7"
 set "ROOTTEMP=%TEMP%\speakingym-stripe-qa-%RANDOM%-%RANDOM%"
 set "CODE=%ROOTTEMP%\speakingym-%SHA%"
 
