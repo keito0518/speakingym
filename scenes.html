@@ -557,6 +557,13 @@ $("inlineGoogleLogin").addEventListener("click",()=>{
  }
  $("inlineLoginHelp").textContent="ログインを準備中です。少し待ってからもう一度押すか、マイページからログインしてね。";
 });
+window.addEventListener("speakingym:account-ready",()=>{
+ if(!window.speakingymAccount?.isLoggedIn?.()||$("loginPrompt").classList.contains("hidden"))return;
+ $("loginPrompt").classList.add("hidden");
+ status("ログイン完了！「このシーンを始める」を押してね。");
+ $("start").focus();
+});
+$("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
 // Abort in-flight AI and clear old-account practice when the login changes.
 window.addEventListener("speakingym:account-changing",()=>{
  leave();serverSessionId="";plansActive=null;safeReplay=false;
@@ -565,13 +572,7 @@ window.addEventListener("speakingym:account-changing",()=>{
  $("coachReport").replaceChildren();
  status("アカウントが切り替わったため練習を終了しました。ログイン後に新しく開始してください。");
 });
-window.addEventListener("speakingym:account-ready",()=>{
- if(!window.speakingymAccount?.isLoggedIn?.()||$("loginPrompt").classList.contains("hidden"))return;
- $("loginPrompt").classList.add("hidden");
- status("ログイン完了！「このシーンを始める」を押してね。");
- $("start").focus();
-});
-$("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
+
 $("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",stopMicrophone);$("resumeMic").addEventListener("click",resumeMicrophone);
 $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply||lastSpoken)});
 $("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running&&!retryBlocked)answer(pendingText)});
