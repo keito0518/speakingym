@@ -18,6 +18,7 @@ const safeError=code=>({
   billing_checkout_review:'保存済みの購入画面の金額・商品・購入者が一致しません。再購入せず開発者に確認してください。',
   subscription_exists:'すでにテスト契約があります。契約状態を再確認してください。',
   billing_test_clock_invalid:'専用テスト時計の設定に問題があります。購入しないで開発者に連絡してください。',
+  billing_test_clock_not_ready:'専用テスト時計が処理中または利用できない状態です。購入せずStripeで準備完了を確認してください。',
   billing_test_clock_mismatch:'このGoogleアカウントは別のテスト顧客に紐づいています。購入せず別の新しいテスターを選んでください。',
 }[code]||'テスト通信に失敗しました。新しい決済は実行しないでください。');
 const show=(id,message)=>{$(id).textContent=message};
