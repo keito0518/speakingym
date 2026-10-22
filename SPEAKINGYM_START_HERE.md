@@ -176,3 +176,13 @@
 - 実staging `GET /health` の**読取専用**再検証。既に実staging D1への合成UIDのSQL QAで1,000ターン・150講評限界はPASS済み。今夜に同じ手動テストを再実施させない。
 - コスト試算と販売法定表示の**下書き**は可能だが、実請求書の確認と運営者自身の住所・事業情報・返金規約の承認は代替できない。
 - **重要：`wrangler.staging-billing.toml` には `keep_vars=false` と `[vars]` があり、ダッシュボードで後から追加した `STRIPE_TEST_CLOCK_ID` が将来のWrangler再デプロイで消える可能性がある。**そのため今夜のQA前に安易に再デプロイしない。追加された時計設定をCloudflare画面で確認し、再デプロイ時は専用設定・secretを安全に保全する計画を先に作成。
+
+
+## 2026-10-22 GitHub側だけで実施：TEST時計の実在確認・Windows QA更新（ステージング未デプロイ）
+
+- 実Stripe API仕様：顧客作成時だけ `test_clock` を付与でき、テスト時計には `id`・`livemode`・`status`（ready/advancing/internal_failure）・`deletes_after` がある。テスト時計が関連づいたSubscriptionは、`GET /v1/subscriptions?customer=<id>` で取得対象になる。公式資料: https://docs.stripe.com/api/test_clocks/object ・ https://docs.stripe.com/api/subscriptions/list 。**これは公開API仕様の調査であり、このStripeアカウントへ接続して時計を確認した事実ではない。**
+- `worker/billing.js` は、明示的に `STRIPE_TEST_CLOCK_ID` を設定した隔離stagingのCheckout時、`GET /v1/test_helpers/test_clocks/<clock>` を **読取専用で一度実行**。時計のID・型・testモード・有効期限が一致せず、または時計が `ready` 以外なら、**Customer POSTの前に停止**する。既存の時計が未指定なら従来通りで、Live/旧¥680には手を加えない。
+- `worker/billing.test.mjs` に mock時計の正しいGET、advance中・内部障害・誤ID・Live・期限切れ・期限欠損などの遮断、明示設定のないときは時計GETを実施しないテストを追加。
+- `stripe-staging-qa.js` に時計準備中の分かりやすいメッセージ。`scripts/Windows_Start_Stripe_Staging_QA.cmd` の固定zipコミットを `e0446d7...` に更新し、既存のGoogleアカウント選択強制・ログイン中メール表示・新時計準備エラー対応済みのQA画面を起動できるようにした。ユーザーがすでに開いた古いQAサーバーへは自動反映されない。
+- **変更範囲はDraft PR #62だけ。** 今夜の独立staging Workerは `c9100b58` コードに再デプロイしていないため、実Stripe時計GETの新チェックは**本番・staging実機では未反映**。将来stagingにWrangler再デプロイすると、dashboardに後から入力した `STRIPE_TEST_CLOCK_ID` が `keep_vars=false` の影響で消える可能性がある。**今回のテスト時計を確実に保持する手順を決める前にWranglerを再実行しないこと。**
+- Stripe TESTの新規顧客作成／月額更新／支払失敗→復旧は**未実施**。実験用Googleアカウントの新staging招待も未確認。本番公開はNO-GO、main/Live/¥680契約無変更。GitHub Actionsの最新HEAD結果は実行ログ参照（合格確認前に完了扱いしない）。
