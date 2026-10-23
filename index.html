@@ -45,6 +45,7 @@
 @media(max-width:520px){.site-head{height:64px}.head-inner,.wrapper{padding-left:17px;padding-right:17px}.logo{font-size:22px}.nav a:nth-child(2){display:none}.hero h1{font-size:43px;line-height:1.23}.lead{font-size:14px}.cta-row .btn{flex:1 1 100%}.mock{padding:15px}.showcase{min-height:343px}.workout{padding:24px;min-height:305px}.workout h3{font-size:27px}.review-card,.habit-card{padding:19px}.concept{padding:33px 0}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 .phrase-jump{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 12px;background:#f3f7ef;border:1px solid #d8e6d5;border-radius:10px;color:#25563f;font-size:12px;font-weight:850}.phrase-jump:hover{text-decoration:underline}.phrase-jump span{margin-left:auto;background:#d7e9d8;color:#22533b;border-radius:20px;min-width:24px;text-align:center;font-size:11px;padding:1px 5px}
+.freeze-banner{max-width:1170px;margin:0 auto 35px;padding:0 24px}.freeze-inner{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;border-radius:21px;padding:28px 32px;background:linear-gradient(114deg,#fff6ed,#eaf4e9);border:1px solid #f0dccb}.freeze-eyebrow{font-size:11px;font-weight:950;color:#b76543;letter-spacing:1.4px}.freeze-inner h2{font-size:clamp(24px,3.5vw,34px);line-height:1.35;margin:7px 0}.freeze-inner p{max-width:720px;font-size:13px;line-height:1.85;color:#53695a;margin:0}.freeze-inner .btn{white-space:nowrap}@media(max-width:740px){.freeze-banner{padding:0 17px}.freeze-inner{grid-template-columns:1fr;padding:21px}.freeze-inner .btn{white-space:normal}}
 .scene-workout{background:#fff;border:1px solid var(--line);min-height:0}.scene-previews{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:18px}.scene-preview{display:flex;flex-direction:column;gap:7px;padding:14px 11px;border:1px solid #dce6d8;border-radius:14px;background:#f5f8f0}.scene-preview:nth-child(2){background:#fff4e9}.scene-preview:nth-child(3){background:#eef5f6}.scene-preview>span{font-size:24px}.scene-preview small{font-size:11px;line-height:1.6}.scene-preview b{font-size:11px;margin-top:auto}.scene-preview:hover{border-color:#568268}@media(max-width:600px){.scene-previews{grid-template-columns:1fr}.scene-preview{padding:16px}.scene-preview>span{font-size:22px}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
@@ -63,6 +64,7 @@
   <div class="cta-row">
    <a class="btn primary" href="./reflex.html" data-sg-cta="sprint">無料で60秒チャレンジ <span aria-hidden="true">↗</span></a>
    <a class="btn" href="./scenes.html" data-sg-cta="ai">AIと実戦英会話 <span aria-hidden="true">→</span></a>
+   <a class="btn orange" href="./freeze-breaker.html" data-sg-cta="freeze">英語が出ない瞬間を克服 ↗</a>
   </div>
   <p class="smallline">無料ベータ版。60秒チャレンジはログイン不要・回数制限なし。AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで。Proの一般向け有料登録はまだ開始していません。</p>
  </div>
@@ -84,10 +86,18 @@
   <div class="start-steps">
    <div class="start-step"><strong>① まずは60秒</strong>ログインなしでスタート。151問の中から、英語でひと言返す練習をしよう。</div>
    <div class="start-step"><strong>② AI英会話に挑戦</strong>Googleでログインして、カフェ・ホテルなど16の場面から選ぼう。</div>
-   <div class="start-step"><strong>③ 振り返ってもう一度</strong>詰まった表現や言い換えを見直して、次は声に出してみよう。</div>
+   <div class="start-step"><strong>③ フリーズ克服に挑戦</strong>予想外の返答に詰まっても、切り返してもう一度。無料で何度でも練習できるよ。</div>
   </div>
   <div style="margin-top:15px"><a class="btn primary" href="./reflex.html" data-sg-cta="sprint">まずは無料で60秒試す →</a></div>
   <p class="start-guide-note">※ AI英会話は無料でも利用回数に制限があります。音声認識はブラウザや端末によって使えない場合があり、文字入力でも練習できます。</p>
+ </div>
+</section>
+<section class="freeze-banner" aria-label="フリーズ克服ジムへ">
+ <div class="freeze-inner">
+  <div><div class="freeze-eyebrow">SPEAKINGYM SPECIAL · FREEZE BREAKER</div>
+  <h2>言えなかった瞬間が、次の練習になる。</h2>
+  <p>予想外のひと言 → 固まった理由を見つける → 会話を立て直す → 別の返答でもう一度。「言えた」の記録を残せる無料トレーニング。AI利用回数を消費しないよ。</p></div>
+  <a class="btn primary" href="./freeze-breaker.html">フリーズ克服ジムを試す ↗</a>
  </div>
 </section>
 <section class="wrapper" id="workouts">
