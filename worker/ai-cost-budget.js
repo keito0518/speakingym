@@ -38,12 +38,19 @@ export function budgetGuardConfig(env={}){
  // A signed user, durable shared D1 and existing plan guard are required.
  if(env.ENFORCE_PLANS!=='true'||!env.PLAN_DB||!ledgerMode(env))return null;
  const monthlyYen=boundedInt(env.AI_MONTHLY_BUDGET_YEN,500,10000000);
+ // Free may not consume the money deliberately reserved for paying learners.
+ const monthlyFreeYen=boundedInt(env.AI_FREE_BUDGET_YEN,1,10000000);
+ const proReserveYen=boundedInt(env.AI_PRO_RESERVED_YEN,1,10000000);
  const monthlyFreeConvo=boundedInt(env.AI_FREE_MONTHLY_CONVERSATIONS,1,500);
  const monthlyFreeTeacher=boundedInt(env.AI_FREE_MONTHLY_TEACHER,1,100);
  const usdJpy=boundedInt(env.AI_GUARD_USD_JPY,100,300);
  const factor=boundedInt(env.AI_GUARD_SAFETY_PERCENT,100,500);
- if([monthlyYen,monthlyFreeConvo,monthlyFreeTeacher,usdJpy,factor].some(x=>x===null)||!RATES[MODEL])return null;
+ if([monthlyYen,monthlyFreeYen,proReserveYen,monthlyFreeConvo,monthlyFreeTeacher,usdJpy,factor]
+   .some(x=>x===null)||!RATES[MODEL]||
+   monthlyFreeYen+proReserveYen>monthlyYen)return null;
  return {monthlyMilliYen:monthlyYen*1000,
+  monthlyFreeMilliYen:monthlyFreeYen*1000,
+  proReservedMilliYen:proReserveYen*1000,
   monthlyFreeConvo,monthlyFreeTeacher,usdJpy,factor,model:MODEL};
 }
 export function estimateBudgetMilliYen(kind,config){
@@ -64,10 +71,9 @@ export async function budgetSchemaReady(db){
  }catch{return false}
 }
 /**
- * One atomic SQLite INSERT enforces both the shared month cap and Free user's
- * per-kind monthly limit. Reads used for the comparisons are in the same
- * SQLite write statement; concurrent requests cannot both spend the final slot.
- * The reservation itself, never the signed entitlement, is the authorization.
+ * One atomic SQLite INSERT enforces global month cap, separate Free budget
+ * cap (leaving an allocated Pro reserve), and Free user's per-kind monthly limit.
+ * Concurrent requests cannot both take the final spending slot.
  */
 export async function reserveAIBudget(db,{uid,tier,kind,env,time=Date.now()}={}){
  const config=budgetGuardConfig(env);
@@ -88,11 +94,14 @@ export async function reserveAIBudget(db,{uid,tier,kind,env,time=Date.now()}={})
   " (id,uid,month,tier,kind,reserved_milliyen,created_at)"+
   " SELECT ?,?,?,?,?,?,?"+
   " WHERE (SELECT COALESCE(SUM(reserved_milliyen),0) FROM ai_cost_budget_reservations WHERE month=?) + ? <= ?"+
+  " AND (?=0 OR (SELECT COALESCE(SUM(reserved_milliyen),0)"+
+  " FROM ai_cost_budget_reservations WHERE month=? AND tier='free') + ? <= ?)"+
   " AND (?=0 OR (SELECT COUNT(*) FROM ai_cost_budget_reservations"+
   " WHERE uid=? AND month=? AND tier='free' AND kind=?) < ?) RETURNING id";
  try{
   const row=await db.prepare(sql).bind(id,uid,month,tier,kind,milliYen,
    Math.floor(time/1000),month,milliYen,config.monthlyMilliYen,
+   freeOnly,month,milliYen,config.monthlyFreeMilliYen,
    freeOnly,uid,month,kind,freeLimit).first();
   return row?{ok:true,id,month,milliYen,model:config.model}:
    {ok:false,reason:'budget_limit'};
