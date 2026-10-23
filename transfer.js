@@ -49,7 +49,7 @@ function refreshIntro(){
  const owner=ownerScope(),allowed=owner!==null;
  $('start').disabled=!allowed;
  $('locked').hidden=allowed;
- if(!allowed){$('historySummary').textContent='ログイン状態を確認中。ほかの利用者の記録は表示しません。';$('reviewDashboard').hidden=true;$('eraseResults').hidden=true;show('introPane');return}
+ if(!allowed){$('historySummary').textContent='ログイン状態を確認中。ほかの利用者の記録は表示しません。';$('reviewDashboard').hidden=true;$('eraseResults').hidden=true;$('startFresh').hidden=true;show('introPane');return}
  const h=history(),stats=transferStats(h),reasonRecords=window.speakingymSprintDiagnosis?.getRecords?.();
  const chosen=chooseTransferPair(h,reasonRecords);
  const schedule=reviewSchedule(h),trend=reviewTrend(h);
@@ -63,6 +63,7 @@ function refreshIntro(){
   'まずは1セット試そう。今日の記録から翌日・3日後・7日後の復習を提案します。';
  $('start').textContent=schedule.due.length?
   '▶ 復習日になったセットに再挑戦':'▶ 新しい2つの場面で挑戦';
+ $('startFresh').hidden=schedule.due.length===0||!chosen.pair;
  $('focus').textContent=chosen.focusReason?
   '前の振り返りを参考に「'+TRANSFER_REASONS[chosen.focusReason]+'」に関連する練習を優先しています。':
   '初めてなら基本のセットから。練習を続けると違う場面に挑戦できます。';
@@ -70,11 +71,11 @@ function refreshIntro(){
  $('eraseResults').hidden=stats.pairAttempts===0;
  show('introPane');
 }
-function begin(){
+function begin(mode='auto'){
  if(ownerScope()===null)return refreshIntro();
  const reasonRecords=window.speakingymSprintDiagnosis?.getRecords?.();
  const entries=history(),selected=chooseTransferPair(entries,reasonRecords);
- const due=chooseReviewPair(entries,new Date(),selected.focusReason);
+ const due=mode==='new'?null:chooseReviewPair(entries,new Date(),selected.focusReason);
  if(!selected.pair&&!due)return;
  current={pair:due||selected.pair,kind:due?'review':'new',owner:ownerScope()};
  round=0;reports=[];
@@ -135,7 +136,8 @@ function erase(){
  try{localStorage.removeItem(k);refreshIntro()}
  catch{$('historySummary').textContent='削除できませんでした。ブラウザの保存設定を確認してください。'}
 }
-$('start').addEventListener('click',begin);
+$('start').addEventListener('click',()=>begin());
+$('startFresh').addEventListener('click',()=>begin('new'));
 $('said').addEventListener('click',()=>choose(true));
 $('froze').addEventListener('click',()=>choose(false));
 $('again').addEventListener('click',refreshIntro);
@@ -148,6 +150,7 @@ function beginOwnerTransition(){
  $('historySummary').textContent='ログイン状態を確認中。';
  $('locked').hidden=false;
  $('start').disabled=true;
+ $('startFresh').hidden=true;
  $('eraseResults').hidden=true;
  $('reviewDashboard').hidden=true;
  $('examples').replaceChildren();
