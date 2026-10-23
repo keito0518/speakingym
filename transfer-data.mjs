@@ -4,6 +4,7 @@
  * Results are self-reported, not automatic assessment or proof of proficiency.
  * The data contain no user content and use no paid API.
  */
+import {EXTRA_TRANSFER_PAIRS} from './transfer-extra.mjs';
 export const TRANSFER_PAIRS = Object.freeze([
  {id:'words-explain-1',reason:'words',skill:'難しい単語を使わず説明する',
   first:{scene:'旅先の駅で',cue:'自分のバッグが見つからないと係員に伝える。',
@@ -77,6 +78,7 @@ export const TRANSFER_PAIRS = Object.freeze([
   second:{scene:'タクシーの乗車前に',cue:'行き先が駅で合っているか確認する。',
     example:'Just to confirm, we are going to the station, right?',alternative:'The destination is the station, correct?'},
   insight:'Just to confirm ... は時刻だけでなく、行き先や予約内容の確認にも使える。'}
+...EXTRA_TRANSFER_PAIRS
 ].map(p=>Object.freeze({...p,
  first:Object.freeze(p.first),second:Object.freeze(p.second)})));
 
