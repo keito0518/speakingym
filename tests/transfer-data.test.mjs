@@ -42,7 +42,21 @@ test('unknown and forged results are rejected and arbitrary private fields are n
  assert.deepEqual(safe[0],{pairId:TRANSFER_PAIRS[0].id,first:true,second:false,at:'2026-10-23T12:01:00.000Z'});
  assert.doesNotMatch(JSON.stringify(safe),/uid|transcript/);
  assert.deepEqual(normalizeTransferResults({bad:'data'}),[]);
- assert.equal(TRANSFER_RESULT_LIMIT,60);
+ assert.equal(TRANSFER_RESULT_LIMIT,180);
+});
+test('expanded bounded history preserves earlier spaced reviews without retaining private text',()=>{
+ const rows=Array.from({length:90},(_,i)=>({
+  pairId:TRANSFER_PAIRS[i%TRANSFER_PAIRS.length].id,
+  first:i%2===0,second:i%3===0,
+  at:new Date(Date.UTC(2026,9,1,0,i)).toISOString(),
+  transcript:'private utterance must never persist',
+  userId:'sensitive-identifier'
+ }));
+ const result=normalizeTransferResults(rows);
+ assert.equal(result.length,90);
+ assert.deepEqual(Object.keys(result[0]),['pairId','first','second','at']);
+ assert.doesNotMatch(JSON.stringify(result),/private utterance|sensitive-identifier/);
+ assert.equal(normalizeTransferResults([...rows,...rows,...rows]).length<=TRANSFER_RESULT_LIMIT,true);
 });
 test('focus reason from voluntary diagnosis prioritizes matching transfer skill',()=>{
  const chosen=chooseTransferPair([],[{session:'2026-10-23T10:11:12.000Z|0|repair1',reason:'words'}]);
