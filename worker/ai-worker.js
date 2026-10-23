@@ -1,6 +1,7 @@
 import {freeSessionMode,freeSessionSchemaReady} from "./free-session-reservations.js";
 import {stagingBillingSchemaReady} from "./staging-billing-schema.js";
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
+import {budgetGuardRequested,budgetGuardConfig,budgetSchemaReady,reserveAIBudget} from "./ai-cost-budget.js";
 import {ledgerMode,ledgerSchemaReady} from "./turn-ledger.js";
 import {replayMode,receiptSchemaReady,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt,purgeReceipts} from "./request-receipts.js";
 import {handleBilling,billingMode,refreshBillingIfNeeded} from "./billing.js";
@@ -356,7 +357,7 @@ export default {
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
       const stageBillingReady=(env.STAGING_HEALTH_ONLY==="true"||env.STAGING_BILLING_ONLY==="true")
         ? await stagingBillingSchemaReady(env.PLAN_DB) : null;
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingMode(env) }, 200, healthOrigin);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, aiBudgetRequested: budgetGuardRequested(env), aiBudgetReady: budgetGuardRequested(env) && !!budgetGuardConfig(env) && await budgetSchemaReady(env.PLAN_DB), billingMode: billingMode(env) }, 200, healthOrigin);
     }
     // An isolated staging Worker starts in inspection-only mode. No quota/session/AI
     // writes or billing/webhook handling, even with a valid Firebase token.
@@ -461,6 +462,12 @@ export default {
       const sceneId=typeof body?.sceneId==="string"?body.sceneId:"";
       if(sceneId&&!Object.hasOwn(EXTRA_SCENES,sceneId))return reply({error:"unknown_scene"},400,origin);
     }
+    // Explicit cost-guard opt-in must FAIL CLOSED before any quota reservation
+    // or provider call if configuration/schema is incomplete. Normal production
+    // defaults remain unchanged until separate activation approval.
+    if(budgetGuardRequested(env) && (!budgetGuardConfig(env) ||
+       !await budgetSchemaReady(env.PLAN_DB)))
+      return reply({error:"ai_budget_not_ready"},503,origin);
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
     const requestStartedAt=Date.now();
@@ -526,6 +533,33 @@ export default {
           }
         }
       }catch{return reply({error:"plans_unavailable"},503,origin)}
+    }
+    // Atomically reserve a conservative per-call budget BEFORE Gemini, not
+    // from client inputs or after uncertain provider billing. Reservation stays
+    // spent on provider errors/timeouts to avoid a retry loophole. The existing
+    // Free/Pro functional quota is refunded if this guard denies admission.
+    if(budgetGuardRequested(env)){
+      let admission;
+      try{
+        admission=await reserveAIBudget(env.PLAN_DB,{
+          uid:planUid,
+          tier:body?.action==="reflex_coach"?teacherReservation?.plan:turnReservation?.plan,
+          kind:body?.action==="reflex_coach"?"teacher":"conversation",env
+        });
+      }catch{admission={ok:false,reason:"budget_not_ready"}}
+      if(!admission?.ok){
+        if(teacherReservation){
+          try{await refundTeacher(env.PLAN_DB,planUid,teacherReservation.id)}catch{}
+        }
+        if(turnReservation){
+          try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}
+        }
+        if(receiptClaim){
+          try{await failReceipt(env.PLAN_DB,{...receiptClaim,status:admission.reason==="budget_limit"?429:503})}catch{}
+        }
+        return reply({error:admission?.reason==="budget_limit"?
+          "ai_budget_exhausted":"ai_budget_not_ready"},admission?.reason==="budget_limit"?429:503,origin);
+      }
     }
     if(body?.action === "reflex_coach"){
       const result=await runReflexCoaching(body,env,origin,teacherReservation?.plan);
