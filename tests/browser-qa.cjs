@@ -88,7 +88,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     await page.evaluate(()=>{
       const key='speakingym-transfer-results-v1:guest';
       const rows=JSON.parse(localStorage.getItem(key)||'[]');
-      rows.push({pairId:'words-explain-1',first:false,second:false,at:new Date(Date.now()-2*86400000).toISOString()});
+      rows.push({pairId:'other-support-5',first:false,second:false,at:new Date(Date.now()-2*86400000).toISOString()});
       localStorage.setItem(key,JSON.stringify(rows));
     });
     // Simulate a second tab saving a due review; focus should update without reload.
