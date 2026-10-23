@@ -49,7 +49,7 @@ function refreshIntro(){
  const owner=ownerScope(),allowed=owner!==null;
  $('start').disabled=!allowed;
  $('locked').hidden=allowed;
- if(!allowed){$('historySummary').textContent='ログイン状態を確認中。ほかの利用者の記録は表示しません。';$('eraseResults').hidden=true;show('introPane');return}
+ if(!allowed){$('historySummary').textContent='ログイン状態を確認中。ほかの利用者の記録は表示しません。';$('reviewDashboard').hidden=true;$('eraseResults').hidden=true;show('introPane');return}
  const h=history(),stats=transferStats(h),reasonRecords=window.speakingymSprintDiagnosis?.getRecords?.();
  const chosen=chooseTransferPair(h,reasonRecords);
  $('focus').textContent=chosen.focusReason?
