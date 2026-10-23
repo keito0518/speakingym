@@ -36,6 +36,11 @@ the real model versions after redacting any PII:
 - For `kind=conversation`: put each generated scene reply in `reply`.
 - For `kind=teacher`: fill the `feedback` object containing at least
   `improved`, `praise`, and `why` strings.
+- When actual TEST responses provide metadata, copy the response
+  `usageMetadata` fields `promptTokenCount`, `candidatesTokenCount` and
+  `thoughtsTokenCount`, plus measured `latencyMs`. Missing fields remain null;
+  never estimate them from guesses. Dollar amounts are standard paid-tier
+  equivalents, **not bills**, and are hidden until ALL cases have valid metrics.
 - Preserve `caseId` and `model`, don't duplicate a combination.
 
 Then compare without making any more provider requests:
