@@ -34,7 +34,7 @@ test('My Page directs core workouts and saved expressions to one place',()=>{
  for(const url of ['./scenes.html','./reflex.html','./freeze-breaker.html','./phrasebook.html']){
   assert.ok(account.includes('href="'+url+'"'),url);
  }
- const shortcuts=account.match(/<div class="shortcut-row">([\\s\\S]*?)<\\/div>/)?.[1];
+ const shortcuts=account.match(/<div class="shortcut-row">([\s\S]*?)<\/div>/)?.[1];
  assert.ok(shortcuts,'my page keeps the four core routes');
  const ordered=['./reflex.html','./freeze-breaker.html','./phrasebook.html','./scenes.html']
   .map(url=>shortcuts.indexOf('href="'+url+'"'));
