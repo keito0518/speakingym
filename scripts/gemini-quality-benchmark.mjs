@@ -16,6 +16,10 @@
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 export const MODELS=Object.freeze(['gemini-3.5-flash-lite','gemini-3.1-flash-lite']);
+const PAID_STANDARD_RATES=Object.freeze({
+ 'gemini-3.5-flash-lite':{input:0.30,output:2.50},
+ 'gemini-3.1-flash-lite':{input:0.25,output:1.50}
+});
 export const CASES=Object.freeze([
  {id:'cafe-milk-fix',kind:'conversation',level:'easy',
   prompt:'I asked for iced oat milk, but this is hot with regular milk. Could you fix it?',
@@ -85,8 +89,9 @@ const words=s=>normalize(s).replace(/[^a-z\d\s'-]/g,' ').split(/\s+/).filter(Boo
 const valid=(s,max=1500)=>typeof s==='string'&&s.length<=max;
 export function createResponseTemplate(){
  return {schemaVersion:1,source:'EMPTY_TEMPLATE_NOT_MODEL_OUTPUT',
-  models:[...MODELS],samples:CASES.flatMap(c=>MODELS.map(model=>({
-   caseId:c.id,model,reply:'',feedback:null
+  models:[...MODELS],cases:CASES.map(c=>({...c})),
+  samples:CASES.flatMap(c=>MODELS.map(model=>({
+   caseId:c.id,model,reply:'',feedback:null,usageMetadata:null,latencyMs:null
   })))};
 }
 export function evaluateSample(entry,scenario){
@@ -118,6 +123,20 @@ export function evaluateSample(entry,scenario){
  }
  return {valid:true,score:reasons.length===0?1:0,checks:1,reasons};
 }
+function observedUsage(entry,model){
+ const u=entry?.usageMetadata;
+ if(!u||typeof u!=='object'||!Number.isSafeInteger(u.promptTokenCount)||u.promptTokenCount<0||
+  !Number.isSafeInteger(u.candidatesTokenCount)||u.candidatesTokenCount<0||
+  !Number.isSafeInteger(u.thoughtsTokenCount)||u.thoughtsTokenCount<0||
+  !Number.isSafeInteger(entry?.latencyMs)||entry.latencyMs<0||entry.latencyMs>120000)return null;
+ const rate=PAID_STANDARD_RATES[model];
+ return {
+  prompt:u.promptTokenCount,candidate:u.candidatesTokenCount,thinking:u.thoughtsTokenCount,
+  latencyMs:entry.latencyMs,
+  hypotheticalPaidTierUsd:
+   (u.promptTokenCount*rate.input+(u.candidatesTokenCount+u.thoughtsTokenCount)*rate.output)/1e6
+ };
+}
 export function evaluateModelResults(input){
  if(!input||input.schemaVersion!==1||!Array.isArray(input.samples)||
     input.samples.length>500)throw Error('invalid_benchmark_schema');
@@ -131,20 +150,37 @@ export function evaluateModelResults(input){
  }
  const results=MODELS.map(model=>{
   let attempted=0,passed=0,failed=0,missing=0;
+  let observedCount=0,pseudoCost=0,promptTokens=0,outputAndThinking=0,latencySum=0;
   const issues=[];
   for(const scenario of CASES){
    const e=byKey.get(model+'|'+scenario.id);
    const test=e?evaluateSample(e,scenario):{valid:false,reasons:['missing_sample']};
+   if(test.valid){
+    const usage=observedUsage(e,model);
+    if(usage){
+     observedCount++;pseudoCost+=usage.hypotheticalPaidTierUsd;
+     promptTokens+=usage.prompt;
+     outputAndThinking+=usage.candidate+usage.thinking;
+     latencySum+=usage.latencyMs;
+    }
+   }
    if(!test.valid){missing++;issues.push({caseId:scenario.id,reasons:test.reasons});continue}
    attempted++;
    if(!test.reasons.length)passed++;else{failed++;issues.push({caseId:scenario.id,reasons:test.reasons})}
   }
   return {model,expected:CASES.length,attempted,missing,passed,failed,
    automatedPassRatio:attempted===CASES.length?Number((passed/attempted).toFixed(3)):null,
+   observedUsageSamples:observedCount,
+   // Never compare partially populated batches as if they represented the entire workload.
+   estimatedBatchUsd:observedCount===CASES.length?Number(pseudoCost.toFixed(6)):null,
+   meanLatencyMs:observedCount===CASES.length?Math.round(latencySum/observedCount):null,
+   inputTokens:observedCount===CASES.length?promptTokens:null,
+   outputIncludingThinkingTokens:observedCount===CASES.length?outputAndThinking:null,
    issues,decision:'HUMAN_REVIEW_REQUIRED_NOT_APPROVED'};
  });
  return {schemaVersion:1,fixtureMode:input.source==='EMPTY_TEMPLATE_NOT_MODEL_OUTPUT',
   rubric:'HEURISTIC_TEXT_CHECKS_ONLY_NOT_A_MODEL_QUALITY_VERDICT',
+  pricingNote:'Observed response usageMetadata only when complete; USD calculation is PAID STANDARD TIER EQUIVALENT, NOT AN INVOICE; ignores cached-token discounts.',
   cases:CASES.length,results,
   releaseDecision:'BLOCKED_UNTIL_REAL_STAGING_SAMPLES_AND_HUMAN_REVIEW'};
 }
