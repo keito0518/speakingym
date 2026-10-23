@@ -3,7 +3,7 @@
  * Does not expose billing operations, charge the user, request AI or persist PII.
  */
 import {readSnapshot,OWNER_KEY} from './account-data.mjs';
-import {buildProStudyPlan,normalizeReviewProgress,markReview} from './pro-study-data.mjs';
+import {buildProStudyPlan,normalizeReviewProgress,markReview,reviewDay} from './pro-study-data.mjs';
 
 const $=id=>document.getElementById(id);
 const make=(tag,text,klass)=>{
@@ -13,7 +13,7 @@ const make=(tag,text,klass)=>{
  return node;
 };
 const endpoint='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/entitlement';
-let epoch=0,activeUid=null,activeSnapshot=null,activeReview=normalizeReviewProgress();
+let epoch=0,activeUid=null,activeSnapshot=null,activeReview=normalizeReviewProgress(),undoStep=null;
 const REVIEW_PREFIX='speakingym-pro-review-progress-v1:';
 function verifiedOwnerUid(){
  try{
@@ -38,7 +38,8 @@ function writeReview(uid,review){
  }catch{return false}
 }
 function lock(title,detail){
- activeUid=null;activeSnapshot=null;activeReview=normalizeReviewProgress();
+ activeUid=null;activeSnapshot=null;activeReview=normalizeReviewProgress();undoStep=null;
+ $('review-undo').hidden=true;
  $('pro-content').hidden=true;
  $('pro-locked').hidden=false;
  $('review-list').replaceChildren();
@@ -71,8 +72,15 @@ function showCards(view){
    $('review-status').textContent='アカウントの保存先を確認できません。ログイン後にページを開き直してね。';
    return;
   }
+  const today=reviewDay(new Date());
+  if(activeReview.cards[card.id]?.last===today){
+   $('review-status').textContent='この表現の今日の復習は記録済みです。';return;
+  }
+  // Keep only the most recent action reversible in case of a wrong tap.
+  undoStep={owner,epoch:current,previous:activeReview};
   activeReview=markReview(activeReview,card.id,outcome,new Date());
   const saved=writeReview(owner,activeReview);
+  $('review-undo').hidden=false;
   const updated=buildProStudyPlan(activeSnapshot,new Date(),activeReview);
   showCards(updated);showReport(updated);showDailyPlan(updated);
   $('review-status').textContent=saved?
@@ -193,6 +201,22 @@ async function refresh(){
 // Authentication has changed even if Firestore synchronization is unfinished.
 // Clear previously rendered Pro-only local history immediately, not at the next
 // signed entitlement response.
+// A mistaken self-report can be undone without altering previously saved practice.
+$('review-undo').addEventListener('click',()=>{
+ const step=undoStep;
+ if(!step||step.epoch!==epoch||$('pro-content').hidden||
+    verifiedOwnerUid()!==step.owner||activeUid!==step.owner||!activeSnapshot){
+  undoStep=null;$('review-undo').hidden=true;return;
+ }
+ activeReview=step.previous;undoStep=null;
+ const saved=writeReview(step.owner,activeReview);
+ const updated=buildProStudyPlan(activeSnapshot,new Date(),activeReview);
+ showCards(updated);showReport(updated);showDailyPlan(updated);
+ $('review-undo').hidden=true;
+ $('review-status').textContent=saved?
+  '直前の復習記録を取り消しました。もう一度選べます。':
+  '画面内では取り消しましたが、端末への保存はできませんでした。';
+});
 window.addEventListener('speakingym:account-changing',()=>{
  epoch++;
  lock('アカウントを再確認中です','新しいアカウントの利用プランを確認しています。');
