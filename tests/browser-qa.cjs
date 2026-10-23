@@ -202,6 +202,36 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#diagnosisPanel').isVisible(),false,'diagnosis hidden for spoken answer');
   await page.locator('#reviewNext').click();
   assert.equal(await page.locator('#diagnosisChoices [data-reason="words"]').getAttribute('aria-pressed'),'true','reason persists across review navigation');
+  // The plan is assembled from real on-device sprint outcomes and voluntary
+  // reflection; a completed round is still followed by the existing review.
+  await page.locator('#reviewNext').click();
+  assert.equal(await page.locator('#historyPane').isVisible(),true);
+  await page.locator('#historyBack').click();
+  await page.locator('#personalPlan').waitFor({state:'visible'});
+  assert.equal(await page.locator('#personalSteps button').count(),3);
+  assert.match(await page.locator('#personalPlanReason').textContent(),/詰まりの理由/);
+  assert.match(await page.locator('#personalSteps .personal-step').first().textContent(),/詰まった表現/);
+  assert.match(await page.locator('#personalProgress').textContent(),/0 \/ 3/);
+  for(let stage=0;stage<3;stage++){
+    if(stage===0)await page.locator('#personalSteps button').first().click();
+    assert.equal(await page.locator('#playPane').isVisible(),true);
+    if(stage===2){
+      assert.match(await page.locator('#personalPlan').textContent(),/最近出ていない場面/);
+    }
+    await page.locator('#spoken').click();
+    await page.locator('#finishEarly').click();
+    assert.equal(await page.locator('#endPane').isVisible(),true);
+    assert.match(await page.locator('#personalProgress').textContent(),new RegExp((stage+1)+' \\/ 3'));
+    assert.equal(await page.locator('#personalNext').isVisible(),true);
+    await page.locator('#personalNext').click();
+  }
+  assert.equal(await page.locator('#introPane').isVisible(),true);
+  assert.match(await page.locator('#personalProgress').textContent(),/3 \/ 3/);
+  assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-sprint-personal-progress-v1:guest')||''),/"done":\[true,true,true\]/);
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  assert.equal(await page.locator('#personalPlan').isVisible(),false,'account transition hides the previous plan');
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-ready')));
+  assert.equal(await page.locator('#personalPlan').isVisible(),true);
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
   await page.evaluate(()=>{localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([{id:'repair1:easy:quick',cardId:'repair1',kind:'quick',text:'Could you repeat that?',level:'easy',goal:'聞き返す'}]));window.speakingymPhrases.toggle({text:'Could I have oat milk?',sceneId:'cafe',level:'standard',source:'AIの言い換え'});window.dispatchEvent(new Event('speakingym:account-ready'))});
   assert.equal(await page.locator('#phrases article').count(),2);await page.click('#hide');assert.equal(await page.locator('.english:visible').count(),0);await page.getByRole('button',{name:'答えを見る'}).first().click();assert.equal(await page.locator('.english:visible').count(),1);
