@@ -33,7 +33,8 @@
   const badge=$('sg-pro-availability');
   if(badge){badge.textContent='受付状況を確認中';badge.classList.toggle('wait',true)}
   copy('sg-pro-sale-notice','Proの申込受付状況を確認できません。ログイン後に契約状態を再確認してください。確認できるまでは決済できません。');
-  copy('sg-pro-price-caption','/ 月・税込（受付状況を確認中）');
+  copy('sg-pro-price-amount','¥980');
+  copy('sg-pro-price-caption','/ 月・税込（正式公開価格・申込準備中）');
   copy('sg-pro-teacher-limit','AI先生の個別講評：月150回（公開準備中）');
   copy('sg-pro-daily-limit','日次回数制限なし・月間上限で管理（公開準備中）');
   copy('sg-pro-compare-heading','Pro（公開準備中）');
@@ -41,7 +42,7 @@
   copy('sg-pro-compare-teacher','月150回（準備中）');
   copy('sg-pro-compare-sprint','回数制限なし（準備中）');
   copy('sg-pro-payment-status','申込受付状況を確認中');
-  copy('sg-pro-faq-availability','Proは月1,480円（税込）の予定です。申込受付状況の確認が必要です。');
+  copy('sg-pro-faq-availability','正式公開価格は月980円（税込）に決定。現在は申込準備中です。');
  }
  // Only a successful, signed-in response from our own Worker is allowed to
  // show real payment availability. Never infer it from URL or browser state.
@@ -53,18 +54,19 @@
   const badge=$('sg-pro-availability');
   if(badge){badge.textContent=live?'申込受付中':'招待テストのみ';badge.classList.toggle('wait',!live)}
   copy('sg-pro-sale-notice',live
-   ?'Proは月1,480円（税込）の自動更新型有料プランです。Stripeでの申し込み後は、解約しない限り毎月請求されます。料金と支払条件を確認してから登録してください。'
-   :'現在、一般向けの有料会員募集・決済は行っていません。指定テスターのStripeサンドボックス操作では、実際の請求はありません。');
-  copy('sg-pro-price-caption',live?'/ 月・税込（自動更新）':'/ 月・税込（テストのみ・実請求なし）');
+   ?'Proの正式料金は月980円（税込）です。Stripeでの申し込み後は、解約しない限り毎月自動更新されます。事業者情報・解約条件・利用枠が確定してから登録してください。'
+   :'正式公開時のPro価格は月980円（税込）に決定済み。現在のサンドボックスは旧1,480円プランを使うTEST専用で、一般の方には請求しません。');
+  copy('sg-pro-price-amount',live?'¥980':'¥1,480');
+  copy('sg-pro-price-caption',live?'/ 月・税込（正式価格・自動更新）':'/ 月・税込（旧TEST専用・実請求なし）');
   copy('sg-pro-teacher-limit',live?'AI先生の個別講評：月150回':'AI先生の個別講評：月150回（公開準備中）');
   copy('sg-pro-daily-limit',live?'日次回数制限なし・月間上限で管理':'日次回数制限なし・月間上限で管理（公開準備中）');
   copy('sg-pro-compare-heading',live?'Pro':'Pro（公開準備中）');
   copy('sg-pro-compare-turns',live?'月1,000ターン':'月1,000ターン（準備中）');
   copy('sg-pro-compare-teacher',live?'月150回':'月150回（準備中）');
   copy('sg-pro-compare-sprint',live?'回数制限なし':'回数制限なし（準備中）');
-  copy('sg-pro-payment-status',live?'月1,480円・税込、自動更新':'一般向けの支払受付なし');
+  copy('sg-pro-payment-status',live?'月980円・税込、自動更新':'一般向けの支払受付なし');
   copy('sg-pro-faq-availability',live
-   ?'ログイン済みのこのアカウントは月1,480円（税込）でProに登録できます。申し込み後は毎月自動更新され、契約管理から解約できます。'
+   ?'ログイン済みのこのアカウントは月980円（税込）でProに登録できます。申し込み後は毎月自動更新され、契約管理から解約できます。'
    :'一般向けの申し込みはまだ受け付けていません。テスト資格のあるアカウントのみ無請求で検証できます。');
  }
  async function refresh(){
@@ -72,13 +74,25 @@
   try{
    const data=await api('status');if(seq!==sequence)return;
    if(data.mode!=='live'&&data.mode!=='test')throw Error('billing_disabled');
-   checkoutAllowed=['none','canceled','incomplete_expired'].includes(data.status);
-   buy.disabled=busy||!checkoutAllowed;
    const live=data.mode==='live';
-   buy.textContent=data.pro?'Proを利用中':(live?'Proに申し込む（月1,480円・税込）':'Proにテスト登録（月1,480円・実請求なし）');portal.hidden=!data.hasCustomer;portal.disabled=busy||!data.hasCustomer;
+   // A backend that has not yet been updated with the signed ¥980 LIVE price
+   // must NOT offer paid checkout. Older TEST fixtures remain test-only.
+   const priceVerified=live?data.checkoutAmountJpy===980:
+    (data.checkoutAmountJpy===undefined||data.checkoutAmountJpy===1480);
+   checkoutAllowed=priceVerified&&['none','canceled','incomplete_expired'].includes(data.status);
+   buy.disabled=busy||!checkoutAllowed;
+   buy.textContent=data.pro?'Proを利用中':(live?'Proに申し込む（月980円・税込）':'Proにテスト登録（旧1,480円・実請求なし）');
+   portal.hidden=!data.hasCustomer;portal.disabled=busy||!data.hasCustomer;
    const states={active:'契約は有効ですが、Pro権限の確認が未完了です。',past_due:'支払いを確認できません。契約管理から支払い方法をご確認ください。',unpaid:'未払いのためFreeです。',incomplete:'支払い手続きが未完了です。',canceled:'契約は終了しています。',none:live?'登録できます。':'テスト登録が可能です。',duplicate_review:'契約が複数あります。再購入せず運営者にお問い合わせください。'};
    status.textContent=(live?'有料プラン：':'サンドボックス：')+(data.pro?'Pro権限を確認しました。':states[data.status]||'契約状態を確認中です。');
    showVerifiedMode(data.mode);
+   if(!priceVerified&&live){
+    buy.disabled=true;
+    buy.textContent='価格確認中：申し込み停止';
+    status.textContent='正式価格980円と決済設定の照合ができません。現時点で有料申し込みはできません。';
+    const badge=$('sg-pro-availability');if(badge){badge.textContent='価格確認中';badge.classList.toggle('wait',true)}
+    const notice=$('sg-pro-sale-notice');if(notice)notice.textContent='980円の決済設定を確認中です。一般向けの有料申し込みは停止しています。既存の契約管理は利用できます。';
+   }
    if(data.status==='active'&&!data.pro){
     const reasons={invoice_missing:'請求書情報が取得できていません',invoice_unpaid:'Stripeの支払い確認が完了していません',
      period_invalid:'契約の有効期限を確認できません',price_mismatch:'契約の価格IDが一致しません',
