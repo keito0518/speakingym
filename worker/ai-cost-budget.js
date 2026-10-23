@@ -21,9 +21,11 @@ const RATES=Object.freeze({
  'gemini-3.1-flash-lite':Object.freeze({input:0.25,output:1.50})
 });
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const COUNTS=Object.freeze({
- conversation:Object.freeze({input:8000,output:1600}),
- teacher:Object.freeze({input:12000,output:2200})
+export const BUDGET_ENVELOPE_TOKENS=Object.freeze({
+ // Provider generationConfig currently caps conversation output at 2,000
+ // and teacher output at 2,200; leave a little additional safety headroom.
+ conversation:Object.freeze({input:8000,output:2400}),
+ teacher:Object.freeze({input:12000,output:2400})
 });
 function boundedInt(value,min,max){
  const num=Number(value);
@@ -44,7 +46,7 @@ export function budgetGuardConfig(env={}){
   monthlyFreeConvo,monthlyFreeTeacher,usdJpy,factor,model:MODEL};
 }
 export function estimateBudgetMilliYen(kind,config){
- const tokens=COUNTS[kind],rate=RATES[config?.model];
+ const tokens=BUDGET_ENVELOPE_TOKENS[kind],rate=RATES[config?.model];
  if(!tokens||!rate||!config)return null;
  // Always round UP to integer milli-yen; never round a tiny reservation to 0.
  const estimated=(tokens.input*rate.input+tokens.output*rate.output)/1e6 *
@@ -69,7 +71,7 @@ export async function budgetSchemaReady(db){
 export async function reserveAIBudget(db,{uid,tier,kind,env,time=Date.now()}={}){
  const config=budgetGuardConfig(env);
  if(!config||db!==env.PLAN_DB||typeof uid!=='string'||!uid||uid.length>128||
-  !['free','pro'].includes(tier)||!Object.hasOwn(COUNTS,kind)||
+  !['free','pro'].includes(tier)||!Object.hasOwn(BUDGET_ENVELOPE_TOKENS,kind)||
   !Number.isFinite(time))return {ok:false,reason:'budget_not_ready'};
  if(!await budgetSchemaReady(db))return {ok:false,reason:'budget_not_ready'};
  const milliYen=estimateBudgetMilliYen(kind,config);
