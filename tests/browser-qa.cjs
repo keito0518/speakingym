@@ -43,6 +43,8 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
      assert.equal(await page.locator('.shortcut-row a[href="./'+dest+'"]').count(),1);
     }
     assert.equal(await page.locator('a[href="./pro-study.html"]').count(),0);
+    assert.equal(await page.locator('#sg-transfer-due').count(),1);
+    assert.equal(await page.locator('#sg-transfer-improved').count(),1);
    }
    if(path==='phrasebook.html'){
     assert.equal(await page.locator('h1').textContent(),'マイ復習帳');
@@ -83,6 +85,17 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.match(await page.locator('#historySummary').textContent(),/1 組に挑戦/);
     await page.locator('#start').click();
     assert.notEqual(await page.locator('#scene').textContent(),firstScene,'repeated exercises rotate to a different unused pair');
+    await page.evaluate(()=>{
+      const key='speakingym-transfer-results-v1:guest';
+      const rows=JSON.parse(localStorage.getItem(key)||'[]');
+      rows.push({pairId:'words-explain-1',first:false,second:false,at:new Date(Date.now()-2*86400000).toISOString()});
+      localStorage.setItem(key,JSON.stringify(rows));
+    });
+    await page.reload();
+    assert.match(await page.locator('#reviewDue').textContent(),/復習するセット/);
+    assert.equal(await page.locator('#dueCount').textContent(),'1');
+    await page.locator('#start').click();
+    assert.match(await page.locator('#progress').textContent(),/SPACED REVIEW/);
     await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
     assert.equal(await page.locator('#questionPane').isVisible(),false,'auth transition redacts the prior learner scene immediately');
     assert.equal(await page.locator('#start').isDisabled(),true);
