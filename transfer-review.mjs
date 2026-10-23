@@ -26,20 +26,17 @@ export function reviewSchedule(rawHistory=[],now=new Date()){
   const sameDay=last?.lastDay===day;
   const succeeded=attempt.first&&attempt.second;
   const streak=succeeded?(sameDay?Math.max(1,last?.streak||0):Math.min(3,(last?.streak||0)+1)):0;
-  const delay=REVIEW_STEPS[Math.min(2,succeeded?streak:0)];
+  const delay=REVIEW_STEPS[Math.min(2,succeeded?streak-1:0)];
   state.set(attempt.pairId,{pairId:attempt.pairId,reason:pairs.get(attempt.pairId)?.reason||'other',
    lastDay:day,lastSuccess:succeeded,streak,dueDay:addDays(day,delay),
    lastFirst:attempt.first,lastSecond:attempt.second});
  }
  const entries=[...state.values()].sort((a,b)=>a.dueDay.localeCompare(b.dueDay)||a.pairId.localeCompare(b.pairId));
  const due=entries.filter(x=>x.dueDay<=today),upcoming=entries.filter(x=>x.dueDay>today);
- const latest=new Map();
- for(const attempt of ordered)latest.set(attempt.pairId,attempt);
  const first=entries.filter(x=>!x.lastSuccess).length;
  const both=entries.filter(x=>x.lastSuccess).length;
  return {today,entries,due,upcoming,attempts:ordered.length,practisedPairs:entries.length,
   needRetry:first,bothSaidNow:both,
-  firstTry:ordered.filter((x,i)=>ordered.findIndex(y=>y.pairId===x.pairId)===i),
   followUps:entries.filter(e=>(ordered.filter(x=>x.pairId===e.pairId).length)>1).length};
 }
 export function chooseReviewPair(rawHistory=[],now=new Date(),reason=null){
