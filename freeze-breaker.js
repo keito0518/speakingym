@@ -9,6 +9,7 @@ import {FREEZE_SCENES,FREEZE_REASONS,normalizeFreezeProgress,nextFreezeScene,sce
 const $=id=>document.getElementById(id);
 const PREFIX='speakingym-freeze-progress-v1:';
 let scope='',progress=normalizeFreezeProgress(),attempt=null,phase='start',reason=null,usedHint=false,epoch=0;
+let importedMoment=null; // ephemeral AI-generated question; never written to localStorage.
 const el=(tag,value,klass)=>{
  const n=document.createElement(tag);if(value!==undefined)n.textContent=value;
  if(klass)n.className=klass;return n;
@@ -41,6 +42,8 @@ function saveScope(key,value){
 }
 function clearSession(){
  epoch++;attempt=null;reason=null;usedHint=false;phase='start';
+ $('return-to-ai').hidden=true;
+ $('imported-followup-note').hidden=true;
  $('reply-note').value='';
  $('feedback').textContent='';
  $('mission').hidden=true;
@@ -85,16 +88,41 @@ function showStage(stage){
  $('stage-name').textContent=names[stage]||'';
  $('mission-heading').textContent=attempt?.scene.name||'';
 }
-function startMission(){
+function receiveAIQuestion(){
+ if(importedMoment||!scope||!scope.startsWith('user:'))return;
+ const handoff=window.speakingymFreezeBridge?.consumeChallenge();
+ if(!handoff)return;
+ if(scope!=='user:'+handoff.uid)return;
+ importedMoment={...handoff,used:false,trained:false};
+ const gymScene=window.speakingymFreezeBridge.freezeScene(handoff.sceneId);
+ $('mission-select').value=gymScene;
+ $('imported-ai-question').textContent=handoff.question;
+ $('imported-ai-cue').hidden=false;
+}
+function startMission(useImported=false){
  bindScope();
  if(!scope)return;
  const mission=sceneAttempt($('mission-select').value,progress);
  if(!mission)return;
- epoch++;attempt=mission;reason=null;usedHint=false;phase='ask';
+ const useOriginal=useImported===true&&!!importedMoment&&!importedMoment.used &&
+  scope==='user:'+importedMoment.uid&&
+  window.speakingymFreezeBridge?.freezeScene(importedMoment.sceneId)===mission.scene.id;
+ if(useOriginal){
+  // Show the exact selected AI utterance once, but never include it in
+  // localStorage, analytics, URL, generated feedback or return payload.
+  attempt={...mission,variation:{...mission.variation,
+   ask:importedMoment.question,
+   meaning:'直前のAIが話した内容です。自動翻訳や添削は行っていません。',
+   goal:'まずは聞き返し・時間稼ぎ・言い換えで会話を立て直そう。'},
+   imported:true};
+  importedMoment.used=true;importedMoment.trained=true;
+ }else attempt=mission;
+ epoch++;reason=null;usedHint=false;phase='ask';
+ $('imported-followup-note').hidden=!useOriginal;
  $('reply-note').value='';$('feedback').textContent='';
  $('result').hidden=true;$('freeze-hint').hidden=true;
  $('transcript-disclaimer').hidden=true;
- $('context').textContent=attempt.scene.context;
+ $('context').textContent=useOriginal?'先ほどのAI実践英会話から選んだ質問だよ。':attempt.scene.context;
  $('dialogue').textContent=attempt.variation.ask;
  $('translation').textContent=attempt.variation.meaning;
  $('goal').textContent=attempt.variation.goal;
@@ -127,7 +155,9 @@ function showFollowup(){
  $('followup-hint').textContent=attempt.variation.examples[0];
  $('followup-hint-2').textContent=attempt.variation.examples[1];
  $('freeze-hint').hidden=true;
- $('feedback').textContent='少し違う返事が来たよ。今度は自分の言葉で答えてみよう。';
+ $('feedback').textContent=attempt.imported?
+  'ここからは実際の会話の続きではなく、別の想定返答での応用練習だよ。':
+  '少し違う返事が来たよ。今度は自分の言葉で答えてみよう。';
  showStage('retry');
 }
 function showHint(){
@@ -145,6 +175,7 @@ function finish(saidIt){
  const saved=saveScope(key,progress);
  const record=progress.records[id];
  phase='done';$('mission').hidden=true;$('result').hidden=false;
+ $('return-to-ai').hidden=!(importedMoment?.trained&&scope==='user:'+importedMoment.uid);
  const independently=saidIt&&!usedHint;
  $('result-title').textContent=independently?'リベンジ成功を記録！':'今日の詰まりは次の練習へ';
  $('result-detail').textContent=independently?
@@ -165,10 +196,14 @@ function renderSceneOptions(){
 }
 function pickRecommended(){
  if(!scope)return;
- $('mission-select').value=nextFreezeScene(progress).id;
+ $('mission-select').value=importedMoment&&!importedMoment.used?
+  window.speakingymFreezeBridge.freezeScene(importedMoment.sceneId):
+  nextFreezeScene(progress).id;
  $('feedback').textContent='期限が来たリベンジを優先して選んだよ。';
 }
 window.addEventListener('speakingym:account-changing',()=>{
+ importedMoment=null;
+ $('imported-ai-cue').hidden=true;$('imported-ai-question').textContent='';
  scope=null;clearSession();
  $('start-button').disabled=true;$('mission-select').disabled=true;
  $('pick-recommendation').disabled=true;
@@ -176,9 +211,27 @@ window.addEventListener('speakingym:account-changing',()=>{
  $('save-warning').textContent='アカウント切替中。記録を保護するため画面を閉じました。';
 });
 window.addEventListener('speakingym:account-ready',()=>{
- bindScope();pickRecommended();
+ bindScope();receiveAIQuestion();pickRecommended();
 });
-$('start-button').addEventListener('click',startMission);
+$('start-button').addEventListener('click',()=>startMission());
+$('use-imported-question').addEventListener('click',()=>{
+ receiveAIQuestion();
+ if(!importedMoment||importedMoment.used)return;
+ $('mission-select').value=window.speakingymFreezeBridge.freezeScene(importedMoment.sceneId);
+ startMission(true);
+});
+$('return-to-ai').addEventListener('click',()=>{
+ if(!importedMoment?.trained||phase!=='done'||
+   resolveScope()!=='user:'+importedMoment.uid)return;
+ const ok=window.speakingymFreezeBridge?.stageReturn({
+  sceneId:importedMoment.sceneId,level:importedMoment.level,reason
+ });
+ if(!ok){
+  $('result-origin').textContent='ログイン状態を確認できません。元のAI実践シーンを手動で選んでね。';return;
+ }
+ // Only scene ID and level appear in URL. No AI or learner text does.
+ window.location.assign('./scenes.html?scene='+encodeURIComponent(importedMoment.sceneId));
+});
 $('pick-recommendation').addEventListener('click',pickRecommended);
 $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
@@ -195,4 +248,4 @@ $('speak-followup').addEventListener('click',()=>{if(attempt)say(attempt.followu
 $('reply-note').addEventListener('input',()=>{
  $('transcript-disclaimer').hidden=!$('reply-note').value.trim();
 });
-renderSceneOptions();bindScope();pickRecommended();
+renderSceneOptions();bindScope();receiveAIQuestion();pickRecommended();
