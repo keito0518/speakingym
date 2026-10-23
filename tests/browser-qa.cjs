@@ -110,6 +110,12 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#questionPane').isVisible(),false,'auth transition redacts the prior learner scene immediately');
     assert.equal(await page.locator('#start').isDisabled(),true);
     await page.evaluate(()=>{
+     window.dispatchEvent(new Event('focus'));
+     window.dispatchEvent(new Event('pageshow'));
+    });
+    assert.equal(await page.locator('#start').isDisabled(),true,'focus and page return must not unlock previous learner during auth transition');
+    assert.equal(await page.locator('#reviewDashboard').isVisible(),false,'old owner results stay masked until account-ready');
+    await page.evaluate(()=>{
      const uid='transfer-synthetic-owner-A';
      localStorage.setItem('speakingym-account-owner-v1',uid);
      window.speakingymAccount={isLoggedIn:()=>true,getUid:()=>uid};
@@ -118,6 +124,27 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.match(await page.locator('#historySummary').textContent(),/0 組に挑戦/,'guest result not shown to another signed-in learner');
     assert.equal(await page.locator('#startFresh').isVisible(),false,'other account has no due item or fresh-choice prompt');
+    // A confirmation callback can cause an auth transition. Protect the
+    // originally targeted records from accidental cross-account deletion.
+    await page.evaluate(()=>{
+     const owner='transfer-synthetic-owner-A';
+     localStorage.setItem('speakingym-transfer-results-v1:user:'+owner,JSON.stringify([{
+      pairId:'words-explain-1',first:true,second:false,at:new Date().toISOString()
+     }]));
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+     window.confirm=()=>{
+      window.dispatchEvent(new Event('speakingym:account-changing'));
+      const next='transfer-synthetic-owner-B';
+      localStorage.setItem('speakingym-account-owner-v1',next);
+      window.speakingymAccount={isLoggedIn:()=>true,getUid:()=>next};
+      window.dispatchEvent(new Event('speakingym:account-ready'));
+      return true;
+     };
+    });
+    assert.equal(await page.locator('#eraseResults').isVisible(),true);
+    await page.locator('#eraseResults').click();
+    assert.equal(await page.locator('#historySummary').textContent(),'これまで 0 組に挑戦 · 両場面で「言えた」0 組（自己評価）');
+    assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-transfer-results-v1:user:transfer-synthetic-owner-A')||''),/"pairId":"words-explain-1"/,'old owner records survive a confirmation dialog account change');
     assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-transfer-results-v1:guest')||''),/"first":true,"second":false/);
    }
    if(path.startsWith('scenes')){
