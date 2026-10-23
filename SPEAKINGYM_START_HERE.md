@@ -1,6 +1,8 @@
-# Speakingym — 2026-10-21 現在の公開ゲート・引き継ぎ（更新版）
+# Speakingym — 2026-10-23 現行開発方針・引き継ぎ
 
-> **対象はドラフト [PR #62](https://github.com/keito0518/speakingym/pull/62) のみ。** 新プランは月額 ¥1,480（税込）・AI会話 1,000 ターン / JST暦月・AI講評150回 / JST暦月。現行 ¥680 の商品・契約、Stripe Live、本番Worker/D1、Pages、mainは変更していない。**PRはマージしない。**
+> **最新決定：将来のPro正式価格は月額980円（税込）で固定。** 対象は未マージの [Draft PR #62](https://github.com/keito0518/speakingym/pull/62) のみ。旧1,480円のStripe TEST商品と月1,000ターン・講評150回の草案は**テスト用の歴史的状態であり、980円プランの最終提供枠ではない**。AI利用枠は採算・実品質の検証後に決める。旧680円契約、Stripe Live、本番Worker/D1/Pages、mainは変更していない。**承認なしにマージ・本番反映しない。**
+
+> **機能整理（2026-10-23）**：トップ・マイページは「60秒チャレンジ／フリーズ克服ジム／AI実践英会話／マイ復習帳」の4つに統一。フレーズ・復習の入口は `phrasebook.html`、Pro向け間隔復習（プレビュー）はそこから案内。旧 `classic.html`／`mission.html`／`live.html`／`home-preview.html` は削除せず、現行メニューから外して試作品であることを明示。AI先生は60秒チャレンジ後の任意の追加講評。**AI利用回数、D1台帳、Stripe、実際のデータはこの整理で変更しない。** 詳細：`SPEAKINGYM_CORE_FOUR_WORKOUTS_2026-10-23.md`。次の検討：Freeが理論上Proより会話回数を多く使える不均衡。
 
 ## 2026-10-21：実際のStripe TEST購入〜失効を確認（過去の「未実施」情報に優先）
 
