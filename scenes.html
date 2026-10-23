@@ -300,6 +300,7 @@ function takeFreezeMoment(){
   $('takeFreezeStatus').textContent='アカウントかブラウザの一時保存を確認できません。通常のフリーズジムは利用できます。';return;
  }
  // Deliberate same-tab transition. AI text is never placed into the URL.
+ window.speakingymAnalytics?.track('sg_freeze_from_ai');
  leave();
  window.location.assign('./freeze-breaker.html?from=ai');
 }
