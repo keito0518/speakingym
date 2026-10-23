@@ -59,6 +59,16 @@ test('completed pairs rotate to unattempted ones even when a focus category is s
  assert.notEqual(next.pair.id,first.id);
  assert.equal(new Set(all.map(p=>p.id)).size,2);
 });
+test('focused pairs do not become a two-question loop after both variations were seen',()=>{
+ const focused=TRANSFER_PAIRS.filter(p=>p.reason==='words');
+ const history=focused.map((p,i)=>({
+  pairId:p.id,first:i===0,second:false,at:'2026-10-23T12:0'+i+':00.000Z'
+ }));
+ const next=chooseTransferPair(history,[{session:'session-example',reason:'words'}]);
+ assert.equal(next.focusReason,'words');
+ assert.notEqual(next.pair.reason,'words','new scenes have priority over repetitive pairs after focus exhaustion');
+ assert.equal(TRANSFER_PAIRS.some(p=>p.id===next.pair.id),true);
+});
 test('self-report counts are not AI assessment or claimed as proven English improvement',()=>{
  const history=[
   {pairId:TRANSFER_PAIRS[0].id,first:true,second:true,at:'2026-10-23T12:00:00.000Z'},
