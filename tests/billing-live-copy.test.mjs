@@ -65,14 +65,14 @@ test('all copy that changes with live billing has an actual target',()=>{
 });
 
 test('verified LIVE Stripe mode displays paid recurring terms everywhere, not sandbox or no-charge warnings',async()=>{
- const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false});
+ const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false,checkoutAmountJpy:980});
  assert.equal(state.fetches.length,1);
  assert.equal(state.fetches[0].method,'GET');
  assert.equal(state.get('sg-checkout').disabled,false);
- assert.match(state.get('sg-checkout').textContent,/Proに申し込む（月1,480円・税込）/);
- assert.match(state.get('sg-pro-sale-notice').textContent,/毎月請求/);
+ assert.match(state.get('sg-checkout').textContent,/Proに申し込む（月980円・税込）/);
+ assert.match(state.get('sg-pro-sale-notice').textContent,/毎月自動更新/);
  assert.match(state.get('sg-pro-price-caption').textContent,/自動更新/);
- assert.equal(state.get('sg-pro-payment-status').textContent,'月1,480円・税込、自動更新');
+ assert.equal(state.get('sg-pro-payment-status').textContent,'月980円・税込、自動更新');
  assert.equal(state.get('sg-pro-availability').textContent,'申込受付中');
  assert.equal(state.get('sg-pro-compare-heading').textContent,'Pro');
  assert.doesNotMatch(state.get('sg-pro-sale-notice').textContent,/請求はありません|募集・決済は行っていません/);
@@ -80,7 +80,7 @@ test('verified LIVE Stripe mode displays paid recurring terms everywhere, not sa
 });
 
 test('LIVE requires explicit pre-Checkout acceptance; cancel and unchecked attempts cannot submit payment',async()=>{
- const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false});
+ const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false,checkoutAmountJpy:980});
  assert.equal(state.get('sg-live-review').hidden,true);
  assert.equal(state.fetches.length,1,'GET status only');
  state.get('sg-checkout').listeners.click();
@@ -103,7 +103,7 @@ test('LIVE requires explicit pre-Checkout acceptance; cancel and unchecked attem
 });
 
 test('Live offer disappears on network error, sign-out and invalid billing mode, and sandbox can recover',async()=>{
- const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false});
+ const state=await ui({mode:'live',status:'none',pro:false,hasCustomer:false,checkoutAmountJpy:980});
  assert.equal(state.get('sg-pro-availability').textContent,'申込受付中');
  assert.equal(state.get('sg-checkout').disabled,false);
  await state.refresh('network_error');
@@ -114,7 +114,7 @@ test('Live offer disappears on network error, sign-out and invalid billing mode,
  assert.doesNotMatch(state.get('sg-pro-sale-notice').textContent,/毎月請求されます|申込受付中/);
  assert.match(state.get('sg-billing-status').textContent,/契約情報を確認できません/);
  const count=state.fetches.length;
- await state.refresh({mode:'live',status:'none',pro:false,hasCustomer:false},false);
+ await state.refresh({mode:'live',status:'none',pro:false,hasCustomer:false,checkoutAmountJpy:980},false);
  assert.equal(state.fetches.length,count,'Sign-out must not reuse old identity');
  assert.equal(state.get('sg-pro-availability').textContent,'受付状況を確認中');
  assert.equal(state.get('sg-checkout').disabled,true);
@@ -131,7 +131,7 @@ test('verified TEST Stripe mode labels sandbox registration as no-charge, never 
  const state=await ui({mode:'test',status:'none',pro:false,hasCustomer:false});
  assert.equal(state.get('sg-checkout').disabled,false);
  assert.match(state.get('sg-checkout').textContent,/Proにテスト登録/);
- assert.match(state.get('sg-pro-sale-notice').textContent,/実際の請求はありません/);
+ assert.match(state.get('sg-pro-sale-notice').textContent,/請求しません/);
  assert.equal(state.get('sg-pro-availability').textContent,'招待テストのみ');
  assert.equal(state.get('sg-pro-payment-status').textContent,'一般向けの支払受付なし');
  assert.doesNotMatch(state.get('sg-pro-price-caption').textContent,/自動更新/);
@@ -143,7 +143,7 @@ test('unknown, disabled or unsigned sessions cannot activate live checkout or pr
   assert.equal(state.get('sg-checkout').disabled,true);
   assert.notEqual(state.get('sg-pro-availability').textContent,'申込受付中');
  }
- const anonymous=await ui({mode:'live',status:'none',pro:false,hasCustomer:false},false);
+ const anonymous=await ui({mode:'live',status:'none',pro:false,hasCustomer:false,checkoutAmountJpy:980},false);
  assert.equal(anonymous.fetches.length,0,'No authenticated billing API call');
  assert.equal(anonymous.get('sg-checkout').disabled,true);
  assert.notEqual(anonymous.get('sg-pro-availability').textContent,'申込受付中');
