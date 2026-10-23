@@ -85,6 +85,10 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.match(await page.locator('#historySummary').textContent(),/1 組に挑戦/);
     await page.locator('#start').click();
     assert.notEqual(await page.locator('#scene').textContent(),firstScene,'repeated exercises rotate to a different unused pair');
+    // Return to the idle dashboard before simulating an external-tab result.
+    // In-progress answers must not be discarded by an unrelated focus event.
+    await page.reload();
+    assert.equal(await page.locator('#introPane').isVisible(),true);
     await page.evaluate(()=>{
       const key='speakingym-transfer-results-v1:guest';
       const rows=JSON.parse(localStorage.getItem(key)||'[]');
