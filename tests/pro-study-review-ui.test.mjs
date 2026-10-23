@@ -46,7 +46,7 @@ function fixture(){
  };
  const context={window,document,localStorage,AbortSignal,OWNER_KEY,
   readSnapshot:()=>{reads++;return data},
-  buildProStudyPlan,normalizeReviewProgress,markReview,
+  buildProStudyPlan,normalizeReviewProgress,markReview,reviewDay,
   fetch:async()=>({ok:true,json:async()=>({plan:session.plan})})
  };
  vm.runInNewContext(runnable,context);
@@ -106,4 +106,37 @@ test('Free or unknown entitlement cannot access review data or mutate a saved re
  assert.equal(f.nodes.get('pro-content').hidden,true);
  assert.equal(f.reads,0);
  assert.equal(f.storage.size,1,'no Pro local progress may be written without entitlement');
+});
+
+test('undo mistaken grade restores due expression and rolls back self-report count',async()=>{
+ const f=fixture();await f.refresh();
+ const before=f.nodes.get('review-list').children.length;
+ const card=f.nodes.get('review-list').children[0];
+ const remember=buttons(card).find(x=>x.textContent==='言えた ✓');
+ remember.trigger('click');
+ assert.equal(f.nodes.get('review-undo').hidden,false);
+ assert.equal(f.nodes.get('review-list').children.length,before-1);
+ f.nodes.get('review-undo').trigger('click');
+ assert.equal(f.nodes.get('review-undo').hidden,true);
+ assert.equal(f.nodes.get('review-list').children.length,before);
+ assert.match(f.nodes.get('review-status').textContent,/取り消しました/);
+ const state=JSON.parse(f.storage.get('speakingym-pro-review-progress-v1:test-user-A'));
+ assert.equal(Object.keys(state.cards).length,0);
+ assert.equal(Object.keys(state.days).length,0);
+ // Undo cannot be reused to revoke an unrelated earlier event.
+ f.nodes.get('review-undo').trigger('click');
+ assert.equal(Object.keys(JSON.parse(f.storage.get('speakingym-pro-review-progress-v1:test-user-A')).cards).length,0);
+});
+
+test('account switch invalidates a pending undo and leaves previous account state untouched',async()=>{
+ const f=fixture();await f.refresh();
+ buttons(f.nodes.get('review-list').children[0]).find(x=>x.textContent==='言えた ✓').trigger('click');
+ const a=f.storage.get('speakingym-pro-review-progress-v1:test-user-A');
+ f.listeners.get('speakingym:account-changing')();
+ assert.equal(f.nodes.get('review-undo').hidden,true);
+ f.session.uid='test-user-B';f.session.token='synthetic-token-B';f.storage.set(OWNER_KEY,'test-user-B');
+ await f.refresh();
+ f.nodes.get('review-undo').trigger('click');
+ assert.equal(f.storage.get('speakingym-pro-review-progress-v1:test-user-A'),a);
+ assert.equal(f.storage.has('speakingym-pro-review-progress-v1:test-user-B'),false);
 });
