@@ -65,7 +65,18 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#mission-select option').count(),6);
     assert.equal(await page.locator('#stat-attempts').textContent(),'0');
     await page.locator('#start-button').click();
-    assert.equal(await page.locator('#mission').isVisible(),true);
+    const freezeDebug=await page.evaluate(()=>({
+     hidden:document.getElementById('mission')?.hidden,
+     selected:document.getElementById('mission-select')?.value,
+     owner:localStorage.getItem('speakingym-account-owner-v1'),
+     loggedIn:window.speakingymAccount?.isLoggedIn?.(),
+     uid:window.speakingymAccount?.getUid?.(),
+     warning:document.getElementById('save-warning')?.textContent,
+     startDisabled:document.getElementById('start-button')?.disabled
+    }));
+    assert.equal(await page.locator('#mission').isVisible(),true,
+     'Freeze Breaker start state: '+JSON.stringify(freezeDebug)+
+     ' errors: '+JSON.stringify(errors.slice(-4)));
     assert.match(await page.locator('#dialogue').textContent(),/oat milk/);
     await page.locator('#speak-dialogue').click();
     assert.ok(await page.evaluate(()=>window.__spoken.some(x=>x.text.includes('oat milk'))));
