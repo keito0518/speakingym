@@ -64,11 +64,11 @@ async function fixture(t){
      customer:'cus_test',status:'open',mode:'subscription',
      url:'https://checkout.stripe.com/c/pay/test',
      client_reference_id:body.get('client_reference_id'),
-     currency:'jpy',amount_subtotal:1480,amount_total:1480,
+     currency:'jpy',amount_subtotal:state.price.unit_amount,amount_total:state.price.unit_amount,
      expires_at:Number(body.get('expires_at')),
      success_url:body.get('success_url'),cancel_url:body.get('cancel_url'),
      line_items:{object:'list',data:[{price:{id:purchasedPrice},quantity:1,
-      currency:'jpy',amount_total:1480}],has_more:false}
+      currency:'jpy',amount_total:state.price.unit_amount}],has_more:false}
     });
    }
    result=state.sessions.get(key);
@@ -510,7 +510,7 @@ test('Stripe Portal verifies the current live customer and live mode',async t=>{
   STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
   STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
  });
- f.state.live=true;f.state.price.livemode=true;
+ f.state.live=true;f.state.price.livemode=true;f.state.price.unit_amount=980;
  assert.equal((await f.call('checkout')).status,200);
  const portal=await f.call('portal');
  assert.equal(portal.status,200);
@@ -787,7 +787,7 @@ test('separately configured live mode isolates customer records and grants only 
   STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student',
  });
  f.state.live=true;
- f.state.price.livemode=true;
+ f.state.price.livemode=true;f.state.price.unit_amount=980;
  const first=await f.call('checkout');
  assert.equal(first.status,200,JSON.stringify(await first.clone().json()));
  assert.match((await first.json()).url,/checkout\.stripe\.com/);
@@ -831,7 +831,7 @@ test('LIVE never treats legacy manually granted Pro or TEST billing as a paid LI
  assert.equal(await getPlan(f.db,'outsider',f.env),'free',
   'an ineligible user cannot bypass invited-only LIVE with a manual beta grant');
  // Pro remains available only after independently verified LIVE subscription.
- f.state.live=true;f.state.price.livemode=true;
+ f.state.live=true;f.state.price.livemode=true;f.state.price.unit_amount=980;
  assert.equal((await f.call('checkout')).status,200);
  assert.equal(await getPlan(f.db,'student',f.env),'free');
  f.state.subscriptions=[{...active(),livemode:true,latest_invoice:invoice('in_test','paid',true)}];
@@ -860,4 +860,27 @@ test('live billing rejects sandbox-mode Stripe objects before any paid entitleme
  assert.equal(result.status,503);
  assert.equal((await result.json()).error,'billing_price_invalid');
  assert.equal(await getPlan(f.db,'student',f.env),'free');
+});
+
+test('fixed ¥980 LIVE checkout refuses an old ¥1,480 price without opening a payment page',async t=>{
+ const f=await fixture(t);
+ f.db.sqlite.exec(readFileSync(new URL('./migrations/0006-live-billing-isolation.sql',import.meta.url),'utf8'));
+ Object.assign(f.env,{
+  BILLING_MODE:'live',LIVE_BILLING_ENABLED:'enabled',TURN_LEDGER_MODE:'enabled',
+  LIVE_LEGAL_READY:'verified',LIVE_STRIPE_SANDBOX_E2E_PASSED:'verified',
+  LIVE_UNIT_ECONOMICS_REVIEWED:'verified',
+  STRIPE_LIVE_SECRET_KEY:'sk_live_fixture',STRIPE_LIVE_WEBHOOK_SECRET:'whsec_live_fixture',
+  STRIPE_LIVE_PRICE_ID:'price_test',BILLING_LIVE_AUDIENCE:'invited',BILLING_LIVE_UIDS:'student'
+ });
+ f.state.live=true;f.state.price.livemode=true;
+ // Old 1480-yen price must NEVER pass the signed LIVE release gate.
+ const denied=await f.call('checkout');
+ assert.equal(denied.status,503);
+ assert.equal((await denied.json()).error,'billing_price_invalid');
+ assert.equal(f.state.calls.filter(([url])=>String(url).includes('checkout/sessions')).length,0);
+ f.state.price.unit_amount=980;
+ const allowed=await f.call('checkout');
+ assert.equal(allowed.status,200);
+ assert.match((await allowed.json()).url,/^https:\/\/checkout\.stripe\.com/);
+ assert.equal(f.state.calls.filter(([url])=>String(url).includes('checkout/sessions')).length,1);
 });
