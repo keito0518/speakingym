@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {normalizeReviewProgress,markReview} from '../pro-study-data.mjs';
+import {normalizeReviewProgress,markReview,reviewDay} from '../pro-study-data.mjs';
 import {OWNER_KEY} from '../account-data.mjs';
 
 // Real pro-study.js UI control flow with synthetic entitlement, DOM and login.
@@ -24,7 +24,7 @@ function fixture(){
  const window={speakingymAccount:{getIdToken:async()=>token.value},addEventListener(name,cb){handlers[name]=cb}};
  const view={cards:[],totalUniqueExpressions:0,suggestion:'練習を続けよう',
   report:{recordedLast7Days:0,savedSessions:0,recent:{attempted:0,spoken:0},comparison:null}};
- const context={window,document,localStorage:{},AbortSignal,OWNER_KEY,normalizeReviewProgress,markReview,
+ const context={window,document,localStorage:{},AbortSignal,OWNER_KEY,normalizeReviewProgress,markReview,reviewDay,
   readSnapshot:()=>{snapshots++;return {}},
   buildProStudyPlan:()=>view,fetch:async()=>({ok:true,json:()=>pending.promise})};
  vm.runInNewContext(runnable,context);
