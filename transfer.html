@@ -20,6 +20,13 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
 .situation{margin:18px 0 21px;padding:24px;border-radius:18px;background:#eef6eb;border:2px solid #d5e7d1}.scene{font-size:12px;font-weight:950;color:#936441;letter-spacing:.3px}.question{font-size:clamp(23px,5.7vw,31px);font-weight:950;line-height:1.6;margin:12px 0 4px;overflow-wrap:anywhere}.statusline{font-size:12px;font-weight:950;letter-spacing:1.4px;color:#ad624b}.skill{font-size:13px;font-weight:800;color:#406d4c}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:22px}.reminder{color:#69776d;font-size:12px;margin:13px 0}
 .ending{background:#edf6ec;border-radius:13px;padding:15px;color:#29583c;font-size:16px;font-weight:850;margin:14px 0}.examples{display:grid;gap:12px;margin-top:17px}.sample{border:1px solid #d9e7d8;background:#fbfcf9;border-radius:13px;padding:15px}.sample strong{font-size:13px}.sample-jp{font-size:12px;color:#536f59;margin:5px 0 12px}.result-chip{font-size:11px;background:#e5f0e1;border-radius:20px;padding:5px 9px;color:#346047;font-weight:850}.sample-en{font-size:16px;color:#1c5d3c;font-weight:950;margin:12px 0 5px;overflow-wrap:anywhere}.sample-alt{font-size:12px;color:#627569;margin:0;overflow-wrap:anywhere}.insight{font-size:13px;line-height:1.9;padding:14px;border-left:3px solid var(--coral);margin:18px 0;background:#fff6ee}
 .warning{padding:12px;background:#fff1e7;color:#8e4e35;border-radius:9px;font-size:12px;margin:12px 0}
+.review-dashboard{background:#f4f8f1;border:1px solid #d9e8d6;border-radius:15px;padding:15px;margin:15px 0}
+.review-dashboard h2{font-size:17px;margin:0 0 10px}
+.review-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.review-metrics>div{border-radius:10px;padding:12px 5px;background:white;text-align:center}
+.review-metrics strong{display:block;font-size:26px;color:#1d6543}
+.review-metrics span{font-size:10px;color:#56715b;display:block;font-weight:850;overflow-wrap:anywhere}
+.next-review{padding:14px;border:1px solid #bddcbe;border-radius:12px;font-weight:850;color:#225b3a;font-size:13px;background:#eff6eb}
 @media(max-width:520px){main{padding:31px 15px 55px}.board{border-radius:18px}.feature-grid{grid-template-columns:1fr;gap:7px}.result-actions{grid-template-columns:1fr}.situation{padding:18px}.footer-controls{flex-direction:column}.footer-controls>*{width:100%}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
@@ -35,6 +42,16 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
  <div class="feature-grid"><div>① 最初の場面</div><div>② 違う場面で試す</div><div>③ 2つの回答例で復習</div></div>
  <p class="focus" id="focus">自己記録に合わせて練習を準備中。</p>
  <p class="history" id="historySummary" aria-live="polite"></p>
+ <section id="reviewDashboard" aria-label="自分の復習スケジュール" class="review-dashboard" hidden>
+  <h2>あなたの復習スケジュール</h2>
+  <div class="review-metrics">
+   <div><strong id="dueCount">0</strong><span>今日の復習（組）</span></div>
+   <div><strong id="reviewedCount">0</strong><span>挑戦した組</span></div>
+   <div><strong id="improvedCount">0</strong><span>詰まった→両方言えた</span></div>
+  </div>
+  <p class="note" id="reviewDue">復習予定を確認中。</p>
+  <p class="note">翌日 → 3日後 → 7日後。両方「言えた」と自己評価すると間隔が延び、詰まったら翌日に戻ります。英語力の自動採点ではありません。</p>
+ </section>
  <p class="warning" id="locked" hidden>アカウント切替を確認中です。以前の利用者の結果は表示しません。</p>
  <button class="btn primary wide" id="start" type="button">▶ 2つの場面で挑戦する</button>
  <p class="note">声に出してから「言えた／詰まった」を自分で選択。英語の音声・発言内容は収集しません。AIの利用回数も消費しません。上達の度合いを自動採点する機能ではありません。</p>
@@ -64,6 +81,7 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
  <div id="examples" class="examples" aria-live="polite"></div>
  <p class="insight" id="insight"></p>
  <p class="note" id="endSaving" role="status"></p>
+ <p id="nextReview" class="next-review" aria-live="polite"></p>
  <button class="btn primary wide" id="again" type="button">次の2つの場面に挑戦 →</button>
  <div class="footer-controls"><a class="btn" href="./reflex.html">60秒チャレンジへ戻る</a><a class="btn" href="./freeze-breaker.html">フリーズ克服ジムへ →</a></div>
 </section>
