@@ -9,7 +9,7 @@ import {
 
 const envVars={
  AI_COST_GUARD_MODE:'enabled',ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',
- AI_MONTHLY_BUDGET_YEN:'500',
+ AI_MONTHLY_BUDGET_YEN:'500',AI_FREE_BUDGET_YEN:'100',AI_PRO_RESERVED_YEN:'200',
  AI_FREE_MONTHLY_CONVERSATIONS:'2',AI_FREE_MONTHLY_TEACHER:'1',
  AI_GUARD_USD_JPY:'160',AI_GUARD_SAFETY_PERCENT:'200'
 };
@@ -35,6 +35,8 @@ test('budget guard is OFF by default, and opt-in demands every server-side setti
  assert.ok(budgetGuardConfig(env));
  for(const bad of [
   {AI_FREE_MONTHLY_CONVERSATIONS:'0'}, {AI_MONTHLY_BUDGET_YEN:'NaN'},
+  {AI_FREE_BUDGET_YEN:'450'}, {AI_PRO_RESERVED_YEN:'450'},
+  {AI_FREE_BUDGET_YEN:''}, {AI_PRO_RESERVED_YEN:'0'},
   {AI_GUARD_USD_JPY:'350'}, {AI_GUARD_SAFETY_PERCENT:'5'},
   {ENFORCE_PLANS:'false'}, {TURN_LEDGER_MODE:'disabled'}, {PLAN_DB:null}
  ]){
@@ -120,4 +122,24 @@ test('budget envelope output always exceeds every configured Worker generation t
  assert.ok(BUDGET_ENVELOPE_TOKENS.teacher.output>=maxOutput);
  assert.ok(BUDGET_ENVELOPE_TOKENS.conversation.input>=6000);
  assert.ok(BUDGET_ENVELOPE_TOKENS.teacher.input>=6000);
+});
+
+test('Free cannot exhaust the reserved Pro budget even under many distinct accounts',async()=>{
+ const {db,sqlite,env}=database();
+ const config=budgetGuardConfig(env);
+ const per=estimateBudgetMilliYen('conversation',config);
+ const freeCapacity=Math.floor(config.monthlyFreeMilliYen/per);
+ const attempts=await Promise.all(Array.from({length:freeCapacity+3},(_,i)=>
+  reserveAIBudget(db,{uid:'free-'+i,tier:'free',kind:'conversation',env})
+ ));
+ assert.equal(attempts.filter(x=>x.ok).length,freeCapacity);
+ assert.equal(attempts.filter(x=>x.reason==='budget_limit').length,3);
+ const freeSpent=sqlite.prepare("SELECT COALESCE(SUM(reserved_milliyen),0) AS n FROM ai_cost_budget_reservations WHERE tier='free'").get().n;
+ assert.ok(freeSpent<=config.monthlyFreeMilliYen);
+ assert.ok(config.monthlyMilliYen-freeSpent>=config.proReservedMilliYen);
+ // Free quota being depleted must not block a signed Pro account.
+ const paid=await reserveAIBudget(db,{uid:'subscriber',tier:'pro',kind:'conversation',env});
+ assert.equal(paid.ok,true);
+ const proSpent=sqlite.prepare("SELECT COALESCE(SUM(reserved_milliyen),0) AS n FROM ai_cost_budget_reservations WHERE tier='pro'").get().n;
+ assert.ok(proSpent>0);
 });
