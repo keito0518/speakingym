@@ -6,7 +6,9 @@ import {reviewSchedule,reviewTrend} from './transfer-review.mjs';
 const $=id=>document.getElementById(id);
 const OWNER='speakingym-account-owner-v1';
 const PREFIX='speakingym-transfer-results-v1:';
+let accountTransition=false;
 function verifiedOwner(){
+ if(accountTransition)return null;
  try{
   const account=window.speakingymAccount;
   if(account?.isLoggedIn?.()){
@@ -41,8 +43,14 @@ function refresh(){
   schedule.upcoming.length?'次の復習予定：'+schedule.upcoming[0].dueDay+'（日本時間）。':
   '応用チェックを始めると復習日を自動で提案します。';
 }
-window.addEventListener('speakingym:account-changing',mask);
-window.addEventListener('speakingym:account-ready',refresh);
+window.addEventListener('speakingym:account-changing',()=>{
+ accountTransition=true;
+ mask();
+});
+window.addEventListener('speakingym:account-ready',()=>{
+ accountTransition=false;
+ refresh();
+});
 window.addEventListener('pageshow',refresh);
 window.addEventListener('focus',refresh);
 window.addEventListener('storage',event=>{
