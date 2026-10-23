@@ -108,7 +108,7 @@ export function transferDay(when=new Date()){
  const now=when instanceof Date&&!Number.isNaN(when.getTime())?when:new Date();
  return new Date(now.getTime()+9*3600000).toISOString().slice(0,10);
 }
-export function chooseTransferPair(history=[],reasonRecords=[]){
+export function chooseTransferPair(history=[],reasonRecords=[],excludedPairIds=[]){
  const entries=normalizeTransferResults(history);
  const counts=Object.create(null);
  const recent=new Set(entries.slice(0,6).map(x=>x.pairId));
@@ -121,13 +121,17 @@ export function chooseTransferPair(history=[],reasonRecords=[]){
   }
  }
  const focused=Object.entries(frequencies).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
- const priority=TRANSFER_PAIRS.filter(x=>!focused||x.reason===focused);
+ const excluded=new Set(Array.isArray(excludedPairIds)?excludedPairIds.filter(x=>typeof x==='string').slice(0,TRANSFER_PAIRS.length):[]);
+ const remaining=TRANSFER_PAIRS.filter(pair=>!excluded.has(pair.id));
+ // If every pair is due, permit a repetition rather than leave the button broken.
+ const catalog=remaining.length?remaining:TRANSFER_PAIRS;
+ const priority=catalog.filter(x=>!focused||x.reason===focused);
  const unseenPriority=priority.filter(x=>!(counts[x.id]||0));
- const unseenAny=TRANSFER_PAIRS.filter(x=>!(counts[x.id]||0));
+ const unseenAny=catalog.filter(x=>!(counts[x.id]||0));
  // Prioritize the learner's weakness, but after its authored variations are
  // exhausted, keep new situations coming instead of looping the same two pairs.
  const all=unseenPriority.length?unseenPriority:
-  unseenAny.length?unseenAny:priority.length?priority:TRANSFER_PAIRS;
+  unseenAny.length?unseenAny:priority.length?priority:catalog;
  // Prefer never-attempted pairs, then less practised, then the least recent.
  const ordered=[...all].sort((a,b)=>{
   const ac=counts[a.id]||0,bc=counts[b.id]||0;
