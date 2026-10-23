@@ -138,3 +138,26 @@ test('unknown reasons are never interpolated into status text',async()=>{
  assert.match(a.node('sg-billing-status').textContent,/診断コード：unknown/);
  assert.doesNotMatch(a.node('sg-billing-status').textContent,/secret customer identifier/);
 });
+
+test('public LIVE checkout never opens when signed Worker price is missing or old 1480',async()=>{
+ for(const checkoutAmountJpy of [undefined,1480,9800,0]){
+  const a=await ui({data:{mode:'live',status:'none',pro:false,checkoutAmountJpy}});
+  assert.equal(a.node('sg-checkout').disabled,true);
+  assert.match(a.node('sg-billing-status').textContent,/正式価格980円/);
+  assert.equal(a.node('sg-pro-price-amount').textContent,'¥980');
+  await a.node('sg-checkout').listeners.click();
+  assert.equal(a.calls.filter(c=>c.options.method==='POST').length,0);
+ }
+});
+test('signed LIVE 980 checkout requires explicit review while old 1480 TEST stays separate',async()=>{
+ const live=await ui({data:{mode:'live',status:'none',pro:false,checkoutAmountJpy:980}});
+ assert.equal(live.node('sg-pro-price-amount').textContent,'¥980');
+ assert.equal(live.node('sg-checkout').disabled,false);
+ await live.node('sg-checkout').listeners.click();
+ assert.equal(live.node('sg-live-review').hidden,false);
+ assert.equal(live.calls.filter(c=>c.options.method==='POST').length,0,
+  'review must precede real payment');
+ const sandbox=await ui({data:{mode:'test',status:'none',pro:false,checkoutAmountJpy:1480}});
+ assert.equal(sandbox.node('sg-pro-price-amount').textContent,'¥1,480');
+ assert.match(sandbox.node('sg-pro-sale-notice').textContent,/TEST/);
+});
