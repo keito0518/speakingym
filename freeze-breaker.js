@@ -177,6 +177,9 @@ function finish(saidIt){
  phase='done';$('mission').hidden=true;$('result').hidden=false;
  $('return-to-ai').hidden=!(importedMoment?.trained&&scope==='user:'+importedMoment.uid);
  const independently=saidIt&&!usedHint;
+ window.speakingymAnalytics?.track('sg_freeze_self_report',{
+  source:attempt.imported?'ai':'scripted',outcome:independently?'said_it':'not_yet'
+ });
  $('result-title').textContent=independently?'リベンジ成功を記録！':'今日の詰まりは次の練習へ';
  $('result-detail').textContent=independently?
   'ヒントを見ずに返せた、と自己記録したよ。少し間隔を空けてもう一度挑戦しよう。':
