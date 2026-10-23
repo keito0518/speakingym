@@ -68,6 +68,9 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
      'guest should see five-minute sample plan');
     await page.locator('#demo-review-list button[aria-label^="言えた："]').first().click();
     assert.match(await page.locator('#demo-review-status').textContent(),/次の復習日/);
+    await page.locator('#demo-undo').click();
+    assert.match(await page.locator('#demo-review-status').textContent(),/取り消した/);
+    await page.locator('#demo-review-list button[aria-label^="言えた："]').first().click();
     await page.locator('#demo-next-day').click();
     assert.match(await page.locator('#demo-day').textContent(),/練習2日目/);
     await page.locator('#demo-reset').click();
@@ -193,6 +196,10 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   await enableSyntheticPro('browser-test-owner-A');
   assert.equal(await page.locator('#daily-plan li').count(),3,'Pro daily plan has three steps');
   assert.equal(await page.locator('#review-list li.review-card').count(),1,'saved phrase becomes a review card');
+  await page.locator('#review-list button[aria-label="この表現を思い出せた"]').click();
+  assert.equal(await page.locator('#review-undo').isVisible(),true);
+  await page.locator('#review-undo').click();
+  assert.match(await page.locator('#review-status').textContent(),/取り消しました/);
   await page.locator('#review-list button[aria-label="この表現を思い出せた"]').click();
   const progressKey='speakingym-pro-review-progress-v1:browser-test-owner-A';
   const aProgress=await page.evaluate(key=>localStorage.getItem(key),progressKey);
