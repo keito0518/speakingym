@@ -6,7 +6,7 @@
   "use strict";
   const EVENTS = Object.freeze({
     sg_home_cta: Object.freeze({ destination: ["sprint", "ai", "freeze"] }),
-    sg_sprint_start: Object.freeze({ mode: ["standard", "weak_review"] }),
+    sg_sprint_start: Object.freeze({ mode: ["standard", "weak_review", "personal_workout"] }),
     sg_sprint_complete: Object.freeze({ result: ["timer", "early"] }),
     sg_ai_scene_start: Object.freeze({}),
     sg_ai_first_reply: Object.freeze({}),
