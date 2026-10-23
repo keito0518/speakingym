@@ -66,3 +66,39 @@ test('offline harness contains no provider fetch, process.env, secrets, or netwo
  const source=readFileSync(new URL('../scripts/gemini-quality-benchmark.mjs',import.meta.url),'utf8');
  assert.doesNotMatch(source,/\bfetch\s*\(|https\.request|process\.env|googleapis\.com|x-goog-api-key|GEMINI_API_KEY/);
 });
+
+test('cost and latency are compared only after both models have complete observed provider metadata',()=>{
+ const t=createResponseTemplate();
+ for(const sample of t.samples){
+  if(sample.model!==MODELS[0])continue;
+  const c=CASES.find(x=>x.id===sample.caseId);
+  if(c.kind==='conversation')sample.reply='I can check that for you right away.';
+  else sample.feedback={praise:'Good try.',why:'Natural expression.',improved:c.prompt};
+  sample.usageMetadata={promptTokenCount:1000,candidatesTokenCount:500,thoughtsTokenCount:250};
+  sample.latencyMs=900;
+ }
+ const report=evaluateModelResults(t);
+ const tested=report.results[0],untested=report.results[1];
+ assert.equal(tested.observedUsageSamples,CASES.length);
+ assert.ok(tested.estimatedBatchUsd>0);
+ assert.equal(tested.meanLatencyMs,900);
+ assert.equal(tested.inputTokens,1000*CASES.length);
+ assert.equal(tested.outputIncludingThinkingTokens,750*CASES.length);
+ assert.equal(untested.observedUsageSamples,0);
+ assert.equal(untested.estimatedBatchUsd,null);
+ assert.equal(untested.meanLatencyMs,null);
+ assert.match(report.pricingNote,/NOT AN INVOICE/);
+ assert.match(report.releaseDecision,/BLOCKED/);
+});
+
+test('partial or malformed token metadata never creates an authoritative batch cost',()=>{
+ const t=createResponseTemplate();
+ const first=t.samples[0];
+ first.reply='I can remake the oat milk drink.';
+ first.usageMetadata={promptTokenCount:1000,candidatesTokenCount:200,thoughtsTokenCount:-1};
+ first.latencyMs=125;
+ const report=evaluateModelResults(t);
+ assert.equal(report.results[0].observedUsageSamples,0);
+ assert.equal(report.results[0].estimatedBatchUsd,null);
+ assert.equal(report.results[1].estimatedBatchUsd,null);
+});
