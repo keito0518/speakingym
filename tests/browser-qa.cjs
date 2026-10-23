@@ -62,7 +62,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
    }
    if(path==='freeze-breaker.html'){
     await page.locator('#start-button').waitFor({state:'visible'});
-    assert.equal(await page.locator('#mission-select option').count(),6);
+    assert.equal(await page.locator('#mission-select option').count(),7);
     assert.equal(await page.locator('#stat-attempts').textContent(),'0');
     await page.locator('#start-button').click();
     const freezeDebug=await page.evaluate(()=>({
