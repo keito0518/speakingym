@@ -8,8 +8,9 @@ import {reviewSchedule,chooseReviewPair,reviewTrend} from './transfer-review.mjs
 const $=id=>document.getElementById(id);
 const OWNER='speakingym-account-owner-v1';
 const PREFIX='speakingym-transfer-results-v1:';
-let current=null,round=0,reports=[],recordingError=false;
+let current=null,round=0,reports=[],recordingError=false,accountTransition=false;
 function ownerScope(){
+ if(accountTransition)return null;
  try{
   const account=window.speakingymAccount;
   if(account?.isLoggedIn?.()===true){
@@ -131,10 +132,13 @@ function choose(didSpeak){
  show('endPane');
 }
 function erase(){
- if(ownerScope()===null)return;
+ const initialOwner=ownerScope();
+ if(initialOwner===null)return;
  if(!window.confirm('この端末にある「場面を変える練習」の自己評価記録を消しますか？ 60秒チャレンジの記録は残ります。'))return;
- const k=key();
- if(!k)return;
+ // Confirmation dialogs can outlive authentication changes. Never delete
+ // results for another owner after the dialog resumes.
+ if(initialOwner!==ownerScope())return;
+ const k=PREFIX+initialOwner;
  try{localStorage.removeItem(k);refreshIntro()}
  catch{$('historySummary').textContent='削除できませんでした。ブラウザの保存設定を確認してください。'}
 }
@@ -147,6 +151,7 @@ $('eraseResults').addEventListener('click',erase);
 // Owner changes may emit before localStorage/auth finish switching. Wipe the
 // old owner's visible prompts and score immediately, even if the old key exists.
 function beginOwnerTransition(){
+ accountTransition=true;
  current=null;round=0;reports=[];recordingError=false;
  $('focus').textContent='アカウントを確認しています。';
  $('historySummary').textContent='ログイン状態を確認中。';
@@ -159,7 +164,10 @@ function beginOwnerTransition(){
  show('introPane');
 }
 window.addEventListener('speakingym:account-changing',beginOwnerTransition);
-window.addEventListener('speakingym:account-ready',refreshIntro);
+window.addEventListener('speakingym:account-ready',()=>{
+ accountTransition=false;
+ refreshIntro();
+});
 // A tab may remain open across midnight, and another tab can update the same
 // local review history. Refresh only while the intro is visible; never erase
 // a learner's ongoing answers or reveal records during owner transitions.
