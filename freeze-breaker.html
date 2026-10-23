@@ -23,9 +23,17 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
  <div class="kicker">FREEZE BREAKER · CONVERSATION REPAIR GYM</div>
  <h1 id="page-title">英語が出てこない。<br>その瞬間を、練習に変える。</h1>
  <p>予想外のひと言で固まったら、会話を立て直して、もう一度。正しい表現を暗記するだけでなく「止まっても会話を続ける」を練習しよう。</p>
- <div class="pill-row"><span class="pill">無料で何度でも</span><span class="pill">AI利用回数を消費しない</span><span class="pill">声に出して練習</span><span class="pill"><span id="scene-count">6</span>場面の予想外の会話</span></div>
+ <div class="pill-row"><span class="pill">無料で何度でも</span><span class="pill">AI利用回数を消費しない</span><span class="pill">声に出して練習</span><span class="pill"><span id="scene-count">7</span>場面の予想外の会話</span></div>
 </section>
 <div class="notice"><strong>このジムはシナリオ型の自主練習です。</strong> 実際のAIとの自由会話ではありません。答えの正しさや発音をAIが採点する機能ではなく、自己申告で「言えた／まだ詰まる」を記録します。入力した英文・声・録音は保存・送信しません。復習記録はこの端末のみです。</div>
+<section class="card" id="imported-ai-cue" hidden aria-labelledby="imported-ai-title" style="border:2px solid #f0b390;background:#fffdf9;margin-top:20px">
+ <div class="kicker">YOUR REAL FREEZE MOMENT · FROM AI ROLEPLAY</div>
+ <h2 id="imported-ai-title">さっき言葉が出なくなった、あの質問</h2>
+ <blockquote id="imported-ai-question" lang="en" style="font-size:20px;line-height:1.55;font-weight:800;margin:12px 0;overflow-wrap:anywhere"></blockquote>
+ <p class="small">AI実践英会話から、あなたが選んだ<strong>直近のAI発言のみ</strong>を一時的に引き継ぎました。自動翻訳・AI添削は行いません。再挑戦の追加質問は同じ場面を想定した練習用の別パターンです。</p>
+ <button id="use-imported-question" type="button" class="button primary">この質問から立て直す ⚡</button>
+ <p class="small">この一時データは同じタブ限りで、取得すると保存領域から消えます。練習の自己評価にはAIの英文を保存しません。</p>
+</section>
 <div class="layout">
  <div>
  <section class="card" aria-labelledby="choose-title">
@@ -68,6 +76,7 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
   </div>
   <div id="step-retry" hidden>
    <h3>さらに予想外のひと言が来た！</h3>
+   <p id="imported-followup-note" class="small" hidden>ここからは同じジャンルの別パターンを使う応用練習です。直前のAI会話の実際の続きではありません。</p>
    <div class="question"><div class="speaker">相手の次の返答</div>
     <blockquote lang="en" id="followup"></blockquote>
     <button class="button muted" id="speak-followup" type="button">▶ 英語を聞く</button>
@@ -96,6 +105,7 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
   <p class="meta" id="result-schedule"></p>
   <p id="result-origin" class="small"></p>
   <div class="control-row">
+   <button class="button orange" id="return-to-ai" type="button" hidden>↗ 元のAI場面でリベンジ</button>
    <button class="button muted" id="retry-scene" type="button">この場面でもう一度</button>
    <button class="button primary" id="try-another" type="button">次のミッションへ →</button>
   </div>
@@ -121,6 +131,7 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
 </div>
 </main>
 <div class="footer">Speakingym · 知ってる英語を、話せる英語に。 · <a href="./privacy.html">プライバシー</a></div>
+<script src="./freeze-bridge.js"></script>
 <script type="module" src="./account-sync.js"></script>
 <script type="module" src="./freeze-breaker.js"></script>
 </body></html>
