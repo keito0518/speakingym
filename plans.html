@@ -25,6 +25,7 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
  <p>Speakingymは現在、無料ベータ版を公開中。60秒チャレンジは何度でも練習できるよ。AI機能には無料の利用枠があるけれど、クレジットカードの登録は必要ありません。</p>
 </section>
 <div class="beta" id="sg-pro-sale-notice" role="note"><strong>Proの登録状況はログイン後に確認できます。</strong> 一般向けの有料会員募集は現在準備中です。テスト決済の場合は実際の請求はありません。請求の有無と料金は、申し込み前に表示されます。</div>
+<div class="beta" id="sg-pro980-decision" role="note"><strong>正式公開時のPro価格は月額980円（税込）に決定しました。</strong> AI英会話・講評の正式な提供量と販売開始日は調整中です。現行の月額1,480円（税込）は旧Stripe TEST検証用の金額で、一般向けの実課金ではありません。購入前に実際の料金・上限・解約条件を確認できるよう整備します。</div>
 <section class="plans" aria-label="プランの比較">
  <article class="plan free">
   <div class="plan-head"><h2>Free</h2><span class="tag">利用可能</span></div>
@@ -34,19 +35,20 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
    <li>AI実戦英会話：1日5セッションまで</li>
    <li>AI先生の個別講評：1日3回まで</li>
    <li>60秒チャレンジ：回数制限なし</li>
-   <li>保存したフレーズの復習：回数制限なし</li>
+   <li><a href="./freeze-breaker.html">フリーズ克服ジム</a>：無料・AI回数を消費しない</li>
+    <li>保存したフレーズの復習：回数制限なし</li>
    <li>Googleログインで学習記録を同期</li>
   </ul>
   <a class="btn" href="./reflex.html">無料でトレーニングする →</a>
  </article>
  <article class="plan">
   <div class="plan-head"><h2>Pro</h2><span class="tag wait" id="sg-pro-availability">登録状況確認中</span></div>
-  <div class="price">¥1,480 <small id="sg-pro-price-caption">/ 月・税込（登録状況を確認中）</small></div>
+  <div class="price"><span id="sg-pro-price-amount">¥980</span> <small id="sg-pro-price-caption">/ 月・税込（登録状況を確認中）</small></div>
   <p>週末にまとめて練習したい人に。日ごとのAIセッション上限なしで練習できますが、月1,000ターンの上限があります。受付状況はログイン後に確認できます。</p>
   <ul>
    <li>AI英会話：月1,000ターン（AIへのリクエスト数。セッション数ではありません）</li>
    <li id="sg-pro-teacher-limit">AI先生の個別講評：月150回（公開準備中）</li>
-   <li>60秒チャレンジ・復習は引き続き利用可能</li>
+   <li>60秒チャレンジ・<a href="./freeze-breaker.html">フリーズ克服ジム</a>・復習は引き続き利用可能</li>
    <li><a href="./pro-study.html">Pro復習スタジオ（準備中）</a>：保存した英語表現を翌日・3日後・7日後に復習し、1日5分メニューと自己記録を確認。復習自体のAI消費なし</li>
    <li><a href="./pro-demo.html"><strong>Pro復習スタジオを無料体験（架空データ） ↗</strong></a>：ログイン・カード登録不要。AI通信や本当の学習記録の保存はありません</li>
    <li id="sg-pro-daily-limit">日次回数制限なし・月間上限で管理（公開準備中）</li>
@@ -54,10 +56,10 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
   <button class="btn" id="sg-checkout" type="button" disabled>テスト登録の利用可否を確認中…</button>
   <section id="sg-live-review" class="sg-live-review" aria-label="Proの申し込み前の確認" hidden>
    <h3>決済前に必ず確認してください</h3>
-   <p><strong>Speakingym Pro：月額1,480円（税込）</strong>。無料体験ではなく、Stripeで申し込むと毎月自動更新される有料契約です。</p>
+   <p><strong>Speakingym Pro：月額980円（税込）</strong>。無料体験ではなく、Stripeで申し込むと毎月自動更新される有料契約です。</p>
    <p>利用枠はAI会話が月1,000ターン、AI先生が月150回。利用枠は日本時間の毎月1日に更新されますが、<strong>請求更新日は登録日を基準とし、利用枠の更新日とは異なります</strong>。</p>
    <p>購入前に <a href="./tokusho.html">特定商取引法に基づく表記</a>、<a href="./terms.html">利用条件</a>、<a href="./privacy.html">プライバシー</a>、<a href="./contact.html">運営者への問い合わせ</a> を確認してください。事業者情報や解約・返金条件が「確認中」の間は、本番決済を開始しません。</p>
-   <label class="sg-live-check"><input id="sg-live-accept" type="checkbox"> 毎月1,480円（税込）の自動更新と上記の内容を理解し、Stripeの最終確認画面へ進みます。</label>
+   <label class="sg-live-check"><input id="sg-live-accept" type="checkbox"> 毎月980円（税込）の自動更新と上記の内容を理解し、Stripeの最終確認画面へ進みます。</label>
    <button class="btn" type="button" id="sg-live-proceed" disabled>Stripeで支払条件を最終確認</button>
    <button class="muted-cta" type="button" id="sg-live-cancel">やめる（請求なし）</button>
   </section>
@@ -85,7 +87,7 @@ h3{font-size:18px;margin:0 0 13px}.details{background:white;border:1px solid #df
  <details><summary>Pro復習スタジオを購入前に試せる？</summary><p>はい。<a href="./pro-demo.html">Pro復習の無料デモ</a>なら、架空の表現で復習カードや1日5分メニューを操作できます。デモにログインや支払いは不要で、実際のPro契約や利用枠は変更されません。正式な提供条件は準備中です。</p></details>
  <details><summary>Proはどうやって解約する？</summary><p>指定テスターのStripeサンドボックスでは、マイページから料金ページへ進み「契約・支払い方法を管理」を開き、Stripeの契約管理画面から「期間末で解約」を予約できることを確認しました。テストでは期間末までProが使え、その後Freeに戻りました。これは本番販売の条件の確定を意味しません。本番販売時の更新停止期限や返金条件は、販売前に<a href="./tokusho.html">特商法の表記</a>で案内します。</p></details>
  <details><summary>返金はできる？</summary><p>本番販売前のため、返金・日割り精算や、障害・誤請求時の対応条件はまだ確定していません。条件を確定して表示するまでは、一般向けの有料決済は開始しません。</p></details>
- <details><summary>Proはいつ申し込める？</summary><p id="sg-pro-faq-availability">Proは月1,480円（税込）の予定です。ログイン後に受付状況を確認できます。現時点で一般公開日は未定です。</p></details>
+ <details><summary>Proはいつ申し込める？</summary><p id="sg-pro-faq-availability">Proの正式価格は月980円（税込）に決定しました。ただし申込受付と利用枠の最終確認は準備中です。現時点で一般公開日は未定です。</p></details>
 </section>
 </main>
 <footer>Speakingym · 知ってる英語を、話せる英語に。　<a href="./index.html">トップへ</a>　<a href="./account.html">マイページ</a></footer>
