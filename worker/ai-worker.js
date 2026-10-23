@@ -357,7 +357,7 @@ export default {
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
       const stageBillingReady=(env.STAGING_HEALTH_ONLY==="true"||env.STAGING_BILLING_ONLY==="true")
         ? await stagingBillingSchemaReady(env.PLAN_DB) : null;
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, aiBudgetRequested: budgetGuardRequested(env), aiBudgetReady: budgetGuardRequested(env) && !!budgetGuardConfig(env) && await budgetSchemaReady(env.PLAN_DB), billingMode: billingMode(env) }, 200, healthOrigin);
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, aiBudgetRequested: budgetGuardRequested(env), aiBudgetReady: budgetGuardRequested(env) && !!budgetGuardConfig(env) && await ledgerSchemaReady(env.PLAN_DB) && await budgetSchemaReady(env.PLAN_DB), billingMode: billingMode(env) }, 200, healthOrigin);
     }
     // An isolated staging Worker starts in inspection-only mode. No quota/session/AI
     // writes or billing/webhook handling, even with a valid Firebase token.
@@ -466,6 +466,7 @@ export default {
     // or provider call if configuration/schema is incomplete. Normal production
     // defaults remain unchanged until separate activation approval.
     if(budgetGuardRequested(env) && (!budgetGuardConfig(env) ||
+       !await ledgerSchemaReady(env.PLAN_DB) ||
        !await budgetSchemaReady(env.PLAN_DB)))
       return reply({error:"ai_budget_not_ready"},503,origin);
     // The authenticated D1 guard is the actual subscription/usage boundary.
