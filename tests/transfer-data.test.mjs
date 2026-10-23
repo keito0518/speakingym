@@ -58,7 +58,7 @@ test('completed pairs rotate to unattempted ones even when a focus category is s
  const next=chooseTransferPair(h,[{session:'valid',reason:'words'}]);
  assert.equal(next.pair.reason,'words');
  assert.notEqual(next.pair.id,first.id);
- assert.equal(new Set(all.map(p=>p.id)).size,2);
+ assert.equal(new Set(all.map(p=>p.id)).size,5);
 });
 test('focused pairs do not become a two-question loop after both variations were seen',()=>{
  const focused=TRANSFER_PAIRS.filter(p=>p.reason==='words');
