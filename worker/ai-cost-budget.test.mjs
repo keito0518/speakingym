@@ -66,10 +66,10 @@ test('global spending cap is atomic, shared by tiers, and cannot be bypassed via
  const {db,sqlite,env}=database();
  const config=budgetGuardConfig(env);
  const per=estimateBudgetMilliYen('teacher',config);
- const max2=2*per;
- // Reserve room for exactly two calls, even if they belong to different users.
- const custom={...env,AI_MONTHLY_BUDGET_YEN:String(Math.ceil(max2/1000))};
- // When rounding yields more than two calls, compute how many fit exactly.
+ // The guard enforces a minimum configurable monthly budget of ¥500.
+ // Fill every available reservation slot, then prove simultaneous extra
+ // attempts cannot pass that last allowance.
+ const custom={...env};
  const budget=Number(custom.AI_MONTHLY_BUDGET_YEN)*1000;
  const capacity=Math.floor(budget/per);
  const outcomes=await Promise.all(Array.from({length:capacity+4},(_,i)=>
