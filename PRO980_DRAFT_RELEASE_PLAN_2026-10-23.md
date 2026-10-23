@@ -2,8 +2,8 @@
 
 ## Status and strict boundaries
 
-- **Proposal, not a launched price.** Candidate: ¥980 incl. tax, 400 AI conversation turns/JST month, 40 AI coaching requests/JST month; 60-second exercises, saved phrasebook and Pro review studio have no extra Gemini calls.
-- A ¥1,280 / 600 / 60 fallback is a modelled alternative only. Existing PR #62 remains a **¥1,480 / 1,000 / 150 staging draft** and is NOT approved for release or merged.
+- **PUBLIC PRICE DECIDED AND FIXED: ¥980 tax included per month.** This is a price commitment, NOT live billing approval. The earlier 400-turn/40-coaching limits are preliminary assumptions and are NOT approved. Non-AI exercises, saved phrases and Pro review studio can be used repeatedly without consuming Gemini turns.
+- **Do not propose a higher Pro subscription price.** ¥1,280/¥1,480 are historical comparisons or the existing Stripe TEST price only. PR #62 retains a TEST-only ¥1,480/1,000/150 fixture for safety QA while future LIVE Stripe Price is guarded at ¥980. The actual final AI allowances are still under cost and learner-experience review.
 - **Unchanged:** Stripe Live/Test Products/Prices, live/legacy ¥680 subscriptions, production Cloudflare Workers, production Pages/D1, `main`, deployed Gemini model and actual Free/Pro quota code.
 - No provider purchase, signed renewal or real invoice has been completed for the 980-yen proposal.
 
@@ -18,7 +18,9 @@
 
 ## Finance and model decision gates
 
-The draft calculator `scripts/pro980-risk-review.mjs` compares:
+The historical draft comparator `scripts/pro980-risk-review.mjs` compares; new price-locked profitability model: `scripts/pro980-operating-model.mjs`. 
+
+The draft comparator compares:
 - Original Gemini Developer API model `gemini-3.5-flash-lite` versus lower-price `gemini-3.1-flash-lite`, standard paid-tier token prices sourced from https://ai.google.dev/gemini-api/docs/pricing (reviewed 2026-10-23).
 - Candidate ¥980 / 400 / 40, ¥1,280 / 600 / 60 and the previous ¥1,480 / 1,000 / 150, with **hypothetical** light/heavy message shapes and failure/retry amplification.
 - Explicit paying/free audience sizes; pay-as-you-go Stripe assumption 3.6% card + 0.7% billing (verify real account); **10/110 of the tax-included price used only as a hypothetical reserve**, not actual tax owed.
