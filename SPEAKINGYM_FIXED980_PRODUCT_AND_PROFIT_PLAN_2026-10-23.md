@@ -130,3 +130,39 @@ Improve margin without price hikes:
 
 This memo is the authoritative current price decision; older dated ¥1,480
 launch-plan files are retained ONLY for sandbox-history and regression QA.
+
+## 2026-10-23 addition: the real Freeze → Recover → Revenge learning loop
+
+The browser now supports opt-in transfer of **the last actual AI-generated sentence**
+from a running session to Freeze Breaker and return to that scene/difficulty.
+Use a same-tab, owner-checked, 10-minute, one-time sessionStorage handoff
+(`freeze-bridge.js`). No transcript, human text, AI output, ID token or full
+conversation is persisted to account/D1/Firestore or embedded into a URL.
+AI dialogue is visible only temporarily after deliberate action. Do not use
+the feature with personally identifying content in the AI reply.
+
+- Open from `scenes.html` when a learner self-reports being stuck. The
+  original AI session is closed on handoff; existing AI turns are not
+  silently replayed, and the gym costs **zero additional Gemini API calls**.
+- The gym asks for a recovery strategy, runs a scripted variant and records
+  only bounded scene/reason/attempt/outcome metadata. An unsupported original
+  scene maps to the seventh generic rescue workout.
+- The new summary aggregates self-reported failure categories and offers
+  a specific repair phrase to practise next, **not** an automated ability
+  diagnosis. Raw responses and optional handwritten notes are never saved.
+- A return button resumes the original `sceneId` and `level` in a **new**
+  legitimate AI session that still consumes normal paid/free quota.
+- Privacy-safe conversion funnel (only when user already consented to GA4):
+  `sg_freeze_from_ai`, `sg_freeze_self_report`,
+  `sg_freeze_revenge`. No scene IDs, questions, responses, Firebase UIDs or
+  token material are forwarded. Success ≠ a button tap: measure downstream
+  return sessions and user feedback before claiming retention benefits.
+- Tested with synthetic Gemini response, simulated Firebase UID, Chromium
+  and WebKit mobile layouts; **not** yet confirmed with production
+  Firebase, live Gemini or a physical iPhone microphone.
+
+Business hypothesis: this closed loop is a better reason to *choose* and
+*keep* Speakingym than a library of generic AI chat prompts. It is not
+evidence that competing apps have no similar feature, nor does a simulated
+test guarantee learning outcomes, commercial success or positive margin.
+Maintain the fixed public Pro price of **¥980 tax-inclusive/month**.
