@@ -13,7 +13,7 @@ const sprint=readFileSync(new URL('../reflex.html',import.meta.url),'utf8');
 
 test('30 authored pairs cover 60 distinct scenes with usable English samples',()=>{
  assert.equal(TRANSFER_PAIRS.length,30);
- assert.equal(new Set(TRANSFER_PAIRS.map(p=>p.id)).size,12);
+ assert.equal(new Set(TRANSFER_PAIRS.map(p=>p.id)).size,30);
  assert.equal(new Set(TRANSFER_PAIRS.map(p=>p.reason)).size,6);
  assert.equal(TRANSFER_PAIRS.length*2,60);
  for(const p of TRANSFER_PAIRS){
