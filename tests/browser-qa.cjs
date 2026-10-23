@@ -45,6 +45,30 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('a[href="./pro-study.html"]').count(),0);
     assert.equal(await page.locator('#sg-transfer-due').count(),1);
     assert.equal(await page.locator('#sg-transfer-improved').count(),1);
+    // Check the real My Page widget, not just static account-scoped code.
+    await page.evaluate(()=>{
+     localStorage.removeItem('speakingym-account-owner-v1');
+     const at=new Date(Date.now()-2*86400000).toISOString();
+     localStorage.setItem('speakingym-transfer-results-v1:guest',
+      JSON.stringify([{pairId:'other-support-5',first:false,second:true,at}]));
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    await page.waitForFunction(()=>document.getElementById('sg-transfer-due')?.textContent==='1');
+    await page.evaluate(()=>{
+     window.dispatchEvent(new Event('speakingym:account-changing'));
+     window.dispatchEvent(new Event('focus'));
+     window.dispatchEvent(new Event('pageshow'));
+    });
+    assert.equal(await page.locator('#sg-transfer-due').textContent(),'—',
+     'My Page must keep personal records masked until login settles');
+    await page.evaluate(()=>{
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    await page.waitForFunction(()=>document.getElementById('sg-transfer-due')?.textContent==='1');
+    await page.evaluate(()=>{
+     localStorage.removeItem('speakingym-transfer-results-v1:guest');
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
    }
    if(path==='phrasebook.html'){
     assert.equal(await page.locator('h1').textContent(),'マイ復習帳');
