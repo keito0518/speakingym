@@ -133,7 +133,19 @@ function showDailyPlan(view){
   li.append(make('strong',item.title),make('p',item.detail,'small'));
   if(item.href){
    const link=make('a',item.title.includes('60秒')?'60秒チャレンジへ ↗':'AI会話を始める ↗','study-link');
-   link.href=item.href;li.append(link);
+   link.href=item.href;
+   if(item.href==='./scenes.html'){
+    // Same-tab, short-lived bridge: show the real saved target expression on
+    // the next scene screen without putting learner text into a URL/referrer.
+    link.addEventListener('click',()=>{
+     const uid=activeUid,phrase=view.cards?.[0]?.text;
+     if(!uid||verifiedOwnerUid()!==uid||typeof phrase!=='string'||!phrase.trim())return;
+     try{sessionStorage.setItem('speakingym-pro-scene-target-v1',JSON.stringify({
+      uid,phrase:phrase.trim().slice(0,260),expires:Date.now()+10*60000
+     }))}catch{}
+    });
+   }
+   li.append(link);
   }
   list.append(li);
  }
