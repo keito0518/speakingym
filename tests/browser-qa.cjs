@@ -26,7 +26,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#sg-analytics-consent-status').textContent(),'任意のアクセス解析：拒否中');
   assert.equal(await page.locator('script[data-sg-ga4-loader]').count(),0);
   const requestsAfterRevoke=googleRequests.length;
-  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','reflex.html']){
+  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','pro-demo.html','reflex.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
    if(path.startsWith('scenes')){
@@ -59,6 +59,20 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(new URL(page.url()).searchParams.get('scene'),'hotel','selection must be reflected in URL');
     await page.reload();
     assert.equal(await page.locator('[data-scene="hotel"]').getAttribute('aria-pressed'),'true','Firebase sync reload must retain selected scene');
+   }
+   if(path==='pro-demo.html'){
+    await page.locator('#demo-review-list li.review-card').first().waitFor();
+    assert.equal(await page.locator('#demo-review-list li.review-card').count(),5,
+     'guest demo must show five example review cards without login');
+    assert.equal(await page.locator('#demo-plan li').count(),3,
+     'guest should see five-minute sample plan');
+    await page.locator('#demo-review-list button[aria-label^="言えた："]').first().click();
+    assert.match(await page.locator('#demo-review-status').textContent(),/次の復習日/);
+    await page.locator('#demo-next-day').click();
+    assert.match(await page.locator('#demo-day').textContent(),/練習2日目/);
+    await page.locator('#demo-reset').click();
+    assert.equal(await page.locator('#demo-review-list li.review-card').count(),5);
+    assert.match(await page.locator('#demo-day').textContent(),/練習1日目/);
    }
    await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
