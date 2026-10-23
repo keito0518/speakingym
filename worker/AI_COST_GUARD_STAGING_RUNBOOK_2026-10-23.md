@@ -19,7 +19,8 @@ estimated cost before each provider call.
 - Every admitted attempt counts, including errors/timeouts/unknown provider usage.
   No automatic refund can be used to game retry costs.
 - Missing D1 schema, missing or invalid guard settings, missing authenticated
-  quota setup or unknown model fail **closed** before any Gemini request.
+  quota setup, missing exact-ID ledger activation or unknown model fail
+  **closed** before any Gemini request.
 - This is separate from the current plans and Stripe: D1 trial caps DO NOT
   upgrade a Free user, extend Pro, replace Stripe signatures or grant entitlement.
 
@@ -60,6 +61,8 @@ If the owner explicitly authorizes future isolated staging testing:
    Confirm schema with a read-only query.
 3. Set these server-side variables in the isolated staging Worker *only*:
    - `ENFORCE_PLANS=true` with verified Firebase test account/PLAN_DB
+   - `TURN_LEDGER_MODE=enabled` with the `0002-ai-turn-ledger.sql` migration
+     and its exact-ID reservation/refund triggers verified on staging first
    - `AI_COST_GUARD_MODE=enabled` (default absent = OFF)
    - `AI_MONTHLY_BUDGET_YEN=500` (example conservative staging budget)
    - `AI_FREE_MONTHLY_CONVERSATIONS=2` (example staging monthly Free calls)
