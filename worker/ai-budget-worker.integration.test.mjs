@@ -79,16 +79,19 @@ test('signed Free learner is admitted once, then guard blocks another Gemini cal
   pair.privateKey,new TextEncoder().encode(unsigned))).toString('base64url');
  const token=unsigned+'.'+signature;
  let provider=0,jwks=0;
- t.mock.method(globalThis,'fetch',async url=>{
+ t.mock.method(globalThis,'fetch',async (url,options={})=>{
   if(String(url).includes('/service_accounts/v1/jwk/')){
    jwks++;return Response.json({keys:[jwk]});
   }
   assert.match(String(url),/generativelanguage.googleapis.com/);
   provider++;
-  return Response.json({candidates:[{content:{parts:[{
-   text:JSON.stringify({reply:'Of course. I can help you with your booking.',
-    progress:{step1:false,step2:false,step3:false}})
-  }]}}]});
+  const sent=JSON.parse(options.body),context=JSON.parse(sent.contents[0].parts[0].text);
+  const content=context.attempts?
+   {feedback:[{index:0,praise:'Good attempt.',improvement:'A little more natural.',
+    improved:'Could you repeat that, please?',why:'Polite request.',practice:'Ask once more.'}]}:
+   {reply:'Of course. I can help you with your booking.',
+    progress:{step1:false,step2:false,step3:false}};
+  return Response.json({candidates:[{content:{parts:[{text:JSON.stringify(content)}]}}]});
  });
  const started=await worker.fetch(request('sessions',{},token),env);
  assert.equal(started.status,200);
@@ -106,4 +109,17 @@ test('signed Free learner is admitted once, then guard blocks another Gemini cal
  assert.ok(jwks>=1);
  assert.equal(sqlite.prepare('SELECT turns FROM ai_sessions WHERE id=?').get(sessionId).turns,1);
  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM ai_cost_budget_reservations').get().n,1);
+ const coach={action:'reflex_coach',level:'standard',attempts:[{
+  index:0,text:'Could you repeat that?',situation:'Checking in at hotel',
+  goal:'Ask politely for clarification'
+ }]};
+ const teacherFirst=await worker.fetch(request('',coach,token),env);
+ assert.equal(teacherFirst.status,200,JSON.stringify(await teacherFirst.clone().json()));
+ const teacherSecond=await worker.fetch(request('',coach,token),env);
+ assert.equal(teacherSecond.status,429);
+ assert.equal((await teacherSecond.json()).error,'ai_budget_exhausted');
+ assert.equal(provider,2,'denied monthly teacher cap must not invoke provider');
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM teacher_uses').get().n,1,
+  'teacher quota is refunded when budget rejects before Gemini');
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM ai_cost_budget_reservations').get().n,2);
 });
