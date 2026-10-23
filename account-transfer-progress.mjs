@@ -44,5 +44,16 @@ function refresh(){
 window.addEventListener('speakingym:account-changing',mask);
 window.addEventListener('speakingym:account-ready',refresh);
 window.addEventListener('pageshow',refresh);
+window.addEventListener('focus',refresh);
+window.addEventListener('storage',event=>{
+ const owner=verifiedOwner();
+ if(event.key===OWNER||(owner&&event.key===PREFIX+owner))refresh();
+});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+function updateAfterMidnight(){
+ const day=86400000;
+ const delay=day-((Date.now()+9*3600000)%day)+1200;
+ window.setTimeout(()=>{refresh();updateAfterMidnight()},delay);
+}
+updateAfterMidnight();
 refresh();
