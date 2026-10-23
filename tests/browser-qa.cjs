@@ -154,6 +154,56 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
    'a login change during delayed token lookup must not start an old account practice');
   assert.equal(await page.locator('#chat').locator('*').count(),0);
   assert.deepEqual(await page.evaluate(()=>window.__qaAIRequests),['new practice text']);
+  // Pro study review: genuine offline UI event / storage / account-transition
+  // coverage in Chromium + WebKit iPhone viewport. No signed paid account.
+  await page.goto('http://127.0.0.1:8765/pro-study.html');
+  const enableSyntheticPro=async(uid)=>{
+   await page.evaluate(uid=>{
+    localStorage.setItem('speakingym-account-owner-v1',uid);
+    localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([
+     {id:'browser:standard:phrase',cardId:'browser',kind:'quick',level:'standard',
+      text:'Could you repeat that?',goal:'もう一度聞き返す'}
+    ]));
+    window.speakingymAccount={getIdToken:async()=> 'synthetic-pro-browser-token',
+     getUid:()=>uid,isLoggedIn:()=>true};
+    const originalFetch=window.fetch.bind(window);
+    window.fetch=(resource,opts)=>{
+     const url=String(resource?.url||resource);
+     if(url.endsWith('/entitlement'))return Promise.resolve(Response.json({plan:'pro'}));
+     return originalFetch(resource,opts);
+    };
+    window.dispatchEvent(new Event('speakingym:account-ready'));
+   },uid);
+   await page.locator('#pro-content').waitFor({state:'visible'});
+  };
+  await enableSyntheticPro('browser-test-owner-A');
+  assert.equal(await page.locator('#daily-plan li').count(),3,'Pro daily plan has three steps');
+  assert.equal(await page.locator('#review-list li.review-card').count(),1,'saved phrase becomes a review card');
+  await page.locator('#review-list button[aria-label="この表現を思い出せた"]').click();
+  const progressKey='speakingym-pro-review-progress-v1:browser-test-owner-A';
+  const aProgress=await page.evaluate(key=>localStorage.getItem(key),progressKey);
+  assert.ok(aProgress,'review result should persist on this browser');
+  assert.equal(Object.values(JSON.parse(aProgress).cards)[0].stage,1);
+  await page.reload();
+  await enableSyntheticPro('browser-test-owner-A');
+  assert.equal(await page.locator('#review-list li.review-card').count(),1);
+  assert.match(await page.locator('#review-progress').textContent(),/次の予定|復習カード/);
+  // Switching accounts invalidates A immediately, then shows B's fresh queue.
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  assert.equal(await page.locator('#pro-content').isVisible(),false);
+  await page.evaluate(()=>{
+   localStorage.setItem('speakingym-account-owner-v1','browser-test-owner-B');
+   window.speakingymAccount.getUid=()=> 'browser-test-owner-B';
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
+  await page.locator('#pro-content').waitFor({state:'visible'});
+  assert.equal(await page.locator('#review-list button[aria-label="この表現を思い出せた"]').count(),1,
+   'new account must see its own due expressions, not owner A progress');
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),progressKey),aProgress,
+   'owner A local review log must stay intact and isolated');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-pro-review-progress-v1:browser-test-owner-B')),null);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,
+   'Pro review studio should not overflow the mobile viewport');
   assert.deepEqual(errors,[]);await context.close();
  }}finally{await browser.close()}
  console.log(JSON.stringify({engine,results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
