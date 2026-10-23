@@ -202,9 +202,12 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
    await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
   assert.equal(googleRequests.length,requestsAfterRevoke,'refused visits must not request Google analytics');
+  // The route loop now ends on the new transfer page; return explicitly to
+  // the 60-second sprint before checking the existing microphone and diagnosis.
+  await page.goto('http://127.0.0.1:8765/reflex.html');
   // Other QA routes intentionally forge account owners; this exercise is a genuine guest.
-  // Clear that synthetic owner before validating isolated guest reflection storage.
   await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
+  await page.reload();
   await page.selectOption('#mode','カフェ');await page.click('#start');assert.match(await page.locator('#category').textContent(),/^カフェ \/ STANDARD$/);
   assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),false,'model hint hidden until learner requests it');
   await page.locator('#hintPanel summary').click();
