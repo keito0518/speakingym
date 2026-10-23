@@ -74,6 +74,14 @@ test('completed pairs rotate to unattempted ones even when a focus category is s
  assert.notEqual(next.pair.id,first.id);
  assert.equal(new Set(all.map(p=>p.id)).size,5);
 });
+test('choosing new practice while reviews are due avoids those cards when alternatives exist',()=>{
+ const due=TRANSFER_PAIRS[0].id;
+ const next=chooseTransferPair([],[],[due]);
+ assert.notEqual(next.pair.id,due);
+ const allDue=TRANSFER_PAIRS.map(p=>p.id);
+ const graceful=chooseTransferPair([],[],allDue);
+ assert.ok(graceful.pair,'never dead-end when every authored pair has been attempted');
+});
 test('focused pairs do not become a two-question loop after both variations were seen',()=>{
  const focused=TRANSFER_PAIRS.filter(p=>p.reason==='words');
  const history=focused.map((p,i)=>({
