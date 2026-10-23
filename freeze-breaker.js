@@ -58,6 +58,10 @@ function updateSummary(){
  $('stat-scenes').textContent=String(stats.scenes);
  $('stat-next').textContent=stats.nextDue||'—';
  $('record-description').textContent=scope==='guest'?'ゲスト記録：この端末のみ':scope?'ログイン中のアカウントの端末内記録（他端末へは同期されません）':'アカウント確認中：記録を読み込めません';
+ $('freeze-personal-label').textContent=stats.topReason?
+  '自己申告では「'+FREEZE_REASONS[stats.topReason].name+'」が多め（'+stats.topReasonCount+'回）。次はこの切り返しを声に出そう。':
+  'まず1回練習すると、自己申告から次に使えそうな切り返しを提案するよ。';
+ $('freeze-personal-phrase').textContent=stats.nextRepairHint||'';
 }
 function bindScope(){
  const next=resolveScope();
