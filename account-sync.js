@@ -365,6 +365,8 @@ async function start(){
  // The Worker validates the token signature and decides the plan; clients cannot set Pro.
  window.speakingymAccount={
   getIdToken:async()=>user&&auth&&authFns?authFns.getIdToken(user):null,
+  // Read-only identity for device-local Pro study progress. Not an entitlement.
+  getUid:()=>user?.uid||null,
   isLoggedIn:()=>!!user
  };
  // Never advertise an unavailable Google-login button to ordinary visitors.
