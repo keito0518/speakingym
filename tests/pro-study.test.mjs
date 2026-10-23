@@ -7,6 +7,7 @@ const html=readFileSync(new URL('../pro-study.html',import.meta.url),'utf8');
 const js=readFileSync(new URL('../pro-study.js',import.meta.url),'utf8');
 const plans=readFileSync(new URL('../plans.html',import.meta.url),'utf8');
 const account=readFileSync(new URL('../account.html',import.meta.url),'utf8');
+const hub=readFileSync(new URL('../phrasebook.html',import.meta.url),'utf8');
 const utc=(day)=>new Date(day+'T12:00:00Z');
 test('pro study cards only derive from saved expressions/teacher feedback, no invented AI content',()=>{
  const snap={
@@ -56,8 +57,11 @@ test('UI is mobile accessible, signed-entitlement-gated, non-AI and discoverable
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(html,/name="robots" content="noindex,nofollow"/);
  assert.match(html,/@media\(max-width:650px\)/);
- assert.ok(plans.includes('href="./pro-study.html"'));
- assert.ok(account.includes('href="./pro-study.html"'));
+ assert.ok(plans.includes('href="./phrasebook.html"'));
+ assert.ok(account.includes('href="./phrasebook.html"'));
+ assert.ok(hub.includes('href="./pro-study.html"'));
+ assert.ok(hub.includes('href="./pro-demo.html"'));
+ assert.ok(!account.includes('href="./pro-study.html"'),'advanced study no longer duplicates the My Page entry');
  assert.match(js,/getIdToken/);
  assert.match(js,/Authorization:'Bearer '/);
  assert.match(js,/data\?\.plan!=='pro'/);
