@@ -112,6 +112,20 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .diagnosis-result p{margin:6px 0 11px}
 .diagnosis-result .btn{margin:0 7px 7px 0;font-size:12px;text-decoration:none}
 @media(max-width:550px){.diagnosis-choices{grid-template-columns:1fr}.diagnosis-panel{padding:13px}}
+.personal-plan{margin:18px 0 20px;padding:18px;border-radius:17px;border:1px solid #bad6c4;background:linear-gradient(145deg,#eff7ee,#fffaf3);text-align:left}
+.personal-plan h2{margin:4px 0 7px;color:#194331;font-size:21px;line-height:1.35}
+.personal-plan .personal-caption{font-size:11px;font-weight:900;letter-spacing:1.5px;color:#b15d40}
+.personal-plan p{font-size:12px;color:#526c58;line-height:1.8;margin:7px 0}
+.personal-progress{font-weight:900;color:#25583e;font-size:12px;margin:12px 0}
+.personal-steps{display:grid;gap:9px;margin:12px 0 9px}
+.personal-step{display:flex;gap:12px;align-items:center;justify-content:space-between;background:#fff;border:1px solid #dbe7d9;border-radius:12px;padding:13px;min-width:0}
+.personal-step .personal-step-copy{flex:1;min-width:0}
+.personal-step strong{display:block;font-size:14px;color:#244934}
+.personal-step .personal-step-description{font-size:11px;color:#617669;line-height:1.7;margin:4px 0 0}
+.personal-step .personal-step-number{font-size:10px;letter-spacing:.8px;color:#b86448;font-weight:900}
+.personal-step .btn{flex-shrink:0;white-space:nowrap;font-size:11px;min-height:43px;padding:8px 12px}
+.personal-step .completed{color:#397348;font-weight:850;font-size:11px}
+@media(max-width:550px){.personal-plan{padding:14px}.personal-step{align-items:stretch;flex-direction:column;gap:9px}.personal-step .btn{width:100%}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
 <body>
@@ -126,6 +140,14 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
  <span class="sprint-duration">60 SEC</span>
 </div>
   <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>全問講評</div><div class="mini"><strong>③</strong>履歴で復習</div></div>
+  <section id="personalPlan" class="personal-plan" aria-label="今日の自分向け練習メニュー" hidden>
+   <div class="personal-caption">YOUR DAILY WORKOUT</div>
+   <h2>今日のあなた向け3ステップ</h2>
+   <p id="personalPlanReason"></p>
+   <div id="personalProgress" class="personal-progress" aria-live="polite"></div>
+   <div id="personalSteps" class="personal-steps"></div>
+   <p>各ステップは60秒。苦手原因は本人の自己申告、初めてのお題かどうかは保存中の履歴だけを参考にしています。音声のAI採点・追加通信はありません。進行記録はこの端末のみ。</p>
+  </section>
   <label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
   <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option><optgroup label="日常・旅行・仕事"><option>自己紹介</option><option>初対面</option><option>雑談・リアクション</option><option>カフェ</option><option>レストラン</option><option>買い物</option><option>ホテル</option><option>空港</option><option>駅・電車</option><option>道案内</option><option>電話</option><option>予約・予定変更</option><option>仕事・会議</option><option>意見を伝える</option><option>トラブル対応</option><option>謝罪・交渉</option></optgroup></select>
   <label class="privacy-opt"><input type="checkbox" id="saveTranscripts"> 自分が話した英文も、この端末の履歴に保存する（任意）</label><button class="btn orange block" type="button" id="start" style="margin-top:20px">▶ 60秒スタート</button><div class="intro-shortcuts"><button class="btn block" type="button" id="openPhrases">📌 保存した表現 <span id="savedCount" aria-live="polite">0</span></button><button class="btn block" type="button" id="openHistory">📚 練習履歴を見る</button></div>
@@ -178,7 +200,8 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
  <div id="diagnosisResult" class="diagnosis-result" role="status" aria-live="polite"></div>
  </section>
  <div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
-  <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
+  <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button>
+  <button class="btn primary block" id="personalNext" type="button" hidden>今日のメニューを続ける →</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
  </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
   <div class="history-head"><div class="kicker">SPRINT REVIEW</div><h2>📌 60秒で保存した表現</h2><p>この練習の保存表現を確認する画面です。AI実践で保存した表現もまとめて見るなら<a href="./phrasebook.html">マイ復習帳へ ↗</a>。英語を隠す練習もできるよ。</p></div>
   <div class="phrase-tools"><span id="phraseTotal">0表現</span><button type="button" class="btn" id="togglePhraseHide">🙈 英語を隠して練習</button></div>
@@ -192,6 +215,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 <script src="./phrasebook.js"></script>
 <script src="./analytics-events.js"></script>
 <script src="./sprint-diagnosis.js"></script>
+<script src="./sprint-personal-plan.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -741,6 +765,59 @@ function taskFor(card,level){
 
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group||$("mode").value===c.category);
 let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false,hideSavedEnglish=false;
+let personalRunningStage=null,personalNextStage=null;
+function currentPersonalPlan(){
+ const engine=window.speakingymPersonalPlan;
+ if(!engine)return null;
+ const progress=engine.getProgress();
+ const reasons=window.speakingymSprintDiagnosis?.getRecords?.();
+ if(!progress||reasons===null||!Array.isArray(reasons))return null;
+ return {...engine.plan(cards,historySessions(),reasons),progress};
+}
+function renderPersonalPlan(){
+ const panel=$("personalPlan");
+ if(!panel)return;
+ const data=currentPersonalPlan();
+ if(!data){panel.hidden=true;return}
+ panel.hidden=false;
+ $("personalProgress").textContent="今日の進行："+data.progress.done.filter(Boolean).length+" / 3 ステップ";
+ $("personalPlanReason").textContent=data.topReason?
+  "この端末で記録した詰まりの理由（"+data.reasonCount+"件）を参考にメニューを提案しています。":
+  data.historyCount?"まだ理由の自己記録がないため、過去の回答を参考にしています。":
+   "最初は基本問題から始めよう。練習後の自己記録でメニューが変わります。";
+ const list=$("personalSteps");list.replaceChildren();
+ data.stages.forEach((step,i)=>{
+  const row=document.createElement("div");row.className="personal-step";
+  const copy=document.createElement("div");copy.className="personal-step-copy";
+  const label=document.createElement("div");label.className="personal-step-number";label.textContent="STEP "+(i+1);
+  const title=document.createElement("strong");title.textContent=step.title;
+  const description=document.createElement("p");description.className="personal-step-description";description.textContent=step.description;
+  copy.append(label,title,description);
+  const button=document.createElement("button");button.className="btn"+(i===0?" primary":"");
+  button.type="button";button.textContent=data.progress.done[i]?"↻ もう一度":"▶ 60秒練習";
+  button.setAttribute("aria-label","ステップ"+(i+1)+"："+step.title);
+  button.addEventListener("click",()=>startPersonalStage(i));
+  row.append(copy,button);
+  list.append(row);
+ });
+}
+function startPersonalStage(i){
+ const data=currentPersonalPlan();
+ if(state==="running"||!data||!Number.isInteger(i)||i<0||i>2)return;
+ const ids=data.stages[i]?.poolIds;
+ if(!Array.isArray(ids)||!ids.length)return;
+ personalRunningStage=i;
+ personalNextStage=null;
+ start(false,ids);
+}
+function updatePersonalNext(){
+ const button=$("personalNext");
+ if(!button)return;
+ button.hidden=personalNextStage===null;
+ if(personalNextStage!==null)button.textContent=personalNextStage===2?
+  "今日のメニューを確認する →":"次のステップへ →";
+}
+window.speakingymSprintPersonalUI=Object.freeze({refresh:renderPersonalPlan});
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const speaker=window.speechSynthesis||null;
 let activeReading=null;
@@ -1239,17 +1316,20 @@ function showHistory(){
 }
 
 
-function start(onlyMissed=false){
+function start(onlyMissed=false,personalIds=null){
  stopListening();cancelReading();stopTimer();
  rated=0;spoken=0;missed=0;remaining=60;index=0;state="running";
  missedIds=[];missedPrompts=[];solvedIds=[];attempts=[];reviewIndex=0;
  chosenLevel=$("level").value;saveWords=$("saveTranscripts").checked===true;
  const old=readJSON(MISSES_KEY,[]);
- const choice=onlyMissed&&Array.isArray(old)?cards.filter(c=>old.includes(c.id)):deck();
+ const isPersonal=Array.isArray(personalIds);
+ if(!isPersonal){personalRunningStage=null;personalNextStage=null}
+ const choice=isPersonal?cards.filter(c=>personalIds.includes(c.id)):
+   onlyMissed&&Array.isArray(old)?cards.filter(c=>old.includes(c.id)):deck();
  activePool=choice.length?choice:deck();
  const recentIds=onlyMissed?[]:historySessions().flatMap(s=>s.attempts.map(a=>a.cardId)).slice(0,12);
- pile=onlyMissed?shuffle(activePool):orderPracticeDeck(activePool,recentIds);
- window.speakingymAnalytics?.track("sg_sprint_start",{mode:onlyMissed?"weak_review":"standard"});
+ pile=onlyMissed||isPersonal?shuffle(activePool):orderPracticeDeck(activePool,recentIds);
+ window.speakingymAnalytics?.track("sg_sprint_start",{mode:isPersonal?"personal_workout":onlyMissed?"weak_review":"standard"});
  pane("playPane");clock();nextCard();
  ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);
 }
@@ -1306,8 +1386,15 @@ function finish(early){
  $("weakOnly").hidden=!updated.length;
  const session={date:new Date().toISOString(),level:chosenLevel,attempts:attempts.map(x=>({...x}))};
  saveSession(session);
+ if(personalRunningStage!==null&&rated>0){
+  window.speakingymPersonalPlan?.markDone(personalRunningStage);
+  personalNextStage=personalRunningStage;
+ }else personalNextStage=null;
+ personalRunningStage=null;
  window.speakingymAnalytics?.track("sg_sprint_complete",{result:early?"early":"timer"});
  openReview(session);
+ renderPersonalPlan();
+ updatePersonalNext();
 }
 $("micBtn").addEventListener("click",()=>microphone(true));
 $("stopMic").addEventListener("click",stopMicManually);
@@ -1329,15 +1416,31 @@ $("openPhrasesFromReview").addEventListener("click",()=>showSavedPhrases("endPan
 $("phrasesBack").addEventListener("click",()=>pane(phraseReturnPane));
 $("togglePhraseHide").addEventListener("click",()=>{hideSavedEnglish=!hideSavedEnglish;renderPhraseBook()});
 $("requestTeacher").addEventListener("click",requestTeacherFeedback);
+$("personalNext").addEventListener("click",()=>{
+ if(personalNextStage===null)return;
+ const next=personalNextStage+1;
+ personalNextStage=null;
+ if(next>=3){pane("introPane");renderPersonalPlan()}
+ else startPersonalStage(next);
+});
 $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
  if(!window.confirm("この端末に保存した60秒チャレンジの履歴をすべて削除しますか？"))return;
  try{localStorage.setItem(HISTORY_KEY,"[]");localStorage.setItem(TEACHER_KEY,"[]");currentTeacherNotes=null;notifyCloud(HISTORY_KEY);notifyCloud(TEACHER_KEY)}catch(e){}
  window.speakingymSprintDiagnosis?.clearHistory();
+ window.speakingymPersonalPlan?.clearProgress();
+ renderPersonalPlan();
  showHistory();
 });
 updateBookmarkCount();
+renderPersonalPlan();
+window.addEventListener("speakingym:account-changing",()=>{
+ personalRunningStage=null;personalNextStage=null;
+ $("personalPlan").hidden=true;
+ $("personalNext").hidden=true;
+});
+window.addEventListener("speakingym:account-ready",renderPersonalPlan);
 const chosenMode=/(?:^\?|&)mode=(mix|repair|hold|boundaries|connect)(?:&|$)/.exec(window.location?.search||"")?.[1]||null;
 if(["mix","repair","hold","boundaries","connect"].includes(chosenMode))$("mode").value=chosenMode;
 if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
