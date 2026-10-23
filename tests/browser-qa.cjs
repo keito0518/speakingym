@@ -312,6 +312,83 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   });
   assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),false,
    'a review target must never be displayed for a different owner');
+  // Scripted browser QA of real AI reply -> offline freeze recovery -> AI revenge.
+  // No API provider calls, live credentials, or paid checkout.
+  await page.goto('http://127.0.0.1:8765/scenes.html?scene=cafe');
+  await page.evaluate(()=>{
+   const owner='browser-freeze-bridge-A',endpoint='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
+   localStorage.setItem('speakingym-account-owner-v1',owner);
+   window.speakingymAccount={isLoggedIn:()=>true,getUid:()=>owner,getIdToken:async()=> 'synthetic-rescue-token'};
+   const realFetch=window.fetch.bind(window);
+   window.__freezeProviderCalls=0;
+   window.fetch=(resource,opts={})=>{
+    const url=String(resource?.url||resource);
+    if(url===endpoint+'health')return Promise.resolve(Response.json({plansEnabled:true}));
+    if(url===endpoint+'sessions')return Promise.resolve(Response.json({sessionId:'synthetic-freeze-session'}));
+    if(url===endpoint){
+     window.__freezeProviderCalls++;
+     return Promise.resolve(Response.json({
+      reply:'Sorry, the oat milk is sold out. Would soy milk work?',
+      sceneId:'cafe',progress:{step1:false,step2:false,step3:false}
+     }));
+    }
+    return realFetch(resource,opts);
+   };
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
+  await page.locator('#level').selectOption('easy');
+  await page.locator('#start').click();
+  assert.equal(await page.locator('#practice').isVisible(),true);
+  await page.locator('#reply').fill('Could I have a latte, please?');
+  await page.locator('#send').click();
+  await page.waitForFunction(()=>
+   document.getElementById('chat')?.textContent?.includes('Would soy milk work?'));
+  assert.equal(await page.evaluate(()=>window.__freezeProviderCalls),1);
+  await Promise.all([
+   page.waitForURL('**/freeze-breaker.html?from=ai'),
+   page.locator('#takeFreezeMoment').click()
+  ]);
+  assert.doesNotMatch(page.url(),/oat|milk|question|answer|token/i);
+  await page.evaluate(()=>{
+   const owner='browser-freeze-bridge-A';
+   localStorage.setItem('speakingym-account-owner-v1',owner);
+   window.speakingymAccount={isLoggedIn:()=>true,getUid:()=>owner,getIdToken:async()=> 'synthetic-rescue-token'};
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
+  await page.locator('#imported-ai-cue').waitFor({state:'visible'});
+  assert.match(await page.locator('#imported-ai-question').textContent(),/Would soy milk work/);
+  assert.equal(await page.locator('#mission-select').inputValue(),'cafe');
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem('speakingym-freeze-chat-handoff-v1')),null,
+   'temporary AI utterance is removed from browser storage when consumed');
+  await page.locator('#use-imported-question').click();
+  assert.match(await page.locator('#dialogue').textContent(),/Would soy milk work/);
+  await page.locator('#reason-buttons button[data-reason="surprise"]').click();
+  await page.locator('#repair-next').click();
+  assert.equal(await page.locator('#imported-followup-note').isVisible(),true,
+   'scripted follow-up is labeled as a practice variant');
+  await page.locator('#said-yes').click();
+  const gymState=await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:user:browser-freeze-bridge-A'));
+  assert.ok(gymState);
+  assert.doesNotMatch(gymState,/oat milk|Would soy|Could I have a latte/);
+  assert.equal(await page.locator('#return-to-ai').isVisible(),true);
+  await Promise.all([
+   page.waitForURL('**/scenes.html?scene=cafe'),
+   page.locator('#return-to-ai').click()
+  ]);
+  await page.evaluate(()=>{
+   const owner='browser-freeze-bridge-A';
+   localStorage.setItem('speakingym-account-owner-v1',owner);
+   window.speakingymAccount={isLoggedIn:()=>true,getUid:()=>owner,getIdToken:async()=> 'synthetic-rescue-token'};
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
+  await page.locator('#freezeRevengeSetup').waitFor({state:'visible'});
+  assert.match(await page.locator('#freezeRevengeSetup').textContent(),/リベンジ実践/);
+  assert.equal(await page.locator('#level').inputValue(),'easy');
+  assert.equal(await page.locator('[data-scene="cafe"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem('speakingym-freeze-return-v1')),null);
+  assert.doesNotMatch(page.url(),/oat|milk|question|answer|token/i);
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  assert.equal(await page.locator('#freezeRevengeSetup').isVisible(),false);
   assert.deepEqual(errors,[]);await context.close();
  }}finally{await browser.close()}
  console.log(JSON.stringify({engine,results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
