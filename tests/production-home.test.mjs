@@ -26,7 +26,7 @@ test("modern production home has brand, SEO, useful routes, no paid checkout and
 test("trial CTA is the free 60-second sprint and the real AI experience is discoverable",()=>{
  assert.match(current,/<a class="btn primary" href="\.\/reflex\.html"[^>]*>無料で60秒チャレンジ/);
  assert.match(current,/<a class="btn" href="\.\/freeze-breaker\.html"[^>]*>フリーズ克服ジムへ/);
- assert.match(current,/href="\.\/scenes\.html">AI実践英会話へ（任意）/);
+ assert.match(current,/href="\.\/scenes\.html"[^>]*>AI実践英会話へ（任意）/);
  assert.match(current,/今日の3ステップ/);
  assert.match(current,/href="\.\/phrasebook\.html"/);
  assert.doesNotMatch(current,/href="\.\/index\.html">旧トップ/);
