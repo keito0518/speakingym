@@ -101,6 +101,17 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .teacher-feedback .teacher-link{font-size:11px;margin-top:7px}
 .teacher-feedback button{font-size:12px}
 @media(max-width:550px){.teacher-panel{padding:14px}.teacher-head strong{font-size:15px}}
+.diagnosis-summary{margin:17px 0;padding:14px 16px;text-align:left;background:#eff7ed;border:1px solid #cfe2ce;border-radius:13px;font-size:13px;color:#28553a}
+.diagnosis-panel{margin:17px 0;padding:16px;border:1px solid #c9decb;border-radius:14px;background:#f4faf2;text-align:left}
+.diagnosis-panel h4{margin:0 0 6px;font-size:17px;color:#204b35}
+.diagnosis-panel .diagnosis-help{margin:0 0 11px;color:#59725d;font-size:12px}
+.diagnosis-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.diagnosis-choices .btn{text-align:left;justify-content:flex-start;min-height:45px;white-space:normal;font-size:12px}
+.diagnosis-choices .btn[aria-pressed="true"]{background:#204e37;border-color:#204e37;color:white}
+.diagnosis-result{margin-top:13px;font-size:13px;color:#385743}
+.diagnosis-result p{margin:6px 0 11px}
+.diagnosis-result .btn{margin:0 7px 7px 0;font-size:12px;text-decoration:none}
+@media(max-width:550px){.diagnosis-choices{grid-template-columns:1fr}.diagnosis-panel{padding:13px}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
 <body>
@@ -149,6 +160,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
+  <div id="diagnosisSummary" class="diagnosis-summary" hidden aria-live="polite"><strong>あなたのフリーズ傾向</strong><div id="diagnosisSummaryText"></div></div>
   <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
   <div class="teacher-head"><span aria-hidden="true">👩‍🏫</span><div><strong>必要なときだけ、AI先生の個別アドバイス</strong><p>普段は無料の回答例・ヒントで復習できます。より詳しい添削が欲しいときだけ、AI利用枠を使って自分の英文を確認しよう。</p></div></div>
   <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini1回だけ無料枠のAPIリクエストを使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
@@ -159,6 +171,12 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
   <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
  </section><div class="review-point"><strong>📘 お題の学習ポイント（共通）</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ お題のヒント（共通）</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
+ <section id="diagnosisPanel" class="diagnosis-panel" aria-label="詰まった理由の振り返り" hidden>
+ <h4>なぜ言葉が詰まった？</h4>
+ <p class="diagnosis-help">ひとつ選ぶだけでOK。次の練習のヒントを表示するよ。後から変更できます。</p>
+ <div id="diagnosisChoices" class="diagnosis-choices"></div>
+ <div id="diagnosisResult" class="diagnosis-result" role="status" aria-live="polite"></div>
+ </section>
  <div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
  </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
@@ -173,6 +191,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 <script src="./speech-settings.js"></script>
 <script src="./phrasebook.js"></script>
 <script src="./analytics-events.js"></script>
+<script src="./sprint-diagnosis.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -1198,6 +1217,7 @@ function showReview(index){
  }
  $("saveStatus").textContent="使いたい表現は📌で保存して、フレーズ帳でいつでも復習できるよ。";
  renderTeacherFeedback();
+ window.speakingymSprintDiagnosis?.render({date:reviewSession.date,index:reviewIndex,cardId:card.id,outcome:item.outcome});
  $("reviewPrev").disabled=reviewIndex===0;
  $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
 }
@@ -1314,9 +1334,12 @@ $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
  if(!window.confirm("この端末に保存した60秒チャレンジの履歴をすべて削除しますか？"))return;
  try{localStorage.setItem(HISTORY_KEY,"[]");localStorage.setItem(TEACHER_KEY,"[]");currentTeacherNotes=null;notifyCloud(HISTORY_KEY);notifyCloud(TEACHER_KEY)}catch(e){}
+ window.speakingymSprintDiagnosis?.clearHistory();
  showHistory();
 });
 updateBookmarkCount();
+const chosenMode=new URLSearchParams(window.location.search).get("mode");
+if(["mix","repair","hold","boundaries","connect"].includes(chosenMode))$("mode").value=chosenMode;
 if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
 window.addEventListener("speakingym:before-speech",()=>{stopListening();cancelReading()});
 window.addEventListener("pagehide",()=>{teacherEpoch++;stopTimer();stopListening();cancelReading();});
