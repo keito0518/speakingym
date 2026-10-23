@@ -74,7 +74,9 @@ function refreshIntro(){
 function begin(mode='auto'){
  if(ownerScope()===null)return refreshIntro();
  const reasonRecords=window.speakingymSprintDiagnosis?.getRecords?.();
- const entries=history(),selected=chooseTransferPair(entries,reasonRecords);
+ const entries=history();
+ const excluded=mode==='new'?reviewSchedule(entries).due.map(x=>x.pairId):[];
+ const selected=chooseTransferPair(entries,reasonRecords,excluded);
  const due=mode==='new'?null:chooseReviewPair(entries,new Date(),selected.focusReason);
  if(!selected.pair&&!due)return;
  current={pair:due||selected.pair,kind:due?'review':'new',owner:ownerScope()};
