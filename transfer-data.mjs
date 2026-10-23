@@ -117,8 +117,13 @@ export function chooseTransferPair(history=[],reasonRecords=[]){
   }
  }
  const focused=Object.entries(frequencies).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
- const candidates=TRANSFER_PAIRS.filter(x=>!focused||x.reason===focused);
- const all=candidates.length?candidates:TRANSFER_PAIRS;
+ const priority=TRANSFER_PAIRS.filter(x=>!focused||x.reason===focused);
+ const unseenPriority=priority.filter(x=>!(counts[x.id]||0));
+ const unseenAny=TRANSFER_PAIRS.filter(x=>!(counts[x.id]||0));
+ // Prioritize the learner's weakness, but after its authored variations are
+ // exhausted, keep new situations coming instead of looping the same two pairs.
+ const all=unseenPriority.length?unseenPriority:
+  unseenAny.length?unseenAny:priority.length?priority:TRANSFER_PAIRS;
  // Prefer never-attempted pairs, then less practised, then the least recent.
  const ordered=[...all].sort((a,b)=>{
   const ac=counts[a.id]||0,bc=counts[b.id]||0;
