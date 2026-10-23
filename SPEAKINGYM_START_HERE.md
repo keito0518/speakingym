@@ -220,3 +220,14 @@
 - 安全なstaging導入の手順：`worker/AI_COST_GUARD_STAGING_RUNBOOK_2026-10-23.md`。モデル比較手順：`GEMINI_QUALITY_AB_STAGING_2026-10-23.md`。
 - **未完了・リリース禁止**：実staging D1への0007適用、サンドボックス認証とAIの費用実測、Gemini3.1の実回答比較、月980円にした場合の販売条件とFree枠の最終決定、Stripe TEST実更新／失敗からの復旧、実iPhoneマイク、法定表示、公開承認。見積原価だけで「赤字が絶対出ない」とは宣言しない。
 
+
+## 2026-10-23：正式Pro価格980円に固定・Freeze Breaker実装（Draft限定）
+
+- **価格決定：一般向けProは月額税込980円で固定。** 値上げ候補の提示は不要。過去の1480円/1000ターン/150講評は旧TESTの比較・回帰検証としてのみ維持。最終のAI利用上限は未決定で、課金して十分練習できることを優先する。完全なAI無制限の保証はしない。
+- `freeze-breaker.html`, `freeze-breaker.js`, `freeze-breaker-data.mjs`：6つの予想外の英会話場面で、詰まりの原因選択→切り返し→別の返事→自己評価→JST間隔復習を練習。AI呼び出しは**ゼロ**、音声・回答テキストは保存しない、進捗は端末内のゲスト／ログイン本人で分離。HPと料金ページからアクセスできる。AI自動採点や発音評価を偽装しない。
+- `worker/ai-cost-budget.js`：原価予約ガードに**Free専用の月額予算 `AI_FREE_BUDGET_YEN` とPro確保額 `AI_PRO_RESERVED_YEN`**を追加。共通上限だけでFreeが予算を使い切りProを止める問題を緩和。既存の正確な回数台帳が前提。**コードはオプトイン・本番未有効**、0007 D1は本番未適用。
+- `worker/billing.js`：将来の**Stripe Live**の商品価格・Checkout支払額・明細が980円（税込）であることを確認しなければ決済URLを返さない。**Stripe TEST**は既存1480円データを維持。 `/billing/status` でサーバー側の金額を返し、`billing-ui.js` はLiveの980円額を照合できない場合にCheckoutを停止。現在の本番/Liveには一切デプロイしていない。
+- `plans.html` は980円決定、一般向け課金準備中、TESTの1480円との区別を明示。既存の古い1480円法定表記・規約は**980円販売開始前に全面確認・改訂必須**。
+- `scripts/pro980-operating-model.mjs` は税込980円を固定し、実測未取得の利用頻度／AIトークン／利用者比率／運営費の仮説を変え、黒字成立条件を検討するシミュレータ。結果は未測定・保証なし。
+- 新しい唯一の現在方針：`SPEAKINGYM_FIXED980_PRODUCT_AND_PROFIT_PLAN_2026-10-23.md`。必ずここから確認し、古い1480円のDraft指示で本番販売を始めないこと。
+- 注意：Freezer（Freeze Breaker）と原価ガードはまだDraft・CIモック確認段階。実iPhone、実Gemini品質・原価、Stripe TEST更新/失敗復旧、法律・返金、正式AI利用枠、オーナー別途公開承認が必要。main/本番Worker/D1/Pages/Stripe Live/旧680円契約は変更禁止。
