@@ -63,6 +63,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
  <a href="./account.html" style="text-decoration:underline;font-weight:850">ログインできない場合はマイページへ →</a>
 </div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
+<p class="muted"><a class="btn" href="./freeze-breaker.html" target="_blank" rel="noopener noreferrer">💬 言葉が出なくなる瞬間の切り返しを練習 ↗</a> <span style="font-size:12px">別タブで開きます。無料・AI回数の消費なし。</span></p>
 <details class="review-saved"><summary>📚 保存した言い換えを復習</summary><a href="./phrasebook.html">すべての保存表現を共通フレーズ帳で復習 →</a><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 
 </section>
@@ -75,6 +76,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <div class="response-head"><label for="reply">英語で答える</label><button class="btn" id="clear" type="button">🗑️ 全消し</button></div>
 <textarea id="reply" placeholder="英語を入力するか、マイクを押して話そう。" maxlength="450" autocapitalize="sentences" spellcheck="false"></textarea>
 <div class="actions"><button class="btn subtle" type="button" id="mic">🎙 話して入力</button><button class="btn hidden" type="button" id="stopMic">⏹ 認識停止</button><button class="btn" type="button" id="repeat">🔊 聞き直す</button><button class="btn primary" type="button" id="send">返答する →</button></div>
+<p class="notice"><strong>途中で詰まったら：</strong><a href="./freeze-breaker.html" target="_blank" rel="noopener noreferrer" style="font-weight:900;text-decoration:underline">フリーズ克服ジムで切り返しを練習 ↗</a>（別タブ・追加AI回数なし）。このAI会話はそのまま続けられるよ。</p>
 <div class="muted" id="recognitionHelp">言葉に詰まっても大丈夫。認識中は待機し、終わったら「⏹ 認識停止」を押して確認しよう。音声認識が自動停止した場合は再開を試みるよ。</div><div class="actions"><button class="btn hidden" type="button" id="resumeMic">🎙 続きを話す</button></div>
 <div id="error" class="hidden" role="alert"><strong>AIとの通信ができませんでした。</strong><div id="errorReason"></div><div class="actions"><button class="btn" id="retry" type="button">↻ 同じ発言を再送</button></div></div>
 <div id="result" class="hidden" role="status"></div>
