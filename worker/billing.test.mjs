@@ -882,5 +882,5 @@ test('fixed ¥980 LIVE checkout refuses an old ¥1,480 price without opening a p
  const allowed=await f.call('checkout');
  assert.equal(allowed.status,200);
  assert.match((await allowed.json()).url,/^https:\/\/checkout\.stripe\.com/);
- assert.equal(f.state.calls.filter(([url])=>String(url).includes('checkout/sessions')).length,1);
+ assert.equal(f.state.calls.filter(([url])=>new URL(url).pathname.endsWith('/checkout/sessions')).length,1);
 });
