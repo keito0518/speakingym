@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const file=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const current=file("index.html"),classic=file("classic.html"),preview=file("home-preview.html");
-const nav=["account.html","reflex.html","scenes.html","scenes.html","classic.html"];
+const nav=["account.html","reflex.html","scenes.html","freeze-breaker.html","phrasebook.html"];
 const mainScript=html=>html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||"";
 
 test("modern production home has brand, SEO, useful routes, no paid checkout and honest beta copy",()=>{
@@ -47,5 +47,6 @@ test("account and sprint navigations now lead to the official homepage",()=>{
  assert.doesNotMatch(account,/href="\.\/home-preview\.html"/);
  assert.doesNotMatch(reflex,/href="\.\/home-preview\.html"/);
  assert.match(account,/href="\.\/index\.html"/);
- assert.match(reflex,/href="\.\/classic\.html">従来の練習ツールを見る/);
+ assert.doesNotMatch(reflex,/href="\.\/classic\.html">従来の練習ツールを見る/);
+ assert.doesNotMatch(current,/href="\.\/classic\.html"/);
 });
