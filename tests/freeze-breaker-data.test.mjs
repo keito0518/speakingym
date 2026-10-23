@@ -114,3 +114,13 @@ test('every Freeze Breaker JS DOM identifier exists in the rendered HTML',()=>{
  assert.match(html,/入力した英文・声・録音は保存・送信しません/);
  assert.match(html,/シナリオ型の自主練習/);
 });
+
+test('free no-AI Freeze Breaker is linked from home, Pro review, plans and live AI scenes',()=>{
+ for(const path of ['index.html','plans.html','pro-study.html','scenes.html']){
+  const html=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  assert.match(html,/href="\.\/freeze-breaker\.html"/,path+' should link to Freeze Breaker');
+ }
+ const sceneHtml=readFileSync(new URL('../scenes.html',import.meta.url),'utf8');
+ assert.match(sceneHtml,/target="_blank" rel="noopener noreferrer"/);
+ assert.match(sceneHtml,/追加AI回数なし/);
+});
