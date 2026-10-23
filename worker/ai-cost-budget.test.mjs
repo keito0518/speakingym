@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {
  budgetGuardRequested,budgetGuardConfig,budgetSchemaReady,
- estimateBudgetMilliYen,reserveAIBudget
+ estimateBudgetMilliYen,reserveAIBudget,BUDGET_ENVELOPE_TOKENS
 } from './ai-cost-budget.js';
 
 const envVars={
@@ -107,4 +107,15 @@ test('invalid uid, tier, model, missing database or forged client price fail clo
   assert.equal(result.ok,false);
   assert.equal(result.reason,'budget_not_ready');
  }
+});
+
+test('budget envelope output always exceeds every configured Worker generation token cap',()=>{
+ const workerCode=readFileSync(new URL('./ai-worker.js',import.meta.url),'utf8');
+ const ceilings=[...workerCode.matchAll(/maxOutputTokens\s*:\s*(\d+)/g)].map(x=>Number(x[1]));
+ assert.ok(ceilings.length>=2,'test must not silently pass when generation config changes');
+ const maxOutput=Math.max(...ceilings);
+ assert.ok(BUDGET_ENVELOPE_TOKENS.conversation.output>=maxOutput);
+ assert.ok(BUDGET_ENVELOPE_TOKENS.teacher.output>=maxOutput);
+ assert.ok(BUDGET_ENVELOPE_TOKENS.conversation.input>=6000);
+ assert.ok(BUDGET_ENVELOPE_TOKENS.teacher.input>=6000);
 });
