@@ -24,12 +24,14 @@ test('only approved events and enum parameters can reach gtag; arbitrary PII is 
  assert.equal(win.speakingymAnalytics.track('login',{email:'x@example.com'}),false);
  assert.equal(win.speakingymAnalytics.track('sg_home_cta',{destination:'sprint',email:'x@example.com',user_id:'uid123',token:'secret',url:'?ref=personal'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_sprint_start',{mode:'custom speech',transcript:'my secret'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_sprint_start',{mode:'personal_workout',transcript:'never transmit my answer'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_sprint_complete',{result:'timer'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_ai_scene_start',{scene:'cafe',prompt:'secret'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_ai_first_reply',{response:'private'}),true);
  assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
   ['event','sg_home_cta',{destination:'sprint'}],
   ['event','sg_sprint_start',{}],
+  ['event','sg_sprint_start',{mode:'personal_workout'}],
   ['event','sg_sprint_complete',{result:'timer'}],
   ['event','sg_ai_scene_start',{}],
   ['event','sg_ai_first_reply',{}]
