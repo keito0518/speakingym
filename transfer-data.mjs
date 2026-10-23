@@ -77,7 +77,7 @@ export const TRANSFER_PAIRS = Object.freeze([
     example:'Just to confirm, we are meeting at three, right?',alternative:'We are meeting at 3 p.m., correct?'},
   second:{scene:'タクシーの乗車前に',cue:'行き先が駅で合っているか確認する。',
     example:'Just to confirm, we are going to the station, right?',alternative:'The destination is the station, correct?'},
-  insight:'Just to confirm ... は時刻だけでなく、行き先や予約内容の確認にも使える。'}
+  insight:'Just to confirm ... は時刻だけでなく、行き先や予約内容の確認にも使える。'},
 ...EXTRA_TRANSFER_PAIRS
 ].map(p=>Object.freeze({...p,
  first:Object.freeze(p.first),second:Object.freeze(p.second)})));
