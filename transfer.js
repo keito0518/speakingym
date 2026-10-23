@@ -73,16 +73,17 @@ function refreshIntro(){
 function begin(){
  if(ownerScope()===null)return refreshIntro();
  const reasonRecords=window.speakingymSprintDiagnosis?.getRecords?.();
- const selected=chooseTransferPair(history(),reasonRecords);
- if(!selected.pair)return;
- current={pair:selected.pair,owner:ownerScope()};
+ const entries=history(),selected=chooseTransferPair(entries,reasonRecords);
+ const due=chooseReviewPair(entries,new Date(),selected.focusReason);
+ if(!selected.pair&&!due)return;
+ current={pair:due||selected.pair,kind:due?'review':'new',owner:ownerScope()};
  round=0;reports=[];
  showQuestion();
 }
 function showQuestion(){
  if(!current||current.owner!==ownerScope()){refreshIntro();return}
  const item=round===0?current.pair.first:current.pair.second;
- $('progress').textContent='ROUND '+(round+1)+' / 2';
+ $('progress').textContent=(current.kind==='review'?'SPACED REVIEW':'TRANSFER CHECK')+' · ROUND '+(round+1)+' / 2';
  $('taskTitle').textContent=round===0?'まず最初の場面':'次は違う場面で';
  $('scene').textContent=item.scene;
  $('cue').textContent=item.cue;
