@@ -26,7 +26,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#sg-analytics-consent-status').textContent(),'任意のアクセス解析：拒否中');
   assert.equal(await page.locator('script[data-sg-ga4-loader]').count(),0);
   const requestsAfterRevoke=googleRequests.length;
-  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','pro-demo.html','freeze-breaker.html','reflex.html']){
+  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','pro-demo.html','freeze-breaker.html','reflex.html','transfer.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
    if(path==='index.html'){
@@ -55,6 +55,46 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#requestTeacher').textContent(),
      '✨ 追加のAI講評を受ける（任意・回数消費）');
     assert.equal(await page.locator('a[href="./classic.html"]').count(),0);
+    assert.equal(await page.locator('a[href="./transfer.html"]').count()>0,true);
+   }
+   if(path==='transfer.html'){
+    // Prior synthetic account states belong to other QA tests; start as guest.
+    await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
+    await page.reload();
+    await page.locator('#start').waitFor({state:'visible'});
+    assert.equal(await page.locator('#start').isEnabled(),true);
+    assert.equal(await page.locator('#questionPane').isVisible(),false);
+    assert.equal(await page.locator('#endPane').isVisible(),false);
+    await page.locator('#start').click();
+    assert.equal(await page.locator('#questionPane').isVisible(),true);
+    assert.equal(await page.locator('#progress').textContent(),'ROUND 1 / 2');
+    assert.equal(await page.locator('#examples .sample').count(),0,'no sample before completing both scenes');
+    const firstScene=await page.locator('#scene').textContent();
+    await page.locator('#said').click();
+    assert.equal(await page.locator('#progress').textContent(),'ROUND 2 / 2');
+    assert.notEqual(await page.locator('#scene').textContent(),firstScene);
+    assert.equal(await page.locator('#examples .sample').count(),0,'base sample must remain hidden during transfer');
+    await page.locator('#froze').click();
+    assert.equal(await page.locator('#endPane').isVisible(),true);
+    assert.equal(await page.locator('#examples .sample').count(),2);
+    assert.match(await page.locator('#endResult').textContent(),/詰まった/);
+    assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-transfer-results-v1:guest')||''),/"first":true,"second":false/);
+    await page.locator('#again').click();
+    assert.match(await page.locator('#historySummary').textContent(),/1 組に挑戦/);
+    await page.locator('#start').click();
+    assert.notEqual(await page.locator('#scene').textContent(),firstScene,'repeated exercises rotate to a different unused pair');
+    await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+    assert.equal(await page.locator('#questionPane').isVisible(),false,'auth transition redacts the prior learner scene immediately');
+    assert.equal(await page.locator('#start').isDisabled(),true);
+    await page.evaluate(()=>{
+     const uid='transfer-synthetic-owner-A';
+     localStorage.setItem('speakingym-account-owner-v1',uid);
+     window.speakingymAccount={isLoggedIn:()=>true,getUid:()=>uid};
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    assert.equal(await page.locator('#start').isEnabled(),true);
+    assert.match(await page.locator('#historySummary').textContent(),/0 組に挑戦/,'guest result not shown to another signed-in learner');
+    assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-transfer-results-v1:guest')||''),/"first":true,"second":false/);
    }
    if(path.startsWith('scenes')){
     assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');
