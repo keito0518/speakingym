@@ -118,6 +118,13 @@ function choose(didSpeak){
   panel.append(name,japanese,rating,english,alt);root.append(panel);
  }
  $('insight').textContent=pair.insight;
+ if(!recordingError){
+  const latest=reviewSchedule(history()).entries.find(x=>x.pairId===pair.id);
+  $('nextReview').textContent=latest?
+   '次回チェック予定：'+latest.dueDay+'（日本時間）。'+
+   (latest.lastSuccess?'両場面で言えたという自己評価に応じて間隔を調整します。':'詰まった自己評価があるため翌日に復習します。'):
+   '次回チェック予定の取得に失敗しました。';
+ }else $('nextReview').textContent='今回は保存できなかったため復習予定が登録されませんでした。';
  show('endPane');
 }
 function erase(){
@@ -142,6 +149,7 @@ function beginOwnerTransition(){
  $('locked').hidden=false;
  $('start').disabled=true;
  $('eraseResults').hidden=true;
+ $('reviewDashboard').hidden=true;
  $('examples').replaceChildren();
  show('introPane');
 }
