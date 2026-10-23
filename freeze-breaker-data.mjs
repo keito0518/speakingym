@@ -134,7 +134,7 @@ export function sceneAttempt(sceneId,raw){
  if(!scene)return null;
  const p=normalizeFreezeProgress(raw),attempts=p.records[sceneId]?.attempts||0;
  const variation=scene.variations[attempts%scene.variations.length];
- const followup=variation.followups[attempts%variation.followups.length];
+ const followup=variation.followups[Math.floor(attempts/scene.variations.length)%variation.followups.length];
  return {scene,variation,followup,attempts};
 }
 /** A recorded result means the learner says they spoke; it is not AI grading. */
