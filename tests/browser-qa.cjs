@@ -221,6 +221,9 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   // Transfer only a short-lived owner-scoped phrase to the roleplay screen.
   await page.locator('#daily-plan a[href="./scenes.html"]').click();
   assert.ok(page.url().includes('scenes.html'));
+  // URL may update before the destination DOM commits on slower WebKit.
+  // Never dispatch the synthetic auth-ready event into the previous document.
+  await page.locator('#proReviewTargetSetup').waitFor({state:'attached',timeout:10000});
   assert.equal(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('speakingym-pro-scene-target-v1')).uid),
    'browser-test-owner-B');
   await page.evaluate(()=>{
