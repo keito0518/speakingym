@@ -86,12 +86,12 @@ test('global spending cap is atomic, shared by tiers, and cannot be bypassed via
 
 test('JST calendar month resets both Free call counts and global budget',async()=>{
  const {db,sqlite,env}=database();
- const before=Date.parse('2026-10-22T14:59:59Z');
- const after=Date.parse('2026-10-22T15:00:01Z');
+ const before=Date.parse('2026-10-31T14:59:59Z');
+ const after=Date.parse('2026-10-31T15:00:01Z');
  const a=await reserveAIBudget(db,{uid:'A',tier:'free',kind:'teacher',env,time:before});
  const b=await reserveAIBudget(db,{uid:'A',tier:'free',kind:'teacher',env,time:after});
  assert.equal(a.ok,true);assert.equal(b.ok,true);
- assert.notEqual(a.month,b.month,'JST monthly rollover is not at JST midnight except month boundary');
+ assert.notEqual(a.month,b.month ,'JST month rolls over on the first day at 00:00 JST');
  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM ai_cost_budget_reservations').get().n,2);
 });
 
