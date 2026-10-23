@@ -86,7 +86,9 @@ export const TRANSFER_REASONS=Object.freeze({
  words:'単語が出なかった',structure:'文章の組み立て',retrieval:'すぐ出てこなかった',
  perfection:'完璧に言おうとして止まった',surprise:'予想外の返答',other:'その他'
 });
-export const TRANSFER_RESULT_LIMIT=60;
+// Bounded local history: 30 pairs x up to 6 attempts fits 180 rows (~15-20 KB).
+// Preserve legacy 60-row data without migration or exposing transcripts.
+export const TRANSFER_RESULT_LIMIT=180;
 const ID_SET=new Set(TRANSFER_PAIRS.map(p=>p.id));
 const validIso=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)
  &&v.length<=35&&!Number.isNaN(Date.parse(v));
