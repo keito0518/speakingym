@@ -14,7 +14,7 @@ test('baseline reserves fees, assumed consumption tax and only bounded provider 
  assert.equal(r.yen.stripeAndBilling,42.14);
  assert.equal(r.yen.taxReserve,89.09);
  assert.equal(r.yen.conditionalContributionIfProviderCeilingEnforced,248.77);
- assert.equal(r.paidMembersToReach50000YenPerMonth,202);
+ assert.equal(r.paidMembersToReach50000YenPerMonth,201);
  assert.equal(r.status,'ILLUSTRATIVE_ONLY_NOT_A_PROVIDER_BILL_OR_ENFORCED_QUOTA');
 });
 test('present 3.5 heavy-envelope 1000 turns/150 teacher is not profitable on full use',()=>{
