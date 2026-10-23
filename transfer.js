@@ -158,4 +158,27 @@ function beginOwnerTransition(){
 }
 window.addEventListener('speakingym:account-changing',beginOwnerTransition);
 window.addEventListener('speakingym:account-ready',refreshIntro);
+// A tab may remain open across midnight, and another tab can update the same
+// local review history. Refresh only while the intro is visible; never erase
+// a learner's ongoing answers or reveal records during owner transitions.
+function refreshWhenIdle(){
+ if(!$('introPane').hidden)refreshIntro();
+}
+window.addEventListener('pageshow',refreshWhenIdle);
+window.addEventListener('focus',refreshWhenIdle);
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden)refreshWhenIdle();
+});
+window.addEventListener('storage',event=>{
+ if(event.key===key()&&!$('introPane').hidden)refreshIntro();
+});
+function scheduleJstRollover(){
+ const day=86400000;
+ const untilNextDay=day-((Date.now()+9*3600000)%day)+1200;
+ window.setTimeout(()=>{
+  refreshWhenIdle();
+  scheduleJstRollover();
+ },untilNextDay);
+}
+scheduleJstRollover();
 refreshIntro();
