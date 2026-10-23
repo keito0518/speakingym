@@ -124,3 +124,26 @@ test('free no-AI Freeze Breaker is linked from home, Pro review, plans and live 
  assert.match(sceneHtml,/target="_blank" rel="noopener noreferrer"/);
  assert.match(sceneHtml,/追加AI回数なし/);
 });
+
+test('personalized rescue insight comes from bounded self-reported reasons, not AI scoring',()=>{
+ const when=new Date('2026-10-23T12:00:00+09:00');
+ let state={};
+ state=recordFreezeAttempt(state,{sceneId:'cafe',reason:'surprise',saidIt:false},when);
+ state=recordFreezeAttempt(state,{sceneId:'hotel',reason:'surprise',saidIt:true},when);
+ state=recordFreezeAttempt(state,{sceneId:'work',reason:'words',saidIt:false},when);
+ const insight=freezeSummary(state,when);
+ assert.equal(insight.topReason,'surprise');
+ assert.equal(insight.topReasonCount,2);
+ assert.match(insight.nextRepairHint,/give me a second/i);
+ assert.equal(state.records.hotel.reasonCounts.surprise,1);
+ assert.equal(Object.hasOwn(state.records.hotel,'question'),false);
+ const json=JSON.stringify(state);
+ assert.doesNotMatch(json,/oat milk|email|question|learnerText|reply/);
+ const corrupted=normalizeFreezeProgress({records:{cafe:{
+  ...state.records.cafe,
+  reasonCounts:{surprise:'not a number',misunderstood:-1,words:999999999}
+ }}});
+ assert.equal(corrupted.records.cafe.reasonCounts.surprise,0);
+ assert.equal(corrupted.records.cafe.reasonCounts.misunderstood,0);
+ assert.equal(corrupted.records.cafe.reasonCounts.words,0);
+});
