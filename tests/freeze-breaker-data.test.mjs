@@ -103,3 +103,14 @@ test('summary describes only self-reported outcomes, not accuracy',()=>{
  assert.equal(sum.due,0);
  assert.equal(sum.nextDue,'2026-10-24');
 });
+
+test('every Freeze Breaker JS DOM identifier exists in the rendered HTML',()=>{
+ const html=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
+ const script=readFileSync(new URL('../freeze-breaker.js',import.meta.url),'utf8');
+ const referenced=[...script.matchAll(/\$\('([a-z0-9-]+)'\)/g)].map(match=>match[1]);
+ assert.ok(referenced.length>=30);
+ for(const id of new Set(referenced))
+  assert.match(html,new RegExp('id="'+id+'"'),id+' must exist in freeze-breaker.html');
+ assert.match(html,/入力した英文・声・録音は保存・送信しません/);
+ assert.match(html,/シナリオ型の自主練習/);
+});
