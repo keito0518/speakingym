@@ -16,21 +16,6 @@ const scene=(id,name,icon,context,conversationLink,variations)=>Object.freeze({
  })))
 });
 export const FREEZE_SCENES=Object.freeze([
- scene('anywhere','どこでも役立つ会話の立て直し','💬','相手の発言が思いがけず、何と言うか迷ってしまった。',
-  './scenes.html?scene=smalltalk',[
-  {ask:'Sorry, could you explain what you mean?',
-   meaning:'ごめんなさい。どういう意味なのか説明してもらえますか？',
-   followups:['Sure. Would you like me to explain it another way?',
-    'No problem. What part would you like me to repeat?'],
-   goal:'相手の話を理解するための質問で会話をつなごう。',
-   examples:['Could you say that in a simpler way?','Can you give me an example?']},
-  {ask:'Is that still okay with you, or would you prefer something else?',
-   meaning:'それで大丈夫ですか？それとも別の方がよいですか？',
-   followups:['That is fine. Do you need a little more time?',
-    'Would it help if I gave you two options?'],
-   goal:'一度考える時間をとって、選択肢を確認しよう。',
-   examples:['Could I have a moment to think?','What other options do I have?']}
- ]),
  scene('cafe','カフェで予想外の注文','☕','店員にいつものラテを注文したところ。',
   './scenes.html?scene=cafe',[
   {ask:'Sorry, we are out of oat milk. Would almond milk be okay?',
@@ -109,7 +94,23 @@ export const FREEZE_SCENES=Object.freeze([
    followups:['The other store is about twenty minutes away.','Would you like me to reserve it?'],
    goal:'提案を理解して返答しよう。',
    examples:['Yes, that would be great.','Could you tell me where the other store is?']}
+ ]),
+ scene('anywhere','どこでも役立つ会話の立て直し','💬','相手の発言が思いがけず、何と言うか迷ってしまった。',
+  './scenes.html?scene=smalltalk',[
+  {ask:'Sorry, could you explain what you mean?',
+   meaning:'ごめんなさい。どういう意味なのか説明してもらえますか？',
+   followups:['Sure. Would you like me to explain it another way?',
+    'No problem. What part would you like me to repeat?'],
+   goal:'相手の話を理解するための質問で会話をつなごう。',
+   examples:['Could you say that in a simpler way?','Can you give me an example?']},
+  {ask:'Is that still okay with you, or would you prefer something else?',
+   meaning:'それで大丈夫ですか？それとも別の方がよいですか？',
+   followups:['That is fine. Do you need a little more time?',
+    'Would it help if I gave you two options?'],
+   goal:'一度考える時間をとって、選択肢を確認しよう。',
+   examples:['Could I have a moment to think?','What other options do I have?']}
  ])
+
 ]);
 const IDS=new Set(FREEZE_SCENES.map(s=>s.id));
 const cleanDay=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&
