@@ -75,7 +75,9 @@ test('account dashboard and transfer page use one canonical scheduler and do not
  assert.match(transfer,/chooseReviewPair/);
  assert.match(transfer,/reviewSchedule/);
  assert.match(account,/reviewSchedule/);
- assert.match(account,/speakingym:account-changing',mask/);
+ assert.match(account,/speakingym:account-changing',\(\)=>\{/);
+ assert.match(account,/accountTransition=true/);
+ assert.match(account,/if\(accountTransition\)return null/);
  assert.match(account,/speakingym-account-owner-v1/);
  assert.match(myPage,/id="sg-transfer-improved"/);
  assert.match(myPage,/src="\.\/account-transfer-progress\.mjs"/);
