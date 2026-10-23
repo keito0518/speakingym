@@ -99,3 +99,15 @@ test('untrusted or excessive local review metadata is sanitized; prototype keys 
  assert.ok(altered.cards['__proto__']);
  assert.equal(markReview({},'', 'remembered',when('2026-10-23')).days['2026-10-23'],undefined);
 });
+
+test('Japan Standard Time boundaries apply to reviews even when the browser timezone differs',()=>{
+ const before=new Date('2026-10-22T14:59:59Z'),after=new Date('2026-10-22T15:00:00Z');
+ assert.equal(reviewDay(before),'2026-10-22');
+ assert.equal(reviewDay(after),'2026-10-23');
+ let state=markReview({},'hello','remembered',after);
+ assert.equal(state.cards.hello.due,'2026-10-24');
+ assert.deepEqual(markReview(state,'hello','retry',new Date('2026-10-23T14:59:59Z')),state,
+  'two clicks in the same JST day must not become two review events');
+ state=markReview(state,'hello','retry',new Date('2026-10-23T15:00:00Z'));
+ assert.equal(state.cards.hello.due,'2026-10-25');
+});
