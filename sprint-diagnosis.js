@@ -48,6 +48,8 @@ function read(){
  }catch{return []}
 }
 function lookup(ctx){return read().find(x=>x.session===identity(ctx))?.reason||null}
+function getRecords(){return scope()?read().map(x=>({session:x.session,reason:x.reason})):null}
+function notifyPlan(){window.speakingymSprintPersonalUI?.refresh?.()}
 function save(ctx,reason){
  const k=key();
  if(!k||!validContext(ctx)||!REASONS.some(r=>r.id===reason))return false;
@@ -105,7 +107,7 @@ function render(ctx){
   btn.dataset.reason=reason.id;
   btn.setAttribute('aria-pressed',String(selected===reason.id));
   btn.addEventListener('click',()=>{
-   if(save(active,reason.id))render(active);
+   if(save(active,reason.id)){render(active);notifyPlan()}
    else result.textContent='記録を保存できませんでした。ブラウザの保存設定を確認してください。';
   });
   buttons.append(btn);
@@ -119,7 +121,7 @@ function render(ctx){
   link.href=item.link;
   const clear=element('button','理由を選び直す／記録を外す','btn');
   clear.type='button';
-  clear.addEventListener('click',()=>{if(remove(active))render(active)});
+  clear.addEventListener('click',()=>{if(remove(active)){render(active);notifyPlan()}});
   result.append(title,tip,link,clear);
  }else{
   result.append(element('p','理由は自己申告で記録します。AI採点ではなく、回答の英文や音声も追加保存しません。'));
@@ -128,9 +130,9 @@ function render(ctx){
 function clearHistory(){
  const k=key();
  if(!k)return false;
- try{localStorage.removeItem(k);hide();return true}catch{return false}
+ try{localStorage.removeItem(k);hide();notifyPlan();return true}catch{return false}
 }
-window.speakingymSprintDiagnosis=Object.freeze({render,clearHistory});
+window.speakingymSprintDiagnosis=Object.freeze({render,clearHistory,getRecords});
 window.addEventListener('speakingym:account-changing',()=>{active=null;hide()});
 window.addEventListener('speakingym:account-ready',()=>{if(active)render(active);else renderSummary()});
 })();
