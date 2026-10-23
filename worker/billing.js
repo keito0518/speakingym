@@ -346,7 +346,7 @@ export async function handleBilling(request,env,reply,origin){
    }
    if(path==='/billing/status'){
     const synced=await reconcile(env,row,token);
-    return {mode:billingMode(env),status:synced.status,pro:synced.entitled===true,hasCustomer:!!synced.customer_id,
+    return {mode:billingMode(env),checkoutAmountJpy:approvedCheckoutAmountJpy(env),status:synced.status,pro:synced.entitled===true,hasCustomer:!!synced.customer_id,
      periodEnd:synced.period_end,cancelAtPeriodEnd:!!synced.cancel_at_period_end,
      entitlementReason:synced.entitlementReason||'no_subscription'};
    }
