@@ -41,3 +41,12 @@ Run locally (read-only):
 - [ ] Owner's explicit, separate approval for an isolated Live pilot, then separate public sale approval.
 
 This plan and its tests change **draft source only**. Passing CI means code/regression checks passed, not that paid release is approved.
+
+## 2026-10-23 implementation follow-up — guest demonstration, safe undo and timezone handling
+
+- New `pro-demo.html` / `pro-demo.js` uses the **same shared pure scheduling code** as actual Pro lessons but with six intentionally fictional saved phrases in memory. Visitors can reveal an answer, self-grade, undo one click, advance the simulated calendar and reset. This demo has **no login, billing, saved learning data or Gemini calls**. `plans.html` links to the clearly marked demo, not to a real Checkout price.
+- Actual Pro `pro-study.js` now includes one-step undo of an accidentally selected self-report. The undo is allowed only for the currently verified account on the current authentication generation; a logout or account switch immediately invalidates it. Grade/undo both update the due queue and self-report statistics consistently.
+- Shared `reviewDay()` now determines a study day using **Asia/Tokyo (UTC+09:00)** instead of the device local timezone, consistent with paid monthly caps and Free daily reset rules. A traveller crossing timezones does not gain/lose a review day.
+- Added offline and browser fixture coverage for the sample demo, per-account undo, JST midnight and delayed Pro→AI scene navigation. An earlier simulated WebKit failure was traced to asserting before the **destination DOM was attached**. The test now waits for the destination element rather than asserting against an incompletely navigated page.
+- The guest sample is distinct from the real signed Pro studio. **No simulated demo result may ever grant entitlement, spend tokens, mark an actual learner's history or imply payment was tested.**
+- Still unverified: actual Pro/test payment release, signed Stripe renewal/failure/recovery, actual 3.1 model conversation quality and billing, revised Free limits, model cost controls, physical microphone, legal/owner launch approval. Continue draft-only until explicit future instructions.
