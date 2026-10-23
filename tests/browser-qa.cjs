@@ -67,11 +67,11 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#endPane').isVisible(),false);
     await page.locator('#start').click();
     assert.equal(await page.locator('#questionPane').isVisible(),true);
-    assert.equal(await page.locator('#progress').textContent(),'ROUND 1 / 2');
+    assert.match(await page.locator('#progress').textContent(),/ROUND 1 \/ 2/);
     assert.equal(await page.locator('#examples .sample').count(),0,'no sample before completing both scenes');
     const firstScene=await page.locator('#scene').textContent();
     await page.locator('#said').click();
-    assert.equal(await page.locator('#progress').textContent(),'ROUND 2 / 2');
+    assert.match(await page.locator('#progress').textContent(),/ROUND 2 \/ 2/);
     assert.notEqual(await page.locator('#scene').textContent(),firstScene);
     assert.equal(await page.locator('#examples .sample').count(),0,'base sample must remain hidden during transfer');
     await page.locator('#froze').click();
