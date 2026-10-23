@@ -34,6 +34,13 @@ test('My Page directs core workouts and saved expressions to one place',()=>{
  for(const url of ['./scenes.html','./reflex.html','./freeze-breaker.html','./phrasebook.html']){
   assert.ok(account.includes('href="'+url+'"'),url);
  }
+ const shortcuts=account.match(/<div class="shortcut-row">([\\s\\S]*?)<\\/div>/)?.[1];
+ assert.ok(shortcuts,'my page keeps the four core routes');
+ const ordered=['./reflex.html','./freeze-breaker.html','./phrasebook.html','./scenes.html']
+  .map(url=>shortcuts.indexOf('href="'+url+'"'));
+ assert.ok(ordered.every((idx,i)=>idx>=0&&(i===0||idx>ordered[i-1])),
+  'my page must prioritize sprint, rescue, and review over optional AI');
+ assert.match(shortcuts,/AI英会話（任意）/);
  assert.doesNotMatch(account,/href="\.\/pro-study\.html"/,
   'advanced study belongs inside the unified review entrance, not standalone in My Page');
  assert.match(account,/復習はマイ復習帳から/);
