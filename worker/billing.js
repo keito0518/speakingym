@@ -23,6 +23,10 @@ export const isTester=(env,uid)=>billingUserEligible(env,uid);
 const liveMode=env=>billingMode(env)==='live';
 const expectedLive=env=>liveMode(env);
 const priceId=env=>liveMode(env)?env.STRIPE_LIVE_PRICE_ID:env.STRIPE_PRICE_ID;
+// Product decision 2026-10-23: the future REAL Pro fee is fixed at ¥980.
+// The existing ¥1,480 Stripe TEST price is retained for historical sandbox QA.
+// Never return a LIVE checkout URL whose Price or actual total is ¥1,480.
+export const approvedCheckoutAmountJpy=env=>liveMode(env)?980:1480;
 const stripeSecret=env=>liveMode(env)?env.STRIPE_LIVE_SECRET_KEY:env.STRIPE_SECRET_KEY;
 const webhookSecret=env=>liveMode(env)?env.STRIPE_LIVE_WEBHOOK_SECRET:env.STRIPE_WEBHOOK_SECRET;
 // Optional and OFF by default: only the isolated billing-only TEST Worker can
@@ -207,7 +211,8 @@ async function verifiedCheckoutRedirect(env,row,session){
     session.status!=='open'||session.mode!=='subscription'||
     session.livemode!==expectedLive(env)||session.customer!==row.customer_id||
     session.client_reference_id!==row.uid||session.currency!=='jpy'||
-    session.amount_subtotal!==1480||session.amount_total!==1480||
+    session.amount_subtotal!==approvedCheckoutAmountJpy(env)||
+     session.amount_total!==approvedCheckoutAmountJpy(env)||
     !Number.isInteger(session.expires_at)||session.expires_at<=now()||
     session.success_url!==returns.success||session.cancel_url!==returns.cancel||
     url.protocol!=='https:'||url.hostname!=='checkout.stripe.com'||
@@ -216,7 +221,8 @@ async function verifiedCheckoutRedirect(env,row,session){
  const lines=await stripe(env,'checkout/sessions/'+encodeURIComponent(session.id)+'/line_items?limit=10');
  if(lines?.has_more!==false||!Array.isArray(lines.data)||lines.data.length!==1||
     lines.data[0].price?.id!==priceId(env)||lines.data[0].quantity!==1||
-    lines.data[0].currency!=='jpy'||lines.data[0].amount_total!==1480)
+    lines.data[0].currency!=='jpy'||
+     lines.data[0].amount_total!==approvedCheckoutAmountJpy(env))
   throw fail('billing_checkout_review');
  return {url:session.url};
 }
@@ -226,7 +232,8 @@ async function checkout(env,row,token){
  // Fail closed if the configured Stripe Price isn't the exact approved monthly
  // flat-price plan: no trials, graduated tiers, or metered quantities.
  if(price.object!=='price'||price.id!==priceId(env)||price.livemode!==expectedLive(env)||
-    !price.active||price.currency!=='jpy'||price.unit_amount!==1480||
+    !price.active||price.currency!=='jpy'||
+     price.unit_amount!==approvedCheckoutAmountJpy(env)||
     price.type!=='recurring'||price.billing_scheme!=='per_unit'||
     price.tax_behavior!=='inclusive'||price.recurring?.interval!=='month'||
     price.recurring?.interval_count!==1||price.recurring?.usage_type!=='licensed'||
