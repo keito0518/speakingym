@@ -51,6 +51,13 @@ test('sample review can be graded, advanced one day, and reset with no permanent
  remember.click();
  assert.equal(nodes.get('demo-review-list').children.length,5,'replaced by next ungraded card');
  assert.match(nodes.get('demo-review-status').textContent,/次の復習日/);
+ assert.equal(nodes.get('demo-undo').hidden,false);
+ nodes.get('demo-undo').click();
+ assert.equal(nodes.get('demo-undo').hidden,true);
+ assert.equal(nodes.get('demo-stats').children[0].children[0].textContent,'0');
+ assert.match(nodes.get('demo-review-status').textContent,/取り消した/);
+ // Regrade the same sample after restoring the earlier state.
+ remember.click();
  const attempts=nodes.get('demo-stats').children[0].children[0].textContent;
  assert.equal(attempts,'1');
  nodes.get('demo-next-day').click();
