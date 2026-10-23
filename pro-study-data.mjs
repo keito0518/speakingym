@@ -27,8 +27,11 @@ const validDay=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)
  !Number.isNaN(Date.parse(value+'T00:00:00Z'))&&
  new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;
 export function reviewDay(now=new Date()){
+ // Subscription quotas and lesson schedules both use Japan Standard Time.
+ // A learner travelling abroad must not gain/lose a review day based on the
+ // browser's local timezone (or a midnight UTC boundary).
  const d=date(now)||new Date();
- return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+ return new Date(d.getTime()+9*3600000).toISOString().slice(0,10);
 }
 const plusDays=(day,days)=>new Date(Date.parse(day+'T00:00:00Z')+days*DAY_MS).toISOString().slice(0,10);
 const cleanCount=n=>Number.isSafeInteger(n)&&n>=0?Math.min(n,100000):0;
@@ -103,7 +106,7 @@ export function buildProStudyPlan(snapshot={},now=new Date(),reviewProgress={}){
  const workouts=recentWorkouts(data);
  const recent=performance(workouts.slice(0,5)),previous=performance(workouts.slice(5,10));
  const lastSaved=workouts[0]?date(workouts[0].date):null;
- const weekStart=new Date(current.getFullYear(),current.getMonth(),current.getDate()-6);
+ const weekStart=new Date(plusDays(reviewDay(current),-6)+'T00:00:00+09:00');
  const weekCount=workouts.filter(w=>date(w.date)>=weekStart&&date(w.date)<=current).length;
  const entries=[],seen=new Set();
  const add=(english,hint,origin,priority)=>{
@@ -127,7 +130,7 @@ export function buildProStudyPlan(snapshot={},now=new Date(),reviewProgress={}){
  for(const p of array(data['speakingym-reflex-saved-phrases-v1']).slice(0,100))
   add(p?.text,p?.goal||p?.situation,'60秒チャレンジの保存表現',2);
  // Rotate each group daily to avoid repeatedly presenting oldest expressions.
- const day=Math.floor(Date.UTC(current.getFullYear(),current.getMonth(),current.getDate())/86400000);
+ const day=Math.floor(Date.parse(reviewDay(current)+'T00:00:00Z')/86400000);
  const today=reviewDay(current);
  const review=normalizeReviewProgress(reviewProgress);
  // Future reviews are hidden until their due day; new expressions are due now.
