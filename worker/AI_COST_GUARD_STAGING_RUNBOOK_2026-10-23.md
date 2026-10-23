@@ -13,9 +13,13 @@ requests across 30 days. The existing D1 counters enforce daily usage, not a mon
 estimated cost before each provider call.
 
 - One signed Firebase UID gets Free monthly budget reservations by request type.
-- All signed Free and Pro calls compete against the same monthly JPY estimate cap.
+- All signed Free and Pro calls share one hard monthly JPY estimate cap,
+  **but Free has its own smaller budget cap that cannot consume the Pro reserve**.
+  A Pro user can still exhaust the global budget or a separate legacy 1,000-turn limit,
+  so this is not a guarantee of unlimited provider calls.
 - Admission is a **single SQLite INSERT...SELECT...RETURNING** statement enforcing
-  global estimated budget and a Free user's month-by-kind count together.
+  global estimated budget, Free-only monetary cap (Pro reserve) and a Free user's
+  month-by-kind count together.
 - Every admitted attempt counts, including errors/timeouts/unknown provider usage.
   No automatic refund can be used to game retry costs.
 - Missing D1 schema, missing or invalid guard settings, missing authenticated
@@ -65,6 +69,8 @@ If the owner explicitly authorizes future isolated staging testing:
      and its exact-ID reservation/refund triggers verified on staging first
    - `AI_COST_GUARD_MODE=enabled` (default absent = OFF)
    - `AI_MONTHLY_BUDGET_YEN=500` (example conservative staging budget)
+   - `AI_FREE_BUDGET_YEN=100` (Free total share for all guest Free calls)
+   - `AI_PRO_RESERVED_YEN=200` (minimum aggregate capacity untouched by Free; these two must total <=500)
    - `AI_FREE_MONTHLY_CONVERSATIONS=2` (example staging monthly Free calls)
    - `AI_FREE_MONTHLY_TEACHER=1` (example staging monthly Free teacher calls)
    - `AI_GUARD_USD_JPY=160` (example exchange-rate assumption)
