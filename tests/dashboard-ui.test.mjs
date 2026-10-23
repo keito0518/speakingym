@@ -76,7 +76,7 @@ test("dashboard contains responsive sections, meaningful links, privacy accordio
  ]){
   assert.match(html,new RegExp('id="'+id+'"'),"Missing UI region "+id);
  }
- for(const dest of ["./phrasebook.html","./scenes.html","./scenes.html?scene=cafe","./index.html"])
+ for(const dest of ["./phrasebook.html","./scenes.html","./freeze-breaker.html","./reflex.html","./index.html"])
   assert.ok(html.includes(dest),"Missing working navigation "+dest);
  assert.match(html,/class="privacy-info"/);
  assert.match(html,/<details class="privacy-info">/);
