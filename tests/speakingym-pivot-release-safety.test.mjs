@@ -39,7 +39,8 @@ test('frontend transfer privacy and account changes fail closed without sending 
  assert.match(p,/自動採点する機能ではありません/);
  assert.match(my,/この端末内だけに保存されます/);
  assert.match(transfer,/speakingym:account-changing',beginOwnerTransition/);
- assert.match(account,/speakingym:account-changing',mask/);
+ assert.match(account,/speakingym:account-changing',\(\)=>\{/);
+ assert.match(account,/accountTransition=true/);
  assert.match(transfer,/normalizeTransferResults/);
  assert.match(account,/normalizeTransferResults/);
  assert.doesNotMatch(account,/window\.gtag\s*\(|ga4|analytics\.track\(/i);
