@@ -233,6 +233,7 @@ $('return-to-ai').addEventListener('click',()=>{
   $('result-origin').textContent='ログイン状態を確認できません。元のAI実践シーンを手動で選んでね。';return;
  }
  // Only scene ID and level appear in URL. No AI or learner text does.
+ window.speakingymAnalytics?.track('sg_freeze_revenge');
  window.location.assign('./scenes.html?scene='+encodeURIComponent(importedMoment.sceneId));
 });
 $('pick-recommendation').addEventListener('click',pickRecommended);
