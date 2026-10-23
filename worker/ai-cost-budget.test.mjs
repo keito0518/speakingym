@@ -8,13 +8,15 @@ import {
 } from './ai-cost-budget.js';
 
 const envVars={
- AI_COST_GUARD_MODE:'enabled',ENFORCE_PLANS:'true',
+ AI_COST_GUARD_MODE:'enabled',ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',
  AI_MONTHLY_BUDGET_YEN:'500',
  AI_FREE_MONTHLY_CONVERSATIONS:'2',AI_FREE_MONTHLY_TEACHER:'1',
  AI_GUARD_USD_JPY:'160',AI_GUARD_SAFETY_PERCENT:'200'
 };
 function database(migrated=true){
  const sqlite=new DatabaseSync(':memory:');
+ sqlite.exec(readFileSync(new URL('./schema-plans.sql',import.meta.url),'utf8'));
+ sqlite.exec(readFileSync(new URL('./migrations/0002-ai-turn-ledger.sql',import.meta.url),'utf8'));
  if(migrated)sqlite.exec(readFileSync(new URL('./migrations/0007-ai-cost-budget.sql',import.meta.url),'utf8'));
  const db={prepare(sql){
   return {all:async()=>({results:sqlite.prepare(sql).all()}),
@@ -34,7 +36,7 @@ test('budget guard is OFF by default, and opt-in demands every server-side setti
  for(const bad of [
   {AI_FREE_MONTHLY_CONVERSATIONS:'0'}, {AI_MONTHLY_BUDGET_YEN:'NaN'},
   {AI_GUARD_USD_JPY:'350'}, {AI_GUARD_SAFETY_PERCENT:'5'},
-  {ENFORCE_PLANS:'false'}, {PLAN_DB:null}
+  {ENFORCE_PLANS:'false'}, {TURN_LEDGER_MODE:'disabled'}, {PLAN_DB:null}
  ]){
   assert.equal(budgetGuardConfig({...env,...bad}),null);
  }
