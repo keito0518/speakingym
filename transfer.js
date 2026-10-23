@@ -52,6 +52,17 @@ function refreshIntro(){
  if(!allowed){$('historySummary').textContent='ログイン状態を確認中。ほかの利用者の記録は表示しません。';$('reviewDashboard').hidden=true;$('eraseResults').hidden=true;show('introPane');return}
  const h=history(),stats=transferStats(h),reasonRecords=window.speakingymSprintDiagnosis?.getRecords?.();
  const chosen=chooseTransferPair(h,reasonRecords);
+ const schedule=reviewSchedule(h),trend=reviewTrend(h);
+ $('reviewDashboard').hidden=false;
+ $('dueCount').textContent=String(schedule.due.length);
+ $('reviewedCount').textContent=String(schedule.practisedPairs);
+ $('improvedCount').textContent=String(trend.improvedSelfRatings);
+ $('reviewDue').textContent=schedule.due.length?
+  '本日までに復習するセット：'+schedule.due.length+'組。まずこちらを優先します。':
+  schedule.upcoming.length?'次の復習予定：'+schedule.upcoming[0].dueDay+'。今日は新しい場面で練習できます。':
+  'まずは1セット試そう。今日の記録から翌日・3日後・7日後の復習を提案します。';
+ $('start').textContent=schedule.due.length?
+  '▶ 復習日になったセットに再挑戦':'▶ 新しい2つの場面で挑戦';
  $('focus').textContent=chosen.focusReason?
   '前の振り返りを参考に「'+TRANSFER_REASONS[chosen.focusReason]+'」に関連する練習を優先しています。':
   '初めてなら基本のセットから。練習を続けると違う場面に挑戦できます。';
