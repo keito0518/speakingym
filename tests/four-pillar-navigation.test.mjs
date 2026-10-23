@@ -14,6 +14,11 @@ test('four and only four canonical learning workout cards form the top-level pro
  assert.ok(block,'main workout section');
  const cards=[...block.matchAll(/<(?:section|a) class="workout(?: [^"]+)?"/g)];
  assert.equal(cards.length,4,'exactly one card per canonical workout');
+ const positions=['./reflex.html','./freeze-breaker.html','./phrasebook.html','./scenes.html']
+  .map(path=>block.indexOf('href="'+path+'"'));
+ assert.ok(positions.every(index=>index>=0)&&positions.every((index,i)=>i===0||index>positions[i-1]),
+  'sprint and recovery appear before review, with AI as an optional last workout');
+ assert.match(block,/04 \/ OPTIONAL AI PRACTICE/);
  for(const dest of ['./scenes.html','./reflex.html','./freeze-breaker.html','./phrasebook.html']){
   assert.match(block,new RegExp('href="'+dest.replaceAll('.','\\.')+'"'));
  }
