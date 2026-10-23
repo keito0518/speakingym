@@ -3,6 +3,8 @@ import {
   TRANSFER_RESULT_LIMIT
 } from './transfer-data.mjs';
 
+import {reviewSchedule,chooseReviewPair,reviewTrend} from './transfer-review.mjs';
+
 const $=id=>document.getElementById(id);
 const OWNER='speakingym-account-owner-v1';
 const PREFIX='speakingym-transfer-results-v1:';
