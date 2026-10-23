@@ -148,6 +148,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
    <div id="personalProgress" class="personal-progress" aria-live="polite"></div>
    <div id="personalSteps" class="personal-steps"></div>
    <p>各ステップは60秒。苦手原因は本人の自己申告、初めてのお題かどうかは保存中の履歴だけを参考にしています。音声のAI採点・追加通信はありません。進行記録はこの端末のみ。</p>
+   <a class="btn block" href="./transfer.html">↗ 場面を変える応用チェック（2つの場面に挑戦）</a>
   </section>
   <label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
   <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option><optgroup label="日常・旅行・仕事"><option>自己紹介</option><option>初対面</option><option>雑談・リアクション</option><option>カフェ</option><option>レストラン</option><option>買い物</option><option>ホテル</option><option>空港</option><option>駅・電車</option><option>道案内</option><option>電話</option><option>予約・予定変更</option><option>仕事・会議</option><option>意見を伝える</option><option>トラブル対応</option><option>謝罪・交渉</option></optgroup></select>
@@ -202,7 +203,8 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
  </section>
  <div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button>
-  <button class="btn primary block" id="personalNext" type="button" hidden>今日のメニューを続ける →</button><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
+  <button class="btn primary block" id="personalNext" type="button" hidden>今日のメニューを続ける →</button>
+  <a class="btn block" href="./transfer.html">↗ 別の場面でも言えるか、応用チェックを試す</a><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
  </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
   <div class="history-head"><div class="kicker">SPRINT REVIEW</div><h2>📌 60秒で保存した表現</h2><p>この練習の保存表現を確認する画面です。AI実践で保存した表現もまとめて見るなら<a href="./phrasebook.html">マイ復習帳へ ↗</a>。英語を隠す練習もできるよ。</p></div>
   <div class="phrase-tools"><span id="phraseTotal">0表現</span><button type="button" class="btn" id="togglePhraseHide">🙈 英語を隠して練習</button></div>
