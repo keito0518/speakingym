@@ -1338,7 +1338,7 @@ $("clearHistory").addEventListener("click",()=>{
  showHistory();
 });
 updateBookmarkCount();
-const chosenMode=new URLSearchParams(window.location.search).get("mode");
+const chosenMode=/(?:^\?|&)mode=(mix|repair|hold|boundaries|connect)(?:&|$)/.exec(window.location?.search||"")?.[1]||null;
 if(["mix","repair","hold","boundaries","connect"].includes(chosenMode))$("mode").value=chosenMode;
 if(window.location?.hash==="#phrases")showSavedPhrases("introPane");
 window.addEventListener("speakingym:before-speech",()=>{stopListening();cancelReading()});
