@@ -49,7 +49,7 @@ test('post-sprint stuck reflection is optional, accessible, and offers AI-free f
  const anchor=get(h,'diagnosisResult').children[2];
  assert.equal(anchor.href,'./freeze-breaker.html');
  assert.equal(h.store.size,1);
- assert.doesNotMatch([...h.store.values()].join(''),'My raw speech transcript');
+ assert.doesNotMatch([...h.store.values()].join(''),/My raw speech transcript/);
  h.ui.render({...CTX,outcome:'spoken'});
  assert.equal(get(h,'diagnosisPanel').hidden,true);
 });
@@ -102,6 +102,6 @@ test('existing sprint review integrates diagnosis with no new AI calls or quota 
  assert.match(html,/id="diagnosisSummary"/);
  assert.match(html,/speakingymSprintDiagnosis\?\.render\(\{date:reviewSession\.date,index:reviewIndex,cardId:card\.id,outcome:item\.outcome\}\)/);
  assert.match(html,/speakingymSprintDiagnosis\?\.clearHistory\(\)/);
- assert.match(html,/new URLSearchParams\(window\.location\.search\)\.get\("mode"\)/);
+ assert.match(html,/mode=\(mix\|repair\|hold\|boundaries\|connect\)/);
  assert.doesNotMatch(source,/fetch\s*\(|XMLHttpRequest|gemini|AIza/);
 });
