@@ -27,12 +27,13 @@ const make=(tag,value,klass)=>{
  return el;
 };
 const TODAY=new Date();
-let offset=0,progress={};
+let offset=0,progress={},undoStep=null;
 const currentDate=()=>new Date(TODAY.getTime()+offset*86400000);
 
 function render(){
  const view=buildProStudyPlan(SAMPLE,currentDate(),progress),stats=view.reviewSummary;
  $('demo-day').textContent=reviewDay(currentDate())+'（練習'+(offset+1)+'日目の例）';
+ $('demo-undo').hidden=!undoStep;
  $('demo-next-day').disabled=offset>=30;
  const list=$('demo-review-list');list.replaceChildren();
  for(const [index,card] of view.cards.entries()){
@@ -55,7 +56,9 @@ function render(){
   retry.type='button';
   retry.setAttribute('aria-label','まだ苦手：'+card.text);
   const record=outcome=>{
+   const previous=progress;
    progress=markReview(progress,card.id,outcome,currentDate());
+   undoStep={previous,offset};
    render();
    $('demo-review-status').textContent=outcome==='remembered'?
     'いいね！次の復習日にもう一度挑戦しよう。':
@@ -92,11 +95,16 @@ function render(){
 }
 $('demo-next-day').addEventListener('click',()=>{
  if(offset>=30)return;
- offset++;render();
+ offset++;undoStep=null;render();
  $('demo-review-status').textContent='体験の日付を1日進めました。実際の学習記録には影響しません。';
 });
 $('demo-reset').addEventListener('click',()=>{
- offset=0;progress={};render();
+ offset=0;progress={};undoStep=null;render();
  $('demo-review-status').textContent='体験版の記録をリセットしました。';
+});
+$('demo-undo').addEventListener('click',()=>{
+ if(!undoStep||undoStep.offset!==offset)return;
+ progress=undoStep.previous;undoStep=null;render();
+ $('demo-review-status').textContent='直前の記録を取り消したよ。もう一度選んでみよう。';
 });
 render();
