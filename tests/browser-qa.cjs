@@ -204,6 +204,26 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-pro-review-progress-v1:browser-test-owner-B')),null);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,
    'Pro review studio should not overflow the mobile viewport');
+  // Transfer only a short-lived owner-scoped phrase to the roleplay screen.
+  await page.locator('#daily-plan a[href="./scenes.html"]').click();
+  assert.ok(page.url().includes('scenes.html'));
+  assert.equal(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('speakingym-pro-scene-target-v1')).uid),
+   'browser-test-owner-B');
+  await page.evaluate(()=>{
+   window.speakingymAccount={getIdToken:async()=> 'synthetic-browser-pro-token',
+    getUid:()=> 'browser-test-owner-B',isLoggedIn:()=>true};
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
+  assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),true);
+  assert.match(await page.locator('#proReviewTargetSetup').textContent(),/Could you repeat that/);
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),false);
+  await page.evaluate(()=>{
+   window.speakingymAccount.getUid=()=> 'browser-test-owner-A';
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
+  assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),false,
+   'a review target must never be displayed for a different owner');
   assert.deepEqual(errors,[]);await context.close();
  }}finally{await browser.close()}
  console.log(JSON.stringify({engine,results,interactions:'Guest sprint, stored phrases, filters, hide/reveal, delete, voice preference and replay passed'},null,2));
