@@ -124,7 +124,9 @@ test('transfer page is discoverable via the main sprint without modifying billin
  assert.match(sprint,/href="\.\/transfer\.html"/);
  assert.match(app,/speakingym-account-owner-v1/);
  assert.match(app,/speakingym:account-changing',beginOwnerTransition/);
- assert.match(app,/speakingym:account-ready',refreshIntro/);
+ assert.match(app,/speakingym:account-ready',\(\)=>\{/);
+ assert.match(app,/accountTransition=false/);
+ assert.match(app,/if\(accountTransition\)return null/);
  assert.doesNotMatch(app,/fetch\s*\(|XMLHttpRequest|api\.gemini|Stripe/i);
  assert.doesNotMatch(page,/stripe\.com|checkout\.sessions/);
 });
