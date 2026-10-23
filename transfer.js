@@ -119,6 +119,18 @@ $('said').addEventListener('click',()=>choose(true));
 $('froze').addEventListener('click',()=>choose(false));
 $('again').addEventListener('click',refreshIntro);
 $('eraseResults').addEventListener('click',erase);
-window.addEventListener('speakingym:account-changing',refreshIntro);
+// Owner changes may emit before localStorage/auth finish switching. Wipe the
+// old owner's visible prompts and score immediately, even if the old key exists.
+function beginOwnerTransition(){
+ current=null;round=0;reports=[];recordingError=false;
+ $('focus').textContent='アカウントを確認しています。';
+ $('historySummary').textContent='ログイン状態を確認中。';
+ $('locked').hidden=false;
+ $('start').disabled=true;
+ $('eraseResults').hidden=true;
+ $('examples').replaceChildren();
+ show('introPane');
+}
+window.addEventListener('speakingym:account-changing',beginOwnerTransition);
 window.addEventListener('speakingym:account-ready',refreshIntro);
 refreshIntro();
