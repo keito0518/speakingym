@@ -29,6 +29,33 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','pro-demo.html','freeze-breaker.html','reflex.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
+   if(path==='index.html'){
+    assert.equal(await page.locator('#workouts .workouts > .workout').count(),4);
+    for(const dest of ['scenes.html','reflex.html','freeze-breaker.html','phrasebook.html']){
+     assert.equal(await page.locator('#workouts .workouts a[href="./'+dest+'"]').count()>0,true,
+      'four-workout route visible: '+dest);
+    }
+    assert.equal(await page.locator('a[href="./classic.html"]').count(),0);
+    assert.equal(await page.locator('a[href="./mission.html"]').count(),0);
+   }
+   if(path==='account.html'){
+    for(const dest of ['scenes.html','reflex.html','freeze-breaker.html','phrasebook.html']){
+     assert.equal(await page.locator('.shortcut-row a[href="./'+dest+'"]').count(),1);
+    }
+    assert.equal(await page.locator('a[href="./pro-study.html"]').count(),0);
+   }
+   if(path==='phrasebook.html'){
+    assert.equal(await page.locator('h1').textContent(),'マイ復習帳');
+    assert.equal(await page.locator('#source').count(),1);
+    assert.equal(await page.locator('#phrases').count(),1);
+    assert.equal(await page.locator('.review-hub a[href="./pro-study.html"]').count(),1);
+    assert.equal(await page.locator('.review-hub a[href="./pro-demo.html"]').count(),1);
+   }
+   if(path==='reflex.html'){
+    assert.equal(await page.locator('#requestTeacher').textContent(),
+     '✨ 追加のAI講評を受ける（任意・回数消費）');
+    assert.equal(await page.locator('a[href="./classic.html"]').count(),0);
+   }
    if(path.startsWith('scenes')){
     assert.equal(await page.locator('[data-scene="taxi"]').getAttribute('aria-pressed'),'true');
     assert.equal(await page.locator('[data-scene]').count(),16);
