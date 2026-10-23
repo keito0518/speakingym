@@ -14,6 +14,7 @@
  */
 import {MODEL} from './cost-telemetry.js';
 import {tokyoDay} from './plan-limits.js';
+import {ledgerMode,ledgerSchemaReady} from './turn-ledger.js';
 
 export const GUARD_MODE='enabled';
 const RATES=Object.freeze({
@@ -35,7 +36,7 @@ export const budgetGuardRequested=env=>env?.AI_COST_GUARD_MODE===GUARD_MODE;
 export function budgetGuardConfig(env={}){
  if(!budgetGuardRequested(env))return null;
  // A signed user, durable shared D1 and existing plan guard are required.
- if(env.ENFORCE_PLANS!=='true'||!env.PLAN_DB)return null;
+ if(env.ENFORCE_PLANS!=='true'||!env.PLAN_DB||!ledgerMode(env))return null;
  const monthlyYen=boundedInt(env.AI_MONTHLY_BUDGET_YEN,500,10000000);
  const monthlyFreeConvo=boundedInt(env.AI_FREE_MONTHLY_CONVERSATIONS,1,500);
  const monthlyFreeTeacher=boundedInt(env.AI_FREE_MONTHLY_TEACHER,1,100);
@@ -73,7 +74,11 @@ export async function reserveAIBudget(db,{uid,tier,kind,env,time=Date.now()}={})
  if(!config||db!==env.PLAN_DB||typeof uid!=='string'||!uid||uid.length>128||
   !['free','pro'].includes(tier)||!Object.hasOwn(BUDGET_ENVELOPE_TOKENS,kind)||
   !Number.isFinite(time))return {ok:false,reason:'budget_not_ready'};
- if(!await budgetSchemaReady(db))return {ok:false,reason:'budget_not_ready'};
+ // Exact-ID ledger refunds must be available before the budget guard is
+ // activated; legacy turn counters may fail to refund a rejected attempt
+ // under concurrent calls.
+ if(!await ledgerSchemaReady(db)||!await budgetSchemaReady(db))
+  return {ok:false,reason:'budget_not_ready'};
  const milliYen=estimateBudgetMilliYen(kind,config);
  const month=tokyoDay(time).slice(0,7),id=crypto.randomUUID();
  const freeLimit=kind==='teacher'?config.monthlyFreeTeacher:config.monthlyFreeConvo;
