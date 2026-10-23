@@ -228,7 +228,16 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     getUid:()=> 'browser-test-owner-B',isLoggedIn:()=>true};
    window.dispatchEvent(new Event('speakingym:account-ready'));
   });
-  assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),true);
+  const roleplayReviewDebug=await page.evaluate(()=>({
+    uid:window.speakingymAccount?.getUid?.()||null,
+    payload:(()=>{try{return JSON.parse(sessionStorage.getItem('speakingym-pro-scene-target-v1')||'null')}catch{return 'invalid-json'}})(),
+    hidden:document.getElementById('proReviewTargetSetup')?.hidden,
+    display:document.getElementById('proReviewTargetSetup')&&getComputedStyle(document.getElementById('proReviewTargetSetup')).display,
+    text:document.getElementById('proReviewTargetSetup')?.textContent,
+    owner:localStorage.getItem('speakingym-account-owner-v1')
+   }));
+  assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),true,
+   'Pro review scene handoff state: '+JSON.stringify(roleplayReviewDebug));
   assert.match(await page.locator('#proReviewTargetSetup').textContent(),/Could you repeat that/);
   await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
   assert.equal(await page.locator('#proReviewTargetSetup').isVisible(),false);
