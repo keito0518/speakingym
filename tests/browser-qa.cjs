@@ -183,6 +183,22 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   await page.locator('#stopMic').click();
   await page.locator('#spoken').click();
   assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),false,'hint must close on the next question');
+  // Freeze diagnosis is only asked in the post-workout review, never during the timer.
+  await page.locator('#stuck').click();
+  assert.equal(await page.locator('#diagnosisPanel').isVisible(),false);
+  await page.locator('#finishEarly').click();
+  assert.equal(await page.locator('#endPane').isVisible(),true);
+  await page.locator('#reviewNext').click();
+  assert.equal(await page.locator('#diagnosisPanel').isVisible(),true);
+  assert.equal(await page.locator('#diagnosisChoices button').count(),6);
+  await page.locator('#diagnosisChoices [data-reason="words"]').click();
+  assert.match(await page.locator('#diagnosisSummaryText').textContent(),/単語が出てこなかった/);
+  assert.equal(await page.locator('#diagnosisResult a').first().getAttribute('href'),'./freeze-breaker.html');
+  assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-sprint-reasons-v1:guest')||''),/words/);
+  await page.locator('#reviewPrev').click();
+  assert.equal(await page.locator('#diagnosisPanel').isVisible(),false,'diagnosis hidden for spoken answer');
+  await page.locator('#reviewNext').click();
+  assert.equal(await page.locator('#diagnosisChoices [data-reason="words"]').getAttribute('aria-pressed'),'true','reason persists across review navigation');
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
   await page.evaluate(()=>{localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([{id:'repair1:easy:quick',cardId:'repair1',kind:'quick',text:'Could you repeat that?',level:'easy',goal:'聞き返す'}]));window.speakingymPhrases.toggle({text:'Could I have oat milk?',sceneId:'cafe',level:'standard',source:'AIの言い換え'});window.dispatchEvent(new Event('speakingym:account-ready'))});
   assert.equal(await page.locator('#phrases article').count(),2);await page.click('#hide');assert.equal(await page.locator('.english:visible').count(),0);await page.getByRole('button',{name:'答えを見る'}).first().click();assert.equal(await page.locator('.english:visible').count(),1);
