@@ -51,6 +51,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 </section>
 <section class="card" id="setup">
 <div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
+<p class="notice" id="proReviewTargetSetup" role="note" hidden></p>
 <div class="assignment" id="setupAssignment" aria-live="polite"></div><div class="goals" id="setupGoals" aria-live="polite"></div>
 <div class="muted" id="scenesQuota" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</div>
 <div class="notice" data-sg-quota-exhausted="sessions" hidden role="status">今日はAI英会話を5セッション使い切ったよ。日本時間の午前0時に回復するよ！ その間も <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
@@ -67,6 +68,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 </section>
 <section class="card hidden" id="practice">
 <div class="row" style="justify-content:space-between"><div><span class="eyebrow" id="sceneLabel">AI CONVERSATION</span><h2 id="sceneTitle" style="margin:2px 0;font-size:20px">シーン練習</h2></div><span class="pill" id="timer">03:00</span></div>
+<p class="notice" id="proReviewTargetPractice" role="note" hidden></p>
 <div class="assignment assignment-in-game" id="practiceAssignment"></div><div class="goals" id="progress"></div>
 <div id="chat" role="log" aria-live="polite" aria-label="英語での会話"></div>
 <p id="status" role="status">相手の話を聞こう。</p>
@@ -223,6 +225,29 @@ function saveSceneOutcome(success){
  }catch(e){}
 }
 function status(message){$("status").textContent=message}
+const PRO_SCENE_TARGET_KEY='speakingym-pro-scene-target-v1';
+function hideProReviewTarget(){
+ for(const key of ['proReviewTargetSetup','proReviewTargetPractice']){
+  const el=$(key);el.hidden=true;el.textContent='';
+ }
+}
+function renderProReviewTarget(){
+ hideProReviewTarget();
+ let payload;
+ try{payload=JSON.parse(sessionStorage.getItem(PRO_SCENE_TARGET_KEY)||'null')}catch{return}
+ if(!payload||typeof payload!=='object')return;
+ const uid=window.speakingymAccount?.getUid?.();
+ if(typeof uid!=='string'||!uid)return;
+ if(payload.uid!==uid||!Number.isFinite(payload.expires)||payload.expires<=Date.now()||
+  typeof payload.phrase!=='string'||!payload.phrase.trim()||payload.phrase.length>260){
+  try{sessionStorage.removeItem(PRO_SCENE_TARGET_KEY)}catch{}
+  return;
+ }
+ for(const key of ['proReviewTargetSetup','proReviewTargetPractice']){
+  const el=$(key);el.textContent='今日のPro復習チャレンジ：会話の流れに合うときに「'+payload.phrase+'」を使ってみよう。';
+  el.hidden=false;
+ }
+}
 function goals(container,done){container.replaceChildren();container.setAttribute("lang",missionLanguage());task().goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
 function addMessage(who,text){const bubble=document.createElement("div");bubble.className="bubble"+(who==="You"?" me":"");const label=document.createElement("strong");label.textContent=who;const body=document.createElement("span");body.textContent=text;bubble.append(label,body);if(who!=="You"&&window.speakingymPhrases)bubble.append(window.speakingymPhrases.button({text,source:"AI英会話の表現",sceneId,level:$("level").value,hint:task().headline}));$("chat").append(bubble);$("chat").scrollTop=$("chat").scrollHeight}
@@ -558,6 +583,7 @@ $("inlineGoogleLogin").addEventListener("click",()=>{
  $("inlineLoginHelp").textContent="ログインを準備中です。少し待ってからもう一度押すか、マイページからログインしてね。";
 });
 window.addEventListener("speakingym:account-ready",()=>{
+ renderProReviewTarget();
  if(!window.speakingymAccount?.isLoggedIn?.()||$("loginPrompt").classList.contains("hidden"))return;
  $("loginPrompt").classList.add("hidden");
  status("ログイン完了！「このシーンを始める」を押してね。");
@@ -566,7 +592,7 @@ window.addEventListener("speakingym:account-ready",()=>{
 $("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
 // Abort in-flight AI and clear old-account practice when the login changes.
 window.addEventListener("speakingym:account-changing",()=>{
- leave();serverSessionId="";plansActive=null;safeReplay=false;
+ hideProReviewTarget();leave();serverSessionId="";plansActive=null;safeReplay=false;
  history=[];coachingHistory=[];lastReply="";lastSpoken="";
  $("reply").value="";$("chat").replaceChildren();$("result").replaceChildren();
  $("coachReport").replaceChildren();
