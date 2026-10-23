@@ -51,8 +51,8 @@ test('reason-backed focus and unseen cards are prioritized, not just labels',()=
  const a=harness(),p=a.api.plan(cards,hist,reasons);
  assert.equal(p.topReason,'words');
  assert.equal(p.reasonCount,2);
- assert.equal(p.missCount,2);
- assert.deepEqual(Array.from(p.stages[0].poolIds),['repair1','hold2']);
+ assert.equal(p.missCount,3,'the earlier unresolved connect problem is still an active retry');
+ assert.deepEqual(Array.from(p.stages[0].poolIds),['hold2','repair1','connect1']);
  assert.deepEqual(Array.from(p.stages[1].poolIds),['repair1','repair2']);
  assert.deepEqual(Array.from(p.stages[2].poolIds),['repair2']);
  assert.match(p.stages[1].description,/単語が出なかった/);
@@ -67,7 +67,7 @@ test('false, orphan and malformed reason records cannot invent a weakness',()=>{
  ]);
  assert.equal(p.topReason,null);
  assert.equal(p.reasonCount,0);
- assert.equal(p.stages[1].poolIds[0],'repair1');
+ assert.deepEqual(Array.from(p.stages[1].poolIds),['hold1','hold2']);
 });
 test('a later spoken answer clears that card from retry priority',()=>{
  const a=harness();
@@ -75,7 +75,8 @@ test('a later spoken answer clears that card from retry priority',()=>{
   date:'2026-10-24T08:00:00.000Z',
   attempts:[{cardId:'repair1',outcome:'spoken'}]
  },...hist],reasons);
- assert.deepEqual(Array.from(p.stages[0].poolIds),['hold2']);
+ assert.deepEqual(Array.from(p.stages[0].poolIds),['hold2','connect1']);
+ assert.equal(p.stages[0].poolIds.includes('repair1'),false,'later success must clear this retry');
 });
 test('recently seen is NOT presented as a verified initial-unseen skill test',()=>{
  const a=harness(),everything=[{date,attempts:cards.map(c=>({cardId:c.id,outcome:'spoken'}))}];
