@@ -209,3 +209,14 @@
 - 継続NO-GO：Stripe実TEST更新・決済失敗からの回復、Gemini実原価とモデル品質、Free/Pro枠の販売案、実iPhoneマイク、運営者の法定表示・返金と既存680円利用者権利の取扱い、オーナーの明示的な本番リリース承認。
 
 最新の980円案の開発状況・リリース阻害事項：`PRO980_DRAFT_RELEASE_PLAN_2026-10-23.md` を参照。
+
+## 2026-10-23：980円案の原価ガード・Gemini品質比較環境をDraftに追加
+
+- **本番を変更していない**。この変更はドラフトPR #62のコード・テスト・手順書だけ。main、Cloudflare本番Worker/D1/Pages、Stripe Live、旧680円契約、既存の月1,480円Draft商品、実AIモデル、Free/Pro利用枠は未変更。
+- `worker/ai-cost-budget.js` / `worker/migrations/0007-ai-cost-budget.sql`：新しい明示的フラグ `AI_COST_GUARD_MODE=enabled` のときだけ、署名済FirebaseアカウントごとのFree月間AI呼び出し上限と、Free/Pro共通の月間推定費用上限をD1の単一原子的INSERTで確保する。実際のGoogle請求額ではなく、控えめではなく**高めの入力・出力トークンを仮定した予約額**でブロックする。取得できない設定・スキーマならAI実行前に拒否。
+- `worker/ai-worker.js`：明示的に有効化した場合のみ、Geminiへ送る前に予算予約し、予算不足ならGeminiを呼ばずに既存のAIターン／講評予約を返却。失敗・タイムアウトで予約した費用枠は保守的に消費されたままにする（料金を過少見積もりしないため）。/healthには有効化要求と準備状況のみ表示。
+- `worker/ai-cost-budget.test.mjs` / `worker/ai-budget-worker.integration.test.mjs`：D1相当の隔離SQLiteと偽Gemini返答だけで、予算の同時更新、Free月間上限、月初リセット、D1設定不足、実providerへの追加呼び出しが止まること、元のFree回数を返却することを検証。
+- `scripts/gemini-quality-benchmark.mjs` と `tests/gemini-quality-benchmark.test.mjs`：両モデルへ同じ18の匿名サンプル問題を投げた**結果を後から公平に比較する基盤**。実API呼び出しゼロ。架空の空テンプレートをモデルの測定結果と混同せず、最終の品質評価は必ず人間が行う。
+- 安全なstaging導入の手順：`worker/AI_COST_GUARD_STAGING_RUNBOOK_2026-10-23.md`。モデル比較手順：`GEMINI_QUALITY_AB_STAGING_2026-10-23.md`。
+- **未完了・リリース禁止**：実staging D1への0007適用、サンドボックス認証とAIの費用実測、Gemini3.1の実回答比較、月980円にした場合の販売条件とFree枠の最終決定、Stripe TEST実更新／失敗からの復旧、実iPhoneマイク、法定表示、公開承認。見積原価だけで「赤字が絶対出ない」とは宣言しない。
+
