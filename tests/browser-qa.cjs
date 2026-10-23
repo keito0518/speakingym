@@ -26,7 +26,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#sg-analytics-consent-status').textContent(),'任意のアクセス解析：拒否中');
   assert.equal(await page.locator('script[data-sg-ga4-loader]').count(),0);
   const requestsAfterRevoke=googleRequests.length;
-  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','pro-demo.html','reflex.html']){
+  for(const path of ['index.html','account.html','phrasebook.html','plans.html','privacy.html','terms.html','contact.html','mission.html','scenes.html?scene=taxi','pro-demo.html','freeze-breaker.html','reflex.html']){
    await page.goto('http://127.0.0.1:8765/'+path);await page.waitForTimeout(150);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
    if(path.startsWith('scenes')){
@@ -59,6 +59,50 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(new URL(page.url()).searchParams.get('scene'),'hotel','selection must be reflected in URL');
     await page.reload();
     assert.equal(await page.locator('[data-scene="hotel"]').getAttribute('aria-pressed'),'true','Firebase sync reload must retain selected scene');
+   }
+   if(path==='freeze-breaker.html'){
+    await page.locator('#start-button').waitFor({state:'visible'});
+    assert.equal(await page.locator('#mission-select option').count(),6);
+    assert.equal(await page.locator('#stat-attempts').textContent(),'0');
+    await page.locator('#start-button').click();
+    assert.equal(await page.locator('#mission').isVisible(),true);
+    assert.match(await page.locator('#dialogue').textContent(),/oat milk/);
+    await page.locator('#speak-dialogue').click();
+    assert.ok(await page.evaluate(()=>window.__spoken.some(x=>x.text.includes('oat milk'))));
+    await page.locator('#reason-buttons button[data-reason="surprise"]').click();
+    assert.match(await page.locator('#rescue-line').textContent(),/give me a second/);
+    await page.locator('#repair-next').click();
+    assert.equal(await page.locator('#step-retry').isVisible(),true);
+    await page.locator('#reply-note').fill('Could you give me a moment?');
+    await page.locator('#show-hint').click();
+    await page.locator('#said-yes').click();
+    assert.equal(await page.locator('#stat-attempts').textContent(),'1');
+    assert.equal(await page.locator('#stat-recovered').textContent(),'0',
+     'hint-assisted response is not claimed as independent success');
+    const guestSaved=await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest'));
+    assert.ok(guestSaved);
+    assert.doesNotMatch(guestSaved,/Could you give me a moment/,'typed answer must never be saved');
+    await page.locator('#retry-scene').click();
+    assert.match(await page.locator('#dialogue').textContent(),/machine is broken/,
+     'same scene retry rotates the surprise');
+    await page.locator('#reason-buttons button[data-reason="words"]').click();
+    await page.locator('#repair-next').click();
+    await page.locator('#said-yes').click();
+    assert.equal(await page.locator('#stat-attempts').textContent(),'2');
+    assert.equal(await page.locator('#stat-recovered').textContent(),'1');
+    await page.evaluate(()=>{
+     window.dispatchEvent(new Event('speakingym:account-changing'));
+     localStorage.setItem('speakingym-account-owner-v1','browser-owner-A');
+     window.speakingymAccount={isLoggedIn:()=>true,getUid:()=> 'browser-owner-A',getIdToken:async()=>null};
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    assert.equal(await page.locator('#stat-attempts').textContent(),'0',
+     'guest data may not be rendered for a new authenticated owner');
+    await page.locator('#start-button').click();
+    assert.equal(await page.locator('#mission').isVisible(),true);
+    await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+    assert.equal(await page.locator('#mission').isVisible(),false);
+    assert.equal(await page.locator('#start-button').isDisabled(),true);
    }
    if(path==='pro-demo.html'){
     await page.locator('#demo-review-list li.review-card').first().waitFor();
