@@ -91,8 +91,14 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
       rows.push({pairId:'words-explain-1',first:false,second:false,at:new Date(Date.now()-2*86400000).toISOString()});
       localStorage.setItem(key,JSON.stringify(rows));
     });
-    await page.reload();
+    // Simulate a second tab saving a due review; focus should update without reload.
+    await page.evaluate(()=>window.dispatchEvent(new Event('pageshow')));
     assert.match(await page.locator('#reviewDue').textContent(),/復習するセット/);
+    assert.equal(await page.locator('#dueCount').textContent(),'1');
+    assert.equal(await page.locator('#startFresh').isVisible(),true);
+    await page.locator('#startFresh').click();
+    assert.match(await page.locator('#progress').textContent(),/TRANSFER CHECK/,'fresh practice remains possible with a due item');
+    await page.reload();
     assert.equal(await page.locator('#dueCount').textContent(),'1');
     await page.locator('#start').click();
     assert.match(await page.locator('#progress').textContent(),/SPACED REVIEW/);
@@ -107,6 +113,7 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     });
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.match(await page.locator('#historySummary').textContent(),/0 組に挑戦/,'guest result not shown to another signed-in learner');
+    assert.equal(await page.locator('#startFresh').isVisible(),false,'other account has no due item or fresh-choice prompt');
     assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-transfer-results-v1:guest')||''),/"first":true,"second":false/);
    }
    if(path.startsWith('scenes')){
