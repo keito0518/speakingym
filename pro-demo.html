@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#183c2f">
+<meta name="robots" content="noindex,nofollow">
+<title>Pro復習スタジオを体験 | Speakingym</title>
+<meta name="description" content="架空の英語表現を使ってProの反復復習・1日5分メニューを無料体験。ログイン・課金・AI API不要。">
+<style>
+:root{font:15px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#183c2e;background:#f6f8f3}
+*{box-sizing:border-box}body{margin:0;min-width:320px}button,a{font:inherit}button{cursor:pointer;min-height:44px;border-radius:10px;border:1px solid #b8d0bd;background:#f0f7ea;color:#194931;font-weight:800;padding:9px 14px}button:focus-visible,a:focus-visible{outline:3px solid #f58f70;outline-offset:2px}
+a{color:#276444}header{background:#173f30;color:white}.nav{max-width:1080px;margin:auto;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.logo{font-size:24px;font-weight:950;color:white;text-decoration:none}.logo span{color:#ffab8a}.nav a:last-child{color:#f5fff4;font-size:13px}
+main{max-width:1020px;margin:auto;padding:26px 18px 76px}.hero{border-radius:23px;background:linear-gradient(125deg,#184531,#286445);color:white;padding:28px 32px}.eyebrow{font-size:11px;font-weight:900;letter-spacing:1.8px;color:#dcf0b5}.hero h1{font-size:clamp(26px,5vw,41px);line-height:1.35;margin:9px 0}.hero p{max-width:740px;color:#e0f0e1}.disclaimer{padding:14px 16px;margin:18px 0 22px;border:1px solid #d4e2ce;border-radius:13px;background:#fffdf3;font-size:13px}.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:20px}.card{background:#fff;border:1px solid #dce7de;border-radius:17px;padding:22px;margin-bottom:18px}.card h2{font-size:19px;margin:0 0 8px}.small{font-size:12px;color:#52675b;margin:8px 0}.review-list{list-style:none;padding:0;margin:0}.review-card{padding:17px 0;border-top:1px solid #eaf0e7}.review-card:first-child{border-top:0}.review-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#51815f;font-weight:800;font-size:12px}.review-hint{margin:7px 0;color:#344c40}.answer{font-size:20px;font-weight:900;color:#163b2b;line-height:1.4}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.actions button{flex:1 1 120px}.retry{background:#fff8ef;border-color:#f2cead;color:#885530}.status{font-size:13px;min-height:22px;color:#295944}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#eef6ea;border-radius:12px;padding:12px}.stat strong{display:block;font-size:26px;line-height:1.3}.stat small{font-size:11px;color:#52665a}.plan{list-style:none;padding:0;margin:0}.plan li{border-bottom:1px solid #ecf1eb;padding:12px 0}.plan li:last-child{border:0}.plan strong{font-size:14px}.tools{display:flex;gap:9px;flex-wrap:wrap}.tools a{display:inline-block;text-align:center;text-decoration:none;border-radius:10px;background:#f57452;color:white;font-weight:850;padding:12px 16px}.tools .secondary{background:#eaf3e7;color:#1b4e35}.day-control{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}.day-control #demo-day{font-weight:850}.demo-label{font-size:12px;font-weight:850;color:#557961}footer{padding:20px;text-align:center;font-size:12px;color:#668070}
+@media(max-width:680px){.grid{grid-template-columns:1fr}.hero{padding:23px}.card{padding:17px}.nav{padding:13px 16px}main{padding:18px 14px 45px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
+</head>
+<body>
+<header><div class="nav"><a class="logo" href="./index.html">speakin<span>gym.</span></a><a href="./plans.html">料金・プランへ ↗</a></div></header>
+<main>
+<section class="hero">
+ <span class="eyebrow">PRO STUDY STUDIO · INTERACTIVE DEMO</span>
+ <h1>覚えるより、<br>話せるまで復習しよう。</h1>
+ <p>AI講評や会話から保存した表現を、忘れそうなタイミングで繰り返す。Pro復習スタジオの使い方を、まずは無料で触ってみよう。</p>
+</section>
+<div class="disclaimer" role="note"><strong>これは架空の学習データを使った操作体験版です。</strong> ログイン・お支払い・AIへの通信は不要。ここでの練習履歴は保存されず、実際のPro権限や利用枠も変更しません。正式な販売条件と公開日は準備中です。</div>
+<div class="grid">
+<div>
+<section class="card" aria-labelledby="demo-review-heading">
+ <h2 id="demo-review-heading">今日の復習・最大5枚</h2>
+ <p class="small">日本語のヒントを見て英語で声に出そう。次に答えを開いて「言えた」か「まだ苦手」を選んでね。</p>
+ <div class="day-control">
+  <span class="demo-label">体験版の練習日</span><span id="demo-day"></span>
+  <button id="demo-next-day" type="button">翌日を試す →</button>
+  <button id="demo-reset" type="button">最初から</button>
+ </div>
+ <ol id="demo-review-list" class="review-list"></ol>
+ <p id="demo-review-status" class="status" role="status" aria-live="polite"></p>
+</section>
+<section class="card" aria-labelledby="demo-plan-heading">
+ <h2 id="demo-plan-heading">1日5分のメニュー</h2>
+ <ol id="demo-plan" class="plan"></ol>
+</section>
+</div>
+<div>
+<section class="card" aria-labelledby="demo-report-heading">
+ <h2 id="demo-report-heading">今日の振り返り</h2>
+ <div id="demo-stats" class="stats"></div>
+ <p class="small">結果はあなたの自己記録の例で、英語力や発音の正確さを判定しているわけではありません。</p>
+</section>
+<section class="card">
+ <h2>実際のSpeakingymも試してみよう</h2>
+ <p>60秒チャレンジはログインなしで練習できるよ。Proの実際の復習機能はログイン後の権限確認が必要です。</p>
+ <div class="tools"><a href="./reflex.html">60秒チャレンジ ↗</a><a class="secondary" href="./plans.html">プランを見る ↗</a></div>
+</section>
+</div>
+</div>
+</main>
+<footer>Speakingym · 知ってる英語を、話せる英語に。</footer>
+<script type="module" src="./pro-demo.js"></script>
+</body>
+</html>
