@@ -131,7 +131,9 @@ export function normalizeFreezeProgress(input){
   if(!Number.isInteger(item.stage)||item.stage<0||item.stage>4)continue;
   records[id]={due:item.due,last:item.last,stage:item.stage,
    attempts:validCount(item.attempts),recovered:validCount(item.recovered),
-   lastReason:Object.hasOwn(FREEZE_REASONS,item.lastReason)?item.lastReason:null};
+   lastReason:Object.hasOwn(FREEZE_REASONS,item.lastReason)?item.lastReason:null,
+   reasonCounts:Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
+    [id,validCount(item.reasonCounts?.[id])]))};
  }
  return {version:1,records};
 }
@@ -161,14 +163,22 @@ export function recordFreezeAttempt(raw,{sceneId,reason,saidIt,usedHint=false},w
  const independent=saidIt&&!usedHint;
  const stage=independent?Math.min(4,(previous?.stage||0)+1):0;
  const due=addDays(day,independent?[0,1,3,7,14][stage]:1);
+ const reasonCounts=Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
+  [id,Math.min(100000,(previous?.reasonCounts?.[id]||0)+(id===reason?1:0))]));
  p.records[sceneId]={last:day,due,stage,attempts:Math.min(100000,(previous?.attempts||0)+1),
-  recovered:Math.min(100000,(previous?.recovered||0)+(independent?1:0)),lastReason:reason};
+  recovered:Math.min(100000,(previous?.recovered||0)+(independent?1:0)),lastReason:reason,reasonCounts};
  return normalizeFreezeProgress(p);
 }
 export function freezeSummary(raw,when=new Date()){
  const p=normalizeFreezeProgress(raw),today=freezeDay(when);
  const entries=Object.values(p.records);
+ const reasonTotals=Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
+  [id,entries.reduce((sum,e)=>sum+(e.reasonCounts?.[id]||0),0)]));
+ const ranked=Object.entries(reasonTotals).sort((a,b)=>b[1]-a[1]);
+ const topReason=ranked[0]?.[1]>0?ranked[0][0]:null;
  return {scenes:entries.filter(x=>x.attempts>0).length,
+  topReason,topReasonCount:topReason?reasonTotals[topReason]:0,
+  nextRepairHint:topReason?FREEZE_REASONS[topReason].rescue:null,
   attempts:entries.reduce((n,x)=>n+x.attempts,0),
   recovered:entries.reduce((n,x)=>n+x.recovered,0),
   due:entries.filter(x=>x.due<=today).length,
