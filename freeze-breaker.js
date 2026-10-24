@@ -8,8 +8,10 @@ import {FREEZE_SCENES,FREEZE_REASONS,normalizeFreezeProgress,nextFreezeScene,sce
 
 const $=id=>document.getElementById(id);
 const PREFIX='speakingym-freeze-progress-v1:';
+const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 let scope='',progress=normalizeFreezeProgress(),attempt=null,phase='start',reason=null,usedHint=false,epoch=0;
 let nextSpokenLine='';
+let capture=null,captureStage=null,captureWanted=false,captureBase='',captureFinal='',captureInterim='',captureRetries=0,captureTimer=null;
 let importedMoment=null; // ephemeral AI-generated question; never written to localStorage.
 const el=(tag,value,klass)=>{
  const n=document.createElement(tag);if(value!==undefined)n.textContent=value;
@@ -43,12 +45,16 @@ function saveScope(key,value){
 }
 function clearSession(){
  epoch++;attempt=null;reason=null;usedHint=false;phase='start';nextSpokenLine='';
+ stopCapture();
  try{window.speechSynthesis?.cancel?.()}catch{}
  $('dialogue').textContent='';$('followup').textContent='';
  resetListen('dialogue');resetListen('followup');
  $('return-to-ai').hidden=true;
  $('imported-followup-note').hidden=true;
+ $('first-transcript').value='';
  $('reply-note').value='';
+ $('first-mic-status').textContent='音声認識は任意です。声を出すだけでも練習できます。';
+ $('retry-mic-status').textContent='マイクで話した英文を確認できます。音声認識の結果は採点ではありません。';
  $('feedback').textContent='';
  $('mission').hidden=true;
  $('result').hidden=true;
@@ -79,6 +85,7 @@ function bindScope(){
  $('save-warning').textContent=next?'':'アカウントを確認中です。ログイン状態が確定すると練習できます。';
 }
 function say(text,rate=.86){
+ if(captureWanted||capture)stopCapture(); // Never transcribe the synthetic voice as the learner's answer.
  if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==='undefined'){
   $('feedback').textContent='この端末では読み上げが利用できません。英文を表示して練習できます。';return false;
  }
@@ -87,6 +94,110 @@ function say(text,rate=.86){
   const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-US';
   utterance.rate=rate;window.speechSynthesis.speak(utterance);return true;
  }catch{$('feedback').textContent='読み上げを開始できませんでした。英文を表示して練習できます。';return false}
+}
+const speechId=which=>which==='first'?'first-transcript':'reply-note';
+const speechStatus=which=>$(which+'-mic-status');
+const joinSpeech=(a,b)=>[String(a||'').trim(),String(b||'').trim()].filter(Boolean).join(' ').slice(0,400);
+function updateSpeechControls(){
+ for(const which of ['first','retry']){
+  const live=captureWanted&&captureStage===which;
+  $(which+'-stop').hidden=!live;
+  $(which+'-mic').textContent=live?'↻ 最初から話し直す':
+   $(speechId(which)).value.trim()?'🎙 続きを話す':'🎙 マイクで返す';
+ }
+}
+function stopCapture(){
+ captureWanted=false;
+ if(captureTimer!==null){clearTimeout(captureTimer);captureTimer=null}
+ if(capture){
+  const old=capture;capture=null;
+  try{old.onstart=null;old.onresult=null;old.onend=null;old.onerror=null;old.abort()}catch{}
+ }
+ captureStage=null;captureFinal='';captureInterim='';
+ updateSpeechControls();
+}
+function captureIsActive(which){
+ return captureWanted&&captureStage===which&&scope&&resolveScope()===scope&&
+  (which==='first'?phase==='ask':phase==='retry');
+}
+function beginRecognition(){
+ const which=captureStage;
+ if(!which||!captureIsActive(which))return;
+ try{
+  const rec=new Recognizer();capture=rec;
+  rec.lang='en-US';rec.interimResults=true;rec.continuous=true;
+  captureFinal='';captureInterim='';
+  rec.onstart=()=>{
+   if(capture!==rec||!captureIsActive(which))return;
+   speechStatus(which).textContent='🎙 聞き取り中。途中で言葉が止まっても続けて話せます。';
+   updateSpeechControls();
+  };
+  rec.onresult=event=>{
+   if(capture!==rec||!captureIsActive(which))return;
+   let done='',partial='';
+   for(let i=0;i<event.results.length;i++){
+    const part=event.results[i]?.[0]?.transcript||'';
+    if(event.results[i].isFinal)done=joinSpeech(done,part);
+    else partial=joinSpeech(partial,part);
+   }
+   captureFinal=done;captureInterim=partial;
+   if(done||partial)captureRetries=0;
+   $(speechId(which)).value=joinSpeech(captureBase,joinSpeech(done,partial));
+   if(which==='retry')$('transcript-disclaimer').hidden=!$('reply-note').value.trim();
+  };
+  rec.onerror=event=>{
+   if(capture!==rec)return;
+   const code=event?.error||'unknown';
+   if(code==='no-speech')return;
+   stopCapture();
+   speechStatus(which).textContent=(code==='not-allowed'||code==='service-not-allowed')?
+    'マイクが許可されていません。サイト設定で許可するか、手入力・声出しで練習できます。':
+    code==='audio-capture'?'マイクを利用できません。端末を確認するか、手入力・声出しで練習できます。':
+    code==='network'?'音声認識の通信が途切れました。入力済みの文はそのまま残っています。':
+    '音声認識が止まりました。入力済みの文はそのまま残っています。';
+  };
+  rec.onend=()=>{
+   if(capture!==rec)return;
+   capture=null;
+   if(!captureIsActive(which)){stopCapture();return}
+   captureBase=joinSpeech(captureBase,joinSpeech(captureFinal,captureInterim));
+   $(speechId(which)).value=captureBase;
+   captureFinal='';captureInterim='';captureRetries++;
+   if(captureRetries>2){
+    stopCapture();speechStatus(which).textContent='ブラウザの制限で一時停止しました。「続きを話す」で再開できます。';return;
+   }
+   speechStatus(which).textContent='音声認識が止まったため、再開を試しています…';
+   captureTimer=setTimeout(()=>{captureTimer=null;if(captureIsActive(which))beginRecognition()},350);
+  };
+  rec.start();
+ }catch{
+  stopCapture();speechStatus(which).textContent='音声認識を開始できません。手入力・声出しでも続けられます。';
+ }
+}
+function startCapture(which){
+ if(!scope||resolveScope()!==scope||(which==='first'?phase!=='ask':phase!=='retry'))return;
+ if(!Recognizer){speechStatus(which).textContent='このブラウザでは音声認識が利用できません。マイクなしで声に出すか、手入力してね。';return}
+ const reset=captureStage===which&&captureWanted;
+ stopCapture();
+ if(reset)$(speechId(which)).value='';
+ captureBase=$(speechId(which)).value.trim().slice(0,400);
+ captureStage=which;captureWanted=true;captureRetries=0;
+ try{window.speechSynthesis?.cancel?.()}catch{}
+ updateSpeechControls();beginRecognition();
+}
+function resetTranscript(which){
+ if(captureStage===which)stopCapture();
+ $(speechId(which)).value='';
+ if(which==='retry')$('transcript-disclaimer').hidden=true;
+ speechStatus(which).textContent='全消ししました。必要ならマイクでもう一度話そう。';
+ updateSpeechControls();
+}
+function transcriptEdited(which){
+ const current=$(speechId(which)).value.slice(0,400);
+ if(captureStage===which)stopCapture();
+ $(speechId(which)).value=current;
+ if(which==='retry')$('transcript-disclaimer').hidden=!current.trim();
+ updateSpeechControls();
 }
 function resetListen(id){
  $(id).hidden=true;
@@ -123,6 +234,7 @@ function receiveAIQuestion(){
 function startMission(useImported=false){
  bindScope();
  if(!scope)return;
+ stopCapture();
  const mission=sceneAttempt($('mission-select').value,progress);
  if(!mission)return;
  const useOriginal=useImported===true&&!!importedMoment&&!importedMoment.used &&
@@ -141,6 +253,8 @@ function startMission(useImported=false){
  epoch++;reason=null;usedHint=false;phase='ask';nextSpokenLine='';
  $('imported-followup-note').hidden=!useOriginal;
  $('reply-note').value='';$('feedback').textContent='';
+ $('first-transcript').value='';
+ updateSpeechControls();
  $('result').hidden=true;$('freeze-hint').hidden=true;
  $('transcript-disclaimer').hidden=true;
  $('reason-panel').hidden=true;
@@ -164,6 +278,7 @@ function startMission(useImported=false){
 }
 function markInstantAnswer(){
  if(!attempt||phase!=='ask')return;
+ stopCapture();
  // An answered first question is not a freeze; don't fabricate a cause.
  reason=null;
  phase='repair';
@@ -173,11 +288,13 @@ function markInstantAnswer(){
 }
 function markFrozen(){
  if(!attempt||phase!=='ask')return;
+ stopCapture();
  $('reason-panel').hidden=false;
  $('reason-panel').scrollIntoView?.({block:'nearest',behavior:'smooth'});
 }
 function chooseReason(id){
  if(!attempt||phase!=='ask'||!Object.hasOwn(FREEZE_REASONS,id))return;
+ stopCapture();
  phase='repair';reason=id;
  const rescue=FREEZE_REASONS[id];
  $('reason-caption').textContent=rescue.hint;
@@ -189,6 +306,7 @@ function chooseReason(id){
 }
 function showFollowup(){
  if(!attempt||phase!=='repair')return;
+ stopCapture();
  phase='retry';
  const answer=recoveryReply(attempt,reason);
  nextSpokenLine=answer.line;
@@ -212,6 +330,7 @@ function showHint(){
 }
 function finish(saidIt){
  if(!attempt||phase!=='retry'||typeof saidIt!=='boolean')return;
+ stopCapture();
  // A stale event from the previous login or tab must not write to its scope.
  const key=resolveScope();
  if(!key||scope!==key){clearSession();bindScope();return}
@@ -296,11 +415,19 @@ $('try-another').addEventListener('click',()=>{
  $('step-start').hidden=false;$('mission-select').focus();
 });
 $('speak-dialogue').addEventListener('click',()=>{if(attempt&&phase==='ask')playListeningLine('dialogue',attempt.variation.ask)});
+$('first-mic').addEventListener('click',()=>startCapture('first'));
+$('retry-mic').addEventListener('click',()=>startCapture('retry'));
+$('first-stop').addEventListener('click',()=>{if(captureStage==='first'){stopCapture();speechStatus('first').textContent='認識を停止しました。文字を確認して自分で「返せたか」を選んでね。'}});
+$('retry-stop').addEventListener('click',()=>{if(captureStage==='retry'){stopCapture();speechStatus('retry').textContent='認識を停止しました。必要なら続きを話せます。'}});
+$('first-reset').addEventListener('click',()=>resetTranscript('first'));
+$('retry-reset').addEventListener('click',()=>resetTranscript('retry'));
+$('first-transcript').addEventListener('input',()=>transcriptEdited('first'));
 $('speak-rescue').addEventListener('click',()=>{if(reason)say(FREEZE_REASONS[reason].rescue)});
 $('speak-followup').addEventListener('click',()=>{if(attempt&&phase==='retry')playListeningLine('followup',nextSpokenLine,recoveryReply(attempt,reason).rate)});
 $('reveal-dialogue').addEventListener('click',()=>{if(attempt&&phase==='ask')revealListen('dialogue',$('dialogue').hidden)});
 $('reveal-followup').addEventListener('click',()=>{if(attempt&&phase==='retry')revealListen('followup',$('followup').hidden)});
 $('reply-note').addEventListener('input',()=>{
+ transcriptEdited('retry');
  $('transcript-disclaimer').hidden=!$('reply-note').value.trim();
 });
 renderSceneOptions();bindScope();receiveAIQuestion();pickRecommended();

@@ -60,7 +60,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
  <p>まず相手の英語を耳で聞き、声で返す。詰まったら「聞き返す」「待ってもらう」などで会話を立て直します。60秒の瞬発練習とは違う、時間制限なしの聞く・返す練習です。</p>
  <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
-<div class="notice">声に出して練習するだけ。録音はしません。<details><summary>採点と記録について</summary><p>このジムはシナリオ型の自主練習です。AI利用回数を消費しない練習で、発音・正誤の自動採点は行いません。入力した英文・声・録音は保存・送信しません。自己評価の復習記録はこの端末のみです。</p></details></div>
+<div class="notice">マイクなしでも練習できます。音声認識は任意です。<details><summary>音声認識・採点・記録について</summary><p>このジムはAIを使わない台本型の自主練習で、AI利用回数を消費しない練習です。発音・正誤の自動採点は行いません。マイク利用時、音声がブラウザ提供元の認識サービスに送られる場合があります。SpeakingymのAIサーバーへは送らず、認識した英文・録音は保存しません。自己評価の復習記録のみ、この端末に保存します。</p></details></div>
 <section class="card" id="imported-ai-cue" hidden aria-labelledby="imported-ai-title" style="border:2px solid #f0b390;background:#fffdf9;margin-top:20px">
  <div class="kicker">YOUR REAL FREEZE MOMENT · FROM AI ROLEPLAY</div>
  <h2 id="imported-ai-title">さっき言葉が出なくなった、あの質問</h2>
@@ -96,7 +96,13 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <div class="control-row"><button class="button primary" id="speak-dialogue" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-dialogue" type="button" aria-expanded="false" aria-controls="dialogue">英文を見る</button></div>
     <details><summary>意味を確認する</summary><p id="translation"></p></details>
    </div>
-   <p class="mission-way">聞いた英語に、声に出して返そう。時間制限・録音・入力はありません。</p>
+   <p class="mission-way">相手の英語に声で返そう。マイクを押すと話した英語を文字で確認できます（任意）。</p>
+   <div class="speech-take" aria-label="最初の返答を声で練習する">
+    <div class="control-row"><button class="button primary" id="first-mic" type="button">🎙 マイクで返す</button><button class="button muted" id="first-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="first-reset" type="button">↻ 全消し</button></div>
+    <label for="first-transcript" class="small">話した英文（この練習中だけ表示・保存しません）</label>
+    <textarea id="first-transcript" class="text-entry" rows="2" maxlength="400" placeholder="話しても、手入力してもOK。空欄のまま練習できます。"></textarea>
+    <p class="speech-status" id="first-mic-status" role="status" aria-live="polite">音声認識は任意です。声を出すだけでも練習できます。</p>
+   </div>
    <p><strong>英語でひと言返せた？</strong></p>
    <div class="response-choice">
     <button class="button primary" id="instant-yes" type="button">✓ ひと言返せた</button>
@@ -130,8 +136,10 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <div class="control-row"><button class="button primary" id="speak-followup" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-followup" type="button" aria-expanded="false" aria-controls="followup">英文を見る</button></div>
    </div>
    <p><strong>今度は自分の英語でひと言返そう。</strong></p>
-   <label for="reply-note" class="small">話した文をメモする（任意・保存されません）</label>
+   <div class="control-row"><button class="button primary" id="retry-mic" type="button">🎙 マイクで返す</button><button class="button muted" id="retry-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="retry-reset" type="button">↻ 全消し</button></div>
+   <label for="reply-note" class="small">話した英文（任意・保存されません）</label>
    <textarea id="reply-note" class="text-entry" maxlength="400" placeholder="例：Could you explain that once more?"></textarea>
+   <p class="speech-status" id="retry-mic-status" role="status" aria-live="polite">マイクで話した英文を確認できます。音声認識の結果は採点ではありません。</p>
    <p class="small" id="transcript-disclaimer" hidden>この入力は練習中に画面へ表示するだけ。保存も採点もAI送信もしません。</p>
    <div class="control-row"><button class="button muted" id="show-hint" type="button">💡 ヒントを見る</button></div>
    <div class="hint" id="freeze-hint" hidden><strong>こんな言い方も使えるよ</strong>

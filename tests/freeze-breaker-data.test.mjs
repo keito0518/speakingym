@@ -138,8 +138,13 @@ test('every Freeze Breaker JS DOM identifier exists in the rendered HTML',()=>{
  assert.ok(referenced.length>=30);
  for(const id of new Set(referenced))
   assert.match(html,new RegExp('id="'+id+'"'),id+' must exist in freeze-breaker.html');
- assert.match(html,/入力した英文・声・録音は保存・送信しません/);
- assert.match(html,/シナリオ型の自主練習/);
+ assert.match(html,/音声がブラウザ提供元の認識サービスに送られる場合があります/);
+ assert.match(html,/SpeakingymのAIサーバーへは送らず、認識した英文・録音は保存しません/);
+ assert.match(html,/台本型の自主練習/);
+ assert.match(html,/id="first-mic"/);
+ assert.match(html,/id="retry-mic"/);
+ assert.match(script,/window\.SpeechRecognition\|\|window\.webkitSpeechRecognition/);
+ assert.doesNotMatch(script,/\bfetch\s*\(/,'voice transcription must not trigger a Speakingym AI request');
 });
 
 test('free no-AI Freeze Breaker is linked from the public training and pricing flow',()=>{

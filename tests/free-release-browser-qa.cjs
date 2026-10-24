@@ -16,6 +16,16 @@ const fs=require('node:fs');
    await context.route('https://**/*',route=>route.abort());
    await context.addInitScript(()=>{
     window.__spoken=[];
+    // Deterministic, offline mock. Never asks for a real mic or contacts a speech service.
+    window.__recognizers=[];
+    window.SpeechRecognition=class{
+     constructor(){this.aborted=false;window.__recognizers.push(this)}
+     start(){this.onstart?.()}
+     abort(){this.aborted=true}
+     emit(transcript,final=true){
+      this.onresult?.({results:[Object.assign([{transcript}],{isFinal:final})]});
+     }
+    };
     window.SpeechSynthesisUtterance=class{constructor(text){this.text=text}};
     Object.defineProperty(window,'speechSynthesis',{value:{
      getVoices:()=>[{name:'English',lang:'en-US',voiceURI:'en',localService:true}],
@@ -115,6 +125,17 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#dialogue').isVisible(),false,'rescue begins with listening, not reading the English answer');
    assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),heardFirst,
     'the initial English line plays from the same user click that started the round');
+   await page.locator('#first-mic').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('Could I have a latte, please?'));
+   assert.equal(await page.locator('#first-transcript').inputValue(),'Could I have a latte, please?');
+   assert.equal(await page.locator('#first-stop').isVisible(),true);
+   await page.locator('#first-stop').click();
+   assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true);
+   await page.locator('#first-reset').click();
+   assert.equal(await page.locator('#first-transcript').inputValue(),'');
+   await page.locator('#first-mic').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('One more question'));
+   assert.equal(await page.locator('#first-transcript').inputValue(),'One more question');
    await page.locator('#reveal-dialogue').click();
    assert.equal(await page.locator('#dialogue').isVisible(),true,'reading remains accessible on demand');
    await page.locator('#reveal-dialogue').click();
@@ -122,6 +143,8 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#instant-yes').isVisible(),true,'first action is a spoken answer, not choosing a diagnosis');
    assert.equal(await page.locator('#reason-panel').isVisible(),false);
    await page.locator('#instant-yes').click();
+   assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true,
+    'changing scene phase must cancel pending microphone recognition');
    assert.equal(await page.locator('#step-retry').isVisible(),true,'a fluent first answer skips the rescue explanation');
    assert.equal(await page.locator('#followup').isVisible(),false,'second turn is also listening-first');
    assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),await page.locator('#followup').textContent());
@@ -141,21 +164,52 @@ const fs=require('node:fs');
    assert.match(await page.locator('#followup').textContent(),/^Sure, take your time\./,
     'the simulated conversation responds to the selected recovery strategy');
    assert.match(await page.locator('#recovery-context').textContent(),/想定会話/,'no fake claim of AI understanding');
+   await page.locator('#retry-mic').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('Could you say that again?'));
+   assert.equal(await page.locator('#reply-note').inputValue(),'Could you say that again?');
+   await page.locator('#retry-stop').click();
+   await page.locator('#retry-mic').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('I did not catch that.'));
+   assert.equal(await page.locator('#reply-note').inputValue(),'Could you say that again? I did not catch that.',
+    'resuming recognition must preserve previous spoken sentences');
+   await page.locator('#retry-reset').click();
+   assert.equal(await page.locator('#reply-note').inputValue(),'');
    await page.locator('#reply-note').fill('Private typed answer — do not store');
    await page.locator('#said-yes').click();
    const saved=await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest')||'');
    assert.ok(saved);
    assert.equal(JSON.parse(saved).records.cafe.reasonCounts.surprise,1);
    assert.doesNotMatch(saved,/Private typed answer/);
+   assert.doesNotMatch(saved,/Could I have a latte|Could you say that again|I did not catch that/,
+    'the progress ledger cannot store recognized speech');
+   await page.locator('#retry-scene').click();
+   await page.locator('#first-mic').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('Never show this to another user'));
    await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
    assert.equal(await page.locator('#mission').isVisible(),false,'redact rescue text on account switch');
    assert.equal(await page.locator('#dialogue').textContent(),'','redact the heard question as well as hiding the card');
    assert.equal(await page.locator('#followup').textContent(),'','redact the simulated follow-up');
+   assert.equal(await page.locator('#first-transcript').inputValue(),'','redact voice-to-text on owner switch');
+   assert.equal(await page.locator('#reply-note').inputValue(),'','redact the recovery voice-to-text too');
+   assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true,'abort microphone on owner switch');
    await page.goto('http://127.0.0.1:8765/freeze-breaker.html');
    await page.evaluate(()=>{window.SpeechSynthesisUtterance=undefined});
    await page.locator('#start-button').click();
    assert.equal(await page.locator('#dialogue').isVisible(),true,
     'a browser without speech output must show text automatically, never strand the learner');
+   const noMicContext=await browser.newContext({viewport:{width,height:850}});
+   await noMicContext.route('https://**/*',route=>route.abort());
+   await noMicContext.addInitScript(()=>{window.SpeechRecognition=undefined;window.webkitSpeechRecognition=undefined});
+   const noMicPage=await noMicContext.newPage();
+   await noMicPage.goto('http://127.0.0.1:8765/freeze-breaker.html');
+   await noMicPage.locator('#start-button').click();
+   await noMicPage.locator('#first-mic').click();
+   assert.match(await noMicPage.locator('#first-mic-status').textContent(),/このブラウザでは音声認識が利用できません/,
+    'unsupported browser must explain how to practice without speech recognition');
+   await noMicPage.locator('#first-transcript').fill('I can still type');
+   await noMicPage.locator('#instant-yes').click();
+   assert.equal(await noMicPage.locator('#step-retry').isVisible(),true,'mic support is never required to continue');
+   await noMicContext.close();
    assert.deepEqual(errors,[],'uncaught browser errors in '+engine+' '+width);
    await context.close();
   }
