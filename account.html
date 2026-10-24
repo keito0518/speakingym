@@ -148,7 +148,7 @@ main{max-width:1050px}.hero{background:transparent;box-shadow:none;color:#24392d
   <div class="hero-left">
    <div class="eyebrow">マイページ</div>
    <span id="greeting-name">おかえりなさい。</span>
-   <h1 id="heroTitle">これまでの練習と、次の一歩。</h1>
+   <h1 id="heroTitle">練習記録と、次の一歩。</h1>
    <p class="hero-desc">挑戦した回数、保存した表現、復習の予定をここで確認できます。</p>
    <div class="hero-actions"><a id="sg-hero-action" class="hero-button" href="./freeze-breaker.html">今日の練習を始める <span aria-hidden="true">→</span></a><a href="#progress" class="hero-small-link">学習記録を見る</a></div>
   </div>
@@ -163,7 +163,7 @@ main{max-width:1050px}.hero{background:transparent;box-shadow:none;color:#24392d
   </aside>
  </section>
  <div class="page-content" id="progress">
-  <div class="section-heading"><div><p class="section-kicker">YOUR NUMBERS</p><h2>少しずつ、積み重ねた記録。</h2></div><span class="section-kicker">ALL TIME</span></div>
+  <div class="section-heading"><div><p class="section-kicker">これまでの練習</p><h2>少しずつ、積み重ねた記録。</h2></div><span class="section-kicker">累計</span></div>
   <section id="sg-account-stats" class="stats-grid" aria-label="あなたの学習記録" aria-live="polite">
    <div class="sg-stat"><span class="stat-icon">⚡</span><strong>—</strong><span class="stat-label">60秒チャレンジ</span></div>
    <div class="sg-stat"><span class="stat-icon">↗</span><strong>—</strong><span class="stat-label">保存フレーズ</span></div>
@@ -171,9 +171,9 @@ main{max-width:1050px}.hero{background:transparent;box-shadow:none;color:#24392d
   </section>
   <div class="main-grid">
    <section class="panel next-panel" aria-labelledby="nextTitle">
-    <div class="section-heading"><div><p class="section-kicker">KEEP GOING</p><h2 id="nextTitle">次の一歩。</h2></div></div>
+    <div class="section-heading"><div><p class="section-kicker">今日のおすすめ</p><h2 id="nextTitle">次の一歩。</h2></div></div>
     <div class="next-feature">
-     <span class="next-tag">RECOMMENDED FOR YOU</span>
+     <span class="next-tag">次はこれをやってみよう</span>
      <h3 id="sg-next-title">今日も、英語を口に出そう。</h3>
      <p id="sg-next-description">60秒だけでもいい。まずは言葉にしてみよう。</p>
      <a id="sg-next-action" class="next-button" href="./reflex.html">練習を始める <span aria-hidden="true">↗</span></a>
@@ -186,12 +186,12 @@ main{max-width:1050px}.hero{background:transparent;box-shadow:none;color:#24392d
     </div>
    </section>
    <section class="panel" aria-labelledby="phrasesTitle">
-    <div class="section-heading"><div><p class="section-kicker">MY REVIEW</p><h2 id="phrasesTitle">覚えておきたい表現。</h2></div><a href="./phrasebook.html">マイ復習帳へ ↗</a></div>
+    <div class="section-heading"><div><p class="section-kicker">保存した表現</p><h2 id="phrasesTitle">覚えておきたい表現。</h2></div><a href="./phrasebook.html">マイ復習帳へ ↗</a></div>
     <div id="sg-saved-list" class="saved-list" aria-live="polite"></div>
    </section>
   </div>
   <section class="panel transfer-dashboard" aria-labelledby="transferDashboardTitle">
-   <div class="section-heading"><div><p class="section-kicker">YOUR TRANSFER PROGRESS</p><h2 id="transferDashboardTitle">言えなかった表現を、違う場面でも。</h2></div><a href="./transfer.html">応用チェックへ ↗</a></div>
+   <div class="section-heading"><div><p class="section-kicker">応用練習の記録</p><h2 id="transferDashboardTitle">言えなかった表現を、違う場面でも。</h2></div><a href="./transfer.html">応用チェックへ ↗</a></div>
    <div class="transfer-dashboard-stats" aria-label="場面を変える練習の自己評価">
     <div><strong id="sg-transfer-due">—</strong><span>今日の復習セット</span></div>
     <div><strong id="sg-transfer-attempted">—</strong><span>試したセット</span></div>
@@ -202,22 +202,22 @@ main{max-width:1050px}.hero{background:transparent;box-shadow:none;color:#24392d
   </section>
   <div class="lower-grid">
    <section class="panel" aria-labelledby="feedbackTitle">
-    <div class="section-heading"><div><p class="section-kicker">COACH'S NOTES</p><h2 id="feedbackTitle">最近のAI講評。</h2></div></div>
+    <div class="section-heading"><div><p class="section-kicker">会話の振り返り</p><h2 id="feedbackTitle">最近のAI講評。</h2></div></div>
     <div id="sg-feedback-list" class="recent-feedback-list" aria-live="polite"></div>
     <p class="micro-note">AI先生に実際に講評してもらった内容のみ表示。発音や流暢さを測定したスコアではありません。</p>
    </section>
    <section class="panel" aria-labelledby="historyTitle">
-    <div class="section-heading"><div><p class="section-kicker">RECENT WORKOUTS</p><h2 id="historyTitle">最近の練習。</h2></div><a href="./reflex.html">履歴を見る ↗</a></div>
+    <div class="section-heading"><div><p class="section-kicker">練習履歴</p><h2 id="historyTitle">最近の練習。</h2></div><a href="./reflex.html">履歴を見る ↗</a></div>
     <div id="sg-session-list" class="session-list" aria-live="polite"></div>
     <p class="micro-note" id="sg-session-total">保存された練習記録を表示しています。</p>
    </section>
   </div>
   <section class="panel" aria-labelledby="proStudioTitle" style="margin-top:20px">
-   <div class="section-heading"><div><p class="section-kicker">ONE REVIEW HOME</p><h2 id="proStudioTitle">復習はマイ復習帳から。</h2></div><a href="./phrasebook.html">復習する ↗</a></div>
+   <div class="section-heading"><div><p class="section-kicker">まとめて復習</p><h2 id="proStudioTitle">復習はマイ復習帳から。</h2></div><a href="./phrasebook.html">復習する ↗</a></div>
     <p class="micro-note">60秒・AI実践・AI先生から保存した表現を、一か所で探して復習できます。別場面での応用チェックは無料で、翌日・3日後・7日後の復習予定を端末内に記録します。既存の保存記録やProの利用権限は変更しません。</p>
    </section>
   <section class="panel" aria-labelledby="planTitle" style="margin-top:20px">
-   <div class="section-heading"><div><p class="section-kicker">ACCOUNT & PLAN</p><h2 id="planTitle">利用プランと残り回数。</h2></div></div>
+   <div class="section-heading"><div><p class="section-kicker">アカウント</p><h2 id="planTitle">利用プランと残り回数。</h2></div></div>
    <p id="sg-plan-info" class="micro-note" role="status" aria-live="polite">Googleログイン後に現在のプランと残り利用枠を確認できます。</p>
    <p class="micro-note">60秒チャレンジとフレーズ復習は無料・無制限。Proは指定テスター向けにStripeサンドボックスで決済・解約を検証中です。一般向けの有料登録はまだ開始していません。 <a href="./plans.html">Free・Proの違いを見る ↗</a></p>
   </section>

@@ -33,3 +33,12 @@ test('optional choices stay available without crowding first-time exercise start
  assert.match(freeze,/id="reason-panel" hidden/);
  assert.match(freeze,/id="start-button"/);
 });
+
+test('quiet hero text stays legible and short labels explain the next action',()=>{
+ const freeze=read('freeze-breaker.html');
+ assert.match(freeze,/\.hero\{[^}]*background:transparent;color:#253b2f/,'hero must not inherit white text from its former dark background');
+ assert.match(read('reflex.html'),/<h1>60秒で、英語を声に出そう。<\/h1>/);
+ assert.match(read('account.html'),/<h1 id="heroTitle">練習記録と、次の一歩。<\/h1>/);
+ assert.match(read('scenes.html'),/<h1>どんな場面で話してみる？<\/h1>/);
+ assert.match(read('index.html'),/max-width:13em;text-wrap:balance/);
+});

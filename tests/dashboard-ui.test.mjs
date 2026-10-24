@@ -81,7 +81,7 @@ test("dashboard contains responsive sections, meaningful links, privacy accordio
  assert.match(html,/class="privacy-info"/);
  assert.match(html,/<details class="privacy-info">/);
  assert.match(html,/@media\(max-width:600px\)/);
- assert.match(html,/id="heroTitle">これまでの練習と、次の一歩/);
+ assert.match(html,/id="heroTitle">練習記録と、次の一歩/);
  assert.match(html,/id="weeklyTitle">今週の記録/);
  assert.match(sync,/buildLearningDashboard\(readSnapshot\(localStorage\)\)/);
  assert.match(sync,/ターン／AI先生/);

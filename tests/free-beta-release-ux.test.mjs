@@ -7,7 +7,7 @@ test('scene introduction is consistent with all 16 real practice cards',()=>{
  const scenes=file('scenes.html');
  const ids=[...scenes.matchAll(/data-scene="([a-z]+)"/g)].map(m=>m[1]);
  assert.equal(new Set(ids).size,16);
- assert.match(scenes,/場面を選んで、AIと英語で話そう/);
+ assert.match(scenes,/どんな場面で話してみる？/);
  assert.match(scenes,/他の場面も見る（全16場面）/);
  assert.doesNotMatch(scenes,/6つの場面から選んで/);
  assert.match(scenes,/Googleで無料ログインする/);
