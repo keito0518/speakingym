@@ -10,7 +10,8 @@ function toDay(value){return typeof value==='string'&&DAY_RE.test(value)?value:n
 export function addDays(day,days){
  if(!toDay(day)||!Number.isSafeInteger(days)||Math.abs(days)>365)return null;
  const ms=Date.parse(day+'T00:00:00.000Z');
- return Number.isFinite(ms)?new Date(ms+days*MS_PER_DAY).toISOString().slice(0,10):null;
+ if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==day)return null;
+ return new Date(ms+days*MS_PER_DAY).toISOString().slice(0,10);
 }
 export function reviewSchedule(rawHistory=[],now=new Date()){
  const today=transferDay(now),pairs=new Map(TRANSFER_PAIRS.map(pair=>[pair.id,pair]));
@@ -49,8 +50,13 @@ export function chooseReviewPair(rawHistory=[],now=new Date(),reason=null){
  });
  return TRANSFER_PAIRS.find(p=>p.id===due[0].pairId)||null;
 }
-export function reviewTrend(rawHistory=[]){
- const clean=normalizeTransferResults(rawHistory).sort((a,b)=>a.at.localeCompare(b.at));
+export function reviewTrend(rawHistory=[],now=new Date()){
+ // Match the scheduler's clock-skew allowance: future-dated local entries
+ // cannot turn into a claimed improvement on My Page before they happen.
+ const latest=now.getTime()+5*60000;
+ const clean=normalizeTransferResults(rawHistory)
+  .filter(x=>Date.parse(x.at)<=latest)
+  .sort((a,b)=>a.at.localeCompare(b.at));
  const pairs=new Map();
  for(const x of clean){
   const day=transferDay(new Date(x.at));
