@@ -53,11 +53,20 @@ export function reviewTrend(rawHistory=[]){
  const clean=normalizeTransferResults(rawHistory).sort((a,b)=>a.at.localeCompare(b.at));
  const pairs=new Map();
  for(const x of clean){
-  if(!pairs.has(x.pairId))pairs.set(x.pairId,{first:x,last:x,count:0});
-  const record=pairs.get(x.pairId);record.last=x;record.count++;
+  const day=transferDay(new Date(x.at));
+  // A same-day retry is useful practice, but is NOT evidence of retention.
+  // Compare the final self-rating from the first practice day with the final
+  // self-rating from the most recent later day, never individual same-day taps.
+  if(!pairs.has(x.pairId))pairs.set(x.pairId,{firstDay:day,firstDayLast:x,last:x,lastDay:day,days:1});
+  const entry=pairs.get(x.pairId);
+  if(entry.firstDay===day)entry.firstDayLast=x;
+  if(entry.lastDay!==day){entry.days++;entry.lastDay=day}
+  entry.last=x;
  }
- const repeated=[...pairs.values()].filter(v=>v.count>=2);
- return {repeatedPairs:repeated.length,improvedSelfRatings:repeated.filter(v=>!(v.first.first&&v.first.second)&&v.last.first&&v.last.second).length,
-  maintainedSelfRatings:repeated.filter(v=>v.first.first&&v.first.second&&v.last.first&&v.last.second).length,
-  stillPractising:repeated.filter(v=>!(v.last.first&&v.last.second)).length};
+ const repeated=[...pairs.values()].filter(v=>v.days>=2);
+ const twoSucceeded=x=>x.first===true&&x.second===true;
+ return {repeatedPairs:repeated.length,
+  improvedSelfRatings:repeated.filter(v=>!twoSucceeded(v.firstDayLast)&&twoSucceeded(v.last)).length,
+  maintainedSelfRatings:repeated.filter(v=>twoSucceeded(v.firstDayLast)&&twoSucceeded(v.last)).length,
+  stillPractising:repeated.filter(v=>!twoSucceeded(v.last)).length};
 }
