@@ -83,6 +83,13 @@ body.sg-freeze .hero .kicker{color:#80e9d7}
 body.sg-freeze .hero p{color:#c2d8de}
 body.sg-freeze .hero .pill{color:#a9d8dc;border-color:#557a7f}
 body.sg-freeze .question{background:#f0faf9;border-color:#c2e7e1;border-left-color:#24bbae}
+body.sg-freeze .question.audio-first{background:#193543;border:1px solid #487379;color:#effbf9;padding:20px}
+body.sg-freeze .audio-first .speaker{color:#80ead8}
+body.sg-freeze .audio-first .listening-cue{color:#e0f5f2;font-size:15px;font-weight:750;line-height:1.8;margin:12px 0 16px}
+body.sg-freeze .audio-first .listening-cue:before{content:'◉';display:inline-block;margin-right:8px;color:#59e4d0}
+body.sg-freeze .audio-first blockquote{color:#fff;border-left:3px solid #55ead0;padding-left:13px}
+body.sg-freeze .audio-first details summary{color:#c4e9e5;cursor:pointer}
+body.sg-freeze .audio-first .button.muted{background:#e7f8f5;color:#19424a;border-color:#c0e6df}
 body.sg-freeze .onboarding{background:#f0f8f8}
 body.sg-freeze .stage,body.sg-freeze .speaker{color:#177c75}
 body.sg-freeze .cta{background:#42dec7;color:#0b2932;box-shadow:0 4px 18px #21c9b431}

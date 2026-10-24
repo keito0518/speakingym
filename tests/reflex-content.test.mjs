@@ -25,6 +25,16 @@ test('all 151 cards are reachable through one of the four category filters',()=>
  for(const c of cards)assert.ok(['repair','hold','boundaries','connect'].includes(c.group),c.id);
  for(const group of ['repair','hold','boundaries','connect'])assert.ok(cards.filter(c=>c.group===group).length>=25);
 });
+test('first-time 60-second practice focuses on 51 everyday production prompts, while all 151 stay accessible',()=>{
+ const source=script.slice(script.indexOf('const cards='),script.indexOf('let pile='));
+ const get=mode=>Array.from(vm.runInNewContext('const $=()=>({value:mode});'+source+';deck().map(c=>c.id)',{mode}));
+ const everyday=get('daily'),full=get('mix');
+ assert.equal(everyday.length,51);
+ assert.ok(everyday.every(id=>id.startsWith('practical')));
+ assert.equal(full.length,151);
+ assert.ok(everyday.every(id=>full.includes(id)));
+ assert.match(html,/id="mode"><option value="daily" selected>/);
+});
 
 test('different questions never reuse an entire model-answer set at the same level',()=>{
  for(const level of ['easy','standard','challenge']){const seen=new Map();for(const c of data.filter(c=>c.level===level)){const key=[c.quick,c.sample,c.polite].map(t=>t.toLowerCase().replace(/[^a-z0-9]/g,'')).join('|');assert.ok(!seen.has(key),c.id+' duplicates '+seen.get(key));seen.set(key,c.id)}}

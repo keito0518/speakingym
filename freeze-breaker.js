@@ -4,11 +4,12 @@
  * Self-assessed outcome only; real AI roleplay is available by explicit link.
  */
 import {OWNER_KEY} from './account-data.mjs';
-import {FREEZE_SCENES,FREEZE_REASONS,normalizeFreezeProgress,nextFreezeScene,sceneAttempt,recordFreezeAttempt,freezeSummary,freezeDay} from './freeze-breaker-data.mjs';
+import {FREEZE_SCENES,FREEZE_REASONS,normalizeFreezeProgress,nextFreezeScene,sceneAttempt,recoveryReply,recordFreezeAttempt,freezeSummary,freezeDay} from './freeze-breaker-data.mjs';
 
 const $=id=>document.getElementById(id);
 const PREFIX='speakingym-freeze-progress-v1:';
 let scope='',progress=normalizeFreezeProgress(),attempt=null,phase='start',reason=null,usedHint=false,epoch=0;
+let nextSpokenLine='';
 let importedMoment=null; // ephemeral AI-generated question; never written to localStorage.
 const el=(tag,value,klass)=>{
  const n=document.createElement(tag);if(value!==undefined)n.textContent=value;
@@ -41,7 +42,10 @@ function saveScope(key,value){
  }catch{return false}
 }
 function clearSession(){
- epoch++;attempt=null;reason=null;usedHint=false;phase='start';
+ epoch++;attempt=null;reason=null;usedHint=false;phase='start';nextSpokenLine='';
+ try{window.speechSynthesis?.cancel?.()}catch{}
+ $('dialogue').textContent='';$('followup').textContent='';
+ resetListen('dialogue');resetListen('followup');
  $('return-to-ai').hidden=true;
  $('imported-followup-note').hidden=true;
  $('reply-note').value='';
@@ -74,15 +78,27 @@ function bindScope(){
  $('pick-recommendation').disabled=!next;
  $('save-warning').textContent=next?'':'アカウントを確認中です。ログイン状態が確定すると練習できます。';
 }
-function say(text){
+function say(text,rate=.86){
  if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==='undefined'){
-  $('feedback').textContent='この端末では読み上げが利用できません。英文を見て声に出そう。';return;
+  $('feedback').textContent='この端末では読み上げが利用できません。英文を表示して練習できます。';return false;
  }
  try{
   window.speechSynthesis.cancel();
   const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-US';
-  utterance.rate=.86;window.speechSynthesis.speak(utterance);
- }catch{$('feedback').textContent='読み上げを開始できませんでした。英文を見て声に出そう。'}
+  utterance.rate=rate;window.speechSynthesis.speak(utterance);return true;
+ }catch{$('feedback').textContent='読み上げを開始できませんでした。英文を表示して練習できます。';return false}
+}
+function resetListen(id){
+ $(id).hidden=true;
+ const b=$('reveal-'+id);b.setAttribute('aria-expanded','false');b.textContent='英文を見る';
+}
+function revealListen(id,show){
+ $(id).hidden=!show;
+ const b=$('reveal-'+id);b.setAttribute('aria-expanded',String(show));
+ b.textContent=show?'英文を隠す':'英文を見る';
+}
+function playListeningLine(id,text,rate=.86){
+ if(!say(text,rate))revealListen(id,true);
 }
 function showStage(stage){
  $('step-start').hidden=stage!=='start';
@@ -122,7 +138,7 @@ function startMission(useImported=false){
    imported:true};
   importedMoment.used=true;importedMoment.trained=true;
  }else attempt=mission;
- epoch++;reason=null;usedHint=false;phase='ask';
+ epoch++;reason=null;usedHint=false;phase='ask';nextSpokenLine='';
  $('imported-followup-note').hidden=!useOriginal;
  $('reply-note').value='';$('feedback').textContent='';
  $('result').hidden=true;$('freeze-hint').hidden=true;
@@ -130,6 +146,7 @@ function startMission(useImported=false){
  $('reason-panel').hidden=true;
  $('context').textContent=useOriginal?'先ほどのAI実践英会話から選んだ質問だよ。':attempt.scene.context;
  $('dialogue').textContent=attempt.variation.ask;
+ $('followup').textContent='';resetListen('dialogue');resetListen('followup');
  $('translation').textContent=attempt.variation.meaning;
  $('goal').textContent=attempt.variation.goal;
  $('attempt-number').textContent='この場面 '+String(attempt.attempts+1)+'回目';
@@ -143,6 +160,7 @@ function startMission(useImported=false){
  $('step-start').hidden=false;$('step-repair').hidden=true;$('step-retry').hidden=true;
  $('stage-name').textContent='1 / 3　予想外のひと言';
  $('mission').scrollIntoView?.({block:'start',behavior:'smooth'});
+ playListeningLine('dialogue',attempt.variation.ask);
 }
 function markInstantAnswer(){
  if(!attempt||phase!=='ask')return;
@@ -172,7 +190,11 @@ function chooseReason(id){
 function showFollowup(){
  if(!attempt||phase!=='repair')return;
  phase='retry';
- $('followup').textContent=attempt.followup;
+ const answer=recoveryReply(attempt,reason);
+ nextSpokenLine=answer.line;
+ $('followup').textContent=nextSpokenLine;
+ $('recovery-context').textContent=answer.caption+'（選んだ練習に合わせた想定会話で、音声の自動理解ではありません）';
+ resetListen('followup');
  $('followup-hint').textContent=attempt.variation.examples[0];
  $('followup-hint-2').textContent=attempt.variation.examples[1];
  $('retry-heading').textContent='さらに予想外のひと言が来た！';
@@ -181,6 +203,7 @@ function showFollowup(){
   'ここからは実際の会話の続きではなく、別の想定返答での応用練習だよ。':
   '少し違う返事が来たよ。今度は自分の言葉で答えてみよう。';
  showStage('retry');
+ playListeningLine('followup',nextSpokenLine,answer.rate);
 }
 function showHint(){
  if(!attempt||phase!=='retry')return;
@@ -193,6 +216,7 @@ function finish(saidIt){
  const key=resolveScope();
  if(!key||scope!==key){clearSession();bindScope();return}
  const id=attempt.scene.id;
+ try{window.speechSynthesis?.cancel?.()}catch{}
  progress=recordFreezeAttempt(progress,{sceneId:id,reason,saidIt,usedHint},new Date());
  const saved=saveScope(key,progress);
  const record=progress.records[id];
@@ -271,9 +295,11 @@ $('try-another').addEventListener('click',()=>{
  pickRecommended();clearSession();
  $('step-start').hidden=false;$('mission-select').focus();
 });
-$('speak-dialogue').addEventListener('click',()=>{if(attempt)say(attempt.variation.ask)});
+$('speak-dialogue').addEventListener('click',()=>{if(attempt&&phase==='ask')playListeningLine('dialogue',attempt.variation.ask)});
 $('speak-rescue').addEventListener('click',()=>{if(reason)say(FREEZE_REASONS[reason].rescue)});
-$('speak-followup').addEventListener('click',()=>{if(attempt)say(attempt.followup)});
+$('speak-followup').addEventListener('click',()=>{if(attempt&&phase==='retry')playListeningLine('followup',nextSpokenLine,recoveryReply(attempt,reason).rate)});
+$('reveal-dialogue').addEventListener('click',()=>{if(attempt&&phase==='ask')revealListen('dialogue',$('dialogue').hidden)});
+$('reveal-followup').addEventListener('click',()=>{if(attempt&&phase==='retry')revealListen('followup',$('followup').hidden)});
 $('reply-note').addEventListener('input',()=>{
  $('transcript-disclaimer').hidden=!$('reply-note').value.trim();
 });

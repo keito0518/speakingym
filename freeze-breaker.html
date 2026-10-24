@@ -57,7 +57,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 <section class="hero" aria-labelledby="page-title">
  <div class="kicker">相手の英語 → 切り返し / 会話の立て直し</div>
  <h1 id="page-title">英語で詰まったら？</h1>
- <p>60秒チャレンジとは違い、ここでは相手が突然英語で話しかけてきます。聞き返し・確認・考える時間の取り方を、時間制限なしで練習できます。</p>
+ <p>まず相手の英語を耳で聞き、声で返す。詰まったら「聞き返す」「待ってもらう」などで会話を立て直します。60秒の瞬発練習とは違う、時間制限なしの聞く・返す練習です。</p>
  <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
 <div class="notice">声に出して練習するだけ。録音はしません。<details><summary>採点と記録について</summary><p>このジムはシナリオ型の自主練習です。AI利用回数を消費しない練習で、発音・正誤の自動採点は行いません。入力した英文・声・録音は保存・送信しません。自己評価の復習記録はこの端末のみです。</p></details></div>
@@ -72,9 +72,9 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 <div class="layout">
  <div>
  <section class="card" aria-labelledby="choose-title">
-  <h2 id="choose-title">まずは1問、会話をしてみよう</h2>
-  <div class="onboarding"><strong>練習の流れ</strong><ol><li>英文を見てひと言返す</li><li>「返せた／固まった」を選ぶ</li><li>詰まったらヒントを見て、別の質問に挑戦する</li></ol></div>
-  <button class="button primary start-main" id="start-button" type="button">▶ さっそく1問やってみる</button>
+  <h2 id="choose-title">相手の英語を聞いて、返してみる</h2>
+  <div class="onboarding"><strong>会話リカバリーの3ステップ</strong><ol><li>英語を耳で聞く。聞き取れなければ英文を表示できる</li><li>声で返す。詰まったら会話をつなぐ表現を練習する</li><li>相手の次のひと言を聞いて、もう一度返す</li></ol></div>
+  <button class="button primary start-main" id="start-button" type="button">▶ 会話を聞いて始める</button>
   <details class="scene-options"><summary>場面を変える・復習する（任意）</summary>
    <p>初回は自動でおすすめの場面を選びます。練習したい場面があれば変更できます。</p>
    <label for="mission-select"><strong>練習する場面</strong></label>
@@ -90,12 +90,13 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
   <div id="step-start">
    <p class="small" id="context"></p>
    <p class="meta" id="goal"></p>
-   <div class="question"><div class="speaker">相手のひと言</div>
-    <blockquote lang="en" id="dialogue"></blockquote>
-    <div class="control-row"><button class="button muted" id="speak-dialogue" type="button">▶ 英語を聞く</button></div>
+   <div class="question audio-first"><div class="speaker">相手から英語で話しかけられた</div>
+    <p class="listening-cue" id="dialogue-listening-cue">まずは耳で聞こう。音が出ない場合は下のボタンから英文を表示できます。</p>
+    <blockquote lang="en" id="dialogue" hidden></blockquote>
+    <div class="control-row"><button class="button primary" id="speak-dialogue" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-dialogue" type="button" aria-expanded="false" aria-controls="dialogue">英文を見る</button></div>
     <details><summary>意味を確認する</summary><p id="translation"></p></details>
    </div>
-   <p class="mission-way">声に出して返してみよう。録音や入力は不要です。</p>
+   <p class="mission-way">聞いた英語に、声に出して返そう。時間制限・録音・入力はありません。</p>
    <p><strong>英語でひと言返せた？</strong></p>
    <div class="response-choice">
     <button class="button primary" id="instant-yes" type="button">✓ ひと言返せた</button>
@@ -117,14 +118,16 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <button class="button muted" id="speak-rescue" type="button">▶ この表現を聞く</button>
    </div>
    <p>この英語を1回声に出そう。流暢に話す必要はないよ。</p>
-   <button class="button primary" id="repair-next" type="button">声に出した！次の質問へ →</button>
+   <button class="button primary" id="repair-next" type="button">声に出した！相手の続きを聞く →</button>
   </div>
   <div id="step-retry" hidden>
    <h3 id="retry-heading">さらに予想外のひと言が来た！</h3>
    <p id="imported-followup-note" class="small" hidden>ここからは同じジャンルの別パターンを使う応用練習です。直前のAI会話の実際の続きではありません。</p>
-   <div class="question"><div class="speaker">相手の次の返答</div>
-    <blockquote lang="en" id="followup"></blockquote>
-    <button class="button muted" id="speak-followup" type="button">▶ 英語を聞く</button>
+   <p class="small" id="recovery-context">相手がもうひと言返してきました。</p>
+   <div class="question audio-first"><div class="speaker">相手の次のひと言</div>
+    <p class="listening-cue" id="followup-listening-cue">次の英語を耳で聞いて返そう。</p>
+    <blockquote lang="en" id="followup" hidden></blockquote>
+    <div class="control-row"><button class="button primary" id="speak-followup" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-followup" type="button" aria-expanded="false" aria-controls="followup">英文を見る</button></div>
    </div>
    <p><strong>今度は自分の英語でひと言返そう。</strong></p>
    <label for="reply-note" class="small">話した文をメモする（任意・保存されません）</label>

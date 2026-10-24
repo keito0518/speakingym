@@ -173,7 +173,7 @@ h1,h2,h3,p{text-wrap:pretty;line-break:strict;overflow-wrap:break-word}
   <div class="three"><div class="mini"><strong>①</strong>日本語を見る</div><div class="mini"><strong>②</strong>英語で言う</div><div class="mini"><strong>③</strong>言えたか記録</div></div>
   <button class="btn primary block" type="button" id="start" style="margin-top:16px">60秒始める →</button>
   <details class="settings-details" id="practiceSettings"><summary>難易度・場面を変える（任意）</summary><label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
-  <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option><optgroup label="日常・旅行・仕事"><option>自己紹介</option><option>初対面</option><option>雑談・リアクション</option><option>カフェ</option><option>レストラン</option><option>買い物</option><option>ホテル</option><option>空港</option><option>駅・電車</option><option>道案内</option><option>電話</option><option>予約・予定変更</option><option>仕事・会議</option><option>意見を伝える</option><option>トラブル対応</option><option>謝罪・交渉</option></optgroup></select></details>
+  <select class="select" id="mode"><option value="daily" selected>日常のひと言｜おすすめ51問</option><option value="mix">全151問ミックス</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option><optgroup label="日常・旅行・仕事"><option>自己紹介</option><option>初対面</option><option>雑談・リアクション</option><option>カフェ</option><option>レストラン</option><option>買い物</option><option>ホテル</option><option>空港</option><option>駅・電車</option><option>道案内</option><option>電話</option><option>予約・予定変更</option><option>仕事・会議</option><option>意見を伝える</option><option>トラブル対応</option><option>謝罪・交渉</option></optgroup></select></details>
   <details class="settings-details" id="personalWorkoutDetails"><summary>苦手に合わせた追加練習（任意）</summary>
    <section id="personalPlan" class="personal-plan" aria-label="今日の自分向け練習メニュー" hidden>
     <div class="personal-caption">今日の練習メニュー</div>
@@ -799,7 +799,11 @@ function taskFor(card,level){
  return {situation:d[0],challenge:d[1],sample:d[2],quick:d[3],polite:d[4],good:d[5],improve:d[6]};
 }
 
-const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group||$("mode").value===c.category);
+const deck=()=>{
+ const mode=$("mode").value;
+ if(mode==="daily")return cards.filter(c=>c.id.startsWith("practical"));
+ return cards.filter(c=>mode==="mix"||mode===c.group||mode===c.category);
+};
 let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false,hideSavedEnglish=false;
 let personalRunningStage=null,personalNextStage=null,reviewFromHistory=false;
 function currentPersonalPlan(){

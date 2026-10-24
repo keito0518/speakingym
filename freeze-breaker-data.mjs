@@ -155,6 +155,28 @@ export function sceneAttempt(sceneId,raw){
  const followup=variation.followups[Math.floor(attempts/scene.variations.length)%variation.followups.length];
  return {scene,variation,followup,attempts};
 }
+/** Scripted, strategy-dependent next line. This does not interpret or score speech. */
+export function recoveryReply(attempt,reason){
+ const original=typeof attempt?.variation?.ask==='string'?attempt.variation.ask.trim().slice(0,320):'';
+ const next=typeof attempt?.followup==='string'?attempt.followup.trim().slice(0,320):'';
+ const ordinary={line:next,caption:'会話が続いた想定です。次のひと言を聞いて返そう。',rate:.86};
+ if(!original||!next)return ordinary;
+ switch(reason){
+  case 'misunderstood':return {
+   line:'Of course. Let me say that again more slowly. '+original,
+   caption:'聞き返した想定：相手が少しゆっくり繰り返してくれます。',rate:.72};
+  case 'words':return {
+   line:'No worries. You can use simple words. '+next,
+   caption:'言い換えた想定：相手が待ってくれました。次のひと言に返そう。',rate:.86};
+  case 'surprise':return {
+   line:'Sure, take your time. '+next,
+   caption:'少し待ってもらった想定：考えたあと、もう一度返そう。',rate:.86};
+  case 'unsure':return {
+   line:'Of course. Let me explain a little more. '+next,
+   caption:'選択肢を確認した想定：相手の説明を聞いて返そう。',rate:.86};
+  default:return ordinary;
+ }
+}
 /** A recorded result means the learner says they spoke; it is not AI grading. */
 export function recordFreezeAttempt(raw,{sceneId,reason,saidIt,usedHint=false},when=new Date()){
  const p=normalizeFreezeProgress(raw);

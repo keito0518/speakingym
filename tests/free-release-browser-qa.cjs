@@ -110,10 +110,22 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#mission-select option').count(),7);
    assert.equal(await page.locator('#reason-panel').isVisible(),false,'the cause question must not appear before trying to speak');
    await page.locator('#start-button').click();
+   const heardFirst=await page.locator('#dialogue').textContent();
+   assert.equal(await page.locator('#dialogue').isVisible(),false,'rescue begins with listening, not reading the English answer');
+   assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),heardFirst,
+    'the initial English line plays from the same user click that started the round');
+   await page.locator('#reveal-dialogue').click();
+   assert.equal(await page.locator('#dialogue').isVisible(),true,'reading remains accessible on demand');
+   await page.locator('#reveal-dialogue').click();
+   assert.equal(await page.locator('#dialogue').isVisible(),false);
    assert.equal(await page.locator('#instant-yes').isVisible(),true,'first action is a spoken answer, not choosing a diagnosis');
    assert.equal(await page.locator('#reason-panel').isVisible(),false);
    await page.locator('#instant-yes').click();
    assert.equal(await page.locator('#step-retry').isVisible(),true,'a fluent first answer skips the rescue explanation');
+   assert.equal(await page.locator('#followup').isVisible(),false,'second turn is also listening-first');
+   assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),await page.locator('#followup').textContent());
+   await page.locator('#reveal-followup').click();
+   assert.equal(await page.locator('#followup').isVisible(),true);
    await page.locator('#said-yes').click();
    const fluent=JSON.parse(await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest')));
    assert.equal(fluent.records.cafe.lastReason,null,'answering without freezing never fabricates a diagnosis');
@@ -124,6 +136,9 @@ const fs=require('node:fs');
    await page.locator('#reason-buttons button[data-reason="surprise"]').click();
    assert.match(await page.locator('#rescue-meaning').textContent(),/考える時間/,'rescue phrase has a plain-Japanese meaning');
    await page.locator('#repair-next').click();
+   assert.match(await page.locator('#followup').textContent(),/^Sure, take your time\./,
+    'the simulated conversation responds to the selected recovery strategy');
+   assert.match(await page.locator('#recovery-context').textContent(),/想定会話/,'no fake claim of AI understanding');
    await page.locator('#reply-note').fill('Private typed answer — do not store');
    await page.locator('#said-yes').click();
    const saved=await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest')||'');
@@ -132,6 +147,13 @@ const fs=require('node:fs');
    assert.doesNotMatch(saved,/Private typed answer/);
    await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
    assert.equal(await page.locator('#mission').isVisible(),false,'redact rescue text on account switch');
+   assert.equal(await page.locator('#dialogue').textContent(),'','redact the heard question as well as hiding the card');
+   assert.equal(await page.locator('#followup').textContent(),'','redact the simulated follow-up');
+   await page.goto('http://127.0.0.1:8765/freeze-breaker.html');
+   await page.evaluate(()=>{window.SpeechSynthesisUtterance=undefined});
+   await page.locator('#start-button').click();
+   assert.equal(await page.locator('#dialogue').isVisible(),true,
+    'a browser without speech output must show text automatically, never strand the learner');
    assert.deepEqual(errors,[],'uncaught browser errors in '+engine+' '+width);
    await context.close();
   }

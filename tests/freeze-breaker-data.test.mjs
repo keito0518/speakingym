@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
  FREEZE_SCENES,FREEZE_REASONS,freezeDay,normalizeFreezeProgress,
- nextFreezeScene,sceneAttempt,recordFreezeAttempt,freezeSummary
+ nextFreezeScene,sceneAttempt,recoveryReply,recordFreezeAttempt,freezeSummary
 } from '../freeze-breaker-data.mjs';
 
 const date=iso=>new Date(iso);
@@ -79,6 +79,22 @@ test('retry scenarios rotate dialogue and followups after each result',()=>{
  const c=sceneAttempt('cafe',p);
  assert.notEqual(a.followup,c.followup);
  assert.equal(sceneAttempt('invalid',p),null);
+});
+test('conversation rescue hears different scripted next lines based on the chosen repair',()=>{
+ const task=sceneAttempt('cafe',{});
+ const uninterrupted=recoveryReply(task,null);
+ assert.equal(uninterrupted.line,task.followup);
+ assert.equal(uninterrupted.rate,.86);
+ const repeat=recoveryReply(task,'misunderstood');
+ assert.match(repeat.line,/say that again more slowly/);
+ assert.ok(repeat.line.endsWith(task.variation.ask));
+ assert.equal(repeat.rate,.72,'asking to repeat should produce slower speech');
+ const words=recoveryReply(task,'words'),wait=recoveryReply(task,'surprise'),options=recoveryReply(task,'unsure');
+ assert.ok([words,wait,options].every(reply=>reply.line.endsWith(task.followup)));
+ assert.notEqual(words.line,wait.line);
+ assert.notEqual(wait.line,options.line);
+ assert.deepEqual(recoveryReply(task,'injected'),uninterrupted);
+ assert.match(repeat.caption,/想定/);
 });
 test('recommendation prioritizes due, then unseen, then future scenes',()=>{
  let p={};
