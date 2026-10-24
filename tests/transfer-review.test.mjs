@@ -15,6 +15,8 @@ test('correct JST calendar arithmetic and explicit 1/3/7 day policy',()=>{
  assert.equal(addDays('2026-10-31',3),'2026-11-03');
  assert.equal(addDays('2026-12-30',7),'2027-01-06');
  assert.equal(addDays('invalid',1),null);
+ assert.equal(addDays('2026-02-30',1),null,'invalid calendar days cannot roll into March');
+ assert.equal(addDays('2026-13-01',1),null,'invalid months do not crash scheduling');
  assert.equal(addDays('2026-10-21',400),null);
 });
 test('successive successful self-ratings propose next day, 3 days and 7 days',()=>{
@@ -50,7 +52,7 @@ test('self-reported improvement is not proof of measured fluency',()=>{
   e(other.id,'2026-10-22',true,true),
   e(other.id,'2026-10-25',true,true)
  ];
- const trend=reviewTrend(rows);
+ const trend=reviewTrend(rows,now('2026-10-26'));
  assert.equal(trend.repeatedPairs,2);
  assert.equal(trend.improvedSelfRatings,1);
  assert.equal(trend.maintainedSelfRatings,1);
@@ -63,16 +65,28 @@ test('self-reported improvement is not proof of measured fluency',()=>{
 test('same-day retakes are practice, not proof of across-day improvement',()=>{
  const sameDay=[e(pair.id,'2026-10-21',false,false),
   {...e(pair.id,'2026-10-21',true,true),at:at('2026-10-21','03:01:00')}];
- const stats=reviewTrend(sameDay);
+ const stats=reviewTrend(sameDay,now('2026-10-23'));
  assert.equal(stats.repeatedPairs,0);
  assert.equal(stats.improvedSelfRatings,0);
  assert.equal(stats.maintainedSelfRatings,0);
  // The final same-day outcome is the baseline for the NEXT calendar day.
  const continued=[...sameDay,e(pair.id,'2026-10-22',true,true)];
- assert.equal(reviewTrend(continued).improvedSelfRatings,0);
- assert.equal(reviewTrend(continued).maintainedSelfRatings,1);
+ assert.equal(reviewTrend(continued,now('2026-10-23')).improvedSelfRatings,0);
+ assert.equal(reviewTrend(continued,now('2026-10-23')).maintainedSelfRatings,1);
  const genuinelyDifferentDays=[e(other.id,'2026-10-21',false,false),e(other.id,'2026-10-22',true,true)];
- assert.equal(reviewTrend(genuinelyDifferentDays).improvedSelfRatings,1);
+ assert.equal(reviewTrend(genuinelyDifferentDays,now('2026-10-23')).improvedSelfRatings,1);
+});
+test('future-dated local self-ratings cannot invent across-day improvement on My Page',()=>{
+ const past=e(pair.id,'2026-10-21',false,false);
+ const future=e(pair.id,'2026-11-30',true,true);
+ const today=now('2026-10-23');
+ assert.deepEqual(reviewTrend([past,future],today),{
+  repeatedPairs:0,improvedSelfRatings:0,maintainedSelfRatings:0,stillPractising:0
+ });
+ assert.equal(reviewSchedule([past,future],today).entries[0].dueDay,'2026-10-22',
+  'the review scheduler likewise ignores a future-dated attempt');
+ assert.equal(reviewTrend([past,future],now('2026-12-01')).improvedSelfRatings,1,
+  'a later genuine date can be counted when that day has arrived');
 });
 test('malformed, future and unknown results are not promoted into due reminders',()=>{
  const rows=[
