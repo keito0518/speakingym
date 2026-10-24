@@ -26,15 +26,20 @@
 
 スクリプト `scripts/ai-cost-report.mjs` は、改行区切りJSON・JSON配列・Cloudflare形式のJSONオブジェクト（`logs[].message` 等）から**明示的に許可した2イベントだけ**を読取る。出力は集計のみ。
 
-- **Pro実測**：conversation:pro が30件、teacher:pro が10件以上の場合にのみ、暫定的な月600会話+100講評の試算を比較可能と表示。**30/10は最低限の分析入口であり、統計的な利益保証条件ではない**。
+- **Pro実測**：conversation:pro が30件、teacher:pro が10件以上の場合にのみ、暫定的な**次期ドラフト月1,000会話+150講評・月額1,480円（税込）**の試算を比較可能と表示。**30/10は最低限の分析入口であり、統計的な利益保証条件ではない**。
 - **Pro未販売**：conversation:free および teacher:free の両方があれば `freeAsProProxyEstimate` に **Freeの利用量をPro販売時の費用代理データとして試算**。実際のPro会員の利用習慣や講評需要とは異なりうるので、これは**有料Proの実測ではない**。同様に最低限30/10件は必要。どちらかが不足なら収益判断を保留。
-- **平均、観測p95、観測最大**：p95は高額外れ値を除外する場合がある。想定平均・想定p95×600/100の両方を表示するが、どちらも厳格な費用上限ではない。
+- **平均、観測p95、観測最大**：p95は高額外れ値を除外する場合がある。想定平均・想定p95×1,000/150の両方を表示するが、どちらも厳格な費用上限ではない。
 - 請求額ではなく**有料Standard料金による換算値**。Google請求・Free APIのレート制限、Stripeの実際の適用手数料、為替、消費税、サーバー費用、Free全体の費用、リトライ・失敗後にメタデータがない呼び出し、観測のサンプリング・偏りは別。
 - 提供開始前に、Cloudflare記録と**Googleの実際の請求画面**を照合し、無料ユーザー数/消費・同時接続ピーク・高使用者分布を把握する。
 
+### 2026-10-21 のレポート計算式修正（Draftのみ）
+
+- **旧680円の計算値を新1,480円の判断に誤用しないよう修正済み。** `scripts/ai-cost-report.mjs` の予測件数と売上価格を `scripts/pro1480-economics.mjs` の `OFFER` 定数から取得（1,000ターン・150講評・税込1,480円）。`aiJpyAt1000TurnsAnd150Teacher` / `after1480JpyAndIllustrative4_3PctStripe` 等の出力名で**ドラフト価格に対応した仮試算**を明示。
+- **必要な実証は残る:** `sampleSufficientForReview=true`（会話30件＋講評10件）は閲覧検討の入口に過ぎず、Googleの実請求・Stripeの実手数料・税・Free負担・リトライ・実ユーザーの使用分布を証明しない。無サンプルなら `insufficient_real_usage_data` のまま。変更はGitHub Draftだけであり、実ログへのアクセス・AI料金改定・本番の変更はない。
+
 ### 原価判断の停止条件
 
-データがない/少ない → **NO-GO**。利用量は取れても請求・容量・リトライの不確実性がある → **まだNO-GO**。680円の採算判断・Pro上限・Free上限の変更には別途ユーザー承認が必要。Stripe live、Gemini paid tier、D1、AI利用枠は**一切変更しない**。
+データがない/少ない → **NO-GO**。利用量は取れても請求・容量・リトライの不確実性がある → **まだNO-GO**。1,480円プランの採算判断・Pro上限・Free上限の変更には別途ユーザー承認が必要。Stripe live、Gemini paid tier、D1、AI利用枠は**一切変更しない**。
 
 公式参考：
 - <https://developers.cloudflare.com/workers/observability/logs/workers-logs/>

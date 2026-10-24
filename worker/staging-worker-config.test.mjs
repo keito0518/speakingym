@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const staging=readFileSync(new URL('./wrangler.staging.toml',import.meta.url),'utf8');
+const stageBilling=readFileSync(new URL('./wrangler.staging-billing.toml',import.meta.url),'utf8');
 const production=readFileSync(new URL('./wrangler.toml',import.meta.url),'utf8');
 const key = (text,name) => {
   const matches=[...text.matchAll(new RegExp('^'+name+'\\s*=\\s*"([^"]+)"\\s*$','gm'))];
@@ -54,4 +55,20 @@ test('existing production deployment configuration remains on its own database',
   assert.equal(key(production,'database_id'),'62419d42-703c-4e41-af47-736fd1738d7e');
   assert.notEqual(key(production,'database_id'),key(staging,'database_id'));
   assert.doesNotMatch(production,/^STAGING_HEALTH_ONLY\s*=/m,'production config must never enable staging GET-only gate');
+});
+
+test('Stripe staging config cannot switch the Worker, D1, rate limits, or AI on',()=>{
+ assert.equal(key(section(stageBilling,'name =','[[ratelimits]]'),'name'),
+  key(section(staging,'name =','[[ratelimits]]'),'name'));
+ for(const field of ['main','database_name','database_id','binding','ENFORCE_PLANS',
+  'TURN_LEDGER_MODE','ALLOW_AI','FREE_SESSION_MODE','AI_REPLAY_MODE',
+  'REPLAY_CLEANUP_MODE'])assert.equal(key(stageBilling,field),key(staging,field),field);
+ assert.equal(key(stageBilling,'STAGING_HEALTH_ONLY'),'false');
+ assert.equal(key(stageBilling,'STAGING_BILLING_ONLY'),'true');
+ assert.equal(key(stageBilling,'BILLING_MODE'),'test');
+ assert.equal(key(staging,'BILLING_MODE'),'disabled');
+ assert.doesNotMatch(stageBilling,/STRIPE_(?:SECRET|LIVE)|GEMINI_API_KEY|CF_API_TOKEN/);
+ assert.deepEqual([...stageBilling.matchAll(/^namespace_id\s*=\s*"(\d+)"$/gm)].map(m=>m[1]),
+  [...staging.matchAll(/^namespace_id\s*=\s*"(\d+)"$/gm)].map(m=>m[1]));
+ assert.equal((stageBilling.match(/^\[\[d1_databases\]\]$/gm)||[]).length,1);
 });

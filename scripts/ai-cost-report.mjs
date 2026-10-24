@@ -1,6 +1,7 @@
 // Speakingym privacy-preserving cost/SLA rollup. Reads local redacted log lines.
 // All output is aggregate; never prints original logs, user IDs, IPs, or text.
 import {readFileSync} from 'node:fs';
+import {OFFER} from './pro1480-economics.mjs';
 import {pathToFileURL} from 'node:url';
 
 const USDJPY_FALLBACK=150;
@@ -57,7 +58,8 @@ function readExport(contents,ignored){
  });
 }
 function projection(conversation,teacher,usdJpy,source){
- const plannedRequests=600,plannedTeacher=100,stripeAssumptionJpy=680*.043;
+ const plannedRequests=OFFER.conversationTurns,plannedTeacher=OFFER.teacher;
+ const stripeAssumptionJpy=OFFER.priceJpy*.043;
  const avg=plannedRequests*conversation.estimatedUsd/conversation.calls+
   plannedTeacher*teacher.estimatedUsd/teacher.calls;
  const p95Usd=plannedRequests*percentile(conversation.callCostsUsd,.95)+
@@ -65,14 +67,16 @@ function projection(conversation,teacher,usdJpy,source){
  const enough=conversation.calls>=30&&teacher.calls>=10;
  return {
   source,sampleSufficientForReview:enough,
+  projectionPlan:'draft_pro_1480_1000_150',projectedMonthlyPriceJpy:OFFER.priceJpy,
+  projectedConversationCalls:plannedRequests,projectedTeacherCalls:plannedTeacher,
   sampledProConversationRequests:source==='pro'?conversation.calls:0,
   sampledProTeacherRequests:source==='pro'?teacher.calls:0,
   sampledFreeConversationRequests:source==='free_proxy'?conversation.calls:0,
   sampledFreeTeacherRequests:source==='free_proxy'?teacher.calls:0,
-  aiJpyAt600TurnsAnd100Teacher:round(avg*usdJpy,2),
-  after680JpyAndIllustrative4_3PctStripe:round(680-stripeAssumptionJpy-avg*usdJpy,2),
+  aiJpyAt1000TurnsAnd150Teacher:round(avg*usdJpy,2),
+  after1480JpyAndIllustrative4_3PctStripe:round(OFFER.priceJpy-stripeAssumptionJpy-avg*usdJpy,2),
   aiJpyIfEveryCallMatchedSampleP95:round(p95Usd*usdJpy,2),
-  after680JpyAndStripeIfEveryCallMatchedSampleP95:round(680-stripeAssumptionJpy-p95Usd*usdJpy,2),
+  after1480JpyAndStripeIfEveryCallMatchedSampleP95:round(OFFER.priceJpy-stripeAssumptionJpy-p95Usd*usdJpy,2),
   note:source==='free_proxy'
    ?'CAUTION: Free usage is only a provisional proxy for future Pro usage, not observed Pro costs. Sample may omit failures and be biased by log sampling. Not a profit guarantee.'
    :'Sample-based paid-tier-equivalent forecast, NOT an invoice or maximum. Excludes Free cost, tax, hosting, refunds, model failures without usage metadata and FX risk.'
@@ -108,7 +112,8 @@ export function analyzeAiLogs(contents,{usdJpy=USDJPY_FALLBACK}={}){
    recognized.outcomes++;
   }
  }
- const summary={basis:'paid-tier-equivalent, NOT an actual invoice',assumedUsdJpy:usdJpy,
+ const summary={basis:'paid-tier-equivalent, NOT an actual invoice',
+  draftOffer:{priceJpy:OFFER.priceJpy,monthlyTurns:OFFER.conversationTurns,monthlyTeacher:OFFER.teacher,liveApproved:false},assumedUsdJpy:usdJpy,
   provenance:'Provided log export; production origin, coverage, and provider invoice NOT independently verified.',
   recognized,ignored,groups:{},fullUseProEstimate:null,freeAsProProxyEstimate:null,
   decision:'insufficient_real_usage_data',

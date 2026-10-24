@@ -4,7 +4,8 @@ import {freeSessionMode,requireFreeSessionReady,startFreeSession,confirmedFreeSe
  * document is allowed to elevate a user's tier. Free-tier Cloudflare D1 only.
  * ENFORCE_PLANS=true activates these checks after D1 setup is complete.
  */
-import {ledgerMode,reserveTurn,finishTurn,refundTurn,expireStaleTurns} from "./turn-ledger.js";
+import {PRO_MONTHLY_TURN_LIMIT,ledgerMode,reserveTurn,finishTurn,refundTurn,expireStaleTurns} from "./turn-ledger.js";
+import {billingMode,billingUserEligible} from "./billing-mode.js";
 const PROJECT_ID="speakingym";
 const JWKS_URL="https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const ISSUER="https://securetoken.google.com/"+PROJECT_ID;
@@ -13,7 +14,7 @@ export const PLAN_LIMITS=Object.freeze({
  free:Object.freeze({sessions:5,teacher:3}),
  // Pro beta: no daily cap, but monthly cap per Firebase user (JST calendar month).
  // Each AI request reserves a turn; failed requests are refunded when safe.
- pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:100})
+ pro:Object.freeze({sessions:null,teacher:null,monthlyTurns:PRO_MONTHLY_TURN_LIMIT,monthlyTeacher:150})
 });
 let keysCached=null,keyExpiry=0;
 function decode(encoded){
@@ -82,37 +83,52 @@ export function tokyoMonthBounds(time=Date.now()){
  const day=tokyoDay(time),year=Number(day.slice(0,4)),month=Number(day.slice(5,7));
  return {start:day.slice(0,7)+"-01",end:new Date(Date.UTC(year,month,1)).toISOString().slice(0,10)};
 }
-export const publicLimits=(tier,used)=>({
+export const publicLimits=(tier,used,time=Date.now())=>({
  plan:tier,limits:PLAN_LIMITS[tier]||PLAN_LIMITS.free,
  used:{sessions:Number(used?.sessions)||0,teacher:Number(used?.teacher)||0,
        monthlyTurns:Number(used?.monthlyTurns)||0,monthlyTeacher:Number(used?.monthlyTeacher)||0},
- day:tokyoDay(),month:tokyoDay().slice(0,7)
+ day:tokyoDay(time),month:tokyoDay(time).slice(0,7)
 });
 export async function getPlan(db,uid,env={}){
- // Sandbox entitlements are isolated from operator-granted plans. Disabling
- // billing or removing a tester cannot leave a Stripe-test Pro grant behind.
- if(env.BILLING_MODE==='test' && String(env.BILLING_TEST_UIDS||'').split(',').map(x=>x.trim()).includes(uid)){
-  if(!/^sk_test_/.test(env.STRIPE_SECRET_KEY||''))return 'free';
-  const billing=await db.prepare('SELECT entitled,period_end,synced_at FROM billing_accounts WHERE uid = ? AND customer_id IS NOT NULL').bind(uid).first();
-  if(billing)return verifiedBillingEntitlement(billing,env)?'pro':'free';
+ // Sandbox and live Stripe customers never share a billing record.
+ // Only a server-verified paid invoice and an explicitly enabled mode grants Pro.
+ const mode=billingMode(env);
+ // When an explicitly approved LIVE Stripe launch is enabled, legacy manual
+ // beta grants must not silently bypass paid invoice verification. Paid access
+ // requires both audience eligibility and an isolated verified live record.
+ // Do not alter legacy manual grants while billing is disabled or in TEST.
+ if(mode==='live' && !billingUserEligible(env,uid))return 'free';
+ if((mode==='test'||mode==='live') && billingUserEligible(env,uid)){
+  const table=mode==='live'?'billing_live_accounts':'billing_accounts';
+  const billing=await db.prepare(
+    'SELECT entitled,period_end,synced_at FROM '+table+' WHERE uid = ? AND customer_id IS NOT NULL'
+  ).bind(uid).first();
+  if(mode==='live'||billing)return billing&&verifiedBillingEntitlement(billing,env)?'pro':'free';
  }
  const row=await db.prepare("SELECT tier FROM account_plans WHERE uid = ?").bind(uid).first();
  return row?.tier==="pro"?"pro":"free";
 }
-async function usage(db,uid,day,tier){
+// COUNT/SUM queries must return a real, nonnegative integer. Treating a
+// missing/invalid result as zero would misleadingly show a full allowance.
+function validQuotaCount(row,key){
+ const count=row?.[key];
+ if(!Number.isSafeInteger(count)||count<0)throw Error("quota_read_invalid");
+ return count;
+}
+async function usage(db,uid,day,tier,time){
  const row=await db.prepare(
  "SELECT (SELECT COUNT(*) FROM ai_sessions WHERE uid = ? AND day = ?) AS sessions, "+
  "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day = ?) AS teacher"
  ).bind(uid,day,uid,day).first();
- const used={sessions:Number(row?.sessions)||0,teacher:Number(row?.teacher)||0};
+ const used={sessions:validQuotaCount(row,"sessions"),teacher:validQuotaCount(row,"teacher")};
  if(tier==="pro"){
-  const month=tokyoMonthBounds();
+  const month=tokyoMonthBounds(time);
   const monthly=await db.prepare(
    "SELECT (SELECT COALESCE(SUM(turns),0) FROM ai_sessions WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTurns, "+
    "(SELECT COUNT(*) FROM teacher_uses WHERE uid = ? AND day >= ? AND day < ?) AS monthlyTeacher"
   ).bind(uid,month.start,month.end,uid,month.start,month.end).first();
-  used.monthlyTurns=Number(monthly?.monthlyTurns)||0;
-  used.monthlyTeacher=Number(monthly?.monthlyTeacher)||0;
+  used.monthlyTurns=validQuotaCount(monthly,"monthlyTurns");
+  used.monthlyTeacher=validQuotaCount(monthly,"monthlyTeacher");
  }
  return used;
 }
@@ -120,21 +136,23 @@ export async function getEntitlement(db,uid,env={}){
  await requireFreeSessionReady(db,env);
  const tier=await getPlan(db,uid,env);
  if(freeSessionMode(env)&&tier==="free")await recoverFreeSessions(db,uid);
- const used=await usage(db,uid,tokyoDay(),tier);
- if(freeSessionMode(env)&&tier==="free")used.sessions=await confirmedFreeSessions(db,uid,tokyoDay());
- return publicLimits(tier,used);
+ // One snapshot prevents mixing yesterday's counts with today's label at JST midnight.
+ const time=Date.now(),day=tokyoDay(time);
+ const used=await usage(db,uid,day,tier,time);
+ if(freeSessionMode(env)&&tier==="free")used.sessions=await confirmedFreeSessions(db,uid,day);
+ return publicLimits(tier,used,time);
 }
 export async function startSession(db,uid,env={}){
  await requireFreeSessionReady(db,env);
  const tier=await getPlan(db,uid,env);
  const max=PLAN_LIMITS[tier].sessions;
- const day=tokyoDay(),id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
+ const time=Date.now(),day=tokyoDay(time),id=crypto.randomUUID(),now=Math.floor(time/1000);
  if(tier==="free"&&freeSessionMode(env)){
   const created=await startFreeSession(db,{uid,day,id,now});
   return created?{sessionId:id,plan:tier,limits:PLAN_LIMITS[tier]}:null;
  }
- // Free daily quotas are checked atomically. Pro uses the current JST month's turn total.
- const month=tokyoMonthBounds();
+ // Free daily quotas are checked atomically. Pro uses the SAME JST date snapshot.
+ const month=tokyoMonthBounds(time);
  const row=tier==="pro"
   ? await db.prepare(
      "INSERT INTO ai_sessions (id,uid,day,started_at,expires_at,turns) "+
@@ -150,13 +168,13 @@ export async function startSession(db,uid,env={}){
 export async function consumeSessionTurn(db,uid,id,env={}){
  await requireFreeSessionReady(db,env);
  if(typeof id!=="string"||!/^[0-9a-f-]{36}$/.test(id))return false;
- const tier=await getPlan(db,uid,env),now=Math.floor(Date.now()/1000);
+ const tier=await getPlan(db,uid,env),time=Date.now(),now=Math.floor(time/1000);
  if(ledgerMode(env)){
-  await expireStaleTurns(db,uid);
-  return reserveTurn(db,{uid,sessionId:id,tier});
+  await expireStaleTurns(db,uid,time);
+  return reserveTurn(db,{uid,sessionId:id,tier,time});
  }
  if(tier==="pro"){
-  const month=tokyoMonthBounds();
+  const month=tokyoMonthBounds(time);
   // Single SQLite statement enforces monthly total even for concurrent requests.
   // A session started in the prior month cannot consume next month's allowance.
   const row=await db.prepare(
@@ -186,8 +204,8 @@ export async function refundSessionTurn(db,uid,reservation){
 }
 export async function consumeTeacher(db,uid,env={}){
  const tier=await getPlan(db,uid,env);
- const day=tokyoDay(),now=Math.floor(Date.now()/1000),id=crypto.randomUUID();
- const month=tokyoMonthBounds();
+ const time=Date.now(),day=tokyoDay(time),now=Math.floor(time/1000),id=crypto.randomUUID();
+ const month=tokyoMonthBounds(time);
  const row=tier==="pro"
   ? await db.prepare(
      "INSERT INTO teacher_uses (id,uid,day,created_at) "+

@@ -2,6 +2,8 @@
  * Isolated, opt-in D1 reservation engine. This module does nothing without a caller.
  * Requires migrations/0002-ai-turn-ledger.sql BEFORE use. Does not change billing.
  */
+// Shared with the public Pro plan: no independent hard-coded cap in ledger SQL.
+export const PRO_MONTHLY_TURN_LIMIT=1000;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function tokyoBounds(time){
  const iso=new Date(time+9*3600000).toISOString();
@@ -30,11 +32,11 @@ export async function reserveTurn(db,{uid,sessionId,tier,time=Date.now()}){
     "WHERE s.id=? AND s.uid=? AND s.expires_at>? AND s.turns<20 "+
     "AND s.day>=? AND s.day<? "+
     "AND (SELECT COALESCE(SUM(turns),0) FROM ai_sessions "+
-    "WHERE uid=? AND day>=? AND day<?)<600 RETURNING id"
+    "WHERE uid=? AND day>=? AND day<?)< ? RETURNING id"
   : "INSERT INTO ai_turn_reservations(id,session_id,uid,day,state,created_at) "+
     "SELECT ?,s.id,s.uid,s.day,'reserved',? FROM ai_sessions s "+
     "WHERE s.id=? AND s.uid=? AND s.expires_at>? AND s.turns<20 RETURNING id";
- const params=tier==='pro'?[id,now,sessionId,uid,now,mon.start,mon.end,uid,mon.start,mon.end]:[id,now,sessionId,uid,now];
+ const params=tier==='pro'?[id,now,sessionId,uid,now,mon.start,mon.end,uid,mon.start,mon.end,PRO_MONTHLY_TURN_LIMIT]:[id,now,sessionId,uid,now];
  const row=await db.prepare(query).bind(...params).first();
  return row?{id,sessionId,plan:tier,ledger:true}:null;
 }

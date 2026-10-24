@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "./ai-worker.js";
-import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds} from "./plan-limits.js";
+import {verifyFirebaseIdToken,PLAN_LIMITS,tokyoDay,tokyoMonthBounds,getEntitlement,startSession,consumeTeacher} from "./plan-limits.js";
 
 const ORIGIN="https://speakingym.pages.dev";
 const API="https://speakingym-worker-test.example/";
@@ -94,12 +94,95 @@ const request=(path,method="POST",token=null,body=null)=>{
 };
 test("free/pro limits are explicit and reset by Japan day",()=>{
  assert.deepEqual(PLAN_LIMITS.free,{sessions:5,teacher:3});
- assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:600,monthlyTeacher:100});
+ assert.deepEqual(PLAN_LIMITS.pro,{sessions:null,teacher:null,monthlyTurns:1000,monthlyTeacher:150});
  assert.equal(tokyoDay(Date.parse("2026-10-15T14:59:59Z")),"2026-10-15");
  assert.equal(tokyoDay(Date.parse("2026-10-15T15:00:00Z")),"2026-10-16");
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T14:59:59Z")),{start:"2026-10-01",end:"2026-11-01"});
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-10-31T15:00:00Z")),{start:"2026-11-01",end:"2026-12-01"});
  assert.deepEqual(tokyoMonthBounds(Date.parse("2026-12-31T15:00:00Z")),{start:"2027-01-01",end:"2027-02-01"});
+});
+test("D1 usage counters must be present, valid and integral or signed entitlement fails closed",async()=>{
+ const base=fakeD1(),uid="reader-test";
+ assert.equal((await getEntitlement(base,uid)).used.sessions,0,"a real zero count is valid");
+ base.plans.set(uid,"pro");
+ assert.equal((await getEntitlement(base,uid)).used.monthlyTurns,0,"a real zero monthly count is valid");
+ const tampered=(match,reply)=>{
+  return {prepare(sql){
+   if(sql.startsWith(match))return {bind(){return {first:async()=>reply}}};
+   return base.prepare(sql);
+  }};
+ };
+ const dailyCases=[
+  null,{sessions:0,teacher:null},{sessions:0,teacher:-1},
+  {sessions:0,teacher:1.5},{sessions:Infinity,teacher:0},
+  {sessions:"0",teacher:0},{sessions:Number.MAX_SAFE_INTEGER+1,teacher:0}
+ ];
+ for(const response of dailyCases){
+  await assert.rejects(getEntitlement(tampered("SELECT (SELECT COUNT",response),uid),/quota_read_invalid/,
+   "invalid daily counts must not be silently reset to zero");
+ }
+ const monthCases=[
+  null,{monthlyTurns:null,monthlyTeacher:0},
+  {monthlyTurns:0,monthlyTeacher:"0"},{monthlyTurns:-1,monthlyTeacher:0},
+  {monthlyTurns:0,monthlyTeacher:NaN}
+ ];
+ for(const response of monthCases){
+  await assert.rejects(getEntitlement(tampered("SELECT (SELECT COALESCE",response),uid),/quota_read_invalid/,
+   "invalid monthly counts must not fabricate remaining Pro quota");
+ }
+});
+test("JST midnight entitlement uses one date and month snapshot even when D1 resolves after midnight",async t=>{
+ const october=Date.parse("2026-10-31T14:59:59Z");
+ const november=Date.parse("2026-10-31T15:00:00Z");
+ let current=october;
+ t.mock.method(Date,"now",()=>current);
+ const db=fakeD1(),uid="time-boundary-test";
+ db.plans.set(uid,"pro");
+ db.sessions.push({uid,day:"2026-10-31",turns:4},
+                  {uid,day:"2026-11-01",turns:9});
+ const prepare=db.prepare.bind(db);
+ const delayed={prepare(sql){
+  const statement=prepare(sql);
+  if(!sql.startsWith("SELECT (SELECT COUNT"))return statement;
+  return {bind(...args){
+   const query=statement.bind(...args);
+   return {first:async()=>{
+    const row=await query.first();
+    current=november; // D1 responds after the JST calendar month changes.
+    return row;
+   }};
+  }};
+ }};
+ const oldMonth=await getEntitlement(delayed,uid);
+ assert.equal(oldMonth.day,"2026-10-31");
+ assert.equal(oldMonth.month,"2026-10");
+ assert.equal(oldMonth.used.monthlyTurns,4,"October usage cannot accidentally read November");
+ assert.equal(oldMonth.used.sessions,1);
+ const newMonth=await getEntitlement(delayed,uid);
+ assert.equal(newMonth.day,"2026-11-01");
+ assert.equal(newMonth.month,"2026-11");
+ assert.equal(newMonth.used.monthlyTurns,9);
+ assert.equal(newMonth.used.sessions,1);
+});
+test("Pro session and teacher reservations use one JST date snapshot across midnight",async t=>{
+ const october=Date.parse("2026-10-31T14:59:59Z"),november=Date.parse("2026-10-31T15:00:00Z");
+ const uid="pro-date-snapshot";
+ const db=fakeD1();db.plans.set(uid,"pro");
+ // If the first clock read yields October and the next yields November,
+ // the operation must use October BOTH for day and monthly limit.
+ for(let i=0;i<50;i++)db.sessions.push({id:"next-month-"+i,uid,day:"2026-11-01",turns:20});
+ for(let i=0;i<150;i++)db.teachers.push({id:"next-month-teacher-"+i,uid,day:"2026-11-01"});
+ let calls=0;
+ t.mock.method(Date,"now",()=>calls++===0?october:november);
+ const session=await startSession(db,uid);
+ assert.ok(session?.sessionId,"new October session must not be blocked by November usage");
+ const row=db.sessions.find(x=>x.id===session.sessionId);
+ assert.equal(row.day,"2026-10-31");
+ assert.equal(row.turns,0);
+ calls=0;
+ const teacher=await consumeTeacher(db,uid);
+ assert.ok(teacher?.id,"October coaching must not be blocked by November's 150 uses");
+ assert.equal(db.teachers.at(-1).day,"2026-10-31");
 });
 test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid signature are rejected",async t=>{
  const {jwk,token}=await signer();
@@ -111,7 +194,11 @@ test("Firebase ID tokens are signature-checked: wrong aud, issuer and invalid si
  assert.equal(await verifyFirebaseIdToken(request("entitlement","GET",signed)),"student_a");
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",await token("student_b",{aud:"other-project"}))),/invalid_token/);
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",await token("student_b",{iss:"https://securetoken.google.com/other"}))),/invalid_token/);
- await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",signed.slice(0,-2)+"aa")),/invalid_token/);
+ // Mutate a significant base64url signature digit. Tweaking only the
+ // last padding bits can decode to identical bytes and make the test flaky.
+ const pieces=signed.split(".");
+ pieces[2]=(pieces[2][0]==="A"?"B":"A")+pieces[2].slice(1);
+ await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET",pieces.join("."))),/invalid_token/);
  await assert.rejects(verifyFirebaseIdToken(request("entitlement","GET")),/login_required/);
 });
 test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quotas",async t=>{
@@ -175,22 +262,22 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal(aiCalls,4,"Blocked teacher use and session replay must not call Gemini");
  const proTeacher=await worker.fetch(request("","POST",b,teacher),config);
  assert.equal(proTeacher.status,200,"Operator-granted Pro allows month quota");
- for(let k=1;k<100;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"100 monthly teacher uses allowed");
+ for(let k=1;k<150;k++)assert.equal((await worker.fetch(request("","POST",b,teacher),config)).status,200,"150 monthly teacher uses allowed");
  const blockedProTeacher=await worker.fetch(request("","POST",b,teacher),config);
  assert.equal(blockedProTeacher.status,429);
  assert.equal((await blockedProTeacher.json()).error,"monthly_teacher_limit");
  const teacherUsage=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
  assert.equal(teacherUsage.limits.teacher,null);
- assert.equal(teacherUsage.limits.monthlyTeacher,100);
- assert.equal(teacherUsage.used.monthlyTeacher,100);
+ assert.equal(teacherUsage.limits.monthlyTeacher,150);
+ assert.equal(teacherUsage.used.monthlyTeacher,150);
  // Seed prior completed sessions so only one monthly AI turn remains.
  const now=Math.floor(Date.now()/1000),day=tokyoDay();
- for(let k=0;k<30;k++)db.sessions.push({id:crypto.randomUUID(),uid:"test_student_B",day,started:now-100,expires:now+100,turns:k===29?19:20});
+ for(let k=0;k<50;k++)db.sessions.push({id:crypto.randomUUID(),uid:"test_student_B",day,started:now-100,expires:now+100,turns:k===49?19:20});
  let entitlement=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
- assert.equal(entitlement.used.monthlyTurns,599);
+ assert.equal(entitlement.used.monthlyTurns,999);
  const conversation={sceneId:"hotel",level:"easy",userText:"Hi!",sessionId:proSessionId};
  const lastTurn=await worker.fetch(request("","POST",b,conversation),config);
- assert.equal(lastTurn.status,200,"the 600th AI request is allowed");
+ assert.equal(lastTurn.status,200,"the 1000th AI request is allowed");
  const aiCallsBefore=aiCalls;
  const overTurn=await worker.fetch(request("","POST",b,conversation),config);
  assert.equal(overTurn.status,429);
@@ -200,8 +287,8 @@ test("Worker denies guests, makes D1 authoritative and enforces Free and Pro quo
  assert.equal((await blockedProSession.json()).error,"monthly_turn_limit");
  assert.equal(aiCalls,aiCallsBefore,"quota-blocked requests cannot call Gemini");
  entitlement=(await (await worker.fetch(request("entitlement","GET",b),config)).json());
- assert.equal(entitlement.limits.monthlyTurns,600);
- assert.equal(entitlement.used.monthlyTurns,600);
+ assert.equal(entitlement.limits.monthlyTurns,1000);
+ assert.equal(entitlement.used.monthlyTurns,1000);
 });
 test("missing D1 binding rejects requests without invoking Gemini when plans are enabled",async t=>{
  const {token}=await signer();

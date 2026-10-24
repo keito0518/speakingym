@@ -39,6 +39,7 @@ test('one read-only GET with no secrets and no AI/provider requests',async()=>{
   const result=await checkStagingHealth('https://speakingym-survival-ai-staging.demo.workers.dev',
     async(url,opts)=>{count++;assert.ok(url.endsWith('/health'));assert.equal(opts.method,'GET');
       assert.equal(opts.body,undefined);assert.equal(opts.headers,undefined);
+      assert.equal(opts.cache,'no-store');assert.equal(opts.redirect,'error');
       return {ok:true,json:async()=>good};
     });
   assert.equal(count,1);
