@@ -54,9 +54,35 @@ test('reason-backed focus and unseen cards are prioritized, not just labels',()=
  assert.equal(p.missCount,3,'the earlier unresolved connect problem is still an active retry');
  assert.deepEqual(Array.from(p.stages[0].poolIds),['hold2','repair1','connect1']);
  assert.deepEqual(Array.from(p.stages[1].poolIds),['repair1','repair2']);
- assert.deepEqual(Array.from(p.stages[2].poolIds),['repair2']);
+ assert.deepEqual(Array.from(p.stages[2].poolIds.slice(0,2)),['repair2','bound1'],
+  'unseen scenarios are prioritized before previously seen questions');
+ assert.equal(new Set(p.stages[2].poolIds).size,p.stages[2].poolIds.length,
+  'the same card cannot appear twice inside the cross-scene practice pool');
  assert.match(p.stages[1].description,/単語が出なかった/);
  assert.doesNotMatch(JSON.stringify(p),/Sensitive private example|Another sensitive example/);
+});
+test('cross-scene round follows the actual last missed skill, even when the reported cause differs',()=>{
+ const a=harness();
+ const crossCards=[
+  {id:'repair1',group:'repair',category:'LISTEN'},
+  {id:'repair2',group:'repair',category:'LISTEN'},
+  {id:'repair3',group:'repair',category:'CLARIFY'},
+  {id:'repair4',group:'repair',category:'CLARIFY'},
+  {id:'hold1',group:'hold',category:'BUY TIME'},
+  {id:'connect1',group:'connect',category:'SMALL TALK'},
+  {id:'bound1',group:'boundaries',category:'REFUSE'}
+ ];
+ const current=[{date,attempts:[{cardId:'repair1',outcome:'stuck',transcript:'DO NOT COPY ME'}]}];
+ const p=a.api.plan(crossCards,current,[{session:date+'|0|repair1',reason:'perfection'}]);
+ assert.equal(p.topReason,'perfection');
+ assert.deepEqual(Array.from(p.stages[1].poolIds),['hold1'],
+  'the cause-focused round follows the self-reported hesitation reason');
+ assert.deepEqual(Array.from(p.stages[2].poolIds.slice(0,3)),['repair3','repair4','repair2'],
+  'the transfer round first reuses the missed skill in different contexts');
+ assert.equal(p.stages[2].poolIds.includes('repair1'),true,
+  'the previously missed card may return later as spaced repetition');
+ assert.doesNotMatch(JSON.stringify(p),/DO NOT COPY ME/);
+ assert.match(p.stages[2].description,/別場面/);
 });
 test('false, orphan and malformed reason records cannot invent a weakness',()=>{
  const a=harness(),p=a.api.plan(cards,hist,[
@@ -129,6 +155,8 @@ test('sprint integration launches real stage pools and preserves existing AI quo
  assert.match(page,/src="\.\/sprint-personal-plan\.js"/);
  assert.match(page,/function startPersonalStage\(i\)/);
  assert.match(page,/function start\(onlyMissed=false,personalIds=null\)/);
+ assert.match(page,/if\(isPersonal&&personalRunningStage===2\)/,
+  'the ordered transfer pool must not be shuffled back into repetitive practice');
  assert.match(page,/window\.speakingymPersonalPlan\?\.markDone\(personalRunningStage\)/);
  assert.match(page,/speakingymPersonalPlan\?\.clearProgress\(\)/);
  assert.match(diagnosis,/getRecords/);

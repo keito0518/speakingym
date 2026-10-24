@@ -1356,7 +1356,12 @@ function start(onlyMissed=false,personalIds=null){
    onlyMissed&&Array.isArray(old)?cards.filter(c=>old.includes(c.id)):deck();
  activePool=choice.length?choice:deck();
  const recentIds=onlyMissed?[]:historySessions().flatMap(s=>s.attempts.map(a=>a.cardId)).slice(0,12);
- pile=onlyMissed||isPersonal?shuffle(activePool):orderPracticeDeck(activePool,recentIds);
+ // Stage 3's authored bridge order matters: unpractised situations with a
+ // different context come first. Keep the other sprints randomized.
+ if(isPersonal&&personalRunningStage===2){
+  const indexed=new Map(activePool.map(c=>[c.id,c]));
+  pile=personalIds.map(id=>indexed.get(id)).filter(Boolean);
+ }else pile=onlyMissed||isPersonal?shuffle(activePool):orderPracticeDeck(activePool,recentIds);
  window.speakingymAnalytics?.track("sg_sprint_start",{mode:isPersonal?"personal_workout":onlyMissed?"weak_review":"standard"});
  pane("playPane");clock();nextCard();
  ticker=setInterval(()=>{if(state!=="running")return;remaining--;clock();if(remaining<=0)finish(false)},1000);

@@ -400,9 +400,18 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#playPane').isVisible(),true);
     if(stage===2){
       assert.match(await page.locator('#personalPlan').textContent(),/最近出ていない場面/);
+      const seenPrompts=new Set();
+      for(let n=0;n<6;n++){
+        const prompt=await page.locator('#challenge').textContent();
+        assert.equal(seenPrompts.has(prompt),false,'personal transfer should not repeat a prompt inside its first six examples');
+        seenPrompts.add(prompt);
+        await page.locator('#spoken').click();
+      }
+      assert.equal(seenPrompts.size,6);
+    }else{
+      await page.locator('#spoken').click();
+      if(stage===1)await page.locator('#spoken').click();
     }
-    await page.locator('#spoken').click();
-    if(stage===1)await page.locator('#spoken').click();
     await page.locator('#finishEarly').click();
     assert.equal(await page.locator('#endPane').isVisible(),true);
     assert.match(await page.locator('#personalProgress').textContent(),new RegExp((stage+1)+' \\/ 3'));
@@ -410,6 +419,11 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
       assert.equal(await page.locator('#personalNext').isVisible(),false,
        'two-answer personal workouts prompt review of both answers before continuing');
       await page.locator('#reviewNext').click();
+    }
+    if(stage===2){
+      assert.equal(await page.locator('#personalNext').isVisible(),false,
+       'six-answer transfer reviews must all be visited before marking the workout ready to continue');
+      for(let n=1;n<6;n++)await page.locator('#reviewNext').click();
     }
     assert.equal(await page.locator('#personalNext').isVisible(),true);
     assert.match(await page.locator('#reviewNext').textContent(),stage===2?/メニューへ/:/次のステップへ/);

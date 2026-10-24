@@ -19,6 +19,7 @@ const GROUP_LABEL=Object.freeze({
  repair:'言い直す・聞き返す',hold:'短い文で時間をつくる',
  boundaries:'丁寧な断り方',connect:'質問を返す・会話をつなぐ',mix:'いろいろな場面'
 });
+const MIN_CROSS_SCENE_POOL=6;
 const isId=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{1,45}$/.test(v);
 function scope(){
  try{
@@ -72,9 +73,31 @@ function plan(cards,sessions,reasons){
  const focus=focusGroup==='mix'?validCards:validCards.filter(c=>c.group===focusGroup);
  const focusIds=(focus.length?focus:validCards).map(c=>c.id);
  const unseen=validCards.filter(c=>!recent.has(c.id));
- const freshFocus=unseen.filter(c=>focusGroup==='mix'||c.group===focusGroup);
- const fresh=freshFocus.length?freshFocus:unseen;
- const freshIds=(fresh.length?fresh:validCards).map(c=>c.id);
+ // A general cause such as "couldn't recall a word" may belong to a
+ // different skill group from the exact task that went wrong. For the final
+ // round, start with unseen scenarios from that most recently missed task's
+ // own group, preferring a different context/category where possible.
+ const transferGroup=lastMiss?.group||focusGroup;
+ const context=validCards.filter(c=>(transferGroup==='mix'||c.group===transferGroup)&&c.id!==lastMiss?.id);
+ const distinctContext=context.filter(c=>!recent.has(c.id));
+ const encounteredContext=context.filter(c=>recent.has(c.id));
+ const differentFirst=items=>lastMiss?[
+  ...items.filter(c=>c.category!==lastMiss.category),
+  ...items.filter(c=>c.category===lastMiss.category)
+ ]:items;
+ const transfer=[...differentFirst(distinctContext)];
+ const used=new Set(transfer.map(c=>c.id));
+ // Small test decks or a newly added category may not provide six relevant
+ // situations. Add other not-recent prompts BEFORE earlier-seen ones, then
+ // return to the same skill group for subsequent repetitions.
+ for(const card of unseen){
+  if(transfer.length>=MIN_CROSS_SCENE_POOL)break;
+  if(!used.has(card.id)){transfer.push(card);used.add(card.id)}
+ }
+ for(const card of [...differentFirst(encounteredContext),...validCards]){
+  if(!used.has(card.id)){transfer.push(card);used.add(card.id)}
+ }
+ const freshIds=(transfer.length?transfer:validCards).map(c=>c.id);
  const stages=[
   {id:'retry',title:miss.length?'詰まった表現を言い直す':'短い一言でウォームアップ',
    description:miss.length?'最後に「詰まった」と自己評価した表現から始めよう。':'まだ苦手履歴がないので、基本の問題から始めよう。',
@@ -83,8 +106,9 @@ function plan(cards,sessions,reasons){
    description:topReason?'自己記録「'+REASON_LABEL[topReason]+'」を参考に、'+(GROUP_LABEL[focusGroup]||'いろいろな場面')+'を練習。':
     (lastMiss?'直近の詰まった分野を参考にした練習。':'まずは色々な場面を練習して、苦手を見つけよう。'),
    poolIds:focusIds,kind:'focus'},
-  {id:'fresh',title:unseen.length?'最近出ていない場面で試す':'別の問題でもう一度試す',
-   description:unseen.length?'保存中の直近20回の履歴では出題されていないお題。初回学習の保証ではありません。':
+  {id:'fresh',title:lastMiss?'詰まった場面を変えて試す':unseen.length?'最近出ていない場面で試す':'別の問題でもう一度試す',
+   description:lastMiss?'直近で詰まったお題と同じ「'+(GROUP_LABEL[transferGroup]||'会話の切り返し')+'」の別場面を優先。候補が少ない場合は他の未出題の場面も加えます。':
+    unseen.length?'保存中の直近20回の履歴では出題されていないお題。初回学習の保証ではありません。':
     '保存中の履歴には新しいお題がないので、別の組み合わせで反復しよう。',
    poolIds:freshIds,kind:'fresh'}
  ];
