@@ -15,6 +15,7 @@ body.sg-soft-neon :is(button,a,select,textarea):focus-visible{
 }
 body.sg-soft-neon :is(.logo span,.brand span,.logo b){color:#21baa9}
 body.sg-soft-neon :is(.site-head,header,.site-header){background:var(--sg-neon-night);color:#f2fbfa;border-color:#294754}
+body.sg-soft-neon :is(.site-head,header,.site-header) :is(.logo,.brand){color:#f2fbfa}
 body.sg-soft-neon :is(.nav a,.header nav a,.back,.header-link){color:#e4f4f4}
 body.sg-soft-neon :is(.site-head,header,.site-header) :is(.logo span,.brand span,.logo b){color:var(--sg-neon-mint)}
 body.sg-soft-neon :is(.btn.primary,.button.primary,.button.orange){

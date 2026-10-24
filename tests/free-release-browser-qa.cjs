@@ -103,6 +103,8 @@ const fs=require('node:fs');
 
    await page.goto('http://127.0.0.1:8765/freeze-breaker.html');
    assert.equal(await page.locator('.hero').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(16, 37, 50)');
+   assert.equal(await page.locator('header .brand').evaluate(el=>getComputedStyle(el).color),'rgb(242, 251, 250)',
+    'dark header brand must stay readable in the conversation rescue page');
    await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
    await page.reload();
    assert.equal(await page.locator('#mission-select option').count(),7);
