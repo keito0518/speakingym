@@ -1040,7 +1040,7 @@ function transcriptObservation(text){
 // The phrase book is independent of session history: bookmarks survive old-history cleanup.
 const PHRASES_MAX=100,PHRASE_KINDS=["quick","natural","polite","teacher"];
 let phraseReturnPane="introPane";
-let teacherInFlight=false,teacherEpoch=0;
+let teacherInFlight=false,teacherEpoch=0,teacherRequestController=null;
 function readSavedPhrases(){
  const stored=readJSON(PHRASES_KEY,[]);
  if(!Array.isArray(stored))return [];
@@ -1214,8 +1214,9 @@ async function requestTeacherFeedback(){
  const date=reviewSession.date,epoch=++teacherEpoch;
  teacherInFlight=true;$("requestTeacher").disabled=true;
  $("teacherStatus").textContent="AI先生が英文を読み、良い点と改善案を考えています…";
+ const controller=new AbortController();
+ teacherRequestController=controller;
  try{
-  const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),19000);
   let response;
   try{
@@ -1241,6 +1242,9 @@ async function requestTeacherFeedback(){
    const clean=Object.fromEntries(keys.map(k=>[k,item[k].trim().slice(0,450)]));
    return {attemptIndex:mapping[i],feedback:clean};
   });
+  // The account or review can change while either provider response is in
+  // flight. Never save a former learner's feedback into the next account.
+  if(epoch!==teacherEpoch||reviewSession?.date!==date)return;
   saveTeacherNotes(date,notes);
    void window.speakingymQuota?.refresh();
   // Keep feedback working within the current tab even if browser storage is disabled.
@@ -1267,6 +1271,7 @@ async function requestTeacherFeedback(){
   };
   $("teacherStatus").textContent=(errors[code]||"AI先生に接続できませんでした。AIサーバーの更新がまだの場合があります。")+" 既存の解説と保存フレーズはそのまま使えます。";
  }finally{
+  if(teacherRequestController===controller)teacherRequestController=null;
   if(epoch===teacherEpoch){teacherInFlight=false;$("requestTeacher").disabled=false;}
  }
 }
@@ -1450,9 +1455,25 @@ $("clearHistory").addEventListener("click",()=>{
 updateBookmarkCount();
 renderPersonalPlan();
 window.addEventListener("speakingym:account-changing",()=>{
+ // Auth may change without a page reload. Immediately stop a running sprint,
+ // redact the former learner's transcript/results and cancel pending coaching.
+ teacherEpoch++;
+ teacherRequestController?.abort();teacherRequestController=null;
+ teacherInFlight=false;
+ stopTimer();stopListening();cancelReading();
+ state="idle";current=null;pile=[];activePool=[];attempts=[];reviewSession=null;
+ reviewFromHistory=false;reviewIndex=0;missedIds=[];missedPrompts=[];solvedIds=[];
+ $("transcript").value="";$("reviewYou").textContent="";
+ $("teacherStatus").textContent="";$("teacherFeedback").replaceChildren();
+ $("reviewAnswers").replaceChildren();$("historyList").replaceChildren();
+ $("savedPhrasesList").replaceChildren();$("diagnosisChoices").replaceChildren();
+ $("diagnosisResult").textContent="";$("diagnosisSummaryText").textContent="";
+ currentTeacherNotes=null;
+ $("requestTeacher").disabled=false;
  personalRunningStage=null;personalNextStage=null;
  $("personalPlan").hidden=true;
  $("personalNext").hidden=true;
+ pane("introPane");
 });
 window.addEventListener("speakingym:account-ready",renderPersonalPlan);
 const chosenMode=/(?:^\?|&)mode=(mix|repair|hold|boundaries|connect)(?:&|$)/.exec(window.location?.search||"")?.[1]||null;

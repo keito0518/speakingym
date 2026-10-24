@@ -412,6 +412,59 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#personalPlan').isVisible(),false,'account transition hides the previous plan');
   await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-ready')));
   assert.equal(await page.locator('#personalPlan').isVisible(),true);
+  // Account switching during a sprint or its review must immediately redact
+  // the old learner's unsaved transcript, stop the timer and return to intro.
+  await page.locator('#start').click();
+  await page.locator('#transcript').fill('OLD ACCOUNT PRIVATE ANSWER');
+  await page.locator('#spoken').click();
+  await page.locator('#finishEarly').click();
+  assert.match(await page.locator('#reviewYou').textContent(),/OLD ACCOUNT PRIVATE ANSWER/);
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+  assert.equal(await page.locator('#introPane').isVisible(),true);
+  assert.equal(await page.locator('#endPane').isVisible(),false);
+  assert.equal(await page.locator('#transcript').inputValue(),'');
+  assert.equal(await page.locator('#reviewYou').textContent(),'');
+  await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-ready')));
+  // A mocked provider ignores abort and sends feedback after another user
+  // signs in. Even this late successful response must never enter local cache.
+  await page.locator('#start').click();
+  await page.locator('#transcript').fill('Do not save this on the next account');
+  await page.locator('#spoken').click();
+  await page.locator('#finishEarly').click();
+  await page.evaluate(()=>{
+   window.__qaTeacherStarted=false;
+   window.fetch=async url=>{
+    if(String(url).endsWith('health'))return {ok:true,json:async()=>({reflexCoachSupported:true,aiConfigured:true,plansEnabled:false})};
+    window.__qaTeacherStarted=true;
+    return new Promise(resolve=>{window.__qaTeacherResolve=resolve});
+   };
+  });
+  await page.locator('#requestTeacher').click();
+  await page.waitForFunction(()=>window.__qaTeacherStarted===true);
+  const feedbackBeforeSwitch=await page.evaluate(()=>localStorage.getItem('speakingym-reflex-ai-teacher-v1'));
+  assert.equal(feedbackBeforeSwitch,null,'the delayed teacher response has not yet saved anything');
+  await page.evaluate(()=>{
+   window.dispatchEvent(new Event('speakingym:account-changing'));
+   localStorage.setItem('speakingym-account-owner-v1','qa-new-sprint-owner');
+   for(const key of ['speakingym-reflex-history-v1','speakingym-reflex-ai-teacher-v1','speakingym-reflex-stats-v1'])localStorage.removeItem(key);
+   window.speakingymAccount={isLoggedIn:()=>true,getUid:()=> 'qa-new-sprint-owner',getIdToken:async()=>null};
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+   window.__qaTeacherResolve({ok:true,json:async()=>({feedback:[{
+    index:0,praise:'OLD ACCOUNT SECRET',improvement:'OLD ACCOUNT SECRET',improved:'OLD ACCOUNT SECRET',
+    why:'OLD ACCOUNT SECRET',practice:'OLD ACCOUNT SECRET'
+   }]})});
+  });
+  await page.waitForTimeout(75);
+  assert.equal(await page.locator('#introPane').isVisible(),true);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-reflex-ai-teacher-v1')),null,
+    'a provider response for the previous account must not write teacher notes to the new account');
+  assert.doesNotMatch(await page.locator('#teacherFeedback').textContent(),/OLD ACCOUNT SECRET/);
+  assert.equal(await page.locator('#requestTeacher').isDisabled(),false,'new account must not be held by old request');
+  await page.evaluate(()=>{
+   localStorage.removeItem('speakingym-account-owner-v1');
+   window.speakingymAccount={isLoggedIn:()=>false,getUid:()=>null};
+   window.dispatchEvent(new Event('speakingym:account-ready'));
+  });
   await page.goto('http://127.0.0.1:8765/phrasebook.html');
   await page.evaluate(()=>{localStorage.setItem('speakingym-reflex-saved-phrases-v1',JSON.stringify([{id:'repair1:easy:quick',cardId:'repair1',kind:'quick',text:'Could you repeat that?',level:'easy',goal:'聞き返す'}]));window.speakingymPhrases.toggle({text:'Could I have oat milk?',sceneId:'cafe',level:'standard',source:'AIの言い換え'});window.dispatchEvent(new Event('speakingym:account-ready'))});
   assert.equal(await page.locator('#phrases article').count(),2);await page.click('#hide');assert.equal(await page.locator('.english:visible').count(),0);await page.getByRole('button',{name:'答えを見る'}).first().click();assert.equal(await page.locator('.english:visible').count(),1);
