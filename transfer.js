@@ -144,6 +144,12 @@ function erase(){
 }
 $('start').addEventListener('click',()=>begin());
 $('startFresh').addEventListener('click',()=>begin('new'));
+$('cancelPractice').addEventListener('click',()=>{
+ // An unfinished pair is never stored as a failed or successful result.
+ // Clear in-memory ratings before returning to the same owner's dashboard.
+ current=null;round=0;reports=[];
+ refreshIntro();
+});
 $('said').addEventListener('click',()=>choose(true));
 $('froze').addEventListener('click',()=>choose(false));
 $('again').addEventListener('click',refreshIntro);
