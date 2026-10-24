@@ -326,19 +326,19 @@ async function handleAuth(next){
     localStorage.removeItem(OWNER_KEY);
     window.location.reload();return;
    }
-   return;
-  }
-  const uid=next.uid;
-  if(oldUid!==uid){
-   let guest={};
-   if(!oldUid)guest=saveGuestSnapshot(localStorage);
-   // Never import the previous account's data into another account.
-   removeSnapshot(localStorage);
-   if(!oldUid&&Object.keys(guest).length&&window.confirm("この端末のゲスト記録をGoogleアカウントへ引き継ぎますか？")){
-    applySnapshot(localStorage,guest);importGuest=true;
-    for(const item of SYNC_ITEMS)if(guest[item.key]!==undefined)markPending(uid,item.key);
+  }else{
+   const uid=next.uid;
+   if(oldUid!==uid){
+    let guest={};
+    if(!oldUid)guest=saveGuestSnapshot(localStorage);
+    // Never import the previous account's data into another account.
+    removeSnapshot(localStorage);
+    if(!oldUid&&Object.keys(guest).length&&window.confirm("この端末のゲスト記録をGoogleアカウントへ引き継ぎますか？")){
+     applySnapshot(localStorage,guest);importGuest=true;
+     for(const item of SYNC_ITEMS)if(guest[item.key]!==undefined)markPending(uid,item.key);
+    }
+    localStorage.setItem(OWNER_KEY,uid);
    }
-   localStorage.setItem(OWNER_KEY,uid);
   }
  }catch(e){status(describeError(e))}
  finally{busy=false;initAuth=false;ready=true;renderControls()}
