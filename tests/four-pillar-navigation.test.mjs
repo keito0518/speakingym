@@ -17,7 +17,8 @@ test('four and only four learning routes remain, presented as a plain numbered l
   .map(path=>block.indexOf('href="'+path+'"'));
  assert.ok(positions.every(index=>index>=0)&&positions.every((index,i)=>i===0||index>positions[i-1]),
   'conversation recovery precedes sprint and review, with AI as an optional last workout');
- assert.match(block,/04 · ログインが必要/);
+ assert.match(block,/<span class="tag">04<\/span>/);
+ assert.match(block,/ログイン後に利用できます。カフェや仕事など16場面/);
  for(const dest of ['./scenes.html','./reflex.html','./freeze-breaker.html','./phrasebook.html']){
   assert.match(block,new RegExp('href="'+dest.replaceAll('.','\\.')+'"'));
  }

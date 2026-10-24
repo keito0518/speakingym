@@ -20,6 +20,8 @@ test('first screen uses a real speaking prompt with one obvious entry, not a fak
  assert.match(home,/まず1問、声に出してみる/);
  assert.doesNotMatch(home,/<div class="orb"|<div class="floating"|<div class="mock"/);
  assert.match(home,/練習はシンプルな3ステップ/);
+ assert.match(home,/<span class="tag">04<\/span>/,'the narrow number column must not wrap a multiword login label');
+ assert.match(home,/ログイン後に利用できます。カフェや仕事など16場面/);
 });
 
 test('optional choices stay available without crowding first-time exercise starts',()=>{
