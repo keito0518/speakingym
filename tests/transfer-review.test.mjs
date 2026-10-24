@@ -60,6 +60,20 @@ test('self-reported improvement is not proof of measured fluency',()=>{
  assert.equal(stats.bothSaidNow,2);
  assert.equal(stats.needRetry,0);
 });
+test('same-day retakes are practice, not proof of across-day improvement',()=>{
+ const sameDay=[e(pair.id,'2026-10-21',false,false),
+  e(pair.id,'2026-10-21',true,true)];
+ const stats=reviewTrend(sameDay);
+ assert.equal(stats.repeatedPairs,0);
+ assert.equal(stats.improvedSelfRatings,0);
+ assert.equal(stats.maintainedSelfRatings,0);
+ // The final same-day outcome is the baseline for the NEXT calendar day.
+ const continued=[...sameDay,e(pair.id,'2026-10-22',true,true)];
+ assert.equal(reviewTrend(continued).improvedSelfRatings,0);
+ assert.equal(reviewTrend(continued).maintainedSelfRatings,1);
+ const genuinelyDifferentDays=[e(other.id,'2026-10-21',false,false),e(other.id,'2026-10-22',true,true)];
+ assert.equal(reviewTrend(genuinelyDifferentDays).improvedSelfRatings,1);
+});
 test('malformed, future and unknown results are not promoted into due reminders',()=>{
  const rows=[
   {pairId:'attacker',first:true,second:true,at:at('2026-10-21')},
