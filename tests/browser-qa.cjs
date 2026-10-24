@@ -37,6 +37,47 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     }
     assert.equal(await page.locator('a[href="./classic.html"]').count(),0);
     assert.equal(await page.locator('a[href="./mission.html"]').count(),0);
+    assert.equal(await page.locator('#homeReviewAction').getAttribute('href'),'./transfer.html');
+    // The homepage must show the next due exercise for the current guest,
+    // but must never display a previous account's private phrases or counts
+    // during authentication transitions or when another tab gains focus.
+    await page.evaluate(()=>{
+     localStorage.removeItem('speakingym-account-owner-v1');
+     window.speakingymAccount={isLoggedIn:()=>false,getUid:()=>null};
+     localStorage.setItem('speakingym-saved-coaching-v1',JSON.stringify([{original:'Guest private question',natural:'Guest private answer'}]));
+     localStorage.setItem('speakingym-reflex-stats-v1',JSON.stringify({sessions:7,spoken:5}));
+     localStorage.setItem('speakingym-transfer-results-v1:guest',JSON.stringify([{
+      pairId:'other-support-5',first:false,second:true,at:new Date(Date.now()-2*86400000).toISOString()
+     }]));
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    assert.equal(await page.locator('#homeDueCount').textContent(),'1');
+    assert.match(await page.locator('#homeReviewAction').textContent(),/今日の復習/);
+    assert.match(await page.locator('#savedWords').textContent(),/Guest private answer/);
+    assert.equal(await page.locator('#totalRuns').textContent(),'7');
+    await page.evaluate(()=>{
+     window.dispatchEvent(new Event('speakingym:account-changing'));
+     window.dispatchEvent(new Event('focus'));
+     window.dispatchEvent(new Event('pageshow'));
+    });
+    assert.equal(await page.locator('#homeDueCount').textContent(),'—');
+    assert.equal(await page.locator('#totalRuns').textContent(),'—');
+    assert.doesNotMatch(await page.locator('#savedWords').textContent(),/Guest private/);
+    await page.evaluate(()=>{
+     localStorage.setItem('speakingym-account-owner-v1','home-owner-A');
+     localStorage.removeItem('speakingym-saved-coaching-v1');
+     localStorage.removeItem('speakingym-reflex-stats-v1');
+     window.speakingymAccount={isLoggedIn:()=>true,getUid:()=> 'home-owner-A'};
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
+    assert.equal(await page.locator('#homeDueCount').textContent(),'0','guest due results cannot appear for a signed-in account');
+    assert.doesNotMatch(await page.locator('#savedWords').textContent(),/Guest private/);
+    await page.evaluate(()=>{
+     localStorage.removeItem('speakingym-account-owner-v1');
+     localStorage.removeItem('speakingym-transfer-results-v1:guest');
+     window.speakingymAccount={isLoggedIn:()=>false,getUid:()=>null};
+     window.dispatchEvent(new Event('speakingym:account-ready'));
+    });
    }
    if(path==='account.html'){
     for(const dest of ['scenes.html','reflex.html','freeze-breaker.html','phrasebook.html']){

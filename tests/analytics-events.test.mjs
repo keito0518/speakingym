@@ -48,12 +48,14 @@ test('gtag failure cannot interrupt practice',()=>{
 });
 test('events are wired to actual learning milestones, not merely page views',()=>{
  const home=source('index.html'),sprint=source('reflex.html'),ai=source('scenes.html');
+ const homeDashboard=source('home-dashboard.js');
  for(const html of [home,sprint,ai]){
   assert.match(html,/<script src="\.\/analytics-events\.js"><\/script>/);
  }
  assert.match(home,/data-sg-cta="sprint"/);
  assert.match(home,/data-sg-cta="ai"/);
- assert.match(home,/track\("sg_home_cta"/);
+ assert.match(home,/<script type="module" src="\.\/home-dashboard\.js"><\/script>/);
+ assert.match(homeDashboard,/track\('sg_home_cta'/);
  assert.match(sprint,/track\("sg_sprint_start"/);
  assert.match(sprint,/track\("sg_sprint_complete"/);
  assert.match(ai,/track\("sg_ai_scene_start"/);

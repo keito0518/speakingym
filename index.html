@@ -38,6 +38,7 @@
 .workout .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:21px}.workout .chip{font-size:11px;font-weight:800;background:#ffffff25;border:1px solid #ffffff19;padding:5px 9px;border-radius:99px}.workout-light .chip{background:#fff9f1;border-color:#f1d7c7}
 .dashboard{padding-top:78px;padding-bottom:80px}
 .reviews{display:grid;grid-template-columns:.95fr 1.05fr;gap:18px}.review-card,.habit-card{border:1px solid var(--line);background:#fff;border-radius:22px;padding:24px;min-height:215px}.review-card .number{font-size:42px;letter-spacing:-2px;font-weight:950;line-height:1.2}.review-card h3,.habit-card h3{margin:6px 0 10px;font-size:19px}.review-card p,.habit-card p{font-size:13px;color:var(--muted);line-height:1.8}
+.due-card{display:flex;justify-content:space-between;align-items:center;gap:22px;margin-bottom:18px;padding:24px;border:1px solid #cfe2d2;background:#eaf4eb;border-radius:22px}.due-card h3{font-size:20px;margin:5px 0}.due-card p{font-size:13px;color:#466752;line-height:1.8;margin:5px 0 0}.due-actions{display:flex;align-items:center;gap:15px;flex-shrink:0}.due-count{text-align:center}.due-count strong{font-size:34px;line-height:1.1;display:block}.due-count span{font-size:11px;font-weight:750;color:#54715b}@media(max-width:650px){.due-card{padding:19px;flex-direction:column;align-items:stretch}.due-actions{justify-content:space-between;gap:12px}.due-actions .btn{min-height:44px}}
 .rewrite-box{background:#f2f6ef;border-radius:12px;padding:15px;margin-top:14px}.rewrite-box .old{font-size:12px;color:#65776a}.rewrite-box .new{font-size:14px;font-weight:850;color:#1b6140;margin-top:8px}.review-nav{display:flex;justify-content:space-between;align-items:center;margin-top:13px}.plain{border:0;background:transparent;font-size:12px;font-weight:900;color:#21593f;padding:7px 0}
 .habit-stat{display:flex;gap:14px;margin-top:22px}.stat{flex:1;background:#f4f6f1;border-radius:13px;padding:17px 13px}.stat strong{display:block;font-size:27px;line-height:1.2}.stat span{color:#66786a;font-size:11px;font-weight:800}
 .concept{background:#eaf2e8;border-block:1px solid #d8e7d7;padding:49px 0}.concept-inner{display:flex;justify-content:space-between;align-items:center;gap:28px}.concept h2{font-size:25px;margin:0 0 12px}.concept p{max-width:680px;font-size:13px;color:#526b59;line-height:2;margin:0}.footer{padding:29px 24px;text-align:center;font-size:11px;color:#7a8a7c}.footer a{text-decoration:underline}
@@ -127,6 +128,10 @@
 </section>
 <section class="wrapper dashboard" id="your-words">
  <div class="section-top"><div class="eyebrow">MAKE IT STICK</div><h2>話しっぱなしにしない。</h2><p>昨日つまずいた表現が、明日は口から出るように。</p></div>
+ <section class="due-card" aria-labelledby="home-due-title">
+  <div><div class="micro-label">TODAY'S NEXT REP</div><h3 id="home-due-title">今日の応用チェック</h3><p id="homeReviewMessage" aria-live="polite">学習記録を確認しています…</p></div>
+  <div class="due-actions"><div class="due-count"><strong id="homeDueCount">—</strong><span>復習するセット</span></div><a class="btn primary" id="homeReviewAction" href="./transfer.html">2場面チェックへ →</a></div>
+ </section>
  <div class="reviews">
   <section class="review-card" aria-labelledby="review-heading">
    <div class="micro-label">MY WORDS · SAVED EXPRESSIONS</div>
@@ -153,39 +158,7 @@
 </main>
 <footer class="footer">© Speakingym · 知ってる英語を、話せる英語に。　<a href="./account.html">マイページ</a>　<a href="./plans.html">利用プラン</a>　<a href="./scenes.html?scene=cafe">カフェでAI英会話</a>　<a href="./privacy.html">プライバシー</a>　<a href="./terms.html">利用条件</a>　<a href="./contact.html">お問い合わせ</a></footer>
 <script src="./analytics-events.js"></script>
-<script>
-(()=>{
-"use strict";
-document.querySelectorAll("[data-sg-cta]").forEach(link=>link.addEventListener("click",()=>window.speakingymAnalytics?.track("sg_home_cta",{destination:link.dataset.sgCta})));
-const $=id=>document.getElementById(id);
-function getSaved(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch(e){return null}}
-const words=getSaved("speakingym-saved-coaching-v1");
-const safeWords=Array.isArray(words)?words.filter(x=>x&&typeof x.original==="string"&&typeof x.natural==="string"&&x.original.length<600&&x.natural.length<600).slice(0,20):[];
-const sprintPhrases=getSaved("speakingym-reflex-saved-phrases-v1");
-$("sprintPhraseCount").textContent=String(new Set([...(Array.isArray(sprintPhrases)?sprintPhrases.map(p=>p?.text):[]),...safeWords.map(p=>p.natural)].filter(t=>typeof t==="string"&&t.trim()).map(t=>t.normalize("NFKC").trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," "))).size);
-let wordIndex=0;
-function showWord(){
- const box=$("savedWords");box.replaceChildren();
- if(!safeWords.length){
-  const p=document.createElement("p");p.textContent="まだ保存した表現はないよ。60秒チャレンジやAI英会話で、使いたい表現を保存してみよう。";box.append(p);$("nextWord").hidden=true;$("wordCounter").textContent="未保存";return;
- }
- const word=safeWords[wordIndex%safeWords.length];
- const panel=document.createElement("div");panel.className="rewrite-box";
- const original=document.createElement("div");original.className="old";original.textContent="YOU SAID: "+word.original;
- const improved=document.createElement("div");improved.className="new";improved.textContent="NEXT TIME: "+word.natural;
- panel.append(original,improved);box.append(panel);
- $("wordCounter").textContent=(wordIndex%safeWords.length+1)+" / "+safeWords.length+" 表現";
- $("nextWord").hidden=safeWords.length<2;
-}
-$("nextWord").addEventListener("click",()=>{wordIndex++;showWord()});
-const log=getSaved("speakingym-reflex-stats-v1");
-if(log&&typeof log==="object"){
- $("totalRuns").textContent=String(Math.max(0,Math.min(99999,Number(log.sessions)||0)));
- $("totalSpoken").textContent=String(Math.max(0,Math.min(99999,Number(log.spoken)||0)));
-}
-showWord();
-})();
-</script>
+<script type="module" src="./home-dashboard.js"></script>
 <script type="module" src="./account-sync.js"></script>
 </body>
 </html>
