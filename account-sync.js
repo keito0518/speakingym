@@ -8,6 +8,9 @@ const configured=["apiKey","authDomain","projectId","appId"].every(k=>typeof fir
 const $=id=>document.getElementById(id);
 const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
 let auth,db,authFns,dbFns,user=null,ready=false,busy=false,initAuth=false,importGuest=false;
+// A previous account's Firestore read/write may finish after account switching.
+// Never let that asynchronous completion replace another user's local learning data.
+let accountEpoch=0,syncInFlight=false,syncQueued=false;
 const PENDING_PREFIX="speakingym-account-dirty:";
 const timers=new Map();
 const css=[
@@ -15,11 +18,11 @@ const css=[
 ".sg-accountbar *{box-sizing:border-box}",
 ".sg-accountbar-inner{max-width:1200px;min-height:47px;margin:auto;padding:8px 18px;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}",
 ".sg-account-status{font-size:12px;font-weight:750;margin-right:auto}",
-".sg-accountbar button,.sg-accountbar a{border:1px solid #bbd1be;background:#fff;color:#234e36;padding:5px 12px;font:800 12px/1.5 inherit;border-radius:8px;min-height:35px;cursor:pointer;text-decoration:none}",
+".sg-accountbar button,.sg-accountbar a{border:1px solid #bbd1be;background:#fff;color:#234e36;padding:5px 12px;font:800 12px/1.5 inherit;border-radius:8px;min-height:44px;cursor:pointer;text-decoration:none}",
 ".sg-accountbar button.primary{background:#205940;border-color:#205940;color:white}",
 ".sg-accountbar button:disabled{opacity:.5;cursor:not-allowed}",
 ".sg-accountbar button:focus-visible,.sg-accountbar a:focus-visible{outline:3px solid #ff9b7d;outline-offset:2px}",
-"@media(max-width:540px){.sg-accountbar-inner{gap:6px;padding:6px 12px}.sg-account-status{flex-basis:100%;font-size:11px}.sg-accountbar button,.sg-accountbar a{font-size:11px;padding:5px 8px;min-height:33px}}"
+"@media(max-width:540px){.sg-accountbar-inner{gap:6px;padding:6px 12px}.sg-account-status{flex-basis:100%;font-size:11px}.sg-accountbar button,.sg-accountbar a{font-size:11px;padding:5px 8px;min-height:44px}}"
 ].join("\n");
 function status(message){$("sg-account-status").textContent=message;const el=$("sg-account-details");if(el)el.textContent=message}
 function renderControls(){
@@ -51,6 +54,16 @@ function describeError(error){
  if(code.includes("permission-denied"))return "Firestoreのセキュリティルールを確認してね。";
  if(code.includes("popup-closed")||code.includes("cancelled-popup"))return "ログインをキャンセルしました。";
  return "接続エラー。Firebase設定と通信状況を確認してね。";
+}
+function startupErrorMessage(error){
+ // Guest drills are local and need neither Firebase nor AI. A temporary SDK
+ // outage must not make the whole product look unusable. Never imply a signed-
+ // in user's data are available while their account is still unverified.
+ try{
+  if(!localStorage.getItem(OWNER_KEY))
+   return "ログインの通信待ち · 60秒などの無料練習は使えるよ。ログインは通信回復後に再読み込みしてね。";
+ }catch{}
+ return describeError(error)+" ログイン状態を確認できるまで記録の操作は控えてね。";
 }
 async function loginNow(){
  if(!auth||busy)return;
@@ -98,32 +111,47 @@ async function cloudWrite(uid,item,value){
  if(safe===null)return;
  await dbFns.setDoc(locationFor(uid,item),{version:1,payload:JSON.stringify(safe),updatedAt:dbFns.serverTimestamp()});
 }
-let quotaLookup=null;
+// Every account/refresh has its own read-only quota lookup. A delayed response
+// for the old account must never paint Pro usage onto the new account.
+let quotaUiSeq=0;
 async function updateQuotaUi(){
  const el=$("sg-plan-info");if(!el)return;
- if(!user){el.textContent="GoogleログインするとAIの利用枠が表示されるよ。";return}
- if(quotaLookup)return;
- quotaLookup=true;
+ const seq=++quotaUiSeq,epoch=accountEpoch,uid=user?.uid;
+ const stillCurrent=()=>seq===quotaUiSeq&&epoch===accountEpoch&&user?.uid===uid;
+ if(!uid){el.textContent="GoogleログインするとAIの利用枠が表示されるよ。";return}
+ el.textContent="利用回数を確認中…";
  try{
   const api="https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/";
-  const health=await fetch(api+"health").then(r=>r.ok?r.json():null).catch(()=>null);
+  const health=await fetch(api+"health",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null);
+  if(!stillCurrent())return;
   if(!health?.plansEnabled){el.textContent="無料ベータ期間中。AIは混雑防止の利用制限で提供しています。";return}
   const idToken=await authFns.getIdToken(user);
-  const response=await fetch(api+"entitlement",{headers:{"Authorization":"Bearer "+idToken}});
+  if(!stillCurrent())return;
+  const response=await fetch(api+"entitlement",{headers:{"Authorization":"Bearer "+idToken},cache:"no-store",credentials:"omit"});
+  if(!stillCurrent())return;
   if(!response.ok)throw Error("quota");
   const data=await response.json();
-  if(data.plan==="pro"){
-   const remainingTurns=Math.max(0,(data?.limits?.monthlyTurns||0)-(data?.used?.monthlyTurns||0));
-   const remainingTeacher=Math.max(0,(data?.limits?.monthlyTeacher||0)-(data?.used?.monthlyTeacher||0));
-   if(!Number.isInteger(data?.limits?.monthlyTurns)||!Number.isInteger(data?.limits?.monthlyTeacher))throw Error("quota");
-   el.textContent="Pro · 今月の残り：AI英会話 "+remainingTurns+" 往復／AI先生 "+remainingTeacher+" 回（日本時間の毎月1日に更新）";
-  }else{
-   const n=Math.max(0,(data?.limits?.sessions||0)-(data?.used?.sessions||0));
-   const t=Math.max(0,(data?.limits?.teacher||0)-(data?.used?.teacher||0));
+  if(!stillCurrent())return;
+  // Never replace a missing count with zero. Incomplete or inconsistent
+  // entitlement data must not falsely tell a paying learner that quota remains.
+  const validCounts=values=>values.every(n=>Number.isSafeInteger(n)&&n>=0);
+  if(data?.plan==="pro"){
+   const {monthlyTurns,monthlyTeacher}=data?.limits||{};
+   const usedTurns=data?.used?.monthlyTurns,usedTeacher=data?.used?.monthlyTeacher;
+   if(!validCounts([monthlyTurns,monthlyTeacher,usedTurns,usedTeacher])||
+      monthlyTurns===0||monthlyTeacher===0)throw Error("quota");
+   const remainingTurns=Math.max(0,monthlyTurns-usedTurns);
+   const remainingTeacher=Math.max(0,monthlyTeacher-usedTeacher);
+   el.textContent="Pro · 今月の残り：AI英会話 "+remainingTurns+" ターン／AI先生 "+remainingTeacher+" 回（日本時間の毎月1日に更新）";
+  }else if(data?.plan==="free"){
+   const {sessions,teacher}=data?.limits||{};
+   const usedSessions=data?.used?.sessions,usedTeacher=data?.used?.teacher;
+   if(!validCounts([sessions,teacher,usedSessions,usedTeacher])||
+      sessions===0||teacher===0)throw Error("quota");
+   const n=Math.max(0,sessions-usedSessions),t=Math.max(0,teacher-usedTeacher);
    el.textContent="Free · 本日の残り：AI英会話 "+n+" セッション／AI先生 "+t+" 回（日本時間の午前0時に更新）";
-  }
- }catch{el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
- finally{quotaLookup=false}
+  }else throw Error("quota");
+ }catch{if(stillCurrent())el.textContent="利用回数を読み込めませんでした。少し待って再読み込みしてね。"}
 }
 function notify(){
  window.dispatchEvent(new Event("speakingym:account-ready"));
@@ -213,13 +241,17 @@ function dashboard(){
 }
 function refreshUi(){if(user)status("☁ "+(user.displayName||"Googleユーザー")+" · クラウド保存");else status(configured?"ゲスト利用中 · 記録はこの端末に保存":"ゲスト利用中 · ログイン機能は設定待ち");renderControls();notify();}
 async function syncAll({reloadOnChange=true}={}){
- if(!user||busy)return;
- const uid=user.uid;
- busy=true;renderControls();status("クラウドと学習記録を同期中…");
+ if(!user)return;
+ if(syncInFlight||busy){syncQueued=true;return}
+ const uid=user.uid,epoch=accountEpoch;
+ const stillOwner=()=>accountEpoch===epoch&&user?.uid===uid&&localStorage.getItem(OWNER_KEY)===uid;
+ syncInFlight=true;busy=true;renderControls();status("クラウドと学習記録を同期中…");
  try{
-  // The cloud is authoritative unless this device has unsynced edits.
-  // For first login only, consented guest records are merged with cloud data.
-  const remote=await cloudRead(uid),local=readSnapshot(localStorage),dirty=new Set(pendingKeys(uid));
+  // A network read is an asynchronous boundary: signing in to a different
+  // account during it must NOT merge the earlier account into the current one.
+  const remote=await cloudRead(uid);
+  if(!stillOwner())return;
+  const local=readSnapshot(localStorage),dirty=new Set(pendingKeys(uid));
   const desired={};
   for(const item of SYNC_ITEMS){
    const a=local[item.key],b=remote[item.key];
@@ -237,23 +269,53 @@ async function syncAll({reloadOnChange=true}={}){
    const value=desired[item.key];
    if(value===undefined)continue;
    if(!snapshotsEqual(value,remote[item.key])){
-    const request=cloudWrite(uid,item,value).then(()=>clearPending(uid,item.key));
+    const request=cloudWrite(uid,item,value).then(()=>{
+     // A later edit or login must not lose its pending-sync flag.
+     if(stillOwner()&&snapshotsEqual(readSnapshot(localStorage)[item.key],value))
+      clearPending(uid,item.key);
+    });
     writes.push(request);
-   }else clearPending(uid,item.key);
+   }else if(stillOwner()&&snapshotsEqual(readSnapshot(localStorage)[item.key],value)){
+    clearPending(uid,item.key);
+   }
   }
   await Promise.all(writes);
+  if(!stillOwner())return;
+  // While Cloud writes were pending the learner may have typed or saved more.
+  // Do not replace their newer local draft with the older cloud snapshot.
+  if(!snapshotsEqual(readSnapshot(localStorage),local)){
+   syncQueued=true;
+   return;
+  }
   importGuest=false;
   const changed=!snapshotsEqual(local,desired);
   if(changed){
    removeSnapshot(localStorage);applySnapshot(localStorage,desired);
-   if(reloadOnChange){window.location.reload();return;}
+   if(reloadOnChange){window.location.reload();return}
   }
   status("✓ 同期しました");
- }catch(e){status("同期できませんでした。端末の記録は残っています。「同期」で再試行してね。")}
- finally{busy=false;renderControls();notify()}
+ }catch(e){
+  if(stillOwner())status("同期できませんでした。端末の記録は残っています。「同期」で再試行してね。");
+ }finally{
+  syncInFlight=false;busy=false;renderControls();notify();
+  // If a new account attempted to sync while the old request was running,
+  // finish that newer account's initial sync after the old request settles.
+  const nextQueued=syncQueued;
+  syncQueued=false;
+  if((nextQueued||accountEpoch!==epoch)&&user&&
+     localStorage.getItem(OWNER_KEY)===user.uid)
+   void syncAll();
+ }
 }
 async function handleAuth(next){
  if(initAuth)return;
+ accountEpoch++;
+ quotaUiSeq++;
+ // Immediately hide the old account's Pro/quota UI. Cloud sync can still be
+ // pending, and it must not keep showing a previous owner's paid details.
+ const quota=$("sg-plan-info");
+ if(quota)quota.textContent=next?"利用回数を確認中…":"GoogleログインするとAIの利用枠が表示されるよ。";
+ window.dispatchEvent(new Event("speakingym:account-changing"));
  initAuth=true;busy=true;user=next;renderControls();
  const oldUid=localStorage.getItem(OWNER_KEY);
  try{
@@ -264,19 +326,19 @@ async function handleAuth(next){
     localStorage.removeItem(OWNER_KEY);
     window.location.reload();return;
    }
-   return;
-  }
-  const uid=next.uid;
-  if(oldUid!==uid){
-   let guest={};
-   if(!oldUid)guest=saveGuestSnapshot(localStorage);
-   // Never import the previous account's data into another account.
-   removeSnapshot(localStorage);
-   if(!oldUid&&Object.keys(guest).length&&window.confirm("この端末のゲスト記録をGoogleアカウントへ引き継ぎますか？")){
-    applySnapshot(localStorage,guest);importGuest=true;
-    for(const item of SYNC_ITEMS)if(guest[item.key]!==undefined)markPending(uid,item.key);
+  }else{
+   const uid=next.uid;
+   if(oldUid!==uid){
+    let guest={};
+    if(!oldUid)guest=saveGuestSnapshot(localStorage);
+    // Never import the previous account's data into another account.
+    removeSnapshot(localStorage);
+    if(!oldUid&&Object.keys(guest).length&&window.confirm("この端末のゲスト記録をGoogleアカウントへ引き継ぎますか？")){
+     applySnapshot(localStorage,guest);importGuest=true;
+     for(const item of SYNC_ITEMS)if(guest[item.key]!==undefined)markPending(uid,item.key);
+    }
+    localStorage.setItem(OWNER_KEY,uid);
    }
-   localStorage.setItem(OWNER_KEY,uid);
   }
  }catch(e){status(describeError(e))}
  finally{busy=false;initAuth=false;ready=true;renderControls()}
@@ -286,30 +348,60 @@ async function handleAuth(next){
 function onChanged(event){
  const item=SYNC_ITEMS.find(i=>i.key===event?.detail?.key);
  if(!item||!user||!ready)return;
- markPending(user.uid,item.key);
+ // Bind the delayed write to the account that actually made the edit.
+ // Auth state can change during the 350 ms debounce (or during a Firestore
+ // request). Never read another account's local data or clear its dirty flag.
+ const uid=user.uid;
+ if(localStorage.getItem(OWNER_KEY)!==uid)return;
+ markPending(uid,item.key);
  if(timers.has(item.key))clearTimeout(timers.get(item.key));
  timers.set(item.key,setTimeout(async()=>{
   timers.delete(item.key);
-  if(!user)return;
-  const uid=user.uid,value=readSnapshot(localStorage)[item.key];
+  if(user?.uid!==uid||localStorage.getItem(OWNER_KEY)!==uid)return;
+  const value=readSnapshot(localStorage)[item.key];
   const toSave=value===undefined?(item.type==="numbers"?{}:[]):value;
-  try{await cloudWrite(uid,item,toSave);if(snapshotsEqual(readSnapshot(localStorage)[item.key],value))clearPending(uid,item.key)}
-  catch(e){status("保存は端末内で完了。クラウド同期は次回再試行するよ。")}
+  try{
+   await cloudWrite(uid,item,toSave);
+   if(user?.uid===uid&&localStorage.getItem(OWNER_KEY)===uid&&
+      snapshotsEqual(readSnapshot(localStorage)[item.key],value))clearPending(uid,item.key);
+  }catch(e){
+   if(user?.uid===uid)status("保存は端末内で完了。クラウド同期は次回再試行するよ。");
+  }
  },350));
 }
 function initDashboard(){dashboard();}
+// The Firebase SDK may take a long time to download (or remain pending on a
+// restrictive network). An *unowned* local guest can still practise without
+// that SDK. Do not release the guest UI when a previous UID is stored: its
+// local records must remain masked until Firebase confirms the owner.
+function releaseUnownedGuestWhileAuthLoads(){
+ try{
+  if(user||localStorage.getItem(OWNER_KEY))return false;
+  notify();
+  return true;
+ }catch{return false}
+}
 async function start(){
  // Expose a narrow, non-privileged token getter for authenticated AI requests.
  // The Worker validates the token signature and decides the plan; clients cannot set Pro.
  window.speakingymAccount={
   getIdToken:async()=>user&&auth&&authFns?authFns.getIdToken(user):null,
+  // Read-only identity for device-local Pro study progress. Not an entitlement.
+  getUid:()=>user?.uid||null,
   isLoggedIn:()=>!!user
  };
  // Never advertise an unavailable Google-login button to ordinary visitors.
  if(!configured && !$("sg-account-stats"))return;
  mount();initDashboard();window.addEventListener("speakingym:changed",onChanged);
+ // A tab may stay open across the JST reset or after a payment in another tab.
+ // Refresh the displayed count on return; the Worker remains authoritative.
+ window.addEventListener("focus",()=>{if(user&&$("sg-plan-info"))void updateQuotaUi()});
+ document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&user&&$("sg-plan-info"))void updateQuotaUi();
+ });
  if(!configured){ready=false;refreshUi();return}
- status("Googleログインの準備中…");
+ const guestReleased=releaseUnownedGuestWhileAuthLoads();
+ status(guestReleased?"無料練習はすぐ使えるよ · Googleログインを準備中…":"Googleログインの準備中…");
  try{
   const root="https://www.gstatic.com/firebasejs/11.10.0/";
   const [appLib,authLib,dbLib]=await Promise.all([
@@ -319,6 +411,6 @@ async function start(){
   authFns=authLib;dbFns=dbLib;auth=authLib.getAuth(app);db=dbLib.getFirestore(app);
   ready=true;renderControls();
   authLib.onAuthStateChanged(auth,next=>handleAuth(next),err=>status(describeError(err)));
- }catch(e){ready=false;renderControls();status(describeError(e))}
+ }catch(e){ready=false;renderControls();status(startupErrorMessage(e))}
 }
 start();

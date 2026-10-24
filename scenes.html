@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#173d31">
+<meta name="theme-color" content="#faf9f6">
 <meta name="description" content="Speakingymの無料AI英会話。カフェ・ホテル・空港・日常会話など16シーンと3段階の難易度で、知っている英語を実際に話す練習へ。">
 <link rel="canonical" href="https://speakingym.pages.dev/scenes.html">
 <meta property="og:type" content="website"><meta property="og:title" content="AI実戦英会話（16シーン） | Speakingym">
@@ -22,12 +22,27 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 .response-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}.response-head label{font-size:12px;font-weight:850}textarea{resize:vertical;min-height:90px;font-size:15px;line-height:1.6}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions .btn{flex:1}.actions .btn.primary{flex:1.4}#status{font-size:12px;color:#52735b;min-height:21px;font-weight:750}#error{margin-top:12px;background:#fff6ef;border:1px solid #edccb5;border-radius:12px;padding:13px;color:#8d4834;font-size:12px;line-height:1.8}.hidden{display:none!important}
 #result{background:#ecf8ee;border:1px solid #cbe6cf;border-radius:12px;padding:14px;margin-top:13px;font-size:13px}.coach-report{background:#fff;border:2px solid #d5e8d7;border-radius:16px;padding:18px;margin:14px 0}.coach-report h3{margin:0 0 7px;font-size:20px}.coach-report .subline{font-size:12px;color:#6b796d;margin:0 0 11px}.coach-point{padding:12px 0;border-top:1px solid #e5ede4}.coach-label{display:block;font-size:11px;letter-spacing:.2px;color:#647b69;font-weight:850;margin-bottom:5px}.coach-original{font-size:13px;color:#566358;overflow-wrap:anywhere}.coach-natural{font-size:15px;color:#1b5c40;font-weight:850;overflow-wrap:anywhere}.coach-tip{font-size:12px;color:#526958;line-height:1.75}.coach-summary{font-size:12px;background:#eef6ee;border-radius:10px;padding:11px 12px;line-height:1.8}.coach-report h4{font-size:15px;margin:17px 0 4px}.coach-praise{font-size:12px;font-weight:750;color:#365842;margin-top:6px}.review-saved{margin:14px 0;border:1px solid #dce7db;border-radius:12px;padding:11px}.review-saved summary{cursor:pointer;font-size:13px;font-weight:850}.review-saved li{font-size:12px;margin:8px 0;overflow-wrap:anywhere}#result strong{font-size:17px}.muted{font-size:11px;color:#748476;line-height:1.7;margin-top:10px}.pill{display:inline-block;border-radius:99px;background:#eaf0e9;font-size:11px;padding:5px 10px;color:#4b6653;font-weight:750}
 @media(max-width:750px){.scenes{grid-template-columns:1fr}.scene{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:12px;row-gap:0}.scene .emoji{grid-row:1/4}.scene .tag{padding:0}.settings{grid-template-columns:1fr}main{padding:20px 15px 45px}.card{padding:15px}.actions .btn{flex:1 1 calc(50% - 8px)}.actions .btn.primary{flex-basis:100%}}
+/* Make choosing a situation straightforward before exposing all 16 options. */
+:root{background:#faf9f6;color:#293a2f}body{background:#faf9f6}
+header{background:#faf9f6;color:#2b4235;border-bottom:1px solid #e1e5dc}.brand span{color:#b8654f}.back{color:#41614d}
+main{padding-top:30px}.eyebrow{color:#788177;letter-spacing:.025em;font-weight:750;font-size:12px}
+.intro h1{font-size:clamp(27px,4vw,39px);letter-spacing:-.025em;line-height:1.4;text-wrap:pretty;line-break:strict}
+.intro p{font-size:14px;color:#64746a;line-height:1.85}.notice{background:#f6f8f3;border:1px solid #e0e8dc;border-radius:8px;color:#576d5d}
+.scenes{gap:10px;margin-top:18px}.scene{border:1px solid #dce5db;border-radius:9px;box-shadow:none;min-height:157px;padding:16px;color:#2c4838}.scene[hidden]{display:none!important}
+.scene[aria-pressed="true"]{border:2px solid #406f55;background:#f7faf5;box-shadow:none}.scene .emoji{font-size:25px}.scene strong{font-size:16px}.scene .tag{color:#7d8b80;font-weight:650}
+.all-scene-toggle{grid-column:1/-1;justify-self:start;border:0;background:transparent;color:#2c6147;font:inherit;font-weight:800;font-size:13px;text-decoration:underline;text-underline-offset:4px;padding:13px 4px;cursor:pointer;min-height:44px}
+.card{border-radius:11px;box-shadow:none}.assignment{background:#f8faf6;border:1px solid #dce5dc;border-radius:9px;box-shadow:none}.assignment-title{letter-spacing:-.02em;color:#2b4838}
+.btn{border-radius:8px;border-color:#d6e0d5}.btn.primary{background:#285547;border-color:#285547}.btn.subtle{background:#f7f9f5}
+.goal{background:#f7f9f5;border-color:#e1e9df;border-radius:8px}.goal.done{background:#e5eee4}
+#chat{border-radius:8px}.bubble{border-radius:8px;background:#f2f5f0}.bubble.me{background:#e9f2e8}.coach-report,#result,.coach-summary{border-radius:8px;background:#f8faf6;border-color:#dfe9df}
+h1,h2,h3,p{text-wrap:pretty;line-break:strict;overflow-wrap:break-word}
+@media(max-width:750px){main{padding:24px 17px 48px}.scene{min-height:0;padding:12px 14px}.scenes{gap:8px}.scene .emoji{font-size:22px}.scene strong{font-size:15px}.scene small{font-size:12px}.card{padding:16px}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
 <body>
 <header><div class="top"><a class="brand" href="./index.html">speakin<span>gym.</span></a><a class="back" href="./index.html">← トップに戻る</a></div></header>
 <main>
-<section class="intro"><div class="eyebrow">AI CONVERSATION · SCENE WORKOUT</div><h1>覚えた英語を、<br>本番の会話で使おう。</h1><p>毎回同じセリフではなく、あなたの答え方でAIの反応が変わる。16の場面から選んで、3つの目標達成に挑戦！</p></section>
+<section class="intro"><div class="eyebrow">AI実践英会話</div><h1>どんな場面で話してみる？</h1><p>カフェや仕事など、よくある場面でAIとの会話を練習できます。まずは下から1つ選んでください。</p></section>
 <div class="notice">無料のAIベータ版です。会話文は外部のGemini AIへ送信され、無料枠では製品改善に使われる場合があります。実名・予約番号・住所などは入力せず、架空の情報を使ってください。無料枠が混雑・終了した場合はAIを停止します。</div>
 <section class="scenes" id="scenes" aria-label="練習するシーン">
 <button type="button" class="scene" data-scene="hotel" aria-pressed="true"><span class="emoji">🏨</span><strong>ホテルでチェックイン</strong><small>予約を伝えて、Wi-Fiや部屋について質問しよう。</small><span class="tag">旅行英会話 · ★★☆</span></button>
@@ -46,6 +61,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 <button type="button" class="scene" data-scene="introductions" aria-pressed="false"><span class="emoji">👋</span><strong>自己紹介</strong><small>新しい同僚と挨拶</small><span class="tag">基礎・標準・応用</span></button>
 <button type="button" class="scene" data-scene="plans" aria-pressed="false"><span class="emoji">📅</span><strong>友人と予定</strong><small>週末のランチに誘う</small><span class="tag">基礎・標準・応用</span></button>
 <button type="button" class="scene" data-scene="help" aria-pressed="false"><span class="emoji">🆘</span><strong>困ったときの相談</strong><small>落とし物を探す</small><span class="tag">基礎・標準・応用</span></button>
+<button type="button" class="all-scene-toggle" id="showAllScenes" aria-expanded="false">他の場面も見る（全16場面）</button>
 </section>
 <section class="card" id="setup">
 <div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
@@ -548,6 +564,23 @@ $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.meta
 window.addEventListener("speakingym:before-speech",()=>{stopRecognition();cancelSpeech()});
 window.addEventListener("beforeunload",()=>{stopClock();stopRecognition();cancelSpeech();requestController?.abort()});
 $("level").addEventListener("change",renderAssignment);const requestedScene=/(?:^|[?&])scene=([a-z]+)(?:&|$)/.exec(window.location?.search||"")?.[1];if(Object.hasOwn(SCENES,requestedScene))select(requestedScene);renderAssignment();showSavedReview();updateControls();
+})();
+</script>
+<script>
+(()=>{
+ const root=document.getElementById('scenes'),toggle=document.getElementById('showAllScenes');
+ const featured=new Set(['hotel','cafe','smalltalk','work']);
+ const options=[...root.querySelectorAll('button[data-scene]')];
+ const requested=new URLSearchParams(location.search).get('scene');
+ let expanded=Boolean(requested&&!featured.has(requested));
+ function render(){
+  const selected=new URLSearchParams(location.search).get('scene');
+  for(const option of options)option.hidden=!expanded&&!featured.has(option.dataset.scene)&&option.dataset.scene!==selected;
+  toggle.textContent=expanded?'最初の4場面だけ表示':'他の場面も見る（全16場面）';
+  toggle.setAttribute('aria-expanded',String(expanded));
+ }
+ toggle.addEventListener('click',()=>{expanded=!expanded;render()});
+ render();
 })();
 </script>
 <script src="./plan-usage.js"></script>

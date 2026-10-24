@@ -5,13 +5,13 @@ import vm from "node:vm";
 
 const file=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const current=file("index.html"),classic=file("classic.html"),preview=file("home-preview.html");
-const nav=["account.html","reflex.html","scenes.html","scenes.html","classic.html"];
+const nav=["account.html","reflex.html","scenes.html","freeze-breaker.html","phrasebook.html"];
 const mainScript=html=>html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||"";
 
 test("modern production home has brand, SEO, useful routes, no paid checkout and honest beta copy",()=>{
  assert.match(current,/<title>Speakingym — 知ってる英語を、話せる英語に。<\/title>/);
  assert.match(current,/<link rel="canonical" href="https:\/\/speakingym.pages.dev\/">/);
- assert.match(current,/練習メニュー/);
+ assert.match(current,/練習を選ぶ/);
  for(const path of nav)assert.match(current,new RegExp('href="\\./'+path.replaceAll(".","\\.")+'"'),"missing "+path);
  assert.match(current,/60秒チャレンジはログイン不要・回数制限なし/);
  assert.match(current,/AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで/);
@@ -23,9 +23,11 @@ test("modern production home has brand, SEO, useful routes, no paid checkout and
  assert.match(current,/@media\(max-width:520px\)/);
  assert.match(current,/<script type="module" src="\.\/account-sync\.js"><\/script>/);
 });
-test("trial CTA is the free 60-second sprint and the real AI experience is discoverable",()=>{
- assert.match(current,/<a class="btn primary" href="\.\/reflex\.html"[^>]*>無料で60秒チャレンジ/);
- assert.match(current,/<a class="btn" href="\.\/scenes\.html"[^>]*>AIと実戦英会話/);
+test("trial CTA leads straight to the guided rescue with a visible optional sprint",()=>{
+ assert.match(current,/<a class="btn primary" href="\.\/freeze-breaker\.html"[^>]*>まず1問、声に出してみる/);
+ assert.match(current,/<a class="btn secondary-link" href="\.\/reflex\.html"[^>]*>60秒チャレンジはこちら/);
+ assert.match(current,/href="\.\/scenes\.html"[^>]*>AI実践英会話へ（任意）/);
+ assert.match(current,/詰まったら、切り返しを知る/);
  assert.match(current,/href="\.\/phrasebook\.html"/);
  assert.doesNotMatch(current,/href="\.\/index\.html">旧トップ/);
 });
@@ -47,5 +49,6 @@ test("account and sprint navigations now lead to the official homepage",()=>{
  assert.doesNotMatch(account,/href="\.\/home-preview\.html"/);
  assert.doesNotMatch(reflex,/href="\.\/home-preview\.html"/);
  assert.match(account,/href="\.\/index\.html"/);
- assert.match(reflex,/href="\.\/classic\.html">従来の練習ツールを見る/);
+ assert.doesNotMatch(reflex,/href="\.\/classic\.html">従来の練習ツールを見る/);
+ assert.doesNotMatch(current,/href="\.\/classic\.html"/);
 });

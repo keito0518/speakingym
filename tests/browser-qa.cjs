@@ -63,6 +63,8 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
    await page.screenshot({path:'qa-screenshots/'+engine+'-'+width+'-'+path.split('.')[0]+'.png',fullPage:true});results.push({width,path,status:'passed'});
   }
   assert.equal(googleRequests.length,requestsAfterRevoke,'refused visits must not request Google analytics');
+  assert.equal(await page.locator('#practiceSettings').evaluate(el=>el.open),false,'advanced choices are optional and initially collapsed');
+  await page.locator('#practiceSettings summary').click();
   await page.selectOption('#mode','カフェ');await page.click('#start');assert.match(await page.locator('#category').textContent(),/^カフェ \/ STANDARD$/);
   assert.equal(await page.locator('#hintPanel').evaluate(el=>el.open),false,'model hint hidden until learner requests it');
   await page.locator('#hintPanel summary').click();
