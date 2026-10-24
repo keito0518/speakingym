@@ -363,7 +363,18 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
   assert.equal(await page.locator('#diagnosisPanel').isVisible(),false);
   await page.locator('#finishEarly').click();
   assert.equal(await page.locator('#endPane').isVisible(),true);
+  assert.equal(await page.locator('#reviewAnswers').isVisible(),false,
+    'the first review must prompt spoken recall before revealing examples');
+  assert.equal(await page.locator('#reviewReveal').getAttribute('aria-expanded'),'false');
+  await page.locator('#reviewReveal').click();
+  assert.equal(await page.locator('#reviewAnswers .answer-card:visible').count(),3,
+    'revealed review offers short, natural and polite answers');
+  assert.equal(await page.locator('#reviewReveal').getAttribute('aria-expanded'),'true');
+  await page.locator('#reviewReveal').click();
+  assert.equal(await page.locator('#reviewAnswers').isVisible(),false,'learner can hide models for another recall');
   await page.locator('#reviewNext').click();
+  assert.equal(await page.locator('#reviewAnswers').isVisible(),false,
+    'moving to the next question resets sample visibility');
   assert.equal(await page.locator('#diagnosisPanel').isVisible(),true);
   assert.equal(await page.locator('#diagnosisChoices button').count(),6);
   await page.locator('#diagnosisChoices [data-reason="words"]').click();

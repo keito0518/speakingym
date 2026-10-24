@@ -44,6 +44,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .review-point strong{font-size:11px;color:#6a906f;letter-spacing:.8px}
 .review-point p{font-size:13px;color:#365640;line-height:1.75;margin:6px 0 0}
 .answer-set{display:grid;gap:9px;margin-top:14px}
+.answer-set[hidden]{display:none!important}.review-recall{margin-top:14px;padding:13px 14px;border-radius:12px;background:#f0f6eb;border:1px solid #cfdfcb}.review-recall p{font-size:13px;color:#36563e;line-height:1.75;margin:0 0 10px}.review-recall .btn{min-height:44px}
 .answer-set .answer-card{padding:11px 13px;border-radius:12px;border:1px solid #e1ebdf;background:#fff}
 .answer-set .answer-card.featured{background:#ebf7ea;border-color:#bcdcc4}
 .answer-set .answer-label{font-size:11px;font-weight:950;color:#aa6448}
@@ -195,7 +196,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
    <button class="btn block" type="button" id="requestTeacher">✨ 追加のAI講評を受ける（任意・回数消費）</button>
   <p id="teacherStatus" class="teacher-status" role="status" aria-live="polite"></p>
   <div id="teacherFeedback" class="teacher-feedback hidden" aria-live="polite"></div>
- </section><div class="review-point"><strong>📘 お題の学習ポイント（共通）</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ お題のヒント（共通）</strong><p id="reviewImprove"></p></div><div class="answer-set" id="reviewAnswers"></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
+ </section><div class="review-point"><strong>📘 お題の学習ポイント（共通）</strong><p id="reviewGood"></p></div><div class="review-point"><strong>↗ お題のヒント（共通）</strong><p id="reviewImprove"></p></div><div class="review-recall"><p>お手本を見る前に、もう一度声に出してみよう。思い出せなくても大丈夫。</p><button class="btn primary" type="button" id="reviewReveal" aria-controls="reviewAnswers" aria-expanded="false">👁 お手本を確認する</button></div><div class="answer-set" id="reviewAnswers" hidden></div><div class="save-note" id="saveStatus" role="status" aria-live="polite">覚えたいフレーズだけを保存して、あとから復習できるよ。</div><div class="review-point"><strong>💡 EXPRESSION TIP</strong><p id="reviewTip"></p></div>
  <section id="diagnosisPanel" class="diagnosis-panel" aria-label="詰まった理由の振り返り" hidden>
  <h4>なぜ言葉が詰まった？</h4>
  <p class="diagnosis-help">ひとつ選ぶだけでOK。次の練習のヒントを表示するよ。後から変更できます。</p>
@@ -1296,6 +1297,9 @@ function showReview(index){
  $("reviewImprove").textContent=info.improve;
  $("reviewTip").textContent=(EXTRA_ANSWERS[card.id]?.tip||"短く自然な表現を声に出して練習しよう。");
  const parent=$("reviewAnswers");parent.replaceChildren();
+ parent.hidden=true;
+ $("reviewReveal").setAttribute("aria-expanded","false");
+ $("reviewReveal").textContent="👁 お手本を確認する";
  for(const [label,example,featured] of [
   ["QUICK · 短く",info.quick,false],["NATURAL · 自然に",info.sample,true],["POLITE · 丁寧に",info.polite,false]
  ]){
@@ -1431,6 +1435,12 @@ $("finishEarly").addEventListener("click",()=>finish(true));
 $("again").addEventListener("click",()=>start(false));
 $("weakOnly").addEventListener("click",()=>start(true));
 $("reviewPrev").addEventListener("click",()=>showReview(reviewIndex-1));
+$("reviewReveal").addEventListener("click",()=>{
+ const answers=$("reviewAnswers"),reveal=$("reviewReveal");
+ answers.hidden=!answers.hidden;
+ reveal.setAttribute("aria-expanded",String(!answers.hidden));
+ reveal.textContent=answers.hidden?"👁 お手本を確認する":"🙈 もう一度隠して練習";
+});
 $("reviewNext").addEventListener("click",()=>{
  if(reviewIndex<(reviewSession?.attempts.length||0)-1)showReview(reviewIndex+1);
  else if(!reviewFromHistory&&personalNextStage!==null)continuePersonalWorkout();
@@ -1465,7 +1475,9 @@ window.addEventListener("speakingym:account-changing",()=>{
  reviewFromHistory=false;reviewIndex=0;missedIds=[];missedPrompts=[];solvedIds=[];
  $("transcript").value="";$("reviewYou").textContent="";
  $("teacherStatus").textContent="";$("teacherFeedback").replaceChildren();
- $("reviewAnswers").replaceChildren();$("historyList").replaceChildren();
+ $("reviewAnswers").replaceChildren();$("reviewAnswers").hidden=true;
+ $("reviewReveal").setAttribute("aria-expanded","false");
+ $("historyList").replaceChildren();
  $("savedPhrasesList").replaceChildren();$("diagnosisChoices").replaceChildren();
  $("diagnosisResult").textContent="";$("diagnosisSummaryText").textContent="";
  currentTeacherNotes=null;
