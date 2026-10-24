@@ -62,7 +62,7 @@ test('self-reported improvement is not proof of measured fluency',()=>{
 });
 test('same-day retakes are practice, not proof of across-day improvement',()=>{
  const sameDay=[e(pair.id,'2026-10-21',false,false),
-  e(pair.id,'2026-10-21',true,true)];
+  {...e(pair.id,'2026-10-21',true,true),at:at('2026-10-21','03:01:00')}];
  const stats=reviewTrend(sameDay);
  assert.equal(stats.repeatedPairs,0);
  assert.equal(stats.improvedSelfRatings,0);
