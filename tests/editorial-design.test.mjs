@@ -17,6 +17,7 @@ test('major headings wrap according to viewport, not author-inserted line breaks
 test('first screen uses a real speaking prompt with one obvious entry, not a fake chat illustration',()=>{
  const home=read('index.html');
  assert.match(home,/<blockquote lang="en">Sorry, we're out of oat milk/);
+ assert.match(home,/<h1>知ってる英語を、<em>話せる英語に。<\/em><\/h1>/);
  assert.match(home,/まず1問、声に出してみる/);
  assert.doesNotMatch(home,/<div class="orb"|<div class="floating"|<div class="mock"/);
  assert.match(home,/練習はシンプルな3ステップ/);
@@ -39,6 +40,7 @@ test('optional choices stay available without crowding first-time exercise start
 test('quiet hero text stays legible and short labels explain the next action',()=>{
  const freeze=read('freeze-breaker.html');
  assert.match(freeze,/\.hero\{[^}]*background:transparent;color:#253b2f/,'hero must not inherit white text from its former dark background');
+ assert.match(freeze,/<h1 id="page-title">英語で詰まったら？<\/h1>/);
  assert.match(read('reflex.html'),/<h1>60秒で、英語を声に出そう。<\/h1>/);
  assert.match(read('account.html'),/<h1 id="heroTitle">練習記録と、次の一歩。<\/h1>/);
  assert.match(read('scenes.html'),/<h1>どんな場面で話してみる？<\/h1>/);
