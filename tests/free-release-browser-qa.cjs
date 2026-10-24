@@ -110,6 +110,7 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#mission-select option').count(),7);
    assert.equal(await page.locator('#reason-panel').isVisible(),false,'the cause question must not appear before trying to speak');
    await page.locator('#start-button').click();
+   await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-listening.png',fullPage:true});
    const heardFirst=await page.locator('#dialogue').textContent();
    assert.equal(await page.locator('#dialogue').isVisible(),false,'rescue begins with listening, not reading the English answer');
    assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),heardFirst,
@@ -136,6 +137,7 @@ const fs=require('node:fs');
    await page.locator('#reason-buttons button[data-reason="surprise"]').click();
    assert.match(await page.locator('#rescue-meaning').textContent(),/考える時間/,'rescue phrase has a plain-Japanese meaning');
    await page.locator('#repair-next').click();
+   await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-recovery.png',fullPage:true});
    assert.match(await page.locator('#followup').textContent(),/^Sure, take your time\./,
     'the simulated conversation responds to the selected recovery strategy');
    assert.match(await page.locator('#recovery-context').textContent(),/想定会話/,'no fake claim of AI understanding');
