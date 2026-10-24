@@ -28,6 +28,7 @@ test('optional choices stay available without crowding first-time exercise start
  assert.match(sprint,/id="level"/);
  assert.match(sprint,/id="mode"/);
  assert.match(scenes,/id="showAllScenes" aria-expanded="false"/);
+ assert.match(scenes,/\.scene\[hidden\]\{display:none!important\}/,'author CSS must not defeat the hidden attribute');
  assert.equal([...scenes.matchAll(/<button type="button" class="scene" data-scene=/g)].length,16);
  assert.match(freeze,/id="reason-panel" hidden/);
  assert.match(freeze,/id="start-button"/);
