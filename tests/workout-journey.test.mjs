@@ -8,8 +8,8 @@ const transfer=file('transfer.html'),transferJs=file('transfer.js');
 
 test('beginner guide tells the rescue-first path and the transfer-review schedule',()=>{
  assert.match(home,/① 相手の英語に返してみる/);
- assert.match(home,/③ 切り返しを覚えて、すぐ再挑戦/);
- assert.match(home,/違う会話で応用チェック。次は翌日・3日後・7日後に自分で復習/);
+ assert.match(home,/② 詰まったら、切り返しを知る/);
+ assert.match(home,/③ 別の場面でもう一度/);
  assert.match(home,/href="\.\/phrasebook\.html"/);
  assert.match(sprint,/詰まった理由を振り返る/);
  assert.match(sprint,/苦手を再挑戦/);

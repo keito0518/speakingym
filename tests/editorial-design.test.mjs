@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const pages=['index.html','freeze-breaker.html','reflex.html','transfer.html','account.html','scenes.html'];
+
+test('major headings wrap according to viewport, not author-inserted line breaks',()=>{
+ for(const path of pages){
+  const h1=read(path).match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1];
+  assert.ok(h1,'page needs a visible H1: '+path);
+  assert.doesNotMatch(h1,/<br\s*\/?\s*>/i,'fixed H1 line break on '+path);
+  assert.match(read(path),/line-break:strict/,'Japanese punctuation should wrap naturally on '+path);
+ }
+});
+
+test('first screen uses a real speaking prompt with one obvious entry, not a fake chat illustration',()=>{
+ const home=read('index.html');
+ assert.match(home,/<blockquote lang="en">Sorry, we're out of oat milk/);
+ assert.match(home,/まず1問、声に出してみる/);
+ assert.doesNotMatch(home,/<div class="orb"|<div class="floating"|<div class="mock"/);
+ assert.match(home,/練習はシンプルな3ステップ/);
+});
+
+test('optional choices stay available without crowding first-time exercise starts',()=>{
+ const sprint=read('reflex.html'),scenes=read('scenes.html'),freeze=read('freeze-breaker.html');
+ assert.match(sprint,/<details class="settings-details" id="practiceSettings">/);
+ assert.match(sprint,/id="level"/);
+ assert.match(sprint,/id="mode"/);
+ assert.match(scenes,/id="showAllScenes" aria-expanded="false"/);
+ assert.equal([...scenes.matchAll(/<button type="button" class="scene" data-scene=/g)].length,16);
+ assert.match(freeze,/id="reason-panel" hidden/);
+ assert.match(freeze,/id="start-button"/);
+});

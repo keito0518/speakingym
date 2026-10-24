@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#163d30">
+<meta name="theme-color" content="#faf9f6">
 <meta name="description" content="Speakingymの無料・場面を変える応用チェック。2つの異なる状況で同じ英会話スキルを試し、言えたか自己記録。追加AI費用なし。">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://speakingym.pages.dev/transfer.html">
@@ -33,14 +33,31 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
 .next-review{padding:14px;border:1px solid #bddcbe;border-radius:12px;font-weight:850;color:#225b3a;font-size:13px;background:#eff6eb}
 @media(max-width:520px){main{padding:31px 15px 55px}.board{border-radius:18px}.feature-grid{grid-template-columns:1fr;gap:7px}.result-actions{grid-template-columns:1fr}.situation{padding:18px}.footer-controls{flex-direction:column}.footer-controls>*{width:100%}}
 .head .back{display:inline-flex;align-items:center;min-height:44px}
+/* The same quiet typography and spacing as the other free workouts. */
+:root{background:#faf9f6;color:#25372d;--green:#285547;--coral:#285547;--border:#e0e6dd}
+body{background:#faf9f6}header{background:#faf9f6;color:#2d4235;border-bottom:1px solid #e2e6dc}
+.head{padding:12px 19px}.logo b{color:#b8654f}.back{color:#3c5948}
+main{padding-top:32px}.kicker{color:#777e70;letter-spacing:.02em;font-weight:750;font-size:12px}
+h1{font-size:clamp(28px,4.1vw,40px);letter-spacing:-.025em;line-height:1.4;margin:10px 0 12px;text-wrap:pretty;line-break:strict}
+.lead{color:#647168;line-height:1.9;margin-bottom:20px}.board{border-radius:12px;box-shadow:none;padding:clamp(19px,4vw,28px)}
+.btn{border-color:#d3ded5;border-radius:8px;color:#2e5b46}.btn.primary,.btn.orange{background:#285547;border-color:#285547;color:white}
+.feature-grid{gap:12px}.feature-grid div{background:#f7f8f4;border-radius:6px;text-align:left;padding:10px 11px;color:#53685a;font-weight:750}
+.focus{background:#f7f8f4;border-radius:7px;color:#526956}.history{color:#466454}
+.situation{background:#f7f9f5;border:1px solid #dce7dc;border-left:3px solid #65836e;border-radius:9px;padding:19px}
+.question{font-size:clamp(21px,4.7vw,30px);font-weight:800;line-height:1.55;overflow-wrap:break-word;letter-spacing:-.02em}
+.scene,.statusline{color:#65796b;letter-spacing:.02em}.ending{background:#f7f9f5;color:#285547}.sample,.review-dashboard{background:#fafbf8;border-color:#dfe6dc;border-radius:9px}
+.review-metrics>div{border-radius:6px}.next-review{background:#f6f8f3;border-color:#d3dfd1;border-radius:7px}
+.insight{background:#f7f8f4;border-color:#65836e}.warning{background:#fdf4ec}
+h1,h2,h3,p{text-wrap:pretty;line-break:strict}
+@media(max-width:520px){main{padding:27px 17px 52px}.feature-grid{gap:4px}.feature-grid div{padding:8px 10px}.board{border-radius:10px}.situation{padding:16px}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
 </head>
 <body>
 <header><div class="head"><a href="./index.html" class="logo">speakin<b>gym.</b></a><a class="back" href="./reflex.html">← 60秒チャレンジへ</a></div></header>
 <main>
-<div class="kicker">SPEAKING TRANSFER / TWO SITUATIONS</div>
-<h1>同じ伝え方を、<br>別の場面でも使える？</h1>
+<div class="kicker">別の場面で言い直す</div>
+<h1>同じ伝え方を、別の場面でも使える？</h1>
 <p class="lead">同じ会話の力を、異なる2つの場面で試す。答えを見ずに話してから、まとめて比べよう。</p>
 <div class="board">
 <section id="introPane" aria-label="応用チェックの設定">
@@ -80,7 +97,7 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
  <button class="btn wide" id="cancelPractice" type="button">今回はここまで（記録せず戻る）</button>
 </section>
 <section id="endPane" aria-label="応用チェックの振り返り" hidden>
- <div class="statusline">TWO SITUATIONS COMPLETE</div>
+ <div class="statusline">2つの場面が終了しました</div>
  <h2>2つの場面を振り返ろう</h2>
  <p class="skill" id="endSkill"></p>
  <div class="ending" id="endResult"></div>

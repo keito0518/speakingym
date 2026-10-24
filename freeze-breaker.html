@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#173d30">
+<meta name="theme-color" content="#faf9f6">
 <meta name="description" content="英語が出てこない瞬間を練習に変える。Speakingymのフリーズ克服ジム。予想外の一言→会話の立て直し→条件を変えた再挑戦を無料で練習。">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://speakingym.pages.dev/freeze-breaker.html">
 <meta property="og:type" content="website"><meta property="og:title" content="無料フリーズ克服ジム | Speakingym">
 <meta property="og:description" content="予想外の英語に詰まったときの切り返しを無料で何度でも練習。AI利用回数を消費しません。">
 <meta property="og:url" content="https://speakingym.pages.dev/freeze-breaker.html">
-<title>FREEZE BREAKER｜フリーズ克服ジム | Speakingym</title>
+<title>会話の立て直し練習 | Speakingym</title>
 <style>
 :root{font:15px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#183c2e;background:#f6f8f3}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px}button,select,textarea{font:inherit}button,select{min-height:44px}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.5;cursor:not-allowed}a{color:#226040}button:focus-visible,a:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #f38e69;outline-offset:3px}
@@ -19,19 +19,47 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
 [hidden]{display:none!important}@media(max-width:720px){.layout{grid-template-columns:1fr}.hero{padding:24px 20px}.card{padding:18px}.reason-grid{grid-template-columns:1fr}.header{padding:14px 16px}.header nav{gap:9px;font-size:11px}main{padding:15px 13px 56px}.hero h1{font-size:34px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .control-row .button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;text-decoration:none}
 .onboarding{background:#f1f8ec;border:1px solid #cfe4cd;border-radius:13px;padding:15px 17px;margin-bottom:16px}.onboarding strong{display:block;color:#22573e;font-size:15px}.onboarding ol{padding-left:21px;margin:8px 0 0;font-size:13px}.onboarding li{margin:4px 0}.scene-options{margin-top:13px;border-top:1px solid #e2eae0;padding-top:12px}.scene-options summary{font-weight:850;color:#29573e;cursor:pointer;padding:6px 0}.scene-options p{margin:5px 0;font-size:12px}.start-main{width:100%;justify-content:center;font-size:17px;padding:15px}.response-choice{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 8px}.response-choice .button{flex:1 1 190px;justify-content:center}.reason-panel{border-top:1px solid #dce8d9;margin-top:18px;padding-top:17px}.reason-panel h3{margin-bottom:7px}.rescue-meaning{font-size:14px;color:#345a40;margin:6px 0}.mission-way{color:#2b6046;font-weight:800;background:#edf6ea;border-radius:10px;padding:10px 13px;margin:14px 0}.question blockquote{white-space:pre-wrap}
+/* Calm, readable exercise surface shared with the simplified homepage. */
+:root{color:#24342b;background:#faf9f6;line-height:1.75}
+body{background:#faf9f6}header{background:#faf9f6;color:#253b2f;border-bottom:1px solid #e2e6dc}
+.header{max-width:1010px;padding:12px 20px}.brand{color:#2c4235;letter-spacing:-.04em}.brand span{color:#b8654f}
+.header nav a{color:#3b5b48;font-size:12px}
+main{max-width:1010px;padding:34px 20px 62px}
+.hero{border:0;border-radius:0;background:transparent;padding:0;overflow:visible}.hero:after{content:none}
+.kicker{letter-spacing:.025em;color:#777e70;font-size:12px;font-weight:750}
+.hero h1{font-size:clamp(29px,4.3vw,43px);letter-spacing:-.03em;line-height:1.35;margin:12px 0 9px;max-width:21em;text-wrap:pretty;line-break:strict}
+.hero p{color:#5f6c62;max-width:58em;font-size:14px;line-height:1.9}
+.pill-row{margin-top:12px;gap:6px}.pill{background:transparent;color:#607368;border:0;border-right:1px solid #cdd9cc;border-radius:0;padding:0 10px 0 0;font-weight:650}.pill:last-child{border:0}
+.notice{border:0;border-top:1px solid #e0e5dc;border-bottom:1px solid #e0e5dc;border-radius:0;margin:20px 0 0;padding:9px 0;background:transparent;color:#748076;font-size:11px}
+.notice details{margin-top:5px}.notice summary{cursor:pointer}
+.layout{grid-template-columns:minmax(0,1fr) 275px;gap:22px;margin-top:24px}
+.card{background:#fff;border-color:#e2e7de;border-radius:12px;padding:23px;margin-bottom:17px;box-shadow:none}.card h2{font-size:21px;letter-spacing:-.025em}.card h3{font-size:17px}
+.onboarding{background:#f7f8f3;border:0;border-radius:8px;padding:14px 17px;margin:14px 0 19px}.onboarding strong{font-size:13px;color:#355442}.onboarding ol{display:grid;gap:2px;color:#52695b}
+.button{border-color:#cedbcf;border-radius:8px;color:#315746;background:#fff;font-weight:800;padding:11px 14px}
+.button.primary,.button.orange{background:#285547;border-color:#285547;color:white}.response-choice .button.orange{background:#f4f6f0;color:#2c5542;border-color:#bccfc0}
+.start-main{font-size:15px;padding:12px}.scene-options{margin-top:18px}.scene-options summary{font-size:13px}
+.question{background:#f7f9f4;border:1px solid #dfe8de;border-left:3px solid #65836e;border-radius:8px;padding:19px}.question blockquote{font-size:clamp(20px,3.2vw,26px);line-height:1.55;letter-spacing:-.02em}
+.speaker,.stage{letter-spacing:.015em;color:#54725d;font-size:11px}.mission-way{background:transparent;border-left:3px solid #b6cab8;border-radius:0;padding:6px 13px;color:#496552}
+.reason-grid{gap:9px}.reason-button{border-radius:8px;font-weight:750;background:#fff;min-height:58px}.reason-panel{border-color:#e0e7dc}
+.prompt-help{background:#f7f9f4;border:1px solid #dfe8db;border-radius:8px}.rescue-line{color:#2b5943}.rescue-meaning{color:#58715d}
+.stat{background:#f6f7f3;border-radius:8px}.stat strong{color:#355747}.hint{background:#f7f8f4;border:1px solid #e0e7dc;border-radius:8px}
+.cta{border-radius:8px;background:#285547}.frame-note,.small{color:#697b6e}.footer{color:#879288}
+h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
+@media(max-width:770px){main{padding:28px 17px 52px}.header{padding:12px 17px}.header nav{gap:11px}.header nav a:last-child{display:none}.layout{grid-template-columns:minmax(0,1fr);gap:0;margin-top:19px}.card{padding:19px}.hero h1{font-size:clamp(28px,6.8vw,36px)}.notice{margin-top:15px}.onboarding{padding:12px 15px}.response-choice .button{flex-basis:145px}}
+@media(max-width:390px){.header nav a:first-child{display:none}.hero h1{font-size:28px}.card h2{font-size:19px}.reason-grid{grid-template-columns:1fr}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
 </head>
 <body>
-<header><div class="header"><a class="brand" href="./index.html">speakin<span>gym.</span></a><nav><a href="./reflex.html">60秒チャレンジ</a><a href="./scenes.html">AI会話</a><a href="./plans.html">料金</a></nav></div></header>
+<header><div class="header"><a class="brand" href="./index.html">speakin<span>gym.</span></a><nav><a href="./index.html">ホーム</a><a href="./reflex.html">60秒チャレンジ</a><a href="./account.html">マイページ</a></nav></div></header>
 <main>
 <section class="hero" aria-labelledby="page-title">
- <div class="kicker">FREEZE BREAKER · CONVERSATION REPAIR GYM</div>
- <h1 id="page-title">英語で固まったとき、<br>次のひと言を出す練習。</h1>
- <p>相手の英語に返してみる。言葉が止まったら、切り返しを覚えて、すぐ再挑戦。実際の会話で困った瞬間を想定した、短い練習です。</p>
- <div class="pill-row"><span class="pill">無料で何度でも</span><span class="pill">AI利用回数を消費しない</span><span class="pill">声に出して練習</span><span class="pill"><span id="scene-count">7</span>場面の予想外の会話</span></div>
+ <div class="kicker">会話の立て直し練習</div>
+ <h1 id="page-title">英語で詰まったとき、どう返す？</h1>
+ <p>相手のひと言に、声に出して返してみよう。言えなかったら使える表現を確認して、もう一度試せます。</p>
+ <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
-<div class="notice"><strong>この練習は無料・録音なし。</strong> 画面の英文を読んで声に出し、できたか自分で選ぶだけ。<details><summary>採点と記録について</summary><p>このジムはシナリオ型の自主練習です。AIによる発音・正誤の採点は行いません。入力した英文・声・録音は保存・送信しません。自己評価の復習記録はこの端末のみです。</p></details></div>
+<div class="notice">声に出して練習するだけ。録音はしません。<details><summary>採点と記録について</summary><p>このジムはシナリオ型の自主練習です。AI利用回数を消費しない練習で、発音・正誤の自動採点は行いません。入力した英文・声・録音は保存・送信しません。自己評価の復習記録はこの端末のみです。</p></details></div>
 <section class="card" id="imported-ai-cue" hidden aria-labelledby="imported-ai-title" style="border:2px solid #f0b390;background:#fffdf9;margin-top:20px">
  <div class="kicker">YOUR REAL FREEZE MOMENT · FROM AI ROLEPLAY</div>
  <h2 id="imported-ai-title">さっき言葉が出なくなった、あの質問</h2>
@@ -44,7 +72,7 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
  <div>
  <section class="card" aria-labelledby="choose-title">
   <h2 id="choose-title">まずは1問、会話をしてみよう</h2>
-  <div class="onboarding"><strong>やることは、これだけ。</strong><ol><li>相手の英文を見て、英語でひと言返す</li><li>「返せた／固まった」を選ぶ</li><li>固まったら切り返しを練習して、次の質問に挑戦</li></ol></div>
+  <div class="onboarding"><strong>練習の流れ</strong><ol><li>英文を見てひと言返す</li><li>「返せた／固まった」を選ぶ</li><li>詰まったらヒントを見て、別の質問に挑戦する</li></ol></div>
   <button class="button primary start-main" id="start-button" type="button">▶ さっそく1問やってみる</button>
   <details class="scene-options"><summary>場面を変える・復習する（任意）</summary>
    <p>初回は自動でおすすめの場面を選びます。練習したい場面があれば変更できます。</p>
@@ -61,7 +89,7 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
   <div id="step-start">
    <p class="small" id="context"></p>
    <p class="meta" id="goal"></p>
-   <div class="question"><div class="speaker">相手から予想外の質問</div>
+   <div class="question"><div class="speaker">相手のひと言</div>
     <blockquote lang="en" id="dialogue"></blockquote>
     <div class="control-row"><button class="button muted" id="speak-dialogue" type="button">▶ 英語を聞く</button></div>
     <details><summary>意味を確認する</summary><p id="translation"></p></details>
@@ -114,8 +142,8 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
   </div>
   <p class="small" id="feedback" role="status" aria-live="polite"></p>
  </section>
- <section class="card" id="result" hidden aria-labelledby="result-title">
-  <div class="kicker">TRAINING COMPLETE</div>
+  <section class="card" id="result" hidden aria-labelledby="result-title">
+  <div class="kicker">練習終了</div>
   <h2 id="result-title"></h2>
   <p id="result-detail"></p>
   <p class="meta" id="result-schedule"></p>
@@ -130,7 +158,7 @@ main{max-width:1030px;margin:auto;padding:27px 18px 85px}.hero{border-radius:23p
  </div>
  <aside>
   <section class="card" aria-labelledby="record-title">
-   <h2 id="record-title">あなたのリベンジ記録</h2>
+   <h2 id="record-title">これまでの練習</h2>
    <div class="stat-grid">
     <div class="stat"><strong id="stat-attempts">0</strong><small>挑戦回数</small></div>
     <div class="stat"><strong id="stat-recovered">0</strong><small>ヒントなしで返せた記録</small></div>

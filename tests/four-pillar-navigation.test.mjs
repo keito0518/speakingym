@@ -7,17 +7,17 @@ const file=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const home=file('index.html'),account=file('account.html'),
  review=file('phrasebook.html'),plans=file('plans.html'),sprint=file('reflex.html');
 
-test('four and only four canonical learning workout cards form the top-level product',()=>{
- assert.match(home,/FOUR CONNECTED WORKOUTS/);
+test('four and only four learning routes remain, presented as a plain numbered list',()=>{
+ assert.match(home,/やってみたい練習を選ぶ/);
  const block=home.match(/<section class="wrapper" id="workouts">([\s\S]*?)<section class="wrapper dashboard"/)?.[1];
  assert.ok(block,'main workout section');
  const cards=[...block.matchAll(/<(?:section|a) class="workout(?: [^"]+)?"/g)];
  assert.equal(cards.length,4,'exactly one card per canonical workout');
- const positions=['./reflex.html','./freeze-breaker.html','./phrasebook.html','./scenes.html']
+ const positions=['./freeze-breaker.html','./reflex.html','./phrasebook.html','./scenes.html']
   .map(path=>block.indexOf('href="'+path+'"'));
  assert.ok(positions.every(index=>index>=0)&&positions.every((index,i)=>i===0||index>positions[i-1]),
-  'sprint and recovery appear before review, with AI as an optional last workout');
- assert.match(block,/04 \/ OPTIONAL AI PRACTICE/);
+  'conversation recovery precedes sprint and review, with AI as an optional last workout');
+ assert.match(block,/04 · ログインが必要/);
  for(const dest of ['./scenes.html','./reflex.html','./freeze-breaker.html','./phrasebook.html']){
   assert.match(block,new RegExp('href="'+dest.replaceAll('.','\\.')+'"'));
  }

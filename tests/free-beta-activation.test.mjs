@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync, existsSync} from 'node:fs';
 
 const page=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
-test('first-time guide offers a one-question speaking demo and a login-free sprint fallback',()=>{
+test('first-time home immediately offers a one-question speaking demo and optional sprint',()=>{
  const html=page('index.html');
  const guide=html.match(/<section class="start-guide"[^>]*>([\s\S]*?)<\/section>/)?.[1];
  assert.ok(guide);
- assert.match(guide,/<a class="btn primary" href="\.\/freeze-breaker\.html" data-sg-cta="freeze">1問だけ試してみる/);
- assert.match(guide,/<a class="btn" href="\.\/reflex\.html">60秒の腕試しもできる/);
+ assert.match(html,/<a class="btn primary" href="\.\/freeze-breaker\.html" data-sg-cta="freeze">まず1問、声に出してみる/);
+ assert.match(html,/<a class="btn secondary-link" href="\.\/reflex\.html" data-sg-cta="sprint">60秒チャレンジはこちら/);
+ assert.match(guide,/練習はシンプルな3ステップ/);
  assert.match(html,/60秒チャレンジはログイン不要・回数制限なし/);
  assert.doesNotMatch(guide,/stripe|checkout|Googleログインが必須/);
 });

@@ -35,8 +35,22 @@ const fs=require('node:fs');
    }
    await page.goto('http://127.0.0.1:8765/index.html');
    assert.equal(await page.locator('#workouts .workouts > .workout').count(),4);
+   assert.equal(await page.locator('.hero h1 br').count(),0,'hero must wrap naturally on narrow screens');
+   assert.equal(await page.locator('.orb,.floating,.mock').count(),0,'fake chat and decorative gradient artwork removed');
+   assert.equal(await page.locator('.demo-card blockquote').count(),1,'home demonstrates a real exercise question');
    for(const target of ['reflex.html','freeze-breaker.html','phrasebook.html','scenes.html'])
     assert.ok(await page.locator('#workouts a[href="./'+target+'"]').count()>0);
+   await page.goto('http://127.0.0.1:8765/scenes.html');
+   assert.equal(await page.locator('#scenes .scene:visible').count(),4,'new learners see only four starter scenes');
+   await page.locator('#showAllScenes').click();
+   assert.equal(await page.locator('#scenes .scene:visible').count(),16,'remaining scenes are discoverable');
+   await page.locator('#showAllScenes').click();
+   assert.equal(await page.locator('#scenes .scene:visible').count(),4,'collapse back to starter scenes');
+   await page.goto('http://127.0.0.1:8765/reflex.html');
+   assert.equal(await page.locator('#practiceSettings').evaluate(el=>el.open),false);
+   await page.locator('#practiceSettings summary').click();
+   assert.equal(await page.locator('#mode').isVisible(),true);
+   await page.goto('http://127.0.0.1:8765/index.html');
    await page.evaluate(()=>{
     localStorage.removeItem('speakingym-account-owner-v1');
     window.speakingymAccount={isLoggedIn:()=>false,getUid:()=>null};

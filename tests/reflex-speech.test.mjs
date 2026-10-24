@@ -257,9 +257,11 @@ test("saved phrase book supports hide, reveal, audio replay and delete independe
  assert.equal(JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1")).length,1);
 });
 
-test("sprint start header is a branded 1-minute workout rather than a bare 60 badge",()=>{
- assert.match(html,/1 MINUTE <em>SPRINT<\/em>/);
- assert.match(html,/QUICK REACTION WORKOUT/);
+test("sprint start screen uses plain instructions with optional advanced settings",()=>{
+ assert.match(html,/<strong>60秒チャレンジ<\/strong>/);
+ assert.match(html,/今日のウォームアップ/);
+ assert.match(html,/<details class="settings-details" id="practiceSettings">/);
+ assert.match(html,/id="start"[^>]*>60秒始める/);
  assert.doesNotMatch(html,/class="time-icon"[^>]*>60<\/div>/);
  assert.match(html,/id="openPhrases"/);
  assert.match(html,/id="phrasesPane"/);

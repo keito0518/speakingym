@@ -48,81 +48,108 @@
 .phrase-jump{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 12px;background:#f3f7ef;border:1px solid #d8e6d5;border-radius:10px;color:#25563f;font-size:12px;font-weight:850}.phrase-jump:hover{text-decoration:underline}.phrase-jump span{margin-left:auto;background:#d7e9d8;color:#22533b;border-radius:20px;min-width:24px;text-align:center;font-size:11px;padding:1px 5px}
 .workouts .scene-workout{grid-column:auto;min-height:0}.workout-freeze{background:#eaf4e7;border:1px solid #d3e6d1;color:#244e37}.workout-review{background:#f3eefb;border:1px solid #e4dcee;color:#423553}.workout-freeze .chip,.workout-review .chip{background:#ffffff8a;border-color:#d4dfd3}@media(max-width:800px){.workouts .scene-workout{grid-column:auto}}
 .scene-workout{background:#fff;border:1px solid var(--line);min-height:0}.scene-previews{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:18px}.scene-preview{display:flex;flex-direction:column;gap:7px;padding:14px 11px;border:1px solid #dce6d8;border-radius:14px;background:#f5f8f0}.scene-preview:nth-child(2){background:#fff4e9}.scene-preview:nth-child(3){background:#eef5f6}.scene-preview>span{font-size:24px}.scene-preview small{font-size:11px;line-height:1.6}.scene-preview b{font-size:11px;margin-top:auto}.scene-preview:hover{border-color:#568268}@media(max-width:600px){.scene-previews{grid-template-columns:1fr}.scene-preview{padding:16px}.scene-preview>span{font-size:22px}}
+/* Editorial, task-first UI. The exercises—not decorative gradients or mock chats—lead. */
+:root{--ink:#24302b;--muted:#63716a;--bg:#faf9f6;--green:#285547;--line:#e2e4dd;--orange:#285547}
+body{background:var(--bg)}.site-head{height:68px;background:var(--bg)}
+.head-inner{max-width:1060px}.logo{font-size:23px;letter-spacing:-1px}.logo span{color:#b8654f}
+.nav{gap:23px;font-size:13px}.wrapper{max-width:1060px}
+.hero{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);padding-top:56px;padding-bottom:51px;gap:42px}
+.eyebrow{font-size:12px;letter-spacing:.03em;color:#6c685c;text-transform:none}
+.hero h1{font-size:clamp(36px,4.2vw,56px);line-height:1.32;letter-spacing:-.035em;margin:15px 0 20px;max-width:13em;text-wrap:pretty;word-break:normal;line-break:strict}
+.hero h1 em{color:#285547}.lead{font-size:15px;color:#526159;line-height:1.9;max-width:35em}
+.cta-row{align-items:center;margin:27px 0 12px}.btn{border-radius:9px;font-weight:750;transition:background .15s ease}.btn:hover{transform:none;box-shadow:none;background:#eaf1ec}.btn.primary:hover{background:#1c4438;color:#fff}
+.btn.secondary-link{border:0;background:transparent;padding-left:4px;padding-right:4px;color:#285547;text-decoration:underline;text-underline-offset:4px}
+.smallline{font-size:12px;font-weight:500;color:#69776d;line-height:1.7}
+.showcase{min-height:0;display:block}.demo-card{width:100%;border:1px solid #d7ded5;border-radius:13px;background:#fff;padding:27px;box-shadow:0 8px 22px #25312708}
+.demo-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:9px;padding-bottom:17px;border-bottom:1px solid var(--line);font-size:12px;font-weight:750;color:#65776a}
+.demo-speaker{font-size:13px;color:#576860;margin:21px 0 9px}.demo-card blockquote{font-size:clamp(21px,2.3vw,28px);font-weight:760;line-height:1.45;letter-spacing:-.02em;margin:0 0 18px;overflow-wrap:break-word;color:#243b31}
+.demo-prompt{font-size:15px;font-weight:800;margin:15px 0 5px}.demo-help{font-size:13px;color:#68786e;line-height:1.8;margin:0 0 19px}
+.demo-action{display:inline-flex;gap:9px;align-items:center;color:#285547;font-size:14px;font-weight:800;text-decoration:underline;text-underline-offset:4px;min-height:44px}
+.start-guide{max-width:1060px;margin-bottom:56px}.start-guide-inner{padding:24px 0;background:transparent;border:0;border-top:1px solid #d8ded6;border-bottom:1px solid #d8ded6;border-radius:0}
+.start-guide h2{font-size:22px;letter-spacing:-.02em;margin-bottom:17px}.start-steps{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.start-step{padding:0;background:transparent;border-radius:0;font-size:13px;color:#617068}.start-step strong{font-size:14px;color:#2d4238;font-weight:800;margin-bottom:5px}
+.start-guide-note{margin:15px 0 0;font-size:11px;color:#79847b}
+.section-top{margin-bottom:19px}.section-top h2{font-size:clamp(23px,3vw,30px);line-height:1.4;letter-spacing:-.025em}
+.workouts{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--line)}
+.workouts .workout,.workouts .scene-workout{display:grid;grid-template-columns:45px minmax(0,1fr) 190px;grid-template-rows:auto auto;gap:3px 18px;align-items:center;min-height:0;padding:22px 4px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;color:var(--ink);overflow:visible}
+.workout-light:after{content:none}.workout .tag{grid-column:1;grid-row:1 / 3;align-self:start;border:0;padding:2px 0;color:#8a958a;font-size:12px;opacity:1}
+.workout h3{grid-column:2;grid-row:1;margin:0;font-size:19px;line-height:1.4;letter-spacing:-.02em}
+.workout p{grid-column:2;grid-row:2;margin:0;max-width:100%;font-size:13px;line-height:1.7;color:#647269}
+.workout .workout-link{grid-column:3;grid-row:1 / 3;align-self:center;justify-self:end;font-size:13px;font-weight:800;margin:0;padding:10px 0;color:#285547;white-space:normal;text-align:right}
+.workout:hover{background:#f0f3ed}.workout .chip-row{display:none}
+.dashboard{padding-top:55px;padding-bottom:65px}.due-card{background:#fff;border-color:var(--line);border-radius:12px;padding:21px}.due-card h3{font-size:18px}
+.review-card,.habit-card{min-height:0;border-radius:12px;padding:22px}.rewrite-box,.stat{background:#f6f7f2}
+.concept{background:#f1f2ed;border-color:#e5e7df}.concept h2{font-size:23px}
+h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
+@media(max-width:850px){.hero{grid-template-columns:1fr;padding-top:40px;gap:26px;padding-bottom:35px}.hero h1{font-size:clamp(35px,7vw,50px)}.showcase{max-width:660px}.start-guide{margin-bottom:45px}.start-steps{gap:17px}.workout{min-height:0!important}}
+@media(max-width:650px){.site-head{height:62px}.head-inner,.wrapper,.start-guide{padding-left:18px;padding-right:18px}.nav{gap:13px;font-size:12px}.nav a:nth-child(2){display:inline}.nav a:last-child{white-space:nowrap}.hero{padding-top:36px}.hero h1{font-size:clamp(31px,8.2vw,42px);letter-spacing:-.03em;line-height:1.36}.lead{font-size:14px}.cta-row{gap:5px}.cta-row .btn.primary{flex-basis:100%}.cta-row .btn.secondary-link{flex-basis:auto;justify-content:flex-start}.demo-card{padding:21px}.demo-card blockquote{font-size:23px}.start-guide-inner{padding:23px 0}.start-steps{grid-template-columns:1fr;gap:14px}.start-step strong{margin-bottom:2px}.workouts .workout,.workouts .scene-workout{grid-template-columns:28px minmax(0,1fr);grid-template-rows:auto auto auto;gap:4px 10px;padding:18px 2px}.workout .tag{grid-column:1;grid-row:1/4;font-size:11px}.workout h3{grid-column:2;grid-row:1;font-size:17px}.workout p{grid-column:2;grid-row:2;font-size:12px}.workout .workout-link{grid-column:2;grid-row:3;justify-self:start;text-align:left;min-height:38px;padding:8px 0}.dashboard{padding-top:42px;padding-bottom:42px}.section-top h2{font-size:24px}.concept{padding:30px 0}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
 <body>
 <header class="site-head"><div class="head-inner">
  <a class="logo" href="./index.html" aria-label="Speakingym ホーム">speakin<span>gym.</span></a>
- <nav class="nav" aria-label="メインメニュー"><a href="#workouts">練習メニュー</a><a href="./phrasebook.html">マイ復習帳</a><a href="./account.html">マイページ ↗</a></nav>
- <span class="preview">FREE BETA</span>
+ <nav class="nav" aria-label="メインメニュー"><a href="#workouts">練習を選ぶ</a><a href="./phrasebook.html">復習</a><a href="./account.html">マイページ</a></nav>
 </div></header>
 <main>
 <section class="wrapper hero">
  <div>
-  <div class="eyebrow">FROM STUCK TO SPOKEN.</div>
-  <h1>言えなかったひと言を、<br><em>次は言える</em>ひと言に。</h1>
-  <p class="lead">英語は知っているのに、急に話しかけられると固まる。<br>Speakingymは、その瞬間を練習に変える場所。「返せなかった」で終わらず、切り返して、もう一度。次は違う場面でも試そう。</p>
+  <div class="eyebrow">英会話で言葉が出なくなる人へ</div>
+  <h1>言えなかったひと言を、<em>次は言えるように。</em></h1>
+  <p class="lead">英語を知っているのに、とっさに言葉が出ない。そんな場面を短い練習に変えよう。相手の質問に答え、詰まったら切り返しを覚えて、もう一度話してみる。</p>
   <div class="cta-row">
-   <a class="btn primary" href="./freeze-breaker.html" data-sg-cta="freeze">会話が止まる瞬間を体験する <span aria-hidden="true">↗</span></a>
-   <a class="btn" href="./reflex.html" data-sg-cta="sprint">60秒で瞬発力を試す <span aria-hidden="true">→</span></a>
+   <a class="btn primary" href="./freeze-breaker.html" data-sg-cta="freeze">まず1問、声に出してみる <span aria-hidden="true">→</span></a>
+   <a class="btn secondary-link" href="./reflex.html" data-sg-cta="sprint">60秒チャレンジはこちら</a>
   </div>
-  <p class="smallline">無料ベータ版。60秒チャレンジはログイン不要・回数制限なし。AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで。Proの一般向け有料登録はまだ開始していません。</p>
+  <p class="smallline">登録不要で始められます。会話の立て直しと60秒チャレンジは無料です。</p>
  </div>
- <div class="showcase" aria-label="60秒の瞬発力トレーニングのイメージ">
-  <div class="orb" aria-hidden="true"></div>
-  <div class="mock">
-   <div class="mock-head"><span class="avatar" aria-hidden="true">⚡</span><div><div class="mock-name">60秒チャレンジ <span class="micro-label">· Sprint</span></div><div class="mock-note">QUICK REACTION · 1 MINUTE</div></div></div>
-   <div class="status-bubble">「急に予定が変わっちゃった」と英語で言うなら？</div>
-   <div class="status-bubble user-bubble">My plans suddenly changed.</div>
-   <div class="status-bubble">言えた？ 詰まった？ 自分で記録して次の練習へ。</div>
-   <div class="mock-footer"><div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="mock-send">SPEAK →</div></div>
+ <aside class="showcase" aria-label="練習の一例">
+  <div class="demo-card">
+   <div class="demo-top"><span>練習の一例</span><span>カフェでの会話</span></div>
+   <p class="demo-speaker">店員が突然、こんなことを言ったら？</p>
+   <blockquote lang="en">Sorry, we're out of oat milk. Would almond milk be okay?</blockquote>
+   <p class="demo-prompt">あなたなら、英語でどう返す？</p>
+   <p class="demo-help">言えなくても大丈夫。練習では、使える切り返しから一緒に考えます。</p>
+   <a href="./freeze-breaker.html" class="demo-action">この場面で練習する <span aria-hidden="true">→</span></a>
   </div>
- <div class="floating">「言えなかった」で終わらせない</div>
- </div>
+ </aside>
 </section>
 <section class="start-guide" aria-labelledby="start-guide-title">
  <div class="start-guide-inner">
-  <h2 id="start-guide-title">「英語が止まった」を、こうやって練習する。</h2>
+  <h2 id="start-guide-title">練習はシンプルな3ステップ</h2>
   <div class="start-steps">
    <div class="start-step"><strong>① 相手の英語に返してみる</strong>カフェ・仕事・旅行の会話を想定。声に出してひと言返そう。</div>
-   <div class="start-step"><strong>② 固まったら、その理由を選ぶ</strong>聞き取れなかった？ 単語が出なかった？ あなたの詰まり方を振り返る。</div>
-   <div class="start-step"><strong>③ 切り返しを覚えて、すぐ再挑戦</strong>聞き返す・時間をもらうなど、会話を止めない一言を声に出す。</div>
-   <div class="start-step"><strong>④ 別の場面でも使えるか試す</strong>違う会話で応用チェック。次は翌日・3日後・7日後に自分で復習。</div>
+   <div class="start-step"><strong>② 詰まったら、切り返しを知る</strong>聞き返す・考える時間をもらうなど、自分に合うひと言を声に出す。</div>
+   <div class="start-step"><strong>③ 別の場面でもう一度</strong>言えなかった表現を別の質問で試し、後日もう一度復習する。</div>
   </div>
-  <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn primary" href="./freeze-breaker.html" data-sg-cta="freeze">1問だけ試してみる →</a><a class="btn" href="./reflex.html">60秒の腕試しもできる ↗</a></div>
-  <p class="start-guide-note">※ AI英会話は無料でも利用回数に制限があります。音声認識はブラウザや端末によって使えない場合があり、文字入力でも練習できます。</p>
+  <p class="start-guide-note">発話は自己評価方式です。AIによる発音・正誤の自動採点ではありません。</p>
  </div>
 </section>
 <section class="wrapper" id="workouts">
- <div class="section-top"><div class="eyebrow">FOUR CONNECTED WORKOUTS</div><h2>「言えなかった」を、そのままにしない。</h2><p>まずは会話が止まる瞬間を練習。60秒はウォームアップ、復習は定着、AI英会話は必要なときだけ。</p></div>
+ <div class="section-top"><div class="eyebrow">メニュー</div><h2>やってみたい練習を選ぶ</h2><p>迷ったら、上の「まず1問」から始めてみよう。</p></div>
  <div class="workouts">
-    <a class="workout workout-light" href="./reflex.html" aria-label="60秒スプリントを始める">
-   <span class="tag">01 / QUICK REACTION</span>
-   <h3>60秒で、<br>口を動かす。</h3>
-   <p>「聞き返す」「時間を稼ぐ」「丁寧に断る」。会話が止まりそうな瞬間を想定した、短い切り返しドリル。基本はGemini不要、詳しいAI先生は希望するときだけ。</p>
-   <div class="chip-row"><span class="chip">1分で完了</span><span class="chip">切り返し特化</span><span class="chip">基本練習はGemini不要</span></div>
-   <span class="workout-link">瞬発力スプリントへ →</span>
-  </a>
   <a class="workout workout-freeze" href="./freeze-breaker.html" aria-label="フリーズ克服ジムを始める">
-   <span class="tag">02 / FREEZE BREAKER</span>
-   <h3>会話が止まったら、<br>どう返す？</h3>
-   <p>相手の質問に答えてみる → 詰まったら理由を選ぶ → 切り返してもう一問。操作は画面の案内どおり進むだけ。</p>
-   <div class="chip-row"><span class="chip">録音・登録なしで体験</span><span class="chip">追加Geminiなし</span></div>
-   <span class="workout-link">会話ストップ脱出を試す →</span>
+   <span class="tag">01</span>
+   <h3>会話が止まったら、どう返す？</h3>
+   <p>予想外の英語にひと言返す。詰まったら切り返しを覚えて、すぐ次の質問に挑戦。</p>
+   <span class="workout-link">会話の立て直しを練習 →</span>
+  </a>
+  <a class="workout workout-light" href="./reflex.html" aria-label="60秒スプリントを始める">
+   <span class="tag">02</span>
+   <h3>60秒チャレンジ</h3>
+   <p>短い日本語のお題に、声に出して英語で返す。通勤中などの短時間練習に。</p>
+   <span class="workout-link">60秒チャレンジへ →</span>
   </a>
   <a class="workout workout-review" href="./phrasebook.html" aria-label="マイ復習帳を開く">
-   <span class="tag">03 / MY REVIEW</span>
-   <h3>言えなかった英語を、<br>自分のものに。</h3>
-   <p>60秒チャレンジやAI実践で保存した表現を一か所に。英語を隠し、声に出して確かめよう。</p>
-   <div class="chip-row"><span class="chip">まとめて保存</span><span class="chip">何度でも復習</span></div>
-   <span class="workout-link">マイ復習帳へ →</span>
+   <span class="tag">03</span>
+   <h3>保存した表現を復習する</h3>
+   <p>覚えたい英語をまとめ、英語を隠して思い出す練習ができる。</p>
+   <span class="workout-link">復習帳へ →</span>
   </a>
   <section class="workout scene-workout" aria-label="任意のAI実践英会話を始める">
-   <span class="tag">04 / OPTIONAL AI PRACTICE</span>
-   <h3>自由な会話は、<br>必要なときだけ。</h3>
-   <p>16のシーンから選んでAIと自由に練習する機能も残しています。ただし主役は、詰まる原因を見つけて反復する瞬発力トレーニング。AIは希望するときだけ使おう。</p>
-   <div class="chip-row"><span class="chip">16シーン</span><span class="chip">基礎・標準・応用</span><span class="chip">利用回数の制限あり</span></div>
-   <a class="workout-link" href="./scenes.html" data-sg-cta="ai">AI実践英会話へ（任意） ↗</a>
+   <span class="tag">04 · ログインが必要</span>
+   <h3>AIと自由に英会話する</h3>
+   <p>カフェや仕事など16場面で自由に会話。AI機能には利用回数の制限があります。</p>
+   <a class="workout-link" href="./scenes.html" data-sg-cta="ai">AI実践英会話へ（任意） →</a>
   </section>
   </div>
 </section>
@@ -156,7 +183,7 @@
  <a class="btn primary" href="./reflex.html">60秒から鍛える ↗</a>
 </div></section>
 </main>
-<footer class="footer">© Speakingym · 知ってる英語を、話せる英語に。　<a href="./account.html">マイページ</a>　<a href="./plans.html">利用プラン</a>　<a href="./scenes.html?scene=cafe">カフェでAI英会話</a>　<a href="./privacy.html">プライバシー</a>　<a href="./terms.html">利用条件</a>　<a href="./contact.html">お問い合わせ</a></footer>
+<footer class="footer"><p>無料ベータ版。60秒チャレンジはログイン不要・回数制限なし。AI英会話はGoogleログインが必要で、無料枠は1日5セッションまで。Proの一般向け有料登録はまだ開始していません。</p>© Speakingym　<a href="./account.html">マイページ</a>　<a href="./plans.html">利用プラン</a>　<a href="./scenes.html?scene=cafe">カフェでAI英会話</a>　<a href="./privacy.html">プライバシー</a>　<a href="./terms.html">利用条件</a>　<a href="./contact.html">お問い合わせ</a></footer>
 <script src="./analytics-events.js"></script>
 <script type="module" src="./home-dashboard.js"></script>
 <script type="module" src="./account-sync.js"></script>
