@@ -370,6 +370,17 @@ function onChanged(event){
  },350));
 }
 function initDashboard(){dashboard();}
+// The Firebase SDK may take a long time to download (or remain pending on a
+// restrictive network). An *unowned* local guest can still practise without
+// that SDK. Do not release the guest UI when a previous UID is stored: its
+// local records must remain masked until Firebase confirms the owner.
+function releaseUnownedGuestWhileAuthLoads(){
+ try{
+  if(user||localStorage.getItem(OWNER_KEY))return false;
+  notify();
+  return true;
+ }catch{return false}
+}
 async function start(){
  // Expose a narrow, non-privileged token getter for authenticated AI requests.
  // The Worker validates the token signature and decides the plan; clients cannot set Pro.
@@ -389,7 +400,8 @@ async function start(){
   if(document.visibilityState==="visible"&&user&&$("sg-plan-info"))void updateQuotaUi();
  });
  if(!configured){ready=false;refreshUi();return}
- status("Googleログインの準備中…");
+ const guestReleased=releaseUnownedGuestWhileAuthLoads();
+ status(guestReleased?"無料練習はすぐ使えるよ · Googleログインを準備中…":"Googleログインの準備中…");
  try{
   const root="https://www.gstatic.com/firebasejs/11.10.0/";
   const [appLib,authLib,dbLib]=await Promise.all([
