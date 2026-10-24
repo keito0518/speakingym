@@ -4,10 +4,10 @@
  * A "win" is a LEARNER SELF-REPORT, never a scored speech/fluency measurement.
  */
 export const FREEZE_REASONS=Object.freeze({
- misunderstood:Object.freeze({name:'相手の質問が聞き取れなかった',rescue:'Sorry, could you say that again more slowly?',hint:'まず「もう一度ゆっくり言ってください」と頼もう。'}),
- words:Object.freeze({name:'言いたい単語が出なかった',rescue:'What I mean is...',hint:'知っている単語を使って、別の言い方に変えよう。'}),
- surprise:Object.freeze({name:'予想外の返事で固まった',rescue:'Oh, I see. Could you give me a second?',hint:'焦らず数秒考える時間をつくって大丈夫。'}),
- unsure:Object.freeze({name:'どう返すのが自然かわからなかった',rescue:'Could you tell me what my options are?',hint:'選択肢を質問すれば、次の一言が出しやすくなる。'})
+ misunderstood:Object.freeze({name:'相手の質問が聞き取れなかった',rescue:'Sorry, could you say that again more slowly?',meaning:'すみません。もう一度ゆっくり言ってもらえますか？',hint:'まず「もう一度ゆっくり言ってください」と頼もう。'}),
+ words:Object.freeze({name:'言いたい単語が出なかった',rescue:'What I mean is...',meaning:'私が言いたいのは……（ここから知っている単語で続ける）',hint:'知っている単語を使って、別の言い方に変えよう。'}),
+ surprise:Object.freeze({name:'予想外の返事で固まった',rescue:'Oh, I see. Could you give me a second?',meaning:'なるほど。ちょっと考える時間をもらえますか？',hint:'焦らず数秒考える時間をつくって大丈夫。'}),
+ unsure:Object.freeze({name:'どう返すのが自然かわからなかった',rescue:'Could you tell me what my options are?',meaning:'どんな選択肢があるか教えてもらえますか？',hint:'選択肢を質問すれば、次の一言が出しやすくなる。'})
 });
 const scene=(id,name,icon,context,conversationLink,variations)=>Object.freeze({
  id,name,icon,context,conversationLink,
@@ -158,7 +158,10 @@ export function sceneAttempt(sceneId,raw){
 /** A recorded result means the learner says they spoke; it is not AI grading. */
 export function recordFreezeAttempt(raw,{sceneId,reason,saidIt,usedHint=false},when=new Date()){
  const p=normalizeFreezeProgress(raw);
- if(!IDS.has(sceneId)||!Object.hasOwn(FREEZE_REASONS,reason)||typeof saidIt!=='boolean'||typeof usedHint!=='boolean')return p;
+ // null means the learner answered the first prompt without freezing.
+ // In that path no freeze cause should be invented in their history.
+ if(!IDS.has(sceneId)||(reason!==null&&!Object.hasOwn(FREEZE_REASONS,reason))||
+    typeof saidIt!=='boolean'||typeof usedHint!=='boolean')return p;
  const day=freezeDay(when),previous=p.records[sceneId];
  const independent=saidIt&&!usedHint;
  const stage=independent?Math.min(4,(previous?.stage||0)+1):0;

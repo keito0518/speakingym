@@ -59,6 +59,17 @@ test('hints do not count as independent success but allow the learner to practis
  },date('2026-10-24T12:00:00+09:00'));
  assert.equal(p.records.hotel.recovered,1);
 });
+test('fluent first answer is recorded without inventing a freeze reason',()=>{
+ const when=date('2026-10-24T09:00:00+09:00');
+ const p=recordFreezeAttempt({}, {sceneId:'cafe',reason:null,saidIt:true,usedHint:false},when);
+ assert.equal(p.records.cafe.attempts,1);
+ assert.equal(p.records.cafe.recovered,1);
+ assert.equal(p.records.cafe.lastReason,null);
+ assert.ok(Object.values(p.records.cafe.reasonCounts).every(count=>count===0));
+ assert.equal(freezeSummary(p,when).topReason,null);
+ const bogus=recordFreezeAttempt(p,{sceneId:'cafe',reason:'not-a-reason',saidIt:true},when);
+ assert.deepEqual(bogus,p);
+});
 test('retry scenarios rotate dialogue and followups after each result',()=>{
  let p={},a=sceneAttempt('cafe',p);
  p=recordFreezeAttempt(p,{sceneId:'cafe',reason:'words',saidIt:false},date('2026-10-23T12:00:00+09:00'));

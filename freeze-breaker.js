@@ -50,6 +50,7 @@ function clearSession(){
  $('result').hidden=true;
  $('freeze-hint').hidden=true;
  $('transcript-disclaimer').hidden=true;
+ $('reason-panel').hidden=true;
 }
 function updateSummary(){
  const stats=freezeSummary(progress);
@@ -88,7 +89,7 @@ function showStage(stage){
  $('step-repair').hidden=stage!=='repair';
  $('step-retry').hidden=stage!=='retry';
  $('mission').hidden=stage==='start';
- const names={start:'1 / 3　予想外のひと言',repair:'2 / 3　会話を立て直す',retry:'3 / 3　もう一度言ってみる'};
+ const names={start:'1 / 3　予想外のひと言',repair:'2 / 3　会話を立て直す',retry:reason===null?'2 / 2　もうひと言返す':'3 / 3　もう一度言ってみる'};
  $('stage-name').textContent=names[stage]||'';
  $('mission-heading').textContent=attempt?.scene.name||'';
 }
@@ -126,6 +127,7 @@ function startMission(useImported=false){
  $('reply-note').value='';$('feedback').textContent='';
  $('result').hidden=true;$('freeze-hint').hidden=true;
  $('transcript-disclaimer').hidden=true;
+ $('reason-panel').hidden=true;
  $('context').textContent=useOriginal?'先ほどのAI実践英会話から選んだ質問だよ。':attempt.scene.context;
  $('dialogue').textContent=attempt.variation.ask;
  $('translation').textContent=attempt.variation.meaning;
@@ -142,13 +144,28 @@ function startMission(useImported=false){
  $('stage-name').textContent='1 / 3　予想外のひと言';
  $('mission').scrollIntoView?.({block:'start',behavior:'smooth'});
 }
+function markInstantAnswer(){
+ if(!attempt||phase!=='ask')return;
+ // An answered first question is not a freeze; don't fabricate a cause.
+ reason=null;
+ phase='repair';
+ showFollowup();
+ $('retry-heading').textContent='いいね！会話が続いたら、次は何と返す？';
+ $('feedback').textContent='1問目は返せたね。今度は少し違う質問に挑戦しよう。';
+}
+function markFrozen(){
+ if(!attempt||phase!=='ask')return;
+ $('reason-panel').hidden=false;
+ $('reason-panel').scrollIntoView?.({block:'nearest',behavior:'smooth'});
+}
 function chooseReason(id){
  if(!attempt||phase!=='ask'||!Object.hasOwn(FREEZE_REASONS,id))return;
  phase='repair';reason=id;
  const rescue=FREEZE_REASONS[id];
  $('reason-caption').textContent=rescue.hint;
  $('rescue-line').textContent=rescue.rescue;
- $('rescue-guide').textContent='この一言で、沈黙を会話に戻そう。';
+ $('rescue-meaning').textContent=rescue.meaning;
+ $('rescue-guide').textContent=rescue.hint;
  showStage('repair');
  $('feedback').textContent='今は完璧な英語でなくて大丈夫。まず会話をつなごう。';
 }
@@ -158,6 +175,7 @@ function showFollowup(){
  $('followup').textContent=attempt.followup;
  $('followup-hint').textContent=attempt.variation.examples[0];
  $('followup-hint-2').textContent=attempt.variation.examples[1];
+ $('retry-heading').textContent='さらに予想外のひと言が来た！';
  $('freeze-hint').hidden=true;
  $('feedback').textContent=attempt.imported?
   'ここからは実際の会話の続きではなく、別の想定返答での応用練習だよ。':
@@ -184,9 +202,10 @@ function finish(saidIt){
  window.speakingymAnalytics?.track('sg_freeze_self_report',{
   source:attempt.imported?'ai':'scripted',outcome:independently?'said_it':'not_yet'
  });
- $('result-title').textContent=independently?'リベンジ成功を記録！':'今日の詰まりは次の練習へ';
+ $('result-title').textContent=independently?(reason===null?'2問目も返せたね！':'言葉が止まっても、立て直せた！'):'今日の詰まりは次の練習へ';
  $('result-detail').textContent=independently?
-  'ヒントを見ずに返せた、と自己記録したよ。少し間隔を空けてもう一度挑戦しよう。':
+  (reason===null?'2つ目の質問にも返せた、と自己記録したよ。別の場面でも試してみよう。':
+   '最初は詰まっても、切り返した後にヒントなしで返せた、と自己記録したよ。'):
   'うまく出てこなくても大丈夫。明日、違う返答でもう一度挑戦しよう。';
  $('result-schedule').textContent='次の復習予定：'+record.due+'（日本時間）';
  $('result-origin').textContent=saved?'今回の練習結果をこの端末に保存しました。音声や入力文は保存していません。':
@@ -241,6 +260,8 @@ $('return-to-ai').addEventListener('click',()=>{
  window.location.assign('./scenes.html?scene='+encodeURIComponent(importedMoment.sceneId));
 });
 $('pick-recommendation').addEventListener('click',pickRecommended);
+$('instant-yes').addEventListener('click',markInstantAnswer);
+$('instant-froze').addEventListener('click',markFrozen);
 $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
 $('said-yes').addEventListener('click',()=>finish(true));

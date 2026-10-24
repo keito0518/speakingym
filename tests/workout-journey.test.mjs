@@ -6,10 +6,11 @@ const file=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const home=file('index.html'),sprint=file('reflex.html'),freeze=file('freeze-breaker.html');
 const transfer=file('transfer.html'),transferJs=file('transfer.js');
 
-test('beginner guide names the actual daily plan and distinguishes transfer reviews from saved phrases',()=>{
- assert.match(home,/60秒チャレンジ内の「今日の3ステップ」/);
- assert.match(home,/応用チェックでは違う場面で試し、翌日・3日後・7日後に復習/);
- assert.match(home,/保存表現はマイ復習帳へ/);
+test('beginner guide tells the rescue-first path and the transfer-review schedule',()=>{
+ assert.match(home,/① 相手の英語に返してみる/);
+ assert.match(home,/③ 切り返しを覚えて、すぐ再挑戦/);
+ assert.match(home,/違う会話で応用チェック。次は翌日・3日後・7日後に自分で復習/);
+ assert.match(home,/href="\.\/phrasebook\.html"/);
  assert.match(sprint,/詰まった理由を振り返る/);
  assert.match(sprint,/苦手を再挑戦/);
 });
