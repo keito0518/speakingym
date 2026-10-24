@@ -48,15 +48,16 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 @media(max-width:770px){main{padding:28px 17px 52px}.header{padding:12px 17px}.header nav{gap:11px}.header nav a:last-child{display:none}.layout{grid-template-columns:minmax(0,1fr);gap:0;margin-top:19px}.card{padding:19px}.hero h1{font-size:clamp(28px,6.8vw,36px)}.notice{margin-top:15px}.onboarding{padding:12px 15px}.response-choice .button{flex-basis:145px}}
 @media(max-width:390px){.header nav a:first-child{display:none}.hero h1{font-size:28px}.card h2{font-size:19px}.reason-grid{grid-template-columns:1fr}}
 </style>
+<link rel="stylesheet" href="./soft-neon.css">
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
 </head>
-<body>
+<body class="sg-soft-neon sg-freeze">
 <header><div class="header"><a class="brand" href="./index.html">speakin<span>gym.</span></a><nav><a href="./index.html">ホーム</a><a href="./reflex.html">60秒チャレンジ</a><a href="./account.html">マイページ</a></nav></div></header>
 <main>
 <section class="hero" aria-labelledby="page-title">
- <div class="kicker">会話の立て直し練習</div>
+ <div class="kicker">相手の英語 → 切り返し / 会話の立て直し</div>
  <h1 id="page-title">英語で詰まったら？</h1>
- <p>相手のひと言に、声に出して返してみよう。言えなかったら使える表現を確認して、もう一度試せます。</p>
+ <p>60秒チャレンジとは違い、ここでは相手が突然英語で話しかけてきます。聞き返し・確認・考える時間の取り方を、時間制限なしで練習できます。</p>
  <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
 <div class="notice">声に出して練習するだけ。録音はしません。<details><summary>採点と記録について</summary><p>このジムはシナリオ型の自主練習です。AI利用回数を消費しない練習で、発音・正誤の自動採点は行いません。入力した英文・声・録音は保存・送信しません。自己評価の復習記録はこの端末のみです。</p></details></div>
@@ -152,7 +153,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
    <button class="button orange" id="return-to-ai" type="button" hidden>↗ 元のAI場面でリベンジ</button>
    <button class="button muted" id="retry-scene" type="button">この場面でもう一度</button>
    <button class="button muted" id="try-another" type="button">次のミッションへ →</button>
-   <a class="button primary" href="./transfer.html">別の場面でも使えるか試す →</a>
+   <a class="button primary" href="./reflex.html">60秒で口を動かす →</a>
   </div>
  </section>
  </div>
@@ -172,12 +173,11 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <p id="freeze-personal-phrase" class="rescue-line" lang="en"></p>
    </div>
   </section>
-  <section class="card"><h2>練習を次へつなげよう</h2>
-   <p class="next">同じ切り返しを別の状況でも使えるか、2つの場面で試してみよう。AI利用枠は消費しません。</p>
-   <a class="cta" href="./transfer.html">場面を変える応用チェックへ ↗</a>
+  <section class="card"><h2>次は、もっと英語を口に出す</h2>
+   <p class="next">ここでは相手の英語への返し方を練習しました。次は日本語のお題から瞬時に英語を作る60秒チャレンジに進めます。</p>
+   <a class="cta" href="./reflex.html">60秒チャレンジへ ↗</a>
    <p class="next">自由に会話を広げたい人はAI実践英会話も利用できます（別途AI利用枠を消費）。</p>
    <a class="cta" href="./scenes.html" style="background:#e9f5e9;color:#245b3e">AI実践英会話（任意）へ ↗</a>
-   <a class="cta" href="./reflex.html" style="background:#e9f5e9;color:#245b3e">60秒チャレンジへ ↗</a>
   </section>
  </aside>
 </div>

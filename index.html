@@ -85,8 +85,9 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 @media(max-width:650px){.site-head{height:62px}.head-inner,.wrapper,.start-guide{padding-left:18px;padding-right:18px}.nav{gap:13px;font-size:12px}.nav a:nth-child(2){display:inline}.nav a:last-child{white-space:nowrap}.hero{padding-top:36px}.hero h1{font-size:clamp(31px,8.2vw,42px);letter-spacing:-.03em;line-height:1.36}.lead{font-size:14px}.cta-row{gap:5px}.cta-row .btn.primary{flex-basis:100%}.cta-row .btn.secondary-link{flex-basis:auto;justify-content:flex-start}.demo-card{padding:21px}.demo-card blockquote{font-size:23px}.start-guide-inner{padding:23px 0}.start-steps{grid-template-columns:1fr;gap:14px}.start-step strong{margin-bottom:2px}.workouts .workout,.workouts .scene-workout{grid-template-columns:28px minmax(0,1fr);grid-template-rows:auto auto auto;gap:4px 10px;padding:18px 2px}.workout .tag{grid-column:1;grid-row:1/4;font-size:11px}.workout h3{grid-column:2;grid-row:1;font-size:17px}.workout p{grid-column:2;grid-row:2;font-size:12px}.workout .workout-link{grid-column:2;grid-row:3;justify-self:start;text-align:left;min-height:38px;padding:8px 0}.dashboard{padding-top:42px;padding-bottom:42px}.section-top h2{font-size:24px}.concept{padding:30px 0}}
 @media(max-width:410px){.nav a:nth-child(2){display:none}.nav{gap:10px}}
 </style>
+<link rel="stylesheet" href="./soft-neon.css">
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
-<body>
+<body class="sg-soft-neon sg-home">
 <header class="site-head"><div class="head-inner">
  <a class="logo" href="./index.html" aria-label="Speakingym ホーム">speakin<span>gym.</span></a>
  <nav class="nav" aria-label="メインメニュー"><a href="#workouts">練習を選ぶ</a><a href="./phrasebook.html">復習</a><a href="./account.html">マイページ</a></nav>
@@ -98,8 +99,8 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
   <h1>知ってる英語を、<em>話せる英語に。</em></h1>
   <p class="lead">英語を知っているのに、とっさに言葉が出ない。そんな場面を短い練習に変えよう。相手の質問に答え、詰まったら切り返しを覚えて、もう一度話してみる。</p>
   <div class="cta-row">
-   <a class="btn primary" href="./freeze-breaker.html" data-sg-cta="freeze">まず1問、声に出してみる <span aria-hidden="true">→</span></a>
-   <a class="btn secondary-link" href="./reflex.html" data-sg-cta="sprint">60秒チャレンジはこちら</a>
+   <a class="btn primary" href="./reflex.html" data-sg-cta="sprint">まず60秒、話してみる <span aria-hidden="true">→</span></a>
+   <a class="btn secondary-link" href="./freeze-breaker.html" data-sg-cta="freeze">会話が止まったときの練習</a>
   </div>
   <p class="smallline">登録不要で始められます。会話の立て直しと60秒チャレンジは無料です。</p>
  </div>
@@ -116,29 +117,29 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 </section>
 <section class="start-guide" aria-labelledby="start-guide-title">
  <div class="start-guide-inner">
-  <h2 id="start-guide-title">練習はシンプルな3ステップ</h2>
+  <h2 id="start-guide-title">まず話す。困ったら切り返す。</h2>
   <div class="start-steps">
-   <div class="start-step"><strong>① 相手の英語に返してみる</strong>カフェ・仕事・旅行の会話を想定。声に出してひと言返そう。</div>
-   <div class="start-step"><strong>② 詰まったら、切り返しを知る</strong>聞き返す・考える時間をもらうなど、自分に合うひと言を声に出す。</div>
-   <div class="start-step"><strong>③ 別の場面でもう一度</strong>言えなかった表現を別の質問で試し、後日もう一度復習する。</div>
+   <div class="start-step"><strong>① 60秒で声に出す</strong>日本語の短いお題を見て、とっさに英語でひと言返す。まずはここから。</div>
+   <div class="start-step"><strong>② 会話が止まったら立て直す</strong>突然の英語に、聞き返す・確認する・少し待ってもらう練習をする。</div>
+   <div class="start-step"><strong>③ 言えなかった表現を復習</strong>覚えたい英語だけを保存し、思い出せるまで声に出して試す。</div>
   </div>
   <p class="start-guide-note">発話は自己評価方式です。AIによる発音・正誤の自動採点ではありません。</p>
  </div>
 </section>
 <section class="wrapper" id="workouts">
- <div class="section-top"><div class="eyebrow">メニュー</div><h2>やってみたい練習を選ぶ</h2><p>迷ったら、上の「まず1問」から始めてみよう。</p></div>
+ <div class="section-top"><div class="eyebrow">メニュー</div><h2>英語を声に出すところから</h2><p>迷ったら、まず60秒。そのあと必要な練習だけ選べます。</p></div>
  <div class="workouts">
-  <a class="workout workout-freeze" href="./freeze-breaker.html" aria-label="フリーズ克服ジムを始める">
+  <a class="workout workout-light" href="./reflex.html" aria-label="60秒チャレンジを始める">
    <span class="tag">01</span>
-   <h3>会話が止まったら、どう返す？</h3>
-   <p>予想外の英語にひと言返す。詰まったら切り返しを覚えて、すぐ次の質問に挑戦。</p>
-   <span class="workout-link">会話の立て直しを練習 →</span>
+   <h3>60秒チャレンジ <small class="workout-role">まずここから</small></h3>
+   <p>日本語のお題を見て、英語でひと言。タイマーを使う瞬発練習です。</p>
+   <span class="workout-link">60秒始める →</span>
   </a>
-  <a class="workout workout-light" href="./reflex.html" aria-label="60秒スプリントを始める">
+  <a class="workout workout-freeze" href="./freeze-breaker.html" aria-label="会話の立て直しを練習する">
    <span class="tag">02</span>
-   <h3>60秒チャレンジ</h3>
-   <p>短い日本語のお題に、声に出して英語で返す。通勤中などの短時間練習に。</p>
-   <span class="workout-link">60秒チャレンジへ →</span>
+   <h3>会話の立て直し <small class="workout-role">困ったときに</small></h3>
+   <p>相手の予想外の英語にどう返す？ 聞き返しや確認を、時間制限なしで練習。</p>
+   <span class="workout-link">切り返しを練習 →</span>
   </a>
   <a class="workout workout-review" href="./phrasebook.html" aria-label="マイ復習帳を開く">
    <span class="tag">03</span>

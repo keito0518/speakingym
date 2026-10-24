@@ -158,30 +158,32 @@ body{background:#faf9f6}header{background:#faf9f6;color:#2e4435;border-bottom:1p
 h1,h2,h3,p{text-wrap:pretty;line-break:strict;overflow-wrap:break-word}
 @media(max-width:550px){.shell{padding:25px 16px 55px}.hero h1{font-size:clamp(27px,7vw,34px)}.board{padding:17px}.sprint-identity{padding:12px 13px;gap:9px}.sprint-duration{font-size:11px;padding:4px 7px}.sprint-identity-copy strong{font-size:21px}.sprint-caption{font-size:11px}.three{grid-template-columns:1fr;gap:3px}.mini{padding:6px 10px;border:0;background:transparent;min-height:32px}.mini strong{font-size:17px}.prompt{min-height:180px!important}.prompt h2{font-size:clamp(22px,6vw,28px)!important}.intro-shortcuts{grid-template-columns:1fr 1fr;gap:7px}}
 </style>
+<link rel="stylesheet" href="./soft-neon.css">
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
-<body>
+<body class="sg-soft-neon sg-reflex">
 <header><div class="head"><a class="brand" href="./index.html">speakin<span>gym.</span></a><a class="back" href="./index.html">← ホームに戻る</a></div></header>
 <main class="shell">
-<section class="hero"><div class="kicker">60秒チャレンジ</div><h1>60秒で、英語を声に出そう。</h1><p>日本語のお題を見て、英語でひと言返してみよう。言えなかった問題はあとで復習できます。</p></section>
+<section class="hero"><div class="kicker">日本語 → 英語 / 瞬発力トレーニング</div><h1>60秒で、英語を声に出そう。</h1><p>日本語のお題を見て、英語でひと言。時間内に何問答えられるか試す練習です。言えなかった問題はあとで復習できます。</p></section>
 <div class="board">
  <section class="pane active" id="introPane" aria-label="60秒ドリルの設定">
   <div class="sprint-identity" aria-label="60秒チャレンジの説明">
  <div class="sprint-identity-copy"><span class="sprint-overline">今日のウォームアップ</span><strong>60秒チャレンジ</strong><span class="sprint-caption">声に出して、言えたか自分で選ぶだけ。</span></div>
  <span class="sprint-duration">60秒</span>
 </div>
-  <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>詰まった理由を振り返る</div><div class="mini"><strong>③</strong>苦手を再挑戦</div></div>
-  <section id="personalPlan" class="personal-plan" aria-label="今日の自分向け練習メニュー" hidden>
-   <div class="personal-caption">今日の練習メニュー</div>
-   <h2>今日のあなた向け3ステップ</h2>
-   <p id="personalPlanReason"></p>
-   <div id="personalProgress" class="personal-progress" aria-live="polite"></div>
-   <div id="personalSteps" class="personal-steps"></div>
-   <p>各ステップは60秒。苦手原因は本人の自己申告、初めてのお題かどうかは保存中の履歴だけを参考にしています。音声のAI採点・追加通信はありません。進行記録はこの端末のみ。</p>
-   <a class="btn block" href="./transfer.html">↗ 場面を変える応用チェック（2つの場面に挑戦）</a>
-  </section>
+  <div class="three"><div class="mini"><strong>①</strong>日本語を見る</div><div class="mini"><strong>②</strong>英語で言う</div><div class="mini"><strong>③</strong>言えたか記録</div></div>
+  <button class="btn primary block" type="button" id="start" style="margin-top:16px">60秒始める →</button>
   <details class="settings-details" id="practiceSettings"><summary>難易度・場面を変える（任意）</summary><label class="mode-label" for="level">英語の難易度</label><select class="select" id="level"><option value="easy">基礎｜短いひと言から</option><option value="standard" selected>標準｜状況に応じて伝える</option><option value="challenge">応用｜English only・理由や条件も話す</option></select><label class="mode-label" for="mode">今日の練習</label>
   <select class="select" id="mode"><option value="mix">全部ミックス｜会話の切り返し</option><option value="repair">聞き返す・言い直す</option><option value="hold">時間を稼ぐ・考えを整理する</option><option value="boundaries">丁寧に断る・条件を伝える</option><option value="connect">会話を続ける・質問を返す</option><optgroup label="日常・旅行・仕事"><option>自己紹介</option><option>初対面</option><option>雑談・リアクション</option><option>カフェ</option><option>レストラン</option><option>買い物</option><option>ホテル</option><option>空港</option><option>駅・電車</option><option>道案内</option><option>電話</option><option>予約・予定変更</option><option>仕事・会議</option><option>意見を伝える</option><option>トラブル対応</option><option>謝罪・交渉</option></optgroup></select></details>
-  <button class="btn primary block" type="button" id="start" style="margin-top:16px">60秒始める →</button>
+  <details class="settings-details" id="personalWorkoutDetails"><summary>苦手に合わせた追加練習（任意）</summary>
+   <section id="personalPlan" class="personal-plan" aria-label="今日の自分向け練習メニュー" hidden>
+    <div class="personal-caption">今日の練習メニュー</div>
+    <h2>今日のあなた向け3ステップ</h2>
+    <p id="personalPlanReason"></p>
+    <div id="personalProgress" class="personal-progress" aria-live="polite"></div>
+    <div id="personalSteps" class="personal-steps"></div>
+    <p>各ステップは60秒。苦手原因は本人の自己申告、初めてのお題かどうかは保存中の履歴だけを参考にしています。音声のAI採点・追加通信はありません。進行記録はこの端末のみ。</p>
+   </section>
+  </details>
   <label class="privacy-opt"><input type="checkbox" id="saveTranscripts"> 自分が話した英文を端末に保存する（任意）</label>
   <div class="intro-shortcuts"><button class="btn block" type="button" id="openPhrases">保存した表現 <span id="savedCount" aria-live="polite">0</span></button><button class="btn block" type="button" id="openHistory">練習履歴を見る</button></div>
   <p class="start-note">回答例は終了後に確認できます。音声認識やAI講評は任意です。</p>
@@ -215,7 +217,7 @@ h1,h2,h3,p{text-wrap:pretty;line-break:strict;overflow-wrap:break-word}
   <h2>60秒、おつかれ！</h2>
   <p id="endMessage">とっさの一言を何度も試せたね。</p>
   <div class="summary"><div class="item"><strong id="total">0</strong><span>挑戦したお題</span></div><div class="item"><strong id="wins">0</strong><span>自分で「言えた」</span></div><div class="item"><strong id="misses">0</strong><span>詰まった表現</span></div></div>
-  <div id="diagnosisSummary" class="diagnosis-summary" hidden aria-live="polite"><strong>あなたのフリーズ傾向</strong><div id="diagnosisSummaryText"></div></div>
+  <div id="diagnosisSummary" class="diagnosis-summary" hidden aria-live="polite"><strong>詰まりやすいパターン（自己評価）</strong><div id="diagnosisSummaryText"></div></div>
   <section class="report-review hidden" id="reportReview" aria-live="polite"><div class="report-progress" id="reviewCounter">REVIEW 1 / 1</div><div class="review-situation" id="reviewSituation"></div><h3 id="reviewChallenge"></h3><div class="review-result" id="reviewResult"></div><div class="review-you" id="reviewYou"></div><section class="teacher-panel" id="teacherPanel" aria-label="AI英会話教師の個別講評">
   <div class="teacher-head"><span aria-hidden="true">👩‍🏫</span><div><strong>必要なときだけ、AI先生の個別アドバイス</strong><p>普段は無料の回答例・ヒントで復習できます。より詳しい添削が欲しいときだけ、AI利用枠を使って自分の英文を確認しよう。</p></div></div>
   <p id="teacherPrivacy" class="teacher-privacy">任意で実行。送信されるのは選んだ最大5問の英文とお題です。Gemini1回だけ無料枠のAPIリクエストを使います。無料枠では入力がモデル改善に使われる場合があります。実名など個人情報は含めないでください。音声の発音は評価しません。AIの講評はこの端末の履歴に保存します。</p>
@@ -235,7 +237,7 @@ h1,h2,h3,p{text-wrap:pretty;line-break:strict;overflow-wrap:break-word}
  <div class="review-nav"><button class="btn" type="button" id="reviewPrev">← 前の問題</button><button class="btn primary" type="button" id="reviewNext">次の問題 →</button></div></section>
   <button class="btn block after-review-saved" id="openPhrasesFromReview" type="button">📌 保存したフレーズを復習する</button>
   <button class="btn primary block" id="personalNext" type="button" hidden>今日のメニューを続ける →</button>
-  <a class="btn block" href="./transfer.html">↗ 別の場面でも言えるか、応用チェックを試す</a><div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
+  <div class="end-actions"><button class="btn orange" id="again" type="button">⚡ もう60秒</button><button class="btn" id="weakOnly" type="button" hidden>↻ 苦手だけ挑戦</button><a class="btn" href="./freeze-breaker.html">会話の立て直しを練習 →</a><a class="btn" href="./index.html">ホームに戻る</a><a class="btn" href="./scenes.html">AI実戦へ進む ↗</a><a class="btn" href="./contact.html">感想・改善案を送る ✉</a></div>
  </section><section class="pane" id="phrasesPane" aria-label="保存した英語フレーズの復習">
   <div class="history-head"><div class="kicker">SPRINT REVIEW</div><h2>📌 60秒で保存した表現</h2><p>この練習の保存表現を確認する画面です。AI実践で保存した表現もまとめて見るなら<a href="./phrasebook.html">マイ復習帳へ ↗</a>。英語を隠す練習もできるよ。</p></div>
   <div class="phrase-tools"><span id="phraseTotal">0表現</span><button type="button" class="btn" id="togglePhraseHide">🙈 英語を隠して練習</button></div>
@@ -858,7 +860,7 @@ function continuePersonalWorkout(){
  if(personalNextStage===null||reviewFromHistory)return;
  const next=personalNextStage+1;
  personalNextStage=null;
- if(next>=3){pane("introPane");renderPersonalPlan()}
+ if(next>=3){pane("introPane");renderPersonalPlan();$("personalWorkoutDetails").open=true}
  else startPersonalStage(next);
 }
 window.speakingymSprintPersonalUI=Object.freeze({refresh:renderPersonalPlan});

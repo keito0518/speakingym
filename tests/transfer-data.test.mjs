@@ -116,12 +116,12 @@ test('the base answer is withheld until both separate scene ratings are collecte
  assert.match(app,/show\('endPane'\)/);
  assert.doesNotMatch(page,/I cannot find my bag|The air conditioner is not working/);
 });
-test('transfer page is discoverable via the main sprint without modifying billing or quotas',()=>{
+test('older transfer route preserves records without competing with the two core practices',()=>{
  assert.match(page,/type="module" src="\.\/transfer\.js"/);
  assert.match(page,/src="\.\/sprint-diagnosis\.js"/);
  assert.match(page,/type="module" src="\.\/account-sync\.js"/);
  assert.match(home,/href="\.\/transfer\.html"/);
- assert.match(sprint,/href="\.\/transfer\.html"/);
+ assert.doesNotMatch(sprint,/href="\.\/transfer\.html"/);
  assert.match(app,/speakingym-account-owner-v1/);
  assert.match(app,/speakingym:account-changing',beginOwnerTransition/);
  assert.match(app,/speakingym:account-ready',\(\)=>\{/);

@@ -1,0 +1,118 @@
+/* Speakingym soft neon: dark editorial surfaces, restrained cyan accents.
+   No continuous animation, decorative mock chats or blinding full-page gradients. */
+:root{
+  --sg-neon-ink:#172f3d;
+  --sg-neon-night:#102532;
+  --sg-neon-night-soft:#193542;
+  --sg-neon-mint:#55ead0;
+  --sg-neon-cta:#42dec7;
+  --sg-neon-muted:#bed0d7;
+  --sg-neon-border:#cce2e4;
+}
+body.sg-soft-neon{background:#f4f8fa;color:var(--sg-neon-ink)}
+body.sg-soft-neon :is(button,a,select,textarea):focus-visible{
+  outline:3px solid #35bfb9;outline-offset:3px
+}
+body.sg-soft-neon :is(.logo span,.brand span,.logo b){color:#21baa9}
+body.sg-soft-neon :is(.site-head,header,.site-header){background:var(--sg-neon-night);color:#f2fbfa;border-color:#294754}
+body.sg-soft-neon :is(.nav a,.header nav a,.back,.header-link){color:#e4f4f4}
+body.sg-soft-neon :is(.site-head,header,.site-header) :is(.logo span,.brand span,.logo b){color:var(--sg-neon-mint)}
+body.sg-soft-neon :is(.btn.primary,.button.primary,.button.orange){
+  background:var(--sg-neon-cta);border-color:var(--sg-neon-cta);color:#0b2932;
+  box-shadow:0 4px 18px #21c9b431
+}
+body.sg-soft-neon :is(.btn.primary,.button.primary,.button.orange):hover{
+  background:#6cf1d9;border-color:#6cf1d9;color:#0b2932
+}
+body.sg-soft-neon :is(.btn,.button):not(.primary):not(.orange){border-color:#bfd7db;color:#20545b}
+body.sg-soft-neon .btn:disabled,body.sg-soft-neon .button:disabled{box-shadow:none}
+body.sg-soft-neon :is(.board,.card,.panel,article){border-color:#d7e6e7}
+body.sg-soft-neon :is(.kicker,.eyebrow,.section-kicker){letter-spacing:.035em}
+
+/* Homepage: one highly legible dark introduction, then calm white content. */
+body.sg-home .site-head{height:68px}
+body.sg-home .hero{
+  background:var(--sg-neon-night);border:1px solid #2a4c57;border-radius:18px;
+  padding:44px 43px 42px;margin-top:25px;box-shadow:0 12px 34px #152e4218
+}
+body.sg-home .hero h1{color:#f6fbfa}
+body.sg-home .hero h1 em{color:var(--sg-neon-mint)}
+body.sg-home .hero .eyebrow{color:#7cf0de}
+body.sg-home .hero .lead{color:#c6d8df}
+body.sg-home .hero .btn.primary{background:var(--sg-neon-cta);color:#0b2932;border-color:var(--sg-neon-cta);box-shadow:0 4px 20px #32d6c34d}
+body.sg-home .hero .btn.primary:hover{background:#7cf2df}
+body.sg-home .hero .btn.secondary-link{background:transparent;color:#e5faf6;text-underline-offset:5px}
+body.sg-home .hero .smallline{color:#a8c0c9}
+body.sg-home .demo-card{background:var(--sg-neon-night-soft);border:1px solid #416b70;box-shadow:none;color:#f1faf9}
+body.sg-home .demo-top{color:#a8d6d8;border-color:#42616c}
+body.sg-home .demo-speaker,body.sg-home .demo-help{color:#c0d6da}
+body.sg-home .demo-card blockquote,body.sg-home .demo-prompt{color:#f9ffff}
+body.sg-home .demo-action{color:#80efdc}
+body.sg-home .workouts{border-top-color:#d0e1e3}
+body.sg-home .workouts .workout{border-bottom-color:#d0e1e3}
+body.sg-home .workout-role{display:inline-block;margin-left:9px;font-size:11px;font-weight:700;color:#168478;white-space:nowrap}
+body.sg-home .workouts .workout-light{border-left:3px solid #27c6b4;padding-left:13px}
+body.sg-home .workouts .workout-freeze{padding-left:16px}
+body.sg-home .workout .workout-link{color:#087e79}
+body.sg-home .start-guide-inner{border-color:#d0e1e3}
+body.sg-home .start-steps{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* Sprint: time-limited, Japanese-prompt practice; its start button comes first. */
+body.sg-reflex .hero{
+  padding:25px 30px 26px;border-radius:15px;background:var(--sg-neon-night);
+  border:1px solid #315361;box-shadow:0 9px 28px #142c3c13
+}
+body.sg-reflex .hero :is(h1,p){color:#f3fbf9}
+body.sg-reflex .hero p{color:#bfd3db}
+body.sg-reflex .hero .kicker{color:#81e9d8}
+body.sg-reflex .sprint-identity{background:#e9f9f7;border:1px solid #b7e6df}
+body.sg-reflex .sprint-duration{border-color:#9edacf;color:#166f6b}
+body.sg-reflex .prompt{background:#effaf9;border:1px solid #a5dcd5}
+body.sg-reflex .bar-fill{background:#2ccab8}
+body.sg-reflex .settings-details{background:#f8fcfc;border-color:#d1e7e8}
+body.sg-reflex #start{font-size:16px;min-height:56px}
+
+/* Conversation rescue: no timer; respond to another person's English. */
+body.sg-freeze .hero{
+  background:var(--sg-neon-night);border:1px solid #315361;color:#f2fbfa;
+  border-radius:15px;padding:29px 30px 25px;box-shadow:0 9px 28px #142c3c13
+}
+body.sg-freeze .hero h1{color:#f3fcfa}
+body.sg-freeze .hero .kicker{color:#80e9d7}
+body.sg-freeze .hero p{color:#c2d8de}
+body.sg-freeze .hero .pill{color:#a9d8dc;border-color:#557a7f}
+body.sg-freeze .question{background:#f0faf9;border-color:#c2e7e1;border-left-color:#24bbae}
+body.sg-freeze .onboarding{background:#f0f8f8}
+body.sg-freeze .stage,body.sg-freeze .speaker{color:#177c75}
+body.sg-freeze .cta{background:#42dec7;color:#0b2932;box-shadow:0 4px 18px #21c9b431}
+
+/* Account and auxiliary pages keep bright reading surfaces and mint focus cues. */
+body.sg-account .hero-button{background:#42dec7;color:#0b2932;box-shadow:0 5px 18px #21c9b431}
+body.sg-account .hero-button:hover{background:#74f0dc}
+body.sg-account .rhythm{border-color:#c9e5e3}
+body.sg-account .weekday.today .weekday-dot{outline-color:#1cb6a7}
+body.sg-account .sg-stat:first-child{background:#edf9f8}
+body.sg-account .section-kicker{color:#16877f}
+body.sg-scenes .scene.active{border-color:#159f94;box-shadow:0 0 0 1px #159f943b}
+body.sg-scenes .notice{background:#eaf8f6;color:#285c5a}
+body.sg-transfer .statusline{color:#147f7b}
+body.sg-transfer .situation{background:#effaf9;border-color:#b9e2dd}
+body.sg-transfer .feature-grid div{background:#e9f8f6}
+body.sg-phrasebook .review-links a:first-child{background:#42dec7;color:#0b2932;border-color:#42dec7}
+body.sg-phrasebook .review-hub{background:#effaf9;border-color:#cde8e3}
+
+@media(max-width:850px){
+  body.sg-home .hero{margin-top:16px;padding:32px 27px}
+}
+@media(max-width:650px){
+  body.sg-home .hero{margin:12px 12px 0;padding:26px 20px 23px;gap:21px;border-radius:14px}
+  body.sg-home .hero h1{font-size:clamp(30px,8.1vw,40px)}
+  body.sg-home .demo-card{padding:19px}
+  body.sg-home .start-steps{grid-template-columns:1fr}
+  body.sg-home .workout-role{font-size:10px;margin-left:6px}
+  body.sg-reflex .hero{padding:21px 19px;border-radius:13px}
+  body.sg-freeze .hero{padding:24px 20px;border-radius:13px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.sg-soft-neon :is(.btn,.button,.hero-button){transition:none}
+}

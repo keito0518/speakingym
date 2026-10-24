@@ -34,6 +34,10 @@ const fs=require('node:fs');
     await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-'+path+'.png',fullPage:true});
    }
    await page.goto('http://127.0.0.1:8765/index.html');
+   assert.equal(await page.locator('.hero').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(16, 37, 50)',
+    'soft neon home palette must load instead of falling back to legacy green');
+   assert.equal(await page.locator('.hero .btn.primary').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(66, 222, 199)',
+    'primary start button needs a calm, readable cyan accent');
    assert.equal(await page.locator('#workouts .workouts > .workout').count(),4);
    assert.equal(await page.locator('.hero h1 br').count(),0,'hero must wrap naturally on narrow screens');
    assert.equal(await page.locator('.orb,.floating,.mock').count(),0,'fake chat and decorative gradient artwork removed');
@@ -47,6 +51,9 @@ const fs=require('node:fs');
    await page.locator('#showAllScenes').click();
    assert.equal(await page.locator('#scenes .scene:visible').count(),4,'collapse back to starter scenes');
    await page.goto('http://127.0.0.1:8765/reflex.html');
+   assert.equal(await page.locator('.hero').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(16, 37, 50)');
+   assert.ok(await page.locator('#start').isVisible(),'primary action is visible without opening extra settings');
+   assert.equal(await page.locator('#personalWorkoutDetails').evaluate(el=>el.open),false);
    assert.equal(await page.locator('#practiceSettings').evaluate(el=>el.open),false);
    await page.locator('#practiceSettings summary').click();
    assert.equal(await page.locator('#mode').isVisible(),true);
@@ -95,6 +102,7 @@ const fs=require('node:fs');
    assert.match(await page.locator('#historySummary').textContent(),/0 組に挑戦/);
 
    await page.goto('http://127.0.0.1:8765/freeze-breaker.html');
+   assert.equal(await page.locator('.hero').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(16, 37, 50)');
    await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
    await page.reload();
    assert.equal(await page.locator('#mission-select option').count(),7);

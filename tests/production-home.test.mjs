@@ -23,11 +23,11 @@ test("modern production home has brand, SEO, useful routes, no paid checkout and
  assert.match(current,/@media\(max-width:520px\)/);
  assert.match(current,/<script type="module" src="\.\/account-sync\.js"><\/script>/);
 });
-test("trial CTA leads straight to the guided rescue with a visible optional sprint",()=>{
- assert.match(current,/<a class="btn primary" href="\.\/freeze-breaker\.html"[^>]*>まず1問、声に出してみる/);
- assert.match(current,/<a class="btn secondary-link" href="\.\/reflex\.html"[^>]*>60秒チャレンジはこちら/);
+test("trial CTA leads straight to the sprint with a visible distinct rescue drill",()=>{
+ assert.match(current,/<a class="btn primary" href="\.\/reflex\.html"[^>]*>まず60秒、話してみる/);
+ assert.match(current,/<a class="btn secondary-link" href="\.\/freeze-breaker\.html"[^>]*>会話が止まったときの練習/);
  assert.match(current,/href="\.\/scenes\.html"[^>]*>AI実践英会話へ（任意）/);
- assert.match(current,/詰まったら、切り返しを知る/);
+ assert.match(current,/会話が止まったら立て直す/);
  assert.match(current,/href="\.\/phrasebook\.html"/);
  assert.doesNotMatch(current,/href="\.\/index\.html">旧トップ/);
 });
