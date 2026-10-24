@@ -115,9 +115,13 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.match(await page.locator('#endResult').textContent(),/詰まった/);
     assert.match(await page.evaluate(()=>localStorage.getItem('speakingym-transfer-results-v1:guest')||''),/"first":true,"second":false/);
     await page.locator('#again').click();
-    assert.match(await page.locator('#historySummary').textContent(),/1 組に挑戦/);
-    await page.locator('#start').click();
+    assert.equal(await page.locator('#questionPane').isVisible(),true,'next-pair CTA opens another exercise immediately');
     assert.notEqual(await page.locator('#scene').textContent(),firstScene,'repeated exercises rotate to a different unused pair');
+    await page.locator('#said').click();
+    await page.locator('#said').click();
+    await page.locator('#reviewMenu').click();
+    assert.equal(await page.locator('#introPane').isVisible(),true,'review-menu CTA returns to the due schedule');
+    assert.match(await page.locator('#historySummary').textContent(),/2 組に挑戦/);
     // Return to the idle dashboard before simulating an external-tab result.
     // In-progress answers must not be discarded by an unrelated focus event.
     await page.reload();
@@ -346,11 +350,19 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
       assert.match(await page.locator('#personalPlan').textContent(),/最近出ていない場面/);
     }
     await page.locator('#spoken').click();
+    if(stage===1)await page.locator('#spoken').click();
     await page.locator('#finishEarly').click();
     assert.equal(await page.locator('#endPane').isVisible(),true);
     assert.match(await page.locator('#personalProgress').textContent(),new RegExp((stage+1)+' \\/ 3'));
+    if(stage===1){
+      assert.equal(await page.locator('#personalNext').isVisible(),false,
+       'two-answer personal workouts prompt review of both answers before continuing');
+      await page.locator('#reviewNext').click();
+    }
     assert.equal(await page.locator('#personalNext').isVisible(),true);
-    await page.locator('#personalNext').click();
+    assert.match(await page.locator('#reviewNext').textContent(),stage===2?/メニューへ/:/次のステップへ/);
+    if(stage===2)await page.locator('#personalNext').click();
+    else await page.locator('#reviewNext').click();
   }
   assert.equal(await page.locator('#introPane').isVisible(),true);
   assert.match(await page.locator('#personalProgress').textContent(),/3 \/ 3/);

@@ -28,6 +28,7 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
 .review-metrics span{font-size:10px;color:#56715b;display:block;font-weight:850;overflow-wrap:anywhere}
 .next-review{padding:14px;border:1px solid #bddcbe;border-radius:12px;font-weight:850;color:#225b3a;font-size:13px;background:#eff6eb}
 @media(max-width:520px){main{padding:31px 15px 55px}.board{border-radius:18px}.feature-grid{grid-template-columns:1fr;gap:7px}.result-actions{grid-template-columns:1fr}.situation{padding:18px}.footer-controls{flex-direction:column}.footer-controls>*{width:100%}}
+.head .back{display:inline-flex;align-items:center;min-height:44px}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
 </head>
@@ -35,7 +36,7 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
 <header><div class="head"><a href="./index.html" class="logo">speakin<b>gym.</b></a><a class="back" href="./reflex.html">← 60秒チャレンジへ</a></div></header>
 <main>
 <div class="kicker">SPEAKING TRANSFER / TWO SITUATIONS</div>
-<h1>覚えたひと言を、<br>別の場面でも言える？</h1>
+<h1>同じ伝え方を、<br>別の場面でも使える？</h1>
 <p class="lead">同じ会話の力を、異なる2つの場面で試す。答えを見ずに話してから、まとめて比べよう。</p>
 <div class="board">
 <section id="introPane" aria-label="応用チェックの設定">
@@ -71,7 +72,7 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
   <button id="said" type="button" class="btn primary">✓ 自分で言えた</button>
   <button id="froze" type="button" class="btn">↻ 言葉が詰まった</button>
  </div>
- <p class="note">正解は1つではありません。自分が伝えたいことを声に出せたか、自己評価してください。2問目が終わるまで模範解答は表示しません。</p>
+ <p class="note">短い一文でも相手に意図を伝えられたら「言えた」でOK。意味が伝わる表現が出なければ「詰まった」を選ぼう。正解は1つではありません。2問目が終わるまで模範解答は表示しません。</p>
  <button class="btn wide" id="cancelPractice" type="button">今回はここまで（記録せず戻る）</button>
 </section>
 <section id="endPane" aria-label="応用チェックの振り返り" hidden>
@@ -85,7 +86,7 @@ main{max-width:780px;margin:0 auto;padding:43px 18px 75px}.kicker{font-size:11px
  <p class="note" id="endSaving" role="status"></p>
  <p id="nextReview" class="next-review" aria-live="polite"></p>
  <button class="btn primary wide" id="again" type="button">次の2つの場面に挑戦 →</button>
- <div class="footer-controls"><a class="btn" href="./reflex.html">60秒チャレンジへ戻る</a><a class="btn" href="./freeze-breaker.html">フリーズ克服ジムへ →</a></div>
+ <div class="footer-controls"><button class="btn" id="reviewMenu" type="button">復習予定を見る</button><a class="btn" href="./reflex.html">60秒チャレンジへ戻る</a><a class="btn" href="./freeze-breaker.html">フリーズ克服ジムへ →</a></div>
 </section>
 </div>
 </main>

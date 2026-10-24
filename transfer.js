@@ -152,7 +152,8 @@ $('cancelPractice').addEventListener('click',()=>{
 });
 $('said').addEventListener('click',()=>choose(true));
 $('froze').addEventListener('click',()=>choose(false));
-$('again').addEventListener('click',refreshIntro);
+$('again').addEventListener('click',()=>begin('new'));
+$('reviewMenu').addEventListener('click',refreshIntro);
 $('eraseResults').addEventListener('click',erase);
 // Owner changes may emit before localStorage/auth finish switching. Wipe the
 // old owner's visible prompts and score immediately, even if the old key exists.

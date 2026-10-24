@@ -26,6 +26,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .info{padding:16px 3px;font-size:12px;color:#788779;line-height:1.9;text-align:center}.info a{text-decoration:underline}
 @media(max-width:550px){.shell{padding-top:23px}.board{padding:18px}.three{grid-template-columns:1fr;gap:7px}.mini{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 15px}.mini strong{font-size:22px;margin:0}.prompt{min-height:280px;padding:18px}.prompt h2{font-size:28px}.button-row{gap:8px}.btn{padding:12px 10px;font-size:13px}.summary{gap:6px}.end-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.bar-fill{transition:none}}
+.head a.back{display:inline-flex;align-items:center;min-height:44px}
 
 .privacy-opt{display:flex;gap:8px;align-items:center;margin-top:16px;font-size:12px;font-weight:680;color:#4f6e56}.privacy-opt input{width:18px;height:18px;accent-color:#22513c}
 .prompt{min-height:220px!important;padding:23px!important;background:#f0f6eb!important;border:2px solid #bfd6bc!important;display:flex;flex-direction:column;justify-content:center}
@@ -47,7 +48,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .answer-set .answer-card.featured{background:#ebf7ea;border-color:#bcdcc4}
 .answer-set .answer-label{font-size:11px;font-weight:950;color:#aa6448}
 .answer-set .answer-text{font-size:15px;font-weight:850;margin:6px 0;color:#264b36;line-height:1.6}
-.answer-set .answer-card button{font-size:11px;min-height:36px;padding:6px 11px}
+.answer-set .answer-card button{font-size:12px;min-height:44px;padding:8px 11px}
 .review-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:19px}
 .history-head h2{font-size:26px;margin:0 0 8px}.history-head p{font-size:12px;color:#748576}
 .history-row{border:1px solid #e1e9df;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;margin:9px 0}
@@ -83,7 +84,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .saved-phrase-card .phrase-hidden{border:1px dashed #accbb6;border-radius:9px;padding:13px;text-align:center;color:#5c7865;background:#eff5eb;font-size:13px;font-weight:800}
 .saved-phrase-card .phrase-tip{font-size:12px;color:#4d6b55;line-height:1.7;border-top:1px solid #e3ebe0;padding-top:9px;margin-top:8px}
 .saved-phrase-card .phrase-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.saved-phrase-card .phrase-actions .btn{font-size:12px;min-height:39px;padding:8px 13px}
+.saved-phrase-card .phrase-actions .btn{font-size:12px;min-height:44px;padding:8px 13px}
 @media(max-width:550px){.sprint-identity{padding:16px 13px;gap:10px}.sprint-lightning{font-size:24px;flex-basis:43px;width:43px;height:43px;border-radius:12px}.sprint-overline{font-size:8px;letter-spacing:.8px}.sprint-duration{font-size:9px;padding:5px 7px}.sprint-caption{font-size:10px}.intro-shortcuts{gap:7px}.intro-shortcuts .btn{padding:9px 6px;font-size:11px}}
 
 
@@ -122,7 +123,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
 .personal-step{display:flex;gap:12px;align-items:center;justify-content:space-between;background:#fff;border:1px solid #dbe7d9;border-radius:12px;padding:13px;min-width:0}
 .personal-step .personal-step-copy{flex:1;min-width:0}
 .personal-step strong{display:block;font-size:14px;color:#244934}
-.personal-step .personal-step-description{font-size:11px;color:#617669;line-height:1.7;margin:4px 0 0}
+.personal-step .personal-step-description{font-size:12px;color:#526c5b;line-height:1.7;margin:4px 0 0}
 .personal-step .personal-step-number{font-size:10px;letter-spacing:.8px;color:#b86448;font-weight:900}
 .personal-step .btn{flex-shrink:0;white-space:nowrap;font-size:11px;min-height:43px;padding:8px 12px}
 .personal-step .completed{color:#397348;font-weight:850;font-size:11px}
@@ -140,7 +141,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
  <div class="sprint-identity-copy"><span class="sprint-overline">QUICK REACTION WORKOUT</span><strong>1 MINUTE <em>SPRINT</em></strong><span class="sprint-caption">とっさの英語を、反射に変える。</span></div>
  <span class="sprint-duration">60 SEC</span>
 </div>
-  <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>全問講評</div><div class="mini"><strong>③</strong>履歴で復習</div></div>
+  <div class="three"><div class="mini"><strong>①</strong>60秒話す</div><div class="mini"><strong>②</strong>詰まった理由を振り返る</div><div class="mini"><strong>③</strong>苦手を再挑戦</div></div>
   <section id="personalPlan" class="personal-plan" aria-label="今日の自分向け練習メニュー" hidden>
    <div class="personal-caption">YOUR DAILY WORKOUT</div>
    <h2>今日のあなた向け3ステップ</h2>
@@ -159,7 +160,7 @@ header{background:var(--green);color:#fff}.head{max-width:940px;margin:auto;min-
   <div class="top-meter"><div><span class="kicker" style="letter-spacing:1px">REMAINING</span><div id="time" class="remain" aria-label="残り時間">01:00</div></div><div class="reps" id="count" aria-live="polite">0 問チャレンジ中</div></div>
   <div class="bar" aria-hidden="true"><div class="bar-fill" id="progress"></div></div>
   <div id="prompt" class="prompt" aria-live="polite"><div class="prompt-tag" id="category">60 SECOND CHALLENGE</div><p class="prompt-scene" id="situation"></p><div id="promptCue" class="prompt-cue">あなたなら英語で何と言う？</div><h2 id="challenge"></h2></div>
-  <p class="voice-reminder" id="roundNote">例文は終了後の講評で公開。まずは自分の英語を！</p>
+  <p class="voice-reminder" id="roundNote">短い一文でも意図を伝えられたら「口から出た」。例文は終了後に公開。</p>
   <details id="hintPanel" style="max-width:650px;margin:8px auto 16px;padding:9px 13px;border:1px solid #dbe7d8;border-radius:10px;background:#f0f7ef;color:#244f38;font-size:13px;line-height:1.7">
     <summary style="font-weight:850;cursor:pointer;min-height:32px;display:list-item">💡 まず自分で答えて、困ったらヒントを見る</summary>
     <p id="hintText" style="margin:8px 0 2px"></p>
@@ -768,7 +769,7 @@ function taskFor(card,level){
 
 const deck=()=>cards.filter(c=>$("mode").value==="mix"||$("mode").value===c.group||$("mode").value===c.category);
 let pile=[],activePool=[],index=0,remaining=60,ticker=null,state="idle",rated=0,spoken=0,missed=0,current=null,exampleOpened=false,missedIds=[],missedPrompts=[],solvedIds=[],attempts=[],reviewIndex=0,reviewSession=null,chosenLevel="standard",saveWords=false,hideSavedEnglish=false;
-let personalRunningStage=null,personalNextStage=null;
+let personalRunningStage=null,personalNextStage=null,reviewFromHistory=false;
 function currentPersonalPlan(){
  const engine=window.speakingymPersonalPlan;
  if(!engine)return null;
@@ -816,9 +817,19 @@ function startPersonalStage(i){
 function updatePersonalNext(){
  const button=$("personalNext");
  if(!button)return;
- button.hidden=personalNextStage===null;
+ // A history replay must not resume a former workout. During a fresh workout,
+ // guide the learner through the last reviewed prompt before continuing.
+ button.hidden=personalNextStage===null||reviewFromHistory||
+  reviewIndex<(reviewSession?.attempts.length||0)-1;
  if(personalNextStage!==null)button.textContent=personalNextStage===2?
   "今日のメニューを確認する →":"次のステップへ →";
+}
+function continuePersonalWorkout(){
+ if(personalNextStage===null||reviewFromHistory)return;
+ const next=personalNextStage+1;
+ personalNextStage=null;
+ if(next>=3){pane("introPane");renderPersonalPlan()}
+ else startPersonalStage(next);
 }
 window.speakingymSprintPersonalUI=Object.freeze({refresh:renderPersonalPlan});
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
@@ -1006,7 +1017,7 @@ function saveSession(session){
  saveJSON(HISTORY_KEY,[saved,...historySessions()].slice(0,HISTORY_LIMIT));
 }
 function openReview(session,fromHistory=false){
- reviewSession=session;reviewIndex=0;
+ reviewSession=session;reviewIndex=0;reviewFromHistory=fromHistory;
  $("total").textContent=String(session.attempts.filter(x=>x.outcome!=="unanswered").length);
  $("wins").textContent=String(session.attempts.filter(x=>x.outcome==="spoken").length);
  $("misses").textContent=String(session.attempts.filter(x=>x.outcome==="stuck").length);
@@ -1299,7 +1310,12 @@ function showReview(index){
  renderTeacherFeedback();
  window.speakingymSprintDiagnosis?.render({date:reviewSession.date,index:reviewIndex,cardId:card.id,outcome:item.outcome});
  $("reviewPrev").disabled=reviewIndex===0;
- $("reviewNext").textContent=reviewIndex===a.length-1?"講評完了 ✓ 履歴へ":"次の問題 →";
+ $("reviewNext").textContent=reviewIndex===a.length-1?
+  (!reviewFromHistory&&personalNextStage!==null?
+   (personalNextStage===2?"講評完了 ✓ メニューへ":"講評完了 ✓ 次のステップへ"):
+   "講評完了 ✓ 履歴へ"):
+  "次の問題 →";
+ updatePersonalNext();
 }
 function showHistory(){
  const parent=$("historyList");parent.replaceChildren();
@@ -1353,7 +1369,7 @@ function nextCard(){
  $("challenge").textContent=problem.challenge;
  $("hintPanel").open=false;
  $("hintText").textContent=current.hint;
- $("roundNote").textContent="例文は最後まで非公開！ 自分の英語で答えよう。";
+ $("roundNote").textContent="短い一文でも意図が伝わればOK。例文は終了後に公開するよ。";
 }
 function recordAttempt(outcome){
  if(state!=="running"||!current)return;
@@ -1412,6 +1428,7 @@ $("weakOnly").addEventListener("click",()=>start(true));
 $("reviewPrev").addEventListener("click",()=>showReview(reviewIndex-1));
 $("reviewNext").addEventListener("click",()=>{
  if(reviewIndex<(reviewSession?.attempts.length||0)-1)showReview(reviewIndex+1);
+ else if(!reviewFromHistory&&personalNextStage!==null)continuePersonalWorkout();
  else showHistory();
 });
 $("openPhrases").addEventListener("click",()=>showSavedPhrases("introPane"));
@@ -1419,13 +1436,7 @@ $("openPhrasesFromReview").addEventListener("click",()=>showSavedPhrases("endPan
 $("phrasesBack").addEventListener("click",()=>pane(phraseReturnPane));
 $("togglePhraseHide").addEventListener("click",()=>{hideSavedEnglish=!hideSavedEnglish;renderPhraseBook()});
 $("requestTeacher").addEventListener("click",requestTeacherFeedback);
-$("personalNext").addEventListener("click",()=>{
- if(personalNextStage===null)return;
- const next=personalNextStage+1;
- personalNextStage=null;
- if(next>=3){pane("introPane");renderPersonalPlan()}
- else startPersonalStage(next);
-});
+$("personalNext").addEventListener("click",continuePersonalWorkout);
 $("openHistory").addEventListener("click",showHistory);
 $("historyBack").addEventListener("click",()=>pane("introPane"));
 $("clearHistory").addEventListener("click",()=>{
