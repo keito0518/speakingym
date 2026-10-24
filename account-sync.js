@@ -18,11 +18,11 @@ const css=[
 ".sg-accountbar *{box-sizing:border-box}",
 ".sg-accountbar-inner{max-width:1200px;min-height:47px;margin:auto;padding:8px 18px;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}",
 ".sg-account-status{font-size:12px;font-weight:750;margin-right:auto}",
-".sg-accountbar button,.sg-accountbar a{border:1px solid #bbd1be;background:#fff;color:#234e36;padding:5px 12px;font:800 12px/1.5 inherit;border-radius:8px;min-height:35px;cursor:pointer;text-decoration:none}",
+".sg-accountbar button,.sg-accountbar a{border:1px solid #bbd1be;background:#fff;color:#234e36;padding:5px 12px;font:800 12px/1.5 inherit;border-radius:8px;min-height:44px;cursor:pointer;text-decoration:none}",
 ".sg-accountbar button.primary{background:#205940;border-color:#205940;color:white}",
 ".sg-accountbar button:disabled{opacity:.5;cursor:not-allowed}",
 ".sg-accountbar button:focus-visible,.sg-accountbar a:focus-visible{outline:3px solid #ff9b7d;outline-offset:2px}",
-"@media(max-width:540px){.sg-accountbar-inner{gap:6px;padding:6px 12px}.sg-account-status{flex-basis:100%;font-size:11px}.sg-accountbar button,.sg-accountbar a{font-size:11px;padding:5px 8px;min-height:33px}}"
+"@media(max-width:540px){.sg-accountbar-inner{gap:6px;padding:6px 12px}.sg-account-status{flex-basis:100%;font-size:11px}.sg-accountbar button,.sg-accountbar a{font-size:11px;padding:5px 8px;min-height:44px}}"
 ].join("\n");
 function status(message){$("sg-account-status").textContent=message;const el=$("sg-account-details");if(el)el.textContent=message}
 function renderControls(){
@@ -54,6 +54,16 @@ function describeError(error){
  if(code.includes("permission-denied"))return "Firestoreのセキュリティルールを確認してね。";
  if(code.includes("popup-closed")||code.includes("cancelled-popup"))return "ログインをキャンセルしました。";
  return "接続エラー。Firebase設定と通信状況を確認してね。";
+}
+function startupErrorMessage(error){
+ // Guest drills are local and need neither Firebase nor AI. A temporary SDK
+ // outage must not make the whole product look unusable. Never imply a signed-
+ // in user's data are available while their account is still unverified.
+ try{
+  if(!localStorage.getItem(OWNER_KEY))
+   return "ログインの通信待ち · 60秒などの無料練習は使えるよ。ログインは通信回復後に再読み込みしてね。";
+ }catch{}
+ return describeError(error)+" ログイン状態を確認できるまで記録の操作は控えてね。";
 }
 async function loginNow(){
  if(!auth||busy)return;
@@ -389,6 +399,6 @@ async function start(){
   authFns=authLib;dbFns=dbLib;auth=authLib.getAuth(app);db=dbLib.getFirestore(app);
   ready=true;renderControls();
   authLib.onAuthStateChanged(auth,next=>handleAuth(next),err=>status(describeError(err)));
- }catch(e){ready=false;renderControls();status(describeError(e))}
+ }catch(e){ready=false;renderControls();status(startupErrorMessage(e))}
 }
 start();

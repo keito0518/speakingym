@@ -31,6 +31,13 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+path);
    if(path==='index.html'){
     assert.equal(await page.locator('#workouts .workouts > .workout').count(),4);
+    // Firebase SDK is intentionally unreachable in this offline QA. Guests
+    // can still practise locally; avoid a scary blanket site-error banner.
+    await page.waitForFunction(()=>document.getElementById('sg-account-status')?.textContent.includes('無料練習は使えるよ'));
+    assert.doesNotMatch(await page.locator('#sg-account-status').textContent(),/^接続エラー/);
+    assert.equal(await page.locator('.sg-accountbar button,.sg-accountbar a').evaluateAll(nodes=>
+      nodes.every(node=>node.getBoundingClientRect().height>=44)),true,
+      'account-bar login and navigation controls remain easy to tap on mobile');
     for(const dest of ['scenes.html','reflex.html','freeze-breaker.html','phrasebook.html']){
      assert.equal(await page.locator('#workouts .workouts a[href="./'+dest+'"]').count()>0,true,
       'four-workout route visible: '+dest);

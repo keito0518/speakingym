@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import vm from "node:vm";
 import {
  SYNC_ITEMS,OWNER_KEY,GUEST_KEY,mergeValue,normalizeValue,
  readSnapshot,removeSnapshot,applySnapshot,saveGuestSnapshot,readGuestSnapshot,
@@ -87,6 +88,21 @@ test("every public page exposes the account bar and retains guest-mode training"
  assert.match(code,/pendingKeys\(uid\)/);
  assert.match(code,/window\.confirm\("この端末のゲスト記録/);
  assert.match(code,/removeSnapshot\(localStorage\)/);
+});
+test("Firebase startup outage explains guest practice remains usable without exposing unverified owner state",()=>{
+ const code=text("account-sync.js");
+ const helpers=code.slice(code.indexOf("function describeError("),code.indexOf("async function loginNow("));
+ const error={message:"network_unavailable"};
+ const guest=vm.runInNewContext(helpers+";startupErrorMessage",{
+  OWNER_KEY,localStorage:storage()
+ });
+ assert.match(guest(error),/60秒などの無料練習は使える/);
+ assert.doesNotMatch(guest(error),/^接続エラー/);
+ const oldOwner=vm.runInNewContext(helpers+";startupErrorMessage",{
+  OWNER_KEY,localStorage:storage({[OWNER_KEY]:"verified-in-previous-session"})
+ });
+ assert.match(oldOwner(error),/ログイン状態を確認できるまで/);
+ assert.doesNotMatch(oldOwner(error),/無料練習は使える/);
 });
 test("Firestore rules deny public access and permit only uid-owner allowlisted documents",()=>{
  const rules=text("firestore.rules");
