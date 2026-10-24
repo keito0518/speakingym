@@ -45,7 +45,7 @@ test('quiet hero text stays legible and short labels explain the next action',()
  assert.match(neon,/body\.sg-freeze \.hero\{[^}]*background:var\(--sg-neon-night\)/,'the dark rescue hero has an explicit dark background');
  assert.match(neon,/body\.sg-freeze \.hero h1\{color:#f3fcfa\}/,'rescue headline stays light against dark panel');
  assert.match(freeze,/<h1 id="page-title">英語で詰まったら？<\/h1>/);
- assert.match(read('reflex.html'),/<h1>60秒で、英語を声に出そう。<\/h1>/);
+ assert.match(read('reflex.html'),/<h1>60秒、英語を話そう。<\/h1>/);
  assert.match(read('account.html'),/<h1 id="heroTitle">練習記録と、次の一歩。<\/h1>/);
  assert.match(read('scenes.html'),/<h1>どんな場面で話してみる？<\/h1>/);
  assert.match(read('index.html'),/max-width:13em;text-wrap:balance/);
