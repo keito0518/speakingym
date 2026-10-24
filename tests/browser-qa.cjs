@@ -36,7 +36,8 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     await page.waitForFunction(()=>document.getElementById('sg-account-status')?.textContent.includes('無料練習は使えるよ'));
     assert.doesNotMatch(await page.locator('#sg-account-status').textContent(),/^接続エラー/);
     assert.equal(await page.locator('.sg-accountbar button,.sg-accountbar a').evaluateAll(nodes=>
-      nodes.every(node=>node.getBoundingClientRect().height>=44)),true,
+      nodes.filter(node=>!node.hidden&&getComputedStyle(node).display!=='none')
+        .every(node=>node.getBoundingClientRect().height>=44)),true,
       'account-bar login and navigation controls remain easy to tap on mobile');
     for(const dest of ['scenes.html','reflex.html','freeze-breaker.html','phrasebook.html']){
      assert.equal(await page.locator('#workouts .workouts a[href="./'+dest+'"]').count()>0,true,
