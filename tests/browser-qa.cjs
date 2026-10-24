@@ -91,6 +91,15 @@ const {chromium,webkit,devices}=require('playwright');const engine=process.env.S
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.equal(await page.locator('#questionPane').isVisible(),false);
     assert.equal(await page.locator('#endPane').isVisible(),false);
+    // Abandoning a partially answered exercise must preserve existing data
+    // without manufacturing a new successful or failed pair.
+    const countBeforeCancel=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-transfer-results-v1:guest')||'[]').length);
+    await page.locator('#start').click();
+    await page.locator('#said').click();
+    await page.locator('#cancelPractice').click();
+    assert.equal(await page.locator('#introPane').isVisible(),true);
+    assert.equal(await page.locator('#questionPane').isVisible(),false);
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-transfer-results-v1:guest')||'[]').length),countBeforeCancel);
     await page.locator('#start').click();
     assert.equal(await page.locator('#questionPane').isVisible(),true);
     assert.match(await page.locator('#progress').textContent(),/ROUND 1 \/ 2/);
