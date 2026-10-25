@@ -1,7 +1,7 @@
 /**
  * Freeze Breaker: deterministic conversation-repair workouts with no provider calls.
  * No audio, transcripts, answers, Firebase IDs or personal information are stored.
- * A "win" is a LEARNER SELF-REPORT, never a scored speech/fluency measurement.
+ * Progress records practice completion; it never scores speech or fluency.
  */
 export const FREEZE_REASONS=Object.freeze({
  misunderstood:Object.freeze({name:'相手の質問が聞き取れなかった',rescue:'Sorry, could you say that again more slowly?',meaning:'すみません。もう一度ゆっくり言ってもらえますか？',hint:'まず「もう一度ゆっくり言ってください」と頼もう。'}),
@@ -300,7 +300,7 @@ export function recoveryReply(attempt,reason){
   default:return ordinary;
  }
 }
-/** A recorded result means the learner says they spoke; it is not AI grading. */
+/** Historical spaced-repetition record; completion never means speech was scored. */
 export function recordFreezeAttempt(raw,{sceneId,reason,saidIt,usedHint=false},when=new Date()){
  const p=normalizeFreezeProgress(raw);
  // null means the learner answered the first prompt without freezing.
