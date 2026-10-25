@@ -48,14 +48,20 @@ test('survival verifies the meaning and only teaches a clarification phrase when
   'the vocabulary repair receives a definition that matches the unknown word');
  assert.match(recoveryReply(vocabulary,'unknown').examples[0],/deposit back/,
   'the learner confirms the meaning after receiving the definition');
+ assert.match(recoveryReply(vocabulary,'unknown').meaning,/返す/,
+  'the reply screen meaning matches the definition the other speaker gives');
  const explanation=sceneAttempt('long-explanation',{});
  assert.ok(recoveryReply(explanation,'long').line.endsWith(explanation.followup),
   'the long explanation repair continues with a smaller, coherent step');
  assert.match(recoveryReply(explanation,'long').examples[0],/local train/,
   'the learner checks the first instruction rather than restarting the question');
+ assert.match(recoveryReply(explanation,'long').meaning,/各駅停車/,
+  'the reply screen translates the same first step the other speaker says');
  const missingWord=sceneAttempt('missing-word',{});
  assert.match(recoveryReply(missingWord,'words').examples[0],/aquarium/,
   'after the listener guesses the word, the learner can acknowledge it');
+ assert.match(recoveryReply(missingWord,'words').meaning,/水族館/,
+  'the missing-word response also has a matching Japanese meaning');
  const html=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
  assert.match(html,/相手の用件はどちら/);
  assert.match(html,/聞き取れないときは、聞き返そう/);

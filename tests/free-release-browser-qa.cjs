@@ -208,8 +208,8 @@ const fs=require('node:fs');
    assert.match(await page.locator('#followup').textContent(),/^Of course\. Let me say that again more slowly\./,
     'the simulated conversation responds to the clarification request');
    await page.locator('#show-hint').click();
-   assert.match(await page.locator('#followup-hint').textContent(),/milk|regular latte/,
-    'the hint gives a natural next response for the café context');
+   assert.match(await page.locator('#followup-hint').textContent(),/tea|anything else/i,
+    'the hint answers the coffee-machine outage with a natural alternative');
    assert.match(await page.locator('#recovery-context').textContent(),/想定会話/,'no fake claim of AI understanding');
    await page.locator('#retry-mic').click();
    await page.evaluate(()=>window.__recognizers.at(-1).emit('Could you say that again?'));

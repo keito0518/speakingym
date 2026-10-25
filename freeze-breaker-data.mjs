@@ -258,8 +258,9 @@ export function sceneAttempt(sceneId,raw){
  const retryIndex=p.records[sceneId]?.repeatVariationIndex;
  const variationIndex=Number.isInteger(retryIndex)?retryIndex:attempts%scene.variations.length;
  const variation=scene.variations[variationIndex];
- const followup=variation.followups[Math.floor(attempts/scene.variations.length)%variation.followups.length];
- return {scene,variation,followup,attempts,variationIndex};
+ const followupIndex=Math.floor(attempts/scene.variations.length)%variation.followups.length;
+ const followup=variation.followups[followupIndex];
+ return {scene,variation,followup,attempts,variationIndex,followupIndex};
 }
 /** Scripted, strategy-dependent next line. This does not interpret or score speech. */
 export function recoveryReply(attempt,reason){
@@ -274,7 +275,8 @@ export function recoveryReply(attempt,reason){
    meaning:'もちろんです。もう一度ゆっくり言います。'+attempt.variation.meaning,rate:.72};
   case 'words':return attempt.scene?.id==='missing-word'?{
    line:'No problem. '+next,
-   caption:'特徴を説明した想定：相手が何のことか分かってくれました。',meaning:'大丈夫です。説明してくれたものが分かりました。',rate:.86,
+   caption:'特徴を説明した想定：相手が何のことか分かってくれました。',
+   meaning:attempt.variationIndex===0?'大丈夫です。魚や海の生き物が見られる場所なら、水族館ですね。':'大丈夫です。クーラーボックスですね。持っていけますよ。',rate:.86,
    examples:attempt.variation.repairExamples
   }:{
    line:'No problem. Can you describe what you mean?',
@@ -282,7 +284,10 @@ export function recoveryReply(attempt,reason){
    examples:['It is something that you use to...','It is similar to...']
   };
   case 'unknown':return attempt.scene?.id==='unknown-word'?{
-   line:next,caption:'意味を尋ねた想定：相手がその単語を説明してくれました。',meaning:'相手が尋ねた単語の意味を説明してくれています。',rate:.86,
+   line:next,caption:'意味を尋ねた想定：相手がその単語を説明してくれました。',
+   meaning:attempt.variationIndex===0?
+    (attempt.followupIndex===0?'期限内にキャンセルすれば、預け金を返すという意味です。':'前日までにキャンセルすれば、料金は返金されます。'):
+    (attempt.followupIndex===0?'予約をキャンセルしても、支払いは返金されないという意味です。':'そうです。返金はできませんが、日程は変更できます。'),rate:.86,
    examples:attempt.variation.repairExamples
   }:{
    line:'Sure. Which word would you like me to explain?',
@@ -291,7 +296,10 @@ export function recoveryReply(attempt,reason){
   };
   case 'long':return attempt.scene?.id==='long-explanation'?{
    line:'Of course. Let’s go one step at a time. '+next,
-   caption:'説明を小分けにしてもらった想定：最初の手順を確認しよう。',meaning:'もちろんです。一つずつ進めましょう。'+attempt.variation.meaning,rate:.86,
+   caption:'説明を小分けにしてもらった想定：最初の手順を確認しよう。',
+   meaning:attempt.variationIndex===0?
+    (attempt.followupIndex===0?'もちろんです。まず各駅停車でセントラル駅まで行きましょう。続きはその後に説明します。':'もちろんです。一つずつ進めましょう。乗り換え前にセントラル駅の掲示板を確認してください。'):
+    (attempt.followupIndex===0?'まずフォームを送信してください。メールのことはその後で案内します。':'そうです。確認メールを受付に持ってきてください。'),rate:.86,
    examples:attempt.variation.repairExamples
   }:{
    line:'Sure. Which part should we go through first?',
