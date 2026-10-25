@@ -136,6 +136,8 @@ const fs=require('node:fs');
    await page.locator('#reason-buttons button[data-correct="true"]').click();
    assert.equal(await page.locator('#step-retry').isVisible(),true,'a correct understanding goes straight to a spoken reply');
    assert.equal(await page.locator('#step-repair').isVisible(),false,'no unnecessary recovery phrase after the meaning is clear');
+   assert.match(await page.locator('#feedback').textContent(),/意味を確認できました/);
+   assert.match(await page.locator('#followup-speaker').textContent(),/相手の発言/);
    assert.match(await page.locator('#recovery-context').textContent(),/カフェ|ラテ|選択肢/);
    assert.equal(await page.locator('#followup').textContent(),heardFirst,'the original line remains available while forming a reply');
    await page.locator('#reveal-followup').click();
@@ -163,6 +165,7 @@ const fs=require('node:fs');
    assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true,
     'changing scene phase must cancel pending microphone recognition');
    assert.equal(await page.locator('#step-retry').isVisible(),true,'the recovery phrase leads back to the same utterance');
+   assert.equal(await page.locator('#followup-speaker').textContent(),'相手の言い直し');
    assert.equal(await page.locator('#followup').isVisible(),false,'the repeated utterance remains listening-first');
    assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),await page.locator('#followup').textContent());
    await page.locator('#reveal-followup').click();
