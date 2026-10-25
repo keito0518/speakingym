@@ -64,6 +64,7 @@ function clearSession(){
  $('mission').hidden=true;
  $('result').hidden=true;
  $('freeze-hint').hidden=true;
+ $('rescue-hint').open=false;
  $('transcript-disclaimer').hidden=true;
  $('reason-panel').hidden=true;
 }
@@ -376,6 +377,7 @@ function startMission(useImported=false){
  $('retry-mic-status').textContent='マイクで話した英文を確認できます。音声認識の結果は採点ではありません。';
  updateSpeechControls();
  $('result').hidden=true;$('freeze-hint').hidden=true;
+ $('rescue-hint').open=false;
  $('transcript-disclaimer').hidden=true;
  $('reason-panel').hidden=true;
  $('context').textContent=useOriginal?'先ほどのAI実践英会話から選んだ質問だよ。':attempt.scene.context;
@@ -476,7 +478,7 @@ function pickRecommended(){
  $('mission-select').value=importedMoment&&!importedMoment.used?
   window.speakingymFreezeBridge.freezeScene(importedMoment.sceneId):
   nextFreezeScene(progress).id;
- $('feedback').textContent='期限が来たリベンジを優先して選んだよ。';
+ $('feedback').textContent='復習期限と自己申告の苦手に合わせた場面を選んだよ。';
 }
 window.addEventListener('speakingym:account-changing',()=>{
  importedMoment=null;
@@ -513,6 +515,7 @@ $('return-to-ai').addEventListener('click',()=>{
 $('pick-recommendation').addEventListener('click',pickRecommended);
 $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
+$('rescue-hint').addEventListener('toggle',()=>{if($('rescue-hint').open)usedHint=true});
 $('said-yes').addEventListener('click',()=>finish(true));
 $('said-no').addEventListener('click',()=>finish(false));
 $('request-coach').addEventListener('click',requestCoach);

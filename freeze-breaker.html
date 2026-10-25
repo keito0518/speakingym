@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#faf9f6">
-<meta name="description" content="予想外の英語に固まったら、どう会話を続ける？Speakingymの無料会話サバイバル。聞き返す・時間を稼ぐ・言い換える・選択肢を聞く練習。">
+<meta name="description" content="速い英語や知らない単語に出会っても、聞き返す・意味を確認する・説明を区切ってもらうなど、会話を続ける切り返しを練習。">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://speakingym.pages.dev/freeze-breaker.html">
 <meta property="og:type" content="website"><meta property="og:title" content="無料・会話サバイバル | Speakingym">
@@ -41,7 +41,7 @@ main{max-width:1010px;padding:34px 20px 62px}
 .question{background:#f7f9f4;border:1px solid #dfe8de;border-left:3px solid #65836e;border-radius:8px;padding:19px}.question blockquote{font-size:clamp(20px,3.2vw,26px);line-height:1.55;letter-spacing:-.02em}
 .speaker,.stage{letter-spacing:.015em;color:#54725d;font-size:11px}.mission-way{background:transparent;border-left:3px solid #b6cab8;border-radius:0;padding:6px 13px;color:#496552}
 .reason-grid{gap:9px}.reason-button{border-radius:8px;font-weight:750;background:#fff;min-height:58px}.reason-panel{border-color:#e0e7dc}
-.prompt-help{background:#f7f9f4;border:1px solid #dfe8db;border-radius:8px}.rescue-line{color:#2b5943}.rescue-meaning{color:#58715d}
+.prompt-help{background:#f7f9f4;border:1px solid #dfe8db;border-radius:8px}.prompt-help summary{cursor:pointer;color:#315746;font-size:13px;font-weight:800;padding:2px 0}.prompt-help[open] summary{margin-bottom:13px}.rescue-line{color:#2b5943}.rescue-meaning{color:#58715d}
 .stat{background:#f6f7f3;border-radius:8px}.stat strong{color:#355747}.hint{background:#f7f8f4;border:1px solid #e0e7dc;border-radius:8px}
 .cta{border-radius:8px;background:#285547}.frame-note,.small{color:#697b6e}.footer{color:#879288}
 h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
@@ -60,7 +60,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
  <div class="kicker">CONVERSATION SURVIVAL · 会話を止めない練習</div>
  <h1 id="page-title"><span class="hero-title-line">不意のひと言に、</span><span class="hero-title-line">切り返す。</span></h1>
  <p>予定外のひと言を聞いたら、聞き返す・時間をもらう・言い換える。使う切り返しを選んで実際に声に出し、相手の次の発言まで会話を続ける時間制限なしの練習です。60秒の英作文とは目的が違います。</p>
- <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
+ <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">12</span>場面</span></div>
 </section>
 <div class="notice">マイクなしでも練習できます。音声認識は任意です。<details><summary>音声認識・採点・記録について</summary><p>通常の練習は台本型で、AI利用回数を消費しません。発音・正誤の自動採点も行いません。マイク利用時、音声がブラウザ提供元の認識サービスに送られる場合があります。認識した英文・録音は保存しません。終了後に自分で追加のAI講評を依頼した場合のみ、書き起こされた英文と練習場面をGeminiへ送信し、AI先生の利用回数を1回消費します。無料枠では入力がモデル改善に使われる場合があります。自己評価の復習記録だけをこの端末に保存します。</p></details></div>
 <section class="card" id="imported-ai-cue" hidden aria-labelledby="imported-ai-title" style="border:2px solid #f0b390;background:#fffdf9;margin-top:20px">
@@ -81,7 +81,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
    <p>初回は自動でおすすめの場面を選びます。練習したい場面があれば変更できます。</p>
    <label for="mission-select"><strong>練習する場面</strong></label>
    <select id="mission-select" aria-label="フリーズ克服の場面"></select>
-   <button class="button muted" id="pick-recommendation" type="button">復習が必要な場面を選ぶ</button>
+   <button class="button muted" id="pick-recommendation" type="button">苦手に合わせたおすすめを選ぶ</button>
   </details>
   <p id="save-warning" class="small" role="status"></p>
  </section>
@@ -107,13 +107,15 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
   <div id="step-repair" hidden>
    <h3>まずは沈黙を切るひと言</h3>
    <p class="small" id="reason-caption"></p>
-   <div class="prompt-help"><div class="speaker">困ったときに使える切り返し</div>
+   <p class="mission-way" id="independent-first-prompt">正解の定型句はないよ。まずは表示された文を見ずに、自分の言葉で聞き返し・確認・時間づくりを試そう。</p>
+   <details class="prompt-help" id="rescue-hint"><summary>言い方に迷ったら例を見る（任意）</summary>
+    <div class="speaker">この場面で使える切り返し</div>
     <div id="rescue-line" class="rescue-line" lang="en"></div>
     <p id="rescue-meaning" class="rescue-meaning"></p>
     <div id="rescue-guide" class="small"></div>
     <button class="button muted" id="speak-rescue" type="button">▶ この表現を聞く</button>
-   </div>
-   <p class="mission-way">この切り返しを自分の声で言ってみよう。全文を暗記しなくても、相手に伝わる短い言い方でOK。</p>
+   </details>
+   <p class="mission-way">マイクは任意。英文の入力欄を使うか、声に出したら「相手の続きを聞く」へ進もう。全文を暗記しなくても大丈夫。</p>
    <div class="speech-take" aria-label="会話を立て直す一言を声で練習する">
     <div class="control-row"><button class="button primary" id="first-mic" type="button">🎙 切り返しを話す</button><button class="button muted" id="first-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="first-reset" type="button">↻ 全消し</button></div>
     <label for="first-transcript" class="small">切り返した英文（この練習中だけ表示・保存しません）</label>

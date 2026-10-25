@@ -5,6 +5,8 @@
  */
 export const FREEZE_REASONS=Object.freeze({
  misunderstood:Object.freeze({name:'相手の質問が聞き取れなかった',rescue:'Sorry, could you say that again more slowly?',meaning:'すみません。もう一度ゆっくり言ってもらえますか？',hint:'まず「もう一度ゆっくり言ってください」と頼もう。'}),
+ unknown:Object.freeze({name:'知らない単語の意味が分からなかった',rescue:'What does that word mean here?',meaning:'ここでのその単語はどういう意味ですか？',hint:'分からない語を一つだけ指して、文脈での意味を聞こう。'}),
+ long:Object.freeze({name:'説明が長くて途中から分からなくなった',rescue:'Could you break that into smaller steps?',meaning:'もう少し小さく分けて説明してもらえますか？',hint:'説明を止めて、要点や最初の一段階だけに絞ってもらおう。'}),
  words:Object.freeze({name:'言いたい単語が出なかった',rescue:"I can't remember the word, but it's like...",meaning:'単語が思い出せないけど、こんな感じのものです……',hint:'知らない単語を探し続けず、特徴や用途を知っている英語で説明しよう。'}),
  surprise:Object.freeze({name:'予想外の返事で固まった',rescue:'Oh, I see. Could you give me a second?',meaning:'なるほど。ちょっと考える時間をもらえますか？',hint:'焦らず数秒考える時間をつくって大丈夫。'}),
  unsure:Object.freeze({name:'どう返すのが自然かわからなかった',rescue:'Could you tell me what my options are?',meaning:'どんな選択肢があるか教えてもらえますか？',hint:'選択肢を質問すれば、次の一言が出しやすくなる。'})
@@ -95,6 +97,84 @@ export const FREEZE_SCENES=Object.freeze([
    goal:'提案を理解して返答しよう。',
    examples:['Yes, that would be great.','Could you tell me where the other store is?']}
  ]),
+ scene('fast-english','速い英語を聞き取れない','🎧','旅行先で相手が自然な速さで案内してくれた。',
+  './scenes.html?scene=smalltalk',[
+  {ask:'I was gonna say, if you head down that street and hang a left after the pharmacy, you should see it on your right.',
+   meaning:'あの通りを進んで薬局の先で左に曲がれば、右側に見えると思います。',
+   followups:['Sure. The pharmacy is on the corner, just past the bank.','Yes, that is right. Turn left at the next traffic light.'],
+   goal:'全部を聞き取ろうとせず、聞き取れなかった区間だけを指定して聞き直そう。',
+   examples:['Could you repeat the part after “the pharmacy”?','I caught “the pharmacy,” but not the next turn.']},
+  {ask:'You can just tap your card when you get off, and it’ll charge the fare based on how far you went.',
+   meaning:'降りるときにカードをタッチすれば、乗った距離に応じて運賃が請求されます。',
+   followups:['That is right. You tap the same card when you get off.','Yes, the system calculates the fare automatically.'],
+   goal:'聞こえたキーワードを伝えて、理解が合っているか確かめよう。',
+   examples:['I heard “tap your card.” Do I tap it when I get off?','Could you repeat the part about when to tap?']}
+ ]),
+ scene('unknown-word','知らない単語の意味が分からない','🧩','宿泊先の予約条件を確認している。',
+  './scenes.html?scene=hotel',[
+  {ask:'The deposit is refundable as long as you cancel at least 24 hours before check-in.',
+   meaning:'チェックインの24時間前までにキャンセルすれば、預け金は返金されます。',
+   followups:['It means we will give your deposit back if you cancel in time.','You will get the money back, but only if you cancel by the day before.'],
+   goal:'知らない語だけを指して、ここでの意味を短く尋ねよう。',
+   examples:['What does “refundable” mean here?','Could you explain “refundable” in simple words?']},
+  {ask:'The room rate is non-refundable, so we cannot return the payment after you book.',
+   meaning:'この部屋の料金は返金不可なので、予約後に支払いを返せません。',
+   followups:['It means the payment will not be returned if you cancel.','That is correct. You can still change the date, but not get a refund.'],
+   goal:'似た単語に頼らず、知らない語の意味をその場の文脈で確認しよう。',
+   examples:['What does “non-refundable” mean if I cancel?','So I would lose the payment if I cancel, right?']}
+ ]),
+ scene('long-explanation','長い説明の途中で分からなくなる','🗺️','駅で乗り換え方法を英語で説明してもらっている。',
+  './scenes.html?scene=train',[
+  {ask:'Take the local train three stops, change at Central, go up to the main concourse, and check the board because the platform can change.',
+   meaning:'各駅停車で3駅進み、セントラル駅で乗り換えて中央コンコースへ上がります。ホームが変わることがあるので掲示板を確認してください。',
+   followups:['First, take the local train to Central. I can explain the rest after that.','The key point is to check the board at Central before you change trains.'],
+   goal:'説明全体を止めず、最初の一段階だけ確認して情報を小分けにしよう。',
+   examples:['Could we go one step at a time?','So first I take the local train to Central, right?']},
+  {ask:'After you submit the form, wait for the email, open the link, verify your details, and then bring the confirmation to the front desk.',
+   meaning:'フォームを送信したらメールを待ち、リンクを開いて情報を確認し、確認メールを受付に持ってきてください。',
+   followups:['First, submit the form. I will help you with the email after that.','Exactly. You need to bring the confirmation email to the front desk.'],
+   goal:'一度に全部覚えず、今やることを一つに絞って確認しよう。',
+   examples:['What should I do first?','Could you repeat the last step about the front desk?']}
+ ]),
+ scene('sudden-opinion','急に意見を求められる','💬','仕事の打ち合わせで、資料を見た直後に意見を聞かれた。',
+  './scenes.html?scene=work',[
+  {ask:'We need to choose a launch date now. Which option would you go with?',
+   meaning:'今、公開日を決める必要があります。どの案を選びますか？',
+   followups:['What is the main reason you prefer the later date?','Would a short delay solve your concern?'],
+   goal:'時間をもらうだけで終わらず、結論・理由・確認したい点のどれかを一つ返そう。',
+   examples:['Could I have a moment to compare the two dates?','I would lean toward the later date because we need more time to test.']},
+  {ask:'Do you think we should expand the project to the whole team next month?',
+   meaning:'来月、このプロジェクトをチーム全体に広げるべきだと思いますか？',
+   followups:['What would you need to feel comfortable moving forward?','Would you support a small trial with one group first?'],
+   goal:'賛否を一言で示し、理由か条件を添えて会話を続けよう。',
+   examples:['I agree with a small trial, but I would wait before expanding it.','I see the benefit. My concern is whether we have enough support.']}
+ ]),
+ scene('change-booking','注文や予約の内容を変更したい','📅','ホテルに到着後、予約内容を変えられるか相談している。',
+  './scenes.html?scene=hotel',[
+  {ask:'Your booking is for one guest, but you said two people will be staying. Would you like me to update it?',
+   meaning:'予約は1名ですが、2名で宿泊されるとのことですね。変更しましょうか？',
+   followups:['There is an extra charge of ten dollars per night. Would you like to continue?','I can update the booking now. Could I see the second guest’s ID?'],
+   goal:'変更内容と追加料金を順に確認してから、希望をはっきり伝えよう。',
+   examples:['Would the price change if I add one guest?','Yes, please update it for two guests.']},
+  {ask:'I can move your dinner reservation to seven, but the patio is only available at six thirty. Which would you prefer?',
+   meaning:'夕食の予約は7時に変更できますが、テラス席は6時半のみ空いています。どちらがよいですか？',
+   followups:['Great, I have changed it to seven indoors.','Of course. The patio table is booked for six thirty.'],
+   goal:'変更後の時刻・場所を復唱し、予約内容の行き違いを防ごう。',
+   examples:['Just to confirm, that is seven o’clock indoors, right?','Could you change it to six thirty on the patio?']}
+ ]),
+ scene('missing-word','言いたい英単語が出てこない','🧭','週末に行きたい場所を友人に説明している。',
+  './scenes.html?scene=smalltalk',[
+  {ask:'What kind of place would you like to visit this weekend?',
+   meaning:'今週末はどんな場所に行きたい？',
+   followups:['You mean a place where you can see fish and sea animals? That is an aquarium.','Oh, an aquarium! Is there one you would like to visit?'],
+   goal:'単語を思い出すまで止まらず、場所の特徴や用途を知っている語で説明しよう。',
+   examples:['It is a place where you can see fish and sea animals.','You can watch sea animals there.']},
+  {ask:'What should we bring to keep our drinks cold on the drive?',
+   meaning:'ドライブ中に飲み物を冷やしておくには、何を持っていけばいい？',
+   followups:['Do you mean a cooler? I can bring one.','A cooler would work. I have a small one in the garage.'],
+   goal:'名前が出てこない物を、用途・形・使う場面から説明して会話を続けよう。',
+   examples:['It is a box that keeps food and drinks cold.','We put ice inside it and carry drinks in it.']}
+ ]),
  scene('anywhere','どこでも役立つ会話の立て直し','💬','相手の発言が思いがけず、何と言うか迷ってしまった。',
   './scenes.html?scene=smalltalk',[
   {ask:'Sorry, could you explain what you mean?',
@@ -113,6 +193,10 @@ export const FREEZE_SCENES=Object.freeze([
 
 ]);
 const IDS=new Set(FREEZE_SCENES.map(s=>s.id));
+const FOCUS_SCENE_BY_REASON=Object.freeze({
+ misunderstood:'fast-english',unknown:'unknown-word',long:'long-explanation',
+ words:'missing-word',surprise:'sudden-opinion',unsure:'change-booking'
+});
 const cleanDay=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&
  !Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
 const validCount=x=>Number.isSafeInteger(x)&&x>=0&&x<=100000?x:0;
@@ -142,10 +226,16 @@ export function nextFreezeScene(raw,when=new Date()){
  const day=freezeDay(when),p=normalizeFreezeProgress(raw);
  const due=FREEZE_SCENES.filter(s=>p.records[s.id]&&p.records[s.id].due<=day)
   .sort((a,b)=>p.records[a.id].due.localeCompare(p.records[b.id].due));
+ const totals=Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
+  [id,Object.values(p.records).reduce((sum,e)=>sum+(e.reasonCounts?.[id]||0),0)]));
+ const ranked=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+ const focus=FREEZE_SCENES.find(s=>s.id===FOCUS_SCENE_BY_REASON[ranked[0]?.[0]]);
+ if(due[0])return due[0];
+ if(ranked[0]?.[1]>0&&focus)return focus;
  const unseen=FREEZE_SCENES.filter(s=>!p.records[s.id]);
  const upcoming=FREEZE_SCENES.filter(s=>p.records[s.id]&&p.records[s.id].due>day)
   .sort((a,b)=>p.records[a.id].due.localeCompare(p.records[b.id].due));
- return due[0]||unseen[0]||upcoming[0]||FREEZE_SCENES[0];
+ return unseen[0]||upcoming[0]||FREEZE_SCENES[0];
 }
 export function sceneAttempt(sceneId,raw){
  const scene=FREEZE_SCENES.find(x=>x.id===sceneId);
@@ -168,6 +258,12 @@ export function recoveryReply(attempt,reason){
   case 'words':return {
    line:'No worries. You can use simple words. '+next,
    caption:'言い換えた想定：相手が待ってくれました。次のひと言に返そう。',rate:.86};
+  case 'unknown':return {
+   line:next||'Sure. Which word would you like me to explain?',
+   caption:'意味を尋ねた想定：相手がその単語を説明してくれます。',rate:.86};
+  case 'long':return {
+   line:'Of course. Let’s take it one step at a time. '+next,
+   caption:'説明を小分けにしてもらった想定：まず一つ目を聞いて返そう。',rate:.86};
   case 'surprise':return {
    line:'Sure, take your time. '+next,
    caption:'少し待ってもらった想定：考えたあと、もう一度返そう。',rate:.86};

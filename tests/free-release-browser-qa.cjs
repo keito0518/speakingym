@@ -117,7 +117,7 @@ const fs=require('node:fs');
     'dark header brand must stay readable in the conversation rescue page');
    await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
    await page.reload();
-   assert.equal(await page.locator('#mission-select option').count(),7);
+   assert.equal(await page.locator('#mission-select option').count(),13);
    assert.equal(await page.locator('#reason-panel').isVisible(),false,'the survival strategy appears only after listening starts');
    await page.locator('#start-button').click();
    await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-listening.png',fullPage:true});
@@ -134,6 +134,11 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#dialogue').isVisible(),false);
    await page.locator('#reason-buttons button[data-reason="misunderstood"]').click();
    assert.equal(await page.locator('#step-repair').isVisible(),true);
+   assert.equal(await page.locator('#rescue-hint').evaluate(el=>el.open),false,
+    'learners get a chance to construct their own repair before seeing the sample');
+   assert.match(await page.locator('#independent-first-prompt').textContent(),/自分の言葉/);
+   assert.equal(await page.locator('#first-transcript').isVisible(),true,
+    'the learner can try their own wording before opening a sample');
    assert.match(await page.locator('#rescue-line').textContent(),/say that again more slowly/);
    await page.locator('#first-mic').click();
    await page.evaluate(()=>window.__recognizers.at(-1).emit('Could I have a latte, please?'));

@@ -7,8 +7,8 @@ import {
 } from '../freeze-breaker-data.mjs';
 
 const date=iso=>new Date(iso);
-test('Freeze Breaker has six concrete travel and work contexts, alternatives and no AI keys',()=>{
- assert.ok(FREEZE_SCENES.length>=6);
+test('Freeze Breaker has varied concrete travel and work contexts, alternatives and no AI keys',()=>{
+ assert.ok(FREEZE_SCENES.length>=13);
  assert.equal(new Set(FREEZE_SCENES.map(s=>s.id)).size,FREEZE_SCENES.length);
  assert.ok(Object.keys(FREEZE_REASONS).length>=4);
  for(const scene of FREEZE_SCENES){
@@ -23,6 +23,34 @@ test('Freeze Breaker has six concrete travel and work contexts, alternatives and
  }
  const source=readFileSync(new URL('../freeze-breaker-data.mjs',import.meta.url),'utf8');
  assert.doesNotMatch(source,/\bfetch\s*\(|GEMINI_API_KEY|STRIPE_SECRET|\blocalStorage\b/);
+});
+test('survival scenarios teach distinct repair moves and make learners think before examples',()=>{
+ assert.equal(FREEZE_SCENES.length,13);
+ const added=['fast-english','unknown-word','long-explanation','sudden-opinion','change-booking','missing-word'];
+ for(const id of added){
+  const scenario=FREEZE_SCENES.find(item=>item.id===id);
+  assert.ok(scenario,`missing scenario ${id}`);
+  assert.match(scenario.name,/速い|知らない|長い|意見|変更|言いたい/);
+  assert.ok(scenario.variations.length>=2,`${id} needs replay variety`);
+  assert.ok(new Set(scenario.variations.map(item=>item.ask)).size>=2,`${id} repeats the same opening`);
+  assert.ok(new Set(scenario.variations.map(item=>item.goal)).size>=2,`${id} does not teach a distinct move`);
+  assert.ok(scenario.variations.every(item=>item.followups.length>=2&&item.examples.length>=2));
+ }
+ assert.match(FREEZE_REASONS.unknown.rescue,/What does that word mean/);
+ assert.match(FREEZE_REASONS.long.rescue,/break that into smaller steps/);
+ const vocabulary=sceneAttempt('unknown-word',{});
+ assert.equal(recoveryReply(vocabulary,'unknown').line,vocabulary.followup,
+  'the vocabulary repair receives a definition that matches the unknown word');
+ const explanation=sceneAttempt('long-explanation',{});
+ assert.ok(recoveryReply(explanation,'long').line.endsWith(explanation.followup),
+  'the long explanation repair continues with a smaller, coherent step');
+ const html=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
+ assert.match(html,/自分の言葉で聞き返し・確認・時間づくりを試そう/);
+ assert.match(html,/<details class="prompt-help" id="rescue-hint"><summary>言い方に迷ったら例を見る/,
+  'the sample recovery must be hidden until requested');
+ const script=readFileSync(new URL('../freeze-breaker.js',import.meta.url),'utf8');
+ assert.ok(script.includes("$('rescue-hint').addEventListener('toggle'")&&script.includes('usedHint=true'),
+  'opening a sample should affect the self-reported practice stage');
 });
 test('JST day and scheduled 1/3/7/14-day independent self-report retries',()=>{
  assert.equal(freezeDay(date('2026-10-22T14:59:59Z')),'2026-10-22');
@@ -96,13 +124,22 @@ test('conversation rescue hears different scripted next lines based on the chose
  assert.deepEqual(recoveryReply(task,'injected'),uninterrupted);
  assert.match(repeat.caption,/想定/);
 });
-test('recommendation prioritizes due, then unseen, then future scenes',()=>{
+test('recommendation prioritizes due reviews, the most reported weakness, then unseen scenes',()=>{
  let p={};
  assert.equal(nextFreezeScene(p,date('2026-10-23T12:00:00+09:00')).id,'cafe');
  p=recordFreezeAttempt(p,{sceneId:'hotel',reason:'words',saidIt:false},date('2026-10-22T12:00:00+09:00'));
  assert.equal(nextFreezeScene(p,date('2026-10-23T12:00:00+09:00')).id,'hotel');
  p=recordFreezeAttempt(p,{sceneId:'hotel',reason:'words',saidIt:true},date('2026-10-23T12:00:00+09:00'));
- assert.equal(nextFreezeScene(p,date('2026-10-23T12:00:00+09:00')).id,'cafe');
+ assert.equal(nextFreezeScene(p,date('2026-10-23T12:00:00+09:00')).id,'missing-word');
+});
+test('next recommendation targets the most reported obstacle after due reviews',()=>{
+ const when=date('2026-10-23T12:00:00+09:00');
+ let p={};
+ p=recordFreezeAttempt(p,{sceneId:'cafe',reason:'unknown',saidIt:false},when);
+ assert.equal(nextFreezeScene(p,when).id,'unknown-word');
+ p=recordFreezeAttempt(p,{sceneId:'hotel',reason:'misunderstood',saidIt:false},when);
+ assert.equal(nextFreezeScene(p,date('2026-10-24T12:00:00+09:00')).id,'cafe',
+  'a due retry is always ahead of a targeted new scene');
 });
 test('malformed/untrusted state cannot inject keys, fake mastery, or store texts',()=>{
  const bad=normalizeFreezeProgress({records:JSON.parse('{"__proto__":{"stage":4,"due":"2026-10-20","last":"2026-10-19"},"cafe":{"stage":9,"due":"2026-10-24","last":"2026-10-23"},"hotel":{"stage":2,"due":"2026-10-24","last":"2026-10-23","attempts":-100,"recovered":"99","privateText":"sensitive"}}')});
