@@ -41,6 +41,11 @@ const fs=require('node:fs');
      'horizontal overflow: '+engine+' '+width+' '+path);
     assert.equal(await page.locator('a[href="./pro-study.html"],a[href="./pro-demo.html"]').count(),0,
      'unreleased Pro preview must not appear in the free public flow');
+    if(path==='plans.html'){
+     assert.equal((await page.locator('.hero h1').textContent()).replace(/\s+/g,''),'英語を、自分のペースで。',
+      'the pricing heading stays concise and intact at '+width+'px');
+     assert.equal(await page.locator('.hero h1 br').count(),0,'the pricing heading must not use forced line breaks');
+    }
     await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-'+path+'.png',fullPage:true});
    }
    await page.goto('http://127.0.0.1:8765/index.html');
