@@ -44,7 +44,7 @@ test('quiet hero text stays legible and short labels explain the next action',()
  const neon=read('soft-neon.css');
  assert.match(neon,/body\.sg-freeze \.hero\{[^}]*background:var\(--sg-neon-night\)/,'the dark rescue hero has an explicit dark background');
  assert.match(neon,/body\.sg-freeze \.hero h1\{color:#f3fcfa\}/,'rescue headline stays light against dark panel');
- assert.match(freeze,/<h1 id="page-title">予想外の英語にも、返せる自分へ。<\/h1>/);
+ assert.match(freeze,/<span class="hero-title-line">不意のひと言に、<\/span><span class="hero-title-line">切り返す。<\/span>/);
  assert.match(read('reflex.html'),/<h1>60秒、英語を話そう。<\/h1>/);
  assert.match(read('account.html'),/<h1 id="heroTitle">練習記録と、次の一歩。<\/h1>/);
  assert.match(read('scenes.html'),/<h1>どんな場面で話してみる？<\/h1>/);

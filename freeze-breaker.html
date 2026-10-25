@@ -47,6 +47,8 @@ main{max-width:1010px;padding:34px 20px 62px}
 h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 @media(max-width:770px){main{padding:28px 17px 52px}.header{padding:12px 17px}.header nav{gap:11px}.header nav a:last-child{display:none}.layout{grid-template-columns:minmax(0,1fr);gap:0;margin-top:19px}.card{padding:19px}.hero h1{font-size:clamp(28px,6.8vw,36px)}.notice{margin-top:15px}.onboarding{padding:12px 15px}.response-choice .button{flex-basis:145px}}
 @media(max-width:390px){.header nav a:first-child{display:none}.hero h1{font-size:28px}.card h2{font-size:19px}.reason-grid{grid-template-columns:1fr}}
+.hero-title-line{display:block;white-space:nowrap}
+@media(max-width:390px){.hero h1{font-size:clamp(23px,6.7vw,28px)}}
 </style>
 <link rel="stylesheet" href="./soft-neon.css">
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script>
@@ -56,7 +58,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 <main>
 <section class="hero" aria-labelledby="page-title">
  <div class="kicker">CONVERSATION SURVIVAL · 会話を止めない練習</div>
- <h1 id="page-title">予想外の英語にも、返せる自分へ。</h1>
+ <h1 id="page-title"><span class="hero-title-line">不意のひと言に、</span><span class="hero-title-line">切り返す。</span></h1>
  <p>予定外のひと言を聞いたら、聞き返す・時間をもらう・言い換える。使う切り返しを選んで実際に声に出し、相手の次の発言まで会話を続ける時間制限なしの練習です。60秒の英作文とは目的が違います。</p>
  <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
