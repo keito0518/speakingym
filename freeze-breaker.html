@@ -47,7 +47,6 @@ main{max-width:1010px;padding:34px 20px 62px}
 h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 @media(max-width:770px){main{padding:28px 17px 52px}.header{padding:12px 17px}.header nav{gap:11px}.header nav a:last-child{display:none}.layout{grid-template-columns:minmax(0,1fr);gap:0;margin-top:19px}.card{padding:19px}.hero h1{font-size:clamp(28px,6.8vw,36px)}.notice{margin-top:15px}.onboarding{padding:12px 15px}.response-choice .button{flex-basis:145px}}
 @media(max-width:390px){.header nav a:first-child{display:none}.hero h1{font-size:28px}.card h2{font-size:19px}.reason-grid{grid-template-columns:1fr}}
-.hero-title-line{display:block;white-space:nowrap}
 @media(max-width:390px){.hero h1{font-size:clamp(23px,6.7vw,28px)}}
 </style>
 <link rel="stylesheet" href="./soft-neon.css">
@@ -58,9 +57,9 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 <main>
 <section class="hero" aria-labelledby="page-title">
  <div class="kicker">CONVERSATION SURVIVAL · 会話を止めない練習</div>
- <h1 id="page-title"><span class="hero-title-line">不意のひと言に、</span><span class="hero-title-line">切り返す。</span></h1>
+ <h1 id="page-title">不意のひと言に、切り返す。</h1>
  <p>予定外のひと言を聞いたら、聞き返す・時間をもらう・言い換える。使う切り返しを選んで実際に声に出し、相手の次の発言まで会話を続ける時間制限なしの練習です。60秒の英作文とは目的が違います。</p>
- <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">12</span>場面</span></div>
+ <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">13</span>場面</span></div>
 </section>
 <div class="notice">マイクなしでも練習できます。音声認識は任意です。<details><summary>音声認識・採点・記録について</summary><p>通常の練習は台本型で、AI利用回数を消費しません。発音・正誤の自動採点も行いません。マイク利用時、音声がブラウザ提供元の認識サービスに送られる場合があります。認識した英文・録音は保存しません。終了後に自分で追加のAI講評を依頼した場合のみ、書き起こされた英文と練習場面をGeminiへ送信し、AI先生の利用回数を1回消費します。無料枠では入力がモデル改善に使われる場合があります。自己評価の復習記録だけをこの端末に保存します。</p></details></div>
 <section class="card" id="imported-ai-cue" hidden aria-labelledby="imported-ai-title" style="border:2px solid #f0b390;background:#fffdf9;margin-top:20px">
@@ -75,7 +74,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
  <div>
  <section class="card" aria-labelledby="choose-title">
   <h2 id="choose-title">突然のひと言、どう切り抜ける？</h2>
-  <div class="onboarding"><strong>会話サバイバル・3ステップ</strong><ol><li>予想外の英語を聞き、今の困り方を選ぶ</li><li>切り返しを自分の声で言う（マイクは任意）</li><li>相手の続きを聞いて、もう一度英語で返す</li></ol></div>
+  <div class="onboarding"><strong>聞いて、意味をつかんで、返す</strong><ol><li>英文を見ずに相手の発言を聞く</li><li>用件を確かめる。分からなければ聞き返す</li><li>場面と用件を見ながら英語で返す</li></ol></div>
   <button class="button primary start-main" id="start-button" type="button">▶ 予想外のひと言を聞く</button>
   <details class="scene-options"><summary>場面を変える・復習する（任意）</summary>
    <p>初回は自動でおすすめの場面を選びます。練習したい場面があれば変更できます。</p>
@@ -99,15 +98,17 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <details><summary>意味を確認する</summary><p id="translation"></p></details>
    </div>
    <div class="reason-panel" id="reason-panel" hidden>
-    <h3>こんなとき、どう会話をつなぐ？</h3>
-    <p class="small">今の困り方に近いものを選ぼう。正解を選ぶテストではないよ。</p>
-    <div class="reason-grid" id="reason-buttons"></div>
+    <h3>相手の用件はどちら？</h3>
+    <p class="small">聞こえた内容を選ぶと、すぐ答え合わせできます。音声はもう一度聞けます。</p>
+    <div class="reason-grid" id="reason-buttons" role="group" aria-label="相手の発言の意味"></div>
+    <p class="speech-status" id="meaning-feedback" role="status" aria-live="polite"></p>
    </div>
   </div>
   <div id="step-repair" hidden>
-   <h3>まずは沈黙を切るひと言</h3>
+   <h3>聞き取れないときは、聞き返そう</h3>
    <p class="small" id="reason-caption"></p>
-   <p class="mission-way" id="independent-first-prompt">正解の定型句はないよ。まずは表示された文を見ずに、自分の言葉で聞き返し・確認・時間づくりを試そう。</p>
+   <div class="question"><div class="speaker">聞き取れなかった発言</div><blockquote lang="en" id="repair-dialogue"></blockquote><p class="small" id="repair-meaning"></p></div>
+   <p class="mission-way" id="independent-first-prompt">相手の用件が分からなかったときに使える一言です。まず声に出して、相手にもう一度言ってもらおう。</p>
    <details class="prompt-help" id="rescue-hint"><summary>言い方に迷ったら例を見る（任意）</summary>
     <div class="speaker">この場面で使える切り返し</div>
     <div id="rescue-line" class="rescue-line" lang="en"></div>
@@ -115,17 +116,17 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <div id="rescue-guide" class="small"></div>
     <button class="button muted" id="speak-rescue" type="button">▶ この表現を聞く</button>
    </details>
-   <p class="mission-way">マイクは任意。英文の入力欄を使うか、声に出したら「相手の続きを聞く」へ進もう。全文を暗記しなくても大丈夫。</p>
+   <p class="mission-way">一言を声に出したら、相手の言い直しを聞いて返そう。音声認識は任意で、発音や正しさは採点しません。</p>
    <div class="speech-take" aria-label="会話を立て直す一言を声で練習する">
     <div class="control-row"><button class="button primary" id="first-mic" type="button">🎙 切り返しを話す</button><button class="button muted" id="first-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="first-reset" type="button">↻ 全消し</button></div>
     <label for="first-transcript" class="small">切り返した英文（この練習中だけ表示・保存しません）</label>
     <textarea id="first-transcript" class="text-entry" rows="2" maxlength="400" placeholder="自分なりに言ってみよう。音声認識も手入力も任意。"></textarea>
     <p class="speech-status" id="first-mic-status" role="status" aria-live="polite">マイクなしで声に出してもOK。自動採点ではありません。</p>
    </div>
-   <button class="button primary" id="repair-next" type="button">切り返した！相手の続きを聞く →</button>
+   <button class="button primary" id="repair-next" type="button">聞き返した。相手の言い直しを聞く →</button>
   </div>
   <div id="step-retry" hidden>
-   <h3 id="retry-heading">さらに予想外のひと言が来た！</h3>
+   <h3 id="retry-heading">聞いた用件に、英語で返そう</h3>
    <p id="imported-followup-note" class="small" hidden>ここからは同じジャンルの別パターンを使う応用練習です。直前のAI会話の実際の続きではありません。</p>
    <p class="small" id="recovery-context">相手がもうひと言返してきました。</p>
    <div class="question audio-first"><div class="speaker">相手の次のひと言</div>
@@ -133,7 +134,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <blockquote lang="en" id="followup" hidden></blockquote>
     <div class="control-row"><button class="button primary" id="speak-followup" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-followup" type="button" aria-expanded="false" aria-controls="followup">英文を見る</button></div>
    </div>
-   <p><strong>今度は自分の英語でひと言返そう。</strong></p>
+   <p><strong>場面と用件を見ながら、短く返してみよう。</strong></p>
    <div class="control-row"><button class="button primary" id="retry-mic" type="button">🎙 マイクで返す</button><button class="button muted" id="retry-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="retry-reset" type="button">↻ 全消し</button></div>
    <label for="reply-note" class="small">話した英文（任意・保存されません）</label>
    <textarea id="reply-note" class="text-entry" maxlength="400" placeholder="例：Could you explain that once more?"></textarea>
@@ -144,11 +145,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <p id="followup-hint" lang="en"></p><p id="followup-hint-2" lang="en"></p>
     <p class="small">例文は参考。あなたの返答と意味が一致する保証はありません。</p>
    </div>
-   <p><strong>自分では、返せたと思う？</strong></p>
-   <div class="control-row">
-    <button class="button primary" id="said-yes" type="button">今回は返せた ✓</button>
-    <button class="button" id="said-no" type="button">まだ詰まる ↻</button>
-   </div>
+   <div class="control-row"><button class="button primary" id="finish-practice" type="button">練習を記録して次へ →</button></div>
   </div>
   <p class="small" id="feedback" role="status" aria-live="polite"></p>
  </section>
@@ -178,8 +175,8 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
   <section class="card" aria-labelledby="record-title">
    <h2 id="record-title">これまでの練習</h2>
    <div class="stat-grid">
-    <div class="stat"><strong id="stat-attempts">0</strong><small>挑戦回数</small></div>
-    <div class="stat"><strong id="stat-recovered">0</strong><small>ヒントなしで返せた記録</small></div>
+    <div class="stat"><strong id="stat-attempts">0</strong><small>練習した回数</small></div>
+    <div class="stat"><strong id="stat-recovered">0</strong><small>今日から復習できる場面</small></div>
     <div class="stat"><strong id="stat-scenes">0</strong><small>練習した場面</small></div>
     <div class="stat"><strong id="stat-next">—</strong><small>次の復習予定</small></div>
    </div>
