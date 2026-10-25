@@ -169,8 +169,11 @@ const fs=require('node:fs');
    assert.match(await page.locator('#rescue-meaning').textContent(),/考える時間/,'rescue phrase has a plain-Japanese meaning');
    await page.locator('#repair-next').click();
    await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-recovery.png',fullPage:true});
-   assert.match(await page.locator('#followup').textContent(),/^Sure, take your time\./,
+   assert.match(await page.locator('#followup').textContent(),/^Of course\. Take your time\./,
     'the simulated conversation responds to the selected recovery strategy');
+   await page.locator('#show-hint').click();
+   assert.match(await page.locator('#followup-hint').textContent(),/quick question/,
+    'the hint answers the simulated second turn instead of the opening question');
    assert.match(await page.locator('#recovery-context').textContent(),/想定会話/,'no fake claim of AI understanding');
    await page.locator('#retry-mic').click();
    await page.evaluate(()=>window.__recognizers.at(-1).emit('Could you say that again?'));

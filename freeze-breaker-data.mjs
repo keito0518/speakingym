@@ -116,11 +116,13 @@ export const FREEZE_SCENES=Object.freeze([
    meaning:'チェックインの24時間前までにキャンセルすれば、預け金は返金されます。',
    followups:['It means we will give your deposit back if you cancel in time.','You will get the money back, but only if you cancel by the day before.'],
    goal:'知らない語だけを指して、ここでの意味を短く尋ねよう。',
+   repairExamples:['So I get my deposit back if I cancel early enough?','Does that mean I have to cancel by the day before?'],
    examples:['What does “refundable” mean here?','Could you explain “refundable” in simple words?']},
   {ask:'The room rate is non-refundable, so we cannot return the payment after you book.',
    meaning:'この部屋の料金は返金不可なので、予約後に支払いを返せません。',
    followups:['It means the payment will not be returned if you cancel.','That is correct. You can still change the date, but not get a refund.'],
    goal:'似た単語に頼らず、知らない語の意味をその場の文脈で確認しよう。',
+   repairExamples:['So the payment cannot be returned even if I cancel?','Can I change the date instead?'],
    examples:['What does “non-refundable” mean if I cancel?','So I would lose the payment if I cancel, right?']}
  ]),
  scene('long-explanation','長い説明の途中で分からなくなる','🗺️','駅で乗り換え方法を英語で説明してもらっている。',
@@ -129,11 +131,13 @@ export const FREEZE_SCENES=Object.freeze([
    meaning:'各駅停車で3駅進み、セントラル駅で乗り換えて中央コンコースへ上がります。ホームが変わることがあるので掲示板を確認してください。',
    followups:['First, take the local train to Central. I can explain the rest after that.','The key point is to check the board at Central before you change trains.'],
    goal:'説明全体を止めず、最初の一段階だけ確認して情報を小分けにしよう。',
+   repairExamples:['So I take the local train to Central first?','Okay. What should I do after I get there?'],
    examples:['Could we go one step at a time?','So first I take the local train to Central, right?']},
   {ask:'After you submit the form, wait for the email, open the link, verify your details, and then bring the confirmation to the front desk.',
    meaning:'フォームを送信したらメールを待ち、リンクを開いて情報を確認し、確認メールを受付に持ってきてください。',
    followups:['First, submit the form. I will help you with the email after that.','Exactly. You need to bring the confirmation email to the front desk.'],
    goal:'一度に全部覚えず、今やることを一つに絞って確認しよう。',
+   repairExamples:['First I submit the form, right?','What should I do when the email arrives?'],
    examples:['What should I do first?','Could you repeat the last step about the front desk?']}
  ]),
  scene('sudden-opinion','急に意見を求められる','💬','仕事の打ち合わせで、資料を見た直後に意見を聞かれた。',
@@ -168,11 +172,13 @@ export const FREEZE_SCENES=Object.freeze([
    meaning:'今週末はどんな場所に行きたい？',
    followups:['You mean a place where you can see fish and sea animals? That is an aquarium.','Oh, an aquarium! Is there one you would like to visit?'],
    goal:'単語を思い出すまで止まらず、場所の特徴や用途を知っている語で説明しよう。',
+   repairExamples:["Yes, an aquarium! That's the word.",'Thanks! Do you know a good one nearby?'],
    examples:['It is a place where you can see fish and sea animals.','You can watch sea animals there.']},
   {ask:'What should we bring to keep our drinks cold on the drive?',
    meaning:'ドライブ中に飲み物を冷やしておくには、何を持っていけばいい？',
    followups:['Do you mean a cooler? I can bring one.','A cooler would work. I have a small one in the garage.'],
    goal:'名前が出てこない物を、用途・形・使う場面から説明して会話を続けよう。',
+   repairExamples:['Yes, a cooler. Could you bring yours?','Thanks. What size is it?'],
    examples:['It is a box that keeps food and drinks cold.','We put ice inside it and carry drinks in it.']}
  ]),
  scene('anywhere','どこでも役立つ会話の立て直し','💬','相手の発言が思いがけず、何と言うか迷ってしまった。',
@@ -255,21 +261,42 @@ export function recoveryReply(attempt,reason){
   case 'misunderstood':return {
    line:'Of course. Let me say that again more slowly. '+original,
    caption:'聞き返した想定：相手が少しゆっくり繰り返してくれます。',rate:.72};
-  case 'words':return {
-   line:'No worries. You can use simple words. '+next,
-   caption:'言い換えた想定：相手が待ってくれました。次のひと言に返そう。',rate:.86};
-  case 'unknown':return {
-   line:next||'Sure. Which word would you like me to explain?',
-   caption:'意味を尋ねた想定：相手がその単語を説明してくれます。',rate:.86};
-  case 'long':return {
-   line:'Of course. Let’s take it one step at a time. '+next,
-   caption:'説明を小分けにしてもらった想定：まず一つ目を聞いて返そう。',rate:.86};
+  case 'words':return attempt.scene?.id==='missing-word'?{
+   line:'No problem. '+next,
+   caption:'特徴を説明した想定：相手が何のことか分かってくれました。',rate:.86,
+   examples:attempt.variation.repairExamples
+  }:{
+   line:'No problem. Can you describe what you mean?',
+   caption:'言いたい単語が出ない想定：相手が説明を待ってくれています。',rate:.86,
+   examples:['It is something that you use to...','It is similar to...']
+  };
+  case 'unknown':return attempt.scene?.id==='unknown-word'?{
+   line:next,caption:'意味を尋ねた想定：相手がその単語を説明してくれました。',rate:.86,
+   examples:attempt.variation.repairExamples
+  }:{
+   line:'Sure. Which word would you like me to explain?',
+   caption:'意味を尋ねた想定：相手がどの単語か聞き返してきました。',rate:.86,
+   examples:['I mean the word I heard at the end.','Could you explain that last word?']
+  };
+  case 'long':return attempt.scene?.id==='long-explanation'?{
+   line:'Of course. Let’s go one step at a time. '+next,
+   caption:'説明を小分けにしてもらった想定：最初の手順を確認しよう。',rate:.86,
+   examples:attempt.variation.repairExamples
+  }:{
+   line:'Sure. Which part should we go through first?',
+   caption:'説明が長かった想定：相手が確認したい部分を聞いています。',rate:.86,
+   examples:['Could you start with the first step?','I understood the beginning, but not the last part.']
+  };
   case 'surprise':return {
-   line:'Sure, take your time. '+next,
-   caption:'少し待ってもらった想定：考えたあと、もう一度返そう。',rate:.86};
+   line:'Of course. Take your time. Let me know when you are ready.',
+   caption:'少し考える時間をもらった想定：準備ができたら会話を戻そう。',rate:.86,
+   examples:['Thanks. I have one quick question first.','Okay, here is what I think.']
+  };
   case 'unsure':return {
-   line:'Of course. Let me explain a little more. '+next,
-   caption:'選択肢を確認した想定：相手の説明を聞いて返そう。',rate:.86};
+   line:'Sure. Would you like me to explain the options?',
+   caption:'選択肢を尋ねた想定：相手が追加の説明を申し出ました。',rate:.86,
+   examples:['Yes, what is the difference between the options?','Which option would you recommend?']
+  };
   default:return ordinary;
  }
 }

@@ -422,8 +422,11 @@ function showFollowup(){
  $('followup').textContent=nextSpokenLine;
  $('recovery-context').textContent=answer.caption+'（選んだ練習に合わせた想定会話で、音声の自動理解ではありません）';
  resetListen('followup');
- $('followup-hint').textContent=attempt.variation.examples[0];
- $('followup-hint-2').textContent=attempt.variation.examples[1];
+ // The second-turn examples must answer the actual simulated reply, not
+ // blindly repeat examples that were meant for the first English prompt.
+ const examples=answer.examples||attempt.variation.examples;
+ $('followup-hint').textContent=examples[0];
+ $('followup-hint-2').textContent=examples[1];
  $('retry-heading').textContent='さらに予想外のひと言が来た！';
  $('freeze-hint').hidden=true;
  $('feedback').textContent=attempt.imported?

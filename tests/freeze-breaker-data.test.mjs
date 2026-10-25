@@ -41,9 +41,16 @@ test('survival scenarios teach distinct repair moves and make learners think bef
  const vocabulary=sceneAttempt('unknown-word',{});
  assert.equal(recoveryReply(vocabulary,'unknown').line,vocabulary.followup,
   'the vocabulary repair receives a definition that matches the unknown word');
+ assert.match(recoveryReply(vocabulary,'unknown').examples[0],/deposit back/,
+  'the learner confirms the meaning after receiving the definition');
  const explanation=sceneAttempt('long-explanation',{});
  assert.ok(recoveryReply(explanation,'long').line.endsWith(explanation.followup),
   'the long explanation repair continues with a smaller, coherent step');
+ assert.match(recoveryReply(explanation,'long').examples[0],/local train/,
+  'the learner checks the first instruction rather than restarting the question');
+ const missingWord=sceneAttempt('missing-word',{});
+ assert.match(recoveryReply(missingWord,'words').examples[0],/aquarium/,
+  'after the listener guesses the word, the learner can acknowledge it');
  const html=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
  assert.match(html,/自分の言葉で聞き返し・確認・時間づくりを試そう/);
  assert.match(html,/<details class="prompt-help" id="rescue-hint"><summary>言い方に迷ったら例を見る/,
@@ -118,9 +125,21 @@ test('conversation rescue hears different scripted next lines based on the chose
  assert.ok(repeat.line.endsWith(task.variation.ask));
  assert.equal(repeat.rate,.72,'asking to repeat should produce slower speech');
  const words=recoveryReply(task,'words'),wait=recoveryReply(task,'surprise'),options=recoveryReply(task,'unsure');
- assert.ok([words,wait,options].every(reply=>reply.line.endsWith(task.followup)));
+ assert.match(words.line,/describe what you mean/);
+ assert.match(wait.line,/Let me know when you are ready/);
+ assert.match(options.line,/explain the options/);
+ assert.ok([words,wait,options].every(reply=>!reply.line.includes(task.followup)),
+  'the other person must not jump to an unrelated scripted line');
+ assert.ok([words,wait,options].every(reply=>reply.examples.length===2),
+  'the post-repair hint must match the second turn');
  assert.notEqual(words.line,wait.line);
  assert.notEqual(wait.line,options.line);
+ const unknown=recoveryReply(task,'unknown'),long=recoveryReply(task,'long');
+ assert.match(unknown.line,/Which word/);
+ assert.match(unknown.caption,/どの単語/);
+ assert.match(long.line,/Which part/);
+ assert.ok(unknown.examples.some(x=>/word/.test(x)));
+ assert.ok(long.examples.some(x=>/first step/.test(x)));
  assert.deepEqual(recoveryReply(task,'injected'),uninterrupted);
  assert.match(repeat.caption,/想定/);
 });
@@ -186,6 +205,8 @@ test('every Freeze Breaker JS DOM identifier exists in the rendered HTML',()=>{
   'only a deliberate click can initiate optional AI coaching');
  assert.match(script,/if\(health\.plansEnabled!==true\)throw Error\('plans_not_ready'\)/,
   'coaching must fail closed unless server quotas are enabled');
+ assert.match(script,/answer\.examples\|\|attempt\.variation\.examples/,
+  'the second-turn hint must use the response-specific examples');
 });
 
 test('free no-AI Freeze Breaker is linked from the public training and pricing flow',()=>{
