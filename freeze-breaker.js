@@ -53,6 +53,7 @@ function clearSession(){
  stopCapture();
  try{window.speechSynthesis?.cancel?.()}catch{}
  $('dialogue').textContent='';$('followup').textContent='';
+ $('repair-dialogue').textContent='';$('repair-meaning').textContent='';$('meaning-feedback').textContent='';
  resetListen('dialogue');resetListen('followup');
  $('return-to-ai').hidden=true;
  $('imported-followup-note').hidden=true;
@@ -71,13 +72,13 @@ function clearSession(){
 function updateSummary(){
  const stats=freezeSummary(progress);
  $('stat-attempts').textContent=String(stats.attempts);
- $('stat-recovered').textContent=String(stats.recovered);
+ $('stat-recovered').textContent=String(stats.due);
  $('stat-scenes').textContent=String(stats.scenes);
  $('stat-next').textContent=stats.nextDue||'—';
  $('record-description').textContent=scope==='guest'?'ゲスト記録：この端末のみ':scope?'ログイン中のアカウントの端末内記録（他端末へは同期されません）':'アカウント確認中：記録を読み込めません';
  $('freeze-personal-label').textContent=stats.topReason?
-  '自己申告では「'+FREEZE_REASONS[stats.topReason].name+'」が多め（'+stats.topReasonCount+'回）。次はこの切り返しを声に出そう。':
-  'まず1回練習すると、自己申告から次に使えそうな切り返しを提案するよ。';
+  '意味を確認した場面では「'+FREEZE_REASONS[stats.topReason].name+'」が多め。次はこの一言を声に出してみよう。':
+  '練習を続けると、意味を確認した場面に合わせた切り返しを提案するよ。';
  $('freeze-personal-phrase').textContent=stats.nextRepairHint||'';
 }
 function bindScope(){
@@ -334,7 +335,7 @@ function showStage(stage){
  $('step-repair').hidden=stage!=='repair';
  $('step-retry').hidden=stage!=='retry';
  $('mission').hidden=stage==='start';
- const names={start:'1 / 3　予想外のひと言',repair:'2 / 3　切り返しを声に出す',retry:'3 / 3　会話を続ける'};
+  const names={start:'1 / 2　聞いて意味を確かめる',repair:'2 / 3　聞き返して確認する',retry:reason?'3 / 3　場面を見て返す':'2 / 2　場面を見て返す'};
  $('stage-name').textContent=names[stage]||'';
  $('mission-heading').textContent=attempt?.scene.name||'';
 }
@@ -386,12 +387,19 @@ function startMission(useImported=false){
  $('translation').textContent=attempt.variation.meaning;
  $('goal').textContent=attempt.variation.goal;
  $('attempt-number').textContent='この場面 '+String(attempt.attempts+1)+'回目';
- $('reason-buttons').replaceChildren();
- for(const [id,value] of Object.entries(FREEZE_REASONS)){
-  const b=el('button',value.name,'reason-button');b.type='button';
-  b.dataset.reason=id;b.addEventListener('click',()=>chooseReason(id));
-  $('reason-buttons').append(b);
- }
+  $('meaning-feedback').textContent='';
+  $('reason-buttons').replaceChildren();
+  const otherMeaning=attempt.scene.variations.find(item=>item!==attempt.variation)?.meaning;
+  const choices=[
+   {text:attempt.variation.meaning,correct:true},
+   {text:otherMeaning||'相手は別の提案をしています。',correct:false}
+  ];
+  if(attempt.attempts%2)choices.reverse();
+  for(const choice of choices){
+   const b=el('button',choice.text,'reason-button');b.type='button';
+   b.dataset.correct=String(choice.correct);b.addEventListener('click',()=>chooseMeaning(b));
+   $('reason-buttons').append(b);
+  }
  $('reason-panel').hidden=false;
  $('mission').hidden=false;
  $('step-start').hidden=false;$('step-repair').hidden=true;$('step-retry').hidden=true;
@@ -407,11 +415,37 @@ function chooseReason(id){
  window.speakingymAnalytics?.track('sg_freeze_strategy',{strategy:id});
  const rescue=FREEZE_REASONS[id];
  $('reason-caption').textContent=rescue.hint;
+ $('repair-dialogue').textContent=attempt.variation.ask;
+ $('repair-meaning').textContent=attempt.variation.meaning;
  $('rescue-line').textContent=rescue.rescue;
  $('rescue-meaning').textContent=rescue.meaning;
  $('rescue-guide').textContent=rescue.hint;
  showStage('repair');
  $('feedback').textContent='今は完璧な英語でなくて大丈夫。まず会話をつなごう。';
+}
+function chooseMeaning(button){
+ if(!attempt||phase!=='ask'||!button||!$('reason-buttons').contains(button))return;
+ const correct=button.dataset.correct==='true';
+ for(const choice of $('reason-buttons').querySelectorAll('button'))choice.disabled=true;
+ if(correct){
+  $('meaning-feedback').textContent='その理解で合っています。次は場面を見ながら、短く返してみよう。';
+  window.speakingymAnalytics?.track('sg_freeze_comprehension',{result:'matched'});
+  reason=null;showAnswer();return;
+ }
+ $('meaning-feedback').textContent='この発言の意味は「'+attempt.variation.meaning+'」です。聞き取れないときの一言を練習してから返そう。';
+ window.speakingymAnalytics?.track('sg_freeze_comprehension',{result:'clarify'});
+ chooseReason('misunderstood');
+}
+function showAnswer(){
+ if(!attempt||phase!=='ask')return;
+ phase='retry';nextSpokenLine=attempt.variation.ask;
+ $('followup').textContent=nextSpokenLine;
+ $('recovery-context').textContent=attempt.scene.context+' '+attempt.variation.goal;
+ $('retry-heading').textContent='聞いた用件に、英語で返そう';
+ $('imported-followup-note').hidden=true;
+ $('followup-listening-cue').textContent='必要なら発言を聞き直すか、英文を確認できます。';
+ $('freeze-hint').hidden=true;$('reply-note').value='';$('feedback').textContent='返答の内容は自由です。音声認識結果で正確さを採点しません。';
+ resetListen('followup');showStage('retry');updateSpeechControls();
 }
 function showFollowup(){
  if(!attempt||phase!=='repair')return;
@@ -420,49 +454,41 @@ function showFollowup(){
  const answer=recoveryReply(attempt,reason);
  nextSpokenLine=answer.line;
  $('followup').textContent=nextSpokenLine;
- $('recovery-context').textContent=answer.caption+'（選んだ練習に合わせた想定会話で、音声の自動理解ではありません）';
+ $('recovery-context').textContent=attempt.scene.context+' '+attempt.variation.goal+' '+answer.caption+'（練習用の想定会話です）';
  resetListen('followup');
  // The second-turn examples must answer the actual simulated reply, not
  // blindly repeat examples that were meant for the first English prompt.
  const examples=answer.examples||attempt.variation.examples;
  $('followup-hint').textContent=examples[0];
  $('followup-hint-2').textContent=examples[1];
- $('retry-heading').textContent='さらに予想外のひと言が来た！';
+  $('retry-heading').textContent='聞き返したあと、用件に英語で返そう';
  $('freeze-hint').hidden=true;
- $('feedback').textContent=attempt.imported?
-  'ここからは実際の会話の続きではなく、別の想定返答での応用練習だよ。':
-  '少し違う返事が来たよ。今度は自分の言葉で答えてみよう。';
+  $('feedback').textContent='相手の言い直しを聞いたら、場面と用件を見ながら短く返そう。';
  showStage('retry');
  playListeningLine('followup',nextSpokenLine,answer.rate);
 }
 function showHint(){
  if(!attempt||phase!=='retry')return;
  usedHint=true;$('freeze-hint').hidden=false;
- $('feedback').textContent='ヒントを見ても大丈夫。「次はヒントなしで」を目指そう。';
+ $('feedback').textContent='例文を参考にしながら、場面に合う返答を声に出そう。';
 }
-function finish(saidIt){
- if(!attempt||phase!=='retry'||typeof saidIt!=='boolean')return;
+function finish(){
+ if(!attempt||phase!=='retry')return;
  stopCapture();
  // A stale event from the previous login or tab must not write to its scope.
  const key=resolveScope();
  if(!key||scope!==key){clearSession();bindScope();return}
  const id=attempt.scene.id;
  try{window.speechSynthesis?.cancel?.()}catch{}
- progress=recordFreezeAttempt(progress,{sceneId:id,reason,saidIt,usedHint},new Date());
+ progress=recordFreezeAttempt(progress,{sceneId:id,reason,saidIt:true,usedHint:false},new Date());
  const saved=saveScope(key,progress);
  const record=progress.records[id];
  phase='done';$('mission').hidden=true;$('result').hidden=false;
  prepareCoach();
  $('return-to-ai').hidden=!(importedMoment?.trained&&scope==='user:'+importedMoment.uid);
- const independently=saidIt&&!usedHint;
- window.speakingymAnalytics?.track('sg_freeze_self_report',{
-  source:attempt.imported?'ai':'scripted',outcome:independently?'said_it':'not_yet'
- });
- $('result-title').textContent=independently?(reason===null?'2問目も返せたね！':'言葉が止まっても、立て直せた！'):'今日の詰まりは次の練習へ';
- $('result-detail').textContent=independently?
-  (reason===null?'2つ目の質問にも返せた、と自己記録したよ。別の場面でも試してみよう。':
-   '最初は詰まっても、切り返した後にヒントなしで返せた、と自己記録したよ。'):
-  'うまく出てこなくても大丈夫。明日、違う返答でもう一度挑戦しよう。';
+ window.speakingymAnalytics?.track('sg_freeze_complete',{source:attempt.imported?'ai':'scripted'});
+ $('result-title').textContent='練習を1回記録しました';
+ $('result-detail').textContent='聞いた英語の用件を確かめ、場面を見ながら返す練習ができました。音声認識やAIによる発音・正確さの採点はしていません。';
  $('result-schedule').textContent='次の復習予定：'+record.due+'（日本時間）';
  $('result-origin').textContent=saved?'今回の練習結果をこの端末に保存しました。音声や入力文は保存していません。':
   '端末への記録保存に失敗しました。ブラウザの容量・設定を確認してください。';
@@ -481,7 +507,7 @@ function pickRecommended(){
  $('mission-select').value=importedMoment&&!importedMoment.used?
   window.speakingymFreezeBridge.freezeScene(importedMoment.sceneId):
   nextFreezeScene(progress).id;
- $('feedback').textContent='復習期限と自己申告の苦手に合わせた場面を選んだよ。';
+ $('feedback').textContent='復習期限と、意味を確認した場面に合わせたおすすめです。';
 }
 window.addEventListener('speakingym:account-changing',()=>{
  importedMoment=null;
@@ -519,8 +545,7 @@ $('pick-recommendation').addEventListener('click',pickRecommended);
 $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
 $('rescue-hint').addEventListener('toggle',()=>{if($('rescue-hint').open)usedHint=true});
-$('said-yes').addEventListener('click',()=>finish(true));
-$('said-no').addEventListener('click',()=>finish(false));
+ $('finish-practice').addEventListener('click',finish);
 $('request-coach').addEventListener('click',requestCoach);
 $('retry-scene').addEventListener('click',()=>{if(attempt){$('mission-select').value=attempt.scene.id;startMission()}});
 $('try-another').addEventListener('click',()=>{
