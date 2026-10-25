@@ -10,7 +10,7 @@ const fs=require('node:fs');
  const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
  fs.mkdirSync('qa-screenshots',{recursive:true});
  try{
-  for(const width of [390,1280]){
+  for(const width of [320,375,390,430,1280]){
    const context=await browser.newContext(engine==='webkit'&&width===390?
     {...devices['iPhone 13'],viewport:{width,height:850}}:{viewport:{width,height:850}});
    await context.route('https://**/*',route=>route.abort());
@@ -118,7 +118,7 @@ const fs=require('node:fs');
    await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
    await page.reload();
    assert.equal(await page.locator('#mission-select option').count(),13);
-   assert.equal(await page.locator('#reason-panel').isVisible(),false,'the survival strategy appears only after listening starts');
+   assert.equal(await page.locator('#reason-panel').isVisible(),false,'the meaning check appears only after listening starts');
    await page.locator('#start-button').click();
    await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-listening.png',fullPage:true});
    const heardFirst=await page.locator('#dialogue').textContent();
@@ -126,54 +126,62 @@ const fs=require('node:fs');
    assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),heardFirst,
     'the initial English line plays from the same user click that started the round');
    assert.equal(await page.locator('#reason-panel').isVisible(),true,
-    'conversation survival starts by choosing how to recover, never with duplicate free translation');
-   assert.equal(await page.locator('#first-mic').isVisible(),false,'the first microphone belongs to the recovery phrase');
+    'the learner checks the meaning of the utterance instead of self-reporting whether they heard it');
+   assert.equal(await page.locator('#reason-buttons button').count(),2,'the meaning check stays to one quick, contextual choice');
+   assert.equal(await page.locator('#first-mic').isVisible(),false,'the clarification phrase appears only when the meaning was missed');
    await page.locator('#reveal-dialogue').click();
    assert.equal(await page.locator('#dialogue').isVisible(),true,'reading remains accessible on demand');
    await page.locator('#reveal-dialogue').click();
    assert.equal(await page.locator('#dialogue').isVisible(),false);
-   await page.locator('#reason-buttons button[data-reason="misunderstood"]').click();
-   assert.equal(await page.locator('#step-repair').isVisible(),true);
+   await page.locator('#reason-buttons button[data-correct="true"]').click();
+   assert.equal(await page.locator('#step-retry').isVisible(),true,'a correct understanding goes straight to a spoken reply');
+   assert.equal(await page.locator('#step-repair').isVisible(),false,'no unnecessary recovery phrase after the meaning is clear');
+   assert.match(await page.locator('#recovery-context').textContent(),/カフェ|ラテ|選択肢/);
+   assert.equal(await page.locator('#followup').textContent(),heardFirst,'the original line remains available while forming a reply');
+   await page.locator('#reveal-followup').click();
+   assert.equal(await page.locator('#followup').isVisible(),true);
+   await page.locator('#retry-mic').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('I will have almond milk, please.'));
+   assert.equal(await page.locator('#reply-note').inputValue(),'I will have almond milk, please.');
+   await page.locator('#finish-practice').click();
+   const firstRecord=JSON.parse(await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest')));
+   assert.equal(firstRecord.records.cafe.attempts,1);
+   assert.match(await page.locator('#result-title').textContent(),/練習を1回記録/);
+
+   await page.locator('#retry-scene').click();
+   await page.locator('#reason-buttons button[data-correct="false"]').click();
+   assert.equal(await page.locator('#step-repair').isVisible(),true,'a missed meaning triggers a useful clarification phrase');
    assert.equal(await page.locator('#rescue-hint').evaluate(el=>el.open),false,
-    'learners get a chance to construct their own repair before seeing the sample');
-   assert.match(await page.locator('#independent-first-prompt').textContent(),/自分の言葉/);
-   assert.equal(await page.locator('#first-transcript').isVisible(),true,
-    'the learner can try their own wording before opening a sample');
+    'the example is available on demand without blocking practice');
+   assert.match(await page.locator('#repair-dialogue').textContent(),/>|milk|coffee/i);
+   assert.match(await page.locator('#repair-meaning').textContent(),/すみません|コーヒー/);
    assert.match(await page.locator('#rescue-line').textContent(),/say that again more slowly/);
    await page.locator('#first-mic').click();
-   await page.evaluate(()=>window.__recognizers.at(-1).emit('Could I have a latte, please?'));
-   assert.equal(await page.locator('#first-transcript').inputValue(),'Could I have a latte, please?');
-   assert.equal(await page.locator('#first-stop').isVisible(),true);
-   await page.locator('#first-stop').click();
-   assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true);
-   await page.locator('#first-reset').click();
-   assert.equal(await page.locator('#first-transcript').inputValue(),'');
-   await page.locator('#first-mic').click();
-   await page.evaluate(()=>window.__recognizers.at(-1).emit('One more question'));
-   assert.equal(await page.locator('#first-transcript').inputValue(),'One more question');
+   await page.evaluate(()=>window.__recognizers.at(-1).emit('Could you say that again more slowly?'));
+   assert.equal(await page.locator('#first-transcript').inputValue(),'Could you say that again more slowly?');
    await page.locator('#repair-next').click();
    assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true,
     'changing scene phase must cancel pending microphone recognition');
-   assert.equal(await page.locator('#step-retry').isVisible(),true,'the recovery phrase leads to a new listening turn');
-   assert.equal(await page.locator('#followup').isVisible(),false,'second turn is also listening-first');
+   assert.equal(await page.locator('#step-retry').isVisible(),true,'the recovery phrase leads back to the same utterance');
+   assert.equal(await page.locator('#followup').isVisible(),false,'the repeated utterance remains listening-first');
    assert.equal((await page.evaluate(()=>window.__spoken)).at(-1),await page.locator('#followup').textContent());
    await page.locator('#reveal-followup').click();
    assert.equal(await page.locator('#followup').isVisible(),true);
-   await page.locator('#said-yes').click();
+   await page.locator('#finish-practice').click();
    const fluent=JSON.parse(await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest')));
    assert.equal(fluent.records.cafe.lastReason,'misunderstood','record only the learner-selected recovery strategy');
-   assert.equal(fluent.records.cafe.recovered,1);
+   assert.equal(fluent.records.cafe.attempts,2);
    await page.locator('#retry-scene').click();
-   assert.equal(await page.locator('#reason-panel').isVisible(),true,'the strategy choices appear on every survival round');
-   await page.locator('#reason-buttons button[data-reason="surprise"]').click();
-   assert.match(await page.locator('#rescue-meaning').textContent(),/考える時間/,'rescue phrase has a plain-Japanese meaning');
+   await page.locator('#reason-buttons button[data-correct="false"]').click();
+   assert.match(await page.locator('#rescue-meaning').textContent(),/もう一度ゆっくり/,'the repair phrase has a plain-Japanese meaning');
+   await page.locator('#first-transcript').fill('Could you repeat that, please?');
    await page.locator('#repair-next').click();
    await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-recovery.png',fullPage:true});
-   assert.match(await page.locator('#followup').textContent(),/^Of course\. Take your time\./,
-    'the simulated conversation responds to the selected recovery strategy');
+   assert.match(await page.locator('#followup').textContent(),/^Of course\. Let me say that again more slowly\./,
+    'the simulated conversation responds to the clarification request');
    await page.locator('#show-hint').click();
-   assert.match(await page.locator('#followup-hint').textContent(),/quick question/,
-    'the hint answers the simulated second turn instead of the opening question');
+   assert.match(await page.locator('#followup-hint').textContent(),/milk|regular latte/,
+    'the hint gives a natural next response for the café context');
    assert.match(await page.locator('#recovery-context').textContent(),/想定会話/,'no fake claim of AI understanding');
    await page.locator('#retry-mic').click();
    await page.evaluate(()=>window.__recognizers.at(-1).emit('Could you say that again?'));
@@ -186,22 +194,23 @@ const fs=require('node:fs');
    await page.locator('#retry-reset').click();
    assert.equal(await page.locator('#reply-note').inputValue(),'');
    await page.locator('#reply-note').fill('Private typed answer — do not store');
-   await page.locator('#said-yes').click();
+   await page.locator('#finish-practice').click();
    const saved=await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:guest')||'');
    assert.ok(saved);
-   assert.equal(JSON.parse(saved).records.cafe.reasonCounts.surprise,1);
+   assert.equal(JSON.parse(saved).records.cafe.reasonCounts.misunderstood,2);
    assert.doesNotMatch(saved,/Private typed answer/);
    assert.doesNotMatch(saved,/Could I have a latte|Could you say that again|I did not catch that/,
     'the progress ledger cannot store recognized speech');
    assert.equal(await page.locator('#request-coach').isEnabled(),false,
     'guest practice must never consume an unowned AI teacher quota');
    await page.locator('#retry-scene').click();
-   await page.locator('#reason-buttons button[data-reason="surprise"]').click();
+   await page.locator('#reason-buttons button[data-correct="false"]').click();
    await page.locator('#first-mic').click();
    await page.evaluate(()=>window.__recognizers.at(-1).emit('Never show this to another user'));
    await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
    assert.equal(await page.locator('#mission').isVisible(),false,'redact rescue text on account switch');
    assert.equal(await page.locator('#dialogue').textContent(),'','redact the heard question as well as hiding the card');
+   assert.equal(await page.locator('#repair-dialogue').textContent(),'','redact the clarification question too');
    assert.equal(await page.locator('#followup').textContent(),'','redact the simulated follow-up');
    assert.equal(await page.locator('#first-transcript').inputValue(),'','redact voice-to-text on owner switch');
    assert.equal(await page.locator('#reply-note').inputValue(),'','redact the recovery voice-to-text too');
@@ -229,11 +238,11 @@ const fs=require('node:fs');
     window.dispatchEvent(new Event('speakingym:account-ready'));
    });
    await page.locator('#start-button').click();
-   await page.locator('#reason-buttons button[data-reason="surprise"]').click();
+   await page.locator('#reason-buttons button[data-correct="false"]').click();
    await page.locator('#first-transcript').fill('Could I have soy milk?');
    await page.locator('#repair-next').click();
    await page.locator('#reply-note').fill('Thank you. That helps.');
-   await page.locator('#said-yes').click();
+   await page.locator('#finish-practice').click();
    assert.equal(coachPosts.length,0,'free scripted exercises must never call the teacher automatically');
    assert.equal(await page.locator('#request-coach').isEnabled(),true);
    await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-coach-consent.png',fullPage:true});
@@ -259,10 +268,10 @@ const fs=require('node:fs');
     window.dispatchEvent(new Event('speakingym:account-ready'));
    });
    await page.locator('#start-button').click();
-   await page.locator('#reason-buttons button[data-reason="unsure"]').click();
+   await page.locator('#reason-buttons button[data-correct="false"]').click();
    await page.locator('#first-transcript').fill('Another answer');
    await page.locator('#repair-next').click();
-   await page.locator('#said-yes').click();
+   await page.locator('#finish-practice').click();
    await page.locator('#request-coach').click();
    await page.getByText('利用回数を安全に確認できないため、送信を止めました。',{exact:false}).waitFor();
    assert.match(await page.locator('#coach-status').textContent(),/利用回数を安全に確認できないため、送信を止めました/);
@@ -279,7 +288,7 @@ const fs=require('node:fs');
    const noMicPage=await noMicContext.newPage();
    await noMicPage.goto('http://127.0.0.1:8765/freeze-breaker.html');
    await noMicPage.locator('#start-button').click();
-   await noMicPage.locator('#reason-buttons button[data-reason="words"]').click();
+   await noMicPage.locator('#reason-buttons button[data-correct="false"]').click();
    await noMicPage.locator('#first-mic').click();
    assert.match(await noMicPage.locator('#first-mic-status').textContent(),/このブラウザでは音声認識が利用できません/,
     'unsupported browser must explain how to practice without speech recognition');
@@ -291,5 +300,5 @@ const fs=require('node:fs');
    await context.close();
   }
  }finally{await browser.close()}
- console.log('Free launch browser QA passed: '+engine+' at 390px and 1280px');
+ console.log('Free launch browser QA passed: '+engine+' at 320, 375, 390, 430 and 1280px');
 })().catch(error=>{console.error(error);process.exitCode=1});
