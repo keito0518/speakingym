@@ -53,6 +53,7 @@ function clearSession(){
  stopCapture();
  try{window.speechSynthesis?.cancel?.()}catch{}
  $('dialogue').textContent='';$('followup').textContent='';
+ $('followup-speaker').textContent='聞いた発言';
  $('repair-dialogue').textContent='';$('repair-meaning').textContent='';$('meaning-feedback').textContent='';
  resetListen('dialogue');resetListen('followup');
  $('return-to-ai').hidden=true;
@@ -439,11 +440,12 @@ function showAnswer(){
  if(!attempt||phase!=='ask')return;
  phase='retry';nextSpokenLine=attempt.variation.ask;
  $('followup').textContent=nextSpokenLine;
+ $('followup-speaker').textContent='相手の発言（聞き直せます）';
  $('recovery-context').textContent=attempt.scene.context+' '+attempt.variation.goal;
  $('retry-heading').textContent='聞いた用件に、英語で返そう';
  $('imported-followup-note').hidden=true;
  $('followup-listening-cue').textContent='必要なら発言を聞き直すか、英文を確認できます。';
- $('freeze-hint').hidden=true;$('reply-note').value='';$('feedback').textContent='返答の内容は自由です。音声認識結果で正確さを採点しません。';
+ $('freeze-hint').hidden=true;$('reply-note').value='';$('feedback').textContent='意味を確認できました。返答は自由です。音声認識結果で正確さを採点しません。';
  resetListen('followup');showStage('retry');updateSpeechControls();
 }
 function showFollowup(){
@@ -453,6 +455,7 @@ function showFollowup(){
  const answer=recoveryReply(attempt,reason);
  nextSpokenLine=answer.line;
  $('followup').textContent=nextSpokenLine;
+ $('followup-speaker').textContent='相手の言い直し';
  $('recovery-context').textContent=attempt.scene.context+' '+attempt.variation.goal+' '+answer.caption+'（練習用の想定会話です）';
  resetListen('followup');
  // The second-turn examples must answer the actual simulated reply, not
