@@ -24,7 +24,7 @@ test('Freeze Breaker has varied concrete travel and work contexts, alternatives 
  const source=readFileSync(new URL('../freeze-breaker-data.mjs',import.meta.url),'utf8');
  assert.doesNotMatch(source,/\bfetch\s*\(|GEMINI_API_KEY|STRIPE_SECRET|\blocalStorage\b/);
 });
-test('survival scenarios teach distinct repair moves and make learners think before examples',()=>{
+test('survival verifies the meaning and only teaches a clarification phrase when it was missed',()=>{
  assert.equal(FREEZE_SCENES.length,13);
  const added=['fast-english','unknown-word','long-explanation','sudden-opinion','change-booking','missing-word'];
  for(const id of added){
@@ -52,14 +52,23 @@ test('survival scenarios teach distinct repair moves and make learners think bef
  assert.match(recoveryReply(missingWord,'words').examples[0],/aquarium/,
   'after the listener guesses the word, the learner can acknowledge it');
  const html=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
- assert.match(html,/自分の言葉で聞き返し・確認・時間づくりを試そう/);
+ assert.match(html,/相手の用件はどちら/);
+ assert.match(html,/聞き取れないときは、聞き返そう/);
+ assert.match(html,/場面と用件を見ながら英語で返す/);
  assert.match(html,/<details class="prompt-help" id="rescue-hint"><summary>言い方に迷ったら例を見る/,
   'the sample recovery must be hidden until requested');
  const script=readFileSync(new URL('../freeze-breaker.js',import.meta.url),'utf8');
- assert.ok(script.includes("$('rescue-hint').addEventListener('toggle'")&&script.includes('usedHint=true'),
-  'opening a sample should affect the self-reported practice stage');
+ assert.match(script,/const otherMeaning=attempt\.scene\.variations\.find/,
+  'the comprehension choice compares two messages from the same scene');
+ assert.match(script,/const correct=button\.dataset\.correct==='true'/,
+  'the answer choice gives a real comprehension check, not a feeling rating');
+ assert.match(script,/chooseReason\('misunderstood'\)/,
+  'missing the message routes into an audible clarification phrase');
+ assert.match(html,/id="finish-practice"/);
+ assert.doesNotMatch(html,/id="said-yes"|id="said-no"|自分では、返せたと思う/,
+  'the learner does not have to self-rate their speaking to finish');
 });
-test('JST day and scheduled 1/3/7/14-day independent self-report retries',()=>{
+test('JST day and scheduled practice repetition at 1/3/7/14-day intervals',()=>{
  assert.equal(freezeDay(date('2026-10-22T14:59:59Z')),'2026-10-22');
  assert.equal(freezeDay(date('2026-10-22T15:00:00Z')),'2026-10-23');
  let state={};
@@ -175,7 +184,7 @@ test('malformed/untrusted state cannot inject keys, fake mastery, or store texts
  assert.equal(summary.attempts,0);
  assert.equal({}.polluted,undefined);
 });
-test('summary describes only self-reported outcomes, not accuracy',()=>{
+test('saved progress is bounded and contains no answers or speech text',()=>{
  let p={};
  p=recordFreezeAttempt(p,{sceneId:'train',reason:'misunderstood',saidIt:true},date('2026-10-23T12:00:00+09:00'));
  p=recordFreezeAttempt(p,{sceneId:'work',reason:'words',saidIt:false},date('2026-10-23T12:00:00+09:00'));
@@ -217,9 +226,14 @@ test('free no-AI Freeze Breaker is linked from the public training and pricing f
  const gym=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
  assert.match(gym,/通常の練習は台本型で、AI利用回数を消費しません/);
  assert.match(gym,/AI先生の利用回数を1回消費します/);
+ const plans=readFileSync(new URL('../plans.html',import.meta.url),'utf8');
+ assert.doesNotMatch(gym,/hero-title-line|<h1[^>]*>[\s\S]*?<br[\s\S]*?<\/h1>/i,
+  'the conversation page title wraps naturally on mobile');
+ assert.doesNotMatch(plans,/<h1[^>]*>[\s\S]*?<br[\s\S]*?<\/h1>/i,
+  'the pricing page title does not force a line break inside Japanese copy');
 });
 
-test('personalized rescue insight comes from bounded self-reported reasons, not AI scoring',()=>{
+test('personalized rescue insight comes from bounded meaning-check results, not AI scoring',()=>{
  const when=new Date('2026-10-23T12:00:00+09:00');
  let state={};
  state=recordFreezeAttempt(state,{sceneId:'cafe',reason:'surprise',saidIt:false},when);
