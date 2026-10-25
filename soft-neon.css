@@ -94,6 +94,14 @@ body.sg-freeze .speech-take{background:#f0f8f8;border:1px solid #cfe5e3;border-r
 body.sg-freeze .speech-take .control-row{margin:0 0 11px}
 body.sg-freeze .speech-status{font-size:12px;line-height:1.6;color:#467174;margin:8px 0 0}
 body.sg-freeze .text-entry{border-color:#bed6d4;color:#15373f}
+body.sg-freeze .freeze-coach{border-top:1px solid #d8e6e4;padding:18px 0 4px;margin:20px 0 8px}
+body.sg-freeze .freeze-coach h3{font-size:17px;line-height:1.5;margin-bottom:8px;color:#164b51}
+body.sg-freeze .freeze-coach .button{margin:9px 0 2px;max-width:100%;white-space:normal;text-align:center}
+body.sg-freeze .coach-answer{margin:14px 0;background:#f1f8f8;border:1px solid #d5e8e5;border-radius:10px;padding:15px}
+body.sg-freeze .coach-answer h4{font-size:15px;line-height:1.5;margin:0 0 10px;color:#18434b}
+body.sg-freeze .coach-answer .coach-label{font-size:12px;color:#4a7777;font-weight:800;margin:12px 0 3px}
+body.sg-freeze .coach-answer p{font-size:14px;line-height:1.7;margin:0;overflow-wrap:break-word}
+body.sg-freeze .coach-answer .coach-improved{font-size:16px;line-height:1.6;font-weight:750;color:#176c65}
 body.sg-freeze .onboarding{background:#f0f8f8}
 body.sg-freeze .stage,body.sg-freeze .speaker{color:#177c75}
 body.sg-freeze .cta{background:#42dec7;color:#0b2932;box-shadow:0 4px 18px #21c9b431}

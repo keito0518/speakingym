@@ -182,6 +182,8 @@ const fs=require('node:fs');
    assert.doesNotMatch(saved,/Private typed answer/);
    assert.doesNotMatch(saved,/Could I have a latte|Could you say that again|I did not catch that/,
     'the progress ledger cannot store recognized speech');
+   assert.equal(await page.locator('#request-coach').isEnabled(),false,
+    'guest practice must never consume an unowned AI teacher quota');
    await page.locator('#retry-scene').click();
    await page.locator('#first-mic').click();
    await page.evaluate(()=>window.__recognizers.at(-1).emit('Never show this to another user'));
@@ -192,6 +194,68 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#first-transcript').inputValue(),'','redact voice-to-text on owner switch');
    assert.equal(await page.locator('#reply-note').inputValue(),'','redact the recovery voice-to-text too');
    assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).aborted),true,'abort microphone on owner switch');
+   // The new optional teacher reuses the existing metered backend. Mock every call;
+   // these QA runs must not send real text or consume a user's teacher quota.
+   const coachPosts=[];
+   let plansEnabled=true;
+   const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers':'authorization,content-type'};
+   await page.route('https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/**',async route=>{
+    const request=route.request();
+    if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
+    if(request.method()==='GET')return route.fulfill({status:200,headers:cors,
+     contentType:'application/json',body:JSON.stringify({reflexCoachSupported:true,aiConfigured:true,plansEnabled})});
+    const body=request.postDataJSON();coachPosts.push(body);
+    const feedback=body.attempts.map((item,i)=>({index:i,praise:'具体的な内容が伝わっています。',
+     improvement:'聞き返しをもう少し丁寧に。',improved:'Could you repeat that, please?',
+     why:'相手にもう一度尋ねる自然な表現です。',practice:'Ask a teammate to repeat.'}));
+    await route.fulfill({status:200,headers:cors,contentType:'application/json',body:JSON.stringify({feedback})});
+   });
+   await page.evaluate(()=>{
+    localStorage.setItem('speakingym-account-owner-v1','coach-owner');
+    window.speakingymAccount={isLoggedIn:()=>true,getUid:()=> 'coach-owner',getIdToken:async()=> 'qa-fake-token'};
+    window.dispatchEvent(new Event('speakingym:account-ready'));
+   });
+   await page.locator('#start-button').click();
+   await page.locator('#first-transcript').fill('Could I have soy milk?');
+   await page.locator('#instant-froze').click();
+   await page.locator('#reason-buttons button[data-reason="surprise"]').click();
+   await page.locator('#repair-next').click();
+   await page.locator('#reply-note').fill('Thank you. That helps.');
+   await page.locator('#said-yes').click();
+   assert.equal(coachPosts.length,0,'free scripted exercises must never call the teacher automatically');
+   assert.equal(await page.locator('#request-coach').isEnabled(),true);
+   await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-coach-consent.png',fullPage:true});
+   await page.locator('#request-coach').click();
+   await page.locator('#coach-results .coach-answer').first().waitFor();
+   assert.equal(coachPosts.length,1,'two short answers must share one metered teacher call');
+   assert.equal(coachPosts[0].action,'reflex_coach');
+   assert.deepEqual(coachPosts[0].attempts.map(x=>x.text),['Could I have soy milk?','Thank you. That helps.']);
+   assert.match(coachPosts[0].attempts[1].goal,/詰まった後/);
+   assert.equal(await page.locator('#coach-results .coach-answer').count(),2);
+   assert.equal(await page.locator('#request-coach').isEnabled(),false,'prevent double-charging on repeated taps');
+   assert.doesNotMatch(await page.evaluate(()=>localStorage.getItem('speakingym-freeze-progress-v1:user:coach-owner')||''),
+    /Could I have soy milk|Thank you\. That helps|Could you repeat that/);
+   await page.screenshot({path:'qa-screenshots/free-'+engine+'-'+width+'-conversation-coach-result.png',fullPage:true});
+   await page.evaluate(()=>window.dispatchEvent(new Event('speakingym:account-changing')));
+   assert.equal(await page.locator('#coach-results').textContent(),'','AI feedback must disappear on account switch');
+   assert.equal(await page.locator('#request-coach').isEnabled(),false);
+   // A server with missing quota protection must never receive teacher POSTs.
+   plansEnabled=false;
+   await page.evaluate(()=>{
+    localStorage.setItem('speakingym-account-owner-v1','coach-owner');
+    window.speakingymAccount={isLoggedIn:()=>true,getUid:()=> 'coach-owner',getIdToken:async()=> 'qa-fake-token'};
+    window.dispatchEvent(new Event('speakingym:account-ready'));
+   });
+   await page.locator('#start-button').click();
+   await page.locator('#first-transcript').fill('Another answer');
+   await page.locator('#instant-yes').click();
+   await page.locator('#said-yes').click();
+   await page.locator('#request-coach').click();
+   await page.getByText('利用回数を安全に確認できないため、送信を止めました。',{exact:false}).waitFor();
+   assert.match(await page.locator('#coach-status').textContent(),/利用回数を安全に確認できないため、送信を止めました/);
+   assert.equal(coachPosts.length,1,'disabled entitlements never reach the AI model');
+   await page.evaluate(()=>localStorage.removeItem('speakingym-account-owner-v1'));
    await page.goto('http://127.0.0.1:8765/freeze-breaker.html');
    await page.evaluate(()=>{window.SpeechSynthesisUtterance=undefined});
    await page.locator('#start-button').click();

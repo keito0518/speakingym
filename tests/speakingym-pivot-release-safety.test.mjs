@@ -18,10 +18,16 @@ test('new Free learning retains existing ¥680 API limits and protected paid tur
  assert.match(plan,/60秒チャレンジ：回数制限なし/);
  assert.match(plan,/2場面応用チェック・1\/3\/7日復習/);
 });
-test('free exercises never invoke Stripe or paid AI Worker',()=>{
- for(const js of [transfer,review,account,file('freeze-breaker.js'),file('home-dashboard.js')]){
+test('free exercises do not invoke Stripe; Freeze coaching is only explicitly opted in and metered',()=>{
+ for(const js of [transfer,review,account,file('home-dashboard.js')]){
   assert.doesNotMatch(js,/Stripe|fetch\s*\(/i);
  }
+ const freeze=file('freeze-breaker.js');
+ assert.doesNotMatch(freeze,/Stripe|checkout|createPortal|billing/i);
+ assert.match(freeze,/\$\('request-coach'\)\.addEventListener\('click',requestCoach\)/);
+ assert.match(freeze,/if\(health\.plansEnabled!==true\)throw Error\('plans_not_ready'\)/);
+ assert.match(freeze,/if\(!token\)throw Error\('login_required'\)/);
+ assert.match(freeze,/coachAsked=true/);
  assert.doesNotMatch(file('phrasebook.html'),/href="\.\/pro-(study|demo)\.html"/);
  assert.match(file('reflex.html'),/monthly_teacher_limit:"今月のProのAI先生100回/);
  assert.doesNotMatch(transfer,/Stripe|\bfetch\s*\(/i);

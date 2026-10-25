@@ -1,17 +1,21 @@
 /**
  * Freeze Breaker is a scripted offline recovery workout, NOT an AI chat.
- * We never upload, save or score a learner's voice or typed answer.
- * Self-assessed outcome only; real AI roleplay is available by explicit link.
+ * The scripted workout never uploads, stores or scores learner words.
+ * A separately clicked optional teacher call sends up to two texts, not voice.
  */
 import {OWNER_KEY} from './account-data.mjs';
 import {FREEZE_SCENES,FREEZE_REASONS,normalizeFreezeProgress,nextFreezeScene,sceneAttempt,recoveryReply,recordFreezeAttempt,freezeSummary,freezeDay} from './freeze-breaker-data.mjs';
+import {buildFreezeCoachingRequests,normalizeFreezeCoachResponse} from './freeze-coach-data.mjs';
 
 const $=id=>document.getElementById(id);
 const PREFIX='speakingym-freeze-progress-v1:';
+const AI_ENDPOINT='https://speakingym-survival-ai.keitokeitokeito0518.workers.dev/';
+const COACH_ORIGINS=new Set(['https://speakingym.pages.dev']);
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 let scope='',progress=normalizeFreezeProgress(),attempt=null,phase='start',reason=null,usedHint=false,epoch=0;
 let nextSpokenLine='';
 let capture=null,captureStage=null,captureWanted=false,captureBase='',captureFinal='',captureInterim='',captureRetries=0,captureTimer=null;
+let coachSession=null,coachEpoch=0,coachAbort=null,coachAsked=false,coachBusy=false;
 let importedMoment=null; // ephemeral AI-generated question; never written to localStorage.
 const el=(tag,value,klass)=>{
  const n=document.createElement(tag);if(value!==undefined)n.textContent=value;
@@ -45,6 +49,7 @@ function saveScope(key,value){
 }
 function clearSession(){
  epoch++;attempt=null;reason=null;usedHint=false;phase='start';nextSpokenLine='';
+ resetCoach();
  stopCapture();
  try{window.speechSynthesis?.cancel?.()}catch{}
  $('dialogue').textContent='';$('followup').textContent='';
@@ -199,6 +204,117 @@ function transcriptEdited(which){
  if(which==='retry')$('transcript-disclaimer').hidden=!current.trim();
  updateSpeechControls();
 }
+function resetCoach(){
+ coachEpoch++;
+ coachAbort?.abort();coachAbort=null;
+ coachSession=null;coachAsked=false;coachBusy=false;
+ $('request-coach').disabled=true;
+ $('coach-status').textContent='';
+ $('coach-results').replaceChildren();
+ $('coach-intro').textContent='講評は任意です。練習自体は無料のまま続けられます。';
+}
+function coachOriginReady(){
+ return COACH_ORIGINS.has(window.location.origin)||
+  ['localhost','127.0.0.1'].includes(window.location.hostname);
+}
+function prepareCoach(){
+ const firstText=$('first-transcript').value;
+ const retryText=$('reply-note').value;
+ const requests=buildFreezeCoachingRequests({
+  scene:attempt.scene.name,question:attempt.variation.ask,followup:nextSpokenLine,
+  reason:reason?FREEZE_REASONS[reason].name:'',firstText,retryText,imported:!!attempt.imported
+ });
+ coachSession={owner:scope,workoutEpoch:epoch,requests,
+  labels:[...(firstText.trim()?['最初の返答']:[]),...(retryText.trim()?['立て直し後の返答']:[])]};
+ if(attempt.imported){
+  $('coach-intro').textContent='AI実践英会話から持ち込んだ質問は、ここではAI講評の対象外です。通常の場面では使えます。';
+ }else if(!requests.length){
+  $('coach-intro').textContent='今回、講評できる英文がありません。次回はマイクか入力欄で自分の返答を残してね。';
+ }else if(!scope.startsWith('user:')){
+  $('coach-intro').textContent='自分の英文をAI先生に見てもらうにはログインが必要です。練習はログインなしで続けられます。';
+ }else if(!coachOriginReady()){
+  $('coach-intro').textContent='開発プレビューではAI講評を実行できません。正式公開後に本番サイトで利用できます。';
+ }else{
+  $('coach-intro').textContent='今回の'+requests.length+'つの返答について、具体的な言い換えと次の練習を提案します。';
+  $('request-coach').disabled=false;
+ }
+}
+function coachIsCurrent(session,requestEpoch){
+ return coachEpoch===requestEpoch&&coachSession===session&&phase==='done'&&
+  epoch===session.workoutEpoch&&scope===session.owner&&resolveScope()===session.owner;
+}
+function renderCoach(feedback,session){
+ const root=$('coach-results');root.replaceChildren();
+ const fields=[['良かったところ','praise'],['次に直すところ','improvement'],
+  ['自然な言い換え','improved'],['なぜこの表現？','why'],['次に声で試すこと','practice']];
+ for(const item of feedback){
+  const card=el('section',undefined,'coach-answer');
+  card.append(el('h4',session.labels[item.index]||'自分の返答'));
+  for(const [label,key] of fields){
+   card.append(el('p',label,'coach-label'));
+   card.append(el('p',item[key],key==='improved'?'coach-improved':''));
+  }
+  root.append(card);
+ }
+}
+async function requestCoach(){
+ const session=coachSession;
+ if(!session||coachBusy||coachAsked||!session.requests.length||
+  !session.owner.startsWith('user:')||!coachOriginReady()||!coachIsCurrent(session,coachEpoch))return;
+ const requestEpoch=coachEpoch;
+ coachBusy=true;$('request-coach').disabled=true;
+ $('coach-status').textContent='AI先生の利用準備を確認しています…';
+ const controller=new AbortController();coachAbort=controller;
+ let sent=false;
+ const timeout=setTimeout(()=>controller.abort(),19000);
+ try{
+  const healthResponse=await fetch(AI_ENDPOINT+'health',{signal:controller.signal});
+  const health=healthResponse.ok?await healthResponse.json().catch(()=>null):null;
+  if(!health?.reflexCoachSupported)throw Error('teacher_not_deployed');
+  if(!health.aiConfigured)throw Error('ai_disabled');
+  // Never allow an unmetered AI request if the entitlement service is offline.
+  if(health.plansEnabled!==true)throw Error('plans_not_ready');
+  if(!coachIsCurrent(session,requestEpoch))return;
+  const token=await window.speakingymAccount?.getIdToken?.();
+  if(!token)throw Error('login_required');
+  if(!coachIsCurrent(session,requestEpoch))return;
+  $('coach-status').textContent='書き起こした英文をAI先生が確認しています…';
+  sent=true;coachAsked=true;
+  const response=await fetch(AI_ENDPOINT,{method:'POST',signal:controller.signal,
+   headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+   body:JSON.stringify({action:'reflex_coach',level:'standard',attempts:session.requests})});
+  const body=await response.json().catch(()=>({error:'invalid_json'}));
+  if(!response.ok)throw Error(String(body.error||'server_unavailable'));
+  const feedback=normalizeFreezeCoachResponse(body.feedback,session.requests.length);
+  if(!feedback)throw Error('invalid_ai_response');
+  if(!coachIsCurrent(session,requestEpoch))return;
+  renderCoach(feedback,session);
+  $('coach-status').textContent='AI講評を受け取りました。音声の発音や実際の流暢さは評価していません。';
+  void window.speakingymQuota?.refresh?.();
+ }catch(e){
+  if(!coachIsCurrent(session,requestEpoch))return;
+  const errors={
+   teacher_not_deployed:'AI講評は準備中です。',ai_disabled:'AI講評は現在停止中です。',
+   plans_not_ready:'利用回数を安全に確認できないため、送信を止めました。',
+   login_required:'AI講評にはログインが必要です。',
+   daily_teacher_limit:'今日のAI先生の回数を使い切りました。',
+   monthly_teacher_limit:'今月のAI先生の回数を使い切りました。',
+   rate_limited:'混み合っています。時間をおいてください。',
+   invalid_coaching_input:'英文を読み取れませんでした。',
+   gemini_quota:'AI提供元の上限に達しました。',
+   invalid_ai_response:'AIから講評を正常に受け取れませんでした。'
+  };
+  const message=errors[String(e?.message)]||'AI講評を取得できませんでした。通信状態を確認してください。';
+  $('coach-status').textContent=message+(sent?' 重複送信を避けるため、この練習からの再送はできません。':' AI利用回数は消費していません。');
+  if(sent)void window.speakingymQuota?.refresh?.();
+ }finally{
+  clearTimeout(timeout);
+  if(coachAbort===controller)coachAbort=null;
+  if(coachIsCurrent(session,requestEpoch)){
+   coachBusy=false;$('request-coach').disabled=coachAsked;
+  }
+ }
+}
 function resetListen(id){
  $(id).hidden=true;
  const b=$('reveal-'+id);b.setAttribute('aria-expanded','false');b.textContent='英文を見る';
@@ -234,6 +350,7 @@ function receiveAIQuestion(){
 function startMission(useImported=false){
  bindScope();
  if(!scope)return;
+ resetCoach();
  stopCapture();
  const mission=sceneAttempt($('mission-select').value,progress);
  if(!mission)return;
@@ -340,6 +457,7 @@ function finish(saidIt){
  const saved=saveScope(key,progress);
  const record=progress.records[id];
  phase='done';$('mission').hidden=true;$('result').hidden=false;
+ prepareCoach();
  $('return-to-ai').hidden=!(importedMoment?.trained&&scope==='user:'+importedMoment.uid);
  const independently=saidIt&&!usedHint;
  window.speakingymAnalytics?.track('sg_freeze_self_report',{
@@ -409,6 +527,7 @@ $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
 $('said-yes').addEventListener('click',()=>finish(true));
 $('said-no').addEventListener('click',()=>finish(false));
+$('request-coach').addEventListener('click',requestCoach);
 $('retry-scene').addEventListener('click',()=>{if(attempt){$('mission-select').value=attempt.scene.id;startMission()}});
 $('try-another').addEventListener('click',()=>{
  pickRecommended();clearSession();
@@ -430,4 +549,5 @@ $('reply-note').addEventListener('input',()=>{
  transcriptEdited('retry');
  $('transcript-disclaimer').hidden=!$('reply-note').value.trim();
 });
+window.addEventListener('pagehide',()=>{stopCapture();resetCoach()});
 renderSceneOptions();bindScope();receiveAIQuestion();pickRecommended();

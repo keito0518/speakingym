@@ -139,12 +139,16 @@ test('every Freeze Breaker JS DOM identifier exists in the rendered HTML',()=>{
  for(const id of new Set(referenced))
   assert.match(html,new RegExp('id="'+id+'"'),id+' must exist in freeze-breaker.html');
  assert.match(html,/音声がブラウザ提供元の認識サービスに送られる場合があります/);
- assert.match(html,/SpeakingymのAIサーバーへは送らず、認識した英文・録音は保存しません/);
- assert.match(html,/台本型の自主練習/);
+ assert.match(html,/認識した英文・録音は保存しません/);
+ assert.match(html,/自分で追加のAI講評を依頼した場合のみ/);
+ assert.match(html,/通常の練習は台本型/);
  assert.match(html,/id="first-mic"/);
  assert.match(html,/id="retry-mic"/);
  assert.match(script,/window\.SpeechRecognition\|\|window\.webkitSpeechRecognition/);
- assert.doesNotMatch(script,/\bfetch\s*\(/,'voice transcription must not trigger a Speakingym AI request');
+ assert.match(script,/\$\('request-coach'\)\.addEventListener\('click',requestCoach\)/,
+  'only a deliberate click can initiate optional AI coaching');
+ assert.match(script,/if\(health\.plansEnabled!==true\)throw Error\('plans_not_ready'\)/,
+  'coaching must fail closed unless server quotas are enabled');
 });
 
 test('free no-AI Freeze Breaker is linked from the public training and pricing flow',()=>{
@@ -153,7 +157,8 @@ test('free no-AI Freeze Breaker is linked from the public training and pricing f
   assert.match(html,/href="\.\/freeze-breaker\.html"/,path+' should link to Freeze Breaker');
  }
  const gym=readFileSync(new URL('../freeze-breaker.html',import.meta.url),'utf8');
- assert.match(gym,/AI利用回数を消費しない/);
+ assert.match(gym,/通常の練習は台本型で、AI利用回数を消費しません/);
+ assert.match(gym,/AI先生の利用回数を1回消費します/);
 });
 
 test('personalized rescue insight comes from bounded self-reported reasons, not AI scoring',()=>{

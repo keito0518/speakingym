@@ -7,7 +7,7 @@
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://speakingym.pages.dev/freeze-breaker.html">
 <meta property="og:type" content="website"><meta property="og:title" content="無料フリーズ克服ジム | Speakingym">
-<meta property="og:description" content="予想外の英語に詰まったときの切り返しを無料で何度でも練習。AI利用回数を消費しません。">
+<meta property="og:description" content="予想外の英語に詰まったときの切り返しを無料で何度でも練習。必要なときだけ追加のAI講評も選べます。">
 <meta property="og:url" content="https://speakingym.pages.dev/freeze-breaker.html">
 <title>会話の立て直し練習 | Speakingym</title>
 <style>
@@ -60,7 +60,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
  <p>まず相手の英語を耳で聞き、声で返す。詰まったら「聞き返す」「待ってもらう」などで会話を立て直します。60秒の瞬発練習とは違う、時間制限なしの聞く・返す練習です。</p>
  <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
-<div class="notice">マイクなしでも練習できます。音声認識は任意です。<details><summary>音声認識・採点・記録について</summary><p>このジムはAIを使わない台本型の自主練習で、AI利用回数を消費しない練習です。発音・正誤の自動採点は行いません。マイク利用時、音声がブラウザ提供元の認識サービスに送られる場合があります。SpeakingymのAIサーバーへは送らず、認識した英文・録音は保存しません。自己評価の復習記録のみ、この端末に保存します。</p></details></div>
+<div class="notice">マイクなしでも練習できます。音声認識は任意です。<details><summary>音声認識・採点・記録について</summary><p>通常の練習は台本型で、AI利用回数を消費しません。発音・正誤の自動採点も行いません。マイク利用時、音声がブラウザ提供元の認識サービスに送られる場合があります。認識した英文・録音は保存しません。終了後に自分で追加のAI講評を依頼した場合のみ、書き起こされた英文と練習場面をGeminiへ送信し、AI先生の利用回数を1回消費します。無料枠では入力がモデル改善に使われる場合があります。自己評価の復習記録だけをこの端末に保存します。</p></details></div>
 <section class="card" id="imported-ai-cue" hidden aria-labelledby="imported-ai-title" style="border:2px solid #f0b390;background:#fffdf9;margin-top:20px">
  <div class="kicker">YOUR REAL FREEZE MOMENT · FROM AI ROLEPLAY</div>
  <h2 id="imported-ai-title">さっき言葉が出なくなった、あの質問</h2>
@@ -140,7 +140,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
    <label for="reply-note" class="small">話した英文（任意・保存されません）</label>
    <textarea id="reply-note" class="text-entry" maxlength="400" placeholder="例：Could you explain that once more?"></textarea>
    <p class="speech-status" id="retry-mic-status" role="status" aria-live="polite">マイクで話した英文を確認できます。音声認識の結果は採点ではありません。</p>
-   <p class="small" id="transcript-disclaimer" hidden>この入力は練習中に画面へ表示するだけ。保存も採点もAI送信もしません。</p>
+   <p class="small" id="transcript-disclaimer" hidden>この英文は保存しません。終了後に追加のAI講評を自分で依頼した場合だけ送信します。</p>
    <div class="control-row"><button class="button muted" id="show-hint" type="button">💡 ヒントを見る</button></div>
    <div class="hint" id="freeze-hint" hidden><strong>こんな言い方も使えるよ</strong>
     <p id="followup-hint" lang="en"></p><p id="followup-hint-2" lang="en"></p>
@@ -160,6 +160,14 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
   <p id="result-detail"></p>
   <p class="meta" id="result-schedule"></p>
   <p id="result-origin" class="small"></p>
+  <section class="freeze-coach" id="coach-panel" aria-labelledby="coach-title">
+   <h3 id="coach-title">会話の切り返しを、AI先生に確認してもらう</h3>
+   <p class="small" id="coach-intro">講評は任意です。練習自体は無料のまま続けられます。</p>
+   <p class="small">実行すると、書き起こした英文と練習場面がGeminiへ送信され、AI先生の回数を1回使います。音声や録音は送りません。講評はこの画面だけに表示し、保存しません。認識の誤りや発音は評価できません。実名や連絡先は含めないでください。</p>
+   <button class="button primary" id="request-coach" type="button" disabled>AI先生に見てもらう（任意・1回消費）</button>
+   <p id="coach-status" class="speech-status" role="status" aria-live="polite"></p>
+   <div id="coach-results" aria-live="polite"></div>
+  </section>
   <div class="control-row">
    <button class="button orange" id="return-to-ai" type="button" hidden>↗ 元のAI場面でリベンジ</button>
    <button class="button muted" id="retry-scene" type="button">この場面でもう一度</button>
