@@ -44,7 +44,7 @@ test('quiet hero text stays legible and short labels explain the next action',()
  const neon=read('soft-neon.css');
  assert.match(neon,/body\.sg-freeze \.hero\{[^}]*background:var\(--sg-neon-night\)/,'the dark rescue hero has an explicit dark background');
  assert.match(neon,/body\.sg-freeze \.hero h1\{color:#f3fcfa\}/,'rescue headline stays light against dark panel');
- assert.match(freeze,/<h1 id="page-title">不意の英語でも、会話を続ける。<\/h1>/);
+ assert.match(freeze,/<h1 id="page-title">不意の英語でも、返そう。<\/h1>/);
  assert.doesNotMatch(freeze,/hero-title-line|white-space:\s*nowrap/,
   'the Japanese survival headline is allowed to wrap naturally');
  assert.match(read('reflex.html'),/<h1>60秒、英語を話そう。<\/h1>/);
