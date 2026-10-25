@@ -412,7 +412,6 @@ function chooseReason(id){
  if(!attempt||phase!=='ask'||!Object.hasOwn(FREEZE_REASONS,id))return;
  stopCapture();
  phase='repair';reason=id;
- window.speakingymAnalytics?.track('sg_freeze_strategy',{strategy:id});
  const rescue=FREEZE_REASONS[id];
  $('reason-caption').textContent=rescue.hint;
  $('repair-dialogue').textContent=attempt.variation.ask;
