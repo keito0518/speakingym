@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#faf9f6">
-<meta name="description" content="英語が出てこない瞬間を練習に変える。Speakingymのフリーズ克服ジム。予想外の一言→会話の立て直し→条件を変えた再挑戦を無料で練習。">
+<meta name="description" content="予想外の英語に固まったら、どう会話を続ける？Speakingymの無料会話サバイバル。聞き返す・時間を稼ぐ・言い換える・選択肢を聞く練習。">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://speakingym.pages.dev/freeze-breaker.html">
-<meta property="og:type" content="website"><meta property="og:title" content="無料フリーズ克服ジム | Speakingym">
+<meta property="og:type" content="website"><meta property="og:title" content="無料・会話サバイバル | Speakingym">
 <meta property="og:description" content="予想外の英語に詰まったときの切り返しを無料で何度でも練習。必要なときだけ追加のAI講評も選べます。">
 <meta property="og:url" content="https://speakingym.pages.dev/freeze-breaker.html">
-<title>会話の立て直し練習 | Speakingym</title>
+<title>会話サバイバル｜英語が詰まったときの切り返し練習 | Speakingym</title>
 <style>
 :root{font:15px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#183c2e;background:#f6f8f3}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px}button,select,textarea{font:inherit}button,select{min-height:44px}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.5;cursor:not-allowed}a{color:#226040}button:focus-visible,a:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #f38e69;outline-offset:3px}
@@ -55,9 +55,9 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 <header><div class="header"><a class="brand" href="./index.html">speakin<span>gym.</span></a><nav><a href="./index.html">ホーム</a><a href="./reflex.html">60秒チャレンジ</a><a href="./account.html">マイページ</a></nav></div></header>
 <main>
 <section class="hero" aria-labelledby="page-title">
- <div class="kicker">相手の英語 → 切り返し / 会話の立て直し</div>
- <h1 id="page-title">英語で詰まったら？</h1>
- <p>まず相手の英語を耳で聞き、声で返す。詰まったら「聞き返す」「待ってもらう」などで会話を立て直します。60秒の瞬発練習とは違う、時間制限なしの聞く・返す練習です。</p>
+ <div class="kicker">CONVERSATION SURVIVAL · 会話を止めない練習</div>
+ <h1 id="page-title">予想外の英語にも、返せる自分へ。</h1>
+ <p>予定外のひと言を聞いたら、聞き返す・時間をもらう・言い換える。使う切り返しを選んで実際に声に出し、相手の次の発言まで会話を続ける時間制限なしの練習です。60秒の英作文とは目的が違います。</p>
  <div class="pill-row"><span class="pill">ログイン不要</span><span class="pill">無料</span><span class="pill"><span id="scene-count">7</span>場面</span></div>
 </section>
 <div class="notice">マイクなしでも練習できます。音声認識は任意です。<details><summary>音声認識・採点・記録について</summary><p>通常の練習は台本型で、AI利用回数を消費しません。発音・正誤の自動採点も行いません。マイク利用時、音声がブラウザ提供元の認識サービスに送られる場合があります。認識した英文・録音は保存しません。終了後に自分で追加のAI講評を依頼した場合のみ、書き起こされた英文と練習場面をGeminiへ送信し、AI先生の利用回数を1回消費します。無料枠では入力がモデル改善に使われる場合があります。自己評価の復習記録だけをこの端末に保存します。</p></details></div>
@@ -72,9 +72,9 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 <div class="layout">
  <div>
  <section class="card" aria-labelledby="choose-title">
-  <h2 id="choose-title">相手の英語を聞いて、返してみる</h2>
-  <div class="onboarding"><strong>会話リカバリーの3ステップ</strong><ol><li>英語を耳で聞く。聞き取れなければ英文を表示できる</li><li>声で返す。詰まったら会話をつなぐ表現を練習する</li><li>相手の次のひと言を聞いて、もう一度返す</li></ol></div>
-  <button class="button primary start-main" id="start-button" type="button">▶ 会話を聞いて始める</button>
+  <h2 id="choose-title">突然のひと言、どう切り抜ける？</h2>
+  <div class="onboarding"><strong>会話サバイバル・3ステップ</strong><ol><li>予想外の英語を聞き、今の困り方を選ぶ</li><li>切り返しを自分の声で言う（マイクは任意）</li><li>相手の続きを聞いて、もう一度英語で返す</li></ol></div>
+  <button class="button primary start-main" id="start-button" type="button">▶ 予想外のひと言を聞く</button>
   <details class="scene-options"><summary>場面を変える・復習する（任意）</summary>
    <p>初回は自動でおすすめの場面を選びます。練習したい場面があれば変更できます。</p>
    <label for="mission-select"><strong>練習する場面</strong></label>
@@ -96,26 +96,14 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <div class="control-row"><button class="button primary" id="speak-dialogue" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-dialogue" type="button" aria-expanded="false" aria-controls="dialogue">英文を見る</button></div>
     <details><summary>意味を確認する</summary><p id="translation"></p></details>
    </div>
-   <p class="mission-way">相手の英語に声で返そう。マイクを押すと話した英語を文字で確認できます（任意）。</p>
-   <div class="speech-take" aria-label="最初の返答を声で練習する">
-    <div class="control-row"><button class="button primary" id="first-mic" type="button">🎙 マイクで返す</button><button class="button muted" id="first-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="first-reset" type="button">↻ 全消し</button></div>
-    <label for="first-transcript" class="small">話した英文（この練習中だけ表示・保存しません）</label>
-    <textarea id="first-transcript" class="text-entry" rows="2" maxlength="400" placeholder="話しても、手入力してもOK。空欄のまま練習できます。"></textarea>
-    <p class="speech-status" id="first-mic-status" role="status" aria-live="polite">音声認識は任意です。声を出すだけでも練習できます。</p>
-   </div>
-   <p><strong>英語でひと言返せた？</strong></p>
-   <div class="response-choice">
-    <button class="button primary" id="instant-yes" type="button">✓ ひと言返せた</button>
-    <button class="button orange" id="instant-froze" type="button">言葉が止まった…</button>
-   </div>
    <div class="reason-panel" id="reason-panel" hidden>
-    <h3>大丈夫。どこで止まった？</h3>
-    <p class="small">近いものを1つ選ぶと、会話をつなぐ表現が出るよ。</p>
+    <h3>こんなとき、どう会話をつなぐ？</h3>
+    <p class="small">今の困り方に近いものを選ぼう。正解を選ぶテストではないよ。</p>
     <div class="reason-grid" id="reason-buttons"></div>
    </div>
   </div>
   <div id="step-repair" hidden>
-   <h3>このひと言で、沈黙を切ろう</h3>
+   <h3>まずは沈黙を切るひと言</h3>
    <p class="small" id="reason-caption"></p>
    <div class="prompt-help"><div class="speaker">困ったときに使える切り返し</div>
     <div id="rescue-line" class="rescue-line" lang="en"></div>
@@ -123,8 +111,14 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <div id="rescue-guide" class="small"></div>
     <button class="button muted" id="speak-rescue" type="button">▶ この表現を聞く</button>
    </div>
-   <p>この英語を1回声に出そう。流暢に話す必要はないよ。</p>
-   <button class="button primary" id="repair-next" type="button">声に出した！相手の続きを聞く →</button>
+   <p class="mission-way">この切り返しを自分の声で言ってみよう。全文を暗記しなくても、相手に伝わる短い言い方でOK。</p>
+   <div class="speech-take" aria-label="会話を立て直す一言を声で練習する">
+    <div class="control-row"><button class="button primary" id="first-mic" type="button">🎙 切り返しを話す</button><button class="button muted" id="first-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="first-reset" type="button">↻ 全消し</button></div>
+    <label for="first-transcript" class="small">切り返した英文（この練習中だけ表示・保存しません）</label>
+    <textarea id="first-transcript" class="text-entry" rows="2" maxlength="400" placeholder="自分なりに言ってみよう。音声認識も手入力も任意。"></textarea>
+    <p class="speech-status" id="first-mic-status" role="status" aria-live="polite">マイクなしで声に出してもOK。自動採点ではありません。</p>
+   </div>
+   <button class="button primary" id="repair-next" type="button">切り返した！相手の続きを聞く →</button>
   </div>
   <div id="step-retry" hidden>
    <h3 id="retry-heading">さらに予想外のひと言が来た！</h3>

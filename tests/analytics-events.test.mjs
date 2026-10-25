@@ -72,6 +72,12 @@ test('Freeze rescue funnel has no PII or transcript parameters and only transmit
   destination:'freeze',learnerAnswer:'private text'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_freeze_from_ai',{
   uid:'learner-id',prompt:'private AI response'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_start',{
+  source:'scripted',transcript:'private answer'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_strategy',{
+  strategy:'misunderstood',learnerName:'private name'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_coach_request',{
+  answers:'two',question:'private question'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_freeze_self_report',{
   source:'ai',outcome:'said_it',transcript:'secret',uid:'abc'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_freeze_self_report',{
@@ -81,13 +87,18 @@ test('Freeze rescue funnel has no PII or transcript parameters and only transmit
  assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
   ['event','sg_home_cta',{destination:'freeze'}],
   ['event','sg_freeze_from_ai',{}],
+  ['event','sg_freeze_start',{source:'scripted'}],
+  ['event','sg_freeze_strategy',{strategy:'misunderstood'}],
+  ['event','sg_freeze_coach_request',{answers:'two'}],
   ['event','sg_freeze_self_report',{source:'ai',outcome:'said_it'}],
   ['event','sg_freeze_self_report',{}],
   ['event','sg_freeze_revenge',{}]
  ]);
  const gym=source('freeze-breaker.js'),page=source('freeze-breaker.html');
- // The live AI scene bridge stays in the separate paid/Worker draft.
- // This release ships standalone, no-AI rescue exercises.
+ // Scripted practice remains no-AI; optional teacher calls are explicitly clicked and metered.
+ assert.match(gym,/track\('sg_freeze_start'/);
+ assert.match(gym,/track\('sg_freeze_strategy'/);
+ assert.match(gym,/track\('sg_freeze_coach_request'/);
  assert.match(gym,/track\('sg_freeze_self_report'/);
  assert.match(gym,/track\('sg_freeze_revenge'\)/);
  assert.match(page,/<script src="\.\/analytics-events\.js"><\/script>/);

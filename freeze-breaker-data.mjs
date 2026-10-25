@@ -5,7 +5,7 @@
  */
 export const FREEZE_REASONS=Object.freeze({
  misunderstood:Object.freeze({name:'相手の質問が聞き取れなかった',rescue:'Sorry, could you say that again more slowly?',meaning:'すみません。もう一度ゆっくり言ってもらえますか？',hint:'まず「もう一度ゆっくり言ってください」と頼もう。'}),
- words:Object.freeze({name:'言いたい単語が出なかった',rescue:'What I mean is...',meaning:'私が言いたいのは……（ここから知っている単語で続ける）',hint:'知っている単語を使って、別の言い方に変えよう。'}),
+ words:Object.freeze({name:'言いたい単語が出なかった',rescue:"I can't remember the word, but it's like...",meaning:'単語が思い出せないけど、こんな感じのものです……',hint:'知らない単語を探し続けず、特徴や用途を知っている英語で説明しよう。'}),
  surprise:Object.freeze({name:'予想外の返事で固まった',rescue:'Oh, I see. Could you give me a second?',meaning:'なるほど。ちょっと考える時間をもらえますか？',hint:'焦らず数秒考える時間をつくって大丈夫。'}),
  unsure:Object.freeze({name:'どう返すのが自然かわからなかった',rescue:'Could you tell me what my options are?',meaning:'どんな選択肢があるか教えてもらえますか？',hint:'選択肢を質問すれば、次の一言が出しやすくなる。'})
 });

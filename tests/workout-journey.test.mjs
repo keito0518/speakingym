@@ -6,13 +6,15 @@ const file=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const home=file('index.html'),sprint=file('reflex.html'),freeze=file('freeze-breaker.html');
 const transfer=file('transfer.html'),transferJs=file('transfer.js');
 
-test('beginner guide distinguishes timed Japanese-to-English drills from untimed English-to-reply rescue',()=>{
- assert.match(home,/① 60秒で声に出す/);
- assert.match(home,/② 会話が止まったら立て直す/);
+test('beginner guide boldly separates speed of recall from recovery of a stalled conversation',()=>{
+ assert.match(home,/① 瞬発スプリント/);
+ assert.match(home,/② 会話サバイバル/);
  assert.match(home,/③ 言えなかった表現を復習/);
  assert.match(home,/href="\.\/phrasebook\.html"/);
  assert.match(sprint,/日本語 → 英語 \/ 瞬発力トレーニング/);
- assert.match(freeze,/相手の英語 → 切り返し \/ 会話の立て直し/);
+ assert.match(freeze,/CONVERSATION SURVIVAL/);
+ assert.match(freeze,/聞き返す・時間をもらう・言い換える/);
+ assert.doesNotMatch(freeze,/id="instant-yes"|id="instant-froze"/,'remove duplicate first-translation assessment');
  assert.match(freeze,/時間制限なし/);
 });
 

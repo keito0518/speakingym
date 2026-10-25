@@ -9,7 +9,7 @@ test('first-time home immediately offers a 60-second warm-up and optional conver
  assert.ok(guide);
  assert.match(html,/<a class="btn primary" href="\.\/reflex\.html" data-sg-cta="sprint">まず60秒、話してみる/);
  assert.match(html,/<a class="btn secondary-link" href="\.\/freeze-breaker\.html" data-sg-cta="freeze">会話が止まったときの練習/);
- assert.match(guide,/まず話す。困ったら切り返す。/);
+ assert.match(guide,/英語を取り出す。会話を止めない。/);
  assert.match(html,/60秒チャレンジはログイン不要・回数制限なし/);
  assert.doesNotMatch(guide,/stripe|checkout|Googleログインが必須/);
 });

@@ -11,7 +11,8 @@ export function buildFreezeCoachingRequests(input={}){
  if(first){
   requests.push({index:requests.length,text:first,
    situation:clean(`${scene}。相手の質問：${question}`,270),
-   goal:'予想外の英語に対して、意味の通る短い返答をして会話を止めない。'});
+   goal:clean(reason?`「${reason}」と感じたとき、聞き返し・言い換え・時間稼ぎなどの切り返しで沈黙を終わらせる。`:
+    '予想外の発言で会話が止まらないよう、短く切り返す。',330)});
  }
  if(retry){
   requests.push({index:requests.length,text:retry,

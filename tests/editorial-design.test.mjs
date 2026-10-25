@@ -20,7 +20,7 @@ test('first screen uses a real speaking prompt with one obvious entry, not a fak
  assert.match(home,/<h1>知ってる英語を、<em>話せる英語に。<\/em><\/h1>/);
  assert.match(home,/まず60秒、話してみる/);
  assert.doesNotMatch(home,/<div class="orb"|<div class="floating"|<div class="mock"/);
- assert.match(home,/まず話す。困ったら切り返す。/);
+ assert.match(home,/英語を取り出す。会話を止めない。/);
  assert.match(home,/<span class="tag">04<\/span>/,'the narrow number column must not wrap a multiword login label');
  assert.match(home,/ログイン後に利用できます。カフェや仕事など16場面/);
 });
@@ -44,7 +44,7 @@ test('quiet hero text stays legible and short labels explain the next action',()
  const neon=read('soft-neon.css');
  assert.match(neon,/body\.sg-freeze \.hero\{[^}]*background:var\(--sg-neon-night\)/,'the dark rescue hero has an explicit dark background');
  assert.match(neon,/body\.sg-freeze \.hero h1\{color:#f3fcfa\}/,'rescue headline stays light against dark panel');
- assert.match(freeze,/<h1 id="page-title">英語で詰まったら？<\/h1>/);
+ assert.match(freeze,/<h1 id="page-title">予想外の英語にも、返せる自分へ。<\/h1>/);
  assert.match(read('reflex.html'),/<h1>60秒、英語を話そう。<\/h1>/);
  assert.match(read('account.html'),/<h1 id="heroTitle">練習記録と、次の一歩。<\/h1>/);
  assert.match(read('scenes.html'),/<h1>どんな場面で話してみる？<\/h1>/);

@@ -58,7 +58,7 @@ function clearSession(){
  $('imported-followup-note').hidden=true;
  $('first-transcript').value='';
  $('reply-note').value='';
- $('first-mic-status').textContent='音声認識は任意です。声を出すだけでも練習できます。';
+ $('first-mic-status').textContent='マイクなしで声に出してもOK。自動採点ではありません。';
  $('retry-mic-status').textContent='マイクで話した英文を確認できます。音声認識の結果は採点ではありません。';
  $('feedback').textContent='';
  $('mission').hidden=true;
@@ -108,7 +108,7 @@ function updateSpeechControls(){
   const live=captureWanted&&captureStage===which;
   $(which+'-stop').hidden=!live;
   $(which+'-mic').textContent=live?'↻ 最初から話し直す':
-   $(speechId(which)).value.trim()?'🎙 続きを話す':'🎙 マイクで返す';
+  $(speechId(which)).value.trim()?'🎙 続きを話す':which==='first'?'🎙 切り返しを話す':'🎙 マイクで返す';
  }
 }
 function stopCapture(){
@@ -123,7 +123,7 @@ function stopCapture(){
 }
 function captureIsActive(which){
  return captureWanted&&captureStage===which&&scope&&resolveScope()===scope&&
-  (which==='first'?phase==='ask':phase==='retry');
+  (which==='first'?phase==='repair':phase==='retry');
 }
 function beginRecognition(){
  const which=captureStage;
@@ -180,7 +180,7 @@ function beginRecognition(){
  }
 }
 function startCapture(which){
- if(!scope||resolveScope()!==scope||(which==='first'?phase!=='ask':phase!=='retry'))return;
+ if(!scope||resolveScope()!==scope||(which==='first'?phase!=='repair':phase!=='retry'))return;
  if(!Recognizer){speechStatus(which).textContent='このブラウザでは音声認識が利用できません。マイクなしで声に出すか、手入力してね。';return}
  const reset=captureStage===which&&captureWanted;
  stopCapture();
@@ -225,7 +225,7 @@ function prepareCoach(){
   reason:reason?FREEZE_REASONS[reason].name:'',firstText,retryText,imported:!!attempt.imported
  });
  coachSession={owner:scope,workoutEpoch:epoch,requests,
-  labels:[...(firstText.trim()?['最初の返答']:[]),...(retryText.trim()?['立て直し後の返答']:[])]};
+  labels:[...(firstText.trim()?['切り返しのひと言']:[]),...(retryText.trim()?['相手の続きへの返答']:[])]};
  if(attempt.imported){
   $('coach-intro').textContent='AI実践英会話から持ち込んだ質問は、ここではAI講評の対象外です。通常の場面では使えます。';
  }else if(!requests.length){
@@ -280,6 +280,7 @@ async function requestCoach(){
   if(!coachIsCurrent(session,requestEpoch))return;
   $('coach-status').textContent='書き起こした英文をAI先生が確認しています…';
   sent=true;coachAsked=true;
+  window.speakingymAnalytics?.track('sg_freeze_coach_request',{answers:session.requests.length===2?'two':'one'});
   const response=await fetch(AI_ENDPOINT,{method:'POST',signal:controller.signal,
    headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
    body:JSON.stringify({action:'reflex_coach',level:'standard',attempts:session.requests})});
@@ -332,7 +333,7 @@ function showStage(stage){
  $('step-repair').hidden=stage!=='repair';
  $('step-retry').hidden=stage!=='retry';
  $('mission').hidden=stage==='start';
- const names={start:'1 / 3　予想外のひと言',repair:'2 / 3　会話を立て直す',retry:reason===null?'2 / 2　もうひと言返す':'3 / 3　もう一度言ってみる'};
+ const names={start:'1 / 3　予想外のひと言',repair:'2 / 3　切り返しを声に出す',retry:'3 / 3　会話を続ける'};
  $('stage-name').textContent=names[stage]||'';
  $('mission-heading').textContent=attempt?.scene.name||'';
 }
@@ -371,6 +372,8 @@ function startMission(useImported=false){
  $('imported-followup-note').hidden=!useOriginal;
  $('reply-note').value='';$('feedback').textContent='';
  $('first-transcript').value='';
+ $('first-mic-status').textContent='マイクなしで声に出してもOK。自動採点ではありません。';
+ $('retry-mic-status').textContent='マイクで話した英文を確認できます。音声認識の結果は採点ではありません。';
  updateSpeechControls();
  $('result').hidden=true;$('freeze-hint').hidden=true;
  $('transcript-disclaimer').hidden=true;
@@ -387,32 +390,19 @@ function startMission(useImported=false){
   b.dataset.reason=id;b.addEventListener('click',()=>chooseReason(id));
   $('reason-buttons').append(b);
  }
+ $('reason-panel').hidden=false;
  $('mission').hidden=false;
  $('step-start').hidden=false;$('step-repair').hidden=true;$('step-retry').hidden=true;
  $('stage-name').textContent='1 / 3　予想外のひと言';
  $('mission').scrollIntoView?.({block:'start',behavior:'smooth'});
+ window.speakingymAnalytics?.track('sg_freeze_start',{source:useOriginal?'ai':'scripted'});
  playListeningLine('dialogue',attempt.variation.ask);
-}
-function markInstantAnswer(){
- if(!attempt||phase!=='ask')return;
- stopCapture();
- // An answered first question is not a freeze; don't fabricate a cause.
- reason=null;
- phase='repair';
- showFollowup();
- $('retry-heading').textContent='いいね！会話が続いたら、次は何と返す？';
- $('feedback').textContent='1問目は返せたね。今度は少し違う質問に挑戦しよう。';
-}
-function markFrozen(){
- if(!attempt||phase!=='ask')return;
- stopCapture();
- $('reason-panel').hidden=false;
- $('reason-panel').scrollIntoView?.({block:'nearest',behavior:'smooth'});
 }
 function chooseReason(id){
  if(!attempt||phase!=='ask'||!Object.hasOwn(FREEZE_REASONS,id))return;
  stopCapture();
  phase='repair';reason=id;
+ window.speakingymAnalytics?.track('sg_freeze_strategy',{strategy:id});
  const rescue=FREEZE_REASONS[id];
  $('reason-caption').textContent=rescue.hint;
  $('rescue-line').textContent=rescue.rescue;
@@ -521,8 +511,6 @@ $('return-to-ai').addEventListener('click',()=>{
  window.location.assign('./scenes.html?scene='+encodeURIComponent(importedMoment.sceneId));
 });
 $('pick-recommendation').addEventListener('click',pickRecommended);
-$('instant-yes').addEventListener('click',markInstantAnswer);
-$('instant-froze').addEventListener('click',markFrozen);
 $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
 $('said-yes').addEventListener('click',()=>finish(true));
@@ -536,7 +524,7 @@ $('try-another').addEventListener('click',()=>{
 $('speak-dialogue').addEventListener('click',()=>{if(attempt&&phase==='ask')playListeningLine('dialogue',attempt.variation.ask)});
 $('first-mic').addEventListener('click',()=>startCapture('first'));
 $('retry-mic').addEventListener('click',()=>startCapture('retry'));
-$('first-stop').addEventListener('click',()=>{if(captureStage==='first'){stopCapture();speechStatus('first').textContent='認識を停止しました。文字を確認して自分で「返せたか」を選んでね。'}});
+$('first-stop').addEventListener('click',()=>{if(captureStage==='first'){stopCapture();speechStatus('first').textContent='認識を停止しました。自分の切り返しを確認して、相手の続きを聞こう。'}});
 $('retry-stop').addEventListener('click',()=>{if(captureStage==='retry'){stopCapture();speechStatus('retry').textContent='認識を停止しました。必要なら続きを話せます。'}});
 $('first-reset').addEventListener('click',()=>resetTranscript('first'));
 $('retry-reset').addEventListener('click',()=>resetTranscript('retry'));
