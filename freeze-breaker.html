@@ -44,6 +44,7 @@ main{max-width:1010px;padding:34px 20px 62px}
 .prompt-help{background:#f7f9f4;border:1px solid #dfe8db;border-radius:8px}.prompt-help summary{cursor:pointer;color:#315746;font-size:13px;font-weight:800;padding:2px 0}.prompt-help[open] summary{margin-bottom:13px}.rescue-line{color:#2b5943}.rescue-meaning{color:#58715d}
 .stat{background:#f6f7f3;border-radius:8px}.stat strong{color:#355747}.hint{background:#f7f8f4;border:1px solid #e0e7dc;border-radius:8px}
 .cta{border-radius:8px;background:#285547}.frame-note,.small{color:#697b6e}.footer{color:#879288}
+.reply-target{border:1px solid #dfe8de;border-left:3px solid #65836e;border-radius:8px;background:#f7f9f4;padding:14px 17px;margin:14px 0}.reply-target blockquote{margin:7px 0;font-size:clamp(19px,3.8vw,25px);line-height:1.5;font-weight:800;overflow-wrap:break-word}.reply-target .mission-way{margin:8px 0 0}#self-reported-speech{margin:2px 0 8px}
 h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
 @media(max-width:770px){main{padding:28px 17px 52px}.header{padding:12px 17px}.header nav{gap:11px}.header nav a:last-child{display:none}.layout{grid-template-columns:minmax(0,1fr);gap:0;margin-top:19px}.card{padding:19px}.hero h1{font-size:clamp(28px,6.8vw,36px)}.notice{margin-top:15px}.onboarding{padding:12px 15px}.response-choice .button{flex-basis:145px}}
 @media(max-width:390px){.header nav a:first-child{display:none}.hero h1{font-size:28px}.card h2{font-size:19px}.reason-grid{grid-template-columns:1fr}}
@@ -134,18 +135,26 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
     <blockquote lang="en" id="followup" hidden></blockquote>
     <div class="control-row"><button class="button primary" id="speak-followup" type="button">▶ もう一度聞く</button><button class="button muted" id="reveal-followup" type="button" aria-expanded="false" aria-controls="followup">英文を見る</button></div>
    </div>
-   <p><strong>場面と用件を見ながら、短く返してみよう。</strong></p>
+   <div class="reply-target" aria-label="返答する相手の発言">
+    <div class="speaker">何に返す？ 相手の発言</div>
+    <blockquote lang="en" id="reply-source"></blockquote>
+    <p id="reply-meaning" class="small"></p>
+    <p class="mission-way" id="reply-goal"></p>
+   </div>
+   <p><strong>英文を覚えず、意味と場面を見ながら返そう。</strong></p>
    <div class="control-row"><button class="button primary" id="retry-mic" type="button">🎙 マイクで返す</button><button class="button muted" id="retry-stop" type="button" hidden>■ 認識を止める</button><button class="button muted" id="retry-reset" type="button">↻ 全消し</button></div>
-   <label for="reply-note" class="small">話した英文（任意・保存されません）</label>
-   <textarea id="reply-note" class="text-entry" maxlength="400" placeholder="例：Could you explain that once more?"></textarea>
-   <p class="speech-status" id="retry-mic-status" role="status" aria-live="polite">マイクで話した英文を確認できます。音声認識の結果は採点ではありません。</p>
+   <label for="reply-note" class="small">返答メモ（任意・この練習中だけ表示）</label>
+   <textarea id="reply-note" class="text-entry" maxlength="400" placeholder="自分の返事を書いてから声に出してもOK"></textarea>
+   <p class="speech-status" id="retry-mic-status" role="status" aria-live="polite">音声認識は任意です。結果は発話の記録に使い、英語の正確さは採点しません。</p>
+   <button class="button muted" id="self-reported-speech" type="button" aria-pressed="false">マイクなしで声に出して練習した（未検証）</button>
+   <p class="small" id="practice-mode-note">声出しの確認が取れない場合も、英文入力で練習内容を記録できます。</p>
    <p class="small" id="transcript-disclaimer" hidden>この英文は保存しません。終了後に追加のAI講評を自分で依頼した場合だけ送信します。</p>
    <div class="control-row"><button class="button muted" id="show-hint" type="button">💡 ヒントを見る</button></div>
    <div class="hint" id="freeze-hint" hidden><strong>こんな言い方も使えるよ</strong>
     <p id="followup-hint" lang="en"></p><p id="followup-hint-2" lang="en"></p>
     <p class="small">例文は参考。あなたの返答と意味が一致する保証はありません。</p>
    </div>
-   <div class="control-row"><button class="button primary" id="finish-practice" type="button">練習を記録して次へ →</button></div>
+   <div class="control-row"><button class="button primary" id="finish-practice" type="button" disabled>返答を記録して学習ポイントを見る →</button></div>
   </div>
   <p class="small" id="feedback" role="status" aria-live="polite"></p>
  </section>
@@ -155,6 +164,13 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
   <p id="result-detail"></p>
   <p class="meta" id="result-schedule"></p>
   <p id="result-origin" class="small"></p>
+  <section class="hint" id="learn-card" hidden aria-labelledby="learn-title">
+   <h3 id="learn-title">この場面で使える返答</h3>
+   <p class="small" id="learn-context"></p>
+   <p id="learn-example" lang="en"></p>
+   <p id="learn-example-2" lang="en"></p>
+   <p><strong>ワンポイント</strong></p><p id="learn-point"></p>
+  </section>
   <section class="freeze-coach" id="coach-panel" aria-labelledby="coach-title">
    <h3 id="coach-title">会話の切り返しを、AI先生に確認してもらう</h3>
    <p class="small" id="coach-intro">講評は任意です。練習自体は無料のまま続けられます。</p>
@@ -176,6 +192,7 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{text-wrap:pretty;line-break:strict}
    <h2 id="record-title">これまでの練習</h2>
    <div class="stat-grid">
     <div class="stat"><strong id="stat-attempts">0</strong><small>練習した回数</small></div>
+    <div class="stat"><strong id="stat-voice-inputs">0</strong><small>音声入力あり</small></div>
     <div class="stat"><strong id="stat-recovered">0</strong><small>今日から復習できる場面</small></div>
     <div class="stat"><strong id="stat-scenes">0</strong><small>練習した場面</small></div>
     <div class="stat"><strong id="stat-next">—</strong><small>次の復習予定</small></div>

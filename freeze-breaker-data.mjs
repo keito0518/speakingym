@@ -199,10 +199,6 @@ export const FREEZE_SCENES=Object.freeze([
 
 ]);
 const IDS=new Set(FREEZE_SCENES.map(s=>s.id));
-const FOCUS_SCENE_BY_REASON=Object.freeze({
- misunderstood:'fast-english',unknown:'unknown-word',long:'long-explanation',
- words:'missing-word',surprise:'sudden-opinion',unsure:'change-booking'
-});
 const cleanDay=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&
  !Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
 const validCount=x=>Number.isSafeInteger(x)&&x>=0&&x<=100000?x:0;
@@ -218,12 +214,24 @@ export function normalizeFreezeProgress(input){
  for(const [id,item] of Object.entries(source)){
   if(!IDS.has(id)||!item||typeof item!=='object'||Array.isArray(item))continue;
   if(!cleanDay(item.due)||!cleanDay(item.last))continue;
-  if(!Number.isInteger(item.stage)||item.stage<0||item.stage>4)continue;
-  records[id]={due:item.due,last:item.last,stage:item.stage,
-   attempts:validCount(item.attempts),recovered:validCount(item.recovered),
+  if(!Number.isInteger(item.stage)||item.stage<0||item.stage>5)continue;
+  records[id]={due:item.due,last:item.last,
+   // Old stage/recovered values implied speaking success without evidence.
+   stage:Number.isInteger(item.comprehensionCorrect)?item.stage:0,
+   attempts:validCount(item.attempts),
+   comprehensionCorrect:validCount(item.comprehensionCorrect),
+   comprehensionMisses:validCount(item.comprehensionMisses),
+   hintUses:validCount(item.hintUses),
+   lastComprehensionCorrect:typeof item.lastComprehensionCorrect==='boolean'?item.lastComprehensionCorrect:null,
+   lastHintUsed:typeof item.lastHintUsed==='boolean'?item.lastHintUsed:false,
+   voiceInputs:validCount(item.voiceInputs),typedResponses:validCount(item.typedResponses),
+   unverifiedSpeech:validCount(item.unverifiedSpeech),
+   repeatVariationIndex:Number.isInteger(item.repeatVariationIndex)&&
+    item.repeatVariationIndex>=0&&item.repeatVariationIndex<FREEZE_SCENES.find(s=>s.id===id).variations.length?
+    item.repeatVariationIndex:null,
    lastReason:Object.hasOwn(FREEZE_REASONS,item.lastReason)?item.lastReason:null,
    reasonCounts:Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
-    [id,validCount(item.reasonCounts?.[id])]))};
+    [id,Number.isInteger(item.comprehensionCorrect)?validCount(item.reasonCounts?.[id]):0]))};
  }
  return {version:1,records};
 }
@@ -232,12 +240,12 @@ export function nextFreezeScene(raw,when=new Date()){
  const day=freezeDay(when),p=normalizeFreezeProgress(raw);
  const due=FREEZE_SCENES.filter(s=>p.records[s.id]&&p.records[s.id].due<=day)
   .sort((a,b)=>p.records[a.id].due.localeCompare(p.records[b.id].due));
- const totals=Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
-  [id,Object.values(p.records).reduce((sum,e)=>sum+(e.reasonCounts?.[id]||0),0)]));
- const ranked=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
- const focus=FREEZE_SCENES.find(s=>s.id===FOCUS_SCENE_BY_REASON[ranked[0]?.[0]]);
+ const weak=FREEZE_SCENES.map((scene,index)=>({scene,index,
+  score:p.records[scene.id]?.repeatVariationIndex!==null&&p.records[scene.id]?.repeatVariationIndex!==undefined?2:
+   p.records[scene.id]?.lastHintUsed?1:0}))
+  .filter(item=>item.score>0).sort((a,b)=>b.score-a.score||a.index-b.index);
  if(due[0])return due[0];
- if(ranked[0]?.[1]>0&&focus)return focus;
+ if(weak[0])return weak[0].scene;
  const unseen=FREEZE_SCENES.filter(s=>!p.records[s.id]);
  const upcoming=FREEZE_SCENES.filter(s=>p.records[s.id]&&p.records[s.id].due>day)
   .sort((a,b)=>p.records[a.id].due.localeCompare(p.records[b.id].due));
@@ -247,74 +255,86 @@ export function sceneAttempt(sceneId,raw){
  const scene=FREEZE_SCENES.find(x=>x.id===sceneId);
  if(!scene)return null;
  const p=normalizeFreezeProgress(raw),attempts=p.records[sceneId]?.attempts||0;
- const variation=scene.variations[attempts%scene.variations.length];
+ const retryIndex=p.records[sceneId]?.repeatVariationIndex;
+ const variationIndex=Number.isInteger(retryIndex)?retryIndex:attempts%scene.variations.length;
+ const variation=scene.variations[variationIndex];
  const followup=variation.followups[Math.floor(attempts/scene.variations.length)%variation.followups.length];
- return {scene,variation,followup,attempts};
+ return {scene,variation,followup,attempts,variationIndex};
 }
 /** Scripted, strategy-dependent next line. This does not interpret or score speech. */
 export function recoveryReply(attempt,reason){
  const original=typeof attempt?.variation?.ask==='string'?attempt.variation.ask.trim().slice(0,320):'';
  const next=typeof attempt?.followup==='string'?attempt.followup.trim().slice(0,320):'';
- const ordinary={line:next,caption:'会話が続いた想定です。次のひと言を聞いて返そう。',rate:.86};
+ const ordinary={line:next,caption:'会話が続いた想定です。次のひと言を聞いて返そう。',meaning:'相手が次のひと言を続けています。場面と用件を思い出して返しましょう。',rate:.86};
  if(!original||!next)return ordinary;
  switch(reason){
   case 'misunderstood':return {
    line:'Of course. Let me say that again more slowly. '+original,
-   caption:'聞き返した想定：相手が少しゆっくり繰り返してくれます。',rate:.72};
+   caption:'聞き返した想定：相手が少しゆっくり繰り返してくれます。',
+   meaning:'もちろんです。もう一度ゆっくり言います。'+attempt.variation.meaning,rate:.72};
   case 'words':return attempt.scene?.id==='missing-word'?{
    line:'No problem. '+next,
-   caption:'特徴を説明した想定：相手が何のことか分かってくれました。',rate:.86,
+   caption:'特徴を説明した想定：相手が何のことか分かってくれました。',meaning:'大丈夫です。説明してくれたものが分かりました。',rate:.86,
    examples:attempt.variation.repairExamples
   }:{
    line:'No problem. Can you describe what you mean?',
-   caption:'言いたい単語が出ない想定：相手が説明を待ってくれています。',rate:.86,
+   caption:'言いたい単語が出ない想定：相手が説明を待ってくれています。',meaning:'大丈夫です。何のことかもう少し説明してもらえますか？',rate:.86,
    examples:['It is something that you use to...','It is similar to...']
   };
   case 'unknown':return attempt.scene?.id==='unknown-word'?{
-   line:next,caption:'意味を尋ねた想定：相手がその単語を説明してくれました。',rate:.86,
+   line:next,caption:'意味を尋ねた想定：相手がその単語を説明してくれました。',meaning:'相手が尋ねた単語の意味を説明してくれています。',rate:.86,
    examples:attempt.variation.repairExamples
   }:{
    line:'Sure. Which word would you like me to explain?',
-   caption:'意味を尋ねた想定：相手がどの単語か聞き返してきました。',rate:.86,
+   caption:'意味を尋ねた想定：相手がどの単語か聞き返してきました。',meaning:'どの単語を説明しましょうか？',rate:.86,
    examples:['I mean the word I heard at the end.','Could you explain that last word?']
   };
   case 'long':return attempt.scene?.id==='long-explanation'?{
    line:'Of course. Let’s go one step at a time. '+next,
-   caption:'説明を小分けにしてもらった想定：最初の手順を確認しよう。',rate:.86,
+   caption:'説明を小分けにしてもらった想定：最初の手順を確認しよう。',meaning:'もちろんです。一つずつ進めましょう。'+attempt.variation.meaning,rate:.86,
    examples:attempt.variation.repairExamples
   }:{
    line:'Sure. Which part should we go through first?',
-   caption:'説明が長かった想定：相手が確認したい部分を聞いています。',rate:.86,
+   caption:'説明が長かった想定：相手が確認したい部分を聞いています。',meaning:'分かりました。どの部分から確認しましょうか？',rate:.86,
    examples:['Could you start with the first step?','I understood the beginning, but not the last part.']
   };
   case 'surprise':return {
    line:'Of course. Take your time. Let me know when you are ready.',
-   caption:'少し考える時間をもらった想定：準備ができたら会話を戻そう。',rate:.86,
+   caption:'少し考える時間をもらった想定：準備ができたら会話を戻そう。',meaning:'もちろんです。準備ができたら教えてください。',rate:.86,
    examples:['Thanks. I have one quick question first.','Okay, here is what I think.']
   };
   case 'unsure':return {
    line:'Sure. Would you like me to explain the options?',
-   caption:'選択肢を尋ねた想定：相手が追加の説明を申し出ました。',rate:.86,
+   caption:'選択肢を尋ねた想定：相手が追加の説明を申し出ました。',meaning:'もちろんです。選択肢について説明しましょうか？',rate:.86,
    examples:['Yes, what is the difference between the options?','Which option would you recommend?']
   };
   default:return ordinary;
  }
 }
-/** Historical spaced-repetition record; completion never means speech was scored. */
-export function recordFreezeAttempt(raw,{sceneId,reason,saidIt,usedHint=false},when=new Date()){
+/** Store only observable interaction types and comprehension results; never speech text or a fluency score. */
+export function recordFreezeAttempt(raw,{sceneId,reason,comprehensionCorrect,usedHint=false,practiceMode,variationIndex},when=new Date()){
  const p=normalizeFreezeProgress(raw);
- // null means the learner answered the first prompt without freezing.
- // In that path no freeze cause should be invented in their history.
  if(!IDS.has(sceneId)||(reason!==null&&!Object.hasOwn(FREEZE_REASONS,reason))||
-    typeof saidIt!=='boolean'||typeof usedHint!=='boolean')return p;
+    typeof comprehensionCorrect!=='boolean'||typeof usedHint!=='boolean'||
+    !['voice-input','typed','self-reported'].includes(practiceMode)||
+    !Number.isInteger(variationIndex)||variationIndex<0||variationIndex>=FREEZE_SCENES.find(s=>s.id===sceneId).variations.length)return p;
  const day=freezeDay(when),previous=p.records[sceneId];
- const independent=saidIt&&!usedHint;
- const stage=independent?Math.min(4,(previous?.stage||0)+1):0;
- const due=addDays(day,independent?[0,1,3,7,14][stage]:1);
+ const understood=comprehensionCorrect&&!usedHint;
+ const stage=understood?Math.min(5,(previous?.stage||0)+1):0;
+ const due=addDays(day,understood?[1,3,7,14,21][stage-1]:1);
  const reasonCounts=Object.fromEntries(Object.keys(FREEZE_REASONS).map(id=>
-  [id,Math.min(100000,(previous?.reasonCounts?.[id]||0)+(id===reason?1:0))]));
- p.records[sceneId]={last:day,due,stage,attempts:Math.min(100000,(previous?.attempts||0)+1),
-  recovered:Math.min(100000,(previous?.recovered||0)+(independent?1:0)),lastReason:reason,reasonCounts};
+  [id,Math.min(100000,(previous?.reasonCounts?.[id]||0)+(id==='misunderstood'&&!comprehensionCorrect?1:0))]));
+ const count=(old,increment)=>Math.min(100000,(old||0)+(increment?1:0));
+ p.records[sceneId]={last:day,due,stage,attempts:count(previous?.attempts,true),
+  comprehensionCorrect:count(previous?.comprehensionCorrect,comprehensionCorrect),
+  comprehensionMisses:count(previous?.comprehensionMisses,!comprehensionCorrect),
+  hintUses:count(previous?.hintUses,usedHint),
+  lastComprehensionCorrect:comprehensionCorrect,lastHintUsed:usedHint,
+  voiceInputs:count(previous?.voiceInputs,practiceMode==='voice-input'),
+  typedResponses:count(previous?.typedResponses,practiceMode==='typed'),
+  unverifiedSpeech:count(previous?.unverifiedSpeech,practiceMode==='self-reported'),
+  repeatVariationIndex:comprehensionCorrect?null:variationIndex,
+  lastReason:reason,reasonCounts};
  return normalizeFreezeProgress(p);
 }
 export function freezeSummary(raw,when=new Date()){
@@ -328,7 +348,10 @@ export function freezeSummary(raw,when=new Date()){
   topReason,topReasonCount:topReason?reasonTotals[topReason]:0,
   nextRepairHint:topReason?FREEZE_REASONS[topReason].rescue:null,
   attempts:entries.reduce((n,x)=>n+x.attempts,0),
-  recovered:entries.reduce((n,x)=>n+x.recovered,0),
+  comprehensionMisses:entries.reduce((n,x)=>n+x.comprehensionMisses,0),
+  voiceInputs:entries.reduce((n,x)=>n+x.voiceInputs,0),
+  typedResponses:entries.reduce((n,x)=>n+x.typedResponses,0),
+  unverifiedSpeech:entries.reduce((n,x)=>n+x.unverifiedSpeech,0),
   due:entries.filter(x=>x.due<=today).length,
   mastered:entries.filter(x=>x.stage>=3).length,
   nextDue:entries.map(x=>x.due).filter(day=>day>today).sort()[0]||null};

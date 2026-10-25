@@ -14,6 +14,7 @@ const COACH_ORIGINS=new Set(['https://speakingym.pages.dev']);
 const Recognizer=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 let scope='',progress=normalizeFreezeProgress(),attempt=null,phase='start',reason=null,usedHint=false,epoch=0;
 let nextSpokenLine='';
+let comprehensionCorrect=null,recognizedSpeech=false,selfReportedSpeech=false,learningExamples=[];
 let capture=null,captureStage=null,captureWanted=false,captureBase='',captureFinal='',captureInterim='',captureRetries=0,captureTimer=null;
 let coachSession=null,coachEpoch=0,coachAbort=null,coachAsked=false,coachBusy=false;
 let importedMoment=null; // ephemeral AI-generated question; never written to localStorage.
@@ -49,6 +50,7 @@ function saveScope(key,value){
 }
 function clearSession(){
  epoch++;attempt=null;reason=null;usedHint=false;phase='start';nextSpokenLine='';
+ comprehensionCorrect=null;recognizedSpeech=false;selfReportedSpeech=false;learningExamples=[];
  resetCoach();
  stopCapture();
  try{window.speechSynthesis?.cancel?.()}catch{}
@@ -60,6 +62,8 @@ function clearSession(){
  $('imported-followup-note').hidden=true;
  $('first-transcript').value='';
  $('reply-note').value='';
+ $('self-reported-speech').setAttribute('aria-pressed','false');
+ $('finish-practice').disabled=true;
  $('first-mic-status').textContent='マイクなしで声に出してもOK。自動採点ではありません。';
  $('retry-mic-status').textContent='マイクで話した英文を確認できます。音声認識の結果は採点ではありません。';
  $('feedback').textContent='';
@@ -73,6 +77,7 @@ function clearSession(){
 function updateSummary(){
  const stats=freezeSummary(progress);
  $('stat-attempts').textContent=String(stats.attempts);
+ $('stat-voice-inputs').textContent=String(stats.voiceInputs);
  $('stat-recovered').textContent=String(stats.due);
  $('stat-scenes').textContent=String(stats.scenes);
  $('stat-next').textContent=stats.nextDue||'—';
@@ -114,6 +119,22 @@ function updateSpeechControls(){
   $(speechId(which)).value.trim()?'🎙 続きを話す':which==='first'?'🎙 切り返しを話す':'🎙 マイクで返す';
  }
 }
+function practiceMode(){
+ if(recognizedSpeech)return 'voice-input';
+ if(selfReportedSpeech)return 'self-reported';
+ if($('reply-note').value.trim())return 'typed';
+ return null;
+}
+function updatePracticeCompletion(){
+ const mode=practiceMode();
+ $('finish-practice').disabled=!mode;
+ $('self-reported-speech').setAttribute('aria-pressed',String(selfReportedSpeech));
+ $('self-reported-speech').classList.toggle('primary',selfReportedSpeech);
+ $('practice-mode-note').textContent=mode==='voice-input'?'音声入力を受け取りました。内容や発音は採点せず、音声入力ありとして記録します。':
+  mode==='typed'?'英文入力を練習として記録します。声に出したかどうかは確認できません。':
+  mode==='self-reported'?'声出しの自己申告を未検証として記録します。正確さや流暢さは評価しません。':
+  'マイク・英文入力・未検証の声出しから記録方法を選べます。';
+}
 function stopCapture(){
  captureWanted=false;
  if(captureTimer!==null){clearTimeout(captureTimer);captureTimer=null}
@@ -149,7 +170,14 @@ function beginRecognition(){
     else partial=joinSpeech(partial,part);
    }
    captureFinal=done;captureInterim=partial;
-   if(done||partial)captureRetries=0;
+   if(done||partial){
+    captureRetries=0;
+    if(which==='retry'){
+     recognizedSpeech=true;selfReportedSpeech=false;
+     $('self-reported-speech').setAttribute('aria-pressed','false');
+     updatePracticeCompletion();
+    }
+   }
    $(speechId(which)).value=joinSpeech(captureBase,joinSpeech(done,partial));
    if(which==='retry')$('transcript-disclaimer').hidden=!$('reply-note').value.trim();
   };
@@ -196,6 +224,7 @@ function startCapture(which){
 function resetTranscript(which){
  if(captureStage===which)stopCapture();
  $(speechId(which)).value='';
+ if(which==='retry'){recognizedSpeech=false;selfReportedSpeech=false;updatePracticeCompletion()}
  if(which==='retry')$('transcript-disclaimer').hidden=true;
  speechStatus(which).textContent='全消ししました。必要ならマイクでもう一度話そう。';
  updateSpeechControls();
@@ -205,6 +234,7 @@ function transcriptEdited(which){
  if(captureStage===which)stopCapture();
  $(speechId(which)).value=current;
  if(which==='retry')$('transcript-disclaimer').hidden=!current.trim();
+ if(which==='retry')updatePracticeCompletion();
  updateSpeechControls();
 }
 function resetCoach(){
@@ -372,13 +402,16 @@ function startMission(useImported=false){
   importedMoment.used=true;importedMoment.trained=true;
  }else attempt=mission;
  epoch++;reason=null;usedHint=false;phase='ask';nextSpokenLine='';
+ comprehensionCorrect=null;recognizedSpeech=false;selfReportedSpeech=false;learningExamples=[];
  $('imported-followup-note').hidden=!useOriginal;
  $('reply-note').value='';$('feedback').textContent='';
  $('first-transcript').value='';
+ $('self-reported-speech').setAttribute('aria-pressed','false');
  $('first-mic-status').textContent='マイクなしで声に出してもOK。自動採点ではありません。';
  $('retry-mic-status').textContent='マイクで話した英文を確認できます。音声認識の結果は採点ではありません。';
  updateSpeechControls();
  $('result').hidden=true;$('freeze-hint').hidden=true;
+ $('learn-card').hidden=true;
  $('rescue-hint').open=false;
  $('transcript-disclaimer').hidden=true;
  $('reason-panel').hidden=true;
@@ -402,6 +435,7 @@ function startMission(useImported=false){
    $('reason-buttons').append(b);
   }
  $('reason-panel').hidden=false;
+ updatePracticeCompletion();
  $('mission').hidden=false;
  $('step-start').hidden=false;$('step-repair').hidden=true;$('step-retry').hidden=true;
  $('stage-name').textContent='1 / 3　予想外のひと言';
@@ -426,6 +460,7 @@ function chooseReason(id){
 function chooseMeaning(button){
  if(!attempt||phase!=='ask'||!button||!$('reason-buttons').contains(button))return;
  const correct=button.dataset.correct==='true';
+ comprehensionCorrect=correct;
  for(const choice of $('reason-buttons').querySelectorAll('button'))choice.disabled=true;
  if(correct){
   $('meaning-feedback').textContent='その理解で合っています。次は場面を見ながら、短く返してみよう。';
@@ -440,12 +475,19 @@ function showAnswer(){
  if(!attempt||phase!=='ask')return;
  phase='retry';nextSpokenLine=attempt.variation.ask;
  $('followup').textContent=nextSpokenLine;
+ $('reply-source').textContent=nextSpokenLine;
+ $('reply-meaning').textContent='意味：'+attempt.variation.meaning;
+ $('reply-goal').textContent='今回伝えること：'+attempt.variation.goal;
  $('followup-speaker').textContent='相手の発言（聞き直せます）';
  $('recovery-context').textContent=attempt.scene.context+' '+attempt.variation.goal;
  $('retry-heading').textContent='聞いた用件に、英語で返そう';
  $('imported-followup-note').hidden=true;
  $('followup-listening-cue').textContent='必要なら発言を聞き直すか、英文を確認できます。';
  $('freeze-hint').hidden=true;$('reply-note').value='';$('feedback').textContent='意味を確認できました。返答は自由です。音声認識結果で正確さを採点しません。';
+ learningExamples=attempt.variation.examples||[];
+ $('followup-hint').textContent=learningExamples[0]||'';
+ $('followup-hint-2').textContent=learningExamples[1]||'';
+ recognizedSpeech=false;selfReportedSpeech=false;updatePracticeCompletion();
  resetListen('followup');showStage('retry');updateSpeechControls();
 }
 function showFollowup(){
@@ -455,16 +497,21 @@ function showFollowup(){
  const answer=recoveryReply(attempt,reason);
  nextSpokenLine=answer.line;
  $('followup').textContent=nextSpokenLine;
+ $('reply-source').textContent=nextSpokenLine;
+ $('reply-meaning').textContent='意味：'+answer.meaning;
+ $('reply-goal').textContent='今回伝えること：'+attempt.variation.goal;
  $('followup-speaker').textContent='相手の言い直し';
  $('recovery-context').textContent=attempt.scene.context+' '+attempt.variation.goal+' '+answer.caption+'（練習用の想定会話です）';
  resetListen('followup');
  // The second-turn examples must answer the actual simulated reply, not
  // blindly repeat examples that were meant for the first English prompt.
  const examples=answer.examples||attempt.variation.examples;
+ learningExamples=examples||[];
  $('followup-hint').textContent=examples[0];
  $('followup-hint-2').textContent=examples[1];
   $('retry-heading').textContent='聞き返したあと、用件に英語で返そう';
  $('freeze-hint').hidden=true;
+ $('reply-note').value='';recognizedSpeech=false;selfReportedSpeech=false;updatePracticeCompletion();
   $('feedback').textContent='相手の言い直しを聞いたら、場面と用件を見ながら短く返そう。';
  showStage('retry');
  playListeningLine('followup',nextSpokenLine,answer.rate);
@@ -474,24 +521,43 @@ function showHint(){
  usedHint=true;$('freeze-hint').hidden=false;
  $('feedback').textContent='例文を参考にしながら、場面に合う返答を声に出そう。';
 }
+function learningPoint(){
+ if(reason==='misunderstood')return '“Could you say that again more slowly?” のように Could you で始めて聞き返すと丁寧です。その後、聞き取った用件に返事をしよう。';
+ if(reason==='unknown')return '分からない語だけを “What does … mean here?” で尋ねると、会話を止めずに意味を確かめられます。';
+ if(reason==='long')return '説明全体を聞き直す代わりに、最初の手順など一つに絞って確認すると理解しやすくなります。';
+ if(reason==='words')return '単語が出ないときは、用途や特徴を知っている簡単な英語で説明すると相手に伝わりやすくなります。';
+ if(reason==='surprise')return '“Could you give me a second?” のように考える時間を頼む一言があると、焦らず返答を組み立てられます。';
+ if(reason==='unsure')return '決められないときは、選択肢の違いやおすすめを尋ねると、次に答える情報がそろいます。';
+ return 'まず希望や判断を短く伝え、必要なら理由や条件を一つ添えると、相手が次の対応をしやすくなります。';
+}
 function finish(){
  if(!attempt||phase!=='retry')return;
+ const mode=practiceMode();
+ if(!mode){$('practice-mode-note').textContent='返答を入力するか、声に出した練習を未検証として確認してから記録してください。';return}
  stopCapture();
  // A stale event from the previous login or tab must not write to its scope.
  const key=resolveScope();
  if(!key||scope!==key){clearSession();bindScope();return}
  const id=attempt.scene.id;
  try{window.speechSynthesis?.cancel?.()}catch{}
- progress=recordFreezeAttempt(progress,{sceneId:id,reason,saidIt:true,usedHint:false},new Date());
+ progress=recordFreezeAttempt(progress,{sceneId:id,reason,comprehensionCorrect,usedHint,
+  practiceMode:mode,variationIndex:attempt.variationIndex},new Date());
  const saved=saveScope(key,progress);
  const record=progress.records[id];
  phase='done';$('mission').hidden=true;$('result').hidden=false;
  prepareCoach();
  $('return-to-ai').hidden=!(importedMoment?.trained&&scope==='user:'+importedMoment.uid);
  window.speakingymAnalytics?.track('sg_freeze_complete',{source:attempt.imported?'ai':'scripted'});
- $('result-title').textContent='練習を1回記録しました';
- $('result-detail').textContent='聞いた英語の用件を確かめ、場面を見ながら返す練習ができました。音声認識やAIによる発音・正確さの採点はしていません。';
+ $('result-title').textContent='会話サバイバルを記録しました';
+ $('result-detail').textContent=mode==='voice-input'?'音声入力がありました。認識結果は発話内容の記録に使い、英語の正確さ・発音・流暢さは採点していません。':
+  mode==='self-reported'?'声出しの自己申告を未検証として記録しました。発話の確認や英語の採点はしていません。':
+  '英文入力で練習を記録しました。声に出したかどうかは確認していません。英語の採点もしていません。';
  $('result-schedule').textContent='次の復習予定：'+record.due+'（日本時間）';
+ $('learn-context').textContent='相手の用件：'+attempt.variation.meaning+' ／ 練習の目的：'+attempt.variation.goal;
+ $('learn-example').textContent=learningExamples[0]||attempt.variation.examples[0]||'';
+ $('learn-example-2').textContent=learningExamples[1]||attempt.variation.examples[1]||'';
+ $('learn-point').textContent=learningPoint();
+ $('learn-card').hidden=false;
  $('result-origin').textContent=saved?'今回の練習結果をこの端末に保存しました。音声や入力文は保存していません。':
   '端末への記録保存に失敗しました。ブラウザの容量・設定を確認してください。';
  updateSummary();
@@ -548,6 +614,11 @@ $('repair-next').addEventListener('click',showFollowup);
 $('show-hint').addEventListener('click',showHint);
 $('rescue-hint').addEventListener('toggle',()=>{if($('rescue-hint').open)usedHint=true});
  $('finish-practice').addEventListener('click',finish);
+$('self-reported-speech').addEventListener('click',()=>{
+ selfReportedSpeech=!selfReportedSpeech;
+ if(selfReportedSpeech)recognizedSpeech=false;
+ updatePracticeCompletion();
+});
 $('request-coach').addEventListener('click',requestCoach);
 $('retry-scene').addEventListener('click',()=>{if(attempt){$('mission-select').value=attempt.scene.id;startMission()}});
 $('try-another').addEventListener('click',()=>{
