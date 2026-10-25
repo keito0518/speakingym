@@ -12,11 +12,9 @@
     sg_ai_first_reply: Object.freeze({}),
     sg_freeze_from_ai: Object.freeze({}),
     sg_freeze_start: Object.freeze({source:['scripted','ai']}),
-    sg_freeze_strategy: Object.freeze({strategy:['misunderstood','words','surprise','unsure']}),
+    sg_freeze_comprehension: Object.freeze({result:['matched','clarify']}),
     sg_freeze_coach_request: Object.freeze({answers:['one','two']}),
-    sg_freeze_self_report: Object.freeze({
-      source: ["scripted", "ai"], outcome: ["said_it", "not_yet"]
-    }),
+    sg_freeze_complete: Object.freeze({source:['scripted','ai']}),
     sg_freeze_revenge: Object.freeze({})
   });
   function track(name, properties) {
