@@ -66,6 +66,7 @@ test('events are wired to actual learning milestones, not merely page views',()=
 test('Freeze rescue funnel has no PII or transcript parameters and only transmits with analytics consent',()=>{
  const noConsent=load();
  assert.equal(noConsent.speakingymAnalytics.track('sg_freeze_from_ai'),false);
+ assert.equal(noConsent.speakingymAnalytics.track('sg_freeze_comprehension',{result:'matched'}),false);
  const calls=[];
  const win=load((...args)=>calls.push(args));
  assert.equal(win.speakingymAnalytics.track('sg_home_cta',{
@@ -74,32 +75,35 @@ test('Freeze rescue funnel has no PII or transcript parameters and only transmit
   uid:'learner-id',prompt:'private AI response'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_freeze_start',{
   source:'scripted',transcript:'private answer'}),true);
- assert.equal(win.speakingymAnalytics.track('sg_freeze_strategy',{
-  strategy:'misunderstood',learnerName:'private name'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_comprehension',{
+  result:'clarify',learnerName:'private name',transcript:'private answer'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_freeze_coach_request',{
   answers:'two',question:'private question'}),true);
- assert.equal(win.speakingymAnalytics.track('sg_freeze_self_report',{
-  source:'ai',outcome:'said_it',transcript:'secret',uid:'abc'}),true);
- assert.equal(win.speakingymAnalytics.track('sg_freeze_self_report',{
-  source:'other',outcome:'guessed',text:'private'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_comprehension',{
+  result:'matched',transcript:'secret',uid:'abc'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_complete',{
+  source:'ai',transcript:'secret',uid:'abc'}),true);
+ assert.equal(win.speakingymAnalytics.track('sg_freeze_complete',{
+  source:'other',text:'private'}),true);
  assert.equal(win.speakingymAnalytics.track('sg_freeze_revenge',{
   scene:'cafe',question:'private AI response'}),true);
  assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
   ['event','sg_home_cta',{destination:'freeze'}],
   ['event','sg_freeze_from_ai',{}],
   ['event','sg_freeze_start',{source:'scripted'}],
-  ['event','sg_freeze_strategy',{strategy:'misunderstood'}],
+  ['event','sg_freeze_comprehension',{result:'clarify'}],
   ['event','sg_freeze_coach_request',{answers:'two'}],
-  ['event','sg_freeze_self_report',{source:'ai',outcome:'said_it'}],
-  ['event','sg_freeze_self_report',{}],
+  ['event','sg_freeze_comprehension',{result:'matched'}],
+  ['event','sg_freeze_complete',{source:'ai'}],
+  ['event','sg_freeze_complete',{}],
   ['event','sg_freeze_revenge',{}]
  ]);
  const gym=source('freeze-breaker.js'),page=source('freeze-breaker.html');
  // Scripted practice remains no-AI; optional teacher calls are explicitly clicked and metered.
  assert.match(gym,/track\('sg_freeze_start'/);
- assert.match(gym,/track\('sg_freeze_strategy'/);
+ assert.match(gym,/track\('sg_freeze_comprehension'/);
  assert.match(gym,/track\('sg_freeze_coach_request'/);
- assert.match(gym,/track\('sg_freeze_self_report'/);
+ assert.match(gym,/track\('sg_freeze_complete'/);
  assert.match(gym,/track\('sg_freeze_revenge'\)/);
  assert.match(page,/<script src="\.\/analytics-events\.js"><\/script>/);
 });
