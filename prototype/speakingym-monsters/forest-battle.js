@@ -9,6 +9,20 @@ export const FOREST_MOBS=Object.freeze([
   {id:'mothum',name:'Mothum',japanese:'月あかりの蛾'}
 ]);
 export const FOREST_BOSS=Object.freeze({id:'thornking',name:'Thorn King',japanese:'森のトゲ王',hp:3});
+// Foes telegraph their own defensive stance. These patterns are cosmetic:
+// neither verdicts nor the XP ledger depend on enemy type.
+export const FOREST_TACTICS=Object.freeze({
+ mossling:Object.freeze({name:'霧のこだま',tell:'音に反応して、霧の中を跳ね回る',guard:'霧に身を隠して、攻撃をかわした'}),
+ thistlet:Object.freeze({name:'トゲの構え',tell:'トゲを広げて、こちらの返事を待っている',guard:'トゲを閉じて身を守った'}),
+ spookap:Object.freeze({name:'きのこの幻影',tell:'ふわっと揺れながら、偽物の姿を見せる',guard:'分身を残して、ひらりと逃げた'}),
+ bramblet:Object.freeze({name:'木の実のよろい',tell:'固い殻を鳴らして、攻撃に備える',guard:'木の実の殻で、攻撃をはじいた'}),
+ mothum:Object.freeze({name:'月光の羽',tell:'月の光をまとい、ゆっくり羽ばたく',guard:'羽を閉じて、月明かりにまぎれた'}),
+ thornking:Object.freeze({name:'トゲ王の結界',tell:'いばらの結界が、周囲に広がっている',guard:'いばらの結界が、攻撃を防いだ'})
+});
+export function enemyTacticFor(index,wave=1){
+ const foe=opponentFor(index,wave);
+ return FOREST_TACTICS[foe.id];
+}
 export const REGULAR_ENCOUNTERS=5;
 export const BOSS_HITS=3;
 export const FOREST_WAVE_LENGTH=REGULAR_ENCOUNTERS+BOSS_HITS;
