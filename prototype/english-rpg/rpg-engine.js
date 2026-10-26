@@ -38,6 +38,13 @@ export const COMPANION_TRAITS = Object.freeze({
   crown: { name: '王者の言葉', detail: 'ことば斬りの威力 +12', move: 'word', bonus: 12 }
 });
 export const traitFor = id => COMPANION_TRAITS[id] || { name: '冒険のきずな', detail: 'ことば斬りの威力 +4', move: 'word', bonus: 4 };
+export function skillFor(id, level = 1, evolved = false) {
+  const rank = (level >= 2 ? 1 : 0) + (evolved ? 1 : 0);
+  if (id === 'lumi' || ['pebblet','puddle','bubbun','mosslet'].includes(id)) return { name:'いやしの風', detail:`全員のHP +${12+rank*7}・盾 +${6+rank*3}`, kind:'heal', power:12+rank*7, shield:6+rank*3 };
+  if (id === 'koro' || ['twiggle','cinder','starling','aurora'].includes(id)) return { name:'集中の構え', detail:`集中 +2・次の連結に +${8+rank*5}`, kind:'charge', power:8+rank*5 };
+  if (id === 'mimip') return { name:'つるで足止め', detail:`敵の次の2行動を -${7+rank*3}`, kind:'weaken', power:7+rank*3 };
+  return { name:'連携の合図', detail:`次に当てた技を +${9+rank*5}`, kind:'combo', power:9+rank*5 };
+}
 export function newForestWalk() { return { x: 1, y: 5, chest: false, shrine: false, steps: 0 }; }
 export function walkForest(walk, dx, dy) {
   if (![0, 1, -1].includes(dx) || ![0, 1, -1].includes(dy) || Math.abs(dx) + Math.abs(dy) !== 1) throw new Error('Walk one tile at a time.');
@@ -141,19 +148,46 @@ export function makePartyBattle(stageId, monsterId, save, { focus = 1, shield = 
   const companionId = partyIds.includes(save.activeCompanionId) ? save.activeCompanionId : partyIds[0];
   return { ...makeBattle(stageId, monsterId, save.roster.find(entry => entry.id === companionId)?.level || 1),
     companionId, tactical: true, partyIds, partyHp, partyMaxHp, partyEvolved, playerHp: partyHp[companionId], maxPlayerHp: partyMaxHp[companionId],
-    enemyHp: 96, maxEnemyHp: 96, focus, shield };
+    enemyHp: 96, maxEnemyHp: 96, focus, shield,
+    partyLevels:Object.fromEntries(partyIds.map(id=>[id,save.roster.find(entry=>entry.id===id)?.level||1])), skillUsed:{}, combo:0, empower:0, weakenTurns:0, weakenPower:0 };
+}
+
+function incomingHit(battle, damage) {
+  const weakened = battle.weakenTurns > 0 ? Math.max(0, damage - (battle.weakenPower || 0)) : damage;
+  const absorbed = Math.min(battle.shield || 0, weakened);
+  return { absorbed, enemyAttack: weakened - absorbed, shield:Math.max(0,(battle.shield||0)-absorbed), weakenTurns:Math.max(0,(battle.weakenTurns||0)-1) };
+}
+
+export function useCompanionSkill(battle) {
+  if (!battle.tactical || battle.ended || battle.playerHp <= 0) throw new Error('A conscious front companion is required.');
+  const id=battle.companionId;
+  if (battle.skillUsed?.[id]) throw new Error('This companion has already used its skill in this encounter.');
+  const skill=skillFor(id,battle.partyLevels?.[id]||1,battle.partyEvolved?.[id]);
+  const next={...battle,partyHp:{...battle.partyHp},skillUsed:{...battle.skillUsed,[id]:true},turn:battle.turn+1};
+  if(skill.kind==='heal') {
+    for(const member of battle.partyIds) if(next.partyHp[member]>0) next.partyHp[member]=Math.min(battle.partyMaxHp[member],next.partyHp[member]+skill.power);
+    next.playerHp=next.partyHp[id];next.shield=(next.shield||0)+skill.shield;
+  }
+  if(skill.kind==='charge'){next.focus=Math.min(2,battle.focus+2);next.empower=skill.power;}
+  if(skill.kind==='combo')next.combo=skill.power;
+  if(skill.kind==='weaken'){next.weakenTurns=2;next.weakenPower=skill.power;}
+  const intent=enemyIntent(battle), hit=incomingHit(next,intent.damage);
+  next.shield=hit.shield;next.weakenTurns=hit.weakenTurns;
+  next.playerHp=Math.max(0,next.playerHp-hit.enemyAttack);next.partyHp[id]=next.playerHp;
+  next.ended=Object.values(next.partyHp).every(hp=>hp<=0);
+  return {battle:next,outcome:{skill:skill.name,kind:skill.kind,enemyMove:intent.name,...hit,failed:next.ended}};
 }
 
 export function switchBattleCompanion(battle, id) {
   if (!battle.tactical || battle.ended || !battle.partyIds?.includes(id) || id === battle.companionId || (battle.partyHp[id] || 0) <= 0) throw new Error('Cannot switch to that companion.');
   const intent = enemyIntent(battle);
-  const absorbed = Math.min(battle.shield || 0, intent.damage);
-  const playerHp = Math.max(0, battle.partyHp[id] - intent.damage + absorbed);
+  const hit=incomingHit(battle,intent.damage);
+  const playerHp = Math.max(0, battle.partyHp[id] - hit.enemyAttack);
   const partyHp = { ...battle.partyHp, [id]: playerHp };
   return { battle: { ...battle, companionId: id, playerHp, maxPlayerHp: battle.partyMaxHp[id], partyHp,
-    shield: Math.max(0, (battle.shield || 0) - absorbed), turn: battle.turn + 1,
+    shield: hit.shield, weakenTurns:hit.weakenTurns, turn: battle.turn + 1,
     ended: Object.values(partyHp).every(hp => hp <= 0) },
-    outcome: { switched: true, enemyMove: intent.name, absorbed, enemyAttack: intent.damage - absorbed } };
+    outcome: { switched: true, enemyMove: intent.name, absorbed:hit.absorbed, enemyAttack:hit.enemyAttack } };
 }
 
 export function pickQuestion(type, save, random = Math.random) {
@@ -182,19 +216,21 @@ export function resolveTurn(battle, move, isCorrect) {
     const trait = traitFor(battle.companionId);
     const evolvedBonus = battle.partyEvolved?.[battle.companionId] ? EVOLUTION_TRAIT_BONUS : 0;
     const bonus = isCorrect && trait.move === move && move !== 'listen' ? trait.bonus + evolvedBonus : 0;
-    const damage = isCorrect ? rule.damage + bonus : 0;
+    const combo = isCorrect ? (battle.combo||0) : 0;
+    const empower = isCorrect && move==='phrase' ? (battle.empower||0) : 0;
+    const damage = isCorrect ? rule.damage + bonus + combo + empower : 0;
+    if(isCorrect){next.combo=0;if(move==='phrase')next.empower=0;}
     next.enemyHp = Math.max(0, next.enemyHp - damage);
     const cleared = next.enemyHp === 0;
     // The companion can block the incoming tell even on a missed question.
     const intent = enemyIntent(battle);
     const guarding = isCorrect && move === 'listen' ? rule.guard + (trait.move === 'listen' ? trait.bonus + evolvedBonus : 0) : 0;
-    const incoming = cleared ? 0 : Math.max(0, intent.damage - guarding);
-    const absorbed = Math.min(battle.shield || 0, incoming);
-    next.shield = Math.max(0, (battle.shield || 0) - absorbed);
-    next.playerHp = Math.max(0, next.playerHp - incoming + absorbed);
+    const hit = cleared ? {absorbed:0,enemyAttack:0,shield:battle.shield||0,weakenTurns:battle.weakenTurns||0} : incomingHit(battle,Math.max(0,intent.damage-guarding));
+    next.shield=hit.shield;next.weakenTurns=hit.weakenTurns;
+    next.playerHp = Math.max(0, next.playerHp - hit.enemyAttack);
     if (battle.partyHp) next.partyHp = { ...battle.partyHp, [battle.companionId]: next.playerHp };
     next.ended = cleared || (next.partyHp ? Object.values(next.partyHp).every(hp => hp <= 0) : next.playerHp === 0);
-    return { battle: next, outcome: { correct: isCorrect, damage, guard: guarding, enemyAttack: incoming - absorbed, absorbed, enemyMove: cleared ? null : intent.name, cleared, failed: next.playerHp === 0 } };
+    return { battle: next, outcome: { correct: isCorrect, damage, combo, empower, guard: guarding, enemyAttack:hit.enemyAttack, absorbed:hit.absorbed, enemyMove: cleared ? null : intent.name, cleared, failed: next.playerHp === 0 } };
   }
   let outcome;
   if (isCorrect) {
