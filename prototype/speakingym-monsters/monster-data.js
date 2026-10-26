@@ -1,3 +1,4 @@
+import { ADDITIONAL_PHRASES, ADDITIONAL_PROMPTS } from './expanded-curriculum.js';
 // A compact, curated speaking curriculum: one useful expression, two situations.
 // The prototype does not claim that speech recognition can grade arbitrary English.
 export const PHRASES = Object.freeze([
@@ -6,7 +7,8 @@ export const PHRASES = Object.freeze([
   { id: 'agree', label: '賛成する', expression: 'That works for me.', hint: 'That works ...', tip: '提案や予定に「それで大丈夫」と答える。' },
   { id: 'late', label: '遅れを伝える', expression: "I'm running a little late.", hint: "I'm running ...", tip: '遅刻しそうなときの、短くて自然な連絡。' },
   { id: 'clarify', label: '確認する', expression: 'Just to make sure, ...', hint: 'Just to ...', tip: '理解が合っているか確認するとき、文の前に付ける。' },
-  { id: 'prefer', label: '希望を伝える', expression: "I'd rather take the train.", hint: "I'd rather ...", tip: 'どちらがいいかを、強すぎない言い方で伝える。' }
+  { id: 'prefer', label: '希望を伝える', expression: "I'd rather take the train.", hint: "I'd rather ...", tip: 'どちらがいいかを、強すぎない言い方で伝える。' },
+  ...ADDITIONAL_PHRASES
 ]);
 
 export const PROMPTS = Object.freeze([
@@ -21,7 +23,8 @@ export const PROMPTS = Object.freeze([
   { id: 'clarify-hotel', phraseId: 'clarify', kind: 'speak', scene: 'ホテル', cue: 'チェックアウトは11時のはず。フロントで時間を確かめよう。', answer: 'Just to make sure, checkout is at eleven, right?', alternatives: ['Just to make sure, is checkout at eleven?'] },
   { id: 'clarify-office', phraseId: 'clarify', kind: 'listen', scene: '職場', audio: 'Please send the file before lunch.', cue: '昼食前で合っているか、確認の一言を添えて聞き返そう。', answer: 'Just to make sure, before lunch, right?', alternatives: ['Just to make sure, you need it before lunch, right?'] },
   { id: 'prefer-city', phraseId: 'prefer', kind: 'speak', scene: '街の移動', cue: 'バスか電車か聞かれた。電車のほうがいいと伝えよう。', answer: "I'd rather take the train.", alternatives: ["I would rather take the train."] },
-  { id: 'prefer-friend', phraseId: 'prefer', kind: 'listen', scene: '友人との移動', audio: 'Should we take the bus or the train?', cue: '電車を選びたい。自分の希望を伝えよう。', answer: "I'd rather take the train.", alternatives: ["I would rather take the train."] }
+  { id: 'prefer-friend', phraseId: 'prefer', kind: 'listen', scene: '友人との移動', audio: 'Should we take the bus or the train?', cue: '電車を選びたい。自分の希望を伝えよう。', answer: "I'd rather take the train.", alternatives: ["I would rather take the train."] },
+  ...ADDITIONAL_PROMPTS.filter(p=>!p.difficulty)
 ]);
 
 // English-to-English tasks are authored independently of the Japanese prompts.
@@ -270,6 +273,7 @@ const ADVANCED_TASKS = Object.freeze([
 ]);
 export const ALL_PROMPTS = Object.freeze([
   ...PROMPTS,
+  ...ADDITIONAL_PROMPTS.filter(p=>p.difficulty),
   ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => ({
     id: `${baseId}-${difficulty}`, baseId,
     phraseId: PROMPTS.find(prompt => prompt.id === baseId).phraseId,
