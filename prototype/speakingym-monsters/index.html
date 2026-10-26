@@ -15,7 +15,7 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="./" aria-label="Speakingym Monsters ホーム"><span class="brand-icon" aria-hidden="true">✳</span><span>Speakingym <b>Monsters</b><small>ことばが育つ、ふしぎな世界。</small></span></a>
+      <a class="brand" href="./" aria-label="Speakingym Monsters ホーム"><span class="brand-icon" aria-hidden="true">M</span><span>Speakingym <b>Monsters</b><small>ことばが育つ、ふしぎな世界。</small></span></a>
       <span class="prototype-tag">PLAYABLE PROTOTYPE</span>
     </header>
 
@@ -36,14 +36,14 @@
               <p id="difficulty-description" class="difficulty-description" aria-live="polite">日本語の状況を読んで、英語で答える。</p>
             </div>
             <div class="hero-buttons">
-              <button class="button button-primary" data-start="practice"><span aria-hidden="true">✦</span> まず練習する</button>
-              <button class="button button-dark" data-start="challenge"><span aria-hidden="true">◷</span> 60秒チャレンジ</button>
+              <button class="button button-primary" data-start="practice">まず練習する</button>
+              <button class="button button-dark" data-start="challenge">60秒チャレンジ</button>
             </div>
             <section class="forest-invite" aria-labelledby="forest-invite-title">
               <span class="forest-kicker">NEW EXPEDITION · 試作ダンジョン</span>
-              <h2 id="forest-invite-title">🌲 Speaking Forest</h2>
+              <h2 id="forest-invite-title">Speaking Forest</h2>
               <p>5回の英語バトルを抜けたらボス戦！ モンスターと冒険してお宝を探そう。</p>
-              <div class="forest-invite-action"><button type="button" id="start-forest" class="forest-primary">ボス討伐に挑戦 <span aria-hidden="true">⚔</span></button><button type="button" id="start-forest-endless" class="forest-endless-button">∞ エンドレスモード</button><span id="forest-home-progress">まだ未踏の森</span></div>
+              <div class="forest-invite-action"><button type="button" id="start-forest" class="forest-primary">ボス討伐に挑戦</button><button type="button" id="start-forest-endless" class="forest-endless-button">∞ エンドレスモード</button><span id="forest-home-progress">まだ未踏の森</span></div>
             </section>
             <span id="save-note" class="save-note">学習記録はこの端末に保存されます</span>
           </div>
@@ -55,17 +55,17 @@
             <div id="hero-vocab" class="hero-vocab" aria-label="名前の由来になった英単語"></div>
             <div class="xp-track" aria-label="モンスター成長ゲージ"><span id="hero-xp-fill"></span></div>
             <p id="hero-next-level">あと70 XPでレベルアップ</p>
-            <button class="wallet-link" id="open-wallet"><span>✦ ためたXP <strong id="home-wallet">0</strong></span><span>仲間にあげる →</span></button>
+            <button class="wallet-link" id="open-wallet"><span>ためたXP <strong id="home-wallet">0</strong></span><span>仲間にあげる →</span></button>
           </div>
         </div>
 
         <div class="section-head"><div><span class="tiny-caps">TODAY'S PROGRESS</span><h2>今日も、ひとこと前進。</h2></div><button class="quiet-link" id="open-collection">なかま・図鑑を見る →</button></div>
         <div class="stat-grid">
-          <article class="stat-card"><span class="stat-icon" aria-hidden="true">✧</span><strong id="stat-independent">0<span> / 6</span></strong><p>ヒントなしで使えた表現</p></article>
-          <article class="stat-card"><span class="stat-icon" aria-hidden="true">↻</span><strong id="stat-review">0</strong><p>今日の復習候補</p></article>
-          <article class="stat-card"><span class="stat-icon" aria-hidden="true">◈</span><strong id="stat-monsters">1<span> / 5</span></strong><p>仲間になったモンスター</p></article>
+          <article class="stat-card"><span class="stat-icon" aria-hidden="true">01</span><strong id="stat-independent">0<span> / 6</span></strong><p>ヒントなしで使えた表現</p></article>
+          <article class="stat-card"><span class="stat-icon" aria-hidden="true">02</span><strong id="stat-review">0</strong><p>今日の復習候補</p></article>
+          <article class="stat-card"><span class="stat-icon" aria-hidden="true">03</span><strong id="stat-monsters">1<span> / 5</span></strong><p>仲間になったモンスター</p></article>
         </div>
-        <div class="notice-card"><div class="notice-spark" aria-hidden="true">✳</div><div><strong>このゲームの主役は、英語を話すあなた。</strong><p>問題を解いてXPをため、好きな仲間にあげよう。ヒントなしで使える表現が増えると、新しい仲間にも出会えるよ。</p></div></div>
+        <div class="notice-card"><div><strong>このゲームの主役は、英語を話すあなた。</strong><p>問題を解いてXPをため、好きな仲間にあげよう。ヒントなしで使える表現が増えると、新しい仲間にも出会えるよ。</p></div></div>
       </section>
 
       <section id="play-view" class="view" hidden>
@@ -95,7 +95,7 @@
             <span class="forest-gate" data-forest-gate="4">5</span>
             <span class="forest-gate forest-boss-gate" data-forest-boss="true">BOSS</span>
           </div>
-          <div class="forest-mission-panel"><span class="forest-mission-icon" aria-hidden="true">✦</span><p id="forest-scene-story" class="forest-scene-story"></p></div>
+          <div class="forest-mission-panel"><p id="forest-scene-story" class="forest-scene-story"></p></div>
         </section>
         <div class="forest-command-window">
           <div class="play-progress"><span id="play-progress-fill"></span></div>
@@ -106,11 +106,11 @@
       </section>
 
       <section id="result-view" class="view" hidden>
-        <div class="result-surface"><div class="result-symbol" aria-hidden="true">✷</div><span class="tiny-caps">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><div class="result-actions"><button class="button button-primary" id="result-collection">ためたXPで仲間を育てる</button><button class="button button-ghost" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button></div></div>
+        <div class="result-surface"><span class="tiny-caps">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><div class="result-actions"><button class="button button-primary" id="result-collection">ためたXPで仲間を育てる</button><button class="button button-ghost" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button></div></div>
       </section>
 
       <section id="collection-view" class="view" hidden>
-        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>✦ 育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、好きな仲間に自由にあげられます。</small></div><p id="feed-feedback" class="feed-feedback" role="status" aria-live="polite"></p></div>
+        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、好きな仲間に自由にあげられます。</small></div><p id="feed-feedback" class="feed-feedback" role="status" aria-live="polite"></p></div>
         <section class="forest-treasures" aria-labelledby="forest-treasures-title">
           <div class="forest-treasures-heading"><span class="tiny-caps">FOREST EXPEDITION</span><h2 id="forest-treasures-title">森で見つけた宝物</h2><p id="forest-collection-count">まだ見つけていないよ。</p></div>
           <div id="forest-collection-relics" class="forest-collection-relics"></div>
