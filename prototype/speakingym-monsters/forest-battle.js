@@ -31,22 +31,29 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],random=
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level);
  if(pool.length<FOREST_WAVE_LENGTH)throw Error('Not enough unique prompts');
  const previous=new Set(previousIds);
- // Choose variety across expressions, not 8 near-duplicates in a row.
- const grouped=new Map();
- for(const p of shuffle(pool,random)) {
-  if(!grouped.has(p.phraseId))grouped.set(p.phraseId,[]);
-  grouped.get(p.phraseId).push(p);
+ const shuffled=shuffle(pool,random);
+ const fresh=shuffled.filter(p=>!previous.has(p.id));
+ const selected=[];
+ const usedPhrases=new Set();
+ const add = p => {
+   if(!p||selected.some(entry=>entry.id===p.id)||selected.length>=FOREST_WAVE_LENGTH)return false;
+   selected.push(p);usedPhrases.add(p.phraseId);return true;
+ };
+ // The enemy poses at least one listening attack and one reading challenge each wave.
+ // Prefer tasks not seen in the previous wave and avoid repeating the same expression.
+ for(const kind of ['listen','read']) {
+   const candidates=[...fresh,...shuffled].filter(p=>p.kind===kind);
+   add(candidates.find(p=>!usedPhrases.has(p.phraseId))||candidates[0]);
  }
- const expressions=shuffle([...grouped.keys()],random);
- const ordered=[];
- for(const phraseId of expressions){
-  const group=grouped.get(phraseId);
-  ordered.push(group.find(p=>!previous.has(p.id))||group[0]);
+ for(const candidate of [...fresh,...shuffled]){
+   if(selected.length>=FOREST_WAVE_LENGTH)break;
+   if(!usedPhrases.has(candidate.phraseId))add(candidate);
  }
- const available=shuffle(pool.filter(p=>!ordered.some(selected=>selected.id===p.id)),random);
- available.sort((a,b)=>Number(previous.has(a.id))-Number(previous.has(b.id)));
- ordered.push(...available.slice(0,FOREST_WAVE_LENGTH-ordered.length));
- const prompts=shuffle(ordered.slice(0,FOREST_WAVE_LENGTH),random);
+ for(const candidate of [...fresh,...shuffled]){
+   if(selected.length>=FOREST_WAVE_LENGTH)break;
+   add(candidate);
+ }
+ const prompts=shuffle(selected,random);
  if(prompts.length!==FOREST_WAVE_LENGTH||new Set(prompts.map(p=>p.id)).size!==FOREST_WAVE_LENGTH)throw Error('Invalid forest wave content');
  return {prompts,level,wave};
 }
