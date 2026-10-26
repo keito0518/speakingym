@@ -28,6 +28,16 @@ const rubric = {
  'prefer-city': [row('電車を希望する', intent.prefer),row('理由を伝える','because','since','as it is','faster','quicker','speed')],
  'prefer-friend': [row('電車を希望する', intent.prefer)],
 };
+// Easy cues do not demand extra details that appear only in the English instructions.
+const easy = {
+ 'repeat-station':[row('聞き返しを依頼',intent.repeat)],
+ 'repeat-class':[row('聞き返しを依頼',intent.repeat)],
+ 'agree-friend':[row('提案に同意',intent.agree)],
+ 'agree-work':[row('提案に同意',intent.agree)],
+ 'late-bus':[row('遅れることを伝える',intent.late)],
+ 'late-call':[row('遅れることを伝える',intent.late)],
+ 'prefer-city':[row('電車を希望する',intent.prefer)]
+};
 const hard = {
  'think-cafe':[row('決めるための時間を頼む',intent.think),row('原材料・乳製品を確認する','ingredient','milk','dairy','allerg'),row('後ろの人に先に注文してもらう','go ahead','order first','before me','after you')],
  'think-trip':[row('決める時間が必要',intent.think),row('勤務予定の確認','schedule','work','shift','availability'),row('今夜返答する','tonight','this evening','by the end of the day')],
@@ -60,7 +70,8 @@ export function gradeLocalResponse(prompt, raw) {
  const exact=compareWithExamples(prompt,raw).matchesExample;
  if(exact) return {status:'correct',reasons:[],confidence:'high',method:'registered-example'};
  const difficulty=prompt.difficulty||'easy';
- const list=difficulty==='hard'?hard[prompt.baseId]:rubric[prompt.baseId || prompt.id];
+ const base=prompt.baseId || prompt.id;
+ const list=difficulty==='hard'?hard[base]:difficulty==='easy'?(easy[base]||rubric[base]):rubric[base];
  if(!list?.length) return {status:'ungraded',reasons:['この問題はまだ自動判定できません。'],confidence:'none'};
  const missing=list.filter(item=>!passes(text,item)).map(item=>item.label);
  if(!missing.length) {
