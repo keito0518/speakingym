@@ -73,6 +73,7 @@ export const ADDITIONAL_PHRASES = Object.freeze([
     "tip": "問題の内容と求める対応を落ち着いて説明する。"
   }
 ]);
+const READING_SCENES = new Set(['help-form','order-veg','direction-transfer','recommend-gift','booking-tour','apology-email','decline-purchase','price-service','change-date','problem-bill']);
 const SCENES = [
   [
     "help-bag",
@@ -716,7 +717,7 @@ const SCENES = [
   ]
 ];
 export const ADDITIONAL_PROMPTS = Object.freeze(SCENES.flatMap(([id,phraseId,scene,englishScene,cue,audio,easy,alternative,normalCue,normalTask,normalAnswer,hardCue,hardTask,hardAnswer]) => [
- {id,baseId:id,phraseId,kind:audio?'listen':'speak',scene,cue,answer:easy,alternatives:[alternative],...(audio?{audio}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
- {id:id+'-normal',baseId:id,phraseId,kind:audio?'listen':'speak',difficulty:'normal',scene:englishScene,cue:normalCue,task:normalTask,answer:normalAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})},
- {id:id+'-hard',baseId:id,phraseId,kind:audio?'listen':'speak',difficulty:'hard',scene:englishScene,cue:hardCue,task:hardTask,answer:hardAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})}
+ {id,baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',scene,cue,answer:easy,alternatives:[alternative],...(audio?{audio}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
+ {id:id+'-normal',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'normal',scene:englishScene,cue:normalCue,task:normalTask,answer:normalAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})},
+ {id:id+'-hard',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'hard',scene:englishScene,cue:hardCue,task:hardTask,answer:hardAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})}
 ]));
