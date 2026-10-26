@@ -55,6 +55,12 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
    if(!p||selected.some(entry=>entry.id===p.id)||selected.length>=FOREST_WAVE_LENGTH)return false;
    selected.push(p);usedPhrases.add(p.phraseId);return true;
  };
+ // Reserve up to two exact overdue exercises before filling enemy-specific
+ // patterns; this prevents tactical variety from starving real revision work.
+ for(const candidate of [...fresh,...shuffled]){
+   if(selected.length>=2)break;
+   if(reviewPrompts.has(candidate.id))add(candidate);
+ }
  // Every monster has its own preferred English move. Author the five mob
  // encounters with matching kinds, then reserve three mixed tasks for the boss.
  // Preserve unique questions and prioritize previously failed tasks for spare slots.
