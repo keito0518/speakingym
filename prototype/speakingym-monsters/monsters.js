@@ -175,7 +175,7 @@ function renderCollection(message = '') {
     const roots = creature.roots.map(root=>`<div class="word-row"><span><b lang="en">${escapeHtml(root.word)}</b><small>${escapeHtml(root.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${escapeHtml(root.word)}" aria-label="${escapeHtml(root.word)} の発音を聞く">▶ 聞く</button></div>`).join('');
     return `<article class="monster-card ${owned?'':'locked'}"><div class="monster-picture">${monsterArt(creature.id,owned&&growth.evolved)}</div><h3 lang="en">${owned?escapeHtml(displayName):'???'}</h3><p class="monster-japanese">${owned?escapeHtml(creature.japaneseName+' · '+creature.kind):escapeHtml(unlock)}</p>${owned?`<p class="monster-note">${escapeHtml(creature.note)}</p><div class="word-roots"><strong>NAME ORIGIN · 名前の由来</strong>${roots}</div><div class="monster-skill"><span>固有能力案 · 進化後に解放予定</span><strong lang="en">${escapeHtml(creature.skill.name)}</strong><small>${escapeHtml(creature.skill.description)}</small></div><span class="mini-tag">Lv.${growth.level} ${growth.evolved?'· 進化済み':''}</span><div class="mini-xp-track"><span style="width:${100-growth.toNextLevel/XP_PER_LEVEL*100}%"></span></div><div class="monster-card-tools"><button class="select-companion" data-select-monster="${creature.id}" ${active?'disabled':''}>${active?'ホームに表示中':'ホームに表示'}</button>${walletActions}</div>`:'<span class="mini-tag">未発見</span>'}</article>`;
   }).join('');
-  $('[data-pronounce-word]').forEach(button=>button.addEventListener('click',()=>{
+  $$('[data-pronounce-word]').forEach(button=>button.addEventListener('click',()=>{
     const word=button.dataset.pronounceWord;
     if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){ $('#feed-feedback').textContent='このブラウザでは発音再生ができません。'; return; }
     try{
@@ -185,7 +185,7 @@ function renderCollection(message = '') {
       window.speechSynthesis.speak(utterance);
     }catch { $('#feed-feedback').textContent='発音再生を開始できませんでした。'; }
   }));
-  $('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection(`${monsterFor(button.dataset.selectMonster).name}をホームに表示します。`);}));
+  $$('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection(`${monsterFor(button.dataset.selectMonster).name}をホームに表示します。`);}));
   $$('[data-feed-monster]').forEach(button=>button.addEventListener('click',()=>{
     const id=button.dataset.feedMonster, amount=button.dataset.feedAmount==='all'?save.xpWallet:10;
     try {
