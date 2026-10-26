@@ -50,7 +50,7 @@ export function makeBattle(stageId, monsterId, level = 1) {
   if (!stage || !foe || !(stage.foes || [stage.foe]).includes(monsterId)) throw new Error('That creature does not live on this route.');
   const boss = Boolean(foe.boss);
   const maxPlayerHp = 70 + Math.min(50, Math.max(0, level - 1) * 5);
-  const maxEnemyHp = boss ? 112 : 66;
+  const maxEnemyHp = boss ? 140 : 88;
   return { stageId: stage.id, monsterId, boss, maxPlayerHp, playerHp: maxPlayerHp, maxEnemyHp, enemyHp: maxEnemyHp, focus: 0, turn: 0, ended: false };
 }
 

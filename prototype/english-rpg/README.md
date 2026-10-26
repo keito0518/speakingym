@@ -9,7 +9,7 @@ Open `/prototype/english-rpg/` in the branch preview. Choose a starter, then cle
 ## Game loop
 
 - 10 sequential routes; stages 5 and 10 are bosses.
-- Each encounter asks short English questions until the enemy is defeated. Three correct normal attacks typically clear a route; wrong answers cost HP but show an explanation and let the learner continue.
+- Each encounter asks short English questions until the enemy is defeated. Four correct normal attacks typically clear a route, and bosses need considerably more progress; wrong answers cost HP but show an explanation and let the learner continue.
 - Word Strike practices vocabulary in a sentence; Listening Wave uses browser speech synthesis and checks the listener's understanding; Phrase Link asks the player to assemble a natural sentence from shuffled word tiles.
 - Each move has distinct power and a focus/guard tradeoff. Listening restores focus and some HP; phrase attacks do the most damage and spend focus.
 - First route clear grants experience, so replaying a simple question cannot be farmed for unlimited growth. Boss stages grant more XP. At level 4 the companion evolves.

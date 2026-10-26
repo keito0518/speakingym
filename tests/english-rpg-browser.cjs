@@ -77,6 +77,9 @@ const path = require('node:path');
 
   await page.locator('.move-card[data-move="word"]').click();
   await chooseMeaning('word',true);
+  await page.getByRole('button',{name:'次の手へ'}).click();
+  await page.locator('.move-card[data-move="word"]').click();
+  await chooseMeaning('word',true);
   await page.getByRole('button',{name:'勝利を確認する'}).click();
   await page.getByRole('heading',{name:'Mimipが仲間になった！'}).waitFor();
   await page.screenshot({path:path.join(shots,`english-rpg-${name}-390-capture.png`),fullPage:true});
