@@ -35,10 +35,10 @@ function micView(mode='ready') {
   if(button){
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.textContent=mode==='listening'?'停止':'話す';
+    button.innerHTML=mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':'<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span>';
     button.title=mode==='listening'?'録音を停止する':'マイクで話す';
     button.setAttribute('aria-label',mode==='listening'?'録音を停止する':'マイクで話す');
-    button.hidden=mode==='captured' || mode==='done';
+    button.hidden=mode==='done';
     button.disabled=mode==='done';
   }
   if(retry) retry.hidden=mode!=='captured';
@@ -214,7 +214,7 @@ function renderQuestion() {
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
-  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false">話す</button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
   $('#retry-mic').addEventListener('click',()=>{
     if(!play || play.revealed)return;
@@ -249,12 +249,12 @@ function startRecognition() {
   const helper=$('#speech-helper');
   if(recognition){
     stopRecognition();
-    if(helper)helper.textContent='録音を停止しました。もう一度マイクを押すか、英文を入力してね。';
+    if(helper)helper.textContent='録音を停止しました。「話す」を押すと再開できます。';
     return;
   }
   const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Constructor){
-    micView('done');
+    micView('ready');
     if(helper)helper.textContent='このブラウザは音声認識に対応していません。英文を入力して判定できます。';
     return;
   }
@@ -302,7 +302,7 @@ function startRecognition() {
     },15000);
     instance.start();
     micView('listening');
-    if(helper)helper.textContent='録音中… 話し終えたら自動的に停止します。■で手動停止もできます。';
+    if(helper)helper.textContent='録音中です。話し終えるか「停止」を押してください。';
   }catch{
     stopRecognition();
     if(helper)helper.textContent='マイクを開始できません。英文入力で続けられます。';
