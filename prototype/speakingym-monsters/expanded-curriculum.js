@@ -89,6 +89,61 @@ const READING_TEXTS = Object.freeze({
   "change-date": "Your appointment is confirmed for Friday.",
   "problem-bill": "Invoice: room charge, breakfast charge, service fee."
 });
+// Different readable clues per level; reading actions must have actual text at every difficulty.
+const READING_VARIANTS = Object.freeze({
+  "help-bag": [
+    "NOTICE: The lift is closed. Please use the stairs for the next two days.",
+    "The elevator is out of service today. Travelers with heavy luggage may ask station staff for assistance near the stairs."
+  ],
+  "change-room": [
+    "GUEST NOTICE: Rooms near the elevator may be noisy during maintenance. Please contact reception if you need help.",
+    "Room notice: The lift will be serviced overnight. Guests who are disturbed by noise may request a different room; upper floors may be quieter."
+  ],
+  "recommend-visit": [
+    "VISITOR GUIDE: The city garden is a 15-minute walk. Entry is free and it closes at six.",
+    "City guide: The riverside garden takes about 20 minutes to reach on foot. Shops are nearby, but the garden is the quietest attraction."
+  ],
+  "help-form": [
+    "APPLICATION: Write your current residential address in box A. Leave box B empty if you have no previous address.",
+    "INSTRUCTIONS: Enter your present address in the first field. The second field asks for your previous address, if applicable. Ask a clerk if the fields are unclear."
+  ],
+  "order-veg": [
+    "VEGETARIAN PLATE: Rice, vegetables, and sesame dressing. Ask staff about other sauces.",
+    "MENU NOTE: The vegetable plate normally comes with fish sauce. Please tell the server if you need a vegetarian version without it."
+  ],
+  "direction-transfer": [
+    "ROUTE NOTICE: For the city center, transfer at Central Station and follow signs for platform three.",
+    "TRAVEL UPDATE: Passengers for the city center must change at Central Station. Your connecting service leaves from platform three."
+  ],
+  "recommend-gift": [
+    "SOUVENIRS: Small wooden spoons ($8), locally made spice tins ($12), and chocolate boxes ($15).",
+    "GIFT GUIDE: Lightweight cooking gifts include a wooden spoon for $8 and a local spice tin for $12. Ceramic bowls cost $28 and are fragile."
+  ],
+  "booking-tour": [
+    "TOUR DESK: Morning walking tour starts at 9:00. Advance reservations are required.",
+    "TOUR NOTICE: Two places remain on tomorrow's 9:00 walking tour. Children aged eight or older may join with an adult. Booking is required."
+  ],
+  "apology-email": [
+    "INBOX: Follow-up reminder from your colleague. Subject: Please reply about the project schedule.",
+    "EMAIL: The client requested the report by yesterday afternoon. No response has been recorded. Please reply with an explanation and a new update time."
+  ],
+  "decline-purchase": [
+    "SHOP TAG: Jacket — $110. Special offer today only. Ask for other sizes at the counter.",
+    "SHOP OFFER: The jacket costs $140 after the discount. Returns are only accepted within seven days. Other designs are available upstairs."
+  ],
+  "price-service": [
+    "PRICE BOARD: Coat cleaning $18. Express service adds $8. Collection on the next business day.",
+    "DRY CLEANER: Standard coat cleaning costs $18. An express Friday pickup costs an additional $8, depending on when the item is dropped off."
+  ],
+  "change-date": [
+    "APPOINTMENT CONFIRMED: Friday at 2:00 p.m. Contact the reception desk to request a change.",
+    "BOOKING TERMS: Friday appointment confirmed. Date changes are possible with 24 hours' notice, but nonrefundable bookings may have a change fee."
+  ],
+  "problem-bill": [
+    "HOTEL INVOICE: Room $100; breakfast $20; service fee $5. Please check your charges.",
+    "INVOICE: Room rate $100; breakfast $20; service $5. Reservation email states breakfast was included. Ask the desk to correct any discrepancy."
+  ]
+});
 const SCENES = [
   [
     "help-bag",
@@ -733,6 +788,6 @@ const SCENES = [
 ];
 export const ADDITIONAL_PROMPTS = Object.freeze(SCENES.flatMap(([id,phraseId,scene,englishScene,cue,audio,easy,alternative,normalCue,normalTask,normalAnswer,hardCue,hardTask,hardAnswer]) => [
  {id,baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',scene,cue,answer:easy,alternatives:[alternative],...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_TEXTS[id]}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
- {id:id+'-normal',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'normal',scene:englishScene,cue:normalCue,task:normalTask,answer:normalAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})},
- {id:id+'-hard',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'hard',scene:englishScene,cue:hardCue,task:hardTask,answer:hardAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})}
+ {id:id+'-normal',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'normal',scene:englishScene,cue:normalCue,task:normalTask,answer:normalAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_VARIANTS[id]?.[0]||READING_TEXTS[id]}:{})},
+ {id:id+'-hard',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'hard',scene:englishScene,cue:hardCue,task:hardTask,answer:hardAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_VARIANTS[id]?.[1]||READING_TEXTS[id]}:{})}
 ]));
