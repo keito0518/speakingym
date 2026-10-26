@@ -39,7 +39,7 @@ const fs=require('node:fs');
      assert.equal(await page.locator('#round-count').textContent(),'SCENE 1 / 30');
      assert.equal(await page.locator('#samples .sample').count(),0,'examples are only shown after a speaking turn');
     }
-    await page.screenshot({path:`qa-screenshots/free-${engine}-${width}-${path}`,fullPage:true});
+    await page.screenshot({path:`qa-screenshots/free-${engine}-${width}-${path.replace('.html','.png')}`,fullPage:true});
    }
    await page.goto('http://127.0.0.1:8765/freeze-breaker.html?qa=1');
    await page.clock.install();
