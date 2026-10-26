@@ -198,6 +198,20 @@ test('study journal accurately summarizes due, upcoming and learned expressions'
   const later=reviewOverview(save,'2026-10-30');
   assert.equal(later.due.length,3);
 });
+test('enemy identity determines which English skill appears at each of five mob gates',()=>{
+  for(const difficulty of DIFFICULTIES){
+    for(const wave of [1,2,3]){
+      const picked=buildForestWave({difficulty,wave,random:()=>0.31});
+      for(let i=0;i<REGULAR_ENCOUNTERS;i++){
+        const tactic=enemyTacticFor(i,wave);
+        assert.equal(picked.prompts[i].kind,tactic.preferredKind,
+          `Wave ${wave} foe ${opponentFor(i,wave).id} did not receive ${tactic.preferredKind}`);
+      }
+      assert.equal(picked.prompts.length,FOREST_WAVE_LENGTH);
+      assert.equal(new Set(picked.prompts.map(p=>p.id)).size,FOREST_WAVE_LENGTH);
+    }
+  }
+});
 test('every forest monster advertises its own visual tactic with immutable battle reward rules',()=>{
   const names=new Set();
   const guards=new Set();
