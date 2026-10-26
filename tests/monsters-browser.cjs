@@ -63,6 +63,60 @@ const path=require('node:path');
     await hardPage.reload();
     assert.equal(await hardPage.locator('[data-difficulty="hard"]').getAttribute('aria-pressed'),'true');
     await hardContext.close();
+    // Play a full Speaking Forest adventure: three verified English gates,
+    // route choice, companion presentation, collectible relic and persisted progress.
+    for(const width of [320,390,430]){
+      const {context:forestContext,page:forestPage}=await boot(width);
+      await forestPage.locator('#start-forest').click();
+      assert.equal(await forestPage.locator('#forest-journey').isVisible(),true);
+      assert.match(await forestPage.locator('#forest-companion-name').innerText(),/Yolkie/);
+      assert.match(await forestPage.locator('#play-mode-label').innerText(),/スピーキングの森/);
+      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 1 \/ 3/);
+      // An unverified attempt may show an example but cannot unlock a gate or XP.
+      await forestPage.locator('#spoken-answer').fill('I have no idea.');
+      await forestPage.locator('#show-answer').click();
+      await forestPage.locator('#show-example').click();
+      await forestPage.locator('#next-question').click();
+      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 1 \/ 3/);
+      await forestPage.locator('#spoken-answer').fill('Let me think about it.');
+      await forestPage.locator('#show-answer').click();
+      assert.match(await forestPage.locator('#feedback-panel').innerText(),/関門突破/);
+      await forestPage.locator('#next-question').click();
+      assert.match(await forestPage.locator('#play-card').innerText(),/森に二つの道/);
+      assert.equal(await forestPage.locator('#answer-area').isVisible(),false);
+      assert.equal(await forestPage.locator('[data-forest-route]').count(),2);
+      const routeMetrics=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(routeMetrics.scroll<=routeMetrics.inner+1,`${engine}/${width} forest choice overflow: ${JSON.stringify(routeMetrics)}`);
+      await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-route.png`),fullPage:true});
+      await forestPage.locator('[data-forest-route="moss"]').click();
+      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 2 \/ 3/);
+      assert.equal(await forestPage.locator('#answer-area').isVisible(),true);
+      assert.match(await forestPage.locator('#forest-route-status').innerText(),/こけむした/);
+      await forestPage.locator('#spoken-answer').fill('Could you say that again?');
+      await forestPage.locator('#show-answer').click();
+      await forestPage.locator('#next-question').click();
+      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 3 \/ 3/);
+      await forestPage.locator('#spoken-answer').fill("I'd rather take the train.");
+      await forestPage.locator('#show-answer').click();
+      await forestPage.locator('#next-question').click();
+      assert.equal(await forestPage.locator('#result-view').isVisible(),true);
+      assert.match(await forestPage.locator('#result-title').innerText(),/森の3つの関門/);
+      assert.match(await forestPage.locator('#result-discoveries').innerText(),/Mosslight/);
+      assert.match(await forestPage.locator('#result-rewards').innerText(),/48 XP/);
+      await forestPage.locator('#result-collection').click();
+      assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
+      assert.match(await forestPage.locator('#forest-collection-count').innerText(),/踏破 1回/);
+      await forestPage.reload();
+      await forestPage.locator('#open-collection').click();
+      assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
+      await forestPage.locator('#collection-home').click();
+      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/探索 1回/);
+      const forestSave=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+      assert.deepEqual(forestSave.forest.relics,['moss-lantern']);
+      assert.equal(forestSave.forest.clears,1);
+      assert.equal(forestSave.xpWallet,48);
+      await forestContext.close();
+    }
     // Fake the browser speech API: check start/stop, stale onend, capture,
     // retry, denied permission, and changing views without a stuck mic.
     const {context:micContext,page:micPage}=await boot(390);

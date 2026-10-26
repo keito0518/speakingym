@@ -37,6 +37,12 @@
               <button class="button button-primary" data-start="practice"><span aria-hidden="true">✦</span> まず練習する</button>
               <button class="button button-dark" data-start="challenge"><span aria-hidden="true">◷</span> 60秒チャレンジ</button>
             </div>
+            <section class="forest-invite" aria-labelledby="forest-invite-title">
+              <span class="forest-kicker">NEW EXPEDITION · 試作ダンジョン</span>
+              <h2 id="forest-invite-title">🌲 Speaking Forest</h2>
+              <p>仲間と森に出発。英語で3つの関門を越えて、隠されたお宝を見つけよう。</p>
+              <div class="forest-invite-action"><button type="button" id="start-forest" class="forest-primary">スピーキングの森へ <span aria-hidden="true">→</span></button><span id="forest-home-progress">まだ未踏の森</span></div>
+            </section>
             <span id="save-note" class="save-note">学習記録はこの端末に保存されます</span>
           </div>
           <div class="companion-showcase">
@@ -62,6 +68,18 @@
 
       <section id="play-view" class="view" hidden>
         <div class="play-topline"><button class="back-button" id="leave-play">← ホームへ</button><span id="play-mode-label" class="mode-chip">練習モード</span><span id="play-clock" class="clock" aria-live="off">自分のペースで</span></div>
+        <section id="forest-journey" class="forest-journey" hidden aria-label="スピーキングの森の進行状況">
+          <div class="forest-journey-header">
+            <div class="forest-companion-art" id="forest-companion-art" aria-hidden="true"></div>
+            <div class="forest-journey-title"><span class="forest-kicker">SPEAKING FOREST</span><strong id="forest-companion-name">Yolkie と探検中</strong><small id="forest-route-status">まず森の入口へ</small></div>
+          </div>
+          <div class="forest-gates" aria-label="3つの関門">
+            <span class="forest-gate" data-forest-gate="0">1 <small>入口</small></span>
+            <span class="forest-gate" data-forest-gate="1">2 <small>橋</small></span>
+            <span class="forest-gate" data-forest-gate="2">3 <small>分かれ道</small></span>
+          </div>
+          <p id="forest-scene-story" class="forest-scene-story"></p>
+        </section>
         <div class="play-progress"><span id="play-progress-fill"></span></div>
         <div id="play-card" class="play-card" aria-live="polite"></div>
         <div id="answer-area" class="answer-area"></div>
@@ -73,6 +91,10 @@
 
       <section id="collection-view" class="view" hidden>
         <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>✦ 育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、好きな仲間に自由にあげられます。</small></div><p id="feed-feedback" class="feed-feedback" role="status" aria-live="polite"></p></div>
+        <section class="forest-treasures" aria-labelledby="forest-treasures-title">
+          <div class="forest-treasures-heading"><span class="tiny-caps">FOREST EXPEDITION</span><h2 id="forest-treasures-title">森で見つけた宝物</h2><p id="forest-collection-count">まだ見つけていないよ。</p></div>
+          <div id="forest-collection-relics" class="forest-collection-relics"></div>
+        </section>
         <div id="collection-grid" class="collection-grid"></div>
         <div class="section-head phrase-head"><div><span class="tiny-caps">LANGUAGE GROWTH</span><h2>ことばの成長記録</h2></div></div>
         <div id="phrase-grid" class="phrase-grid"></div>

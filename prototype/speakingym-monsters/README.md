@@ -57,3 +57,17 @@ Use unlockable evolution branches, secret color variants, collection-map discove
 
 - Browser speech recognition now requests `interimResults=true` and updates the answer field **while the user is speaking**, styling non-final text distinctly. No XP is awarded for interim text alone; the learner must still request checking. Final recognition hides the microphone and offers rerecording. Unexpected `onend` retains available text and clears the active mic UI. Unsupported browsers keep typed English fallback. The exact behavior still needs real-device Safari confirmation.
 - Proposed Free/basic judging + Pro/deep after-run coaching and three different dungeon gameplay loops are recorded in [DUNGEON_AND_FEEDBACK_DESIGN.md](./DUNGEON_AND_FEEDBACK_DESIGN.md). These are **designs, not shipped dungeon areas or active billing tiers**; do not expose a placeholder dungeon menu until a substantive vertical slice exists.
+
+## Speaking Forest — playable three-gate vertical slice
+
+The first dungeon is now playable from the home screen using the **スピーキングの森へ** action. This is a small meaningful progression loop, not a reskin of the 60-second challenge.
+
+1. Enter with your currently selected companion; a companion panel, forest narrative, three visible gates and a progress tracker stay on screen.
+2. Complete the first speaking gate using an English response and the existing conservative checker. Failure or unclear expression lets the learner revise; revealing the example grants **0 XP** and retries the **same gate**, never skipping ahead. Only verified correctness opens the route fork.
+3. Choose **ひだまりの小道** or **こけむした抜け道**, then solve a polite clarification gate and a travel-preference speaking gate. Difficulty follows the existing easy Japanese→English, normal/hard English→English selection. Three different practical expressions are required.
+4. After all three gates, claim a **cosmetic souvenir** for the chosen route: Sunleaf or Mosslight. These persist in a separate `forest` field on the existing local save, with old saves migrating automatically. Repeated clears do not duplicate souvenirs.
+5. **Companion evolution powers** (cosmetic, not language-scoring powers): evolved Yolkie on the sunlit route may find Golden Yolk, evolved Soxie on the moss route may find Lost Button. These abilities unlock hidden treasure but do **not** alter answer scoring, XP or the number of gates. Other companions' dungeon powers are still future work.
+
+The next full run alternates between two sets of three authored speaking situations. Full Free/Pro semantics, actual listening swamp / vocabulary cave and a large explorable map are **not** included. The forest remains prototype-only, with no server-authoritative XP nor account sync, and no AI-enabled production deployment. Repeated practice can earn local XP; paid economics and abuse-resistant XP require server-side design before release.
+
+Mobile QA must verify 320/390/430 px, skip retry with no XP, route selection, 3 verified speaking gates, treasure save-and-reload, and no horizontal overflow. Existing speech and 60-second modes must remain functional. Real iPhone browser verification remains a separate gate.

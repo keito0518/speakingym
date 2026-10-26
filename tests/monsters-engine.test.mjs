@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
+import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
@@ -33,6 +34,55 @@ test('curriculum has six expressions, two situations, and three authored difficu
     assert.ok(phrase.hint&&phrase.tip);
   }
   for(const prompt of PROMPTS) {assert.ok(prompt.scene&&prompt.cue&&prompt.answer);if(prompt.kind==='listen')assert.ok(prompt.audio);}
+});
+
+test('Speaking Forest is three authored speaking gates across all difficulty levels', () => {
+  assert.equal(FOREST_STAGES.length,3);
+  assert.equal(FOREST_ROUTES.length,2);
+  const start=createSave();
+  for(const level of DIFFICULTIES){
+    const prompts=getForestPrompts(start,level);
+    assert.equal(prompts.length,3);
+    assert.equal(new Set(prompts.map(x=>x.phraseId)).size,3);
+    assert.deepEqual(prompts.map(x=>x.phraseId),['think','repeat','prefer']);
+    assert.ok(prompts.every(x=>(x.difficulty||'easy')===level));
+  }
+  assert.deepEqual(getForestPrompts(start,'easy').map(x=>x.id),['think-cafe','repeat-station','prefer-city']);
+  assert.deepEqual(getForestPrompts({...start,forest:{clears:1}},'easy').map(x=>x.id),['think-trip','repeat-class','prefer-friend']);
+  assert.throws(()=>getForestPrompts(start,'expert'),/Invalid forest difficulty/);
+});
+test('Forest stamp unlocks only on full route completion; evolved companions find extra cosmetic relics', () => {
+  const initial=createSave();
+  assert.deepEqual(cleanForest(null),{clears:0,routes:[],relics:[]});
+  assert.throws(()=>finishForest(initial,'unknown','medamago'),/Invalid forest route/);
+  assert.throws(()=>finishForest(initial,'moss','katappo'),/not owned/);
+  const one=finishForest(initial,'sunlit','medamago');
+  assert.equal(one.save.forest.clears,1);
+  assert.deepEqual(one.discovered,['sunlit-leaf']);
+  assert.deepEqual(initial.forest.relics,[]);
+  assert.equal(one.save.xpWallet,0);
+  const repeated=finishForest(one.save,'sunlit','medamago');
+  assert.equal(repeated.save.forest.clears,2);
+  assert.deepEqual(repeated.discovered,[]);
+  const two=finishForest(repeated.save,'moss','medamago');
+  assert.deepEqual(two.save.forest.routes,['sunlit','moss']);
+  assert.deepEqual(two.discovered,['moss-lantern']);
+  assert.equal(two.save.xpWallet,0);
+  const evolved={...two.save,monsterXp:{...two.save.monsterXp,medamago:160}};
+  const secret=finishForest(evolved,'sunlit','medamago');
+  assert.deepEqual(secret.discovered,['golden-yolk']);
+  assert.equal(secret.save.forest.relics.length,3);
+  const soxie={...initial,ownedMonsters:['medamago','katappo'],monsterXp:{medamago:0,katappo:160}};
+  assert.deepEqual(finishForest(soxie,'moss','katappo').discovered,['moss-lantern','lost-button']);
+  assert.equal(FOREST_RELICS['lost-button'].name,'Lost Button');
+});
+test('Forest souvenirs persist when old saves are loaded without a forest field', () => {
+ const initial=createSave();
+ assert.deepEqual(validateSave({...initial,forest:undefined}).forest,cleanForest(null));
+ const completed=finishForest(initial,'sunlit','medamago').save;
+ assert.deepEqual(validateSave(completed).forest,completed.forest);
+ const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
+ assert.deepEqual(polluted.forest,{clears:0,relics:['sunlit-leaf'],routes:['sunlit']});
 });
 
 test('fresh save has a fried-egg companion and does not call account or AI APIs', () => {

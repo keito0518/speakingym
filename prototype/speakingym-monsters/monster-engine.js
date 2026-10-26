@@ -1,4 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
+import { cleanForest } from './forest-engine.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
@@ -21,7 +22,8 @@ export function createSave() {
     rewardedDays: [],
     completedRuns: 0,
     bestSmooth: 0,
-    totalAnswers: 0
+    totalAnswers: 0,
+    forest: cleanForest(null)
   };
 }
 
@@ -54,7 +56,8 @@ export function validateSave(value) {
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: Math.max(0, Number(value.completedRuns) || 0),
     bestSmooth: Math.max(0, Number(value.bestSmooth) || 0),
-    totalAnswers: Math.max(0, Number(value.totalAnswers) || 0)
+    totalAnswers: Math.max(0, Number(value.totalAnswers) || 0),
+    forest: cleanForest(value.forest)
   };
 }
 
