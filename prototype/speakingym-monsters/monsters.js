@@ -1,5 +1,5 @@
 import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, compareWithExamples, createSave, dayKey, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 
 const $ = selector => document.querySelector(selector);
