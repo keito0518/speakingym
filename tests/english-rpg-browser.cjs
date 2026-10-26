@@ -51,7 +51,7 @@ const path = require('node:path');
   }
 
   await page.locator('.move-card[data-move="listen"]').click();
-  await page.getByRole('button',{name:/英文を聞く/}).click();
+  await page.getByRole('button',{name:/英文を再生/}).click();
   await page.waitForTimeout(30);
   if(!(await page.locator('#speak-question').textContent()).includes('再生できません'))throw new Error('speech failure fallback was not shown');
   await page.getByRole('button',{name:'英文を確認'}).click();
