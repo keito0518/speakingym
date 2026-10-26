@@ -63,7 +63,7 @@ function renderMap() {
     return `<button class="stage-card ${stage.boss?'boss':''} ${here?'current':''} ${cleared?'cleared':''}" data-stage="${stage.id}" ${locked?'disabled':''} aria-label="${stage.id} ${stage.jp} ${locked?'未解放':cleared?'クリア済み':'冒険する'}"><span class="stage-number">${stage.boss?'✦':String(stage.id).padStart(2,'0')}</span><span><strong>${stage.jp}</strong><small>${stage.id===1?'旅人を橋へ案内する':stage.name}</small></span><span class="stage-status">${locked?'🔒':cleared?'✓':here?'現在地':'→'}</span></button>`;
   }).join('');
   $$('.stage-card:not(:disabled)').forEach(button => button.addEventListener('click', () => startStage(Number(button.dataset.stage))));
-  $('#collection-mini').innerHTML = `<div class="collection-row">${monsters.slice(0,8).map(monster=>`<span class="mini-dot ${save.captures.includes(monster.id)?'found':''}" title="${save.captures.includes(monster.id)?monster.name:'未発見'}">${save.captures.includes(monster.id)?monster.glyph:'?'}</span>`).join('')}<b>+${Math.max(0,save.captures.length-8)}</b></div><p style="margin-top:8px">${save.captures.length}体が仲間</p>`;
+  $('#collection-mini').innerHTML = `<div class="collection-row">${monsters.slice(0,8).map(monster=>`<span class="mini-dot ${save.captures.includes(monster.id)?'found':''}" title="${save.captures.includes(monster.id)?monster.name:'未発見'}">${save.captures.includes(monster.id)?monster.glyph:'?'}</span>`).join('')}</div><p style="margin-top:8px">${monsters.filter(monster=>save.captures.includes(monster.id)).length}体が仲間</p>`;
 }
 function renderBattleField() {
   const stage = getStage(currentStage), foe = getMonster(battle.monsterId), hero = activeInfo(), entry = activeEntry();
@@ -198,7 +198,7 @@ function renderCamp() {
   const roster=save.roster;
   $('#camp-hero').innerHTML=roster.map(entry=>{const info=getCompanion(entry.id)||getMonster(entry.id);return `<div class="companion-row ${entry.id===save.activeCompanionId?'active':''}">${avatar(info.id,'',entry.evolved)}<div class="companion-meta"><b>${escapeHtml(info.name)}${entry.id===save.activeCompanionId?' · 相棒':''}</b><small>Lv.${entry.level} · ${entry.xp}/${XP_PER_LEVEL} XP ${entry.evolved?' · 進化済み':''}</small></div>${entry.id!==save.activeCompanionId?`<button class="small-button switch-companion" data-id="${entry.id}">相棒にする</button>`:''}</div>`;}).join('');
   $$('.switch-companion').forEach(button=>button.addEventListener('click',()=>{persist(changeActiveCompanion(save,button.dataset.id));renderCamp();}));
-  $('#dex-count').textContent=`${save.captures.length} / ${monsters.length}`;
+  $('#dex-count').textContent=`${monsters.filter(monster=>save.captures.includes(monster.id)).length} / ${monsters.length}`;
   $('#dex-grid').innerHTML=monsters.map(monster=>{const found=save.captures.includes(monster.id);const habitat=stages.find(stage=>stage.foes.includes(monster.id));return `<article class="dex-card ${found?'':'unknown'}">${avatar(monster.id)}<b>${found?escapeHtml(monster.name):'？？？'}</b><small>${found?escapeHtml(monster.kind):`${monster.boss?'ボス':'野生'} · ${escapeHtml(habitat.jp)}に生息`}</small>${!found?`<button class="hunt-button" data-hunt="${monster.id}">生息地を探す</button>`:''}</article>`;}).join('');
   $$('.hunt-button').forEach(button=>button.addEventListener('click',()=>{const monster=getMonster(button.dataset.hunt);const stage=stages.find(item=>item.foes.includes(monster.id));if(stage.id>unlockedStageCount(save)){showScreen('map-screen');return;}preferredMonster=monster.id;startStage(stage.id,monster.id);}));
 }
