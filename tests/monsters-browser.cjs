@@ -64,16 +64,22 @@ const path=require('node:path');
     assert.equal(await hardPage.locator('[data-difficulty="hard"]').getAttribute('aria-pressed'),'true');
     await hardContext.close();
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
-    for(const width of [320,390,430]){
+    for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);
       await forestPage.locator('#start-forest').click();
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),true);
+      assert.equal(await forestPage.locator('.forest-battle-shell #play-card').count(),1);
+      assert.equal(await forestPage.locator('.forest-battle-shell #answer-area').count(),1);
+      assert.equal(await forestPage.locator('.forest-battle-shell #forest-battle-log').count(),1);
       assert.match(await forestPage.locator('#forest-companion-name').innerText(),/Yolkie/);
       assert.equal(await forestPage.locator('#forest-world-backdrop svg').count(),1);
       assert.equal(await forestPage.locator('#forest-enemy svg').count(),1);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'wild');
       assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Mossling/);
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
+      const battleMetrics=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(battleMetrics.scroll<=battleMetrics.inner+1,`${engine}/${width} forest battle overflow: ${JSON.stringify(battleMetrics)}`);
+      await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-battle.png`),fullPage:true});
       const answer=async()=>{
         const example=await forestPage.evaluate(async()=>{
           const {ALL_PROMPTS}=await import('./monster-data.js');
@@ -84,10 +90,13 @@ const path=require('node:path');
         assert.match(await forestPage.locator('#feedback-panel').innerText(),/関門突破/);
         assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-attack')),true);
         assert.equal(await forestPage.locator('#forest-damage').isVisible(),true);
+        assert.match(await forestPage.locator('#forest-battle-log').innerText(),/のこうげき！.*1ダメージ！/);
       };
       // Seeing a model answer cannot open a gate or mint any XP.
       await forestPage.locator('#spoken-answer').fill('I have no idea.');
       await forestPage.locator('#show-answer').click();
+      assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-attack')),false);
+      assert.match(await forestPage.locator('#forest-battle-log').innerText(),/攻撃は発生しません/);
       await forestPage.locator('#show-example').click();
       await forestPage.locator('#next-question').click();
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
@@ -108,11 +117,14 @@ const path=require('node:path');
       }
       assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
       assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Thorn King/);
+      assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
       assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-stage')),true);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-boss.png`),fullPage:true});
       for(let hit=1;hit<=3;hit++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('BOSS ATTACK '+hit+' \/ 3'));
         await answer();
+        assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
+        if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').innerText(),/Thorn Kingをたおした！/);
         await forestPage.locator('#next-question').click();
       }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
