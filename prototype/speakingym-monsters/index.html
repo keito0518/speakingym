@@ -24,6 +24,15 @@
             <div class="eyebrow"><span class="eyebrow-dot"></span> SPEAKING FIRST. FUN ALWAYS.</div>
             <h1>英語を話すほど、<br><em>仲間が育つ。</em></h1>
             <p>知っているはずの言葉が、とっさに出てこない。そんな瞬間を、楽しい60秒に変えていこう。</p>
+            <div class="difficulty-picker" aria-label="問題の難易度">
+              <span class="difficulty-title">難易度を選ぶ</span>
+              <div class="difficulty-options" role="group" aria-label="問題の難易度">
+                <button type="button" data-difficulty="easy" aria-pressed="true">やさしい<small>日本語 → 英語</small></button>
+                <button type="button" data-difficulty="normal" aria-pressed="false">ふつう<small>英語 → 英語</small></button>
+                <button type="button" data-difficulty="hard" aria-pressed="false">むずかしい<small>英語 → 英語</small></button>
+              </div>
+              <p id="difficulty-description" class="difficulty-description" aria-live="polite">日本語の状況を読んで、英語で答える。</p>
+            </div>
             <div class="hero-buttons">
               <button class="button button-primary" data-start="practice"><span aria-hidden="true">✦</span> まず練習する</button>
               <button class="button button-dark" data-start="challenge"><span aria-hidden="true">◷</span> 60秒チャレンジ</button>

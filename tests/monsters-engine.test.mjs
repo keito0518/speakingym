@@ -1,12 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
-import { EVOLUTION_XP, STORAGE_KEY, addDays, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
-test('curriculum has six useful expressions and two curated situations for each', () => {
+test('curriculum has six expressions, two situations, and three authored difficulty levels', () => {
   assert.equal(PHRASES.length,6);assert.equal(PROMPTS.length,12);assert.equal(MONSTERS.length,9);
+  assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
+  assert.equal(ALL_PROMPTS.length,36);
+  for(const difficulty of ['normal','hard']) {
+    const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
+    assert.equal(level.length,12);
+    assert.equal(new Set(level.map(p=>p.id)).size,12);
+    assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&p.kind==='speak'));
+    assert.ok(level.every(p=>/^[\\x00-\\x7F]+$/.test(p.cue+p.task)));
+    assert.ok(level.every(p=>PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
+  }
+  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/12;
+  assert.ok(averageLength('hard')>averageLength('normal')*1.3);
   assert.equal(new Set(PROMPTS.map(p => p.id)).size,12);
   assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
   assert.ok(MONSTERS.every(monster=>monster.name&&monster.kind&&monster.note));
@@ -22,6 +34,7 @@ test('fresh save has a fried-egg companion and does not call account or AI APIs'
   assert.equal(STORAGE_KEY,'speakingym-monsters-prototype-v1');
   assert.deepEqual(save.ownedMonsters,['medamago']);assert.equal(save.selectedMonster,'medamago');
   assert.equal(save.xpWallet,0);
+  assert.equal(save.difficulty,'easy');
   assert.equal(learningSummary(save,'2026-10-26').independent,0);
   assert.deepEqual(validateSave(save),save);
 });
@@ -34,6 +47,33 @@ test('practice and challenge pick distinct expressions and prioritize overdue re
   const review=selectRoundPrompts(save,1,()=>0,'2026-10-26');
   assert.equal(review[0].phraseId,'think');
   assert.throws(()=>selectRoundPrompts(save,7),/Choose/);
+});
+
+test('difficulty selection preserves progress and rewards, and variants share scene mastery', () => {
+  const start=createSave();
+  assert.throws(()=>chooseDifficulty(start,'extreme'),/Invalid difficulty/);
+  const normal=chooseDifficulty(start,'normal');
+  assert.equal(normal.difficulty,'normal');assert.equal(start.difficulty,'easy');
+  const normalRound=selectRoundPrompts(normal,4,()=>0,'2026-10-26');
+  assert.equal(normalRound.length,4);assert.ok(normalRound.every(p=>p.difficulty==='normal'));
+  const hard=chooseDifficulty(normal,'hard');
+  const hardRound=selectRoundPrompts(hard,3,()=>0,'2026-10-26');
+  assert.ok(hardRound.every(p=>p.difficulty==='hard'));
+  assert.throws(()=>selectRoundPrompts(hard,3,()=>0,'2026-10-26','extreme'),/Invalid difficulty/);
+  const first=rate(normal,'think-cafe-normal','smooth','2026-10-26');
+  assert.equal(first.reward.xp,24);
+  assert.equal(first.save.xpWallet,24);
+  const second=rate(first.save,'think-cafe-hard','smooth','2026-10-27');
+  assert.equal(second.reward.xp,32);
+  assert.equal(second.save.progress.think.smoothContexts.length,1);
+  assert.equal(masteryLevel(second.save.progress.think),2);
+  const third=rate(second.save,'think-trip-hard','smooth','2026-10-27');
+  assert.equal(masteryLevel(third.save.progress.think),3);
+  assert.equal(third.save.xpWallet,88);
+  assert.equal(validateSave(third.save).difficulty,'normal');
+  assert.equal(validateSave({...third.save,difficulty:'invalid'}).difficulty,'easy');
+  assert.equal(rate(start,'late-bus-hard','hint').reward.xp,16);
+  assert.equal(rate(start,'late-bus-normal','again').reward.xp,3);
 });
 
 test('example matching is intentionally narrow, not a claim to grade free-form speech', () => {

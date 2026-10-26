@@ -24,6 +24,259 @@ export const PROMPTS = Object.freeze([
   { id: 'prefer-friend', phraseId: 'prefer', kind: 'listen', scene: '友人との移動', audio: 'Should we take the bus or the train?', cue: '電車を選びたい。自分の希望を伝えよう。', answer: "I'd rather take the train.", alternatives: ["I would rather take the train."] }
 ]);
 
+// English-to-English tasks are authored independently of the Japanese prompts.
+// Each difficulty practices the same useful expressions in progressively richer contexts.
+const ADVANCED_TASKS = Object.freeze([
+  [
+    "think-cafe",
+    "normal",
+    "At a coffee shop",
+    "The barista is waiting for your order, but you have not decided yet.",
+    "Ask for a little time to think.",
+    "Let me think about it for a moment.",
+    "Let me think ...",
+    "A brief pause is natural when you need more time."
+  ],
+  [
+    "think-trip",
+    "normal",
+    "Planning a trip",
+    "Your friend wants to book a tour today, but you are still unsure.",
+    "Tell your friend that you need some time to decide.",
+    "Let me think about it before we book.",
+    "Let me think ...",
+    "Do not feel pressured to decide immediately."
+  ],
+  [
+    "repeat-station",
+    "normal",
+    "At a train station",
+    "You missed the platform number in an announcement.",
+    "Politely ask the staff member to repeat the platform number.",
+    "Could you say the platform number again, please?",
+    "Could you say ... again?",
+    "Be specific about the part you missed."
+  ],
+  [
+    "repeat-class",
+    "normal",
+    "In class",
+    "Your teacher explained the homework too quickly.",
+    "Ask the teacher to repeat the homework instructions.",
+    "Could you repeat the homework instructions, please?",
+    "Could you repeat ...?",
+    "A polite question can be direct and clear."
+  ],
+  [
+    "agree-friend",
+    "normal",
+    "Making plans",
+    "Your friend suggests meeting at three on Saturday.",
+    "Accept the suggested time in a natural way.",
+    "Three on Saturday works for me.",
+    "... works for me.",
+    "You can name the exact time to show agreement."
+  ],
+  [
+    "agree-work",
+    "normal",
+    "At work",
+    "A colleague suggests moving your meeting to Friday.",
+    "Accept the new meeting day.",
+    "Friday works for me.",
+    "... works for me.",
+    "Mentioning the day makes your agreement clear."
+  ],
+  [
+    "late-bus",
+    "normal",
+    "Meeting a friend",
+    "Your bus is delayed, and your friend is already waiting.",
+    "Say you will be a little late and apologize.",
+    "I'm running a little late. Sorry about that.",
+    "I'm running ...",
+    "A short apology is often enough."
+  ],
+  [
+    "late-call",
+    "normal",
+    "On the phone",
+    "Your teammate asks whether you will arrive on time.",
+    "Say that you expect to be about ten minutes late.",
+    "I'm running about ten minutes late.",
+    "I'm running ... minutes late.",
+    "Give a specific estimate if you know it."
+  ],
+  [
+    "clarify-hotel",
+    "normal",
+    "At a hotel",
+    "You are not sure when you need to check out.",
+    "Confirm whether checkout is at eleven in the morning.",
+    "Just to make sure, checkout is at eleven, right?",
+    "Just to make sure, ...",
+    "Repeat the important detail when checking."
+  ],
+  [
+    "clarify-office",
+    "normal",
+    "At the office",
+    "Your manager asks you to send a file before lunch.",
+    "Confirm the deadline before you leave.",
+    "Just to make sure, you need it before lunch, right?",
+    "Just to make sure, ...",
+    "Check deadlines instead of making assumptions."
+  ],
+  [
+    "prefer-city",
+    "normal",
+    "Getting around town",
+    "A friend asks whether you want to take a bus or a train.",
+    "Choose the train and give one simple reason.",
+    "I'd rather take the train because it's faster.",
+    "I'd rather ... because ...",
+    "Give a reason without making your choice sound harsh."
+  ],
+  [
+    "prefer-friend",
+    "normal",
+    "Traveling with friends",
+    "Your group wants to take a taxi, but you prefer the train.",
+    "Politely express your preference.",
+    "I'd rather take the train, if that's okay.",
+    "I'd rather ...",
+    "Softening your preference can keep the conversation friendly."
+  ],
+  [
+    "think-cafe",
+    "hard",
+    "At a busy café",
+    "You need to check which drinks contain milk before ordering. A customer behind you is in a hurry.",
+    "Ask for time to decide, explain why, and invite the other customer to order first.",
+    "Let me think about it while I check the ingredients. Please go ahead of me.",
+    "Let me think ... while ...",
+    "Handle both your own need and the other person's time."
+  ],
+  [
+    "think-trip",
+    "hard",
+    "Booking a nonrefundable tour",
+    "Your friend wants to pay for a nonrefundable tour now, but you have not confirmed your work schedule.",
+    "Explain why you cannot decide yet and promise a clear answer by tonight.",
+    "Let me think about it and check my work schedule first. I'll let you know tonight.",
+    "Let me think ... first. I'll ...",
+    "Include both a reason and a concrete follow-up."
+  ],
+  [
+    "repeat-station",
+    "hard",
+    "Changing trains",
+    "The station employee explains a route with a transfer, but the platform is noisy and you miss two important details.",
+    "Politely ask them to repeat both the stop where you change trains and the platform number.",
+    "Sorry, could you repeat where I should change trains and which platform I need?",
+    "Sorry, could you repeat ... and ...?",
+    "Ask for the exact two details you missed."
+  ],
+  [
+    "repeat-class",
+    "hard",
+    "Following complex instructions",
+    "Your teacher gives a two-step assignment and mentions a deadline. You understood the first step but not the second.",
+    "Ask them to explain the second step again and confirm the due date in the same response.",
+    "Could you go over the second step again and confirm when the assignment is due?",
+    "Could you go over ... and confirm ...?",
+    "A good clarification identifies the missing step and the deadline."
+  ],
+  [
+    "agree-friend",
+    "hard",
+    "Changing weekend plans",
+    "Your friend cannot make dinner on Saturday and suggests lunch instead. You are free until two in the afternoon.",
+    "Accept the change, suggest a specific lunch time, and keep the tone friendly.",
+    "Lunch works for me instead. How about meeting at twelve thirty?",
+    "... works for me. How about ...?",
+    "Agree first, then make the plan actionable."
+  ],
+  [
+    "agree-work",
+    "hard",
+    "Rescheduling a client call",
+    "A client suggests moving your call to Friday at nine in the morning. You are available but need time to prepare.",
+    "Confirm the new time and politely request the agenda in advance.",
+    "Friday at nine works for me. Could you send the agenda beforehand?",
+    "... works for me. Could you ...?",
+    "Acknowledge the new time before asking for preparation material."
+  ],
+  [
+    "late-bus",
+    "hard",
+    "A canceled bus",
+    "Your bus has been canceled. You expect to arrive twenty minutes late, and your friend is standing outside in cold weather.",
+    "Apologize, explain the delay, give your estimated arrival, and suggest somewhere warm to wait.",
+    "I'm sorry, but I'm running about twenty minutes late because my bus was canceled. Please wait inside if you can.",
+    "I'm sorry, but I'm running ... because ...",
+    "Combine a clear update with consideration for the listener."
+  ],
+  [
+    "late-call",
+    "hard",
+    "A meeting that runs over",
+    "Your current meeting is taking longer than expected, so you cannot join your next call at three. You should be free at three fifteen.",
+    "Explain the situation, apologize, and propose a specific new start time.",
+    "I'm sorry, but I'm running about fifteen minutes late because my meeting is taking longer than expected. Could we start at three fifteen?",
+    "I'm sorry, but ... Could we ...?",
+    "Explain the delay and propose a realistic alternative."
+  ],
+  [
+    "clarify-hotel",
+    "hard",
+    "Conflicting checkout information",
+    "Your booking confirmation says checkout is at eleven, but a staff member told you ten. You need to leave your luggage at reception afterward.",
+    "Politely point out the conflicting times, ask which applies to your booking, and mention your luggage.",
+    "Just to make sure, my confirmation says eleven, but I was told ten. Which time applies to my booking? Can I leave my luggage here afterward?",
+    "Just to make sure, ... but ...",
+    "Resolve the conflict before asking about the extra service."
+  ],
+  [
+    "clarify-office",
+    "hard",
+    "A deadline across time zones",
+    "A coworker in another country says a report is due by Friday. You are preparing the PDF from Japan and need to avoid a timezone mistake.",
+    "Ask whether the deadline is five p.m. Japan time on Friday and confirm the required file format.",
+    "Just to make sure, is the deadline five p.m. Japan time on Friday, and should I send the report as a PDF?",
+    "Just to make sure, is ... and should ...?",
+    "Check both the time zone and the deliverable."
+  ],
+  [
+    "prefer-city",
+    "hard",
+    "Choosing a route in heavy rain",
+    "It is raining heavily and you are carrying luggage. The bus goes directly to the hotel, but the train is faster even with one transfer.",
+    "State your preference for the train, acknowledge the bus advantage, and explain your decision.",
+    "Although the bus goes directly to the hotel, I'd rather take the train because it's faster, even with the transfer.",
+    "Although ..., I'd rather ... because ...",
+    "Acknowledge a trade-off without losing your main point."
+  ],
+  [
+    "prefer-friend",
+    "hard",
+    "Keeping travel costs down",
+    "Your friend suggests an expensive taxi. You want to save money by taking the train, but the weather forecast says the rain may get worse.",
+    "Politely prefer the train, give a reason, and offer to reconsider if the weather changes.",
+    "I'd rather take the train to save money, but I'm happy to take a taxi if the rain gets worse.",
+    "I'd rather ... but ... if ...",
+    "A conditional compromise can make your preference easier to accept."
+  ]
+]);
+export const ALL_PROMPTS = Object.freeze([
+  ...PROMPTS,
+  ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => ({
+    id: `${baseId}-${difficulty}`, baseId,
+    phraseId: PROMPTS.find(prompt => prompt.id === baseId).phraseId,
+    kind: 'speak', difficulty, scene, cue, task, answer, hint, tip
+  }))
+]);
+
 export const MONSTERS = Object.freeze([
   { id: 'medamago', name: 'メダマゴ', kind: 'めだまやきモンスター', color: '#f5b545', unlock: 0, note: '黄身の目でじっと見つめてくる。朝が苦手。' },
   { id: 'katappo', name: 'カタッポ', kind: '片方だけの靴下', color: '#9585d9', unlock: 2, note: '相方を探して毎日走り回っている。' },

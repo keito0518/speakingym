@@ -30,6 +30,36 @@ const path=require('node:path');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-question.png`),fullPage:true});
       await context.close();
     }
+    // Verify English-only task cards at both higher difficulties and narrow widths.
+    for (const width of [320,375,390,430]) {
+      const {context:levelContext,page:levelPage}=await boot(width);
+      for (const difficulty of ['normal','hard']) {
+        await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
+        assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
+        await levelPage.getByRole('button',{name:/まず練習する/}).click();
+        assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH/);
+        assert.equal(await levelPage.locator('.task-panel').isVisible(),true);
+        assert.equal(await levelPage.locator('#play-card').evaluate(el=>/[ぁ-んァ-ン一-龯]/.test(el.innerText)),false);
+        const metrics=await levelPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+        assert.ok(metrics.scroll<=metrics.inner+1,`${engine}/${width} ${difficulty} overflow: ${JSON.stringify(metrics)}`);
+        await levelPage.screenshot({path:path.join(shots,`monsters-${engine}-${width}-${difficulty}.png`),fullPage:true});
+        await levelPage.locator('#leave-play').click();
+      }
+      await levelContext.close();
+    }
+    const {context:hardContext,page:hardPage}=await boot(390);
+    await hardPage.locator('[data-difficulty="hard"]').click();
+    await hardPage.getByRole('button',{name:/60秒チャレンジ/}).click();
+    assert.match(await hardPage.locator('.question-top').innerText(),/1 \/ 3/);
+    for(let i=0;i<3;i++){
+      await hardPage.locator('#show-answer').click();
+      await hardPage.locator('[data-rating="again"]').click();
+    }
+    assert.equal(await hardPage.locator('#result-view').isVisible(),true);
+    await hardPage.locator('#result-home').click();
+    await hardPage.reload();
+    assert.equal(await hardPage.locator('[data-difficulty="hard"]').getAttribute('aria-pressed'),'true');
+    await hardContext.close();
     const {context,page}=await boot(390);
     await page.getByRole('button',{name:/まず練習する/}).click();
     assert.match(await page.locator('#play-mode-label').innerText(),/練習モード/);

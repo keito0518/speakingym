@@ -1,5 +1,5 @@
 import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 
 const $ = selector => document.querySelector(selector);
@@ -7,6 +7,11 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
 const monsterFor = id => MONSTERS.find(monster => monster.id === id);
+const difficultyCopy = {
+  easy: { label: 'やさしい', description: '日本語の状況を読んで、英語で答える。' },
+  normal: { label: 'ふつう', description: '英語の状況と指示を読み、英語で答える。' },
+  hard: { label: 'むずかしい', description: '長めの英文を読み、複数の条件を満たして英語で答える。' }
+};
 let save = loadSave() || createSave();
 let play = null, timer = null, recognition = null;
 
@@ -29,6 +34,14 @@ function showView(name) {
   for (const id of ['home','play','result','collection']) $(`#${id}-view`).hidden = id !== name;
   window.scrollTo({top:0,behavior:'instant'});
 }
+function renderDifficulty() {
+  $('[data-difficulty]').forEach(button => {
+    const active = button.dataset.difficulty === save.difficulty;
+    button.classList.toggle('selected', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  $('#difficulty-description').textContent = difficultyCopy[save.difficulty].description;
+}
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);
   $('#hero-monster-art').innerHTML = monsterArt(creature.id,growth.evolved);
@@ -41,13 +54,16 @@ function renderHome() {
   $('#stat-independent').innerHTML = `${summary.independent}<span> / ${summary.total}</span>`;
   $('#stat-review').textContent = summary.reviewCount;
   $('#stat-monsters').innerHTML = `${save.ownedMonsters.length}<span> / ${MONSTERS.length}</span>`;
+  renderDifficulty();
   showView('home');
 }
 function startSession(mode) {
   clearTimer(); stopAudio();
-  const promptCount = mode === 'challenge' ? 6 : 3;
-  play = { mode, prompts: selectRoundPrompts(save,promptCount), index:0, smooth:0, earnedXp:0, captured:[], hintUsed:false, revealed:false, speechState:'', startedAt:Date.now(), deadline:mode==='challenge'?Date.now()+60000:null };
-  $('#play-mode-label').textContent = mode === 'challenge' ? '60秒チャレンジ' : '練習モード';
+  const difficulty = save.difficulty;
+  // Higher levels require more reading; adjust 60-second challenge length.
+  const promptCount = mode === 'challenge' ? {easy:6,normal:4,hard:3}[difficulty] : 3;
+  play = { mode, difficulty, prompts: selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty), index:0, smooth:0, earnedXp:0, captured:[], hintUsed:false, revealed:false, speechState:'', startedAt:Date.now(), deadline:mode==='challenge'?Date.now()+60000:null };
+  $('#play-mode-label').textContent = `${mode === 'challenge' ? '60秒チャレンジ' : '練習モード'} · ${difficultyCopy[difficulty].label}`;
   showView('play');
   renderQuestion();
   if (mode === 'challenge') timer = setInterval(updateClock,200);
@@ -70,7 +86,11 @@ function renderQuestion() {
   const prompt=currentPrompt();
   if (!prompt) {finishSession();return;}
   $('#play-progress-fill').style.width=`${100*play.index/play.prompts.length}%`;
-  $('#play-card').innerHTML=`<div class="question-top"><span>QUESTION ${play.index+1} / ${play.prompts.length}</span><span class="question-tag">${prompt.kind==='listen'?'LISTEN & RESPOND':'SPEAK IN ENGLISH'}</span></div><h1>${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
+  const englishMode = play.difficulty !== 'easy';
+  const questionBody = englishMode
+    ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
+    : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
+  $('#play-card').innerHTML=`<div class="question-top"><span>QUESTION ${play.index+1} / ${play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
   $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">声に出してから、認識結果または入力文を確認</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" class="mic-button" title="マイクで話す" aria-label="マイクで話す">🎙</button></div><p id="speech-helper" class="answer-helper">マイクが使えなければ、声に出したあと入力なしで答え合わせもできます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを確認する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
   $('#show-hint').addEventListener('click',showHint);
@@ -103,8 +123,8 @@ function startRecognition() {
   }catch{$('#speech-helper').textContent='マイクを開始できません。入力または自己チェックで続けられます。';recognition=null;}
 }
 function showHint() {
-  const phrase=phraseFor(currentPrompt().phraseId);play.hintUsed=true;
-  $('#hint-panel').hidden=false;$('#hint-panel').textContent=`ヒント：${phrase.hint}　${phrase.tip}`;
+  const prompt=currentPrompt(), phrase=phraseFor(prompt.phraseId);play.hintUsed=true;
+  $('#hint-panel').hidden=false;$('#hint-panel').textContent=`ヒント：${prompt.hint || phrase.hint}　${prompt.tip || phrase.tip}`;
 }
 function revealAnswer() {
   if(!play || play.revealed)return;
@@ -112,7 +132,7 @@ function revealAnswer() {
   const prompt=currentPrompt(), raw=$('#spoken-answer').value;
   const match=compareWithExamples(prompt,raw);
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#mic-button').disabled=true;
-  $('#feedback-panel').innerHTML=`<div class="feedback-box"><div class="feedback-head">使える表現の一例</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">${escapeHtml(phraseFor(prompt.phraseId).tip)}${match.matchesExample?' 入力した英文は登録例文と一致しました。':' 自然な言い方は複数あります。表示例文と比べてみよう。'}</div></div><p class="rating-legend">実際にどれくらい自力で話せた？（自己チェック・自動採点ではありません）</p><div class="rating-row"><button class="rating-button best" data-rating="smooth">自力で言えた！</button><button class="rating-button" data-rating="hint">ヒントで言えた</button><button class="rating-button" data-rating="again">まだ難しい</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box"><div class="feedback-head">使える表現の一例</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}${match.matchesExample?' 入力した英文は登録例文と一致しました。':' 自然な言い方は複数あります。表示例文と比べてみよう。'}</div></div><p class="rating-legend">実際にどれくらい自力で話せた？（自己チェック・自動採点ではありません）</p><div class="rating-row"><button class="rating-button best" data-rating="smooth">自力で言えた！</button><button class="rating-button" data-rating="hint">ヒントで言えた</button><button class="rating-button" data-rating="again">まだ難しい</button></div>`;
   $$('.rating-button').forEach(button=>button.addEventListener('click',()=>rateAnswer(button.dataset.rating)));
 }
 function rateAnswer(rating) {
@@ -166,7 +186,11 @@ function renderCollection(message = '') {
   if ($('#collection-view').hidden) showView('collection');
 }
 
-$$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
+$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
+  persist(chooseDifficulty(save, button.dataset.difficulty));
+  renderDifficulty();
+}));
+$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;renderHome();});

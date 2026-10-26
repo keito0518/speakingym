@@ -1,10 +1,11 @@
-import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
+import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
 export const EVOLUTION_XP = 160;
 export const XP_PER_LEVEL = 70;
 const VALID_RATINGS = ['smooth', 'hint', 'again'];
+export const DIFFICULTIES = Object.freeze(['easy','normal','hard']);
 const clone = value => JSON.parse(JSON.stringify(value));
 const unique = list => [...new Set(list)];
 
@@ -12,6 +13,7 @@ export function createSave() {
   return {
     version: SAVE_VERSION,
     selectedMonster: 'medamago',
+    difficulty: 'easy',
     ownedMonsters: ['medamago'],
     monsterXp: { medamago: 0 },
     xpWallet: 0,
@@ -34,7 +36,7 @@ export function validateSave(value) {
     if (!entry || typeof entry !== 'object') continue;
     cleanProgress[phrase.id] = {
       attempts: Math.max(0, Number(entry.attempts) || 0),
-      smoothContexts: unique((Array.isArray(entry.smoothContexts) ? entry.smoothContexts : []).filter(id => PROMPTS.some(prompt => prompt.id === id && prompt.phraseId === phrase.id))),
+      smoothContexts: unique((Array.isArray(entry.smoothContexts) ? entry.smoothContexts : []).map(id => ALL_PROMPTS.find(prompt => prompt.id === id)?.baseId || id).filter(id => PROMPTS.some(prompt => prompt.id === id && prompt.phraseId === phrase.id))),
       smoothDays: unique((Array.isArray(entry.smoothDays) ? entry.smoothDays : []).filter(key => /^\d{4}-\d{2}-\d{2}$/.test(key))),
       lastDay: typeof entry.lastDay === 'string' ? entry.lastDay : null,
       nextReviewDay: typeof entry.nextReviewDay === 'string' ? entry.nextReviewDay : null,
@@ -43,6 +45,7 @@ export function validateSave(value) {
   }
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
+    difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
     monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, Math.max(0, Number(value.monsterXp?.[id]) || 0)])),
     // Older prototype saves put XP straight onto companions. Keep that growth,
     // and initialize the new spendable wallet without duplicating historical XP.
@@ -105,12 +108,18 @@ export function feedMonster(save, id, amount) {
   return { save: next, reward: { xp: amount, monsterId: id, before, after, leveledUp: after.level > before.level, evolved: !before.evolved && after.evolved } };
 }
 
-export function selectRoundPrompts(save, count = 6, random = Math.random, today = dayKey()) {
+export function chooseDifficulty(save, difficulty) {
+  if (!DIFFICULTIES.includes(difficulty)) throw new Error('Invalid difficulty.');
+  return { ...clone(save), difficulty };
+}
+
+export function selectRoundPrompts(save, count = 6, random = Math.random, today = dayKey(), difficulty = save.difficulty || 'easy') {
   if (!Number.isInteger(count) || count < 1 || count > PHRASES.length) throw new Error('Choose 1–6 prompts.');
+  if (!DIFFICULTIES.includes(difficulty)) throw new Error('Invalid difficulty.');
   const groups = PHRASES.map(phrase => {
     const entry = save.progress[phrase.id];
-    const candidates = PROMPTS.filter(prompt => prompt.phraseId === phrase.id);
-    const unseen = candidates.filter(prompt => !entry?.smoothContexts?.includes(prompt.id));
+    const candidates = ALL_PROMPTS.filter(prompt => prompt.phraseId === phrase.id && (prompt.difficulty || 'easy') === difficulty);
+    const unseen = candidates.filter(prompt => !entry?.smoothContexts?.includes(prompt.baseId || prompt.id));
     const pool = unseen.length ? unseen : candidates;
     const choice = pool[Math.min(pool.length - 1, Math.floor(Math.max(0, Math.min(0.999999, random())) * pool.length))];
     const due = entry?.nextReviewDay && entry.nextReviewDay <= today;
@@ -131,7 +140,7 @@ export function compareWithExamples(prompt, answer) {
 }
 
 export function recordAnswer(save, promptId, rating, today = dayKey()) {
-  const prompt = PROMPTS.find(item => item.id === promptId);
+  const prompt = ALL_PROMPTS.find(item => item.id === promptId);
   if (!prompt || !VALID_RATINGS.includes(rating) || !/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error('Invalid learning result.');
   const next = clone(save);
   const entry = next.progress[prompt.phraseId] || { attempts: 0, smoothContexts: [], smoothDays: [], lastDay: null, nextReviewDay: null, lastRating: 'again' };
@@ -140,7 +149,8 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   entry.lastDay = today;
   entry.lastRating = rating;
   if (rating === 'smooth') {
-    entry.smoothContexts = unique([...entry.smoothContexts, promptId]);
+    // Difficulty variants of one scene do not count as distinct mastery contexts.
+    entry.smoothContexts = unique([...entry.smoothContexts, prompt.baseId || prompt.id]);
     entry.smoothDays = unique([...entry.smoothDays, today]);
   }
   entry.nextReviewDay = addDays(today, rating === 'smooth' ? (masteryLevel(entry) === 3 ? 7 : 3) : 1);
@@ -149,7 +159,9 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
 
   // Each completed prompt earns spendable XP. Training does not silently level
   // the selected monster; learners choose whom to grow in their collection.
-  const xp = rating === 'smooth' ? 16 : rating === 'hint' ? 8 : 2;
+  const baseXp = rating === 'smooth' ? 16 : rating === 'hint' ? 8 : 2;
+  const multiplier = { easy: 1, normal: 1.5, hard: 2 }[prompt.difficulty || 'easy'];
+  const xp = Math.round(baseXp * multiplier);
   next.xpWallet = (next.xpWallet || 0) + xp;
 
   const summary = learningSummary(next, today);
