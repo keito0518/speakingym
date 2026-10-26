@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { companions, monsters, questions, stages } from '../prototype/english-rpg/rpg-data.js';
-import { EVOLUTION_HP_BONUS, EVOLUTION_TRAIT_BONUS, FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, switchBattleCompanion, traitFor, unlockedStageCount, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
+import { EVOLUTION_HP_BONUS, EVOLUTION_TRAIT_BONUS, FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, skillFor, switchBattleCompanion, traitFor, unlockedStageCount, useCompanionSkill, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
 
 const winBattle = (stageId, monsterId, level=1, move='word') => {
   let battle=makeBattle(stageId,monsterId,level);
@@ -176,4 +176,36 @@ test('evolution makes training matter: more HP and a stronger signature skill',(
   lumi.roster[0]={id:'lumi',level:4,xp:0,evolved:true};
   const evolvedGuard=makePartyBattle(1,'mimip',lumi);
   assert.equal(resolveTurn(evolvedGuard,'listen',true).outcome.guard,7+traitFor('lumi').bonus+EVOLUTION_TRAIT_BONUS);
+});
+
+test('support skills produce distinct party tactics and enemy counters',()=>{
+  const save=createSave('momo');save.roster.push({id:'lumi',level:2,xp:0,evolved:false},{id:'koro',level:1,xp:0,evolved:false});save.partyIds=['momo','lumi','koro'];
+  let battle=makePartyBattle(1,'mimip',save,{focus:1});
+  assert.equal(skillFor('momo').kind,'combo');
+  const rally=useCompanionSkill(battle);
+  assert.equal(rally.battle.combo,9);assert.equal(rally.battle.partyHp.momo,60);
+  assert.equal(resolveTurn(rally.battle,'word',true).outcome.damage,22+7+9);
+  assert.throws(()=>useCompanionSkill(rally.battle),/already used/);
+  battle={...battle,companionId:'lumi',playerHp:40,partyHp:{momo:30,lumi:40,koro:0}};
+  const heal=useCompanionSkill(battle);
+  assert.equal(heal.battle.partyHp.momo,49); // Lv.2 heals 19, but does not revive a fallen ally
+  assert.equal(heal.battle.partyHp.koro,0);
+  assert.equal(heal.battle.shield,0); // light counter consumes the shield
+  const charge=useCompanionSkill({...battle,companionId:'koro',playerHp:70,partyHp:{momo:30,lumi:40,koro:70}});
+  assert.equal(charge.battle.focus,2);assert.equal(charge.battle.empower,8);
+  assert.equal(resolveTurn(charge.battle,'phrase',true).outcome.damage,29+9+8);
+  assert.equal(skillFor('lumi',2).power,19);
+  assert.equal(skillFor('lumi',4,true).power,26);
+});
+
+test('Mimip weakening survives switching and reduces two incoming actions',()=>{
+  const save=createSave('momo');save.roster.push({id:'mimip',level:1,xp:0,evolved:false});save.partyIds=['mimip','momo'];save.activeCompanionId='mimip';
+  const battle=makePartyBattle(1,'mimip',save,{shield:0});
+  const trap=useCompanionSkill(battle);
+  assert.equal(trap.outcome.enemyAttack,3);assert.equal(trap.battle.weakenTurns,1);
+  const swap=switchBattleCompanion(trap.battle,'momo');
+  assert.equal(swap.outcome.enemyAttack,14); // heavy tell 21 - 7
+  assert.equal(swap.battle.weakenTurns,0);
+  assert.equal(swap.battle.partyHp.mimip,67);
+  assert.equal(swap.battle.partyHp.momo,56);
 });
