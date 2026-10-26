@@ -55,7 +55,7 @@ let browser;
   await page.getByRole('button',{name:'左の道を進む'}).click();
   assert.match(await page.locator('#story-feedback').innerText(),/cliff/);
   await page.getByRole('button',{name:'苔の生えた右の道を進む'}).click();
-  assert.equal(await page.locator('.move-card[data-move="phrase"]').isDisabled(),true);
+  assert.equal(await page.locator('.move-card[data-move="phrase"]').isEnabled(),true);
   await page.screenshot({path:path.join(shots,`quest-${name}-390-battle.png`),fullPage:true});
   await page.locator('.move-card[data-move="word"]').click();
   await page.locator('.answer-option[data-value="ふさぐものを取り除く"]').click();
