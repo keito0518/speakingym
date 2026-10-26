@@ -11,6 +11,8 @@ const path = require('node:path');
   for(const width of widths){
     const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:width===390?3:1,isMobile:name==='webkit'&&width===390,hasTouch:true});
     const page=await context.newPage();
+  page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(15000);
+    page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(15000);
     await page.addInitScript(()=>{
       Math.random=()=>.01;
       window.SpeechSynthesisUtterance=class {constructor(text){this.text=text;this.lang='';this.onerror=null;this.onend=null;}};
@@ -18,12 +20,14 @@ const path = require('node:path');
     });
     await page.goto('http://127.0.0.1:8765/prototype/english-rpg/',{waitUntil:'networkidle'});
     await page.screenshot({path:path.join(shots,`english-rpg-${name}-${width}-welcome.png`),fullPage:true});
+    console.log(`${name}: welcome ${width}px`);
     await page.getByRole('button',{name:/Momo/}).click();
     await page.getByRole('button',{name:'相棒を選んで冒険へ'}).click();
     await page.screenshot({path:path.join(shots,`english-rpg-${name}-${width}-map.png`),fullPage:true});
     const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
     if(overflow.scroll>overflow.width+1)throw new Error(`${name} ${width}px horizontal overflow: ${JSON.stringify(overflow)}`);
     await context.close();
+    console.log(`${name}: responsive ${width}px passed`);
   }
 
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:name==='webkit',hasTouch:true});
@@ -36,6 +40,7 @@ const path = require('node:path');
   await page.goto('http://127.0.0.1:8765/prototype/english-rpg/',{waitUntil:'networkidle'});
   await page.getByRole('button',{name:/Momo/}).click();await page.getByRole('button',{name:'相棒を選んで冒険へ'}).click();
   await page.locator('[data-stage="1"]').click();
+  console.log(`${name}: stage 1 started`);
   if(!await page.locator('.move-card[data-move="phrase"]').isDisabled())throw new Error('phrase move should require focus before use');
 
   async function questionFor(type){
@@ -51,6 +56,7 @@ const path = require('node:path');
   }
 
   await page.locator('.move-card[data-move="listen"]').click();
+  console.log(`${name}: listening move`);
   await page.getByRole('button',{name:/英文を再生/}).click();
   await page.waitForTimeout(30);
   if(!(await page.locator('#speak-question').textContent()).includes('再生できません'))throw new Error('speech failure fallback was not shown');
@@ -61,6 +67,7 @@ const path = require('node:path');
   await page.getByRole('button',{name:'次の手へ'}).click();
 
   await page.locator('.move-card[data-move="phrase"]').click();
+  console.log(`${name}: phrase move`);
   const phrase=await questionFor('phrase');
   for(let i=0;i<phrase.tokens.length;i++)await page.locator(`.bank-chip[data-token-index="${i}"]`).click();
   const builtText=await page.locator('#phrase-built').innerText();
@@ -80,10 +87,12 @@ const path = require('node:path');
   await page.getByRole('button',{name:'次の手へ'}).click();
   await page.locator('.move-card[data-move="word"]').click();
   await chooseMeaning('word',true);
+  console.log(`${name}: victory screen reached`);
   await page.getByRole('button',{name:'勝利を確認する'}).click();
   await page.getByRole('heading',{name:'Mimipが仲間になった！'}).waitFor();
   await page.screenshot({path:path.join(shots,`english-rpg-${name}-390-capture.png`),fullPage:true});
   await page.getByRole('button',{name:/次のステージへ/}).click();
+  console.log(`${name}: stage clear saved`);
   if(!(await page.locator('#stage-progress').textContent()).includes('1 / 10'))throw new Error('stage clear was not recorded');
   await page.reload();
   if(!(await page.locator('#stage-progress').textContent()).includes('1 / 10'))throw new Error('saved progress was not restored after reload');
