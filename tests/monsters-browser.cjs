@@ -53,8 +53,10 @@ const path=require('node:path');
     await hardPage.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await hardPage.locator('.question-top').innerText(),/1 \/ 3/);
     for(let i=0;i<3;i++){
+      await hardPage.locator('#spoken-answer').fill('I do not know yet.');
       await hardPage.locator('#show-answer').click();
-      await hardPage.locator('[data-rating="again"]').click();
+      await hardPage.locator('#show-example').click();
+      await hardPage.locator('#next-question').click();
     }
     assert.equal(await hardPage.locator('#result-view').isVisible(),true);
     await hardPage.locator('#result-home').click();
@@ -67,15 +69,20 @@ const path=require('node:path');
     assert.equal(await page.locator('#reveal-transcript').isVisible(),true);
     await page.locator('#reveal-transcript').click();
     assert.match(await page.locator('#transcript').innerText(),/book the tour now/);
+    await page.locator('#show-answer').click(); // Empty answer never grants XP.
+    assert.match(await page.locator('#feedback-panel').innerText(),/英語を入力/);
     await page.locator('#show-hint').click();
     assert.match(await page.locator('#hint-panel').innerText(),/Let me/);
+    await page.locator('#spoken-answer').fill('Let me think about it.');
     await page.locator('#show-answer').click();
     assert.match(await page.locator('.feedback-answer').innerText(),/Let me think/);
-    await page.locator('.rating-button.best').click(); // Hinted answer is not falsely counted as independent.
+    assert.match(await page.locator('#feedback-panel').innerText(),/\+8 XP/); // Hint lowers awarded XP.
+    await page.locator('#next-question').click();
     for(let i=0;i<2;i++){
       await page.locator('#spoken-answer').fill(i===0?'Could you say that again?':'That works for me.');
       await page.locator('#show-answer').click();
-      await page.locator('.rating-button.best').click();
+      assert.match(await page.locator('#feedback-panel').innerText(),/\+16 XP/);
+      await page.locator('#next-question').click();
     }
     await page.locator('#result-view').waitFor({state:'visible'});
     assert.match(await page.locator('#result-discoveries').innerText(),/Soxie/);
@@ -100,18 +107,20 @@ const path=require('node:path');
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
     for(let i=0;i<6;i++){
+      await page.locator('#spoken-answer').fill('I do not know yet.');
       await page.locator('#show-answer').click();
-      await page.locator('[data-rating="again"]').click();
+      await page.locator('#show-example').click();
+      await page.locator('#next-question').click();
     }
     assert.equal(await page.locator('#result-view').isVisible(),true);
     await page.locator('#result-home').click();
     await page.reload();
-    assert.match(await page.locator('#hero-monster-name').innerText(),/カタッポ/);
+    assert.match(await page.locator('#hero-monster-name').innerText(),/Soxie/);
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
     assert.equal(saved.completedRuns,1);assert.ok(saved.totalAnswers>=9);
     assert.ok(saved.ownedMonsters.includes('katappo'));
     assert.equal(saved.monsterXp.katappo,40);
-    assert.equal(saved.xpWallet,12);
+    assert.equal(saved.xpWallet,0); // Skipping questions never grants XP.
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-persisted.png`),fullPage:true});
     await context.close();
     console.log(`${engine}: 320/375/390/430 responsive, listening fallback, capture, XP banking/allocation, 60-sec flow and persistence passed`);

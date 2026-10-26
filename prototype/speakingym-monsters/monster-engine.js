@@ -159,7 +159,8 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
 
   // Each completed prompt earns spendable XP. Training does not silently level
   // the selected monster; learners choose whom to grow in their collection.
-  const baseXp = rating === 'smooth' ? 16 : rating === 'hint' ? 8 : 2;
+  // Only independently verified/hinted correct answers mint XP. Skips stay in the review queue.
+  const baseXp = rating === 'smooth' ? 16 : rating === 'hint' ? 8 : 0;
   const multiplier = { easy: 1, normal: 1.5, hard: 2 }[prompt.difficulty || 'easy'];
   const xp = Math.round(baseXp * multiplier);
   next.xpWallet = (next.xpWallet || 0) + xp;

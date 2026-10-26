@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
+import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
@@ -78,7 +79,7 @@ test('difficulty selection preserves progress and rewards, and variants share sc
   assert.equal(validateSave(third.save).difficulty,'normal');
   assert.equal(validateSave({...third.save,difficulty:'invalid'}).difficulty,'easy');
   assert.equal(rate(start,'late-bus-hard','hint').reward.xp,16);
-  assert.equal(rate(start,'late-bus-normal','again').reward.xp,3);
+  assert.equal(rate(start,'late-bus-normal','again').reward.xp,0);
 });
 
 test('example matching is intentionally narrow, not a claim to grade free-form speech', () => {
@@ -90,6 +91,26 @@ test('example matching is intentionally narrow, not a claim to grade free-form s
   assert.equal(normalizeEnglish('  THAT works for me!  '),'that works for me');
 });
 
+
+test('objective local checks accept authored examples and some natural paraphrases, abstain on ambiguous content', () => {
+  for(const prompt of ALL_PROMPTS) {
+    const graded=gradeLocalResponse(prompt,prompt.answer);
+    assert.equal(graded.status,'correct',prompt.id);
+    assert.equal(graded.method,'registered-example');
+  }
+  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+  assert.equal(gradeLocalResponse(byId('think-cafe'),'Can I have a moment to decide?').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus'),'I might arrive a little late.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('prefer-city-normal'),'I prefer the train since it is quicker.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'Sorry! My bus has been cancelled, so I will be around 20 minutes late. Please wait inside.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'My bus was canceled.').status,'review');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'I have no idea.').status,'review');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'').status,'empty');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'OK').status,'empty');
+  assert.equal(gradeLocalResponse(null,'hello').status,'ungraded');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'No '.repeat(400)).status,'ungraded');
+  assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
+});
 test('a genuine new expression grows the companion and unlocks the odd sock', () => {
   const initial=createSave();
   const first=rate(initial,'think-cafe');
@@ -105,7 +126,7 @@ test('a genuine new expression grows the companion and unlocks the odd sock', ()
   assert.throws(()=>selectMonster(second.save,'cone'),/まだ仲間/);
 });
 
-test('every completed prompt stocks XP, even when practising a familiar phrase', () => {
+test('correct completions stock XP, skips do not, and familiar phrases can be practised', () => {
   let save=rate(createSave(),'think-cafe','again').save;
   const current=save.xpWallet;
   const another=rate(save,'think-trip','smooth');
