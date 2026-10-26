@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { companions, monsters, questions, stages } from '../prototype/english-rpg/rpg-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, finishStage, getMonster, makeBattle, pickQuestion, rememberQuestion, resolveTurn, unlockedStageCount, validateSave } from '../prototype/english-rpg/rpg-engine.js';
+import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, traitFor, unlockedStageCount, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
 
 const winBattle = (stageId, monsterId, level=1, move='word') => {
   let battle=makeBattle(stageId,monsterId,level);
@@ -46,14 +46,14 @@ test('three actions have different power and phrase focus recovers through liste
   assert.equal(resolveTurn(battle,'phrase',true).battle.enemyHp,0);
 });
 
-test('winning a stage saves progress, awards XP once, catches companions and unlocks the next stage',()=>{
+test('winning a stage saves progress, gives replay training XP, catches companions and unlocks the next stage',()=>{
   const initial=createSave('momo');
   const victory=finishStage(initial,winBattle(1,'mimip'),()=>0.01);
   assert.deepEqual(victory.save.stageClears,[1]);assert.equal(unlockedStageCount(victory.save),2);
   assert.ok(victory.rewards.captured);assert.ok(victory.save.captures.includes('mimip'));
   assert.ok(victory.save.roster.some(member=>member.id==='mimip'));
   const replay=finishStage(victory.save,winBattle(1,'mimip'),()=>0.99);
-  assert.equal(replay.rewards.xpAwarded,0);assert.equal(replay.rewards.alreadyCaught,true);
+  assert.equal(replay.rewards.xpAwarded,12);assert.equal(replay.rewards.alreadyCaught,true);
 });
 
 test('capture chance is visible in state and three wins guarantee a catch',()=>{
@@ -88,4 +88,41 @@ test('missed species can be targeted again from a multi-creature habitat',()=>{
   const one={...save,captures:[...save.captures,'twiggle']};
   assert.equal(chooseStageMonster(4,one),'glimmer');
   assert.equal(getMonster('craggle').boss,false);
+});
+
+test('forest detours are optional, solid trees block progress, rewards persist along walk',()=>{
+  assert.equal(FOREST_TILES.length,7);
+  let walk=newForestWalk();
+  assert.equal(walkForest(walk,-1,0).event,'blocked');
+  assert.throws(()=>walkForest(walk,2,0),/one tile/);
+  for(let step=0;step<4;step++) walk=walkForest(walk,0,-1).walk;
+  assert.equal(walk.chest,true);
+  assert.equal(walkForest(walk,0,-1).event,'blocked');
+  for(let step=0;step<4;step++) walk=walkForest(walk,0,1).walk;
+  for(let step=0;step<3;step++) walk=walkForest(walk,1,0).walk;
+  for(let step=0;step<2;step++) walk=walkForest(walk,0,-1).walk;
+  assert.equal(walk.shrine,true);
+  walk=walkForest(walk,0,1).walk;
+  walk=walkForest(walk,0,1).walk;
+  walk=walkForest(walk,1,0).walk;
+  let event;
+  for(let step=0;step<4;step++){const result=walkForest(walk,0,-1); walk=result.walk;event=result.event;}
+  assert.equal(event,'encounter');
+  assert.equal(walk.chest,true);assert.equal(walk.shrine,true);
+});
+
+test('tactical turn has enemy telegraphs, focus management, shields and companion advantages',()=>{
+  const base={...makeBattle(1,'mimip'),tactical:true,companionId:'momo',focus:1,shield:14,enemyHp:96,maxEnemyHp:96};
+  assert.deepEqual(enemyIntent(base),{name:'つるの一撃',damage:10,strong:false});
+  const attack=resolveTurn(base,'word',true);
+  assert.equal(attack.outcome.damage,29);assert.equal(attack.outcome.absorbed,10);
+  assert.equal(attack.battle.playerHp,base.playerHp);assert.equal(attack.battle.shield,4);
+  assert.deepEqual(enemyIntent(attack.battle),{name:'大きく跳ねる',damage:21,strong:true});
+  const braced=resolveTurn({...attack.battle,companionId:'lumi'},'listen',true);
+  assert.equal(braced.outcome.enemyAttack,5); // heavy 21, guard 12, remaining shield 4
+  assert.equal(braced.battle.focus,2);
+  const koro=resolveTurn({...base,companionId:'koro',shield:0},'phrase',true);
+  assert.equal(koro.outcome.damage,38);assert.equal(koro.battle.focus,0);
+  assert.throws(()=>resolveTurn(koro.battle,'phrase',true),/focus/);
+  assert.equal(traitFor('mimip').name,'冒険のきずな');
 });

@@ -1,17 +1,32 @@
 import { companions, monsters, stages, questions } from './rpg-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, finishStage, getCompanion, getMonster, getStage, makeBattle, pickQuestion, rememberQuestion, resolveTurn, unlockedStageCount, validateSave } from './rpg-engine.js';
+import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getCompanion, getMonster, getStage, makeBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, traitFor, unlockedStageCount, validateSave, walkForest } from './rpg-engine.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const screens = ['welcome-screen','map-screen','story-screen','battle-screen','camp-screen'];
 let save = null, battle = null, currentStage = null, currentQuestion = null, currentMove = null, phraseBuilt = [], lastOutcome = null, phraseOrder = [], selectedStarter = null, preferredMonster = null, fallbackMemorySave = null;
-let recognition = null, muted = false, stageOneMove = 'word';
+let recognition = null, muted = false;
 const forest = {
   listen: 'I need to get to the village, but I can’t find the bridge.',
   replyPrompt: 'Which path should I take to the bridge?',
+  listenMove: {id:'story1-listen-move',type:'listen',prompt:'ミミップの鳴き声を聞いて、次の動きを予測！',target:"I'm getting ready to jump!",meaning:'飛びかかる準備をしている',choices:['眠ろうとしている','飛びかかる準備をしている','道を案内している','逃げようとしている'],answer:1,tip:'get ready to ～ は「～する準備をする」。聞き耳ウェーブなら敵の反撃を軽くできる。'},
   word: {id:'story1-word',type:'word',prompt:'ミミップが道をふさいだ！ “clear the path” の clear は？',target:'clear',meaning:'ふさぐものを取り除く',choices:['道を遠ざける','道を照らす','ふさぐものを取り除く','道を隠す'],example:'Let’s clear the path.',tip:'clear the path は、通れるように道をあけること。'},
   phrase: {id:'story1-phrase',type:'phrase',prompt:'ミミップに道をあけてもらおう。語をつないで声にも出してみよう。',target:'Please let us pass.',meaning:'通してくれる？',tokens:['Please','let','us','pass.'],tip:'let us pass は「私たちを通して」。丁寧に頼むなら Please を添える。'}
 };
+const forestBattleQuestions = {
+  word: [forest.word,
+    {id:'story1-word-blocked',type:'word',prompt:'枝に足を取られた！ “The trail is blocked.” の blocked は？',target:'blocked',meaning:'ふさがれた',choices:['広がった','ふさがれた','乾いた','揺れた'],example:'The trail is blocked by branches.',tip:'be blocked by ～ は「～によってふさがれる」。'},
+    {id:'story1-word-safe',type:'word',prompt:'相棒の足元を確かめよう。 “safe ground” の safe は？',target:'safe',meaning:'安全な',choices:['ぬれた','騒がしい','安全な','狭い'],example:'Stay on safe ground.',tip:'safe は危険がないこと。stay on は「～から離れない」。'}],
+  listen: [forest.listenMove,
+    {id:'story1-listen-vines',type:'listen',prompt:'ミミップが森の奥を指さした。何と言った？',target:'The bridge is just beyond those vines!',meaning:'橋はあのつるのすぐ向こうにある',choices:['つるの先には村がある','橋はあのつるのすぐ向こうにある','橋は閉鎖されている','つるに触れてはいけない'],answer:1,tip:'just beyond は「～のすぐ向こう」。'}],
+  phrase: [forest.phrase,
+    {id:'story1-phrase-help',type:'phrase',prompt:'力を合わせよう！ 橋への道を探すことを英語で伝えよう。',target:"Let's find the bridge.",meaning:'橋を探そう',tokens:["Let's",'find','the','bridge.'],tip:"Let's + 動詞 は「一緒に～しよう」。"}]
+};
+function forestBattleQuestion(move) {
+  const pool=forestBattleQuestions[move];
+  const recent=save.recentQuestions[move]||[];
+  return pool.find(item=>!recent.includes(item.id))||pool[0];
+}
 const params = new URLSearchParams(location.search);
 const random = () => window.__RPG_TEST__?.random?.() ?? Math.random();
 
@@ -46,7 +61,7 @@ function activeEntry() { return save.roster.find(entry => entry.id === save.acti
 function activeInfo() { return getCompanion(save.activeCompanionId) || getMonster(save.activeCompanionId); }
 function setScreenInitial() { if (save) { renderMap(); showScreen('map-screen'); } else { renderStarter(); showScreen('welcome-screen'); } }
 function renderStarter() {
-  $('#starter-list').innerHTML = companions.map(c => `<button class="starter-option ${selectedStarter === c.id?'selected':''}" data-starter="${c.id}">${avatar(c.id)}<span><b>${c.name} · ${c.kind}</b><small>${c.line}</small></span><span>${selectedStarter===c.id?'✓':''}</span></button>`).join('');
+  $('#starter-list').innerHTML = companions.map(c => `<button class="starter-option ${selectedStarter === c.id?'selected':''}" data-starter="${c.id}">${avatar(c.id)}<span><b>${c.name} · ${c.kind}</b><small>${c.line}</small><small class="trait-caption">固有特性：${traitFor(c.id).name} / ${traitFor(c.id).detail}</small></span><span>${selectedStarter===c.id?'✓':''}</span></button>`).join('');
   $$('.starter-option').forEach(button => button.addEventListener('click', () => { selectedStarter = button.dataset.starter; renderStarter(); $('#choose-starter').disabled = false; }));
 }
 function renderMap() {
@@ -79,12 +94,19 @@ function renderBattleField() {
   $('#foe-hp-name').textContent = foe.name;
   updateHp();
   updateFocus();
+  $('#tactical-info').classList.toggle('hidden', !battle.tactical);
 }
 function updateHp() {
   $('#ally-hp-fill').style.width = `${battle.playerHp/battle.maxPlayerHp*100}%`;
   $('#foe-hp-fill').style.width = `${battle.enemyHp/battle.maxEnemyHp*100}%`;
   $('#ally-hp-text').textContent = `${battle.playerHp}/${battle.maxPlayerHp}`;
   $('#foe-hp-text').textContent = `${battle.enemyHp}/${battle.maxEnemyHp}`;
+  if (battle.tactical) renderTacticalInfo();
+}
+function renderTacticalInfo() {
+  if (!battle?.tactical) return;
+  const tell = enemyIntent(battle), trait = traitFor(battle.companionId);
+  $('#tactical-info').innerHTML = `<span class="tactical-label">敵の次の行動</span><strong>${escapeHtml(tell.name)} · 予告 ${tell.damage} ダメージ</strong><span>${tell.strong?'⚠ 強攻撃！ 聞き耳で受け流そう。':'次は軽い攻撃。今のうちに攻めてもいい。'}</span><span class="tactical-trait">${escapeHtml(trait.name)}：${escapeHtml(trait.detail)}　｜　探索で得た盾：${battle.shield || 0}</span>`;
 }
 function updateFocus() { $('#focus-count').textContent = `集中 ${'●'.repeat(battle.focus)}${'○'.repeat(2-battle.focus)}`; $$('.move-card[data-move="phrase"]').forEach(b=>b.disabled=battle.focus<1); }
 function startStage(id, forcedMonster = null) {
@@ -105,10 +127,9 @@ function startStage(id, forcedMonster = null) {
 }
 const typeNames = {word:'ことば斬り',listen:'聞き耳ウェーブ',phrase:'フレーズ連結'};
 function beginMove(move) {
-  if (currentStage === 1 && battle && move !== stageOneMove && !(stageOneMove==='choice' && ['word','phrase'].includes(move))) return;
   if (move === 'phrase' && battle.focus < 1) return;
   currentMove = move;
-  currentQuestion = currentStage === 1 ? forest[move] : pickQuestion(move, save, random);
+  currentQuestion = currentStage === 1 ? forestBattleQuestion(move) : pickQuestion(move, save, random);
   persist(rememberQuestion(save, currentQuestion));
   phraseBuilt = []; phraseOrder = move === 'phrase' ? shuffle(currentQuestion.tokens.map((token,index)=>({token,index})),random) : [];
   $('#move-screen').classList.add('hidden');
@@ -158,14 +179,15 @@ function answerPhrase() {
 function resolveAnswer(correct) {
   const result=resolveTurn(battle,currentMove,correct);
   battle=result.battle;lastOutcome=result.outcome;
-  // A missed story action can be retried without trapping the player behind focus.
-  if(currentStage===1 && currentMove==='phrase' && !correct) battle.focus=1;
   updateHp();updateFocus();
-  if(currentStage===1){save.storyRun={phase:'battle',battle,move:stageOneMove};persist();}
+  if(currentStage===1){save.storyRun={...save.storyRun,phase:'battle',battle};persist();}
   const feedback=$('#feedback');feedback.classList.remove('hidden','incorrect');
   if(!correct)feedback.classList.add('incorrect');
-  let line=correct?`正解！ ${lastOutcome.damage} ダメージ。`:`今回は違った。${lastOutcome.enemyAttack} ダメージを受けた。`;
-  if(correct&&lastOutcome.guard)line+=` 守りが${lastOutcome.guard}回復。`;
+  let line=correct?`正解！ ${lastOutcome.damage} ダメージ。`:'今回は違った。';
+  if(battle.tactical && lastOutcome.enemyMove)line+=` 敵の「${lastOutcome.enemyMove}」！ ${lastOutcome.enemyAttack} ダメージを受けた。`;
+  else if(!correct)line+=` ${lastOutcome.enemyAttack} ダメージを受けた。`;
+  if(lastOutcome.absorbed)line+=` 探索の盾で ${lastOutcome.absorbed} ダメージ防いだ。`;
+  if(correct&&lastOutcome.guard)line+=` 聞き耳で反撃を ${lastOutcome.guard} 軽減！`;
   if(currentQuestion.type==='word')line+=` “${currentQuestion.target}” は「${currentQuestion.meaning}」。 ${currentQuestion.example}`;
   if(currentQuestion.type==='listen')line+=` “${currentQuestion.target}” — ${currentQuestion.meaning} ${currentQuestion.tip}`;
   if(currentQuestion.type==='phrase')line+=` ${currentQuestion.target} — ${currentQuestion.meaning}`;
@@ -178,7 +200,6 @@ function resolveAnswer(correct) {
 function continueBattle() {
   if (battle.enemyHp===0) { if(currentStage===1){save.storyRun={phase:'speak',battle};persist();renderForest();} else finishEncounter(); return; }
   if (battle.playerHp===0) { showDefeat(); return; }
-  if(currentStage===1 && lastOutcome?.correct){stageOneMove=currentMove==='word'?'phrase':'word';save.storyRun={phase:'battle',battle,move:stageOneMove};persist();}
   $('#question-screen').classList.add('hidden');$('#move-screen').classList.remove('hidden');currentQuestion=null;
   if(currentStage===1) renderForestBattleMove();
 }
@@ -192,13 +213,13 @@ function finishEncounter() {
   $('#capture-return').addEventListener('click',()=>{modal.innerHTML='';renderMap();showScreen('map-screen');});
 }
 function showDefeat() {
-  $('#battle-result').innerHTML=`<div class="modal-badge">TRY AGAIN</div><h2>いったん立て直そう</h2><p>正解すると攻撃できるよ。技を変えたり、聞き直したりしてもう一度挑戦しよう。</p><div class="result-buttons"><button class="primary-button" id="retry-battle">同じ相手に再挑戦</button><button class="secondary-button" id="result-map">マップへ戻る</button></div>`;
+  $('#battle-result').innerHTML=`<div class="modal-badge">TRY AGAIN</div><h2>いったん立て直そう</h2><p>敵の予告を見て、強攻撃は「聞き耳」で防ごう。森の奥の宝箱も助けになるよ。</p><div class="result-buttons"><button class="primary-button" id="retry-battle">同じ相手に再挑戦</button><button class="secondary-button" id="result-map">マップへ戻る</button></div>`;
   $('#question-screen').classList.add('hidden');$('#move-screen').classList.add('hidden');$('#battle-result').classList.remove('hidden');
-  $('#retry-battle').addEventListener('click',()=>{if(currentStage===1){save.storyRun={phase:'battle',move:'choice'};persist();renderForest();}else startStage(currentStage,battle.monsterId);});$('#result-map').addEventListener('click',()=>{renderMap();showScreen('map-screen');});
+  $('#retry-battle').addEventListener('click',()=>{if(currentStage===1){save.storyRun={...save.storyRun,phase:'battle'};delete save.storyRun.battle;persist();renderForest();}else startStage(currentStage,battle.monsterId);});$('#result-map').addEventListener('click',()=>{renderMap();showScreen('map-screen');});
 }
 function renderCamp() {
   const roster=save.roster;
-  $('#camp-hero').innerHTML=roster.map(entry=>{const info=getCompanion(entry.id)||getMonster(entry.id);return `<div class="companion-row ${entry.id===save.activeCompanionId?'active':''}">${avatar(info.id,'',entry.evolved)}<div class="companion-meta"><b>${escapeHtml(info.name)}${entry.id===save.activeCompanionId?' · 相棒':''}</b><small>Lv.${entry.level} · ${entry.xp}/${XP_PER_LEVEL} XP ${entry.evolved?' · 進化済み':''}</small></div>${entry.id!==save.activeCompanionId?`<button class="small-button switch-companion" data-id="${entry.id}">相棒にする</button>`:''}</div>`;}).join('');
+  $('#camp-hero').innerHTML=roster.map(entry=>{const info=getCompanion(entry.id)||getMonster(entry.id);return `<div class="companion-row ${entry.id===save.activeCompanionId?'active':''}">${avatar(info.id,'',entry.evolved)}<div class="companion-meta"><b>${escapeHtml(info.name)}${entry.id===save.activeCompanionId?' · 相棒':''}</b><small>Lv.${entry.level} · ${entry.xp}/${XP_PER_LEVEL} XP ${entry.evolved?' · 進化済み':''}</small><small class="trait-caption">${escapeHtml(traitFor(entry.id).name)}：${escapeHtml(traitFor(entry.id).detail)}</small></div>${entry.id!==save.activeCompanionId?`<button class="small-button switch-companion" data-id="${entry.id}">相棒にする</button>`:''}</div>`;}).join('');
   $$('.switch-companion').forEach(button=>button.addEventListener('click',()=>{persist(changeActiveCompanion(save,button.dataset.id));renderCamp();}));
   $('#dex-count').textContent=`${monsters.filter(monster=>save.captures.includes(monster.id)).length} / ${monsters.length}`;
   $('#dex-grid').innerHTML=monsters.map(monster=>{const found=save.captures.includes(monster.id);const habitat=stages.find(stage=>stage.foes.includes(monster.id));return `<article class="dex-card ${found?'':'unknown'}">${avatar(monster.id)}<b>${found?escapeHtml(monster.name):'？？？'}</b><small>${found?escapeHtml(monster.kind):`${monster.boss?'ボス':'野生'} · ${escapeHtml(habitat.jp)}に生息`}</small>${!found?`<button class="hunt-button" data-hunt="${monster.id}">生息地を探す</button>`:''}</article>`;}).join('');
@@ -234,28 +255,66 @@ function speakLine(text, button, onFailure=()=>{}) {
 function startForest() {
   currentStage=1;
   if(!save.storyRun) {save.storyRun={phase:'listen'};persist();}
+  else if(save.storyRun.phase==='battle' && (!save.storyRun.battle?.tactical || save.storyRun.battle.playerHp<=0)) {
+    // Old prototype saves and defeated battles must never resume into a dead end.
+    save.storyRun={...save.storyRun,phase:'explore',walk:save.storyRun.walk||newForestWalk()};
+    delete save.storyRun.battle;
+    persist();
+  }
   renderForest();
 }
 function advanceForest(phase) {save.storyRun={...save.storyRun,phase};persist();renderForest();}
 function renderForestBattleMove() {
-  $$('.move-card').forEach(button=>{const available=button.dataset.move===stageOneMove||(stageOneMove==='choice'&&['word','phrase'].includes(button.dataset.move));button.disabled=!available;button.classList.toggle('quest-move',available);});
-  $('#move-screen h2').textContent=stageOneMove==='choice'?'どちらの技から道をひらく？':'もう一つの技で道をひらこう';
-  $('#battle-title').textContent=stageOneMove==='choice'?'ミミップが道をふさいだ！':'力を合わせて道をあけよう！';
+  $$('.move-card').forEach(button=>{button.disabled=button.dataset.move==='phrase'&&battle.focus<1;button.classList.toggle('quest-move',button.dataset.move==='listen'&&enemyIntent(battle).strong);});
+  $('#move-screen h2').textContent='敵の次の一手を読んで、技を選ぼう';
+  $('#battle-title').textContent='ミミップが道をふさいだ！';
+  renderTacticalInfo();
 }
 function enterForestBattle() {
-  stageOneMove=save.storyRun.move||'choice';
-  battle=save.storyRun.battle || {...makeBattle(1,chooseStageMonster(1,save),activeEntry().level),enemyHp:51,maxEnemyHp:51,focus:1};
-  save.storyRun={phase:'battle',battle,move:stageOneMove};persist();
+  const walk=save.storyRun.walk || newForestWalk();
+  battle=save.storyRun.battle || {...makeBattle(1,chooseStageMonster(1,save),activeEntry().level),enemyHp:96,maxEnemyHp:96,focus:walk.shrine?2:1,shield:walk.chest?14:0,tactical:true,companionId:save.activeCompanionId};
+  save.storyRun={...save.storyRun,phase:'battle',battle};persist();
   renderBattleField();renderForestBattleMove();
   $('#move-screen').classList.remove('hidden');$('#question-screen').classList.add('hidden');$('#battle-result').classList.add('hidden');
   showScreen('battle-screen');
+}
+const forestDirection = {up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+const forestMessages = {
+  blocked:'木が密集している。別の道を探そう。',
+  step:'足音が森の奥に響く。ミミップのいる東へ向かおう。',
+  chest:'木陰で救急道具を発見！ 次の戦闘に使える盾を14獲得した。',
+  shrine:'古い石碑に触れた。相棒の集中が高まり、戦闘開始時の集中が2になる。',
+  encounter:'ミミップを発見！ 敵の構えをよく見て戦おう。'
+};
+function renderForestWalk() {
+  const walk=save.storyRun.walk || newForestWalk();
+  const grid=FOREST_TILES.flatMap((line,y)=>[...line].map((tile,x)=>{
+    const current=x===walk.x&&y===walk.y;
+    const cleared=(tile==='C'&&walk.chest)||(tile==='R'&&walk.shrine);
+    const label=current?'現在地':tile==='M'?'ミミップ（目的地）':tile==='C'?'宝箱':tile==='R'?'精霊の石碑':tile==='#'?'木': '道';
+    const mark=current?'🧭':tile==='M'?'⚔':tile==='C'?(cleared?'✓':'📦'):tile==='R'?(cleared?'✓':'✦'):tile==='#'?'♣':'·';
+    const adjacent=Math.abs(x-walk.x)+Math.abs(y-walk.y)===1&&tile!=='#';
+    return `<button type="button" class="forest-tile ${tile==='#'?'forest-tree':'forest-road'} ${current?'forest-player':''} ${adjacent?'forest-next':''} ${cleared?'forest-cleared':''}" data-action="walk-tile" data-x="${x}" data-y="${y}" aria-label="${label}${adjacent?'、移動できる':''}" ${adjacent?'':'disabled'}><span>${mark}</span></button>`;
+  })).join('');
+  $('#story-speaker').textContent='迷いの森 · 探索';
+  $('#story-line').textContent='ミミップが東の奥で橋への道をふさいでいる。寄り道すれば戦いに役立つ物も…';
+  $('#story-task').innerHTML=`<div class="forest-task-head"><div><p class="eyebrow">03 · EXPLORE</p><h2>森を歩いてミミップを探そう</h2></div><span class="steps-badge">${walk.steps} 歩</span></div><p>光るマスをタップ、または十字キーで移動。西の奥には宝箱、東には精霊の石碑がある。</p><div class="forest-explorer" role="group" aria-label="探索マップ"><div class="forest-tile-grid">${grid}</div><div class="forest-map-key">🧭 自分　⚔ ミミップ　📦 宝箱　✦ 石碑　♣ 木</div></div><div class="forest-explore-footer"><div class="forest-inventory"><span>${walk.chest?'🛡 盾 +14':'🛡 盾 未発見'}</span><span>${walk.shrine?'● 集中 +1':'● 集中 未発見'}</span></div><div class="forest-dpad" aria-label="移動する"><button data-action="walk" data-direction="up" aria-label="上へ移動">↑</button><div><button data-action="walk" data-direction="left" aria-label="左へ移動">←</button><button data-action="walk" data-direction="down" aria-label="下へ移動">↓</button><button data-action="walk" data-direction="right" aria-label="右へ移動">→</button></div></div></div><p id="story-feedback" class="forest-walk-feedback" role="status">${escapeHtml(save.storyRun.walkMessage||'まずは進む方向を選ぼう。敵を倒すだけでなく、寄り道も冒険の一部だ。')}</p>`;
+}
+function moveForestBy(dx,dy) {
+  if(save.storyRun?.phase!=='explore')return;
+  const {walk,event}=walkForest(save.storyRun.walk||newForestWalk(),dx,dy);
+  save.storyRun.walk=walk;save.storyRun.walkMessage=forestMessages[event];
+  persist();
+  if(event==='chest'||event==='shrine')playTone(640);
+  if(event==='encounter'){advanceForest('battle');return;}
+  renderForestWalk();
 }
 function renderForest() {
   const phase=save.storyRun?.phase;
   if(phase==='battle'){enterForestBattle();return;}
   showScreen('story-screen');
-  const steps=['listen','read','battle','speak','learn'];
-  $('#quest-progress').innerHTML=steps.map((step,i)=>`<span class="${i<=steps.indexOf(phase)?'reached':''}">${['声を聞く','道標を読む','道をひらく','道案内','旅の記録'][i]}</span>`).join('');
+  const steps=['listen','read','explore','battle','speak','learn'];
+  $('#quest-progress').innerHTML=steps.map((step,i)=>`<span class="${i<=steps.indexOf(phase)?'reached':''}">${['声を聞く','道標','森を探索','戦う','道案内','記録'][i]}</span>`).join('');
   $('#story-scene').dataset.phase=phase;
   $('#story-character').innerHTML=phase==='speak'||phase==='learn'?avatar(save.activeCompanionId,'',activeEntry().evolved):`<svg class="traveler-art" viewBox="0 0 120 145" role="img" aria-label="迷っている旅人"><ellipse cx="60" cy="138" rx="42" ry="6" fill="#22473588"/><path d="M44 82 31 135h23l9-31 8 31h23L78 82" fill="#415b70" stroke="#263e49" stroke-width="3"/><path d="M33 133h24v8H27q-3-7 6-8m44 0h24q8 1 8 8H76z" fill="#523d3a"/><path d="M34 72q25-18 52 0l8 53-23 5-10-16-12 16-25-5z" fill="#d58c64" stroke="#754f45" stroke-width="4"/><path d="m39 79-21 33 10 8 20-25m32-16 20 29-9 9-22-23" fill="#e5aa7d" stroke="#754f45" stroke-width="3"/><path d="M22 115q-10 14 5 15l7-11m62-8q13 12 1 19l-9-14" fill="#edbd91"/><path d="M33 72q-12 1-12 22l7 11 13-20" fill="#587666" stroke="#3d5e53" stroke-width="3"/><circle cx="60" cy="50" r="26" fill="#efc69a" stroke="#754f45" stroke-width="3"/><path d="M36 45q-3-30 25-28 25 1 23 29-18-12-37-5z" fill="#513d3c"/><path d="M30 36q17-39 50-18l11 20q-28 11-61-2" fill="#809765" stroke="#4b684c" stroke-width="4"/><circle cx="51" cy="52" r="2.5" fill="#373c36"/><circle cx="70" cy="52" r="2.5" fill="#373c36"/><path d="M53 65q9 5 16-1" fill="none" stroke="#a56e5d" stroke-width="2" stroke-linecap="round"/><path d="M83 78q22-6 18 23l-11 10-7-17" fill="#7c9a6d" stroke="#486750" stroke-width="3"/></svg>`;
   const task=$('#story-task');
@@ -266,13 +325,16 @@ function renderForest() {
   }else if(phase==='read'){
     $('#story-speaker').textContent='古い道標';$('#story-line').textContent='二つの道に分かれている。道標を読んで橋へ向かおう。';
     task.innerHTML=`<p class="eyebrow">02 · READ</p><h2>橋へ続く道を選ぼう</h2><blockquote class="forest-sign" lang="en">BRIDGE → Follow the mossy path.<br>The left path ends at a cliff.</blockquote><div class="answer-options"><button data-action="read-choice" data-correct="false">左の道を進む</button><button data-action="read-choice" data-correct="true">苔の生えた右の道を進む</button></div><div id="story-feedback" class="feedback hidden" role="status"></div>`;
+  }else if(phase==='explore'){
+    if(!save.storyRun.walk){save.storyRun.walk=newForestWalk();persist();}
+    renderForestWalk();
   }else if(phase==='speak'){
     $('#story-speaker').textContent='旅人';$('#story-line').textContent='「橋へはどっちの道？」英語で教えよう。';
-    task.innerHTML=`<p class="eyebrow">04 · SPEAK</p><h2>旅人に道を教えよう</h2><p>苔の道を進むと橋に着く。英語で伝えよう。</p><p class="transcript" lang="en">${forest.replyPrompt}</p><button class="sound-button" data-action="repeat-npc">▶ 旅人の声をもう一度聞く</button><div class="speech-box"><button class="primary-button" data-action="record">🎙 英語を話す</button><span id="speech-status">音声認識は対応ブラウザで利用できます</span><label for="forest-speech">認識された文を直す、または英文を入力</label><textarea id="forest-speech" rows="3" lang="en" placeholder="例を見ずに、まず自分の言葉で伝えてみよう"></textarea><button class="primary-button" data-action="submit-speech" disabled>伝えた内容を見る</button></div><p class="microcopy">音声認識の文字起こしは採点しません。使えない端末では、声に出してから英文を入力できます。</p>`;
+    task.innerHTML=`<p class="eyebrow">05 · SPEAK</p><h2>旅人に道を教えよう</h2><p>苔の道を進むと橋に着く。英語で伝えよう。</p><p class="transcript" lang="en">${forest.replyPrompt}</p><button class="sound-button" data-action="repeat-npc">▶ 旅人の声をもう一度聞く</button><div class="speech-box"><button class="primary-button" data-action="record">🎙 英語を話す</button><span id="speech-status">音声認識は対応ブラウザで利用できます</span><label for="forest-speech">認識された文を直す、または英文を入力</label><textarea id="forest-speech" rows="3" lang="en" placeholder="例を見ずに、まず自分の言葉で伝えてみよう"></textarea><button class="primary-button" data-action="submit-speech" disabled>伝えた内容を見る</button></div><p class="microcopy">音声認識の文字起こしは採点しません。使えない端末では、声に出してから英文を入力できます。</p>`;
     const input=$('#forest-speech');input.value=save.storyRun.transcript||'';input.addEventListener('input',()=>{$('[data-action="submit-speech"]').disabled=!input.value.trim();});input.dispatchEvent(new Event('input'));
   }else if(phase==='learn'){
     $('#story-speaker').textContent='旅人';$('#story-line').textContent='“Thank you! Now I know where to go.” 旅人は橋へ向かった。';
-    task.innerHTML=`<p class="eyebrow">05 · YOUR WORDS</p><h2>道を伝えられた！</h2><p>あなたの文（文字起こし・入力、未採点）</p><blockquote class="your-words" lang="en">${escapeHtml(save.storyRun.transcript)}</blockquote><h3>こんな言い方もできる</h3><ul class="example-lines"><li lang="en">Follow the mossy path to the bridge.</li><li lang="en">Take the path on the right. It leads to the bridge.</li><li lang="en">The bridge is down this mossy path.</li></ul><p class="learning-tip">道順には <b>follow the path</b>、つながりを説明するなら <b>leads to the bridge</b>。自由な表現の正確さは自動判定していません。</p><button class="primary-button" data-action="finish-forest">旅を終えて仲間のもとへ</button>`;
+    task.innerHTML=`<p class="eyebrow">06 · YOUR WORDS</p><h2>道を伝えられた！</h2><p>あなたの文（文字起こし・入力、未採点）</p><blockquote class="your-words" lang="en">${escapeHtml(save.storyRun.transcript)}</blockquote><h3>こんな言い方もできる</h3><ul class="example-lines"><li lang="en">Follow the mossy path to the bridge.</li><li lang="en">Take the path on the right. It leads to the bridge.</li><li lang="en">The bridge is down this mossy path.</li></ul><p class="learning-tip">道順には <b>follow the path</b>、つながりを説明するなら <b>leads to the bridge</b>。自由な表現の正確さは自動判定していません。</p><button class="primary-button" data-action="finish-forest">旅を終えて仲間のもとへ</button>`;
   }
 }
 function startRecognition() {
@@ -287,12 +349,20 @@ $('#story-task').addEventListener('click',event=>{
   if(action==='listen-audio'||action==='repeat-npc')speakLine(action==='repeat-npc'?forest.replyPrompt:forest.listen,button,()=>{$('#story-transcript')?.classList.remove('hidden');button.textContent=action==='repeat-npc'?'音声を再生できません':'再生できません · 英文を確認';});
   if(action==='reveal-transcript')$('#story-transcript').classList.remove('hidden');
   if(action==='listen-choice'||action==='read-choice'){
-    if(button.dataset.correct==='true'){playTone(620);advanceForest(action==='listen-choice'?'read':'battle');}
+    if(button.dataset.correct==='true'){playTone(620);advanceForest(action==='listen-choice'?'read':'explore');}
     else {playTone(190);const feedback=$('#story-feedback');feedback.classList.remove('hidden');feedback.innerHTML=action==='listen-choice'?'もう一度聞いてみよう。聞き取れないときは <b>Could you say that again?</b> と聞き返せるよ。':'道標には <b>left path ends at a cliff</b> とある。橋は別の道だ。';if(action==='listen-choice')$('#story-transcript').classList.remove('hidden');}
   }
+  if(action==='walk'){const direction=forestDirection[button.dataset.direction];if(direction)moveForestBy(...direction);}
+  if(action==='walk-tile'){const walk=save.storyRun?.walk||newForestWalk();moveForestBy(Number(button.dataset.x)-walk.x,Number(button.dataset.y)-walk.y);}
   if(action==='record'){if(recognition&&button.textContent.startsWith('■')){recognition.stop();return;}startRecognition();}
   if(action==='submit-speech'){const transcript=$('#forest-speech').value.trim();if(!transcript)return;recognition?.stop();save.storyRun.transcript=transcript;advanceForest('learn');}
   if(action==='finish-forest'){battle=save.storyRun.battle;delete save.storyRun;finishEncounter();}
+});
+document.addEventListener('keydown',event=>{
+  if(save?.storyRun?.phase!=='explore'||$('#story-screen').classList.contains('hidden'))return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
+  const direction=({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',a:'left',s:'down',d:'right'})[event.key];
+  if(direction){event.preventDefault();moveForestBy(...forestDirection[direction]);}
 });
 $('#leave-story').addEventListener('click',()=>{recognition?.stop();renderMap();showScreen('map-screen');});
 $('#toggle-sound').addEventListener('click',()=>{muted=!muted;$('#toggle-sound').textContent=muted?'♪̸':'♫';$('#toggle-sound').setAttribute('aria-pressed',String(muted));});

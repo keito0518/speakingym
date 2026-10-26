@@ -19,3 +19,37 @@
 .traveler-art{width:126px;height:150px;filter:drop-shadow(0 8px 4px #28433588)}
 @media(max-width:430px){#save-state{display:none}}
 @media(prefers-reduced-motion:reduce){.story-character,.battle-creature,.modal-card .creature-icon,.modal-card .level-up{animation:none!important}}
+
+/* Stage 1 is a real walkable location: trees block movement, detours grant combat gear. */
+#story-scene[data-phase="explore"]{height:130px}
+#story-scene[data-phase="explore"] .story-character{display:none}
+.forest-task-head{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.forest-task-head h2{margin:0 0 8px}
+.steps-badge{flex:none;border-radius:99px;background:#d9e8ba;padding:6px 11px;font-size:12px;font-weight:900;color:#335738}
+.forest-explorer{max-width:470px;margin:18px auto;padding:10px;border:5px solid #4f6c4d;border-radius:20px;background:#243e37;box-shadow:0 8px 0 #273e35,0 16px 26px #243e373c}
+.forest-tile-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;aspect-ratio:1;background:#385948;border-radius:9px;overflow:hidden;padding:4px}
+.forest-tile{display:grid;place-items:center;min-width:0;min-height:0;padding:0;border:0;border-radius:5px;font-size:clamp(13px,4vw,23px);font-weight:900;transition:transform .1s,filter .1s;aspect-ratio:1;position:relative}
+.forest-tree{background:radial-gradient(circle at 51% 42%,#3b794d 0 30%,#295d3e 32% 57%,#234935 59%);color:#79b976;text-shadow:0 2px #284c31}
+.forest-road{background:repeating-linear-gradient(34deg,#adbb7b 0 9px,#bbca8c 10px 14px);color:#587349}
+.forest-player{background:#eed18a;color:#345840;box-shadow:inset 0 0 0 3px #ffe7a2,0 0 12px #ffefb4;z-index:1}
+.forest-next{cursor:pointer;box-shadow:inset 0 0 0 3px #f2efad;animation:tile-glow 1s alternate infinite}
+.forest-next:active{transform:scale(.93)}
+.forest-tile:disabled{cursor:default;opacity:1}
+.forest-tile:not(:disabled):focus-visible{outline:3px solid #fff;outline-offset:-4px}
+.forest-map-key{padding:10px 2px 2px;text-align:center;color:#f9f2d1;font-size:11px;font-weight:850}
+.forest-explore-footer{display:flex;gap:12px;justify-content:space-between;align-items:center;max-width:470px;margin:14px auto}
+.forest-inventory{display:flex;flex-direction:column;gap:9px;font-size:12px;font-weight:900;color:#476249}
+.forest-inventory span{padding:7px 10px;background:#ecf1e2;border:1px solid #c1d1aa;border-radius:12px}
+.forest-dpad{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+.forest-dpad>div{display:flex;gap:4px}
+.forest-dpad button{width:48px;height:44px;background:#e4eed5;border:2px solid #8caa78;border-bottom:4px solid #63845b;border-radius:10px;font-size:20px;font-weight:900}
+.forest-dpad button:active{transform:translateY(2px);border-bottom-width:2px}
+.forest-walk-feedback{max-width:470px;margin:0 auto!important;border-radius:12px;background:#e3eed9;padding:12px 15px;font-weight:800;font-size:13px}
+.tactical-info{display:flex;flex-direction:column;gap:5px;background:#f4e7cd;border:2px solid #c5a57a;border-left:7px solid #c47e53;border-radius:14px;padding:12px 15px;margin:12px 0 17px;font-size:12px}
+.tactical-info strong{font-size:17px;color:#6a4538}
+.tactical-label{font-size:10px;letter-spacing:.13em;font-weight:900;color:#955936}
+.tactical-trait{padding-top:8px;border-top:1px solid #d7be9b;font-weight:800;color:#466342}
+.trait-caption{display:block!important;color:#36785d!important;font-size:11px!important;line-height:1.5;margin-top:4px}
+@keyframes tile-glow{to{filter:brightness(1.16)}}
+@media(max-width:370px){.forest-explorer{padding:7px;border-width:4px}.forest-tile-grid{gap:1px;padding:3px}.forest-map-key{font-size:9px}.forest-dpad button{width:42px;height:40px}.forest-inventory{font-size:10px}.tactical-info strong{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.forest-next{animation:none!important}}

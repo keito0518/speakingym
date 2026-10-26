@@ -7,6 +7,42 @@ export const MOVE_RULES = {
   listen: { damage: 18, focus: 0, guard: 7 },
   phrase: { damage: 29, focus: 1, guard: 0 }
 };
+// # = a tree; S = entrance; C = supply cache; R = focus shrine; M = encounter.
+// The optional cache is a dead-end. Taking the longer route changes the fight.
+export const FOREST_TILES = Object.freeze([
+  '#######',
+  '#C###M#',
+  '#.###.#',
+  '#.##R.#',
+  '#.##..#',
+  '#S....#',
+  '#######'
+]);
+export const COMPANION_TRAITS = Object.freeze({
+  momo: { name: '先陣の一撃', detail: 'ことば斬りの威力 +7', move: 'word', bonus: 7 },
+  lumi: { name: '耳を澄ます', detail: '聞き耳ウェーブの被ダメージ軽減 +5', move: 'listen', bonus: 5 },
+  koro: { name: '勇気の一文', detail: 'フレーズ連結の威力 +9', move: 'phrase', bonus: 9 }
+});
+export const traitFor = id => COMPANION_TRAITS[id] || { name: '冒険のきずな', detail: 'ことば斬りの威力 +4', move: 'word', bonus: 4 };
+export function newForestWalk() { return { x: 1, y: 5, chest: false, shrine: false, steps: 0 }; }
+export function walkForest(walk, dx, dy) {
+  if (![0, 1, -1].includes(dx) || ![0, 1, -1].includes(dy) || Math.abs(dx) + Math.abs(dy) !== 1) throw new Error('Walk one tile at a time.');
+  const x = walk.x + dx, y = walk.y + dy;
+  const tile = FOREST_TILES[y]?.[x];
+  if (!tile || tile === '#') return { walk, event: 'blocked' };
+  const next = { ...walk, x, y, steps: walk.steps + 1 };
+  let event = 'step';
+  if (tile === 'C' && !walk.chest) { next.chest = true; event = 'chest'; }
+  if (tile === 'R' && !walk.shrine) { next.shrine = true; event = 'shrine'; }
+  if (tile === 'M') event = 'encounter';
+  return { walk: next, event };
+}
+
+export function enemyIntent(battle) {
+  // Predictable patterns allow a real choice: brace with listening or rush damage.
+  const heavy = battle.turn % 3 === 1;
+  return heavy ? { name: '大きく跳ねる', damage: 21, strong: true } : { name: 'つるの一撃', damage: 10, strong: false };
+}
 const clone = value => JSON.parse(JSON.stringify(value));
 export const getMonster = id => monsters.find(monster => monster.id === id);
 export const getStage = id => stages.find(stage => stage.id === Number(id));
@@ -76,6 +112,22 @@ export function resolveTurn(battle, move, isCorrect) {
   if (!rule) throw new Error('Unknown move.');
   if (battle.focus < rule.focus) throw new Error('Not enough focus for that move.');
   const next = { ...battle, turn: battle.turn + 1, focus: Math.min(2, battle.focus - rule.focus + (move === 'listen' ? 1 : 0)) };
+  if (battle.tactical) {
+    const trait = traitFor(battle.companionId);
+    const bonus = isCorrect && trait.move === move && move !== 'listen' ? trait.bonus : 0;
+    const damage = isCorrect ? rule.damage + bonus : 0;
+    next.enemyHp = Math.max(0, next.enemyHp - damage);
+    const cleared = next.enemyHp === 0;
+    // The companion can block the incoming tell even on a missed question.
+    const intent = enemyIntent(battle);
+    const guarding = isCorrect && move === 'listen' ? rule.guard + (trait.move === 'listen' ? trait.bonus : 0) : 0;
+    const incoming = cleared ? 0 : Math.max(0, intent.damage - guarding);
+    const absorbed = Math.min(battle.shield || 0, incoming);
+    next.shield = Math.max(0, (battle.shield || 0) - absorbed);
+    next.playerHp = Math.max(0, next.playerHp - incoming + absorbed);
+    next.ended = cleared || next.playerHp === 0;
+    return { battle: next, outcome: { correct: isCorrect, damage, guard: guarding, enemyAttack: incoming - absorbed, absorbed, enemyMove: cleared ? null : intent.name, cleared, failed: next.playerHp === 0 } };
+  }
   let outcome;
   if (isCorrect) {
     next.enemyHp = Math.max(0, next.enemyHp - rule.damage);
@@ -106,7 +158,8 @@ export function finishStage(save, battle, random = Math.random) {
   if (captured) { next.captures.push(species); next.roster.push({ id: species, xp: 0, level: 1, evolved: false }); }
 
   const active = next.roster.find(entry => entry.id === next.activeCompanionId);
-  const xpAwarded = firstClear ? (monster.boss ? 70 : 40) : 0;
+  // Replaying a route should remain rewarding: players can train a newly caught ally.
+  const xpAwarded = firstClear ? (monster.boss ? 70 : 40) : (monster.boss ? 22 : 12);
   let levelUps = 0;
   let evolvedNow = false;
   if (xpAwarded && active) {
