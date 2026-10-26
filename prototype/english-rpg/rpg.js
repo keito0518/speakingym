@@ -125,7 +125,7 @@ function beginMove(move) {
 }
 function renderPhrase() {
   $('#phrase-options').classList.remove('hidden');
-  $('#phrase-built').innerHTML = phraseBuilt.map((token,index)=>`<button class="word-chip built-chip" data-built-index="${index}">${escapeHtml(token)}</button>`).join('') || '<span class="microcopy">ここに文ができます</span>';
+  $('#phrase-built').innerHTML = phraseBuilt.map((tokenIndex,index)=>`<button class="word-chip built-chip" data-built-index="${index}">${escapeHtml(currentQuestion.tokens[tokenIndex])}</button>`).join('') || '<span class="microcopy">ここに文ができます</span>';
   $$('.built-chip').forEach(button=>button.addEventListener('click',()=>{const index=Number(button.dataset.builtIndex);phraseBuilt.splice(index,1);renderPhrase();}));
   $('#phrase-bank').innerHTML=phraseOrder.map(item=>`<button class="word-chip bank-chip" data-token-index="${item.index}" ${phraseBuilt.includes(item.index)?'disabled':''}>${escapeHtml(item.token)}</button>`).join('');
   $$('.bank-chip:not(:disabled)').forEach(button=>button.addEventListener('click',()=>{phraseBuilt.push(Number(button.dataset.tokenIndex));renderPhrase();}));

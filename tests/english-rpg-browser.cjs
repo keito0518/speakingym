@@ -63,6 +63,8 @@ const path = require('node:path');
   await page.locator('.move-card[data-move="phrase"]').click();
   const phrase=await questionFor('phrase');
   for(let i=0;i<phrase.tokens.length;i++)await page.locator(`.bank-chip[data-token-index="${i}"]`).click();
+  const builtText=await page.locator('#phrase-built').innerText();
+  if(!phrase.tokens.every(token=>builtText.includes(token)))throw new Error('selected phrase tiles are not displayed');
   await page.getByRole('button',{name:'この文で攻撃'}).click();
   if(!(await page.locator('#feedback').textContent()).includes('正解'))throw new Error('phrase assembly did not accept the natural sentence');
   await page.getByRole('button',{name:'次の手へ'}).click();
