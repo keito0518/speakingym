@@ -1,5 +1,5 @@
 import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, recordAnswer, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -96,15 +96,21 @@ function dueForestPhrases(){
   const today=dayKey();
   return PHRASES.filter(phrase=>{
     const item=save.progress?.[phrase.id];
-    return item?.nextReviewDay && item.nextReviewDay<=today;
+    return (item?.nextReviewDay && item.nextReviewDay<=today) ||
+      Object.entries(save.reviewPrompts||{}).some(([id,due])=>due<=today &&
+        ALL_PROMPTS.find(prompt=>prompt.id===id)?.phraseId===phrase.id);
   }).map(phrase=>phrase.id);
+}
+function dueForestPromptIds(){
+  const today=dayKey();
+  return Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id);
 }
 function startSession(mode) {
   clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
-  const firstWave=forestMode?buildForestWave({difficulty,wave:1,reviewPhraseIds:dueForestPhrases()}):null;
+  const firstWave=forestMode?buildForestWave({difficulty,wave:1,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds()}):null;
   const prompts=forestMode?firstWave.prompts:selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,
@@ -397,6 +403,7 @@ async function gradeAnswer() {
       $('#speech-helper').textContent='AI判定を利用できないため、教材の簡易判定で確認しています。';
   }
   if(grade.status!=='correct'){
+    if(grade.status==='review' && raw)persist(flagUncertainReview(save,prompt.id));
     if(play.mode==='forest' && raw){
       const world=$('#forest-world-stage');
       world.classList.remove('forest-attack','forest-guarding','forest-player-damaged');
@@ -420,7 +427,7 @@ async function gradeAnswer() {
     }
     const empty=grade.status==='empty';
     const uncertain=grade.status==='review'||grade.status==='ungraded';
-    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':'自動判定では確認できませんでした'}</div><p class="grading-intro">${uncertain?'簡易判定で確認できない部分があります。正しい別表現の可能性もあるので、言い換えてみてね。':'回答を入力または音声認識で取り込んでね。'}</p>${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${empty?'':'<button type="button" class="grading-skip" id="show-example">例文を見て次へ（XPなし）</button>'}</div>`;
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':'自動判定では確認できませんでした'}</div><p class="grading-intro">${uncertain?'簡易判定で確認できない部分があります。正しい別表現の可能性もあるので、言い換えてみてね。今回の表現は復習にも登録しました。':'回答を入力または音声認識で取り込んでね。'}</p>${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${empty?'':'<button type="button" class="grading-skip" id="show-example">例文を見て次へ（XPなし）</button>'}</div>`;
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     micView('ready');
     return;
