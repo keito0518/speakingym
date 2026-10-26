@@ -18,7 +18,7 @@ test('new Free learning retains existing ¥680 API limits and protected paid tur
  assert.match(plan,/60秒チャレンジ：回数制限なし/);
  assert.match(plan,/2場面応用チェック・1\/3\/7日復習/);
 });
-test('free exercises do not invoke Stripe; Freeze coaching is only explicitly opted in and metered',()=>{
+test('legacy free paths preserve billing controls and optional coaching remains explicitly metered',()=>{
  for(const js of [transfer,review,account,file('home-dashboard.js')]){
   assert.doesNotMatch(js,/Stripe|fetch\s*\(/i);
  }
@@ -33,6 +33,13 @@ test('free exercises do not invoke Stripe; Freeze coaching is only explicitly op
  assert.doesNotMatch(transfer,/Stripe|\bfetch\s*\(/i);
  assert.doesNotMatch(review,/Stripe|\bfetch\s*\(/i);
  assert.doesNotMatch(account,/Stripe|\bfetch\s*\(/i);
+});
+test('scene commentary sends no speech, AI, account or billing data from its practice code',()=>{
+ const scene=file('scene-commentary.js');
+ assert.doesNotMatch(scene,/Stripe|checkout|createPortal|billing|\bfetch\s*\(|GEMINI_API_KEY|speakingym-survival-ai/i);
+ assert.match(scene,/recognition\.continuous=true/);
+ assert.match(scene,/音声認識なし/);
+ assert.match(file('freeze-breaker.html'),/ブラウザ提供元の条件/);
 });
 test('frontend transfer privacy and account changes fail closed without sending data to analytics',()=>{
  const p=file('transfer.html'),my=file('account.html');

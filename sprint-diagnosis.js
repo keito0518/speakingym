@@ -11,8 +11,8 @@ const REASONS=Object.freeze([
  {id:'words',label:'単語が出てこなかった',advice:'難しい単語を探さず、知っている単語で短く言い換えてみよう。',link:'./freeze-breaker.html',action:'言い換えを練習'},
  {id:'structure',label:'英文の組み立てに迷った',advice:'まず主語と動詞だけで伝えてから、一言ずつ付け足してみよう。',link:'./reflex.html?mode=hold',action:'短い文から練習'},
  {id:'retrieval',label:'知っているのにすぐ出なかった',advice:'同じお題を短く言い直してから、別の場面でも試してみよう。',link:'./reflex.html?mode=mix',action:'もう一度瞬発練習'},
- {id:'perfection',label:'完璧に言おうとして止まった',advice:'最初は正確さより「短い一言を出す」を目指そう。',link:'./freeze-breaker.html',action:'会話の立て直しを練習'},
- {id:'surprise',label:'場面への返し方が浮かばなかった',advice:'聞き返す・考える時間をもらう・質問を返す、のいずれかでつないでみよう。',link:'./freeze-breaker.html',action:'突然の質問に挑戦'},
+ {id:'perfection',label:'完璧に言おうとして止まった',advice:'最初は正確さより「短い一言を出す」を目指そう。',link:'./freeze-breaker.html',action:'写真を見て説明する'},
+ {id:'surprise',label:'場面への返し方が浮かばなかった',advice:'写真から話す材料を見つけ、短く状況を説明してみよう。',link:'./freeze-breaker.html',action:'シーン実況に挑戦'},
  {id:'other',label:'その他・まだわからない',advice:'原因が分からなくても大丈夫。まず短い言い方を声に出して確認してみよう。',link:'./reflex.html?mode=repair',action:'基本の切り返しを練習'}
 ]);
 const $=id=>document.getElementById(id);

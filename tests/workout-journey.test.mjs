@@ -6,16 +6,19 @@ const file=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const home=file('index.html'),sprint=file('reflex.html'),freeze=file('freeze-breaker.html');
 const transfer=file('transfer.html'),transferJs=file('transfer.js');
 
-test('beginner guide boldly separates speed of recall from recovery of a stalled conversation',()=>{
+test('beginner guide clearly separates Japanese-to-English recall from photo-based scene speaking',()=>{
  assert.match(home,/① 瞬発スプリント/);
- assert.match(home,/② 会話サバイバル/);
+ assert.match(home,/② シーン実況/);
+ assert.match(home,/写真/);
  assert.match(home,/③ 言えなかった表現を復習/);
  assert.match(home,/href="\.\/phrasebook\.html"/);
  assert.match(sprint,/日本語 → 英語 \/ 瞬発力トレーニング/);
- assert.match(freeze,/CONVERSATION SURVIVAL/);
- assert.match(freeze,/聞き返す・時間をもらう・言い換える/);
- assert.doesNotMatch(freeze,/id="instant-yes"|id="instant-froze"/,'remove duplicate first-translation assessment');
- assert.match(freeze,/時間制限なし/);
+ assert.match(freeze,/シーン実況チャレンジ/);
+ assert.match(freeze,/写真を観察して、自分で選んだ情報を説明/);
+ assert.match(freeze,/30秒チャレンジを始める/);
+ assert.match(freeze,/LEVEL 1 · 描写/);
+ assert.match(freeze,/LEVEL 2 · 推測/);
+ assert.match(freeze,/LEVEL 3 · 共有/);
 });
 
 test('personal stage completes directly into the next step only after its own review',()=>{
@@ -36,17 +39,17 @@ test('transfer follow-up buttons have truthful distinct destinations',()=>{
  assert.match(transfer,/短い一文でも相手に意図を伝えられたら「言えた」でOK/);
 });
 
-test('freeze workout suggests a distinctly timed next exercise while retaining optional AI',()=>{
- assert.match(freeze,/id="result"[\s\S]*?href="\.\/reflex\.html"[\s\S]*?60秒で口を動かす/);
- assert.doesNotMatch(freeze,/href="\.\/transfer\.html"/);
- assert.match(freeze,/AI実践英会話（任意）へ/);
- assert.match(freeze,/自由に会話を広げたい人はAI実践英会話も利用できます（別途AI利用枠を消費）/);
+test('scene workout offers a clean spoken reattempt and no AI connection',()=>{
+ assert.match(freeze,/同じ写真でもう一度/);
+ assert.match(freeze,/次の写真へ/);
+ assert.match(freeze,/音声認識なしで続ける/);
+ assert.doesNotMatch(file('scene-commentary.js'),/\bfetch\s*\(|speakingym-survival-ai/);
 });
 
 test('small-screen review and saved-expression actions remain touch-friendly',()=>{
  assert.match(sprint,/\.answer-set \.answer-card button\{[^}]*min-height:44px/);
  assert.match(sprint,/\.saved-phrase-card \.phrase-actions \.btn\{[^}]*min-height:44px/);
- assert.match(freeze,/\.control-row \.button\{[^}]*min-height:46px/);
+ assert.match(freeze,/\.level\{[^}]*min-height:48px/);
  assert.match(transfer,/\.head \.back\{[^}]*min-height:44px/);
  assert.match(sprint,/\.head a\.back\{[^}]*min-height:44px/);
 });

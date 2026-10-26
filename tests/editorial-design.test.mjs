@@ -14,15 +14,16 @@ test('major headings wrap according to viewport, not author-inserted line breaks
  }
 });
 
-test('first screen uses a real speaking prompt with one obvious entry, not a fake chat illustration',()=>{
+test('first screen presents both distinct free speaking practices',()=>{
  const home=read('index.html');
- assert.match(home,/<blockquote lang="en">Sorry, we're out of oat milk/);
  assert.match(home,/<h1>知ってる英語を、<em>話せる英語に。<\/em><\/h1>/);
  assert.match(home,/まず60秒、話してみる/);
+ assert.match(home,/シーン実況チャレンジ/);
+ assert.match(home,/写真から情報を見つけて英語へ/);
  assert.doesNotMatch(home,/<div class="orb"|<div class="floating"|<div class="mock"/);
  assert.match(home,/英語を取り出す。会話を止めない。/);
  assert.match(home,/<span class="tag">04<\/span>/,'the narrow number column must not wrap a multiword login label');
- assert.match(home,/ログイン後に利用できます。カフェや仕事など16場面/);
+ assert.match(home,/30秒間、自分の英語で状況を説明/);
 });
 
 test('optional choices stay available without crowding first-time exercise starts',()=>{
@@ -35,18 +36,16 @@ test('optional choices stay available without crowding first-time exercise start
  assert.match(scenes,/id="showAllScenes" aria-expanded="false"/);
  assert.match(scenes,/\.scene\[hidden\]\{display:none!important\}/,'author CSS must not defeat the hidden attribute');
  assert.equal([...scenes.matchAll(/<button type="button" class="scene" data-scene=/g)].length,16);
- assert.match(freeze,/id="reason-panel" hidden/);
- assert.match(freeze,/id="start-button"/);
+ assert.match(freeze,/id="learn-panel"[^>]*hidden/);
+ assert.match(freeze,/id="start-challenge"/);
 });
 
 test('quiet hero text stays legible and short labels explain the next action',()=>{
  const freeze=read('freeze-breaker.html');
- const neon=read('soft-neon.css');
- assert.match(neon,/body\.sg-freeze \.hero\{[^}]*background:var\(--sg-neon-night\)/,'the dark rescue hero has an explicit dark background');
- assert.match(neon,/body\.sg-freeze \.hero h1\{color:#f3fcfa\}/,'rescue headline stays light against dark panel');
- assert.match(freeze,/<h1 id="page-title">会話をつなごう。<\/h1>/);
- assert.doesNotMatch(freeze,/hero-title-line|white-space:\s*nowrap/,
-  'the Japanese survival headline is allowed to wrap naturally');
+ assert.match(freeze,/<h1 id="page-title">シーン実況チャレンジ<\/h1>/);
+ assert.match(freeze,/line-break:\s*strict/);
+ assert.doesNotMatch(freeze,/\.intro h1\{[^}]*white-space:\s*nowrap/,
+  'the Japanese scene headline is allowed to wrap naturally');
  assert.match(read('reflex.html'),/<h1>60秒、英語を話そう。<\/h1>/);
  assert.match(read('account.html'),/<h1 id="heroTitle">練習記録と、次の一歩。<\/h1>/);
  assert.match(read('scenes.html'),/<h1>どんな場面で話してみる？<\/h1>/);
@@ -55,7 +54,7 @@ test('quiet hero text stays legible and short labels explain the next action',()
 
 test('restrained neon design is shared across learning routes and respects small screens',()=>{
  const neon=read('soft-neon.css');
- for(const path of pages){
+ for(const path of pages.filter(path=>path!=='freeze-breaker.html')){
   const html=read(path);
   assert.match(html,/<link rel="stylesheet" href="\.\/soft-neon\.css">/,'shared CSS must load: '+path);
   assert.match(html,/<body[^>]*class="[^"]*sg-soft-neon/,'scoped theme must apply: '+path);
@@ -64,4 +63,5 @@ test('restrained neon design is shared across learning routes and respects small
  assert.match(neon,/--sg-neon-mint:#55ead0/);
  assert.match(neon,/@media\(max-width:650px\)/);
  assert.doesNotMatch(neon,/animation\s*:/,'do not introduce distracting neon animations');
+ assert.match(read('freeze-breaker.html'),/@media\(max-width:520px\)/,'scene page has its own mobile layout');
 });
