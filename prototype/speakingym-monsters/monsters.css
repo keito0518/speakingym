@@ -39,3 +39,7 @@ footer{padding:29px 0;border-top:1px solid #e8e9df;margin-top:28px;display:flex;
 .mic-button[aria-pressed="true"]{background:#d6815b;box-shadow:0 0 0 4px #eeb89d66}
 .retry-mic{display:inline-flex;align-items:center;min-height:38px;margin-top:8px;padding:5px 12px;border:1px solid #b9d5c7;border-radius:10px;background:#fff;color:#277554;font-size:11px;font-weight:800}
 .retry-mic[hidden],.mic-button[hidden]{display:none!important}
+
+/* Live speech transcription: show interim text distinctly but never as a final grade. */
+.answer-input.transcript-interim{border-color:#e0a662;background:#fffdf3;box-shadow:inset 0 -2px 0 #efce99}
+.answer-input.transcript-interim::selection{background:#f8e2bc}

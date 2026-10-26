@@ -45,6 +45,7 @@ function stopRecognition(mode='ready') {
   const active=recognition;
   recognition=null; // Disarm callbacks before abort: Safari fires onend asynchronously.
   if(active)try{active.abort();}catch{}
+  if(mode==='done')$('#spoken-answer')?.classList.remove('transcript-interim');
   micView(mode);
 }
 function stopAudio() {
@@ -114,17 +115,21 @@ function renderQuestion() {
     ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').innerHTML=`<div class="question-top"><span>QUESTION ${play.index+1} / ${play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
-  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false">🎙</button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false">🎙</button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
   $('#retry-mic').addEventListener('click',()=>{
     if(!play || play.revealed)return;
     $('#spoken-answer').value='';
+    $('#spoken-answer').classList.remove('transcript-interim');
     micView('ready');startRecognition();
   });
   $('#show-hint').addEventListener('click',showHint);
   $('#show-answer').addEventListener('click',gradeAnswer);
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter')gradeAnswer();});
-  $('#spoken-answer').addEventListener('input',()=>{if(!recognition)micView('ready');});
+  $('#spoken-answer').addEventListener('input',()=>{
+    $('#spoken-answer').classList.remove('transcript-interim');
+    if(!recognition)micView('ready');
+  });
   micView('ready');
   if(prompt.kind==='listen'){
     $('#play-audio').addEventListener('click',()=>speakLine(prompt.audio));
@@ -157,15 +162,23 @@ function startRecognition() {
   try{
     const instance=new Constructor(),session=play;
     recognition=instance;
-    instance.lang='en-US';instance.interimResults=false;instance.continuous=false;instance.maxAlternatives=1;
+    instance.lang='en-US';instance.interimResults=true;instance.continuous=false;instance.maxAlternatives=1;
     instance.onresult=event=>{
       if(recognition!==instance || play!==session || !$('#spoken-answer'))return;
-      const transcript=[...event.results].map(result=>result[0]?.transcript||'').join(' ').trim();
-      if(transcript){
-        $('#spoken-answer').value=transcript;
-        if(helper)helper.textContent='聞き取った英文を表示しました。確認して「答えを判定する」を押してね。';
-        stopRecognition('captured');
-      }
+      const segments=[...event.results];
+      const transcript=segments.map(result=>result[0]?.transcript||'').join(' ').replace(/\s+/g,' ').trim();
+      if(!transcript)return;
+      // Display partial recognition immediately, without counting it as a final answer.
+      // The orange recording button stays only while recognition is actually active.
+      const finalized=segments.length>0 && segments.every(result=>result.isFinal===true);
+      const field=$('#spoken-answer');
+      field.value=transcript;
+      field.classList.toggle('transcript-interim',!finalized);
+      field.setAttribute('aria-label',finalized?'音声認識が確定した英文':'リアルタイムで聞き取った英文（認識中）');
+      if(helper)helper.textContent=finalized
+        ?'聞き取った英文を表示しました。確認して「答えを判定する」を押してね。'
+        :'聞き取り中… 英文がリアルタイムで表示されています（まだ確定前）。';
+      if(finalized) stopRecognition('captured');
     };
     instance.onerror=event=>{
       if(recognition!==instance || play!==session)return;
@@ -176,8 +189,12 @@ function startRecognition() {
     };
     instance.onend=()=>{
       if(recognition!==instance || play!==session)return;
-      stopRecognition($('#spoken-answer')?.value.trim()?'captured':'ready');
-      if(helper && !$('#spoken-answer')?.value.trim())helper.textContent='録音が終了しました。もう一度マイクを押すか英文を入力してね。';
+      const transcript=$('#spoken-answer')?.value.trim();
+      $('#spoken-answer')?.classList.remove('transcript-interim');
+      stopRecognition(transcript?'captured':'ready');
+      if(helper)helper.textContent=transcript
+        ?'音声認識が終了しました。表示された英文を確認してから判定してね。'
+        :'録音が終了しました。もう一度マイクを押すか英文を入力してね。';
     };
     recognitionWatchdog=setTimeout(()=>{
       if(recognition!==instance)return;

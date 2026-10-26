@@ -78,10 +78,20 @@ const path=require('node:path');
     await micButton.click();
     assert.equal(await micButton.getAttribute('aria-pressed'),'true');
     assert.equal(await micButton.getAttribute('aria-label'),'録音を停止する');
-    await micPage.evaluate(()=>window.__activeMic.onresult({results:[[{transcript:'Let me think about it.'}]]}));
+    // Interim results must be visible as the learner speaks, before onend.
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Let me'}],{isFinal:false})]}));
+    assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Let me');
+    assert.equal(await micPage.locator('#spoken-answer').evaluate(el=>el.classList.contains('transcript-interim')),true);
+    assert.equal(await micButton.getAttribute('aria-pressed'),'true');
+    assert.equal(await micButton.isVisible(),true);
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Let me think'}],{isFinal:false})]}));
+    assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Let me think');
+    assert.match(await micPage.locator('#speech-helper').innerText(),/リアルタイム/);
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]}));
     assert.equal(await micButton.isVisible(),false);
     assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
     assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Let me think about it.');
+    assert.equal(await micPage.locator('#spoken-answer').evaluate(el=>el.classList.contains('transcript-interim')),false);
     await micPage.locator('#retry-mic').click();
     assert.equal(await micButton.getAttribute('aria-pressed'),'true');
     await micButton.click(); // Explicit stop must remove the orange recording state.
@@ -96,6 +106,14 @@ const path=require('node:path');
     await micPage.locator('#next-question').click();
     assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
     await micPage.locator('#mic-button').click();
+    assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Could you'}],{isFinal:false})]}));
+    assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Could you');
+    // An interim recognition that ends without final text must not leave an active mic.
+    await micPage.evaluate(()=>window.__activeMic.onend());
+    assert.equal(await micPage.locator('#mic-button').isVisible(),false);
+    assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
+    await micPage.locator('#retry-mic').click();
     assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
     await micPage.locator('#leave-play').click();
     assert.equal(await micPage.locator('#home-view').isVisible(),true);

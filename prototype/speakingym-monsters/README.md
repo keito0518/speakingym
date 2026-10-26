@@ -52,3 +52,8 @@ The current prototype **does not rely on subjective self-rating**. It uses autho
 
 ### Suggested future collection-only abilities (not activated)
 Use unlockable evolution branches, secret color variants, collection-map discoveries or unusual egg hatching rather than hints/grade bonuses. Keep scoring independent of collectible abilities and require actual English practice for XP.
+
+## 2026-10-26 next iteration — live transcript and dungeon plans
+
+- Browser speech recognition now requests `interimResults=true` and updates the answer field **while the user is speaking**, styling non-final text distinctly. No XP is awarded for interim text alone; the learner must still request checking. Final recognition hides the microphone and offers rerecording. Unexpected `onend` retains available text and clears the active mic UI. Unsupported browsers keep typed English fallback. The exact behavior still needs real-device Safari confirmation.
+- Proposed Free/basic judging + Pro/deep after-run coaching and three different dungeon gameplay loops are recorded in [DUNGEON_AND_FEEDBACK_DESIGN.md](./DUNGEON_AND_FEEDBACK_DESIGN.md). These are **designs, not shipped dungeon areas or active billing tiers**; do not expose a placeholder dungeon menu until a substantive vertical slice exists.
