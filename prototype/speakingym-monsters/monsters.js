@@ -273,6 +273,7 @@ function renderQuestion() {
   }
   const prompt=currentPrompt();
   if (!prompt) {finishSession();return;}
+  const reviewing=!!(save.reviewPrompts?.[prompt.id] && save.reviewPrompts[prompt.id]<=dayKey());
   if(play.mode==='forest'){
     const style=prompt.kind==='listen'?'defense':prompt.kind==='read'?'reading':'attack';
     $('#forest-world-stage').dataset.action=style;
@@ -302,6 +303,7 @@ function renderQuestion() {
     if(!recognition)micView('ready');
   });
   micView('ready');
+  if(reviewing)$('#speech-helper').textContent='復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(prompt.kind==='listen'){
     $('#play-audio').addEventListener('click',()=>speakLine(prompt.audio));
     $('#reveal-transcript').addEventListener('click',()=>{$('#transcript').hidden=false;$('#transcript').textContent=prompt.audio;});
