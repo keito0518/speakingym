@@ -1,6 +1,7 @@
 import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, compareWithExamples, createSave, dayKey, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
+import { gradeLocalResponse } from './monster-grader.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -13,7 +14,7 @@ const difficultyCopy = {
   hard: { label: 'むずかしい', description: '長めの英文を読み、複数の条件を満たして英語で答える。' }
 };
 let save = loadSave() || createSave();
-let play = null, timer = null, recognition = null;
+let play = null, timer = null, recognition = null, recognitionWatchdog = null;
 
 function loadSave() {
   try { return validateSave(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')); }
@@ -24,10 +25,30 @@ function persist(next = save) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(save)); $('#save-note').textContent = '学習記録はこの端末に保存されます'; }
   catch { $('#save-note').textContent = '保存できない環境です。このタブを閉じると進捗が消えます'; }
 }
+function micView(mode='ready') {
+  const button=$('#mic-button'), retry=$('#retry-mic');
+  if(button){
+    button.classList.toggle('active',mode==='listening');
+    button.setAttribute('aria-pressed',String(mode==='listening'));
+    button.textContent=mode==='listening'?'■':'🎙';
+    button.title=mode==='listening'?'録音を停止する':'マイクで話す';
+    button.setAttribute('aria-label',mode==='listening'?'録音を停止する':'マイクで話す');
+    button.hidden=mode==='captured' || mode==='done';
+    button.disabled=mode==='done';
+  }
+  if(retry) retry.hidden=mode!=='captured';
+}
+function stopRecognition(mode='ready') {
+  if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
+  recognitionWatchdog=null;
+  const active=recognition;
+  recognition=null; // Disarm callbacks before abort: Safari fires onend asynchronously.
+  if(active)try{active.abort();}catch{}
+  micView(mode);
+}
 function stopAudio() {
-  try { recognition?.abort(); } catch {}
-  recognition = null;
-  try { speechSynthesis?.cancel(); } catch {}
+  stopRecognition('done');
+  try { window.speechSynthesis?.cancel(); } catch {}
 }
 function clearTimer() { if (timer) clearInterval(timer); timer = null; }
 function showView(name) {
@@ -92,11 +113,18 @@ function renderQuestion() {
     ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').innerHTML=`<div class="question-top"><span>QUESTION ${play.index+1} / ${play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
-  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">声に出してから、認識結果または入力文を確認</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" class="mic-button" title="マイクで話す" aria-label="マイクで話す">🎙</button></div><p id="speech-helper" class="answer-helper">マイクが使えなければ、声に出したあと入力なしで答え合わせもできます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを確認する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false">🎙</button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
+  $('#retry-mic').addEventListener('click',()=>{
+    if(!play || play.revealed)return;
+    $('#spoken-answer').value='';
+    micView('ready');startRecognition();
+  });
   $('#show-hint').addEventListener('click',showHint);
-  $('#show-answer').addEventListener('click',revealAnswer);
-  $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter')revealAnswer();});
+  $('#show-answer').addEventListener('click',gradeAnswer);
+  $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter')gradeAnswer();});
+  $('#spoken-answer').addEventListener('input',()=>{if(!recognition)micView('ready');});
+  micView('ready');
   if(prompt.kind==='listen'){
     $('#play-audio').addEventListener('click',()=>speakLine(prompt.audio));
     $('#reveal-transcript').addEventListener('click',()=>{$('#transcript').hidden=false;$('#transcript').textContent=prompt.audio;});
@@ -112,39 +140,97 @@ function speakLine(line) {
   } catch { $('#transcript').hidden=false;$('#transcript').textContent=line; }
 }
 function startRecognition() {
+  if(!play || play.revealed)return;
+  const helper=$('#speech-helper');
+  if(recognition){
+    stopRecognition();
+    if(helper)helper.textContent='録音を停止しました。もう一度マイクを押すか、英文を入力してね。';
+    return;
+  }
   const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!Constructor){$('#speech-helper').textContent='このブラウザでは音声認識を利用できません。声に出してから自分で確認、または英文を入力してください。';return;}
+  if(!Constructor){
+    micView('done');
+    if(helper)helper.textContent='このブラウザは音声認識に対応していません。英文を入力して判定できます。';
+    return;
+  }
   try{
-    if(recognition){recognition.stop();recognition=null;return;}
-    recognition=new Constructor();recognition.lang='en-US';recognition.interimResults=false;
-    recognition.onresult=event=>{const transcript=[...event.results].map(result=>result[0].transcript).join(' ').trim();$('#spoken-answer').value=transcript;$('#speech-helper').textContent='聞き取った英語を表示しました。内容を確認して答え合わせへ。';};
-    recognition.onerror=()=>{$('#speech-helper').textContent='聞き取れませんでした。英文を入力するか、自分で答え合わせしてください。';};
-    recognition.onend=()=>{recognition=null;$('#mic-button').classList.remove('active');};
-    recognition.start();$('#mic-button').classList.add('active');$('#speech-helper').textContent='聞き取り中… 話したら結果を確認してください。';
-  }catch{$('#speech-helper').textContent='マイクを開始できません。入力または自己チェックで続けられます。';recognition=null;}
+    const instance=new Constructor(),session=play;
+    recognition=instance;
+    instance.lang='en-US';instance.interimResults=false;instance.continuous=false;instance.maxAlternatives=1;
+    instance.onresult=event=>{
+      if(recognition!==instance || play!==session || !$('#spoken-answer'))return;
+      const transcript=[...event.results].map(result=>result[0]?.transcript||'').join(' ').trim();
+      if(transcript){
+        $('#spoken-answer').value=transcript;
+        if(helper)helper.textContent='聞き取った英文を表示しました。確認して「答えを判定する」を押してね。';
+        stopRecognition('captured');
+      }
+    };
+    instance.onerror=event=>{
+      if(recognition!==instance || play!==session)return;
+      stopRecognition();
+      if(helper)helper.textContent=event.error==='not-allowed'||event.error==='service-not-allowed'
+        ?'マイクの利用が許可されていません。英文を入力して判定できます。'
+        :'うまく聞き取れませんでした。もう一度録音するか、英文を入力してね。';
+    };
+    instance.onend=()=>{
+      if(recognition!==instance || play!==session)return;
+      stopRecognition($('#spoken-answer')?.value.trim()?'captured':'ready');
+      if(helper && !$('#spoken-answer')?.value.trim())helper.textContent='録音が終了しました。もう一度マイクを押すか英文を入力してね。';
+    };
+    recognitionWatchdog=setTimeout(()=>{
+      if(recognition!==instance)return;
+      stopRecognition();
+      if(helper)helper.textContent='録音が長く続いたため自動停止しました。もう一度試すか英文を入力してね。';
+    },15000);
+    instance.start();
+    micView('listening');
+    if(helper)helper.textContent='録音中… 話し終えたら自動的に停止します。■で手動停止もできます。';
+  }catch{
+    stopRecognition();
+    if(helper)helper.textContent='マイクを開始できません。英文入力で続けられます。';
+  }
 }
 function showHint() {
   const prompt=currentPrompt(), phrase=phraseFor(prompt.phraseId);play.hintUsed=true;
   $('#hint-panel').hidden=false;$('#hint-panel').textContent=`ヒント：${prompt.hint || phrase.hint}　${prompt.tip || phrase.tip}`;
 }
-function revealAnswer() {
+function gradeAnswer() {
   if(!play || play.revealed)return;
-  play.revealed=true;stopAudio();
-  const prompt=currentPrompt(), raw=$('#spoken-answer').value;
-  const match=compareWithExamples(prompt,raw);
-  $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#mic-button').disabled=true;
-  $('#feedback-panel').innerHTML=`<div class="feedback-box"><div class="feedback-head">使える表現の一例</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}${match.matchesExample?' 入力した英文は登録例文と一致しました。':' 自然な言い方は複数あります。表示例文と比べてみよう。'}</div></div><p class="rating-legend">実際にどれくらい自力で話せた？（自己チェック・自動採点ではありません）</p><div class="rating-row"><button class="rating-button best" data-rating="smooth">自力で言えた！</button><button class="rating-button" data-rating="hint">ヒントで言えた</button><button class="rating-button" data-rating="again">まだ難しい</button></div>`;
-  $$('.rating-button').forEach(button=>button.addEventListener('click',()=>rateAnswer(button.dataset.rating)));
-}
-function rateAnswer(rating) {
-  if(!play || !play.revealed)return;
-  const prompt=currentPrompt();
-  const effectiveRating=rating==='smooth'&&play.hintUsed?'hint':rating;
-  const {save:next,reward}=recordAnswer(save,prompt.id,effectiveRating);
+  stopRecognition('done');
+  const prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
+  const grade=gradeLocalResponse(prompt,raw);
+  if(grade.status!=='correct'){
+    const empty=grade.status==='empty';
+    const uncertain=grade.status==='review'||grade.status==='ungraded';
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':'もう少しで伝わりそう！'}</div><p class="grading-intro">${uncertain?'簡易判定で確認できない部分があります。正しい別表現の可能性もあるので、言い換えてみてね。':'回答を入力または音声認識で取り込んでね。'}</p>${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${empty?'':'<button type="button" class="grading-skip" id="show-example">例文を見て次へ（XPなし）</button>'}</div>`;
+    if(!empty)$('#show-example').addEventListener('click',skipAnswer);
+    micView('ready');
+    return;
+  }
+  const rating=play.hintUsed?'hint':'smooth';
+  const {save:next,reward}=recordAnswer(save,prompt.id,rating);
   persist(next);
   play.earnedXp+=reward.xp;
   play.captured.push(...reward.captured);
-  if(effectiveRating==='smooth')play.smooth++;
+  if(rating==='smooth')play.smooth++;
+  play.revealed=true;
+  stopAudio();
+  $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">✓ 内容を確認できた！ +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>※教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
+  $('#next-question').addEventListener('click',advanceQuestion);
+}
+function skipAnswer(){
+  if(!play || play.revealed)return;
+  const prompt=currentPrompt(),{save:next}=recordAnswer(save,prompt.id,'again');
+  persist(next);
+  play.revealed=true;stopAudio();
+  $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
+  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">例文を確認しよう · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
+  $('#next-question').addEventListener('click',advanceQuestion);
+}
+function advanceQuestion(){
+  if(!play || !play.revealed)return;
   play.index++;
   if(play.index===play.prompts.length){finishSession();return;}
   if(play.deadline && Date.now()>=play.deadline){finishSession(true);return;}
@@ -211,4 +297,6 @@ $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
 $('#collection-home').addEventListener('click',renderHome);
 persist(save);
+window.addEventListener('pagehide',()=>stopAudio());
+document.addEventListener('visibilitychange',()=>{if(document.hidden && recognition)stopRecognition();});
 renderHome();

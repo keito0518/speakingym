@@ -63,6 +63,44 @@ const path=require('node:path');
     await hardPage.reload();
     assert.equal(await hardPage.locator('[data-difficulty="hard"]').getAttribute('aria-pressed'),'true');
     await hardContext.close();
+    // Fake the browser speech API: check start/stop, stale onend, capture,
+    // retry, denied permission, and changing views without a stuck mic.
+    const {context:micContext,page:micPage}=await boot(390);
+    await micPage.evaluate(()=>{
+      class FakeRecognition {
+        start(){window.__activeMic=this;}
+        abort(){this.aborted=true;queueMicrotask(()=>this.onend?.());}
+      }
+      window.SpeechRecognition=FakeRecognition;
+    });
+    await micPage.getByRole('button',{name:/まず練習する/}).click();
+    const micButton=micPage.locator('#mic-button');
+    await micButton.click();
+    assert.equal(await micButton.getAttribute('aria-pressed'),'true');
+    assert.equal(await micButton.getAttribute('aria-label'),'録音を停止する');
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[[{transcript:'Let me think about it.'}]]}));
+    assert.equal(await micButton.isVisible(),false);
+    assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
+    assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Let me think about it.');
+    await micPage.locator('#retry-mic').click();
+    assert.equal(await micButton.getAttribute('aria-pressed'),'true');
+    await micButton.click(); // Explicit stop must remove the orange recording state.
+    assert.equal(await micButton.getAttribute('aria-pressed'),'false');
+    await micButton.click();
+    await micPage.evaluate(()=>window.__activeMic.onerror?.({error:'not-allowed'}));
+    assert.equal(await micButton.getAttribute('aria-pressed'),'false');
+    assert.match(await micPage.locator('#speech-helper').innerText(),/許可されていません/);
+    await micPage.locator('#spoken-answer').fill('Let me think about it.');
+    await micPage.locator('#show-answer').click();
+    assert.equal(await micButton.isVisible(),false);
+    await micPage.locator('#next-question').click();
+    assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
+    await micPage.locator('#mic-button').click();
+    assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+    await micPage.locator('#leave-play').click();
+    assert.equal(await micPage.locator('#home-view').isVisible(),true);
+    assert.equal(await micPage.locator('#play-view').isVisible(),false);
+    await micContext.close();
     const {context,page}=await boot(390);
     await page.getByRole('button',{name:/まず練習する/}).click();
     assert.match(await page.locator('#play-mode-label').innerText(),/練習モード/);

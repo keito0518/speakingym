@@ -34,3 +34,8 @@ footer{padding:29px 0;border-top:1px solid #e8e9df;margin-top:28px;display:flex;
 
 /* Objective answer checks: actionable feedback without subjective reward buttons. */
 .grading-review{border-color:#e4d9ba;background:#fffcf3}.grading-correct{border-color:#acd6ba;background:#f2fbf4}.grading-intro{font-size:12px;line-height:1.7;color:#526d58;margin:8px 0}.grading-reasons{font-size:12px;line-height:1.65;color:#456750;margin:9px 0 6px;padding-left:20px}.grading-next,.grading-skip{border:0;border-radius:12px;min-height:48px;padding:12px 18px;margin-top:16px;font-weight:800;font-size:13px;display:block;width:100%;background:#238361;color:white}.grading-skip{background:#f7f6ec;color:#3c6e52;border:1px solid #c9dccb}.grading-next:hover{background:#176b4a}.grading-skip:hover{background:#e8f0e4}
+
+/* Recording control: never leave a glowing/active microphone after a result, stop or view change. */
+.mic-button[aria-pressed="true"]{background:#d6815b;box-shadow:0 0 0 4px #eeb89d66}
+.retry-mic{display:inline-flex;align-items:center;min-height:38px;margin-top:8px;padding:5px 12px;border:1px solid #b9d5c7;border-radius:10px;background:#fff;color:#277554;font-size:11px;font-weight:800}
+.retry-mic[hidden],.mic-button[hidden]{display:none!important}
