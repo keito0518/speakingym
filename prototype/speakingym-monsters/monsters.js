@@ -45,8 +45,8 @@ function renderDifficulty() {
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);
   $('#hero-monster-art').innerHTML = monsterArt(creature.id,growth.evolved);
-  $('#hero-monster-name').textContent = creature.name + (growth.evolved ? ' ✨' : '');
-  $('#hero-monster-species').textContent = creature.kind;
+  $('#hero-monster-name').textContent = (growth.evolved ? creature.evolvedName : creature.name) + (growth.evolved ? ' ✨' : '');
+  $('#hero-monster-species').textContent = `${creature.japaneseName} · ${creature.roots.map(root=>root.word).join(' + ')}`;
   $('#hero-level').textContent = `Lv.${growth.level}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
@@ -54,6 +54,7 @@ function renderHome() {
   $('#stat-independent').innerHTML = `${summary.independent}<span> / ${summary.total}</span>`;
   $('#stat-review').textContent = summary.reviewCount;
   $('#stat-monsters').innerHTML = `${save.ownedMonsters.length}<span> / ${MONSTERS.length}</span>`;
+  $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
   showView('home');
 }
@@ -170,9 +171,21 @@ function renderCollection(message = '') {
     const growth=getMonsterProgress(save,creature.id);
     const unlock=creature.masteryUnlock!==undefined?`MASTER ${creature.masteryUnlock}表現で出会える`:`自力で${creature.unlock}表現を話せると出会える`;
     const walletActions=`<div class="feed-actions"><button data-feed-monster="${creature.id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>+10 XP</button><button data-feed-monster="${creature.id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>`;
-    return `<article class="monster-card ${owned?'':'locked'}"><div class="monster-picture">${monsterArt(creature.id,owned&&growth.evolved)}</div><h3>${owned?escapeHtml(creature.name):'？？？'}</h3><p>${owned?escapeHtml(creature.kind+' · '+creature.note):escapeHtml(unlock)}</p>${owned?`<span class="mini-tag">Lv.${growth.level} ${growth.evolved?'· 進化済み':''}</span><div class="mini-xp-track"><span style="width:${100-growth.toNextLevel/XP_PER_LEVEL*100}%"></span></div><div class="monster-card-tools"><button class="select-companion" data-select-monster="${creature.id}" ${active?'disabled':''}>${active?'ホームに表示中':'ホームに表示'}</button>${walletActions}</div>`:'<span class="mini-tag">未発見</span>'}</article>`;
+    const displayName = growth.evolved ? creature.evolvedName : creature.name;
+    const roots = creature.roots.map(root=>`<div class="word-row"><span><b lang="en">${escapeHtml(root.word)}</b><small>${escapeHtml(root.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${escapeHtml(root.word)}" aria-label="${escapeHtml(root.word)} の発音を聞く">▶ 聞く</button></div>`).join('');
+    return `<article class="monster-card ${owned?'':'locked'}"><div class="monster-picture">${monsterArt(creature.id,owned&&growth.evolved)}</div><h3 lang="en">${owned?escapeHtml(displayName):'???'}</h3><p class="monster-japanese">${owned?escapeHtml(creature.japaneseName+' · '+creature.kind):escapeHtml(unlock)}</p>${owned?`<p class="monster-note">${escapeHtml(creature.note)}</p><div class="word-roots"><strong>NAME ORIGIN · 名前の由来</strong>${roots}</div><div class="monster-skill"><span>固有能力案 · 進化後に解放予定</span><strong lang="en">${escapeHtml(creature.skill.name)}</strong><small>${escapeHtml(creature.skill.description)}</small></div><span class="mini-tag">Lv.${growth.level} ${growth.evolved?'· 進化済み':''}</span><div class="mini-xp-track"><span style="width:${100-growth.toNextLevel/XP_PER_LEVEL*100}%"></span></div><div class="monster-card-tools"><button class="select-companion" data-select-monster="${creature.id}" ${active?'disabled':''}>${active?'ホームに表示中':'ホームに表示'}</button>${walletActions}</div>`:'<span class="mini-tag">未発見</span>'}</article>`;
   }).join('');
-  $$('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection(`${monsterFor(button.dataset.selectMonster).name}をホームに表示します。`);}));
+  $('[data-pronounce-word]').forEach(button=>button.addEventListener('click',()=>{
+    const word=button.dataset.pronounceWord;
+    if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){ $('#feed-feedback').textContent='このブラウザでは発音再生ができません。'; return; }
+    try{
+      window.speechSynthesis.cancel();
+      const utterance=new SpeechSynthesisUtterance(word);
+      utterance.lang='en-US'; utterance.rate=.82;
+      window.speechSynthesis.speak(utterance);
+    }catch { $('#feed-feedback').textContent='発音再生を開始できませんでした。'; }
+  }));
+  $('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection(`${monsterFor(button.dataset.selectMonster).name}をホームに表示します。`);}));
   $$('[data-feed-monster]').forEach(button=>button.addEventListener('click',()=>{
     const id=button.dataset.feedMonster, amount=button.dataset.feedAmount==='all'?save.xpWallet:10;
     try {

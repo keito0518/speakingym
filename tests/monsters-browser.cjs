@@ -19,7 +19,8 @@ const path=require('node:path');
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
       assert.equal(await page.getByRole('heading',{name:/英語を話すほど/}).isVisible(),true);
-      assert.equal(await page.locator('#hero-monster-name').innerText(),'メダマゴ');
+      assert.equal(await page.locator('#hero-monster-name').innerText(),'Yolkie');
+      assert.match(await page.locator('#hero-vocab').innerText(),/yolk/);
       assert.equal(await page.locator('#home-wallet').innerText(),'0');
       const metrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(metrics.scroll<=metrics.inner+1,`${engine}/${width} horizontal overflow: ${JSON.stringify(metrics)}`);
@@ -77,7 +78,7 @@ const path=require('node:path');
       await page.locator('.rating-button.best').click();
     }
     await page.locator('#result-view').waitFor({state:'visible'});
-    assert.match(await page.locator('#result-discoveries').innerText(),/カタッポ/);
+    assert.match(await page.locator('#result-discoveries').innerText(),/Soxie/);
     assert.match(await page.locator('#result-rewards').innerText(),/40 XP ストック/);
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-result.png`),fullPage:true});
     await page.locator('#result-collection').click();
@@ -86,14 +87,16 @@ const path=require('node:path');
     assert.equal(await page.locator('#collection-wallet').innerText(),'30 XP');
     await page.locator('[data-feed-monster="katappo"][data-feed-amount="all"]').click();
     assert.equal(await page.locator('#collection-wallet').innerText(),'0 XP');
-    assert.match(await page.locator('#feed-feedback').innerText(),/カタッポに30 XP/);
+    assert.match(await page.locator('#feed-feedback').innerText(),/Soxieに30 XP/);
+    assert.match(await page.locator('[data-select-monster="katappo"]').locator('xpath=ancestor::article').innerText(),/sock/);
+    assert.equal(await page.locator('[data-pronounce-word="sock"]').isVisible(),true);
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-collection.png`),fullPage:true});
     const collectionMetrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
     assert.ok(collectionMetrics.scroll<=collectionMetrics.inner+1,`${engine}/390 collection horizontal overflow: ${JSON.stringify(collectionMetrics)}`);
     await page.locator('[data-select-monster="katappo"]').click();
     await page.locator('#collection-home').click();
     assert.match(await page.locator('#stat-independent').innerText(),/2 \/ 6/);
-    assert.match(await page.locator('#hero-monster-name').innerText(),/カタッポ/);
+    assert.match(await page.locator('#hero-monster-name').innerText(),/Soxie/);
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
     for(let i=0;i<6;i++){

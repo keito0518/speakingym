@@ -278,13 +278,13 @@ export const ALL_PROMPTS = Object.freeze([
 ]);
 
 export const MONSTERS = Object.freeze([
-  { id: 'medamago', name: 'メダマゴ', kind: 'めだまやきモンスター', color: '#f5b545', unlock: 0, note: '黄身の目でじっと見つめてくる。朝が苦手。' },
-  { id: 'katappo', name: 'カタッポ', kind: '片方だけの靴下', color: '#9585d9', unlock: 2, note: '相方を探して毎日走り回っている。' },
-  { id: 'purupun', name: 'プルプン', kind: '歩くプリン', color: '#c49355', unlock: 4, note: '緊張すると、より一層ぷるぷるする。' },
-  { id: 'koge', name: 'コゲッタ', kind: 'すねたトースト', color: '#d4875a', masteryUnlock: 2, note: 'トースターに入ると機嫌が良くなる。' },
-  { id: 'cone', name: 'コンボウ', kind: '三角コーンの旅人', color: '#ed864e', masteryUnlock: 4, note: 'いつも道をふさいでいるのに、道案内が得意。' },
-  { id: 'nororo', name: 'ノロロ', kind: '転がるのり巻き', color: '#5e976e', unlock: 3, note: '走るたびに海苔が一枚ずつほどけていく。' },
-  { id: 'keshipon', name: 'ケシポン', kind: '消しゴムのたましい', color: '#84a9ca', unlock: 5, note: '昨日の失敗まで消そうとしてしまう。' },
-  { id: 'donako', name: 'ドナコ', kind: 'ひとくちドーナツ', color: '#d49b8c', masteryUnlock: 3, note: '自分の欠けたところを誇りにしている。' },
-  { id: 'amekurage', name: 'アメクラゲ', kind: '傘になったクラゲ', color: '#7ab4ca', unlock: 6, note: '晴れた日も誰かを雨から守ろうとする。' }
+  { id: 'medamago', name: 'Yolkie', japaneseName: 'メダマゴ', evolvedName: 'Sunnyolk', roots: [{"word":"yolk","meaning":"卵の黄身"},{"word":"sunny-side up","meaning":"片面焼きの目玉焼き"}], skill: { name: 'Slow-Mo', description: '英文の音声をゆっくり聞き直す' }, kind: 'めだまやきモンスター', color: '#f5b545', unlock: 0, note: '黄身の目でじっと見つめてくる。朝が苦手。' },
+  { id: 'katappo', name: 'Soxie', japaneseName: 'カタッポ', evolvedName: 'Pairadox', roots: [{"word":"sock","meaning":"靴下"},{"word":"pair","meaning":"一組・ペア"}], skill: { name: 'Pair-Up', description: '同じ意味の別表現とセットで覚える' }, kind: '片方だけの靴下', color: '#9585d9', unlock: 2, note: '相方を探して毎日走り回っている。' },
+  { id: 'purupun', name: 'Wobblin', japaneseName: 'プルプン', evolvedName: 'Wobblord', roots: [{"word":"wobble","meaning":"ぐらぐら揺れる"},{"word":"pudding","meaning":"プリン"}], skill: { name: 'Echo', description: '聞いたフレーズをもう一度確認する' }, kind: '歩くプリン', color: '#c49355', unlock: 4, note: '緊張すると、より一層ぷるぷるする。' },
+  { id: 'koge', name: 'Toastrophe', japaneseName: 'コゲッタ', evolvedName: 'Toastorm', roots: [{"word":"toast","meaning":"トースト"},{"word":"catastrophe","meaning":"大惨事"}], skill: { name: 'Redo', description: '間違えた英語だけ集中してやり直す' }, kind: 'すねたトースト', color: '#d4875a', masteryUnlock: 2, note: 'トースターに入ると機嫌が良くなる。' },
+  { id: 'cone', name: 'Conavoy', japaneseName: 'コンボウ', evolvedName: 'Conavoy Max', roots: [{"word":"cone","meaning":"円すい・三角コーン"},{"word":"convoy","meaning":"車列・集団移動"}], skill: { name: 'Navigator', description: '問題の重要な指示を見つける' }, kind: '三角コーンの旅人', color: '#ed864e', masteryUnlock: 4, note: 'いつも道をふさいでいるのに、道案内が得意。' },
+  { id: 'nororo', name: 'Rolloro', japaneseName: 'ノロロ', evolvedName: 'Rollorama', roots: [{"word":"roll","meaning":"巻く・転がる"},{"word":"seaweed","meaning":"海藻・のり"}], skill: { name: 'Switch-Up', description: '同じ表現を別の場面で使ってみる' }, kind: '転がるのり巻き', color: '#5e976e', unlock: 3, note: '走るたびに海苔が一枚ずつほどけていく。' },
+  { id: 'keshipon', name: 'Erasie', japaneseName: 'ケシポン', evolvedName: 'Erasaurus', roots: [{"word":"erase","meaning":"消す"},{"word":"eraser","meaning":"消しゴム"}], skill: { name: 'Clean Slate', description: '苦手な表現だけをまとめて復習する' }, kind: '消しゴムのたましい', color: '#84a9ca', unlock: 5, note: '昨日の失敗まで消そうとしてしまう。' },
+  { id: 'donako', name: 'Nibbunut', japaneseName: 'ドナコ', evolvedName: 'Nibbunova', roots: [{"word":"nibble","meaning":"少しずつかじる"},{"word":"doughnut","meaning":"ドーナツ"}], skill: { name: 'Tiny Bites', description: '長い英文を短いまとまりに分ける' }, kind: 'ひとくちドーナツ', color: '#d49b8c', masteryUnlock: 3, note: '自分の欠けたところを誇りにしている。' },
+  { id: 'amekurage', name: 'Umbrellish', japaneseName: 'アメクラゲ', evolvedName: 'Umbrelluna', roots: [{"word":"umbrella","meaning":"傘"},{"word":"jellyfish","meaning":"クラゲ"}], skill: { name: 'Shelter', description: '難しい英文の語彙にやさしい英語の語注を出す' }, kind: '傘になったクラゲ', color: '#7ab4ca', unlock: 6, note: '晴れた日も誰かを雨から守ろうとする。' }
 ]);

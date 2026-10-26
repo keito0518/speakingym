@@ -22,6 +22,11 @@ test('curriculum has six expressions, two situations, and three authored difficu
   assert.equal(new Set(PROMPTS.map(p => p.id)).size,12);
   assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
   assert.ok(MONSTERS.every(monster=>monster.name&&monster.kind&&monster.note));
+  assert.ok(MONSTERS.every(monster => /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(monster.name) && monster.japaneseName && monster.evolvedName));
+  assert.equal(new Set(MONSTERS.map(monster=>monster.name)).size,MONSTERS.length);
+  assert.ok(MONSTERS.every(monster => monster.roots.length>=1 && monster.roots.every(root=>root.word&&root.meaning)));
+  assert.ok(MONSTERS.every(monster => monster.skill?.name && monster.skill?.description));
+  assert.deepEqual(MONSTERS.find(monster=>monster.id==='medamago').roots.map(root=>root.word),['yolk','sunny-side up']);
   for(const phrase of PHRASES) {
     assert.equal(PROMPTS.filter(prompt=>prompt.phraseId===phrase.id).length,2);
     assert.ok(phrase.hint&&phrase.tip);
