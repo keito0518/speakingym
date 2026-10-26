@@ -1,0 +1,51 @@
+name: Free-only release candidate QA
+on:
+  push:
+    branches: [release/free-training-20261024]
+  pull_request:
+    paths:
+      - '**'
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify production and billing source files are untouched
+        shell: bash
+        run: |
+          git diff --name-only origin/main...HEAD | while IFS= read -r file; do
+            case "$file" in
+              worker/*|billing*|plan-usage.js|plans-billing*|.github/workflows/staging-*|scripts/stripe-*|scripts/staging-*|stripe-*)
+                echo "Out-of-scope protected file modified: $file"
+                exit 1 ;;
+            esac
+          done
+  tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full Node and existing Worker regressions
+        run: node --test tests/*.test.mjs worker/*.test.mjs
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Chromium and WebKit public-flow QA
+        run: |
+          python3 -m http.server 8765 >/tmp/free-qa-server.log 2>&1 &
+          node tests/browser-qa.cjs
+          SPEAKINGYM_BROWSER_ENGINE=webkit node tests/browser-qa.cjs
+          node tests/free-release-browser-qa.cjs
+          SPEAKINGYM_BROWSER_ENGINE=webkit node tests/free-release-browser-qa.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: free-release-browser-screenshots
+          path: qa-screenshots/

@@ -5,7 +5,7 @@ import {existsSync,readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const source=path=>readFileSync(new URL(path,root),'utf8');
 const origin='https://speakingym.pages.dev';
-const indexed=['/','/reflex.html','/scenes.html','/phrasebook.html','/plans.html',
+const indexed=['/','/reflex.html','/freeze-breaker.html','/transfer.html','/scenes.html','/phrasebook.html','/plans.html',
  '/privacy.html','/terms.html','/contact.html'];
 
 test('robots allows public Free beta discovery and points to exactly the same-origin sitemap',()=>{
@@ -49,8 +49,8 @@ test('home schema is accurate, Japanese, public free access and does not claim p
  assert.equal(data.offers,undefined);
  assert.match(home,/name="twitter:card" content="summary"/);
 });
-test('AI scene and sprint metadata are correct, nonduplicated and canonical',()=>{
- for(const file of ['scenes.html','reflex.html','phrasebook.html','plans.html']){
+test('AI scene and Free workout metadata are correct, nonduplicated and canonical',()=>{
+ for(const file of ['scenes.html','reflex.html','freeze-breaker.html','transfer.html','phrasebook.html','plans.html']){
   const html=source(file);
   const links=[...html.matchAll(/<link rel="canonical" href="([^"]+)"/g)].map(m=>m[1]);
   assert.deepEqual(links,[origin+'/'+file]);

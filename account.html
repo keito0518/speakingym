@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#113c2e">
+<meta name="theme-color" content="#faf9f6">
 <meta name="description" content="Speakingymのマイページ。実際の学習履歴、今週の練習状況、AI先生の講評、保存フレーズをまとめて確認できます。">
-<title>My Learning Space | Speakingym</title>
+<title>マイページ | Speakingym</title>
 <style>
 :root{--forest:#123d2e;--ink:#203a2e;--muted:#6b7c70;--cream:#f7f7f1;--line:#e4eae1;--accent:#fa9c70;--lime:#d5f3a1;--white:#fff;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;color:var(--ink);background:var(--cream);font-synthesis:none;line-height:1.6}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:var(--cream)}a{color:inherit;text-decoration:none}button{font:inherit}a,button{touch-action:manipulation}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #ef9a73;outline-offset:4px}
@@ -85,6 +85,12 @@ main{max-width:1160px;padding:0 24px 90px;margin:0 auto}
 .empty-state strong{font-size:14px;display:block}.empty-state p{font-size:12px;color:#697e70;line-height:1.8;margin:6px 0 13px}
 .empty-state a{font-size:12px;font-weight:850;color:#2d7250}
 .lower-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:18px}
+.transfer-dashboard{margin-top:18px}
+.transfer-dashboard-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.transfer-dashboard-stats>div{background:#eef6eb;border-radius:13px;padding:15px 9px;text-align:center;min-width:0}
+.transfer-dashboard-stats strong{display:block;color:#205b3e;font-size:30px;line-height:1.3}
+.transfer-dashboard-stats span{font-size:11px;color:#5f7866;font-weight:850;overflow-wrap:anywhere}
+@media(max-width:520px){.transfer-dashboard-stats{gap:6px}.transfer-dashboard-stats>div{padding:10px 4px}.transfer-dashboard-stats strong{font-size:25px}.transfer-dashboard-stats span{font-size:10px}}
 .feedback-item{padding:16px;border-left:3px solid #b0d6a4;border-radius:0 10px 10px 0;background:#f6faf3}
 .feedback-date{font-size:10px;font-weight:900;color:#8d9b8c}
 .feedback-label{font-size:10px;font-weight:950;letter-spacing:.6px;color:#438263;margin:12px 0 3px}
@@ -108,21 +114,47 @@ main{max-width:1160px;padding:0 24px 90px;margin:0 auto}
 @media(max-width:600px){.site-header-inner{padding:17px 19px}.logo{font-size:23px}.header-link{font-size:11px}main{padding:0 14px 65px}.hero{margin:0 -14px;border-radius:0 0 23px 23px;padding:30px 23px 30px;gap:22px}.hero h1{font-size:38px;letter-spacing:-1.7px;margin-top:13px}.hero-desc{font-size:12px;line-height:1.85}.hero-actions{margin-top:22px;gap:15px}.hero-button{min-height:49px}.rhythm{padding:19px}.rhythm-summary strong{font-size:46px}.weekdays{gap:5px}.page-content{padding-top:29px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.sg-stat{min-height:135px;padding:15px 16px}.sg-stat strong{font-size:35px}.sg-stat .stat-label{font-size:11px}.panel{padding:19px}.main-grid{margin-top:23px;gap:12px}.lower-grid{gap:12px;margin-top:12px}.shortcut-row{gap:7px}.shortcut-row a{font-size:10px;padding:12px 6px}.section-heading h2{font-size:22px}.privacy-info{margin-top:13px}}
 @media(max-width:600px){.stats-grid .sg-stat:last-child{grid-column:1 / -1;min-height:110px}}
 @media(prefers-reduced-motion:no-preference){.hero-button,.next-button,.shortcut-row a{transition:transform .18s ease,background .18s ease}.hero-button:hover,.next-button:hover{transform:translateY(-2px)}}
+/* Learning records should read like a dashboard, not a promotional landing page. */
+:root{--forest:#285547;--ink:#27392e;--muted:#69766c;--cream:#faf9f6;--line:#e0e6dc;--accent:#b8654f;--lime:#285547}
+body{background:#faf9f6}.site-header{background:#faf9f6;color:#2d4436;border-bottom:1px solid #e2e6dc}
+.site-header-inner{padding-top:16px;padding-bottom:16px}.logo{letter-spacing:-.04em}.header-link{color:#47634d}
+body.account-page .sg-accountbar{background:#faf9f6;border-color:#e2e6dc;color:#375441}
+body.account-page .sg-account-status{color:#52695b}
+body.account-page .sg-accountbar button,body.account-page .sg-accountbar a{color:#365a46;background:#fff;border-color:#d6e2d7}
+body.account-page .sg-accountbar button.primary{background:#285547;border-color:#285547;color:#fff}
+main{max-width:1050px}.hero{background:transparent;box-shadow:none;color:#24392d;border:0;border-bottom:1px solid #e0e6dc;border-radius:0;padding:32px 5px 27px;gap:25px}
+.hero:after{content:none}.eyebrow{color:#778576;letter-spacing:.025em}.eyebrow:before{content:none}
+#greeting-name{color:#647669}.hero h1{font-size:clamp(27px,3.8vw,40px);letter-spacing:-.025em;line-height:1.4;margin:12px 0 8px;text-wrap:pretty;line-break:strict}
+.hero h1 em{color:#285547}.hero-desc{color:#69796d;font-size:13px}
+.hero-actions{margin-top:20px}.hero-button{border-radius:8px;background:#285547;color:#fff;box-shadow:none;font-weight:750}.hero-button:hover{background:#1f473a}
+.hero-small-link{color:#39624a;text-decoration:underline;text-underline-offset:4px}
+.rhythm{background:#fff;border:1px solid #e0e6dc;backdrop-filter:none;border-radius:10px;padding:17px 19px}
+.rhythm-top,.rhythm-top span:last-child,.rhythm-summary span,.rhythm-caption,.weeknote{color:#728277}.rhythm-summary strong{font-size:43px;color:#315744;letter-spacing:-.04em}
+.weekday .weekday-dot{background:#f2f5ee;border-color:#e2e9df;color:#7b8c80;border-radius:5px}.weekday.done .weekday-dot{background:#dce9dc;color:#2d6047;border-color:#cbddce}
+.weekday.today .weekday-dot{outline-color:#77987e}.weekday>span:last-child{color:#73857a}
+.page-content{padding-top:31px}.section-kicker{color:#7d8577;letter-spacing:.02em}.section-heading h2{letter-spacing:-.02em;font-size:24px}
+.sg-stat,.panel,.privacy-info{border-radius:11px;box-shadow:none}.sg-stat,.sg-stat:first-child,.sg-stat:nth-child(2){background:#fff}
+.sg-stat:before{content:none}.sg-stat .stat-icon{background:#f6f8f3}.sg-stat strong{font-size:37px;letter-spacing:-.03em}
+.next-feature{background:#f7f9f5;border-radius:9px}.next-feature:after{content:none}.next-tag{background:#eaf0e8;color:#47674f}
+.next-button{background:#285547;border-radius:8px}.shortcut-row a,.saved-item,.session-item,.transfer-dashboard-stats>div{border-radius:8px;background:#f8faf6}
+.footer-line{letter-spacing:0}h1,h2,h3,p{text-wrap:pretty;line-break:strict;overflow-wrap:break-word}
+@media(max-width:600px){main{padding:0 17px 55px}.hero{margin:0;padding:26px 0 24px;gap:17px}.hero h1{font-size:clamp(28px,7vw,36px);letter-spacing:-.02em}.site-header-inner{padding:15px 17px}.rhythm{padding:17px}.sg-stat{min-height:115px;padding:14px}.section-heading h2{font-size:21px}.panel{padding:18px}}
 </style>
+<link rel="stylesheet" href="./soft-neon.css">
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
-<body class="account-page">
+<body class="account-page sg-soft-neon sg-account">
 <header class="site-header"><div class="site-header-inner"><a href="./index.html" class="logo" aria-label="Speakingym ホーム">speakin<span>gym.</span></a><a class="header-link" href="./index.html">← ホームへ戻る</a></div></header>
 <main>
  <section class="hero" aria-labelledby="heroTitle">
   <div class="hero-left">
-   <div class="eyebrow">YOUR SPEAKING SPACE</div>
+   <div class="eyebrow">マイページ</div>
    <span id="greeting-name">おかえりなさい。</span>
-   <h1 id="heroTitle">話した分だけ、<br><em>前に進める。</em></h1>
-   <p class="hero-desc">完璧じゃなくていい。昨日よりひと言多く話せたら、それも立派な成長。あなたの練習を、ここから続けよう。</p>
-   <div class="hero-actions"><a id="sg-hero-action" class="hero-button" href="./reflex.html">⚡ 今日の練習を始める <span aria-hidden="true">↗</span></a><a href="#progress" class="hero-small-link">学習記録を見る ↓</a></div>
+   <h1 id="heroTitle">練習記録と、次の一歩。</h1>
+   <p class="hero-desc">挑戦した回数、保存した表現、復習の予定をここで確認できます。</p>
+   <div class="hero-actions"><a id="sg-hero-action" class="hero-button" href="./freeze-breaker.html">シーン実況を始める <span aria-hidden="true">→</span></a><a href="#progress" class="hero-small-link">学習記録を見る</a></div>
   </div>
   <aside class="rhythm" aria-labelledby="weeklyTitle">
-   <div class="rhythm-top"><span id="weeklyTitle">WEEKLY RHYTHM</span><span>直近7日間</span></div>
+   <div class="rhythm-top"><span id="weeklyTitle">今週の記録</span><span>直近7日間</span></div>
    <div class="rhythm-summary"><strong id="sg-weekly-active">0</strong><span>日、英語に挑戦</span></div>
    <p class="rhythm-caption" id="sg-weekly-caption">60秒チャレンジの履歴から集計</p>
    <div id="sg-weekly-days" class="weekdays" role="list" aria-label="過去7日間の60秒チャレンジ記録">
@@ -132,7 +164,7 @@ main{max-width:1160px;padding:0 24px 90px;margin:0 auto}
   </aside>
  </section>
  <div class="page-content" id="progress">
-  <div class="section-heading"><div><p class="section-kicker">YOUR NUMBERS</p><h2>少しずつ、積み重ねた記録。</h2></div><span class="section-kicker">ALL TIME</span></div>
+  <div class="section-heading"><div><p class="section-kicker">これまでの練習</p><h2>少しずつ、積み重ねた記録。</h2></div><span class="section-kicker">累計</span></div>
   <section id="sg-account-stats" class="stats-grid" aria-label="あなたの学習記録" aria-live="polite">
    <div class="sg-stat"><span class="stat-icon">⚡</span><strong>—</strong><span class="stat-label">60秒チャレンジ</span></div>
    <div class="sg-stat"><span class="stat-icon">↗</span><strong>—</strong><span class="stat-label">保存フレーズ</span></div>
@@ -140,37 +172,53 @@ main{max-width:1160px;padding:0 24px 90px;margin:0 auto}
   </section>
   <div class="main-grid">
    <section class="panel next-panel" aria-labelledby="nextTitle">
-    <div class="section-heading"><div><p class="section-kicker">KEEP GOING</p><h2 id="nextTitle">次の一歩。</h2></div></div>
+    <div class="section-heading"><div><p class="section-kicker">今日のおすすめ</p><h2 id="nextTitle">次の一歩。</h2></div></div>
     <div class="next-feature">
-     <span class="next-tag">RECOMMENDED FOR YOU</span>
+     <span class="next-tag">次はこれをやってみよう</span>
      <h3 id="sg-next-title">今日も、英語を口に出そう。</h3>
      <p id="sg-next-description">60秒だけでもいい。まずは言葉にしてみよう。</p>
      <a id="sg-next-action" class="next-button" href="./reflex.html">練習を始める <span aria-hidden="true">↗</span></a>
     </div>
     <div class="shortcut-row">
-     <a href="./scenes.html">◉ AI実戦英会話 ↗</a>
-     <a href="./scenes.html?scene=cafe">☕ カフェで注文 ↗</a>
+     <a href="./reflex.html">⏱ 60秒チャレンジ ↗</a>
+     <a href="./freeze-breaker.html">写真でシーン実況 ↗</a>
+     <a href="./phrasebook.html">📚 マイ復習帳 ↗</a>
+     <a href="./scenes.html">◉ AI英会話（任意） ↗</a>
     </div>
    </section>
    <section class="panel" aria-labelledby="phrasesTitle">
-    <div class="section-heading"><div><p class="section-kicker">YOUR VOCABULARY</p><h2 id="phrasesTitle">覚えておきたい表現。</h2></div><a href="./phrasebook.html">フレーズ帳へ ↗</a></div>
+    <div class="section-heading"><div><p class="section-kicker">保存した表現</p><h2 id="phrasesTitle">覚えておきたい表現。</h2></div><a href="./phrasebook.html">マイ復習帳へ ↗</a></div>
     <div id="sg-saved-list" class="saved-list" aria-live="polite"></div>
    </section>
   </div>
+  <section class="panel transfer-dashboard" aria-labelledby="transferDashboardTitle">
+   <div class="section-heading"><div><p class="section-kicker">応用練習の記録</p><h2 id="transferDashboardTitle">言えなかった表現を、違う場面でも。</h2></div><a href="./transfer.html">応用チェックへ ↗</a></div>
+   <div class="transfer-dashboard-stats" aria-label="場面を変える練習の自己評価">
+    <div><strong id="sg-transfer-due">—</strong><span>今日の復習セット</span></div>
+    <div><strong id="sg-transfer-attempted">—</strong><span>試したセット</span></div>
+    <div><strong id="sg-transfer-improved">—</strong><span>別の日に「詰まった→言えた」</span></div>
+   </div>
+   <p class="micro-note" id="sg-transfer-next" aria-live="polite">復習記録を確認しています。</p>
+   <p class="micro-note">本人が選択した「言えた／詰まった」の変化のみ。発音・正確さなど英語力の客観的な採点ではありません。応用チェックの記録はこの端末内だけに保存されます。</p>
+  </section>
   <div class="lower-grid">
    <section class="panel" aria-labelledby="feedbackTitle">
-    <div class="section-heading"><div><p class="section-kicker">COACH'S NOTES</p><h2 id="feedbackTitle">最近のAI講評。</h2></div></div>
+    <div class="section-heading"><div><p class="section-kicker">会話の振り返り</p><h2 id="feedbackTitle">最近のAI講評。</h2></div></div>
     <div id="sg-feedback-list" class="recent-feedback-list" aria-live="polite"></div>
     <p class="micro-note">AI先生に実際に講評してもらった内容のみ表示。発音や流暢さを測定したスコアではありません。</p>
    </section>
    <section class="panel" aria-labelledby="historyTitle">
-    <div class="section-heading"><div><p class="section-kicker">RECENT WORKOUTS</p><h2 id="historyTitle">最近の練習。</h2></div><a href="./reflex.html">履歴を見る ↗</a></div>
+    <div class="section-heading"><div><p class="section-kicker">練習履歴</p><h2 id="historyTitle">最近の練習。</h2></div><a href="./reflex.html">履歴を見る ↗</a></div>
     <div id="sg-session-list" class="session-list" aria-live="polite"></div>
     <p class="micro-note" id="sg-session-total">保存された練習記録を表示しています。</p>
    </section>
   </div>
+  <section class="panel" aria-labelledby="proStudioTitle" style="margin-top:20px">
+   <div class="section-heading"><div><p class="section-kicker">まとめて復習</p><h2 id="proStudioTitle">復習はマイ復習帳から。</h2></div><a href="./phrasebook.html">復習する ↗</a></div>
+    <p class="micro-note">60秒・AI実践・AI先生から保存した表現を、一か所で探して復習できます。別場面での応用チェックは無料で、翌日・3日後・7日後の復習予定を端末内に記録します。既存の保存記録やProの利用権限は変更しません。</p>
+   </section>
   <section class="panel" aria-labelledby="planTitle" style="margin-top:20px">
-   <div class="section-heading"><div><p class="section-kicker">ACCOUNT & PLAN</p><h2 id="planTitle">利用プランと残り回数。</h2></div></div>
+   <div class="section-heading"><div><p class="section-kicker">アカウント</p><h2 id="planTitle">利用プランと残り回数。</h2></div></div>
    <p id="sg-plan-info" class="micro-note" role="status" aria-live="polite">Googleログイン後に現在のプランと残り利用枠を確認できます。</p>
    <p class="micro-note">60秒チャレンジとフレーズ復習は無料・無制限。Proは指定テスター向けにStripeサンドボックスで決済・解約を検証中です。一般向けの有料登録はまだ開始していません。 <a href="./plans.html">Free・Proの違いを見る ↗</a></p>
   </section>
@@ -192,5 +240,6 @@ main{max-width:1160px;padding:0 24px 90px;margin:0 auto}
  </div>
 </main>
 <script type="module" src="./account-sync.js"></script>
+<script type="module" src="./account-transfer-progress.mjs"></script>
 </body>
 </html>

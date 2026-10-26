@@ -94,6 +94,55 @@ test("mic re-tap discards wrong transcript; manual clear and edits remain possib
  ui.click("clearSpeech");assert.equal(ui.node("transcript").value,"");
 });
 
+test("typing over live speech never loses the correction or accepts a stale callback",()=>{
+ const ui=app();ui.click("start");ui.click("micBtn");
+ const first=ui.FakeRecognizer.instances[0];
+ first.heard("wrong recognized phrase",false);
+ const staleResult=first.onresult,staleEnd=first.onend;
+ ui.node("transcript").value="I meant the earlier appointment.";
+ ui.node("transcript").listeners.input();
+ assert.equal(first.aborted,true);
+ assert.equal(ui.node("transcript").value,"I meant the earlier appointment.");
+ assert.equal(first.onresult,null);
+ assert.equal(first.onend,null);
+ staleResult?.({results:[Object.assign([{transcript:"old speech"}],{isFinal:true})]});
+ staleEnd?.();
+ assert.equal(ui.node("transcript").value,"I meant the earlier appointment.");
+ ui.click("resumeMic");
+ const resumed=ui.FakeRecognizer.instances[1];
+ resumed.heard("Can we change it?",true);
+ assert.equal(ui.node("transcript").value,"I meant the earlier appointment. Can we change it?");
+});
+test("typing without an active microphone never erases a user answer",()=>{
+ const ui=app();ui.click("start");
+ ui.node("transcript").value="Typed without microphone";
+ ui.node("transcript").listeners.input();
+ assert.equal(ui.node("transcript").value,"Typed without microphone");
+ assert.equal(ui.FakeRecognizer.instances.length,0);
+});
+test("denied microphone permission keeps previous speech and explains how to recover",()=>{
+ const ui=app();ui.click("start");ui.click("micBtn");
+ const rec=ui.FakeRecognizer.instances[0];
+ rec.heard("Please explain again",false);
+ rec.onerror?.({error:"not-allowed"});
+ assert.equal(rec.aborted,true);
+ assert.equal(ui.node("transcript").value,"Please explain again");
+ assert.match(ui.node("micStatus").textContent,/マイクが許可されていません/);
+ assert.match(ui.node("micStatus").textContent,/サイト設定/);
+ ui.click("resumeMic");
+ ui.FakeRecognizer.instances[1].heard("more slowly",true);
+ assert.equal(ui.node("transcript").value,"Please explain again more slowly");
+});
+test("audio-capture and network ASR failures show actionable messages without erasing words",()=>{
+ for(const [error,copy] of [["audio-capture",/マイクが見つからない/],["network",/通信が途切れました/]]){
+  const ui=app();ui.click("start");ui.click("micBtn");
+  const rec=ui.FakeRecognizer.instances[0];
+  rec.heard("Keep my words",false);
+  rec.onerror?.({error});
+  assert.equal(ui.node("transcript").value,"Keep my words");
+  assert.match(ui.node("micStatus").textContent,copy);
+ }
+});
 test("model answers and contextual advice appear only after timed play",()=>{
  const ui=app();ui.click("start");ui.click("stuck");
  assert.equal(ui.node("reportReview").classList.contains("hidden"),true);
@@ -208,9 +257,11 @@ test("saved phrase book supports hide, reveal, audio replay and delete independe
  assert.equal(JSON.parse(ui.storage.get("speakingym-reflex-saved-phrases-v1")).length,1);
 });
 
-test("sprint start header is a branded 1-minute workout rather than a bare 60 badge",()=>{
- assert.match(html,/1 MINUTE <em>SPRINT<\/em>/);
- assert.match(html,/QUICK REACTION WORKOUT/);
+test("sprint start screen uses plain instructions with optional advanced settings",()=>{
+ assert.match(html,/<strong>60秒チャレンジ<\/strong>/);
+ assert.match(html,/今日のウォームアップ/);
+ assert.match(html,/<details class="settings-details" id="practiceSettings">/);
+ assert.match(html,/id="start"[^>]*>60秒始める/);
  assert.doesNotMatch(html,/class="time-icon"[^>]*>60<\/div>/);
  assert.match(html,/id="openPhrases"/);
  assert.match(html,/id="phrasesPane"/);

@@ -5,11 +5,17 @@
 (function (root) {
   "use strict";
   const EVENTS = Object.freeze({
-    sg_home_cta: Object.freeze({ destination: ["sprint", "ai"] }),
-    sg_sprint_start: Object.freeze({ mode: ["standard", "weak_review"] }),
+    sg_home_cta: Object.freeze({ destination: ["sprint", "ai", "freeze", "scene"] }),
+    sg_sprint_start: Object.freeze({ mode: ["standard", "weak_review", "personal_workout"] }),
     sg_sprint_complete: Object.freeze({ result: ["timer", "early"] }),
     sg_ai_scene_start: Object.freeze({}),
-    sg_ai_first_reply: Object.freeze({})
+    sg_ai_first_reply: Object.freeze({}),
+    sg_freeze_from_ai: Object.freeze({}),
+    sg_freeze_start: Object.freeze({source:['scripted','ai']}),
+    sg_freeze_comprehension: Object.freeze({result:['matched','clarify']}),
+    sg_freeze_coach_request: Object.freeze({answers:['one','two']}),
+    sg_freeze_complete: Object.freeze({source:['scripted','ai']}),
+    sg_freeze_revenge: Object.freeze({})
   });
   function track(name, properties) {
     if (!Object.prototype.hasOwnProperty.call(EVENTS, name)) return false;
