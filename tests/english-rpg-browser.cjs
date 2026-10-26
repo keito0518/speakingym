@@ -10,7 +10,7 @@ const path = require('node:path');
   const shots=path.join(process.cwd(),'qa-screenshots');fs.mkdirSync(shots,{recursive:true});
   const widths=[320,375,390,430];
   for(const width of widths){
-    const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:width===390?3:1,isMobile:name==='webkit'&&width===390,hasTouch:true});
+    const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:width===390?3:1,reducedMotion:'reduce',isMobile:name==='webkit'&&width===390,hasTouch:true});
     const page=await context.newPage();
   page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(15000);
     page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(15000);
@@ -31,7 +31,7 @@ const path = require('node:path');
     console.log(`${name}: responsive ${width}px passed`);
   }
 
-  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:name==='webkit',hasTouch:true});
+  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,reducedMotion:'reduce',isMobile:name==='webkit',hasTouch:true});
   const page=await context.newPage();
   await page.addInitScript(()=>{
     Math.random=()=>.01;
