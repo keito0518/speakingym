@@ -74,7 +74,12 @@ export async function handleMonstersSemantic(request,env,{verifyUser=verifyFireb
  let uid;
  try{uid=await verifyUser(request)}catch{return json({error:'login_required'},401,origin)}
  let payload;
- try{payload=await request.json()}catch{return json({error:'invalid_json'},400,origin)}
+ try{
+  // Content-Length is sometimes absent: enforce the actual UTF-8 body cap too.
+  const raw=await request.text();
+  if(new TextEncoder().encode(raw).length>8500)return json({error:'too_large'},413,origin);
+  payload=JSON.parse(raw);
+ }catch{return json({error:'invalid_json'},400,origin)}
  const attempts=validateSemanticBatch(payload);
  if(!attempts)return json({error:'invalid_attempts'},400,origin);
  try{
