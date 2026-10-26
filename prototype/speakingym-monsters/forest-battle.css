@@ -338,3 +338,11 @@
  .forest-world-stage.forest-defended .forest-party::after{animation:none!important}
  .forest-world-stage.forest-defended .forest-party::after{opacity:1}
 }
+
+/* Guard and hit reactions must interrupt the enemy's idle listening cast. */
+.forest-active .forest-world-stage.forest-guarding[data-action="defense"] .forest-enemy{
+ animation:enemy-brace .8s ease-out both!important;
+}
+.forest-active .forest-world-stage.forest-attack[data-action="defense"] .forest-enemy{
+ animation:forest-foe-hit-strong 1.2s ease-out both!important;
+}
