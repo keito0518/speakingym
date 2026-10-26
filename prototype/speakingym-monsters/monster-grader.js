@@ -1,4 +1,5 @@
-// Browser-only, conservative communicative-content checks for the 36 curated prompts.
+// Browser-only, conservative communicative-content checks for authored prompts.
+// Newly added situations accept vetted examples; otherwise they abstain rather than invent a grade.
 // This is NOT an AI / pronunciation / full grammar grade. Unclear paraphrases remain
 // 'review', not 'wrong'. No reward is ever minted from empty/unsupported answers.
 import { ALL_PROMPTS } from './monster-data.js';
@@ -72,7 +73,7 @@ export function gradeLocalResponse(prompt, raw) {
  const difficulty=prompt.difficulty||'easy';
  const base=prompt.baseId || prompt.id;
  const list=difficulty==='hard'?hard[base]:difficulty==='easy'?(easy[base]||rubric[base]):rubric[base];
- if(!list?.length) return {status:'ungraded',reasons:['この問題はまだ自動判定できません。'],confidence:'none'};
+ if(!list?.length) return {status:'review',reasons:['この場面では、登録済みの例文や言い換えとは異なる表現でした。自然な英語の可能性があるので誤答とは判定しません。'],confidence:'low',method:'example-review'};
  const missing=list.filter(item=>!passes(text,item)).map(item=>item.label);
  if(!missing.length) {
    if (/\b(don't|do not|never|not)\b/.test(text) && !/\b(not sure|not ready|not decided|not on time|not be|not make it|not run)\b/.test(text))
