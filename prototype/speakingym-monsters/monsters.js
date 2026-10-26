@@ -5,7 +5,7 @@ import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 import { cleanForest, FOREST_ROUTES, FOREST_RELICS, finishForest } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
-import { buildForestWave, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from './forest-battle.js';
+import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from './forest-battle.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
 import { createCollectionViews } from './monster-collection.js';
@@ -181,8 +181,11 @@ function renderForestHud() {
   $('.forest-chapter-pin').textContent=play.index>=REGULAR_ENCOUNTERS?'THORN VAULT':'MOONSTONE ARENA';
   world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding');
   const foe=opponentFor(play.index,play.wave);
+  const tactic=enemyTacticFor(play.index,play.wave);
+  world.dataset.foe=foe.id;
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
   $('#forest-foe-name').textContent=foe.name+' · '+foe.japanese;
+  $('#forest-foe-pattern').textContent=tactic.name;
   updateEnemyHealth();
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
     '英語で攻撃！';
@@ -201,11 +204,11 @@ function renderForestHud() {
   bossMarker.classList.toggle('is-cleared',play.index>=REGULAR_ENCOUNTERS+BOSS_HITS);
   $('#forest-scene-story').textContent=play.index>=REGULAR_ENCOUNTERS?
     '森のトゲ王が立ちはだかる！ 英語を伝えて3回の攻撃で倒そう。':
-    `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ 英語で応えて道を切り開こう。`;
+    `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ ${enemyTacticFor(play.index,play.wave).tell}。`;
   const log=$('#forest-battle-log');
   log.textContent=play.index>=REGULAR_ENCOUNTERS && play.bossHits===0?
-    `${foe.name} が現れた！ 英語の攻撃を3回当てよう。`:
-    `${foe.name} が現れた。英語で応えて仲間に攻撃の合図を出そう。`;
+    `${foe.name} が現れた！ ${tactic.tell}。英語の攻撃を3回当てよう。`:
+    `${foe.name} が現れた。${tactic.tell}。英語で応えて仲間に攻撃の合図を出そう。`;
 }
 function updateEnemyHealth(hit=false) {
   if(play?.mode!=='forest')return;
@@ -425,7 +428,8 @@ async function gradeAnswer() {
       void world.offsetWidth;
       world.classList.add('forest-guarding');
       $('#forest-world-fx').textContent='';
-      $('#forest-battle-log').textContent='敵が身構えた。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。';
+      const tactic=enemyTacticFor(play.index,play.wave);
+      $('#forest-battle-log').textContent=`${tactic.guard}。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。`;
     }
     if(play.mode==='forest'&&play.endless&&grade.status==='review'&&raw){
       play.attemptReviewed=true;
