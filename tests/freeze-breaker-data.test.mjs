@@ -37,6 +37,7 @@ test('photo tasks develop noticing, cautious inference and contextual sharing ra
  assert.match(rainy.examples[2],/walk carefully/);
  const tourists=SCENE_COMMENTARY_PHOTOS.find(s=>s.title==='地図を見ながら観光');
  assert.match(tourists.examples[0],/map/);
+ assert.doesNotMatch(tourists.examples[0],/camera/);
  assert.match(tourists.examples[2],/directions/);
 });
 

@@ -106,7 +106,7 @@ export const SCENE_COMMENTARY_PHOTOS=[
   'We are at a night market. The food stalls are easy to spot from here.'
  ],'stalls は市場やイベントの「屋台・売り場」。shops との使い分けを覚えよう。',['屋台と人の様子を言う','買い物をしていそうだと推測する','友人に屋台を見つけやすいと伝える']),
  photo('1752650143544-81a9f60fbe5c','https://unsplash.com/photos/two-women-are-sightseeing-with-a-map-and-camera-eTSAD_dptMA','Unsplash contributor','Two travelers are looking at a map and pointing toward a landmark.','地図を見ながら観光','地図やカメラを使う人の動きを伝えよう。',[
-  'Two travelers are looking at a map and a camera.',
+  'Two travelers are looking at a map and pointing toward a landmark.',
   'They may be deciding which place to visit next.',
   'These travelers are checking their map. We can ask if they need directions.'
  ],'decide which ... は「どの〜にするか決める」。選択の途中を説明できます。',['人と持ち物を説明する','次の行き先を決めていそうだと推測する','道に迷った人へ声をかける提案をする']),
