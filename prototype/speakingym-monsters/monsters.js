@@ -4,6 +4,7 @@ import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from './forest-engine.js';
+import { forestWorldArt } from './forest-world.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -93,6 +94,12 @@ function startSession(mode) {
   play = { mode, difficulty, prompts, index:0, smooth:0, earnedXp:0, captured:[], hintUsed:false, revealed:false, speechState:'', startedAt:Date.now(), deadline:mode==='challenge'?Date.now()+60000:null, route:null, companionId:save.selectedMonster };
   $('#play-mode-label').textContent = `${mode === 'forest' ? 'スピーキングの森' : mode === 'challenge' ? '60秒チャレンジ' : '練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=mode!=='forest';
+  $('#play-view').classList.toggle('forest-active',mode==='forest');
+  if(mode==='forest'){
+    $('#forest-journey').classList.remove('forest-victory');
+    $('#forest-world-stage').dataset.route='wild';
+    $('#forest-world-stage').dataset.renderedRoute='';
+  }
   showView('play');
   renderQuestion();
   if (mode === 'challenge') timer = setInterval(updateClock,200);
@@ -113,7 +120,21 @@ function renderForestHud() {
   const companion=monsterFor(play.companionId);
   const evolved=getMonsterProgress(save,play.companionId).evolved;
   $('#forest-companion-art').innerHTML=monsterArt(companion.id,evolved);
+  if($('#forest-party').dataset.companion!==companion.id || $('#forest-party').dataset.evolved!==String(evolved)){
+    $('#forest-player-art').innerHTML=monsterArt(companion.id,evolved);
+    $('#forest-party').dataset.companion=companion.id;
+    $('#forest-party').dataset.evolved=String(evolved);
+  }
   $('#forest-companion-name').textContent=(evolved?companion.evolvedName:companion.name)+' と探検中';
+  const world=$('#forest-world-stage');
+  const currentRoute=play.route||'wild';
+  if(world.dataset.renderedRoute!==currentRoute){
+    $('#forest-world-backdrop').innerHTML=forestWorldArt(play.route);
+    world.dataset.renderedRoute=currentRoute;
+  }
+  world.dataset.stage=String(Math.min(play.index,2));
+  world.dataset.route=currentRoute;
+  $('#forest-world-counter').textContent=`GATE ${Math.min(play.index+1,3)} OF 3`;
   const route=FOREST_ROUTES.find(entry=>entry.id===play.route);
   $('#forest-route-status').textContent=route ? route.name : '道を選ぶ前に、最初の関門へ';
   $$('[data-forest-gate]').forEach((node,index)=>{
@@ -129,11 +150,13 @@ function showForestRouteChoice() {
   stopAudio();
   play.revealed=true;
   $('#answer-area').hidden=true;
+  $('#forest-journey').classList.add('forest-route-reveal');
   renderForestHud();
   $('#play-card').innerHTML=`<div class="forest-route-choice"><span class="forest-kicker">THE FIRST GATE IS OPEN</span><h1>森に二つの道が現れた。</h1><p class="forest-choice-intro">仲間とどっちへ進む？ 道によって見つかる宝物が変わるよ。英語の採点やXPは変わらない。</p><div class="forest-route-grid">${FOREST_ROUTES.map(route=>`<button type="button" class="forest-route-option" data-forest-route="${route.id}"><span class="forest-route-symbol" aria-hidden="true">${route.symbol}</span><strong>${route.name}</strong><small lang="en">${route.tag}</small><span>${route.detail}</span></button>`).join('')}</div></div>`;
   $$('[data-forest-route]').forEach(button=>button.addEventListener('click',()=>{
     if(!play||play.mode!=='forest'||play.route)return;
     play.route=button.dataset.forestRoute;
+    $('#forest-journey').classList.remove('forest-route-reveal');
     renderQuestion();
   }));
 }
@@ -142,6 +165,7 @@ function renderQuestion() {
   if (!play) return;
   stopAudio();
   $('#answer-area').hidden=false;
+  $('#forest-journey').classList.remove('forest-victory');
   play.hintUsed=false;play.revealed=false;play.speechState='';
   if(play.mode==='forest')renderForestHud();
   const prompt=currentPrompt();
@@ -285,6 +309,10 @@ async function gradeAnswer() {
   play.revealed=true;
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
+  if(play.mode==='forest'){
+    $('#forest-journey').classList.add('forest-victory');
+    $('#forest-world-fx').textContent='✦ GATE CLEAR ✦';
+  }
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${play.mode==='forest'?'🌿 関門突破！':'✓ 内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
 }
@@ -313,6 +341,8 @@ function finishSession(timedOut=false) {
   if(!play)return;
   const ended=play;play=null;clearTimer();stopAudio();
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
+  $('#play-view').classList.remove('forest-active');
+  $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.route&&ended.index===ended.prompts.length;
   const forestResult=forestFinished?finishForest(save,ended.route,ended.companionId):null;
   if(forestResult)persist(forestResult.save);
@@ -387,7 +417,7 @@ $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSess
 $('#start-forest').addEventListener('click',()=>startSession('forest'));
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
-$('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;renderHome();});
+$('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active');renderHome();});
 $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
 $('#collection-home').addEventListener('click',renderHome);

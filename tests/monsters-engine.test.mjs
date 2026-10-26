@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
+import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
@@ -36,6 +37,22 @@ test('curriculum has six expressions, two situations, and three authored difficu
   for(const prompt of PROMPTS) {assert.ok(prompt.scene&&prompt.cue&&prompt.answer);if(prompt.kind==='listen')assert.ok(prompt.audio);}
 });
 
+test('the illustrated adventure scene has distinct accessible route art and stable landmarks', () => {
+  const before=forestWorldArt();
+  const moss=forestWorldArt('moss');
+  const sun=forestWorldArt('sunlit');
+  for(const svg of [before,moss,sun]){
+    assert.ok(svg.startsWith('<svg'));
+    assert.ok(svg.endsWith('</svg>'));
+    assert.equal((svg.match(/forest-landmark/g)||[]).length,3);
+    assert.match(svg,/viewBox="0 0 720 270"/);
+    assert.match(svg,/aria-label="深い森/);
+    assert.ok(!/https?:\/\//.test(svg.replace('http://www.w3.org/2000/svg','')));
+  }
+  assert.match(moss,/forest-world-moss/);
+  assert.match(sun,/forest-world-sunlit/);
+  assert.notEqual(moss,sun);
+});
 test('Speaking Forest is three authored speaking gates across all difficulty levels', () => {
   assert.equal(FOREST_STAGES.length,3);
   assert.equal(FOREST_ROUTES.length,2);
