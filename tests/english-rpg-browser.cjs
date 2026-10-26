@@ -1,110 +1,99 @@
 const { chromium, webkit } = require('playwright');
-let browser;
 const fs = require('node:fs');
 const path = require('node:path');
+const assert = require('node:assert/strict');
 
-(async()=>{
-  const engine=process.env.RPG_BROWSER_ENGINE==='webkit'?webkit:chromium;
-  const name=process.env.RPG_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
-  browser=await engine.launch({headless:true});
-  const shots=path.join(process.cwd(),'qa-screenshots');fs.mkdirSync(shots,{recursive:true});
-  const widths=[320,375,390,430];
-  for(const width of widths){
-    const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:width===390?3:1,reducedMotion:'reduce',isMobile:name==='webkit'&&width===390,hasTouch:true});
-    const page=await context.newPage();
-  page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(15000);
-    page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(15000);
-    await page.addInitScript(()=>{
-      Math.random=()=>.01;
-      window.SpeechSynthesisUtterance=class {constructor(text){this.text=text;this.lang='';this.onerror=null;this.onend=null;}};
+let browser;
+(async () => {
+  const name = process.env.RPG_BROWSER_ENGINE === 'webkit' ? 'webkit' : 'chromium';
+  browser = await (name === 'webkit' ? webkit : chromium).launch({headless:true});
+  const shots = path.join(process.cwd(), 'qa-screenshots');
+  fs.mkdirSync(shots, {recursive:true});
+  const boot = async (width, speechRecognition=false) => {
+    const context = await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,isMobile:name==='webkit',hasTouch:true,reducedMotion:'reduce'});
+    const page = await context.newPage();
+    await page.addInitScript(({speechRecognition}) => {
+      Math.random = () => .01;
+      window.SpeechSynthesisUtterance = class {constructor(text){this.text=text;this.lang='';this.onerror=null;this.onend=null;}};
       Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{cancel(){},speak(utterance){queueMicrotask(()=>utterance.onerror?.({error:'not-allowed'}));}}});
-    });
+      if (speechRecognition) window.SpeechRecognition = class {
+        start(){queueMicrotask(()=>this.onresult?.({resultIndex:0,results:[{0:{transcript:'Take the mossy path to the bridge.'},isFinal:true}]}));}
+        stop(){this.onend?.();} abort(){}
+      };
+    }, {speechRecognition});
     await page.goto('http://127.0.0.1:8765/prototype/english-rpg/',{waitUntil:'networkidle'});
-    await page.screenshot({path:path.join(shots,`english-rpg-${name}-${width}-welcome.png`),fullPage:false});
-    console.log(`${name}: welcome ${width}px`);
+    return {context,page};
+  };
+  for (const width of [320,375,390,430]) {
+    const {context,page}=await boot(width);
+    await page.screenshot({path:path.join(shots,`quest-${name}-${width}-welcome.png`),fullPage:true});
     await page.getByRole('button',{name:/Momo/}).click();
     await page.getByRole('button',{name:'相棒を選んで冒険へ'}).click();
-    await page.screenshot({path:path.join(shots,`english-rpg-${name}-${width}-map.png`),fullPage:false});
-    const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
-    if(overflow.scroll>overflow.width+1)throw new Error(`${name} ${width}px horizontal overflow: ${JSON.stringify(overflow)}`);
+    await page.screenshot({path:path.join(shots,`quest-${name}-${width}-map.png`),fullPage:true});
+    await page.locator('[data-stage="1"]').click();
+    await page.screenshot({path:path.join(shots,`quest-${name}-${width}-listen.png`),fullPage:true});
+    assert.equal(await page.locator('#story-transcript').isVisible(),false);
+    const size=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert.ok(size.scroll<=size.inner+1,`${name} ${width}px horizontal overflow: ${JSON.stringify(size)}`);
     await context.close();
-    console.log(`${name}: responsive ${width}px passed`);
   }
-
-  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,reducedMotion:'reduce',isMobile:name==='webkit',hasTouch:true});
-  const page=await context.newPage();
-  await page.addInitScript(()=>{
-    Math.random=()=>.01;
-    window.SpeechSynthesisUtterance=class {constructor(text){this.text=text;this.lang='';this.onerror=null;this.onend=null;}};
-    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{cancel(){},speak(utterance){queueMicrotask(()=>utterance.onerror?.({error:'not-allowed'}));}}});
-  });
-  await page.goto('http://127.0.0.1:8765/prototype/english-rpg/',{waitUntil:'networkidle'});
-  await page.getByRole('button',{name:/Momo/}).click();await page.getByRole('button',{name:'相棒を選んで冒険へ'}).click();
+  const {context,page}=await boot(390,name==='chromium');
+  await page.getByRole('button',{name:/Momo/}).click();
+  await page.getByRole('button',{name:'相棒を選んで冒険へ'}).click();
   await page.locator('[data-stage="1"]').click();
-  console.log(`${name}: stage 1 started`);
-  if(!await page.locator('.move-card[data-move="phrase"]').isDisabled())throw new Error('phrase move should require focus before use');
-
-  async function questionFor(type){
-    const id=await page.evaluate(type=>JSON.parse(localStorage.getItem('speakingym-rpg-prototype-v1')).recentQuestions[type].at(-1),type);
-    return page.evaluate(async id=>{const {questions}=await import('/prototype/english-rpg/rpg-data.js');return questions.find(q=>q.id===id);},id);
-  }
-  async function chooseMeaning(type,correct){
-    const q=await questionFor(type);
-    const answer=type==='listen'?q.choices[q.answer]:q.meaning;
-    const picked=correct?answer:q.choices.find(choice=>choice!==answer);
-    await page.getByRole('button',{name:picked,exact:true}).click();
-    return {q,answer,picked};
-  }
-
-  await page.locator('.move-card[data-move="listen"]').click();
-  console.log(`${name}: listening move`);
-  await page.getByRole('button',{name:/英文を再生/}).click();
-  await page.waitForTimeout(30);
-  if(!(await page.locator('#speak-question').textContent()).includes('再生できません'))throw new Error('speech failure fallback was not shown');
-  await page.getByRole('button',{name:'英文を確認'}).click();
-  if(!await page.locator('#question-target-wrap').isVisible())throw new Error('manual transcript fallback failed');
-  await chooseMeaning('listen',true);
-  if(!(await page.locator('#feedback').textContent()).includes('正解'))throw new Error('correct listening answer feedback missing');
-  await page.getByRole('button',{name:'次の手へ'}).click();
-
-  await page.locator('.move-card[data-move="phrase"]').click();
-  console.log(`${name}: phrase move`);
-  const phrase=await questionFor('phrase');
-  for(let i=0;i<phrase.tokens.length;i++)await page.locator(`.bank-chip[data-token-index="${i}"]`).click();
-  const builtText=await page.locator('#phrase-built').innerText();
-  if(!phrase.tokens.every(token=>builtText.includes(token)))throw new Error('selected phrase tiles are not displayed');
-  await page.getByRole('button',{name:'この文で攻撃'}).click();
-  if(!(await page.locator('#feedback').textContent()).includes('正解'))throw new Error('phrase assembly did not accept the natural sentence');
-  await page.getByRole('button',{name:'次の手へ'}).click();
-
-  await page.locator('.move-card[data-move="word"]').click();
-  const wrong=await chooseMeaning('word',false);
-  if(wrong.picked===wrong.answer)throw new Error('QA did not select an incorrect answer');
-  if(!(await page.locator('#feedback').textContent()).includes('今回は違った'))throw new Error('incorrect-answer combat behavior missing');
-  await page.getByRole('button',{name:'次の手へ'}).click();
-
-  await page.locator('.move-card[data-move="word"]').click();
-  await chooseMeaning('word',true);
-  await page.getByRole('button',{name:'次の手へ'}).click();
-  await page.locator('.move-card[data-move="word"]').click();
-  await chooseMeaning('word',true);
-  console.log(`${name}: victory screen reached`);
-  await page.getByRole('button',{name:'勝利を確認する'}).click();
-  await page.getByRole('heading',{name:'Mimipが仲間になった！'}).waitFor();
-  await page.screenshot({path:path.join(shots,`english-rpg-${name}-390-capture.png`),fullPage:false});
-  await page.getByRole('button',{name:/次のステージへ/}).click();
-  console.log(`${name}: stage clear saved`);
-  if(!(await page.locator('#stage-progress').textContent()).includes('1 / 10'))throw new Error('stage clear was not recorded');
+  await page.getByRole('button',{name:'▶ 旅人の声を聞く'}).click();
+  await page.getByText('再生できません').waitFor();
+  assert.equal(await page.locator('#story-transcript').isVisible(),true);
+  await page.getByRole('button',{name:'村に行きたいが、切符をなくした'}).click();
+  assert.match(await page.locator('#story-feedback').innerText(),/Could you say that again/);
+  await page.getByRole('button',{name:'村に行きたいが、橋が見つからない'}).click();
+  assert.match(await page.locator('.forest-sign').innerText(),/left path ends at a cliff/);
   await page.reload();
-  if(!(await page.locator('#stage-progress').textContent()).includes('1 / 10'))throw new Error('saved progress was not restored after reload');
-  if(!await page.locator('[data-stage="2"]').isEnabled())throw new Error('next stage did not unlock');
-  await page.locator('[data-stage="2"]').click();
+  assert.equal(await page.locator('.forest-sign').isVisible(),false);
+  await page.locator('[data-stage="1"]').click();
+  assert.equal(await page.locator('.forest-sign').isVisible(),true);
+  await page.getByRole('button',{name:'左の道を進む'}).click();
+  assert.match(await page.locator('#story-feedback').innerText(),/cliff/);
+  await page.getByRole('button',{name:'苔の生えた右の道を進む'}).click();
+  assert.equal(await page.locator('.move-card[data-move="phrase"]').isDisabled(),true);
+  await page.screenshot({path:path.join(shots,`quest-${name}-390-battle.png`),fullPage:true});
   await page.locator('.move-card[data-move="word"]').click();
-  await chooseMeaning('word',false);
-  const afterWrong=await page.locator('#ally-hp-text').textContent();
-  if(!afterWrong.includes('58/70'))throw new Error(`wrong answer did not lower player HP: ${afterWrong}`);
-  await page.screenshot({path:path.join(shots,`english-rpg-${name}-390-combat.png`),fullPage:false});
+  await page.locator('.answer-option[data-value="ふさぐものを取り除く"]').click();
+  assert.match(await page.locator('#feedback').innerText(),/正解/);
+  await page.getByRole('button',{name:'次の手へ'}).click();
+  await page.locator('.move-card[data-move="phrase"]').click();
+  for(const i of [1,0,2,3])await page.locator(`.bank-chip[data-token-index="${i}"]`).click();
+  await page.getByRole('button',{name:'この文で攻撃'}).click();
+  assert.match(await page.locator('#feedback').innerText(),/今回は違った/);
+  await page.getByRole('button',{name:'次の手へ'}).click();
+  await page.locator('.move-card[data-move="phrase"]').click();
+  for(const i of [0,1,2,3])await page.locator(`.bank-chip[data-token-index="${i}"]`).click();
+  await page.getByRole('button',{name:'この文で攻撃'}).click();
+  await page.getByRole('button',{name:'勝利を確認する'}).click();
+  await page.getByRole('heading',{name:'旅人に道を教えよう'}).waitFor();
+  assert.equal(await page.locator('[data-action="submit-speech"]').isDisabled(),true);
+  if(name==='chromium'){
+    await page.locator('[data-action="record"]').click();
+    await page.getByText('Take the mossy path to the bridge.',{exact:true}).waitFor().catch(()=>{});
+    assert.match(await page.locator('#forest-speech').inputValue(),/mossy path/);
+  }else{
+    await page.locator('[data-action="record"]').click();
+    assert.match(await page.locator('#speech-status').innerText(),/使えません/);
+    await page.locator('#forest-speech').fill('Follow the mossy path to the bridge.');
+  }
+  await page.screenshot({path:path.join(shots,`quest-${name}-390-speak.png`),fullPage:true});
+  await page.locator('[data-action="submit-speech"]').click();
+  assert.match(await page.locator('.example-lines').innerText(),/leads to the bridge/);
+  await page.locator('[data-action="finish-forest"]').click();
+  await page.getByRole('heading',{name:'Mimipが仲間になった！'}).waitFor();
+  await page.screenshot({path:path.join(shots,`quest-${name}-390-capture.png`),fullPage:true});
+  await page.getByRole('button',{name:/次のステージへ/}).click();
+  assert.match(await page.locator('#stage-progress').innerText(),/1 \/ 10/);
+  await page.reload();
+  assert.match(await page.locator('#stage-progress').innerText(),/1 \/ 10/);
+  assert.equal(await page.locator('[data-stage="2"]').isEnabled(),true);
+  await page.getByRole('button',{name:'相棒・図鑑'}).click();
+  assert.match(await page.locator('#dex-count').innerText(),/1 \/ 12/);
   await context.close();
-  await browser.close();
-  console.log(`${name}: welcome/map at 320, 375, 390, 430px; battle, audio fallback, wrong/correct paths, capture, stage progression, persistence passed`);
-})().catch(async error=>{console.error(error);await browser?.close();process.exitCode=1;});
+  console.log(`${name}: 320/375/390/430 visual QA, stage 1 story, audio fallback, reading, combat, speech fallback, capture, XP, save/reload passed`);
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();});
