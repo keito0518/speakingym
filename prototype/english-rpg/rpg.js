@@ -94,6 +94,7 @@ function startStage(id, forcedMonster = null) {
   const hero = activeEntry();
   battle = makeBattle(id, monsterId, hero.level);
   $$('.move-card').forEach(button=>{button.disabled=false;button.classList.remove('quest-move');});
+  $('#move-screen h2').textContent='どの技で英語に挑戦する？';
   currentQuestion = null; currentMove = null; lastOutcome = null;
   renderBattleField();
   $('#move-screen').classList.remove('hidden');
@@ -103,9 +104,7 @@ function startStage(id, forcedMonster = null) {
 }
 const typeNames = {word:'ことば斬り',listen:'聞き耳ウェーブ',phrase:'フレーズ連結'};
 function beginMove(move) {
-  if (currentStage === 1 && battle) {
-    if (move !== stageOneMove) return;
-  }
+  if (currentStage === 1 && battle && move !== stageOneMove && !(stageOneMove==='choice' && ['word','phrase'].includes(move))) return;
   if (move === 'phrase' && battle.focus < 1) return;
   currentMove = move;
   currentQuestion = currentStage === 1 ? forest[move] : pickQuestion(move, save, random);
@@ -178,7 +177,7 @@ function resolveAnswer(correct) {
 function continueBattle() {
   if (battle.enemyHp===0) { if(currentStage===1){save.storyRun={phase:'speak',battle};persist();renderForest();} else finishEncounter(); return; }
   if (battle.playerHp===0) { showDefeat(); return; }
-  if(currentStage===1 && lastOutcome?.correct){stageOneMove='phrase';save.storyRun={phase:'battle',battle,move:stageOneMove};persist();}
+  if(currentStage===1 && lastOutcome?.correct){stageOneMove=currentMove==='word'?'phrase':'word';save.storyRun={phase:'battle',battle,move:stageOneMove};persist();}
   $('#question-screen').classList.add('hidden');$('#move-screen').classList.remove('hidden');currentQuestion=null;
   if(currentStage===1) renderForestBattleMove();
 }
@@ -195,7 +194,7 @@ function finishEncounter() {
 function showDefeat() {
   $('#battle-result').innerHTML=`<div class="modal-badge">TRY AGAIN</div><h2>いったん立て直そう</h2><p>正解すると攻撃できるよ。技を変えたり、聞き直したりしてもう一度挑戦しよう。</p><div class="result-buttons"><button class="primary-button" id="retry-battle">同じ相手に再挑戦</button><button class="secondary-button" id="result-map">マップへ戻る</button></div>`;
   $('#question-screen').classList.add('hidden');$('#move-screen').classList.add('hidden');$('#battle-result').classList.remove('hidden');
-  $('#retry-battle').addEventListener('click',()=>{if(currentStage===1){save.storyRun={phase:'battle',move:'word'};persist();renderForest();}else startStage(currentStage,battle.monsterId);});$('#result-map').addEventListener('click',()=>{renderMap();showScreen('map-screen');});
+  $('#retry-battle').addEventListener('click',()=>{if(currentStage===1){save.storyRun={phase:'battle',move:'choice'};persist();renderForest();}else startStage(currentStage,battle.monsterId);});$('#result-map').addEventListener('click',()=>{renderMap();showScreen('map-screen');});
 }
 function renderCamp() {
   const roster=save.roster;
@@ -239,11 +238,12 @@ function startForest() {
 }
 function advanceForest(phase) {save.storyRun={...save.storyRun,phase};persist();renderForest();}
 function renderForestBattleMove() {
-  $$('.move-card').forEach(button=>{button.disabled=button.dataset.move!==stageOneMove;button.classList.toggle('quest-move',button.dataset.move===stageOneMove);});
-  $('#battle-title').textContent=stageOneMove==='word'?'ミミップが道をふさいだ！':'力を合わせて道をあけよう！';
+  $$('.move-card').forEach(button=>{const available=button.dataset.move===stageOneMove||(stageOneMove==='choice'&&['word','phrase'].includes(button.dataset.move));button.disabled=!available;button.classList.toggle('quest-move',available);});
+  $('#move-screen h2').textContent=stageOneMove==='choice'?'どちらの技から道をひらく？':'もう一つの技で道をひらこう';
+  $('#battle-title').textContent=stageOneMove==='choice'?'ミミップが道をふさいだ！':'力を合わせて道をあけよう！';
 }
 function enterForestBattle() {
-  stageOneMove=save.storyRun.move||'word';
+  stageOneMove=save.storyRun.move||'choice';
   battle=save.storyRun.battle || {...makeBattle(1,chooseStageMonster(1,save),activeEntry().level),enemyHp:51,maxEnemyHp:51,focus:1};
   save.storyRun={phase:'battle',battle,move:stageOneMove};persist();
   renderBattleField();renderForestBattleMove();
