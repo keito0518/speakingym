@@ -191,3 +191,63 @@
  .forest-active .forest-world-stage.forest-boss-defeated .forest-enemy{animation:none!important}
  .forest-active .forest-world-stage.forest-attack .forest-damage{opacity:1}
 }
+
+/* Exploration is a separate game screen, never a strip above the battle UI. */
+.forest-active.forest-exploring .forest-journey,
+.forest-active.forest-exploring .forest-command-window{display:none!important}
+.forest-active .forest-explore-screen[hidden]{display:none!important}
+.forest-active .forest-explore-screen{
+  display:flex;flex-direction:column;gap:14px;padding:20px;
+  background:linear-gradient(155deg,#15392f,#244f3a 63%,#182d2b);
+  color:#f8edcf;min-height:clamp(475px,76svh,720px);
+  animation:forest-explore-slide .35s ease-out both;
+}
+.forest-explore-heading{display:grid;gap:7px}
+.forest-explore-heading .forest-kicker{font-size:10px;letter-spacing:.16em;color:#ddc686}
+.forest-explore-heading h2{font-size:clamp(21px,5vw,30px);font-family:Georgia,'Hiragino Mincho ProN',serif;line-height:1.4;letter-spacing:.025em}
+.forest-explore-heading p{font-size:13px;line-height:1.75;color:#d5e8d2;line-break:strict;overflow-wrap:break-word}
+.forest-explore-art{position:relative;flex:1;min-height:250px;max-height:450px;overflow:hidden;
+ border:2px solid #b6a472;border-radius:14px;background:#1a3b34;
+ box-shadow:inset 0 0 50px #071e2199,0 8px 24px #0c211f66}
+.forest-explore-art .forest-world-svg{position:absolute;width:100%;height:100%;object-fit:cover;inset:0}
+.forest-explore-art::after{content:"";position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(0deg,#102f29b2,transparent 23%,transparent 75%,#102f2970)}
+.forest-explore-companion{position:absolute;z-index:2;left:var(--explorer-left,15%);top:var(--explorer-top,67%);
+ width:clamp(58px,15vw,93px);height:clamp(58px,15vw,93px);filter:drop-shadow(0 8px 8px #081f1eaa);
+ animation:forest-explorer-arrive .8s cubic-bezier(.15,.65,.15,1) both}
+.forest-explore-companion svg{width:100%;height:100%;display:block}
+.forest-explore-art[data-step="0"]{--explorer-left:12%;--explorer-top:68%;--destination-left:34%;--destination-top:56%}
+.forest-explore-art[data-step="1"]{--explorer-left:30%;--explorer-top:58%;--destination-left:50%;--destination-top:63%}
+.forest-explore-art[data-step="2"]{--explorer-left:46%;--explorer-top:65%;--destination-left:61%;--destination-top:44%}
+.forest-explore-art[data-step="3"]{--explorer-left:58%;--explorer-top:46%;--destination-left:72%;--destination-top:54%}
+.forest-explore-art[data-step="4"]{--explorer-left:69%;--explorer-top:54%;--destination-left:83%;--destination-top:30%}
+.forest-explore-destination{position:absolute;z-index:2;left:var(--destination-left,34%);top:var(--destination-top,56%);
+ width:20px;height:20px;border:3px solid #f4d69a;border-radius:50%;background:#e9bc6a88;box-shadow:0 0 0 8px #ecc8782a,0 0 20px 8px #f5e19b77;
+ animation:forest-destination-beacon 1.9s ease-in-out infinite}
+.forest-explore-continue{margin-top:auto;min-height:55px;font-size:15px;letter-spacing:.025em}
+.forest-explore-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.forest-explore-options[hidden]{display:none!important}
+.forest-explore-route{min-height:95px;padding:13px 12px;text-align:left;background:#e9dfbb;color:#1b3e30;border:2px solid #edce8f;
+ border-radius:12px;display:flex;flex-direction:column;justify-content:center;gap:8px;cursor:pointer}
+.forest-explore-route:focus-visible{outline:3px solid #f8d893;outline-offset:3px}
+.forest-explore-route strong{font-size:15px;line-height:1.3}
+.forest-explore-route small{font-size:11px;line-height:1.55;overflow-wrap:break-word;line-break:strict}
+@keyframes forest-explore-slide{from{opacity:.3;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes forest-explorer-arrive{from{opacity:.25;transform:translate(-24px,11px) scale(.83)}to{opacity:1;transform:translate(0,0) scale(1)}}
+@keyframes forest-destination-beacon{0%,100%{opacity:.5;transform:scale(.86)}50%{opacity:1;transform:scale(1.14)}}
+@media(max-width:690px){
+ .forest-active.forest-exploring .forest-battle-shell{overflow:hidden}
+ .forest-active .forest-explore-screen{padding:15px;gap:11px;min-height:calc(100svh - 130px)}
+ .forest-explore-art{min-height:270px}
+ .forest-explore-heading h2{font-size:22px}
+ .forest-explore-continue{min-height:52px}
+}
+@media(max-width:360px){
+ .forest-active .forest-explore-screen{padding:11px}
+ .forest-explore-options{gap:7px}
+ .forest-explore-route{padding:10px 8px}
+ .forest-explore-route strong{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){
+ .forest-active .forest-explore-screen,.forest-explore-companion,.forest-explore-destination{animation:none!important}
+}
