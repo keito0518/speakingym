@@ -26,13 +26,14 @@ function shuffle(items,random) {
  }
  return pool;
 }
-export function buildForestWave({difficulty='easy',wave=1,previousIds=[],random=Math.random}={}){
+export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewPhraseIds=[],random=Math.random}={}){
  const level=forestLevel(difficulty,wave);
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level);
  if(pool.length<FOREST_WAVE_LENGTH)throw Error('Not enough unique prompts');
  const previous=new Set(previousIds);
  const shuffled=shuffle(pool,random);
  const fresh=shuffled.filter(p=>!previous.has(p.id));
+ const review=new Set(reviewPhraseIds);
  const selected=[];
  const usedPhrases=new Set();
  const add = p => {
@@ -45,7 +46,8 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],random=
    const candidates=[...fresh,...shuffled].filter(p=>p.kind===kind);
    add(candidates.find(p=>!usedPhrases.has(p.phraseId))||candidates[0]);
  }
- for(const candidate of [...fresh,...shuffled]){
+ const prioritized=[...fresh.filter(p=>review.has(p.phraseId)),...fresh.filter(p=>!review.has(p.phraseId)),...shuffled];
+ for(const candidate of prioritized){
    if(selected.length>=FOREST_WAVE_LENGTH)break;
    if(!usedPhrases.has(candidate.phraseId))add(candidate);
  }
