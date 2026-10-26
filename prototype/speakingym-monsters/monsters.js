@@ -260,13 +260,18 @@ function renderQuestion() {
   }
   const prompt=currentPrompt();
   if (!prompt) {finishSession();return;}
+  if(play.mode==='forest'){
+    const style=prompt.kind==='listen'?'defense':prompt.kind==='read'?'reading':'attack';
+    $('#forest-world-stage').dataset.action=style;
+    $('#forest-battle-log').textContent=style==='defense'?'敵のリスニング攻撃！音声を聞いて、英語で返して防御しよう。':style==='reading'?'敵の作戦を読んで、英語で応答して突破しよう。':'英語で応えて、仲間の攻撃を決めよう。';
+  }
   $('#play-progress-fill').style.width=`${100*play.index/play.prompts.length}%`;
   const englishMode = (prompt.difficulty||'easy')!=='easy';
   const questionBody = englishMode
     ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
-  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
+  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTENING DEFENSE':prompt.kind==='read'?'READING STRIKE':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
   $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
   $('#retry-mic').addEventListener('click',()=>{
@@ -431,16 +436,19 @@ async function gradeAnswer() {
     play.usedPower ||= special.usedPower;
     if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+special.strikes);
     $('#forest-journey').classList.add('forest-victory');
-    $('#forest-world-stage').classList.remove('forest-attack','forest-guarding');
-    void $('#forest-world-stage').offsetWidth;
-    $('#forest-world-stage').classList.add('forest-attack');
+    const stage=$('#forest-world-stage');
+    stage.classList.remove('forest-attack','forest-guarding','forest-defended','forest-reading-hit');
+    void stage.offsetWidth;
+    stage.classList.add('forest-attack');
+    if(prompt.kind==='listen')stage.classList.add('forest-defended');
+    if(prompt.kind==='read')stage.classList.add('forest-reading-hit');
     $('#forest-world-stage').dataset.attack=play.companionId;
     $('#forest-damage').textContent=`−${special.strikes}`;
-    $('#forest-world-fx').textContent=special.ability?special.ability:boss?'BOSS HIT':'HIT';
+    $('#forest-world-fx').textContent=prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss&&play.bossHits>=BOSS_HITS;
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
-    $('#forest-battle-log').textContent=`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
+    $('#forest-battle-log').textContent=prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
   }
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${play.mode==='forest'?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
