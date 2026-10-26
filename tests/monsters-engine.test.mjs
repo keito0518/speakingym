@@ -6,7 +6,7 @@ import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -184,6 +184,58 @@ test('practice and challenge pick distinct expressions and prioritize overdue re
   assert.throws(()=>selectRoundPrompts(save,17),/Choose/);
 });
 
+test('uncertain answers are revisited without awarding XP or erasing mastery', () => {
+  const fresh=createSave();
+  const flagged=flagUncertainReview(fresh,'help-bag','2026-10-26');
+  assert.deepEqual(fresh.reviewPrompts,{});
+  assert.equal(flagged.xpWallet,0);
+  assert.equal(flagged.totalAnswers,0);
+  assert.equal(flagged.progress.help,undefined);
+  assert.equal(flagged.reviewPrompts['help-bag'],'2026-10-27');
+  assert.equal(learningSummary(flagged,'2026-10-26').reviewCount,0);
+  assert.equal(learningSummary(flagged,'2026-10-27').reviewCount,1);
+  const due=selectRoundPrompts(flagged,1,()=>0,'2026-10-27','easy');
+  assert.equal(due[0].id,'help-bag');
+  const repeated=flagUncertainReview(flagged,'help-bag','2026-10-27');
+  assert.equal(repeated.reviewPrompts['help-bag'],'2026-10-27');
+  const passed=recordAnswer(flagged,'help-bag','smooth','2026-10-27');
+  assert.equal(passed.reward.xp,16);
+  assert.equal(passed.save.reviewPrompts['help-bag'],'2026-10-30');
+  assert.equal(learningSummary(passed.save,'2026-10-27').reviewCount,0);
+  const viewed=recordAnswer(flagged,'help-bag','again','2026-10-27');
+  assert.equal(viewed.reward.xp,0);
+  assert.equal(viewed.save.reviewPrompts['help-bag'],'2026-10-28');
+  assert.equal(viewed.save.xpWallet,0);
+  assert.equal(validateSave(passed.save).reviewPrompts['help-bag'],'2026-10-30');
+  assert.deepEqual(validateSave({...fresh,reviewPrompts:{'fake-id':'2026-10-28','help-bag':'invalid'}}).reviewPrompts,{});
+  assert.throws(()=>flagUncertainReview(fresh,'not-a-prompt'),/Invalid/);
+  assert.throws(()=>flagUncertainReview(fresh,'help-bag','tomorrow'),/Invalid/);
+});
+test('review-focused forest waves retain listening and reading attacks', () => {
+  const wave=buildForestWave({difficulty:'easy',random:()=>0.43,reviewPromptIds:['booking-table','help-bag']});
+  assert.ok(wave.prompts.some(p=>p.id==='booking-table'));
+  assert.ok(wave.prompts.some(p=>p.id==='help-bag'));
+  assert.ok(wave.prompts.some(p=>p.kind==='listen'));
+  assert.ok(wave.prompts.some(p=>p.kind==='read'));
+  assert.equal(new Set(wave.prompts.map(p=>p.id)).size,8);
+});
+test('narrow natural paraphrases are accepted but contradictory meanings stay unresolved', () => {
+  const prompt=id=>ALL_PROMPTS.find(p=>p.id===id);
+  for(const [id,reply] of [
+    ['help-bag','Could you give me a hand with this bag?'],
+    ['help-phone','Would you mind helping me with my phone?'],
+    ['order-coffee','May I have an iced coffee, please?'],
+    ['direction-station','Could you show me the way to the station?'],
+    ['booking-table','Could I reserve a table for two?'],
+    ['change-room','Would it be possible to move to another room?'],
+    ['problem-wifi','I cannot get the Wi-Fi to work in my room.']
+  ]) {
+    assert.equal(gradeLocalResponse(prompt(id),reply).status,'correct',id);
+  }
+  assert.equal(gradeLocalResponse(prompt('order-coffee'),'I would like a hot tea.').status,'review');
+  assert.equal(gradeLocalResponse(prompt('booking-table'),'Could I reserve a table for six?').status,'review');
+  assert.equal(gradeLocalResponse(prompt('problem-wifi'),'The Wi-Fi is working perfectly.').status,'review');
+});
 test('difficulty selection preserves progress and rewards, and variants share scene mastery', () => {
   const start=createSave();
   assert.throws(()=>chooseDifficulty(start,'extreme'),/Invalid difficulty/);
