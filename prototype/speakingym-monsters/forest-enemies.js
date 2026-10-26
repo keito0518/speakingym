@@ -1,0 +1,15 @@
+// Original, low-cost vector adversaries for the Speaking Forest.
+const eye='<ellipse cx="53" cy="76" rx="5" ry="7" fill="#272c2b"/><ellipse cx="91" cy="76" rx="5" ry="7" fill="#272c2b"/>';
+const smile='<path d="M57 95Q72 107 88 95" fill="none" stroke="#29362e" stroke-width="4" stroke-linecap="round"/>';
+const sprites={
+ mossling:`<path d="M29 61Q4 47 25 29Q39 18 51 32Q71 6 91 30Q115 14 122 42Q140 58 120 74L121 107Q108 131 69 126Q26 127 22 105Z" fill="#79b66c" stroke="#315e4a" stroke-width="6"/><path d="M30 51Q44 13 63 46Q74 9 93 43Q115 13 123 54" fill="none" stroke="#b4dd84" stroke-width="12" stroke-linecap="round"/>${eye}${smile}`,
+ thistlet:`<path d="M71 16L83 38L110 25L111 54L133 66L112 84L126 115L92 112L73 138L56 114L24 119L35 87L14 63L42 52L39 24L63 39Z" fill="#b28bc9" stroke="#66517c" stroke-width="6"/><path d="M36 49L59 63M104 44L89 61" stroke="#dbc8f0" stroke-width="8" stroke-linecap="round"/>${eye}${smile}`,
+ spookap:`<path d="M20 81Q16 34 71 25Q126 28 130 82Z" fill="#e29a78" stroke="#845a63" stroke-width="6"/><circle cx="52" cy="50" r="10" fill="#ffebbf"/><circle cx="97" cy="60" r="12" fill="#ffe7b7"/><path d="M45 81L47 126Q72 142 99 125L101 81Z" fill="#f6e0ba" stroke="#9f7f6c" stroke-width="6"/>${eye}${smile}`,
+ bramblet:`<path d="M70 15L87 39Q132 44 128 84Q133 127 81 133Q25 135 20 89Q18 47 58 37Z" fill="#a76f4a" stroke="#64462f" stroke-width="6"/><path d="M65 44L71 18M43 59L26 43M112 58L134 41" fill="none" stroke="#655131" stroke-width="8" stroke-linecap="round"/><path d="M34 113Q72 99 111 116" fill="none" stroke="#dfad75" stroke-width="7"/>${eye}${smile}`,
+ mothum:`<path d="M68 68Q27 10 17 65Q12 103 58 100M76 70Q125 8 131 64Q139 106 82 102" fill="#a8c5df" stroke="#4e758e" stroke-width="6"/><path d="M65 39Q73 25 82 39L88 106Q72 135 57 106Z" fill="#6a8196" stroke="#40576c" stroke-width="5"/><circle cx="38" cy="69" r="9" fill="#e5d69d"/><circle cx="110" cy="69" r="9" fill="#e5d69d"/>${eye}`,
+ thornking:`<path d="M22 107Q8 75 29 43L19 17L48 35L68 8L88 31L121 13L117 47Q141 67 121 104Q111 134 74 137Q34 138 22 107Z" fill="#44694d" stroke="#173c32" stroke-width="7"/><path d="M19 19L28 1L51 31L71 0L91 29L121 4L124 29L112 55L33 57Z" fill="#d0b574" stroke="#74562c" stroke-width="6"/><path d="M36 57Q64 41 82 55Q100 41 112 59" stroke="#789667" stroke-width="12" stroke-linecap="round"/><path d="M43 84L59 80M84 80L100 84" stroke="#f1d9a3" stroke-width="7" stroke-linecap="round"/><ellipse cx="52" cy="84" rx="6" ry="8" fill="#fae2a2"/><ellipse cx="94" cy="84" rx="6" ry="8" fill="#fae2a2"/><path d="M60 113L72 108L85 113" fill="none" stroke="#edd59e" stroke-width="5" stroke-linecap="round"/><path d="M17 105L3 87M125 105L144 92" stroke="#638450" stroke-width="8" stroke-linecap="round"/>`
+};
+export function enemyArt(id){
+ const body=sprites[id]||sprites.mossling;
+ return `<svg class="forest-enemy-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 150" role="img" aria-label="森の敵モンスター"><ellipse cx="74" cy="142" rx="58" ry="7" fill="#09271b" opacity=".23"/>${body}</svg>`;
+}

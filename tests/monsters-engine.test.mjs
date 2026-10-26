@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
+import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from '../prototype/speakingym-monsters/forest-battle.js';
+import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
@@ -53,6 +55,37 @@ test('the illustrated adventure scene has distinct accessible route art and stab
   assert.match(sun,/forest-world-sunlit/);
   assert.notEqual(moss,sun);
 });
+test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endless difficulty',()=>{
+ assert.equal(REGULAR_ENCOUNTERS,5);
+ assert.equal(BOSS_HITS,3);
+ assert.equal(FOREST_WAVE_LENGTH,8);
+ assert.deepEqual(DIFFICULTY_TRIES,{easy:3,normal:2,hard:1});
+ const a=buildForestWave({difficulty:'easy',wave:1,random:()=>.99});
+ const b=buildForestWave({difficulty:'easy',wave:1,random:()=>0});
+ assert.equal(a.prompts.length,8);
+ assert.equal(new Set(a.prompts.map(x=>x.id)).size,8);
+ assert.notDeepEqual(a.prompts.map(x=>x.id),b.prompts.map(x=>x.id));
+ assert.ok(a.prompts.every(x=>!x.difficulty||x.difficulty==='easy'));
+ assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=6);
+ assert.equal(forestLevel('easy',1),'easy');
+ assert.equal(forestLevel('easy',2),'easy');
+ assert.equal(forestLevel('easy',3),'normal');
+ assert.equal(forestLevel('easy',5),'hard');
+ assert.equal(forestLevel('normal',3),'hard');
+ assert.equal(forestLevel('hard',100),'hard');
+ const boosted=buildForestWave({difficulty:'easy',wave:3,previousIds:a.prompts.map(x=>x.id),random:()=>0.2});
+ assert.equal(boosted.level,'normal');
+ assert.ok(boosted.prompts.every(x=>x.difficulty==='normal'));
+ assert.equal(opponentFor(0,1).id,'mossling');
+ assert.equal(opponentFor(4,1).id,'mothum');
+ assert.equal(opponentFor(5,1).id,'thornking');
+ assert.match(enemyArt('thornking'),/<svg/);
+ for(let i=0;i<5;i++)assert.match(enemyArt(opponentFor(i).id),/forest-enemy-svg/);
+ assert.deepEqual(specialStrike({companionId:'medamago',evolved:true,boss:true}),{strikes:2,ability:'DOUBLE YOLK',usedPower:true});
+ assert.equal(specialStrike({companionId:'medamago',evolved:true,boss:true,usedPower:true}).strikes,1);
+ assert.equal(specialStrike({companionId:'katappo',evolved:true,boss:true}).strikes,1);
+ assert.throws(()=>forestLevel('extreme'),/Invalid/);
+});
 test('Speaking Forest is three authored speaking gates across all difficulty levels', () => {
   assert.equal(FOREST_STAGES.length,3);
   assert.equal(FOREST_ROUTES.length,2);
@@ -70,7 +103,7 @@ test('Speaking Forest is three authored speaking gates across all difficulty lev
 });
 test('Forest stamp unlocks only on full route completion; evolved companions find extra cosmetic relics', () => {
   const initial=createSave();
-  assert.deepEqual(cleanForest(null),{clears:0,routes:[],relics:[]});
+  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[]});
   assert.throws(()=>finishForest(initial,'unknown','medamago'),/Invalid forest route/);
   assert.throws(()=>finishForest(initial,'moss','katappo'),/not owned/);
   const one=finishForest(initial,'sunlit','medamago');
@@ -99,7 +132,7 @@ test('Forest souvenirs persist when old saves are loaded without a forest field'
  const completed=finishForest(initial,'sunlit','medamago').save;
  assert.deepEqual(validateSave(completed).forest,completed.forest);
  const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
- assert.deepEqual(polluted.forest,{clears:0,relics:['sunlit-leaf'],routes:['sunlit']});
+ assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit']});
 });
 
 test('fresh save has a fried-egg companion and does not call account or AI APIs', () => {

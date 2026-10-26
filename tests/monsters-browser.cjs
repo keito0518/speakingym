@@ -63,32 +63,35 @@ const path=require('node:path');
     await hardPage.reload();
     assert.equal(await hardPage.locator('[data-difficulty="hard"]').getAttribute('aria-pressed'),'true');
     await hardContext.close();
-    // Play a full Speaking Forest adventure: three verified English gates,
-    // route choice, companion presentation, collectible relic and persisted progress.
+    // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);
       await forestPage.locator('#start-forest').click();
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),true);
       assert.match(await forestPage.locator('#forest-companion-name').innerText(),/Yolkie/);
       assert.equal(await forestPage.locator('#forest-world-backdrop svg').count(),1);
-      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-stage'),'0');
+      assert.equal(await forestPage.locator('#forest-enemy svg').count(),1);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'wild');
-      assert.equal(await forestPage.locator('#forest-player-art svg').isVisible(),true);
-      const startMarker=await forestPage.locator('#forest-party').evaluate(el=>getComputedStyle(el).left);
-      assert.ok(startMarker);
-      assert.match(await forestPage.locator('#play-mode-label').innerText(),/スピーキングの森/);
-      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 1 \/ 3/);
-      // An unverified attempt may show an example but cannot unlock a gate or XP.
+      assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Mossling/);
+      assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
+      const answer=async()=>{
+        const example=await forestPage.evaluate(async()=>{
+          const {ALL_PROMPTS}=await import('./monster-data.js');
+          return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+        });
+        await forestPage.locator('#spoken-answer').fill(example);
+        await forestPage.locator('#show-answer').click();
+        assert.match(await forestPage.locator('#feedback-panel').innerText(),/関門突破/);
+        assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-attack')),true);
+        assert.equal(await forestPage.locator('#forest-damage').isVisible(),true);
+      };
+      // Seeing a model answer cannot open a gate or mint any XP.
       await forestPage.locator('#spoken-answer').fill('I have no idea.');
       await forestPage.locator('#show-answer').click();
       await forestPage.locator('#show-example').click();
       await forestPage.locator('#next-question').click();
-      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 1 \/ 3/);
-      await forestPage.locator('#spoken-answer').fill('Let me think about it.');
-      await forestPage.locator('#show-answer').click();
-      assert.match(await forestPage.locator('#feedback-panel').innerText(),/関門突破/);
-      assert.equal(await forestPage.locator('#forest-journey').evaluate(el=>el.classList.contains('forest-victory')),true);
-      assert.match(await forestPage.locator('#forest-world-fx').innerText(),/GATE CLEAR/);
+      assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
+      await answer();
       await forestPage.locator('#next-question').click();
       assert.match(await forestPage.locator('#play-card').innerText(),/森に二つの道/);
       assert.equal(await forestPage.locator('#answer-area').isVisible(),false);
@@ -97,42 +100,53 @@ const path=require('node:path');
       assert.ok(routeMetrics.scroll<=routeMetrics.inner+1,`${engine}/${width} forest choice overflow: ${JSON.stringify(routeMetrics)}`);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-route.png`),fullPage:true});
       await forestPage.locator('[data-forest-route="moss"]').click();
-      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 2 \/ 3/);
-      assert.equal(await forestPage.locator('#answer-area').isVisible(),true);
-      assert.match(await forestPage.locator('#forest-route-status').innerText(),/こけむした/);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'moss');
-      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-stage'),'1');
-      assert.equal(await forestPage.locator('#forest-journey').evaluate(el=>el.classList.contains('forest-victory')),false);
-      await forestPage.locator('#spoken-answer').fill('Could you say that again?');
-      await forestPage.locator('#show-answer').click();
-      await forestPage.locator('#next-question').click();
-      assert.match(await forestPage.locator('.question-top').innerText(),/FOREST GATE 3 \/ 3/);
-      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-stage'),'2');
-      await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-checkpoint.png`),fullPage:true});
-      const checkpointMetrics=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
-      assert.ok(checkpointMetrics.scroll<=checkpointMetrics.inner+1,`${engine}/${width} forest checkpoint overflow: ${JSON.stringify(checkpointMetrics)}`);
-      await forestPage.locator('#spoken-answer').fill("I'd rather take the train.");
-      await forestPage.locator('#show-answer').click();
-      await forestPage.locator('#next-question').click();
+      for(let mob=2;mob<=5;mob++){
+        assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('ENCOUNTER '+mob+' \/ 5'));
+        await answer();
+        await forestPage.locator('#next-question').click();
+      }
+      assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
+      assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Thorn King/);
+      assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-stage')),true);
+      await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-boss.png`),fullPage:true});
+      for(let hit=1;hit<=3;hit++){
+        assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('BOSS ATTACK '+hit+' \/ 3'));
+        await answer();
+        await forestPage.locator('#next-question').click();
+      }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
-      assert.match(await forestPage.locator('#result-title').innerText(),/森の3つの関門/);
-      assert.equal(await forestPage.locator('#result-view').evaluate(el=>el.classList.contains('forest-results')),true);
+      assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
       assert.match(await forestPage.locator('#result-discoveries').innerText(),/Mosslight/);
-      assert.match(await forestPage.locator('#result-rewards').innerText(),/48 XP/);
+      assert.match(await forestPage.locator('#result-rewards').innerText(),/128 XP/);
       await forestPage.locator('#result-collection').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
-      assert.match(await forestPage.locator('#forest-collection-count').innerText(),/踏破 1回/);
       await forestPage.reload();
       await forestPage.locator('#open-collection').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
       await forestPage.locator('#collection-home').click();
-      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/探索 1回/);
-      const forestSave=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-      assert.deepEqual(forestSave.forest.relics,['moss-lantern']);
-      assert.equal(forestSave.forest.clears,1);
-      assert.equal(forestSave.xpWallet,48);
+      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/討伐 1回/);
+      const saved=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+      assert.equal(saved.forest.clears,1);
+      assert.deepEqual(saved.forest.relics,['moss-lantern']);
+      assert.equal(saved.xpWallet,128);
       await forestContext.close();
     }
+    // Endless mode limits attempts by difficulty; ambiguous results are not falsely called wrong.
+    const {context:endlessContext,page:endlessPage}=await boot(390);
+    await endlessPage.locator('[data-difficulty="hard"]').click();
+    await endlessPage.locator('#start-forest-endless').click();
+    assert.match(await endlessPage.locator('#play-mode-label').innerText(),/エンドレス/);
+    assert.match(await endlessPage.locator('#forest-tries').innerText(),/あと1回/);
+    await endlessPage.locator('#spoken-answer').fill('I have no idea what to say here.');
+    await endlessPage.locator('#show-answer').click();
+    assert.match(await endlessPage.locator('#feedback-panel').innerText(),/挑戦回数を使い切った/);
+    await endlessPage.locator('#forest-exit').click();
+    assert.match(await endlessPage.locator('#result-title').innerText(),/挑戦終了/);
+    const endedSave=await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+    assert.equal(endedSave.xpWallet,0);
+    assert.equal(endedSave.forest.clears,0);
+    await endlessContext.close();
     // Fake the browser speech API: check start/stop, stale onend, capture,
     // retry, denied permission, and changing views without a stuck mic.
     const {context:micContext,page:micPage}=await boot(390);

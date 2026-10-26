@@ -1,0 +1,61 @@
+
+/* Battle layer: foes, boss stamina and visibly animated player attacks. */
+.forest-endless-button{background:#17382ed9;border:1px solid #f4d893a6;border-radius:12px;color:#f8e5ae;font-weight:900;font-size:12px;min-height:46px;padding:11px 14px;transition:transform .15s,border-color .15s}
+.forest-endless-button:hover{background:#345e47;border-color:#ffedb4;transform:translateY(-2px)}
+.forest-battle-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;margin:11px 2px 8px;color:#f7ebc5;font-size:12px;font-weight:800;min-height:30px}
+.forest-foe-name{font-size:13px;font-family:Georgia,'Hiragino Mincho ProN',serif;color:#ffe4a0;overflow-wrap:anywhere}
+.forest-tries{font-size:10px;color:#d6ead3;border:1px solid #64846b;padding:6px 10px;background:#102d27;border-radius:9px;flex-shrink:0}
+.forest-boss-hp{color:#ffca73;font-size:17px;letter-spacing:3px;font-weight:900;text-shadow:0 2px 3px #172922}
+.forest-active .forest-gates{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:9px 0 12px}
+.forest-active .forest-gate{min-width:0;padding:9px 2px}
+.forest-active .forest-boss-gate{font-size:10px;font-weight:900;letter-spacing:.01em}
+.forest-active .forest-boss-gate.is-current{background:linear-gradient(#f9c48a,#d88764);border-color:#ffd2a9;box-shadow:0 3px 0 #9e5237;color:#4c2a27}
+.forest-enemy{position:absolute;z-index:3;width:clamp(58px,13vw,102px);height:clamp(68px,14vw,111px);right:8%;top:38%;
+ pointer-events:none;transform:translateY(0);filter:drop-shadow(0 9px 7px #051c1866);
+ animation:forest-foe-hover 2.6s ease-in-out infinite;transform-origin:50% 80%}
+.forest-enemy-svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%}
+.forest-world-stage.forest-boss-stage .forest-enemy{width:clamp(98px,22vw,148px);height:clamp(95px,24vw,157px);right:2%;top:24%;
+ filter:drop-shadow(0 8px 12px #2c16299a) drop-shadow(0 0 16px #f7aa8055)}
+.forest-world-stage.forest-boss-stage{border-color:#d4aa80}
+.forest-world-stage.forest-boss-stage .forest-world-vignette{background:linear-gradient(0deg,#361e32a8,transparent 48%),
+ linear-gradient(90deg,#1a25284c,transparent 37%,#47233281)}
+.forest-world-stage.forest-attack .forest-party{animation:forest-lunge .64s cubic-bezier(.22,.8,.24,1) both}
+.forest-world-stage.forest-attack .forest-enemy{animation:forest-foe-hit .7s ease-in-out both}
+.forest-damage{position:absolute;z-index:7;right:16%;top:14%;color:#ffea9b;font-size:clamp(16px,4vw,28px);
+ font-weight:1000;letter-spacing:.06em;text-shadow:0 3px 0 #752f2c,0 0 20px #ffd68a;
+ opacity:0;pointer-events:none}
+.forest-world-stage.forest-attack .forest-damage{animation:forest-hit-label .9s ease-out both}
+.forest-world-stage.forest-player-damaged .forest-enemy{animation:forest-foe-pounce .6s both}
+.forest-world-stage.forest-player-damaged .forest-party{animation:forest-player-shake .6s both}
+.forest-world-stage.forest-player-damaged{border-color:#e98a6e}
+.forest-journey.forest-victory .forest-world-fx{font-size:clamp(14px,3vw,22px);inset:19% 18% auto}
+#forest-world-counter{font-size:9px}
+@keyframes forest-foe-hover{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+@keyframes forest-lunge{0%{transform:translate(-50%,9%) scale(1)}35%{transform:translate(38%,-18%) scale(1.17) rotate(-14deg)}
+ 60%{transform:translate(45%,-20%) scale(1.06)}100%{transform:translate(-50%,9%) scale(1)}}
+@keyframes forest-foe-hit{0%{transform:translateX(0) scale(1);opacity:1}33%{transform:translateX(9px) rotate(15deg) scale(.85);opacity:.75}
+ 45%{transform:translateX(-9px) rotate(-15deg) scale(1.12);opacity:.8}78%{transform:translateX(20px) scale(.5);opacity:0}
+ 100%{transform:translateX(24px) scale(.4);opacity:0}}
+@keyframes forest-hit-label{0%{opacity:0;transform:translateY(24px) scale(.7)}20%{opacity:1;transform:translateY(0) scale(1.15)}
+ 60%{opacity:1;transform:translateY(-12px) scale(1)}100%{opacity:0;transform:translateY(-27px)}}
+@keyframes forest-foe-pounce{0%,100%{transform:translateX(0)}40%{transform:translateX(-19px) scale(1.1)}}
+@keyframes forest-player-shake{0%,100%{transform:translate(-50%,9%)}25%,75%{transform:translate(-40%,9%)}
+ 50%{transform:translate(-63%,9%)}}
+@media(max-width:690px){
+ .forest-endless-button{flex:1 1 165px}
+ .forest-enemy{right:6%;top:39%}
+ .forest-world-stage.forest-boss-stage .forest-enemy{right:1%;top:30%}
+ .forest-foe-name{font-size:12px}
+}
+@media(max-width:370px){
+ .forest-foe-name{font-size:11px}
+ .forest-tries{font-size:9px;padding:5px 6px}
+ .forest-active .forest-gate{font-size:11px}
+ .forest-active .forest-boss-gate{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .forest-enemy,.forest-world-stage.forest-attack .forest-party,.forest-world-stage.forest-attack .forest-enemy,
+ .forest-world-stage.forest-attack .forest-damage,.forest-world-stage.forest-player-damaged .forest-party,
+ .forest-world-stage.forest-player-damaged .forest-enemy{animation:none!important;transition:none!important}
+ .forest-world-stage.forest-attack .forest-damage{opacity:1}
+}

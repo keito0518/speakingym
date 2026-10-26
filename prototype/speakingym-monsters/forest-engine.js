@@ -26,6 +26,7 @@ export function cleanForest(input){
  const ids=Object.keys(FOREST_RELICS);
  return {
   clears:Number.isSafeInteger(source.clears)&&source.clears>=0?Math.min(source.clears,100000):0,
+  bestWave:Number.isSafeInteger(source.bestWave)&&source.bestWave>=0?Math.min(source.bestWave,100000):0,
   routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>FOREST_ROUTES.some(r=>r.id===x)))],
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
  };
@@ -53,6 +54,7 @@ export function finishForest(save,routeId,companionId){
   ...save,
   forest:{
    clears:before.clears+1,
+   bestWave:before.bestWave,
    routes:[...new Set([...before.routes,routeId])],
    relics:[...new Set([...before.relics,...earned])]
   }
