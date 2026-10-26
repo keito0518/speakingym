@@ -120,3 +120,5 @@
  .forest-world-stage.forest-attack::after,.forest-world-stage.forest-boss-defeated .forest-enemy{animation:none!important}
  .forest-active .forest-boss-hp::before{transition:none}
 }
+/* The journey marker reaches the end of the trail; battle actors return to opposite sides. */
+.forest-world-stage.forest-boss-stage .forest-party{left:19%;bottom:10%}
