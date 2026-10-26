@@ -122,3 +122,72 @@
 }
 /* The journey marker reaches the end of the trail; battle actors return to opposite sides. */
 .forest-world-stage.forest-boss-stage .forest-party{left:19%;bottom:10%}
+
+/* Battle-first mobile layout: keep the actors visible while answering below. */
+.forest-active .forest-gates{display:none!important}
+.forest-active .forest-world-counter{display:none}
+.forest-active .forest-mission-panel{display:none}
+.forest-active .forest-journey-header{padding-bottom:4px}
+.forest-active .forest-journey-title small{display:none}
+.forest-active .forest-world-stage{isolation:isolate}
+.forest-active .forest-world-stage.forest-attack{animation:forest-impact-camera .82s ease-out}
+.forest-active .forest-world-stage.forest-attack::before{
+ content:"";position:absolute;z-index:5;right:8%;top:27%;width:35%;aspect-ratio:1;pointer-events:none;
+ background:radial-gradient(circle,#fffbe8 0 6%,#ffed9c 8% 12%,#ffaf5588 15% 24%,transparent 52%),
+ repeating-conic-gradient(from 12deg,#ffe8a8 0deg 6deg,transparent 6deg 32deg);
+ border-radius:50%;opacity:0;animation:forest-impact-burst 1.15s ease-out .26s both;
+}
+.forest-active .forest-world-stage.forest-attack[data-attack="katappo"]::before{
+ background:radial-gradient(circle,#ffffff 0 6%,#c2ffff 8% 14%,#73dce888 16% 26%,transparent 52%),
+ repeating-conic-gradient(from 12deg,#c5faff 0deg 6deg,transparent 6deg 32deg);
+}
+.forest-active .forest-world-stage.forest-boss-stage.forest-attack::before{right:3%;top:19%;width:46%}
+.forest-active .forest-world-stage.forest-boss-stage.forest-attack::after{height:9px;box-shadow:0 0 22px 12px #ffd189aa}
+.forest-active .forest-world-stage.forest-attack .forest-enemy{animation:forest-foe-hit-strong 1.2s cubic-bezier(.3,.7,.4,1) both}
+.forest-active .forest-world-stage.forest-attack .forest-party{animation:forest-lunge-strong 1.15s cubic-bezier(.25,.7,.35,1) both}
+.forest-active .forest-world-stage.forest-attack .forest-damage{animation:forest-hit-label 1.35s ease-out .25s both;font-size:clamp(23px,5vw,38px)}
+.forest-active .forest-world-stage.forest-boss-defeated .forest-enemy{animation:forest-boss-fall 1.3s ease-in .4s both}
+@keyframes forest-impact-burst{
+ 0%,18%{opacity:0;transform:scale(.12) rotate(-30deg)}
+ 32%{opacity:1;transform:scale(.85) rotate(0)}
+ 58%{opacity:.9;transform:scale(1.35) rotate(20deg)}
+ 100%{opacity:0;transform:scale(1.9) rotate(45deg)}
+}
+@keyframes forest-impact-camera{
+ 0%,38%,100%{filter:none}
+ 43%{filter:brightness(1.45)}
+ 48%{filter:brightness(.82)}
+ 55%{filter:brightness(1.12)}
+}
+@keyframes forest-lunge-strong{
+ 0%{transform:translate(-50%,9%) scale(1)}
+ 25%{transform:translate(-65%,13%) scale(.91)}
+ 47%{transform:translate(65%,-22%) scale(1.28) rotate(-16deg)}
+ 56%{transform:translate(67%,-20%) scale(1.17) rotate(-10deg)}
+ 100%{transform:translate(-50%,9%) scale(1)}
+}
+@keyframes forest-foe-hit-strong{
+ 0%,34%{transform:translateX(0) scale(1);opacity:1;filter:none}
+ 43%{transform:translateX(11px) rotate(12deg) scale(1.13);filter:brightness(2.5);opacity:1}
+ 53%{transform:translateX(-10px) rotate(-11deg) scale(.92);filter:brightness(.7);opacity:1}
+ 67%{transform:translateX(13px) rotate(9deg) scale(1.08);filter:brightness(1.8);opacity:1}
+ 100%{transform:translateX(0) scale(1);filter:none;opacity:1}
+}
+@media(max-width:690px){
+ .forest-active .forest-battle-shell{overflow:visible;border-radius:16px}
+ .forest-active .forest-journey{position:sticky;top:0;z-index:20;border-radius:14px 14px 0 0!important;box-shadow:0 5px 16px #092c2580!important}
+ .forest-active .forest-journey-header{padding:0 3px 4px}
+ .forest-active .forest-companion-art{width:31px;height:31px;flex-basis:31px}
+ .forest-active .forest-world-stage{height:clamp(155px,42vw,205px)}
+ .forest-active .forest-battle-info{margin:3px 2px;padding-bottom:3px;min-height:24px}
+ .forest-active .forest-command-window{position:relative;z-index:1}
+}
+@media(prefers-reduced-motion:reduce){
+ .forest-active .forest-world-stage.forest-attack,
+ .forest-active .forest-world-stage.forest-attack::before,
+ .forest-active .forest-world-stage.forest-attack .forest-enemy,
+ .forest-active .forest-world-stage.forest-attack .forest-party,
+ .forest-active .forest-world-stage.forest-attack .forest-damage,
+ .forest-active .forest-world-stage.forest-boss-defeated .forest-enemy{animation:none!important}
+ .forest-active .forest-world-stage.forest-attack .forest-damage{opacity:1}
+}
