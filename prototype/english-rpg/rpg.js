@@ -99,7 +99,7 @@ function beginMove(move) {
   currentMove = move;
   currentQuestion = pickQuestion(move, save, random);
   persist(rememberQuestion(save, currentQuestion));
-  phraseBuilt = []; phraseOrder = shuffle(currentQuestion.tokens.map((token,index)=>({token,index})),random);
+  phraseBuilt = []; phraseOrder = move === 'phrase' ? shuffle(currentQuestion.tokens.map((token,index)=>({token,index})),random) : [];
   $('#move-screen').classList.add('hidden');
   $('#question-screen').classList.remove('hidden');
   $('#feedback').classList.add('hidden');
