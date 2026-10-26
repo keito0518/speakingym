@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f8f6ef"><meta name="description" content="英語を使って冒険するモンスター育成RPGのプレイアブル試作版。">
+<title>Speakingym Quest — 英語で冒険するRPG試作</title>
+<link rel="stylesheet" href="./rpg.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="./index.html" aria-label="Speakingym Quest ホーム">speakingym<span>Quest</span></a><div class="top-actions"><span id="save-state" role="status">この端末に保存</span><button class="icon-button" id="reset-game" title="試作データをリセット" aria-label="試作データをリセット">↺</button></div></header>
+<main id="app" class="shell">
+<section id="welcome-screen" class="screen welcome" aria-labelledby="welcome-title">
+  <div class="welcome-copy"><p class="eyebrow">A LITTLE ENGLISH ADVENTURE</p><h1 id="welcome-title">英語で冒険、<br>仲間と成長。</h1><p class="lead">英語を使ってモンスターと戦い、仲間にしよう。<br>正解を重ねるたび、冒険が少しずつ進みます。</p><div class="welcome-note"><b>60秒チャレンジとは別の練習です</b><br>日本語を英訳するのではなく、選ぶ技に合わせて単語・リスニング・語順を使います。</div></div>
+  <div class="starter-card"><div class="starter-head"><span class="step-dot">01</span><div><h2>最初の相棒を選ぼう</h2><p>どの相棒でも学べる問題と成長機会は同じです。</p></div></div><div id="starter-list" class="starter-list"></div><button id="choose-starter" class="primary-button" disabled>相棒を選んで冒険へ</button></div>
+</section>
+<section id="map-screen" class="screen hidden" aria-labelledby="map-title">
+  <div class="page-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1 id="map-title">冒険マップ</h1><p class="subheading">道をひとつずつ進もう。5・10ステージはボス戦！</p></div><button class="small-button" id="open-companions">相棒・図鑑</button></div>
+  <div class="journey-bar"><div id="hero-mini" class="hero-mini"></div><div class="journey-info"><b id="hero-name"></b><span id="hero-level"></span><div class="xp-track"><i id="xp-fill"></i></div></div><div class="journey-count"><b id="stage-progress">0 / 10</b><span>クリア</span></div></div>
+  <div class="map-layout"><div id="stage-list" class="stage-list" aria-label="ステージ一覧"></div><aside class="map-aside"><div class="side-card"><p class="eyebrow">FIELD GUIDE</p><h2>仲間の記録</h2><div id="collection-mini"></div><button id="open-dex" class="text-button">図鑑を見る　→</button></div><div class="side-card learning-card"><p class="eyebrow">LEARN WHILE PLAYING</p><h3>技を選ぶと練習が変わる</h3><p>単語の意味を選ぶ、英語を聞いて用件をつかむ、単語を並べて文を作る。どの技にも英語を使う場面があります。</p></div></aside></div>
+</section>
+<section id="battle-screen" class="screen hidden" aria-labelledby="battle-title">
+  <div class="battle-head"><button class="back-button" id="leave-battle">← マップ</button><div><p id="battle-stage-label" class="eyebrow"></p><h1 id="battle-title">野生の仲間が現れた！</h1></div><span class="boss-tag hidden" id="boss-tag">BOSS</span></div>
+  <div id="battle-field" class="battle-field"><div class="field-sky"></div><div class="battle-creature ally-side"><div id="battle-hero-art"></div><span id="battle-hero-name"></span></div><div class="battle-creature foe-side"><div id="foe-art"></div><span id="foe-name"></span></div><div class="battle-vs">VS</div><div class="hp-panel ally-hp"><span id="ally-hp-name"></span><div class="hp-track"><i id="ally-hp-fill"></i></div><small id="ally-hp-text"></small></div><div class="hp-panel foe-hp"><span id="foe-hp-name"></span><div class="hp-track"><i id="foe-hp-fill"></i></div><small id="foe-hp-text"></small></div></div>
+  <div id="move-screen" class="battle-panel"><div class="prompt-head"><div><p class="eyebrow">YOUR TURN</p><h2>どの技で英語に挑戦する？</h2></div><span id="focus-count" class="focus-pill">集中 ●●</span></div><div class="move-list"><button class="move-card" data-move="word"><span class="move-icon word-icon">語</span><span><b>ことば斬り</b><small>英文のキーワードを選ぶ</small></span><strong>攻 22</strong></button><button class="move-card" data-move="listen"><span class="move-icon listen-icon">♪</span><span><b>聞き耳ウェーブ</b><small>英文を聞いて用件をつかむ</small></span><strong>攻 18＋守</strong></button><button class="move-card" data-move="phrase"><span class="move-icon phrase-icon">文</span><span><b>フレーズ連結</b><small>単語を並べて文を作る</small></span><strong>攻 29 · 集中1</strong></button></div><p class="microcopy">不正解でも冒険は続く。ヒントを見て次の手を選ぼう。</p></div>
+  <div id="question-screen" class="battle-panel hidden"><div class="question-top"><button id="change-move" class="back-button">← 技を選び直す</button><span id="question-type" class="type-pill"></span></div><h2 id="question-prompt"></h2><div id="question-target-wrap" class="target-wrap hidden"><span>ENGLISH</span><b id="question-target"></b></div><div id="question-audio-row" class="question-audio-row hidden"><button id="speak-question" class="sound-button" aria-label="英文を再生">▶ 英文を聞く</button><button id="reveal-listen-text" class="small-button hidden">英文を確認</button></div><div id="answer-options" class="answer-options"></div><div id="phrase-options" class="phrase-options hidden"><p>単語をタップして文を組み立てよう。できたら声に出してから攻撃！発話は記録・採点しません。</p><div id="phrase-built" class="phrase-built" aria-live="polite"></div><div id="phrase-bank" class="phrase-bank"></div><div class="phrase-actions"><button class="small-button" id="undo-word">1語戻す</button><button class="small-button" id="clear-phrase">やり直す</button><button class="primary-button phrase-submit" id="submit-phrase" disabled>この文で攻撃</button></div></div><div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div><div id="after-answer" class="after-answer hidden"><button id="continue-battle" class="primary-button">次の手へ</button></div></div>
+  <div id="battle-result" class="battle-panel result-panel hidden" role="status" aria-live="polite"></div>
+</section>
+<section id="camp-screen" class="screen hidden" aria-labelledby="camp-title"><div class="page-heading"><div><p class="eyebrow">CAMP & FIELD GUIDE</p><h1 id="camp-title">相棒と図鑑</h1><p class="subheading">捕まえた仲間を確認。相棒はいつでも変更できます。</p></div><button class="small-button" id="camp-to-map">← 冒険マップ</button></div><div class="camp-hero" id="camp-hero"></div><h2 class="section-title">仲間になったモンスター <span id="dex-count"></span></h2><div id="dex-grid" class="dex-grid"></div><p class="microcopy">未発見の仲間は、生息地のステージを再挑戦すると出会えることがあります。勝利を重ねると必ず仲間になります。</p></section>
+<div id="modal-root" aria-live="polite"></div>
+<footer class="footer"><span>Speakingym Quest · プレイアブル試作</span><span>進行データはこの端末だけに保存します</span></footer>
+</main>
+<script type="module" src="./rpg.js"></script>
+</body></html>

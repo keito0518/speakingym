@@ -1,0 +1,40 @@
+name: English RPG prototype QA
+on:
+  pull_request:
+    paths:
+      - 'prototype/english-rpg/**'
+      - 'tests/english-rpg-*'
+      - '.github/workflows/english-rpg-prototype.yml'
+  push:
+    branches: [prototype/english-rpg-20261026]
+    paths:
+      - 'prototype/english-rpg/**'
+      - 'tests/english-rpg-*'
+      - '.github/workflows/english-rpg-prototype.yml'
+jobs:
+  node-and-browser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Engine and learning content tests
+        run: node --test tests/english-rpg-engine.test.mjs
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Start local static preview
+        run: python3 -m http.server 8765 >/tmp/rpg-preview.log 2>&1 &
+      - name: Chromium responsive and gameplay QA
+        run: node tests/english-rpg-browser.cjs
+      - name: WebKit responsive and gameplay QA
+        run: RPG_BROWSER_ENGINE=webkit node tests/english-rpg-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: english-rpg-browser-screenshots
+          path: qa-screenshots/
