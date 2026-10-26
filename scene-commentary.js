@@ -27,7 +27,7 @@ function renderScene(){
  $('photo-credit').href=scene.source;$('photo-credit').textContent=`写真：${scene.creator} · Unsplash`;
  $('scene-name').textContent=scene.title;
  $('photo-error').style.display='none';
- $('learn-panel').hidden=true;$('timer-area').hidden=true;
+ $('learn-panel').hidden=true;$('timer-area').hidden=true;$('samples').replaceChildren();$('final-transcript').textContent='';$('language-tip').textContent='';
  $('timer').textContent='30';$('live-transcript').textContent='マイクを押すと、認識された英語がここに表示されます。';
  $('live-transcript').classList.add('placeholder');$('status').textContent='写真を見て、話すレベルを選んだらスタート。';
  $('practice-actions').hidden=false;$('start-challenge').hidden=false;
