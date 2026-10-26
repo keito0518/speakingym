@@ -73,8 +73,11 @@ export const ADDITIONAL_PHRASES = Object.freeze([
     "tip": "問題の内容と求める対応を落ち着いて説明する。"
   }
 ]);
-const READING_SCENES = new Set(['help-form','order-veg','direction-transfer','recommend-gift','booking-tour','apology-email','decline-purchase','price-service','change-date','problem-bill']);
+const READING_SCENES = new Set(['help-bag','change-room','recommend-visit','help-form','order-veg','direction-transfer','recommend-gift','booking-tour','apology-email','decline-purchase','price-service','change-date','problem-bill']);
 const READING_TEXTS = Object.freeze({
+  "help-bag":"Elevator out of service. Please use the stairs.",
+  "change-room":"Room 202 is beside the elevator. Reception is open 24 hours.",
+  "recommend-visit":"City Garden: a short walk from the visitor center.",
   "help-form": "Please write your current address in the first box.",
   "order-veg": "Vegetarian plate: served with vegetables and rice.",
   "direction-transfer": "For the city center, change at Central Station.",
