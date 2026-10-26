@@ -1,4 +1,4 @@
-import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
+import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
