@@ -14,6 +14,7 @@ on:
 jobs:
   node-and-browser:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     permissions:
       contents: read
     steps:
@@ -30,9 +31,11 @@ jobs:
       - name: Start local static preview
         run: python3 -m http.server 8765 >/tmp/rpg-preview.log 2>&1 &
       - name: Chromium responsive and gameplay QA
-        run: node tests/english-rpg-browser.cjs
+        timeout-minutes: 2
+        run: timeout 90s node tests/english-rpg-browser.cjs
       - name: WebKit responsive and gameplay QA
-        run: RPG_BROWSER_ENGINE=webkit node tests/english-rpg-browser.cjs
+        timeout-minutes: 2
+        run: timeout 90s env RPG_BROWSER_ENGINE=webkit node tests/english-rpg-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
