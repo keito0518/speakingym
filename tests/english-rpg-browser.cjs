@@ -1,11 +1,12 @@
-const { chromium, webkit, devices } = require('playwright');
+const { chromium, webkit } = require('playwright');
+let browser;
 const fs = require('node:fs');
 const path = require('node:path');
 
 (async()=>{
   const engine=process.env.RPG_BROWSER_ENGINE==='webkit'?webkit:chromium;
   const name=process.env.RPG_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
-  const browser=await engine.launch({headless:true});
+  browser=await engine.launch({headless:true});
   const shots=path.join(process.cwd(),'qa-screenshots');fs.mkdirSync(shots,{recursive:true});
   const widths=[320,375,390,430];
   for(const width of widths){
@@ -106,4 +107,4 @@ const path = require('node:path');
   await context.close();
   await browser.close();
   console.log(`${name}: welcome/map at 320, 375, 390, 430px; battle, audio fallback, wrong/correct paths, capture, stage progression, persistence passed`);
-})().catch(error=>{console.error(error);process.exitCode=1;});
+})().catch(async error=>{console.error(error);await browser?.close();process.exitCode=1;});
