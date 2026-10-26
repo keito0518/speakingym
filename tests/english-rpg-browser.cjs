@@ -71,6 +71,7 @@ let browser;
   await page.getByRole('button',{name:'この文で攻撃'}).click();
   await page.getByRole('button',{name:'勝利を確認する'}).click();
   await page.getByRole('heading',{name:'旅人に道を教えよう'}).waitFor();
+  assert.match(await page.locator('#story-task .transcript').innerText(),/Which path should I take to the bridge/);
   assert.equal(await page.locator('[data-action="submit-speech"]').isDisabled(),true);
   if(name==='chromium'){
     await page.locator('[data-action="record"]').click();
