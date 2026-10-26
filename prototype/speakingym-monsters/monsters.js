@@ -35,7 +35,7 @@ function showView(name) {
   window.scrollTo({top:0,behavior:'instant'});
 }
 function renderDifficulty() {
-  $('[data-difficulty]').forEach(button => {
+  $$('[data-difficulty]').forEach(button => {
     const active = button.dataset.difficulty === save.difficulty;
     button.classList.toggle('selected', active);
     button.setAttribute('aria-pressed', String(active));
@@ -186,7 +186,7 @@ function renderCollection(message = '') {
   if ($('#collection-view').hidden) showView('collection');
 }
 
-$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
+$$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
   renderDifficulty();
 }));
