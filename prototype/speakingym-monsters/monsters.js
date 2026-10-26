@@ -1,5 +1,5 @@
 import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, compareWithExamples, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 
 const $ = selector => document.querySelector(selector);
@@ -37,6 +37,7 @@ function renderHome() {
   $('#hero-level').textContent = `Lv.${growth.level}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
+  $('#home-wallet').textContent = save.xpWallet;
   $('#stat-independent').innerHTML = `${summary.independent}<span> / ${summary.total}</span>`;
   $('#stat-review').textContent = summary.reviewCount;
   $('#stat-monsters').innerHTML = `${save.ownedMonsters.length}<span> / ${MONSTERS.length}</span>`;
@@ -45,7 +46,7 @@ function renderHome() {
 function startSession(mode) {
   clearTimer(); stopAudio();
   const promptCount = mode === 'challenge' ? 6 : 3;
-  play = { mode, prompts: selectRoundPrompts(save,promptCount), index:0, smooth:0, earnedXp:0, captured:[], evolved:false, hintUsed:false, revealed:false, speechState:'', startedAt:Date.now(), deadline:mode==='challenge'?Date.now()+60000:null };
+  play = { mode, prompts: selectRoundPrompts(save,promptCount), index:0, smooth:0, earnedXp:0, captured:[], hintUsed:false, revealed:false, speechState:'', startedAt:Date.now(), deadline:mode==='challenge'?Date.now()+60000:null };
   $('#play-mode-label').textContent = mode === 'challenge' ? '60秒チャレンジ' : '練習モード';
   showView('play');
   renderQuestion();
@@ -122,7 +123,6 @@ function rateAnswer(rating) {
   persist(next);
   play.earnedXp+=reward.xp;
   play.captured.push(...reward.captured);
-  if(reward.evolved)play.evolved=true;
   if(effectiveRating==='smooth')play.smooth++;
   play.index++;
   if(play.index===play.prompts.length){finishSession();return;}
@@ -135,29 +135,43 @@ function finishSession(timedOut=false) {
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
   $('#result-title').textContent=ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
   $('#result-description').textContent=timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':'練習した表現は、別の場面や後日の復習でも使ってみよう。';
-  $('#result-rewards').innerHTML=`<span class="reward-pill">自力で言えた ${ended.smooth} / ${ended.index}</span><span class="reward-pill">+${ended.earnedXp} XP</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
-  $('#result-discoveries').innerHTML=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('')+(ended.evolved?'<p class="reward-pill">✨ 相棒が進化した！</p>':'');
+  $('#result-rewards').innerHTML=`<span class="reward-pill">自力で言えた ${ended.smooth} / ${ended.index}</span><span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
+  $('#result-discoveries').innerHTML=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
   $('#replay-run').textContent=ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.mode);
   showView('result');
 }
-function renderCollection() {
+function renderCollection(message = '') {
   const summary=learningSummary(save);
+  $('#collection-wallet').textContent = `${save.xpWallet} XP`;
+  $('#feed-feedback').textContent = message;
   $('#collection-grid').innerHTML=MONSTERS.map(creature=>{
     const owned=save.ownedMonsters.includes(creature.id), active=save.selectedMonster===creature.id;
     const growth=getMonsterProgress(save,creature.id);
     const unlock=creature.masteryUnlock!==undefined?`MASTER ${creature.masteryUnlock}表現で出会える`:`自力で${creature.unlock}表現を話せると出会える`;
-    return `<article class="monster-card ${owned?'':'locked'}"><div class="monster-picture">${monsterArt(creature.id,owned&&growth.evolved)}</div><h3>${owned?escapeHtml(creature.name):'？？？'}</h3><p>${owned?escapeHtml(creature.kind+' · '+creature.note):escapeHtml(unlock)}</p>${owned?`<span class="mini-tag">Lv.${growth.level} ${growth.evolved?'· 進化済み':''}</span><br><button data-select-monster="${creature.id}" ${active?'disabled':''}>${active?'育成中':'この子を育てる'}</button>`:'<span class="mini-tag">未発見</span>'}</article>`;
+    const walletActions=`<div class="feed-actions"><button data-feed-monster="${creature.id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>+10 XP</button><button data-feed-monster="${creature.id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>`;
+    return `<article class="monster-card ${owned?'':'locked'}"><div class="monster-picture">${monsterArt(creature.id,owned&&growth.evolved)}</div><h3>${owned?escapeHtml(creature.name):'？？？'}</h3><p>${owned?escapeHtml(creature.kind+' · '+creature.note):escapeHtml(unlock)}</p>${owned?`<span class="mini-tag">Lv.${growth.level} ${growth.evolved?'· 進化済み':''}</span><div class="mini-xp-track"><span style="width:${100-growth.toNextLevel/XP_PER_LEVEL*100}%"></span></div><div class="monster-card-tools"><button class="select-companion" data-select-monster="${creature.id}" ${active?'disabled':''}>${active?'ホームに表示中':'ホームに表示'}</button>${walletActions}</div>`:'<span class="mini-tag">未発見</span>'}</article>`;
   }).join('');
-  $$('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection();}));
+  $$('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection(`${monsterFor(button.dataset.selectMonster).name}をホームに表示します。`);}));
+  $$('[data-feed-monster]').forEach(button=>button.addEventListener('click',()=>{
+    const id=button.dataset.feedMonster, amount=button.dataset.feedAmount==='all'?save.xpWallet:10;
+    try {
+      const {save:next,reward}=feedMonster(save,id,amount);
+      persist(next);
+      const message=`${monsterFor(id).name}に${reward.xp} XP！${reward.evolved?' ✨進化した！':reward.leveledUp?` Lv.${reward.after.level}になった！`:''}`;
+      renderCollection(message);
+    } catch(error) { $('#feed-feedback').textContent=error.message; }
+  }));
   $('#phrase-grid').innerHTML=summary.entries.map(({phrase,entry,level})=>`<article class="phrase-card"><strong>${escapeHtml(phrase.label)}</strong><p>${escapeHtml(phrase.expression)}</p><div class="phrase-progress" aria-label="習得レベル ${level} / 3">${[1,2,3].map(index=>`<span class="${index<=level?'full':''}"></span>`).join('')}</div><p>${level===3?'MASTER · 別の場面と別の日でも使えた':level===2?'自力で言えた · 次は別場面と後日の確認':level===1?'練習中 · まずヒントなしで言ってみよう':'これから出会う表現'}${entry?.nextReviewDay?' · 次の目安 '+escapeHtml(entry.nextReviewDay):''}</p></article>`).join('');
-  showView('collection');
+  if ($('#collection-view').hidden) showView('collection');
 }
 
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
-$('#open-collection').addEventListener('click',renderCollection);
+$('#open-collection').addEventListener('click',()=>renderCollection());
+$('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;renderHome();});
 $('#result-home').addEventListener('click',renderHome);
+$('#result-collection').addEventListener('click',()=>renderCollection());
 $('#collection-home').addEventListener('click',renderHome);
 persist(save);
 renderHome();

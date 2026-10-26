@@ -22,7 +22,7 @@
         <div class="hero-grid">
           <div class="hero-copy">
             <div class="eyebrow"><span class="eyebrow-dot"></span> SPEAKING FIRST. FUN ALWAYS.</div>
-            <h1>話せる英語が増えると、<br><em>仲間も育つ。</em></h1>
+            <h1>英語を話すほど、<br><em>仲間が育つ。</em></h1>
             <p>知っているはずの言葉が、とっさに出てこない。そんな瞬間を、楽しい60秒に変えていこう。</p>
             <div class="hero-buttons">
               <button class="button button-primary" data-start="practice"><span aria-hidden="true">✦</span> まず練習する</button>
@@ -37,6 +37,7 @@
             <div class="showcase-footer"><div><strong id="hero-monster-name">メダマゴ</strong><span id="hero-monster-species">めだまやきモンスター</span></div><span id="hero-level" class="level-pill">Lv.1</span></div>
             <div class="xp-track" aria-label="モンスター成長ゲージ"><span id="hero-xp-fill"></span></div>
             <p id="hero-next-level">あと70 XPでレベルアップ</p>
+            <button class="wallet-link" id="open-wallet"><span>✦ ためたXP <strong id="home-wallet">0</strong></span><span>仲間にあげる →</span></button>
           </div>
         </div>
 
@@ -57,11 +58,11 @@
       </section>
 
       <section id="result-view" class="view" hidden>
-        <div class="result-surface"><div class="result-symbol" aria-hidden="true">✷</div><span class="tiny-caps">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><div class="result-actions"><button class="button button-primary" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button></div></div>
+        <div class="result-surface"><div class="result-symbol" aria-hidden="true">✷</div><span class="tiny-caps">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><div class="result-actions"><button class="button button-primary" id="result-collection">ためたXPで仲間を育てる</button><button class="button button-ghost" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button></div></div>
       </section>
 
       <section id="collection-view" class="view" hidden>
-        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p></div>
+        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>✦ 育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、好きな仲間に自由にあげられます。</small></div><p id="feed-feedback" class="feed-feedback" role="status" aria-live="polite"></p></div>
         <div id="collection-grid" class="collection-grid"></div>
         <div class="section-head phrase-head"><div><span class="tiny-caps">LANGUAGE GROWTH</span><h2>ことばの成長記録</h2></div></div>
         <div id="phrase-grid" class="phrase-grid"></div>

@@ -14,6 +14,7 @@ export function createSave() {
     selectedMonster: 'medamago',
     ownedMonsters: ['medamago'],
     monsterXp: { medamago: 0 },
+    xpWallet: 0,
     progress: {},
     rewardedDays: [],
     completedRuns: 0,
@@ -43,6 +44,9 @@ export function validateSave(value) {
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
     monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, Math.max(0, Number(value.monsterXp?.[id]) || 0)])),
+    // Older prototype saves put XP straight onto companions. Keep that growth,
+    // and initialize the new spendable wallet without duplicating historical XP.
+    xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
     progress: cleanProgress,
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: Math.max(0, Number(value.completedRuns) || 0),
@@ -89,6 +93,18 @@ export function selectMonster(save, id) {
   return { ...clone(save), selectedMonster: id };
 }
 
+export function feedMonster(save, id, amount) {
+  if (!save.ownedMonsters.includes(id)) throw new Error('そのモンスターはまだ仲間ではありません。');
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('XPは1以上の整数で指定してください。');
+  if (amount > save.xpWallet) throw new Error('貯めたXPが足りません。');
+  const before = getMonsterProgress(save,id);
+  const next = clone(save);
+  next.xpWallet -= amount;
+  next.monsterXp[id] = (next.monsterXp[id] || 0) + amount;
+  const after = getMonsterProgress(next,id);
+  return { save: next, reward: { xp: amount, monsterId: id, before, after, leveledUp: after.level > before.level, evolved: !before.evolved && after.evolved } };
+}
+
 export function selectRoundPrompts(save, count = 6, random = Math.random, today = dayKey()) {
   if (!Number.isInteger(count) || count < 1 || count > PHRASES.length) throw new Error('Choose 1–6 prompts.');
   const groups = PHRASES.map(phrase => {
@@ -131,13 +147,10 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   next.progress[prompt.phraseId] = entry;
   next.totalAnswers++;
 
-  // Only the first attempt on each phrase/day earns XP. Repeated easy taps cannot farm it.
-  const rewardKey = `${today}:${prompt.phraseId}`;
-  const xp = next.rewardedDays.includes(rewardKey) ? 0 : rating === 'smooth' ? 16 : rating === 'hint' ? 8 : 2;
-  if (xp) {
-    next.rewardedDays = [...next.rewardedDays, rewardKey].slice(-250);
-    next.monsterXp[next.selectedMonster] = (next.monsterXp[next.selectedMonster] || 0) + xp;
-  }
+  // Each completed prompt earns spendable XP. Training does not silently level
+  // the selected monster; learners choose whom to grow in their collection.
+  const xp = rating === 'smooth' ? 16 : rating === 'hint' ? 8 : 2;
+  next.xpWallet = (next.xpWallet || 0) + xp;
 
   const summary = learningSummary(next, today);
   const captured = [];
@@ -151,8 +164,7 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
       captured.push(monster.id);
     }
   }
-  const monster = getMonsterProgress(next);
-  return { save: next, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), evolved: monster.evolved && !getMonsterProgress(save).evolved, monster } };
+  return { save: next, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: next.xpWallet } };
 }
 
 export function finishRound(save, smoothCount) {

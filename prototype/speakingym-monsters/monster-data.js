@@ -14,11 +14,11 @@ export const PROMPTS = Object.freeze([
   { id: 'think-trip', phraseId: 'think', kind: 'listen', scene: '旅行の計画', audio: 'Do you want to book the tour now?', cue: '相手に今決めるか聞かれた。少し考えたいと伝えよう。', answer: 'Let me think about it.', alternatives: ['Give me a moment to think.'] },
   { id: 'repeat-station', phraseId: 'repeat', kind: 'listen', scene: '駅の窓口', audio: 'The last train leaves at ten forty-five.', cue: '案内が聞き取れなかった。もう一度言ってもらおう。', answer: 'Could you say that again?', alternatives: ['Could you repeat that, please?'] },
   { id: 'repeat-class', phraseId: 'repeat', kind: 'speak', scene: '英語の授業', cue: '先生の説明が速かった。丁寧に聞き返そう。', answer: 'Could you say that again?', alternatives: ['Could you repeat that, please?'] },
-  { id: 'agree-friend', phraseId: 'agree', kind: 'speak', scene: '友人との約束', cue: '友人が「午後3時に会おう」と提案した。それで大丈夫と伝えよう。', answer: 'That works for me.', alternatives: ['Three works for me.', 'Sounds good to me.'] },
+  { id: 'agree-friend', phraseId: 'agree', kind: 'speak', scene: '友人との約束', cue: '友人から午後3時に会おうと提案された。その時間で大丈夫と伝えよう。', answer: 'That works for me.', alternatives: ['Three works for me.', 'Sounds good to me.'] },
   { id: 'agree-work', phraseId: 'agree', kind: 'listen', scene: '仕事の予定', audio: 'How about meeting on Friday instead?', cue: '日程変更の提案に、問題ないと答えよう。', answer: 'That works for me.', alternatives: ['Friday works for me.', 'Sounds good to me.'] },
   { id: 'late-bus', phraseId: 'late', kind: 'speak', scene: '待ち合わせ', cue: 'バスが遅れていて、約束に少し遅れそう。', answer: "I'm running a little late.", alternatives: ["I'm going to be a little late."] },
   { id: 'late-call', phraseId: 'late', kind: 'listen', scene: '電話', audio: 'Are you almost here?', cue: 'もう着くか聞かれた。少し遅れていることを伝えよう。', answer: "I'm running a little late.", alternatives: ["I'm going to be a little late."] },
-  { id: 'clarify-hotel', phraseId: 'clarify', kind: 'speak', scene: 'ホテル', cue: 'チェックアウト時間が11時で合っているか確認したい。「確認ですが、11時ですよね？」', answer: 'Just to make sure, checkout is at eleven, right?', alternatives: ['Just to make sure, is checkout at eleven?'] },
+  { id: 'clarify-hotel', phraseId: 'clarify', kind: 'speak', scene: 'ホテル', cue: 'チェックアウトは11時のはず。フロントで時間を確かめよう。', answer: 'Just to make sure, checkout is at eleven, right?', alternatives: ['Just to make sure, is checkout at eleven?'] },
   { id: 'clarify-office', phraseId: 'clarify', kind: 'listen', scene: '職場', audio: 'Please send the file before lunch.', cue: '昼食前で合っているか、確認の一言を添えて聞き返そう。', answer: 'Just to make sure, before lunch, right?', alternatives: ['Just to make sure, you need it before lunch, right?'] },
   { id: 'prefer-city', phraseId: 'prefer', kind: 'speak', scene: '街の移動', cue: 'バスか電車か聞かれた。電車のほうがいいと伝えよう。', answer: "I'd rather take the train.", alternatives: ["I would rather take the train."] },
   { id: 'prefer-friend', phraseId: 'prefer', kind: 'listen', scene: '友人との移動', audio: 'Should we take the bus or the train?', cue: '電車を選びたい。自分の希望を伝えよう。', answer: "I'd rather take the train.", alternatives: ["I would rather take the train."] }
@@ -29,5 +29,9 @@ export const MONSTERS = Object.freeze([
   { id: 'katappo', name: 'カタッポ', kind: '片方だけの靴下', color: '#9585d9', unlock: 2, note: '相方を探して毎日走り回っている。' },
   { id: 'purupun', name: 'プルプン', kind: '歩くプリン', color: '#c49355', unlock: 4, note: '緊張すると、より一層ぷるぷるする。' },
   { id: 'koge', name: 'コゲッタ', kind: 'すねたトースト', color: '#d4875a', masteryUnlock: 2, note: 'トースターに入ると機嫌が良くなる。' },
-  { id: 'cone', name: 'コンボウ', kind: '三角コーンの旅人', color: '#ed864e', masteryUnlock: 4, note: 'いつも道をふさいでいるのに、道案内が得意。' }
+  { id: 'cone', name: 'コンボウ', kind: '三角コーンの旅人', color: '#ed864e', masteryUnlock: 4, note: 'いつも道をふさいでいるのに、道案内が得意。' },
+  { id: 'nororo', name: 'ノロロ', kind: '転がるのり巻き', color: '#5e976e', unlock: 3, note: '走るたびに海苔が一枚ずつほどけていく。' },
+  { id: 'keshipon', name: 'ケシポン', kind: '消しゴムのたましい', color: '#84a9ca', unlock: 5, note: '昨日の失敗まで消そうとしてしまう。' },
+  { id: 'donako', name: 'ドナコ', kind: 'ひとくちドーナツ', color: '#d49b8c', masteryUnlock: 3, note: '自分の欠けたところを誇りにしている。' },
+  { id: 'amekurage', name: 'アメクラゲ', kind: '傘になったクラゲ', color: '#7ab4ca', unlock: 6, note: '晴れた日も誰かを雨から守ろうとする。' }
 ]);
