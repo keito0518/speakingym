@@ -155,7 +155,7 @@ function renderForestHud() {
   $('#forest-world-counter').textContent=play.index>=REGULAR_ENCOUNTERS?`WAVE ${play.wave} · BOSS ${play.bossHits+1}/${BOSS_HITS}`:`WAVE ${play.wave} · BATTLE ${play.index+1}/${REGULAR_ENCOUNTERS}`;
   const route=FOREST_ROUTES.find(entry=>entry.id===play.route);
   $('#forest-route-status').textContent=route ? route.name : '道を選ぶ前に、最初の関門へ';
-  $('[data-forest-gate]').forEach((node,index)=>{
+  $$('[data-forest-gate]').forEach((node,index)=>{
     node.classList.toggle('is-current',play.index===index);
     node.classList.toggle('is-cleared',index<play.index);
     node.setAttribute('aria-current',play.index===index?'step':'false');
