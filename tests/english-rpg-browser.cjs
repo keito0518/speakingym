@@ -74,7 +74,7 @@ let browser;
   assert.equal(await page.locator('[data-action="submit-speech"]').isDisabled(),true);
   if(name==='chromium'){
     await page.locator('[data-action="record"]').click();
-    await page.getByText('Take the mossy path to the bridge.',{exact:true}).waitFor().catch(()=>{});
+    await page.waitForFunction(()=>document.querySelector('#forest-speech')?.value.includes('mossy path'));
     assert.match(await page.locator('#forest-speech').inputValue(),/mossy path/);
   }else{
     await page.locator('[data-action="record"]').click();
