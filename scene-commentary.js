@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const recognitionSupported=()=>Boolean(window.SpeechRecognition||window.webkitSpeechRecognition);
 const ORDER_KEY='speakingym-scene-session-v1';
 let order=makeOrder(),position=0,level=1,recognition=null,active=false,restarting=false;
-let finalText='',interimText='',startedAt=0,timerId=0,recognitionRetryTimer=0;
+let finalText='',interimText='',startedAt=0,timerId=0,recognitionRetryTimer=0,recognitionBlocked=false;
 function makeOrder(){
  const query=new URLSearchParams(location.search);
  if(query.has('qa'))return SCENE_COMMENTARY_PHOTOS.map((_,i)=>i);
@@ -41,6 +41,7 @@ function showLiveText(){
  $('live-transcript').classList.toggle('placeholder',!text);
 }
 function startRecognition(){
+ stopRecognition();recognitionBlocked=false;
  const Ctor=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!Ctor){showMicFallback('このブラウザは音声認識に対応していません。マイクなしで声に出す練習を続けられます。');return false}
  try{
@@ -54,11 +55,12 @@ function startRecognition(){
   };
   recognition.onerror=event=>{
    if(!active)return;
+   recognitionBlocked=true;
    const reason=event.error==='not-allowed'||event.error==='service-not-allowed'?'マイクが使えませんでした。ブラウザの許可を確認して再試行できます。':'音声を認識できませんでした。周囲が静かな場所で再試行できます。';
    showMicFallback(reason);
   };
   recognition.onend=()=>{
-   if(active&&!restarting){restarting=true;clearTimeout(recognitionRetryTimer);recognitionRetryTimer=setTimeout(()=>{restarting=false;if(active)startRecognition()},350)}
+   if(active&&!recognitionBlocked&&!restarting){restarting=true;clearTimeout(recognitionRetryTimer);recognitionRetryTimer=setTimeout(()=>{restarting=false;if(active)startRecognition()},350)}
   };
   recognition.start();$('status').textContent='音声認識中。写真を見たまま、英語で説明を続けよう。';
   $('retry-recognition').hidden=true;$('continue-without-mic').hidden=true;
@@ -74,6 +76,7 @@ function showMicFallback(message){
 function stopRecognition(){
  clearTimeout(recognitionRetryTimer);restarting=false;
  const old=recognition;recognition=null;
+ if(old){old.onend=null;old.onerror=null;old.onresult=null}
  try{old?.stop()}catch{}
 }
 function startChallenge(withRecognition=true){
@@ -115,7 +118,7 @@ $('scene-photo').addEventListener('error',()=>{$('photo-error').style.display='g
 document.querySelectorAll('.level').forEach(button=>button.addEventListener('click',()=>setLevel(button.dataset.level)));
 $('start-challenge').addEventListener('click',()=>startChallenge(true));
 $('retry-recognition').addEventListener('click',()=>{if(!active)startChallenge(true);else startRecognition()});
-$('continue-without-mic').addEventListener('click',()=>{if(!active)startChallenge(false);else{$('status').textContent='音声認識なしで練習中。声に出して続けよう。';$('retry-recognition').hidden=true;$('continue-without-mic').hidden=true}});
+$('continue-without-mic').addEventListener('click',()=>{if(!active)startChallenge(false);else{recognitionBlocked=true;stopRecognition();$('status').textContent='音声認識なしで練習中。声に出して続けよう。';$('retry-recognition').hidden=true;$('continue-without-mic').hidden=true}});
 $('retry-same').addEventListener('click',()=>{renderScene();startChallenge(true)});
 $('next-scene').addEventListener('click',nextScene);
 window.addEventListener('speakingym:account-changing',()=>{

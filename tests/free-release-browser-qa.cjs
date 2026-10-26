@@ -21,6 +21,7 @@ const fs=require('node:fs');
      stop(){this.stopped=true;this.onend?.()}
      abort(){this.stopped=true}
      emit(transcript,final=true){this.onresult?.({resultIndex:0,results:[Object.assign([{transcript}],{isFinal:final})]})}
+     fail(error='network'){this.onerror?.({error})}
     };
    });
    const page=await context.newPage();
@@ -68,6 +69,14 @@ const fs=require('node:fs');
    assert.equal(await page.locator('#scene-photo').getAttribute('src'),firstPhoto,'retry preserves the same photo');
    assert.equal(await page.locator('#samples .sample').count(),0,'retry starts a clean turn');
    await page.locator('#start-challenge').click();
+   await page.evaluate(()=>window.__recognizers.at(-1).fail());
+   assert.equal(await page.locator('#retry-recognition').isVisible(),true,'recognition error offers a direct retry');
+   const failedRecognition=await page.evaluate(()=>window.__recognizers.at(-1).started);
+   assert.equal(failedRecognition,true);
+   await page.locator('#retry-recognition').click();
+   assert.equal(await page.evaluate(()=>window.__recognizers.length),3,'retry creates one clean recognition session');
+   assert.equal(await page.evaluate(()=>window.__recognizers[1].stopped),true,'retry stops the failed recognition session');
+   assert.equal(await page.evaluate(()=>window.__recognizers.at(-1).started),true,'retry starts recognition again');
    await page.clock.runFor(31_000);
    await page.locator('#next-scene').click();
    assert.equal(await page.locator('#round-count').textContent(),'SCENE 2 / 30');
