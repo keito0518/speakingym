@@ -69,7 +69,7 @@ const path=require('node:path');
       await forestPage.locator('#start-forest').click();
       assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),false);
-      assert.equal(await forestPage.locator('#forest-explore-art svg').count(),1);
+      assert.equal(await forestPage.locator('#forest-explore-art > svg').count(),1);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-explore.png`),fullPage:true});
       await forestPage.locator('#forest-explore-continue').click();
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),true);
