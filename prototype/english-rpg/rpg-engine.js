@@ -2,6 +2,8 @@ import { companions, monsters, stages, questions } from './rpg-data.js';
 
 export const STORAGE_KEY = 'speakingym-rpg-prototype-v1';
 export const XP_PER_LEVEL = 60;
+export const EVOLUTION_HP_BONUS = 15;
+export const EVOLUTION_TRAIT_BONUS = 4;
 export const MOVE_RULES = {
   word: { damage: 22, focus: 0, guard: 0 },
   listen: { damage: 18, focus: 0, guard: 7 },
@@ -128,15 +130,17 @@ export function makeBattle(stageId, monsterId, level = 1) {
 
 export function makePartyBattle(stageId, monsterId, save, { focus = 1, shield = 0 } = {}) {
   const partyIds = (save.partyIds || [save.activeCompanionId]).slice(0, 3);
-  const partyHp = {}, partyMaxHp = {};
+  const partyHp = {}, partyMaxHp = {}, partyEvolved = {};
   for (const id of partyIds) {
-    const level = save.roster.find(entry => entry.id === id)?.level || 1;
-    partyMaxHp[id] = makeBattle(stageId, monsterId, level).maxPlayerHp;
+    const entry = save.roster.find(member => member.id === id);
+    const level = entry?.level || 1;
+    partyEvolved[id] = Boolean(entry?.evolved);
+    partyMaxHp[id] = makeBattle(stageId, monsterId, level).maxPlayerHp + (partyEvolved[id] ? EVOLUTION_HP_BONUS : 0);
     partyHp[id] = partyMaxHp[id];
   }
   const companionId = partyIds.includes(save.activeCompanionId) ? save.activeCompanionId : partyIds[0];
   return { ...makeBattle(stageId, monsterId, save.roster.find(entry => entry.id === companionId)?.level || 1),
-    companionId, tactical: true, partyIds, partyHp, partyMaxHp, playerHp: partyHp[companionId], maxPlayerHp: partyMaxHp[companionId],
+    companionId, tactical: true, partyIds, partyHp, partyMaxHp, partyEvolved, playerHp: partyHp[companionId], maxPlayerHp: partyMaxHp[companionId],
     enemyHp: 96, maxEnemyHp: 96, focus, shield };
 }
 
@@ -176,13 +180,14 @@ export function resolveTurn(battle, move, isCorrect) {
   const next = { ...battle, turn: battle.turn + 1, focus: Math.min(2, battle.focus - rule.focus + (move === 'listen' ? 1 : 0)) };
   if (battle.tactical) {
     const trait = traitFor(battle.companionId);
-    const bonus = isCorrect && trait.move === move && move !== 'listen' ? trait.bonus : 0;
+    const evolvedBonus = battle.partyEvolved?.[battle.companionId] ? EVOLUTION_TRAIT_BONUS : 0;
+    const bonus = isCorrect && trait.move === move && move !== 'listen' ? trait.bonus + evolvedBonus : 0;
     const damage = isCorrect ? rule.damage + bonus : 0;
     next.enemyHp = Math.max(0, next.enemyHp - damage);
     const cleared = next.enemyHp === 0;
     // The companion can block the incoming tell even on a missed question.
     const intent = enemyIntent(battle);
-    const guarding = isCorrect && move === 'listen' ? rule.guard + (trait.move === 'listen' ? trait.bonus : 0) : 0;
+    const guarding = isCorrect && move === 'listen' ? rule.guard + (trait.move === 'listen' ? trait.bonus + evolvedBonus : 0) : 0;
     const incoming = cleared ? 0 : Math.max(0, intent.damage - guarding);
     const absorbed = Math.min(battle.shield || 0, incoming);
     next.shield = Math.max(0, (battle.shield || 0) - absorbed);

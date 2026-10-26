@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { companions, monsters, questions, stages } from '../prototype/english-rpg/rpg-data.js';
-import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, switchBattleCompanion, traitFor, unlockedStageCount, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
+import { EVOLUTION_HP_BONUS, EVOLUTION_TRAIT_BONUS, FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, switchBattleCompanion, traitFor, unlockedStageCount, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
 
 const winBattle = (stageId, monsterId, level=1, move='word') => {
   let battle=makeBattle(stageId,monsterId,level);
@@ -161,4 +161,19 @@ test('tactical battle swaps to caught companions with their own HP and a real tu
   const rescue=switchBattleCompanion(downed,'mimip').battle;
   assert.equal(rescue.playerHp,49); // Next telegraphed hit costs 21 HP on swap
   assert.equal(rescue.ended,false);
+});
+
+test('evolution makes training matter: more HP and a stronger signature skill',()=>{
+  const save=createSave('momo');
+  save.roster[0]={id:'momo',level:4,xp:0,evolved:true};
+  const evolved=makePartyBattle(1,'mimip',save);
+  const base=makePartyBattle(1,'mimip',{...save,roster:[{id:'momo',level:4,xp:0,evolved:false}]});
+  assert.equal(evolved.partyMaxHp.momo,base.partyMaxHp.momo+EVOLUTION_HP_BONUS);
+  assert.equal(evolved.partyEvolved.momo,true);
+  assert.equal(resolveTurn(evolved,'word',true).outcome.damage,resolveTurn(base,'word',true).outcome.damage+EVOLUTION_TRAIT_BONUS);
+  assert.equal(resolveTurn(evolved,'listen',true).outcome.guard,resolveTurn(base,'listen',true).outcome.guard);
+  const lumi=createSave('lumi');
+  lumi.roster[0]={id:'lumi',level:4,xp:0,evolved:true};
+  const evolvedGuard=makePartyBattle(1,'mimip',lumi);
+  assert.equal(resolveTurn(evolvedGuard,'listen',true).outcome.guard,7+traitFor('lumi').bonus+EVOLUTION_TRAIT_BONUS);
 });
