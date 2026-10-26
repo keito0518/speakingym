@@ -29,6 +29,8 @@ const fs=require('node:fs');
    page.on('request',request=>{if(/workers\.dev|cloudflareworker/i.test(request.url()))page.evaluate(()=>window.__workerCalls.push('worker')).catch(()=>{})});
    for(const path of ['index.html','reflex.html','freeze-breaker.html','plans.html','account.html','phrasebook.html']){
     await page.goto(`http://127.0.0.1:8765/${path}${path==='freeze-breaker.html'?'?qa=1':''}`);
+    const declineAnalytics=page.getByRole('button',{name:'同意しない',exact:true});
+    if(await declineAnalytics.isVisible())await declineAnalytics.click();
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,
      `horizontal overflow: ${engine} ${width} ${path}`);
     assert.equal(await page.locator('a[href="./pro-study.html"],a[href="./pro-demo.html"]').count(),0,
@@ -91,6 +93,8 @@ const fs=require('node:fs');
   await fallbackContext.addInitScript(()=>{window.SpeechRecognition=undefined;window.webkitSpeechRecognition=undefined});
   const fallback=await fallbackContext.newPage();
   await fallback.goto('http://127.0.0.1:8765/freeze-breaker.html?qa=1');
+  const declineFallbackAnalytics=fallback.getByRole('button',{name:'同意しない',exact:true});
+  if(await declineFallbackAnalytics.isVisible())await declineFallbackAnalytics.click();
   await fallback.locator('#start-challenge').click();
   assert.equal(await fallback.locator('#retry-recognition').isVisible(),true,'unsupported speech recognition offers retry');
   assert.equal(await fallback.locator('#continue-without-mic').isVisible(),true,'unsupported speech recognition offers a voice-only practice path');
