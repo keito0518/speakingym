@@ -101,6 +101,7 @@ function startSession(mode) {
     route:null,companionId:save.selectedMonster};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':'森のボス討伐'):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
+  $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
@@ -141,13 +142,15 @@ function renderForestHud() {
   }
   world.dataset.stage=String(play.index<REGULAR_ENCOUNTERS?Math.min(2,Math.floor(play.index*3/REGULAR_ENCOUNTERS)):2);
   world.classList.toggle('forest-boss-stage',play.index>=REGULAR_ENCOUNTERS);
-  world.classList.remove('forest-attack','forest-player-damaged');
+  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated');
   const foe=opponentFor(play.index,play.wave);
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
   $('#forest-foe-name').textContent=foe.name+' · '+foe.japanese;
   $('#forest-boss-hp').hidden=play.index<REGULAR_ENCOUNTERS;
   $('#forest-boss-hp').textContent=play.index>=REGULAR_ENCOUNTERS?
     '◆ '.repeat(Math.max(0,BOSS_HITS-play.bossHits))+'◇ '.repeat(play.bossHits):'';
+  $('#forest-boss-hp').setAttribute('aria-valuenow',String(Math.max(0,BOSS_HITS-play.bossHits)));
+  $('#forest-boss-hp').style.setProperty('--boss-health',`${100*(BOSS_HITS-play.bossHits)/BOSS_HITS}%`);
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
     '英語で攻撃！';
   $('#forest-world-fx').textContent='';
@@ -166,6 +169,10 @@ function renderForestHud() {
   $('#forest-scene-story').textContent=play.index>=REGULAR_ENCOUNTERS?
     '👑 森のトゲ王が立ちはだかる！ 英語を伝えて3回の攻撃で倒そう。':
     `⚔ BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ 英語で応えて道を切り開こう。`;
+  const log=$('#forest-battle-log');
+  log.textContent=play.index>=REGULAR_ENCOUNTERS && play.bossHits===0?
+    `⚠ ${foe.name} が現れた！ 英語の攻撃を3回当てよう。`:
+    `${foe.name} が現れた。英語で応えて仲間に攻撃の合図を出そう。`;
 }
 function showForestRouteChoice() {
   if(!play || play.mode!=='forest')return;
@@ -324,6 +331,7 @@ async function gradeAnswer() {
       $('#speech-helper').textContent='AI判定を利用できないため、教材の簡易判定で確認しています。';
   }
   if(grade.status!=='correct'){
+    if(play.mode==='forest' && raw)$('#forest-battle-log').textContent='判定保留。攻撃は発生しません。言い換えて再挑戦できます。';
     if(play.mode==='forest'&&play.endless&&grade.status==='review'&&raw){
       play.attemptReviewed=true;
       // Ambiguous recognizer output is explicitly not called wrong; limited attempts are a challenge rule.
@@ -358,6 +366,9 @@ async function gradeAnswer() {
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
   if(play.mode==='forest'){
     const boss=play.index>=REGULAR_ENCOUNTERS;
+    const foe=opponentFor(play.index,play.wave);
+    const companion=monsterFor(play.companionId);
+    const companionName=getMonsterProgress(save,play.companionId).evolved?companion.evolvedName:companion.name;
     const special=specialStrike({companionId:play.companionId,
       evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower});
     play.usedPower ||= special.usedPower;
@@ -366,9 +377,15 @@ async function gradeAnswer() {
     $('#forest-world-stage').classList.remove('forest-attack');
     void $('#forest-world-stage').offsetWidth;
     $('#forest-world-stage').classList.add('forest-attack');
-    $('#forest-damage').textContent=boss?`-${special.strikes} HIT`:'HIT!';
+    $('#forest-world-stage').dataset.attack=play.companionId;
+    $('#forest-damage').textContent=`−${special.strikes}`;
     $('#forest-world-fx').textContent=special.ability?`✦ ${special.ability} ✦`:boss?'⚔ BOSS HIT!':'✦ ATTACK! ✦';
     $('#forest-boss-hp').textContent='◆ '.repeat(Math.max(0,BOSS_HITS-play.bossHits))+'◇ '.repeat(play.bossHits);
+    $('#forest-boss-hp').setAttribute('aria-valuenow',String(Math.max(0,BOSS_HITS-play.bossHits)));
+    $('#forest-boss-hp').style.setProperty('--boss-health',`${100*(BOSS_HITS-play.bossHits)/BOSS_HITS}%`);
+    const defeated=boss&&play.bossHits>=BOSS_HITS;
+    if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
+    $('#forest-battle-log').textContent=`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
   }
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${play.mode==='forest'?'🌿 関門突破！':'✓ 内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
