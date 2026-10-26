@@ -97,6 +97,40 @@ export function learningSummary(save, today = dayKey()) {
   return { total: PHRASES.length, practiced, independent, mastered, reviewCount: review.length, entries };
 }
 
+// Review schedule is a projection of saved activity, not a separate reward ledger.
+// Group due work by expression so two due variants do not inflate the headline.
+export function reviewOverview(save,today=dayKey()) {
+  const groups=new Map();
+  const add=(phraseId,due,promptId=null)=>{
+    if(!PHRASES.some(phrase=>phrase.id===phraseId) || typeof due!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(due))return;
+    const group=groups.get(phraseId)||{phraseId,due,promptId,exact:!!promptId};
+    if(due<group.due || (due===group.due&&promptId&&!group.exact)){
+      group.due=due;group.promptId=promptId;group.exact=!!promptId;
+    }
+    groups.set(phraseId,group);
+  };
+  for(const phrase of PHRASES){
+    const due=save.progress?.[phrase.id]?.nextReviewDay;
+    if(due)add(phrase.id,due);
+  }
+  for(const [id,due] of Object.entries(save.reviewPrompts||{})){
+    const prompt=ALL_PROMPTS.find(item=>item.id===id);
+    if(prompt)add(prompt.phraseId,due,id);
+  }
+  const scheduled=[...groups.values()].map(row=>({
+    ...row,label:PHRASES.find(phrase=>phrase.id===row.phraseId).label,
+    dueNow:row.due<=today, upcoming:row.due>today&&row.due<=addDays(today,3)
+  })).sort((a,b)=>a.due.localeCompare(b.due)||a.phraseId.localeCompare(b.phraseId));
+  return {
+    due:scheduled.filter(item=>item.dueNow),
+    upcoming:scheduled.filter(item=>item.upcoming),
+    scheduled,
+    learned:PHRASES.filter(phrase=>masteryLevel(save.progress?.[phrase.id])>=2).length,
+    mastered:PHRASES.filter(phrase=>masteryLevel(save.progress?.[phrase.id])===3).length,
+    total:PHRASES.length
+  };
+}
+
 export function getMonsterProgress(save, id = save.selectedMonster) {
   const xp = save.monsterXp[id] || 0;
   return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), evolved: xp >= EVOLUTION_XP, toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
