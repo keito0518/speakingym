@@ -8,6 +8,7 @@ let save = null, battle = null, currentStage = null, currentQuestion = null, cur
 let recognition = null, muted = false, stageOneMove = 'word';
 const forest = {
   listen: 'I need to get to the village, but I can’t find the bridge.',
+  replyPrompt: 'Which path should I take to the bridge?',
   word: {id:'story1-word',type:'word',prompt:'ミミップが道をふさいだ！ “clear the path” の clear は？',target:'clear',meaning:'ふさぐものを取り除く',choices:['道を遠ざける','道を照らす','ふさぐものを取り除く','道を隠す'],example:'Let’s clear the path.',tip:'clear the path は、通れるように道をあけること。'},
   phrase: {id:'story1-phrase',type:'phrase',prompt:'ミミップに道をあけてもらおう。語をつないで声にも出してみよう。',target:'Please let us pass.',meaning:'通してくれる？',tokens:['Please','let','us','pass.'],tip:'let us pass は「私たちを通して」。丁寧に頼むなら Please を添える。'}
 };
@@ -267,8 +268,8 @@ function renderForest() {
     $('#story-speaker').textContent='古い道標';$('#story-line').textContent='二つの道に分かれている。道標を読んで橋へ向かおう。';
     task.innerHTML=`<p class="eyebrow">02 · READ</p><h2>橋へ続く道を選ぼう</h2><blockquote class="forest-sign" lang="en">BRIDGE → Follow the mossy path.<br>The left path ends at a cliff.</blockquote><div class="answer-options"><button data-action="read-choice" data-correct="false">左の道を進む</button><button data-action="read-choice" data-correct="true">苔の生えた右の道を進む</button></div><div id="story-feedback" class="feedback hidden" role="status"></div>`;
   }else if(phase==='speak'){
-    $('#story-speaker').textContent='旅人';$('#story-line').textContent='「橋へは、どちらを進めばいい？」あなたの英語で伝えよう。';
-    task.innerHTML=`<p class="eyebrow">04 · SPEAK</p><h2>旅人に道を教えよう</h2><p>苔の生えた道を進めば橋に着く。短い英語で伝えてみよう。言い方は一つではありません。</p><button class="sound-button" data-action="repeat-npc">▶ 旅人の声をもう一度聞く</button><div class="speech-box"><button class="primary-button" data-action="record">🎙 英語を話す</button><span id="speech-status">音声認識は対応ブラウザで利用できます</span><label for="forest-speech">認識された文を直す、または英文を入力</label><textarea id="forest-speech" rows="3" lang="en" placeholder="例を見ずに、まず自分の言葉で伝えてみよう"></textarea><button class="primary-button" data-action="submit-speech" disabled>伝えた内容を見る</button></div><p class="microcopy">音声認識の文字起こしは採点しません。使えない端末では、声に出してから英文を入力できます。</p>`;
+    $('#story-speaker').textContent='旅人';$('#story-line').textContent='「橋へはどちらの道を進めばいい？」英語で伝えよう。';
+    task.innerHTML=`<p class="eyebrow">04 · SPEAK</p><h2>旅人に道を教えよう</h2><p>苔の生えた道を進めば橋に着く。短い英語で伝えてみよう。言い方は一つではありません。</p><p class="transcript" lang="en">${forest.replyPrompt}</p><button class="sound-button" data-action="repeat-npc">▶ 旅人の声をもう一度聞く</button><div class="speech-box"><button class="primary-button" data-action="record">🎙 英語を話す</button><span id="speech-status">音声認識は対応ブラウザで利用できます</span><label for="forest-speech">認識された文を直す、または英文を入力</label><textarea id="forest-speech" rows="3" lang="en" placeholder="例を見ずに、まず自分の言葉で伝えてみよう"></textarea><button class="primary-button" data-action="submit-speech" disabled>伝えた内容を見る</button></div><p class="microcopy">音声認識の文字起こしは採点しません。使えない端末では、声に出してから英文を入力できます。</p>`;
     const input=$('#forest-speech');input.value=save.storyRun.transcript||'';input.addEventListener('input',()=>{$('[data-action="submit-speech"]').disabled=!input.value.trim();});input.dispatchEvent(new Event('input'));
   }else if(phase==='learn'){
     $('#story-speaker').textContent='旅人';$('#story-line').textContent='“Thank you! Now I know where to go.” 旅人は橋へ向かった。';
@@ -284,7 +285,7 @@ function startRecognition() {
 $('#story-task').addEventListener('click',event=>{
   const button=event.target.closest('button[data-action]');if(!button)return;
   const action=button.dataset.action;
-  if(action==='listen-audio'||action==='repeat-npc')speakLine(forest.listen,button,()=>{$('#story-transcript')?.classList.remove('hidden');button.textContent='再生できません · 英文を確認';});
+  if(action==='listen-audio'||action==='repeat-npc')speakLine(action==='repeat-npc'?forest.replyPrompt:forest.listen,button,()=>{$('#story-transcript')?.classList.remove('hidden');button.textContent=action==='repeat-npc'?'音声を再生できません':'再生できません · 英文を確認';});
   if(action==='reveal-transcript')$('#story-transcript').classList.remove('hidden');
   if(action==='listen-choice'||action==='read-choice'){
     if(button.dataset.correct==='true'){playTone(620);advanceForest(action==='listen-choice'?'read':'battle');}
