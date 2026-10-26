@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
-import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from '../prototype/speakingym-monsters/forest-battle.js';
+import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -174,6 +174,46 @@ test('fresh save has a fried-egg companion and does not call account or AI APIs'
   assert.deepEqual(validateSave(save),save);
 });
 
+test('study journal accurately summarizes due, upcoming and learned expressions',()=>{
+  const initial=createSave();
+  const empty=reviewOverview(initial,'2026-10-27');
+  assert.equal(empty.due.length,0);
+  assert.equal(empty.upcoming.length,0);
+  assert.equal(empty.learned,0);
+  assert.equal(empty.mastered,0);
+  assert.equal(empty.total,PHRASES.length);
+  let save=recordAnswer(initial,'think-cafe','smooth','2026-10-26').save;
+  save=flagUncertainReview(save,'help-bag','2026-10-26');
+  save=flagUncertainReview(save,'help-form','2026-10-26');
+  save=flagUncertainReview(save,'booking-table','2026-10-27');
+  const now=reviewOverview(save,'2026-10-27');
+  assert.equal(now.due.length,1);
+  assert.equal(now.due[0].phraseId,'help');
+  assert.equal(now.upcoming.length,2);
+  assert.equal(now.learned,1);
+  assert.equal(now.mastered,0);
+  assert.ok(now.scheduled.every((item,i,array)=>i===0||item.due>=array[i-1].due));
+  assert.deepEqual(save.reviewPrompts['booking-table'],'2026-10-28');
+  assert.equal(learningSummary(save,'2026-10-27').reviewCount,1);
+  const later=reviewOverview(save,'2026-10-30');
+  assert.equal(later.due.length,3);
+});
+test('every forest monster advertises its own visual tactic with immutable battle reward rules',()=>{
+  const names=new Set();
+  const guards=new Set();
+  for(let i=0;i<REGULAR_ENCOUNTERS+BOSS_HITS;i++){
+    const foe=opponentFor(i);
+    const tactic=enemyTacticFor(i);
+    assert.deepEqual(tactic,FOREST_TACTICS[foe.id]);
+    assert.ok(tactic.name&&tactic.tell&&tactic.guard);
+    names.add(tactic.name);
+    guards.add(tactic.guard);
+  }
+  assert.equal(names.size,6);
+  assert.equal(guards.size,6);
+  assert.equal(enemyTacticFor(0,2).name,FOREST_TACTICS.thistlet.name);
+  assert.deepEqual(specialStrike({companionId:'katappo',evolved:false,boss:false}),{strikes:1,ability:null,usedPower:false});
+});
 test('practice and challenge pick distinct expressions and prioritize overdue reviews', () => {
   let save=createSave();
   const round=selectRoundPrompts(save,6,()=>0,'2026-10-26');
