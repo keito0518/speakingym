@@ -1,0 +1,42 @@
+name: Speakingym Monsters prototype QA
+on:
+  pull_request:
+    paths:
+      - 'prototype/speakingym-monsters/**'
+      - 'tests/monsters-*'
+      - '.github/workflows/monsters-prototype.yml'
+jobs:
+  node-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Curriculum, mastery and reward tests
+        run: node --test tests/monsters-engine.test.mjs
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-speakingym-monsters-playwright-1.62.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Start local preview
+        run: python3 -m http.server 8766 >/tmp/monsters-preview.log 2>&1 &
+      - name: Chromium mobile and learning QA
+        timeout-minutes: 2
+        run: timeout 90s node tests/monsters-browser.cjs
+      - name: WebKit mobile and learning QA
+        timeout-minutes: 2
+        run: timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: speakingym-monsters-screenshots
+          path: qa-screenshots/
+
