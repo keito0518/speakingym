@@ -14,7 +14,7 @@ test('curriculum has six expressions, two situations, and three authored difficu
     assert.equal(level.length,12);
     assert.equal(new Set(level.map(p=>p.id)).size,12);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&p.kind==='speak'));
-    assert.ok(level.every(p=>/^[\\x00-\\x7F]+$/.test(p.cue+p.task)));
+    assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
     assert.ok(level.every(p=>PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
   }
   const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/12;
