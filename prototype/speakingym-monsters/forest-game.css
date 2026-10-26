@@ -12,7 +12,7 @@
  radial-gradient(circle at 64% 44%,#3b8055 0 35%,transparent 36%),
  radial-gradient(circle at 54% 62%,#1e513a 0 34%,transparent 35%);
  opacity:.84;transform:rotate(-11deg)}
-.forest-invite::after{content:"✧ · ✧";position:absolute;right:18px;top:17px;letter-spacing:28px;color:#e7d18c80;pointer-events:none}
+.forest-invite::after{content:"";position:absolute;right:18px;top:17px;letter-spacing:28px;color:#e7d18c80;pointer-events:none}
 .forest-invite .forest-kicker{color:#f0d38f;letter-spacing:.2em!important}
 .forest-invite h2{font-family:Georgia,'Hiragino Mincho ProN',serif;font-weight:900;font-size:26px!important;letter-spacing:.025em!important;color:#fff2c3!important;text-shadow:0 2px 10px #07271f55}
 .forest-invite p{max-width:370px!important;color:#d9e9d5!important}
