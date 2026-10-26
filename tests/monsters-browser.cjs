@@ -63,6 +63,24 @@ const path=require('node:path');
     await hardPage.reload();
     assert.equal(await hardPage.locator('[data-difficulty="hard"]').getAttribute('aria-pressed'),'true');
     await hardContext.close();
+    // Previously uncertain answers are surfaced again in a later practice run.
+    const {context:reviewContext,page:reviewPage}=await boot(390);
+    await reviewPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();
+      seeded.reviewPrompts['help-bag']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await reviewPage.reload();
+    await reviewPage.getByRole('button',{name:/まず練習する/}).click();
+    assert.equal(await reviewPage.locator('#play-card').getAttribute('data-prompt-id'),'help-bag');
+    assert.match(await reviewPage.locator('#speech-helper').innerText(),/復習問題/);
+    await reviewPage.locator('#spoken-answer').fill('I do not know what to say here.');
+    await reviewPage.locator('#show-answer').click();
+    const queued=await reviewPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+    assert.equal(queued.xpWallet,0);
+    assert.equal(queued.reviewPrompts['help-bag'],'2020-01-01');
+    await reviewContext.close();
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);
