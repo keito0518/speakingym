@@ -88,7 +88,7 @@ let browser;
   await page.locator('[data-action="finish-forest"]').click();
   await page.getByRole('heading',{name:'Mimipが仲間になった！'}).waitFor();
   await page.screenshot({path:path.join(shots,`quest-${name}-390-capture.png`),fullPage:true});
-  await page.getByRole('button',{name:/次のステージへ/}).click();
+  await page.getByRole('button',{name:/マップで次の道を見る/}).click();
   assert.match(await page.locator('#stage-progress').innerText(),/1 \/ 10/);
   await page.reload();
   assert.match(await page.locator('#stage-progress').innerText(),/1 \/ 10/);
