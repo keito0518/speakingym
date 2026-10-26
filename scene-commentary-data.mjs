@@ -3,7 +3,7 @@ const photo=(id,source,creator,alt,title,task,examples,tip,levelTasks)=>({id,ima
 const U='https://unsplash.com/license';
 export const SCENE_PHOTO_LICENSE=U;
 export const SCENE_COMMENTARY_LEVELS={
- 1:{label:'描写',description:'見えている人・物・動きを、2つ以上伝えてみよう。',goal:'見えている人・物・動きを2つ、短い文で伝える'},
+ 1:{label:'描写',description:'見つけた人や物、動きを英語で話そう。',goal:'見えている人・物・動きを2つ、短い文で伝える'},
  2:{label:'推測',description:'今の状況を説明し、理由は maybe / might で控えめに推測しよう。',goal:'状況を説明し、理由は maybe や might で控えめに推測する'},
  3:{label:'共有',description:'友人に現場を伝えるつもりで、役立ちそうな情報も添えよう。',goal:'友人へ現場の様子と、次に役立つ情報を伝える'}
 };
