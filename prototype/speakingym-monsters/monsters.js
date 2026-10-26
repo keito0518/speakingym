@@ -2,6 +2,7 @@ import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, compareWithExamples, createSave, dayKey, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
+import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -195,11 +196,24 @@ function showHint() {
   const prompt=currentPrompt(), phrase=phraseFor(prompt.phraseId);play.hintUsed=true;
   $('#hint-panel').hidden=false;$('#hint-panel').textContent=`ヒント：${prompt.hint || phrase.hint}　${prompt.tip || phrase.tip}`;
 }
-function gradeAnswer() {
-  if(!play || play.revealed)return;
+async function gradeAnswer() {
+  if(!play || play.revealed || play.grading)return;
   stopRecognition('done');
-  const prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
-  const grade=gradeLocalResponse(prompt,raw);
+  const session=play,prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
+  let grade=gradeLocalResponse(prompt,raw);
+  if(grade.status==='review' && STAGING_SEMANTIC_GRADER_ENDPOINT){
+    session.grading=true;
+    $('#show-answer').disabled=true;
+    $('#speech-helper').textContent='意味を確認中…';
+    const result=await askSemanticGrader(prompt,raw);
+    if(play!==session)return; // Ignore delayed remote results from a previous question.
+    session.grading=false;
+    $('#show-answer').disabled=false;
+    if(result.state==='correct')grade={status:'correct',reasons:[],method:'semantic-beta'};
+    if(result.state==='review')grade={status:'review',reasons:result.missing.length?result.missing:[result.feedback||'内容をもう少し具体的にしてみよう。'],method:'semantic-beta'};
+    if(result.state==='unavailable'||result.state==='rate_limited'||result.state==='login_required')
+      $('#speech-helper').textContent='AI判定を利用できないため、教材の簡易判定で確認しています。';
+  }
   if(grade.status!=='correct'){
     const empty=grade.status==='empty';
     const uncertain=grade.status==='review'||grade.status==='ungraded';
@@ -217,7 +231,7 @@ function gradeAnswer() {
   play.revealed=true;
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">✓ 内容を確認できた！ +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>※教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">✓ 内容を確認できた！ +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
 }
 function skipAnswer(){
