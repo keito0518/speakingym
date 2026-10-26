@@ -40,10 +40,10 @@ export const COMPANION_TRAITS = Object.freeze({
 export const traitFor = id => COMPANION_TRAITS[id] || { name: '冒険のきずな', detail: 'ことば斬りの威力 +4', move: 'word', bonus: 4 };
 export function skillFor(id, level = 1, evolved = false) {
   const rank = (level >= 2 ? 1 : 0) + (evolved ? 1 : 0);
-  if (id === 'lumi' || ['pebblet','puddle','bubbun','mosslet'].includes(id)) return { name:'いやしの風', detail:`全員のHP +${12+rank*7}・盾 +${6+rank*3}`, kind:'heal', power:12+rank*7, shield:6+rank*3 };
-  if (id === 'koro' || ['twiggle','cinder','starling','aurora'].includes(id)) return { name:'集中の構え', detail:`集中 +2・次の連結に +${8+rank*5}`, kind:'charge', power:8+rank*5 };
-  if (id === 'mimip') return { name:'つるで足止め', detail:`敵の次の2行動を -${7+rank*3}`, kind:'weaken', power:7+rank*3 };
-  return { name:'連携の合図', detail:`次に当てた技を +${9+rank*5}`, kind:'combo', power:9+rank*5 };
+  if (id === 'lumi' || ['pebblet','puddle','bubbun','mosslet'].includes(id)) return { name:rank?'再生の風':'いやしの風', detail:`全員のHP +${12+rank*7}・盾 +${6+rank*3}`, kind:'heal', power:12+rank*7, shield:6+rank*3 };
+  if (id === 'koro' || ['twiggle','cinder','starling','aurora'].includes(id)) return { name:rank?'渾身の構え':'集中の構え', detail:`集中 +2・次の連結に +${8+rank*5}`, kind:'charge', power:8+rank*5 };
+  if (id === 'mimip') return { name:rank?'深い足止め':'つるで足止め', detail:`敵の次の2行動を -${7+rank*3}`, kind:'weaken', power:7+rank*3 };
+  return { name:rank?'連撃の号令':'連携の合図', detail:`次に当てた技を +${9+rank*5}`, kind:'combo', power:9+rank*5 };
 }
 export function newForestWalk() { return { x: 1, y: 5, chest: false, shrine: false, steps: 0 }; }
 export function walkForest(walk, dx, dy) {
