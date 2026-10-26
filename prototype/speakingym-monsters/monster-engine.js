@@ -19,6 +19,7 @@ export function createSave() {
     monsterXp: { medamago: 0 },
     xpWallet: 0,
     progress: {},
+    reviewPrompts: {},
     rewardedDays: [],
     completedRuns: 0,
     bestSmooth: 0,
@@ -45,6 +46,10 @@ export function validateSave(value) {
       lastRating: VALID_RATINGS.includes(entry.lastRating) ? entry.lastRating : 'again'
     };
   }
+  const validPromptIds=new Set(ALL_PROMPTS.map(prompt=>prompt.id));
+  const reviewPrompts=Object.fromEntries(Object.entries(value.reviewPrompts && typeof value.reviewPrompts==='object' && !Array.isArray(value.reviewPrompts)?value.reviewPrompts:{})
+    .filter(([id,due])=>validPromptIds.has(id)&&typeof due==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(due))
+    .slice(-156));
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
     difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
@@ -53,6 +58,7 @@ export function validateSave(value) {
     // and initialize the new spendable wallet without duplicating historical XP.
     xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
     progress: cleanProgress,
+    reviewPrompts,
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: Math.max(0, Number(value.completedRuns) || 0),
     bestSmooth: Math.max(0, Number(value.bestSmooth) || 0),
@@ -85,7 +91,9 @@ export function learningSummary(save, today = dayKey()) {
   const mastered = entries.filter(item => item.level === 3).length;
   const independent = entries.filter(item => item.level >= 2).length;
   const practiced = entries.filter(item => item.level >= 1).length;
-  const review = entries.filter(item => item.entry && item.entry.nextReviewDay && item.entry.nextReviewDay <= today);
+  const duePromptPhrases=new Set(Object.entries(save.reviewPrompts||{}).filter(([,date])=>date<=today)
+    .map(([id])=>ALL_PROMPTS.find(prompt=>prompt.id===id)?.phraseId).filter(Boolean));
+  const review = entries.filter(item => (item.entry?.nextReviewDay && item.entry.nextReviewDay <= today)||duePromptPhrases.has(item.phrase.id));
   return { total: PHRASES.length, practiced, independent, mastered, reviewCount: review.length, entries };
 }
 
@@ -123,10 +131,11 @@ export function selectRoundPrompts(save, count = 6, random = Math.random, today 
     const entry = save.progress[phrase.id];
     const candidates = ALL_PROMPTS.filter(prompt => prompt.phraseId === phrase.id && (prompt.difficulty || 'easy') === difficulty);
     const unseen = candidates.filter(prompt => !entry?.smoothContexts?.includes(prompt.baseId || prompt.id));
-    const pool = unseen.length ? unseen : candidates;
+    const dueCandidates=candidates.filter(prompt=>save.reviewPrompts?.[prompt.id] && save.reviewPrompts[prompt.id]<=today);
+    const pool = dueCandidates.length?dueCandidates:unseen.length?unseen:candidates;
     const choice = pool[Math.min(pool.length - 1, Math.floor(Math.max(0, Math.min(0.999999, random())) * pool.length))];
     const due = entry?.nextReviewDay && entry.nextReviewDay <= today;
-    const priority = due ? 0 : !entry ? 1 : masteryLevel(entry) < 3 ? 2 : 3;
+    const priority = dueCandidates.length||due ? 0 : !entry ? 1 : masteryLevel(entry) < 3 ? 2 : 3;
     return { choice, priority, tie: random() };
   });
   return groups.sort((a, b) => a.priority - b.priority || a.tie - b.tie).slice(0, count).map(item => item.choice);
@@ -144,11 +153,37 @@ function canonicalVettedReply(value) {
     .replace(/(?: please| thank you| thanks)$/, '')
     .replace(/^can (you|i) /, 'could $1 ');
 }
+// Fully authored, narrow equivalents for selected practical situations.
+const VETTED_PARAPHRASES=Object.freeze({
+  'help-bag':['Could you give me a hand with this bag?'],
+  'help-phone':['Would you mind helping me with my phone?'],
+  'order-coffee':['May I have an iced coffee, please?'],
+  'order-veg':['May I have the vegetable dish, please?'],
+  'direction-station':['Could you show me the way to the station?'],
+  'recommend-food':['Do you have a local dish you would suggest?'],
+  'booking-table':['Could I reserve a table for two?'],
+  'apology-email':['I apologize for taking so long to reply.'],
+  'decline-dinner':['Sorry, I will not be able to make dinner tonight.'],
+  'price-ticket':['What is the admission fee?'],
+  'change-room':['Would it be possible to move to another room?'],
+  'problem-wifi':['I cannot get the Wi-Fi to work in my room.']
+});
+export function flagUncertainReview(save,promptId,today=dayKey()) {
+  if(!ALL_PROMPTS.some(item=>item.id===promptId)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(today))
+    throw new Error('Invalid review prompt.');
+  const next=clone(save);
+  const due=addDays(today,1);
+  next.reviewPrompts ||= {};
+  // Never push a review that is already due further into the future.
+  if(!next.reviewPrompts[promptId]||next.reviewPrompts[promptId]>due)next.reviewPrompts[promptId]=due;
+  return next;
+}
 export function compareWithExamples(prompt, answer) {
   const normalized = normalizeEnglish(answer);
   if (!normalized) return { matchesExample: false, empty: true };
   const canonical = canonicalVettedReply(answer);
-  return { matchesExample: [prompt.answer, ...(prompt.alternatives || [])].some(example => canonicalVettedReply(example) === canonical), empty: false };
+  return { matchesExample: [prompt.answer, ...(prompt.alternatives || []), ...(!prompt.difficulty ? VETTED_PARAPHRASES[prompt.id]||[] : [])]
+    .some(example => canonicalVettedReply(example) === canonical), empty: false };
 }
 
 export function recordAnswer(save, promptId, rating, today = dayKey()) {
@@ -167,6 +202,11 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   }
   entry.nextReviewDay = addDays(today, rating === 'smooth' ? (masteryLevel(entry) === 3 ? 7 : 3) : 1);
   next.progress[prompt.phraseId] = entry;
+  // A previously uncertain exact task becomes a spaced replay, even when the
+  // learner later solves it. Skips must be reviewed the next day without XP.
+  next.reviewPrompts ||= {};
+  if(rating==='again'||Object.hasOwn(next.reviewPrompts,promptId))
+    next.reviewPrompts[promptId]=addDays(today,rating==='smooth'?(masteryLevel(entry)===3?7:3):rating==='hint'?3:1);
   next.totalAnswers++;
 
   // Each completed prompt earns spendable XP. Training does not silently level
