@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -87,6 +87,19 @@ function renderHome() {
   $('#forest-home-progress').textContent = forest.clears ? `討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個 · 最長 ${forest.bestWave||0}W` : 'まだ未踏の森';
   $('#stat-independent').innerHTML = `${summary.independent}<span> / ${summary.total}</span>`;
   $('#stat-review').textContent = summary.reviewCount;
+  const journal=reviewOverview(save);
+  $('#review-due-count').textContent=String(journal.due.length);
+  $('#review-upcoming-count').textContent=String(journal.upcoming.length);
+  $('#review-mastered-count').textContent=String(journal.mastered);
+  $('#review-mastery-meter').setAttribute('aria-valuenow',String(journal.learned));
+  $('#review-mastery-meter').setAttribute('aria-valuemax',String(journal.total));
+  $('#review-mastery-fill').style.width=`${Math.round(journal.learned/journal.total*100)}%`;
+  $('#review-mastery-description').textContent=`ヒントなしで使えた表現 ${journal.learned}/${journal.total}。別の日・別の場面でも使えると定着が進みます。`;
+  const top=[...journal.due,...journal.upcoming].slice(0,3);
+  $('#review-journal-list').innerHTML=top.length?top.map(entry=>
+    `<div class="review-journal-entry"><strong>${escapeHtml(entry.label)}</strong><span>${entry.dueNow?'今日の復習':'次の復習 '+escapeHtml(entry.due)}</span></div>`).join(''):
+    '<p class="review-journal-empty">今日の復習はありません。新しい表現に挑戦してみよう。</p>';
+  $('#start-review-practice').textContent=journal.due.length?'今日の復習をする':'英語を練習する';
   $('#stat-monsters').innerHTML = `${save.ownedMonsters.length}<span> / ${MONSTERS.length}</span>`;
   $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
@@ -566,6 +579,7 @@ $$('[data-difficulty]').forEach(button => button.addEventListener('click', () =>
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
 $('#start-forest').addEventListener('click',()=>startSession('forest'));
 $('#start-forest-endless').addEventListener('click',()=>startSession('forest-endless'));
+$('#start-review-practice').addEventListener('click',()=>startSession('practice'));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   renderQuestion();
