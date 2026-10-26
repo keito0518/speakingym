@@ -75,3 +75,4 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 @media(max-width:360px){.character-sheet,.training-sheet{padding:19px 12px}.evolution-path{font-size:11px;gap:7px;padding:12px 8px}.catalog-card strong{font-size:14px}.training-feed{gap:7px}}
 @media(prefers-reduced-motion:reduce){.view,.catalog-card,.character-view *,.character-view *::before{animation:none!important;transition:none!important}.growth-before{display:none}.growth-label{opacity:1}}
 .listen-control .audio-glyph{display:inline-block;vertical-align:middle;margin-right:3px}
+@media(max-width:370px){.forest-active .question-top{gap:7px}.forest-active .question-top>span:first-child{white-space:nowrap;font-size:9px}.forest-active .question-tag{font-size:8px;padding:7px 8px}}

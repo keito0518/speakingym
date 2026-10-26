@@ -11,6 +11,7 @@ const path=require('node:path');
   async function boot(width,reducedMotion='reduce'){
     const context=await browser.newContext({viewport:{width,height:844},hasTouch:true,isMobile:engine==='webkit',reducedMotion});
     const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+    page.on('crash',()=>errors.push('Browser page crashed'));
     await page.goto(base,{waitUntil:'networkidle'});
     return {context,page};
   }
@@ -41,6 +42,7 @@ const path=require('node:path');
       assert.equal(await page.locator('[data-open-monster]').count(),9);
       assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
       await noOverflow(page,`${width} catalog`);
+      await page.waitForTimeout(300); // Let the entry fade finish before visual QA.
       await page.screenshot({path:path.join(shots,`catalog-${engine}-${width}.png`),fullPage:true});
       await page.locator('[data-open-monster="medamago"]').click();
       assert.equal(await page.locator('#collection-view').isVisible(),false);
@@ -54,6 +56,7 @@ const path=require('node:path');
       await page.locator('[data-pronounce-word="sunny-side up"]').click();
       assert.deepEqual(await page.evaluate(()=>window.__spoken),[{text:'sunny-side up',lang:'en-US'}]);
       await noOverflow(page,`${width} detail`);
+      await page.waitForTimeout(300);
       await page.screenshot({path:path.join(shots,`detail-${engine}-${width}.png`),fullPage:true});
       await page.locator('#open-training').click();
       assert.equal(await page.locator('#detail-view').isVisible(),false);
@@ -92,12 +95,11 @@ const path=require('node:path');
       await context.close();
     }
     // Every owned character uses a distinct actual CSS attack with motion enabled.
-    const {context,page}=await boot(390,'no-preference');await seed(page);
     const motions={medamago:'yolk-dive',katappo:'sock-spring',purupun:'pudding-slam',koge:'toast-flip',cone:'cone-drill',nororo:'roll-charge',keshipon:'eraser-sweep',donako:'doughnut-spin',amekurage:'umbrella-float'};
     for(const [id,motion] of Object.entries(motions)){
-      await page.locator('#open-collection').click();await page.locator(`[data-open-monster="${id}"]`).click();
-      const select=page.locator(`[data-select-monster="${id}"]`);if(!await select.isDisabled()) await select.click();
-      await page.locator('#detail-back').click();await page.locator('#collection-home').click();
+      const {context,page}=await boot(390,'no-preference');
+      await seed(page,{selectedMonster:id});
+      console.log(`${engine}: testing ${id} attack`);
       await page.locator('#start-forest').click();
       assert.equal(await page.locator('#forest-journey').isVisible(),false);
       assert.equal(await page.locator('#spoken-answer').isVisible(),false);
@@ -122,22 +124,26 @@ const path=require('node:path');
       assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),motion);
       assert.equal(await page.locator('.forest-guarding').count(),0);
       assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
+      await page.waitForTimeout(1400); // Verify the whole motion, then navigate out.
       await page.locator('#leave-play').click();
+      assert.equal(await page.locator('#home-view').isVisible(),true);
+      await context.close();
     }
     // Evolved versions preserve per-character motions and gain an independent aura.
-    await seed(page,{monsterXp:{medamago:160,katappo:160}});
     for(const id of ['medamago','katappo']){
-      await page.locator('#open-collection').click();await page.locator(`[data-open-monster="${id}"]`).click();
-      const select=page.locator(`[data-select-monster="${id}"]`);if(!await select.isDisabled())await select.click();
-      await page.locator('#detail-back').click();await page.locator('#collection-home').click();
+      const {context,page}=await boot(390,'no-preference');
+      await seed(page,{selectedMonster:id,monsterXp:{medamago:160,katappo:160}});
+      console.log(`${engine}: testing evolved ${id} attack`);
       await page.locator('#start-forest').click();await page.locator('#forest-explore-continue').click();
       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-evolved'),'true');
       await answer(page);
       assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),motions[id]);
       assert.equal(await page.locator('#forest-player-art').evaluate(e=>getComputedStyle(e).animationName),'evolved-strike');
+      await page.waitForTimeout(1400);
       await page.locator('#leave-play').click();
+      assert.equal(await page.locator('#home-view').isVisible(),true);
+      await context.close();
     }
-    await context.close();
     const locked=await boot(320);await locked.page.locator('#open-collection').click();
     await locked.page.locator('[data-open-monster="katappo"]').click();
     assert.equal(await locked.page.locator('#open-training').count(),0);
