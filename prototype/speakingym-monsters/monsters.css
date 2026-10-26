@@ -96,3 +96,34 @@ footer{padding:29px 0;border-top:1px solid #e8e9df;margin-top:28px;display:flex;
  .forest-collection-relics{grid-template-columns:1fr}}
 @media(max-width:360px){.forest-journey-title strong{font-size:14px}.forest-companion-art{flex-basis:54px;width:54px;height:54px}
  .forest-route-option strong{font-size:13px}.forest-route-choice h1{font-size:21px}}
+
+/* Original CSS iconography; no platform emoji or decorative Unicode glyphs. */
+.brand-icon{font-size:0;transform:rotate(-7deg)}
+.brand-icon::before{content:"";width:23px;height:23px;border:3px solid #f8e8bc;border-radius:50% 50% 42% 42%;box-shadow:inset 0 -5px 0 #a3d9ad;transform:rotate(8deg)}
+.brand-icon::after{content:"";position:absolute;width:6px;height:6px;background:#1f7255;border-radius:50%;transform:translate(-5px,0);box-shadow:10px 0 0 #1f7255}
+.stat-icon{font-size:0;position:relative}
+.stat-icon::before{content:"";width:16px;height:16px;border:2px solid currentColor;border-radius:5px;transform:rotate(-10deg)}
+.stat-card:nth-child(1) .stat-icon::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:currentColor;transform:translate(6px,-5px)}
+.stat-card:nth-child(2) .stat-icon::before{border-radius:50%;border-right-color:transparent}
+.stat-card:nth-child(3) .stat-icon::before{border-radius:50% 50% 35% 35%;box-shadow:0 5px 0 -2px currentColor}
+.mic-button{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;white-space:nowrap}
+.mic-glyph{position:relative;display:inline-block;flex:none;width:13px;height:18px}
+.mic-glyph-talk::before{content:"";position:absolute;left:4px;top:0;width:6px;height:11px;border-radius:5px;background:currentColor}
+.mic-glyph-talk::after{content:"";position:absolute;left:1px;top:5px;width:12px;height:10px;border:2px solid currentColor;border-top:0;border-radius:0 0 8px 8px}
+.mic-glyph-stop::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:10px;border-radius:2px;background:currentColor}
+html[lang="ja"] .hero-copy h1,html[lang="ja"] .play-card h1,
+html[lang="ja"] .forest-scene-story,html[lang="ja"] .notice-card,
+html[lang="ja"] .feedback-box,html[lang="ja"] .forest-invite,
+html[lang="ja"] .question-caption,html[lang="ja"] .result-surface,
+html[lang="ja"] .collection-head,html[lang="ja"] .stat-card p{
+ word-break:normal;overflow-wrap:break-word;line-break:strict;hyphens:none;
+}
+html[lang="ja"] button{word-break:keep-all;overflow-wrap:normal;line-break:strict}
+@media(max-width:690px){
+ .hero-copy h1{font-size:clamp(30px,8.8vw,42px);letter-spacing:-.035em}
+ .forest-invite h2{word-break:keep-all}
+ .play-card h1{line-height:1.6;letter-spacing:-.025em}
+ .question-caption,.forest-scene-story,.notice-card p{line-height:1.7}
+ .stat-card p{word-break:normal;line-break:strict}
+ .mic-button{font-size:11px}
+}
