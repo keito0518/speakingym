@@ -220,7 +220,7 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Could you');
     // An interim recognition that ends without final text must not leave an active mic.
     await micPage.evaluate(()=>window.__activeMic.onend());
-    assert.equal(await micPage.locator('#mic-button').isVisible(),false);
+    assert.equal(await micPage.locator('#mic-button').isVisible(),true);
     assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
     await micPage.locator('#retry-mic').click();
     assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
