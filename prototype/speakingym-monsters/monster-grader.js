@@ -45,7 +45,7 @@ const hard = {
  'repeat-class':[row('もう一度説明を依頼',intent.repeat),row('2番目の手順','second','step two','step 2','part two'),row('締め切り','due','deadline','when.*submit')],
  'agree-friend':[row('昼食案に同意',intent.agree,'lunch sounds good'),row('昼食について','lunch','noon'),row('具体的な時刻を提案','twelve','12','one','1','half past')],
  'agree-work':[row('金曜日9時を承諾',intent.agree),row('金曜に言及','friday'),row('9時に言及','nine','9'),row('事前の議題を依頼','agenda','topics','talk about','discuss')],
- 'late-bus':[row('謝罪','sorry','apologiz'),row('遅れることを伝える',intent.late),row('20分の見込み','twenty','20'),row('バスの運休','cancel','bus.*not (come|run)','bus.*stop'),row('屋内で待つ提案','inside','indoors','warm','cafe')],
+ 'late-bus':[row('謝罪','sorry','apologiz'),row('遅れることを伝える',intent.late),row('20分の見込み','twenty','20'),row('バスの運休','cancel(?:l?ed|l?ation)?','bus.*not (come|run)','bus.*stop'),row('屋内で待つ提案','inside','indoors','warm','cafe')],
  'late-call':[row('謝罪','sorry','apologiz'),row('会議が長引いている','meeting','call.*long'),row('3時15分を提案','three fifteen','3:15','3\.15','fifteen past three')],
  'clarify-hotel':[row('時間の確認',intent.clarify,'which time'),row('11時と10時の相違','eleven.*ten','ten.*eleven','11.*10','10.*11'),row('荷物を預けたい','luggage','bags','suitcase','store.*bag')],
  'clarify-office':[row('確認する',intent.clarify),row('金曜日の日本時間17時','friday'),row('時刻と時間帯','five','5 pm','5 p.m','17:00','17\.00'),row('日本時間','japan','jst','tokyo'),row('PDF形式','pdf','file format')],
