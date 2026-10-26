@@ -12,12 +12,12 @@ export const FOREST_BOSS=Object.freeze({id:'thornking',name:'Thorn King',japanes
 // Foes telegraph their own defensive stance. These patterns are cosmetic:
 // neither verdicts nor the XP ledger depend on enemy type.
 export const FOREST_TACTICS=Object.freeze({
- mossling:Object.freeze({name:'霧のこだま',tell:'音に反応して、霧の中を跳ね回る',guard:'霧に身を隠して、攻撃をかわした'}),
- thistlet:Object.freeze({name:'トゲの構え',tell:'トゲを広げて、こちらの返事を待っている',guard:'トゲを閉じて身を守った'}),
- spookap:Object.freeze({name:'きのこの幻影',tell:'ふわっと揺れながら、偽物の姿を見せる',guard:'分身を残して、ひらりと逃げた'}),
- bramblet:Object.freeze({name:'木の実のよろい',tell:'固い殻を鳴らして、攻撃に備える',guard:'木の実の殻で、攻撃をはじいた'}),
- mothum:Object.freeze({name:'月光の羽',tell:'月の光をまとい、ゆっくり羽ばたく',guard:'羽を閉じて、月明かりにまぎれた'}),
- thornking:Object.freeze({name:'トゲ王の結界',tell:'いばらの結界が、周囲に広がっている',guard:'いばらの結界が、攻撃を防いだ'})
+ mossling:Object.freeze({preferredKind:'listen',name:'霧のこだま',tell:'音に反応して、霧の中を跳ね回る',guard:'霧に身を隠して、攻撃をかわした'}),
+ thistlet:Object.freeze({preferredKind:'read',name:'トゲの構え',tell:'トゲを広げて、こちらの返事を待っている',guard:'トゲを閉じて身を守った'}),
+ spookap:Object.freeze({preferredKind:'speak',name:'きのこの幻影',tell:'ふわっと揺れながら、偽物の姿を見せる',guard:'分身を残して、ひらりと逃げた'}),
+ bramblet:Object.freeze({preferredKind:'listen',name:'木の実のよろい',tell:'固い殻を鳴らして、攻撃に備える',guard:'木の実の殻で、攻撃をはじいた'}),
+ mothum:Object.freeze({preferredKind:'read',name:'月光の羽',tell:'月の光をまとい、ゆっくり羽ばたく',guard:'羽を閉じて、月明かりにまぎれた'}),
+ thornking:Object.freeze({preferredKind:'mixed',name:'トゲ王の結界',tell:'いばらの結界が、周囲に広がっている',guard:'いばらの結界が、攻撃を防いだ'})
 });
 export function enemyTacticFor(index,wave=1){
  const foe=opponentFor(index,wave);
@@ -55,9 +55,12 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
    if(!p||selected.some(entry=>entry.id===p.id)||selected.length>=FOREST_WAVE_LENGTH)return false;
    selected.push(p);usedPhrases.add(p.phraseId);return true;
  };
- // The enemy poses at least one listening attack and one reading challenge each wave.
- // Prefer tasks not seen in the previous wave and avoid repeating the same expression.
- for(const kind of ['listen','read']) {
+ // Every monster has its own preferred English move. Author the five mob
+ // encounters with matching kinds, then reserve three mixed tasks for the boss.
+ // Preserve unique questions and prioritize previously failed tasks for spare slots.
+ const foeKinds=Array.from({length:REGULAR_ENCOUNTERS},(_,index)=>
+   enemyTacticFor(index,wave).preferredKind);
+ for(const kind of foeKinds) {
    const candidates=[...fresh,...shuffled].filter(p=>p.kind===kind);
    add(candidates.find(p=>!usedPhrases.has(p.phraseId))||candidates[0]);
  }
@@ -71,7 +74,15 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
    if(selected.length>=FOREST_WAVE_LENGTH)break;
    add(candidate);
  }
- const prompts=shuffle(selected,random);
+ // Arrange the first five encounters by their foe's preferred skill.
+ // The boss retains mixed tasks; enemy type never changes answer grading or XP.
+ const remaining=shuffle(selected,random),prompts=[];
+ for(const kind of foeKinds){
+   const matched=remaining.findIndex(p=>p.kind===kind);
+   const at=matched<0?0:matched;
+   prompts.push(remaining.splice(at,1)[0]);
+ }
+ prompts.push(...remaining);
  if(prompts.length!==FOREST_WAVE_LENGTH||new Set(prompts.map(p=>p.id)).size!==FOREST_WAVE_LENGTH)throw Error('Invalid forest wave content');
  return {prompts,level,wave};
 }
