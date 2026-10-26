@@ -346,3 +346,31 @@
 .forest-active .forest-world-stage.forest-attack[data-action="defense"] .forest-enemy{
  animation:forest-foe-hit-strong 1.2s ease-out both!important;
 }
+
+/* Enemy-specific telegraphs distinguish battles without platform emoji or AI calls. */
+.forest-foe-pattern{padding:5px 9px;border:1px solid #8d9e72;border-radius:8px;background:#203e31;color:#dce6b8;font-size:10px;line-height:1.4;font-weight:800;max-width:100%;text-align:center}
+.forest-world-stage[data-foe="mossling"]{--foe-glow:#8fdcaa}
+.forest-world-stage[data-foe="thistlet"]{--foe-glow:#e2b16d}
+.forest-world-stage[data-foe="spookap"]{--foe-glow:#c4b5ef}
+.forest-world-stage[data-foe="bramblet"]{--foe-glow:#c3a672}
+.forest-world-stage[data-foe="mothum"]{--foe-glow:#9ac4f3}
+.forest-world-stage[data-foe="thornking"]{--foe-glow:#ea917a}
+.forest-active .forest-world-stage[data-foe]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{
+ filter:drop-shadow(0 0 11px var(--foe-glow)) drop-shadow(0 8px 8px #081f1980);
+}
+.forest-active .forest-world-stage[data-foe="mossling"]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{animation:mossling-dart 2.3s ease-in-out infinite}
+.forest-active .forest-world-stage[data-foe="thistlet"]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{animation:thistlet-brace 2.8s ease-in-out infinite}
+.forest-active .forest-world-stage[data-foe="spookap"]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{animation:spookap-flicker 3.1s ease-in-out infinite}
+.forest-active .forest-world-stage[data-foe="bramblet"]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{animation:bramblet-heavy 2.7s ease-in-out infinite}
+.forest-active .forest-world-stage[data-foe="mothum"]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{animation:mothum-flutter 2.4s ease-in-out infinite}
+.forest-active .forest-world-stage[data-foe="thornking"]:not(.forest-attack):not(.forest-guarding):not(.forest-reading-hit):not(.forest-boss-defeated) .forest-enemy{animation:thornking-presence 3.2s ease-in-out infinite}
+@keyframes mossling-dart{0%,100%{transform:translate(0,0) rotate(-5deg)}30%{transform:translate(-9px,-9px) rotate(10deg)}60%{transform:translate(6px,-3px) rotate(-9deg)}}
+@keyframes thistlet-brace{0%,100%{transform:translateY(0) scale(1)}47%{transform:translateY(-4px) scale(1.1,0.96)}}
+@keyframes spookap-flicker{0%,100%{transform:translateY(0);opacity:1}40%{transform:translateY(-11px);opacity:.48}55%{transform:translateY(-10px);opacity:.9}}
+@keyframes bramblet-heavy{0%,100%{transform:translateY(0) rotate(0)}26%{transform:translateY(-3px) rotate(-8deg)}52%{transform:translateY(4px) rotate(4deg)}}
+@keyframes mothum-flutter{0%,100%{transform:translateY(0) rotate(-7deg)}25%{transform:translateY(-12px) rotate(10deg)}50%{transform:translateY(-1px) rotate(-4deg)}75%{transform:translateY(-8px) rotate(8deg)}}
+@keyframes thornking-presence{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.07)}}
+@media(max-width:370px){.forest-foe-pattern{order:4;width:100%;text-align:left}}
+@media(prefers-reduced-motion:reduce){
+ .forest-active .forest-world-stage[data-foe]:not(.forest-attack):not(.forest-guarding) .forest-enemy{animation:none!important}
+}
