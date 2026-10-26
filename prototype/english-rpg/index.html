@@ -10,13 +10,19 @@
 <header class="topbar"><a class="brand" href="./index.html" aria-label="Speakingym Quest ホーム">speakingym<span>Quest</span></a><div class="top-actions"><span id="save-state" role="status">この端末に保存</span><button class="icon-button" id="reset-game" title="試作データをリセット" aria-label="試作データをリセット">↺</button></div></header>
 <main id="app" class="shell">
 <section id="welcome-screen" class="screen welcome" aria-labelledby="welcome-title">
-  <div class="welcome-copy"><p class="eyebrow">A LITTLE ENGLISH ADVENTURE</p><h1 id="welcome-title">英語で冒険、<br>仲間と成長。</h1><p class="lead">英語を使ってモンスターと戦い、仲間にしよう。<br>正解を重ねるたび、冒険が少しずつ進みます。</p><div class="welcome-note"><b>60秒チャレンジとは別の練習です</b><br>日本語を英訳するのではなく、選ぶ技に合わせて単語・リスニング・語順を使います。</div></div>
+  <div class="welcome-copy"><p class="eyebrow">A LITTLE ENGLISH ADVENTURE</p><h1 id="welcome-title">英語で道をひらく。<br>仲間と旅に出る。</h1><p class="lead">森で出会った旅人を助けよう。声を聞き、道標を読み、仲間と力を合わせて、英語で道を伝える冒険。</p><div class="welcome-note"><b>60秒チャレンジとは別の練習です</b><br>英語を使うことで物語が進みます。答えを間違えても、道は閉ざされません。</div></div>
   <div class="starter-card"><div class="starter-head"><span class="step-dot">01</span><div><h2>最初の相棒を選ぼう</h2><p>どの相棒でも学べる問題と成長機会は同じです。</p></div></div><div id="starter-list" class="starter-list"></div><button id="choose-starter" class="primary-button" disabled>相棒を選んで冒険へ</button></div>
 </section>
 <section id="map-screen" class="screen hidden" aria-labelledby="map-title">
-  <div class="page-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1 id="map-title">冒険マップ</h1><p class="subheading">道をひとつずつ進もう。5・10ステージはボス戦！</p></div><button class="small-button" id="open-companions">相棒・図鑑</button></div>
+  <div class="page-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1 id="map-title">森への道</h1><p class="subheading">光る地点から冒険を始めよう。</p></div><button class="small-button" id="open-companions">相棒・図鑑</button></div>
   <div class="journey-bar"><div id="hero-mini" class="hero-mini"></div><div class="journey-info"><b id="hero-name"></b><span id="hero-level"></span><div class="xp-track"><i id="xp-fill"></i></div></div><div class="journey-count"><b id="stage-progress">0 / 10</b><span>クリア</span></div></div>
-  <div class="map-layout"><div id="stage-list" class="stage-list" aria-label="ステージ一覧"></div><aside class="map-aside"><div class="side-card"><p class="eyebrow">FIELD GUIDE</p><h2>仲間の記録</h2><div id="collection-mini"></div><button id="open-dex" class="text-button">図鑑を見る　→</button></div><div class="side-card learning-card"><p class="eyebrow">LEARN WHILE PLAYING</p><h3>技を選ぶと練習が変わる</h3><p>単語の意味を選ぶ、英語を聞いて用件をつかむ、単語を並べて文を作る。どの技にも英語を使う場面があります。</p></div></aside></div>
+  <div class="map-layout"><div class="world-map"><div class="map-canopy" aria-hidden="true"></div><svg class="map-road" viewBox="0 0 400 850" preserveAspectRatio="none" aria-hidden="true"><path d="M82 790 C390 725 354 625 154 595 S20 485 240 425 S373 315 170 245 S32 135 260 52"/></svg><div id="stage-list" class="stage-list" aria-label="冒険の道"></div></div><aside class="map-aside"><div class="side-card"><p class="eyebrow">FIELD GUIDE</p><h2>仲間の記録</h2><div id="collection-mini"></div><button id="open-dex" class="text-button">図鑑を見る　→</button></div><div class="side-card learning-card"><p class="eyebrow">STORY QUEST</p><h3>こけむす小道</h3><p>旅人の声を聞き、道標を読み、森の仲間と力を合わせて道を案内しよう。</p></div></aside></div>
+</section>
+<section id="story-screen" class="screen hidden" aria-labelledby="story-title">
+  <div class="battle-head"><button class="back-button" id="leave-story">← マップ</button><div><p class="eyebrow" id="story-chapter">STAGE 01 · STORY</p><h1 id="story-title">迷いの森</h1></div><button class="icon-button" id="toggle-sound" aria-label="効果音をミュート" aria-pressed="false">♫</button></div>
+  <div class="quest-progress" id="quest-progress" aria-label="冒険の進行"></div>
+  <div class="story-scene" id="story-scene"><div class="forest-depth" aria-hidden="true"></div><div id="story-character" class="story-character"></div><div class="story-dialogue"><small id="story-speaker"></small><p id="story-line"></p></div></div>
+  <div id="story-task" class="story-task" aria-live="polite"></div>
 </section>
 <section id="battle-screen" class="screen hidden" aria-labelledby="battle-title">
   <div class="battle-head"><button class="back-button" id="leave-battle">← マップ</button><div><p id="battle-stage-label" class="eyebrow"></p><h1 id="battle-title">野生の仲間が現れた！</h1></div><span class="boss-tag hidden" id="boss-tag">BOSS</span></div>
