@@ -41,6 +41,25 @@ test('curriculum has 16 expressions and 52 authored tasks at each difficulty lev
   for(const prompt of PROMPTS) {assert.ok(prompt.scene&&prompt.cue&&prompt.answer);if(prompt.kind==='listen')assert.ok(prompt.audio);}
 });
 
+test('every reading encounter has an authored passage, including higher difficulty levels', () => {
+  const reading=ALL_PROMPTS.filter(prompt=>prompt.kind==='read');
+  assert.ok(reading.length>=24);
+  for(const prompt of reading) {
+    assert.ok(typeof prompt.readText==='string' && prompt.readText.length>=30, `Missing passage for ${prompt.id}`);
+    assert.ok(prompt.answer && prompt.phraseId);
+    assert.ok(!/<script|<img|https?:\\/\\//i.test(prompt.readText));
+  }
+  for(const level of ['normal','hard']) {
+    const set=reading.filter(prompt=>prompt.difficulty===level);
+    assert.ok(set.length>=8);
+    for(const prompt of set) {
+      const simpler=ALL_PROMPTS.find(other=>other.id===prompt.baseId);
+      assert.ok(simpler?.readText);
+      assert.notEqual(prompt.readText,simpler.readText,`Difficulty passage was duplicated for ${prompt.id}`);
+    }
+  }
+});
+
 test('the illustrated adventure scene has distinct accessible route art and stable landmarks', () => {
   const before=forestWorldArt();
   const moss=forestWorldArt('moss');
