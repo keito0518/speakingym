@@ -190,7 +190,7 @@ $$('[data-difficulty]').forEach(button => button.addEventListener('click', () =>
   persist(chooseDifficulty(save, button.dataset.difficulty));
   renderDifficulty();
 }));
-$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
+$$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;renderHome();});
