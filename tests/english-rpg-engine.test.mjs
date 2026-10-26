@@ -195,6 +195,9 @@ test('support skills produce distinct party tactics and enemy counters',()=>{
   assert.equal(charge.battle.focus,2);assert.equal(charge.battle.empower,8);
   assert.equal(resolveTurn(charge.battle,'phrase',true).outcome.damage,29+9+8);
   assert.equal(skillFor('lumi',2).power,19);
+  assert.equal(skillFor('lumi',2).name,'再生の風');
+  assert.equal(skillFor('momo',2).name,'連撃の号令');
+  assert.equal(skillFor('koro',2).name,'渾身の構え');
   assert.equal(skillFor('lumi',4,true).power,26);
 });
 
