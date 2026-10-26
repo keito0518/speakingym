@@ -74,6 +74,18 @@ export const ADDITIONAL_PHRASES = Object.freeze([
   }
 ]);
 const READING_SCENES = new Set(['help-form','order-veg','direction-transfer','recommend-gift','booking-tour','apology-email','decline-purchase','price-service','change-date','problem-bill']);
+const READING_TEXTS = Object.freeze({
+  "help-form": "Please write your current address in the first box.",
+  "order-veg": "Vegetarian plate: served with vegetables and rice.",
+  "direction-transfer": "For the city center, change at Central Station.",
+  "recommend-gift": "Gift section: local kitchen tools and handmade snacks.",
+  "booking-tour": "Walking tour: morning departure, booking required.",
+  "apology-email": "Reminder: please reply to the message from yesterday.",
+  "decline-purchase": "This jacket is on sale today. Would you like it?",
+  "price-service": "Express cleaning is available for an additional fee.",
+  "change-date": "Your appointment is confirmed for Friday.",
+  "problem-bill": "Invoice: room charge, breakfast charge, service fee."
+});
 const SCENES = [
   [
     "help-bag",
@@ -717,7 +729,7 @@ const SCENES = [
   ]
 ];
 export const ADDITIONAL_PROMPTS = Object.freeze(SCENES.flatMap(([id,phraseId,scene,englishScene,cue,audio,easy,alternative,normalCue,normalTask,normalAnswer,hardCue,hardTask,hardAnswer]) => [
- {id,baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',scene,cue,answer:easy,alternatives:[alternative],...(audio?{audio}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
+ {id,baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',scene,cue,answer:easy,alternatives:[alternative],...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_TEXTS[id]}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
  {id:id+'-normal',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'normal',scene:englishScene,cue:normalCue,task:normalTask,answer:normalAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})},
  {id:id+'-hard',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'hard',scene:englishScene,cue:hardCue,task:hardTask,answer:hardAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{})}
 ]));
