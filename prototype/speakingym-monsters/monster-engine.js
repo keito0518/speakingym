@@ -48,7 +48,7 @@ export function validateSave(value) {
   }
   const validPromptIds=new Set(ALL_PROMPTS.map(prompt=>prompt.id));
   const reviewPrompts=Object.fromEntries(Object.entries(value.reviewPrompts && typeof value.reviewPrompts==='object' && !Array.isArray(value.reviewPrompts)?value.reviewPrompts:{})
-    .filter(([id,due])=>validPromptIds.has(id)&&typeof due==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(due))
+    .filter(([id,due])=>validPromptIds.has(id)&&typeof due==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(due))
     .slice(-156));
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
@@ -169,7 +169,7 @@ const VETTED_PARAPHRASES=Object.freeze({
   'problem-wifi':['I cannot get the Wi-Fi to work in my room.']
 });
 export function flagUncertainReview(save,promptId,today=dayKey()) {
-  if(!ALL_PROMPTS.some(item=>item.id===promptId)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(today))
+  if(!ALL_PROMPTS.some(item=>item.id===promptId)||!/^\d{4}-\d{2}-\d{2}$/.test(today))
     throw new Error('Invalid review prompt.');
   const next=clone(save);
   const due=addDays(today,1);
