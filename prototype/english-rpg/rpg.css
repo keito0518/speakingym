@@ -19,6 +19,7 @@
 .traveler-art{width:126px;height:150px;filter:drop-shadow(0 8px 4px #28433588)}
 @media(max-width:430px){#save-state{display:none}}
 @media(prefers-reduced-motion:reduce){.story-character,.battle-creature,.modal-card .creature-icon,.modal-card .level-up{animation:none!important}}
+.companion-skill{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:10px 0 0;padding:12px 15px;min-height:52px;border:2px solid #bda66a;border-radius:14px;background:#fff4d8;color:#344f3c;text-align:left;box-shadow:0 3px #a58958}.companion-skill b{font-size:14px;white-space:nowrap}.companion-skill small{font-size:11px;line-height:1.4}.companion-skill:disabled{opacity:.52;box-shadow:none}.tactical-trait{overflow-wrap:anywhere}@media(max-width:430px){.companion-skill{display:block}.companion-skill b,.companion-skill small{display:block}.companion-skill small{margin-top:3px}}
 
 /* Stage 1 is a real walkable location: trees block movement, detours grant combat gear. */
 #story-scene[data-phase="explore"]{height:130px}
