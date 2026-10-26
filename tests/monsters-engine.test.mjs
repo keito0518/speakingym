@@ -47,7 +47,7 @@ test('every reading encounter has an authored passage, including higher difficul
   for(const prompt of reading) {
     assert.ok(typeof prompt.readText==='string' && prompt.readText.length>=30, `Missing passage for ${prompt.id}`);
     assert.ok(prompt.answer && prompt.phraseId);
-    assert.ok(!/<script|<img|https?:\\/\\//i.test(prompt.readText));
+    assert.ok(!prompt.readText.includes('<script') && !prompt.readText.includes('<img') && !prompt.readText.includes('http://') && !prompt.readText.includes('https://'));
   }
   for(const level of ['normal','hard']) {
     const set=reading.filter(prompt=>prompt.difficulty===level);
