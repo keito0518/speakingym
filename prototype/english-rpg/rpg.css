@@ -53,3 +53,17 @@
 @keyframes tile-glow{to{filter:brightness(1.16)}}
 @media(max-width:370px){.forest-explorer{padding:7px;border-width:4px}.forest-tile-grid{gap:1px;padding:3px}.forest-map-key{font-size:9px}.forest-dpad button{width:42px;height:40px}.forest-inventory{font-size:10px}.tactical-info strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.forest-next{animation:none!important}}
+.party-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0 18px}
+.party-slot{display:grid;gap:7px;border:2px solid #c5d6b6;background:#f2f8e9;padding:12px;border-radius:14px;font-size:12px;font-weight:900}
+.party-slot select{min-width:0;width:100%;padding:10px 5px;border:2px solid #98b390;border-radius:9px;color:#2c4b3b;background:#fffefa;font:inherit;font-size:13px}
+.party-slot select:disabled{opacity:.55}
+.battle-party{margin:11px 0 20px;padding:12px;background:#e8f0df;border:2px solid #b5c9a6;border-radius:15px}
+.party-heading{margin:0 0 9px;font-size:12px;font-weight:900}
+.battle-party-list{display:flex;gap:8px;flex-wrap:wrap}
+.party-chip{display:flex;gap:5px;align-items:center;min-width:0;flex:1 1 125px;text-align:left;border:2px solid #93ae87;border-radius:12px;padding:7px;background:#fffefa}
+.party-chip.current{border-color:#d5a54d;background:#fff5cf}
+.party-chip:disabled{opacity:.72;cursor:default}
+.party-chip .creature-icon{width:43px;height:43px;flex:none}
+.party-chip b{display:block;font-size:12px}.party-chip small{display:block;font-size:11px;color:#59715b}
+#party-notice{margin:9px 0 0;color:#456f51;font-weight:800;font-size:11px}
+@media(max-width:580px){.party-slots{grid-template-columns:1fr}.party-slot{grid-template-columns:80px 1fr;align-items:center}.party-chip{flex-basis:calc(50% - 5px)}}

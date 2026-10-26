@@ -21,7 +21,19 @@ export const FOREST_TILES = Object.freeze([
 export const COMPANION_TRAITS = Object.freeze({
   momo: { name: '先陣の一撃', detail: 'ことば斬りの威力 +7', move: 'word', bonus: 7 },
   lumi: { name: '耳を澄ます', detail: '聞き耳ウェーブの被ダメージ軽減 +5', move: 'listen', bonus: 5 },
-  koro: { name: '勇気の一文', detail: 'フレーズ連結の威力 +9', move: 'phrase', bonus: 9 }
+  koro: { name: '勇気の一文', detail: 'フレーズ連結の威力 +9', move: 'phrase', bonus: 9 },
+  mimip: { name: '道ふさぎ', detail: 'ことば斬りの威力 +6', move: 'word', bonus: 6 },
+  pebblet: { name: '石の盾', detail: '聞き耳ウェーブの被ダメージ軽減 +8', move: 'listen', bonus: 8 },
+  puddle: { name: '雨の耳', detail: '聞き耳ウェーブの被ダメージ軽減 +6', move: 'listen', bonus: 6 },
+  twiggle: { name: '若枝の連結', detail: 'フレーズ連結の威力 +6', move: 'phrase', bonus: 6 },
+  glimmer: { name: 'ひかりの言葉', detail: 'ことば斬りの威力 +8', move: 'word', bonus: 8 },
+  cinder: { name: '炎の連文', detail: 'フレーズ連結の威力 +8', move: 'phrase', bonus: 8 },
+  bubbun: { name: '潮の守り', detail: '聞き耳ウェーブの被ダメージ軽減 +7', move: 'listen', bonus: 7 },
+  mosslet: { name: '苔の盾', detail: '聞き耳ウェーブの被ダメージ軽減 +9', move: 'listen', bonus: 9 },
+  starling: { name: '星の一文', detail: 'フレーズ連結の威力 +10', move: 'phrase', bonus: 10 },
+  craggle: { name: '岩砕き', detail: 'ことば斬りの威力 +10', move: 'word', bonus: 10 },
+  aurora: { name: '暁の響き', detail: 'フレーズ連結の威力 +11', move: 'phrase', bonus: 11 },
+  crown: { name: '王者の言葉', detail: 'ことば斬りの威力 +12', move: 'word', bonus: 12 }
 });
 export const traitFor = id => COMPANION_TRAITS[id] || { name: '冒険のきずな', detail: 'ことば斬りの威力 +4', move: 'word', bonus: 4 };
 export function newForestWalk() { return { x: 1, y: 5, chest: false, shrine: false, steps: 0 }; }
@@ -54,6 +66,7 @@ export function createSave(starterId) {
     version: 1,
     starterId,
     activeCompanionId: starterId,
+    partyIds: [starterId],
     roster: [{ id: starterId, xp: 0, level: 1, evolved: false }],
     stageClears: [],
     captures: [starterId],
@@ -65,7 +78,30 @@ export function createSave(starterId) {
 export function validateSave(value) {
   if (!value || value.version !== 1 || !getCompanion(value.starterId) || !Array.isArray(value.roster) || !Array.isArray(value.stageClears) || !Array.isArray(value.captures)) return null;
   if (!value.roster.some(entry => entry.id === value.activeCompanionId) || value.roster.some(entry => !getCompanion(entry.id) && !getMonster(entry.id))) return null;
+  // Previous prototype saves contained only one active companion.
+  if (!Array.isArray(value.partyIds)) value.partyIds = [value.activeCompanionId];
+  if (value.partyIds.length < 1 || value.partyIds.length > 3 || new Set(value.partyIds).size !== value.partyIds.length || value.partyIds.some(id => !value.roster.some(entry => entry.id === id))) return null;
+  if (!value.partyIds.includes(value.activeCompanionId)) value.activeCompanionId = value.partyIds[0];
+  value.partyIds = [value.activeCompanionId, ...value.partyIds.filter(id => id !== value.activeCompanionId)];
   return value;
+}
+
+export function setPartySlot(save, slot, id) {
+  if (!Number.isInteger(slot) || slot < 0 || slot > 2) throw new Error('Only three party slots are available.');
+  const next = clone(save);
+  const party = next.partyIds || [next.activeCompanionId];
+  if (slot > party.length) throw new Error('Fill the previous party slot first.');
+  if (!id) {
+    if (slot === 0 || slot >= party.length) throw new Error('The first companion cannot be removed.');
+    party.splice(slot, 1);
+  } else {
+    if (!next.roster.some(entry => entry.id === id)) throw new Error('You have not caught that companion.');
+    if (party.includes(id) && party[slot] !== id) throw new Error('A companion cannot fill two slots.');
+    party[slot] = id;
+  }
+  next.partyIds = party;
+  next.activeCompanionId = party[0];
+  return next;
 }
 
 export function unlockedStageCount(save) {
@@ -88,6 +124,32 @@ export function makeBattle(stageId, monsterId, level = 1) {
   const maxPlayerHp = 70 + Math.min(50, Math.max(0, level - 1) * 5);
   const maxEnemyHp = boss ? 140 : 88;
   return { stageId: stage.id, monsterId, boss, maxPlayerHp, playerHp: maxPlayerHp, maxEnemyHp, enemyHp: maxEnemyHp, focus: 0, turn: 0, ended: false };
+}
+
+export function makePartyBattle(stageId, monsterId, save, { focus = 1, shield = 0 } = {}) {
+  const partyIds = (save.partyIds || [save.activeCompanionId]).slice(0, 3);
+  const partyHp = {}, partyMaxHp = {};
+  for (const id of partyIds) {
+    const level = save.roster.find(entry => entry.id === id)?.level || 1;
+    partyMaxHp[id] = makeBattle(stageId, monsterId, level).maxPlayerHp;
+    partyHp[id] = partyMaxHp[id];
+  }
+  const companionId = partyIds.includes(save.activeCompanionId) ? save.activeCompanionId : partyIds[0];
+  return { ...makeBattle(stageId, monsterId, save.roster.find(entry => entry.id === companionId)?.level || 1),
+    companionId, tactical: true, partyIds, partyHp, partyMaxHp, playerHp: partyHp[companionId], maxPlayerHp: partyMaxHp[companionId],
+    enemyHp: 96, maxEnemyHp: 96, focus, shield };
+}
+
+export function switchBattleCompanion(battle, id) {
+  if (!battle.tactical || battle.ended || !battle.partyIds?.includes(id) || id === battle.companionId || (battle.partyHp[id] || 0) <= 0) throw new Error('Cannot switch to that companion.');
+  const intent = enemyIntent(battle);
+  const absorbed = Math.min(battle.shield || 0, intent.damage);
+  const playerHp = Math.max(0, battle.partyHp[id] - intent.damage + absorbed);
+  const partyHp = { ...battle.partyHp, [id]: playerHp };
+  return { battle: { ...battle, companionId: id, playerHp, maxPlayerHp: battle.partyMaxHp[id], partyHp,
+    shield: Math.max(0, (battle.shield || 0) - absorbed), turn: battle.turn + 1,
+    ended: Object.values(partyHp).every(hp => hp <= 0) },
+    outcome: { switched: true, enemyMove: intent.name, absorbed, enemyAttack: intent.damage - absorbed } };
 }
 
 export function pickQuestion(type, save, random = Math.random) {
@@ -125,7 +187,8 @@ export function resolveTurn(battle, move, isCorrect) {
     const absorbed = Math.min(battle.shield || 0, incoming);
     next.shield = Math.max(0, (battle.shield || 0) - absorbed);
     next.playerHp = Math.max(0, next.playerHp - incoming + absorbed);
-    next.ended = cleared || next.playerHp === 0;
+    if (battle.partyHp) next.partyHp = { ...battle.partyHp, [battle.companionId]: next.playerHp };
+    next.ended = cleared || (next.partyHp ? Object.values(next.partyHp).every(hp => hp <= 0) : next.playerHp === 0);
     return { battle: next, outcome: { correct: isCorrect, damage, guard: guarding, enemyAttack: incoming - absorbed, absorbed, enemyMove: cleared ? null : intent.name, cleared, failed: next.playerHp === 0 } };
   }
   let outcome;
@@ -155,9 +218,14 @@ export function finishStage(save, battle, random = Math.random) {
   const pityWins = 3;
   const alreadyCaught = next.captures.includes(species);
   const captured = !alreadyCaught && (next.speciesWins[species] >= pityWins || random() < captureChance);
-  if (captured) { next.captures.push(species); next.roster.push({ id: species, xp: 0, level: 1, evolved: false }); }
+  if (captured) {
+    next.captures.push(species);
+    next.roster.push({ id: species, xp: 0, level: 1, evolved: false });
+    if (!next.partyIds) next.partyIds = [next.activeCompanionId];
+    if (next.partyIds.length < 3) next.partyIds.push(species);
+  }
 
-  const active = next.roster.find(entry => entry.id === next.activeCompanionId);
+  const active = next.roster.find(entry => entry.id === (battle.tactical ? battle.companionId : next.activeCompanionId));
   // Replaying a route should remain rewarding: players can train a newly caught ally.
   const xpAwarded = firstClear ? (monster.boss ? 70 : 40) : (monster.boss ? 22 : 12);
   let levelUps = 0;
@@ -174,6 +242,8 @@ export function changeActiveCompanion(save, id) {
   if (!save.roster.some(entry => entry.id === id)) throw new Error('That companion has not joined yet.');
   const next = clone(save);
   next.activeCompanionId = id;
+  if (!next.partyIds) next.partyIds = [id];
+  next.partyIds = [id, ...next.partyIds.filter(memberId => memberId !== id)].slice(0, 3);
   return next;
 }
 

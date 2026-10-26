@@ -1,5 +1,5 @@
 import { companions, monsters, stages, questions } from './rpg-data.js';
-import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getCompanion, getMonster, getStage, makeBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, traitFor, unlockedStageCount, validateSave, walkForest } from './rpg-engine.js';
+import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getCompanion, getMonster, getStage, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, switchBattleCompanion, traitFor, unlockedStageCount, validateSave, walkForest } from './rpg-engine.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -82,7 +82,7 @@ function renderMap() {
   $('#collection-mini').innerHTML = `<div class="collection-row">${monsters.slice(0,8).map(monster=>`<span class="mini-dot ${save.captures.includes(monster.id)?'found':''}" title="${save.captures.includes(monster.id)?monster.name:'未発見'}">${save.captures.includes(monster.id)?monster.glyph:'?'}</span>`).join('')}</div><p style="margin-top:8px">${monsters.filter(monster=>save.captures.includes(monster.id)).length}体が仲間</p>`;
 }
 function renderBattleField() {
-  const stage = getStage(currentStage), foe = getMonster(battle.monsterId), hero = activeInfo(), entry = activeEntry();
+  const stage = getStage(currentStage), foe = getMonster(battle.monsterId), heroId=battle.tactical?battle.companionId:save.activeCompanionId, hero = getCompanion(heroId)||getMonster(heroId), entry = save.roster.find(member=>member.id===heroId);
   $('#battle-stage-label').textContent = `STAGE ${stage.id} · ${stage.jp}`;
   $('#battle-title').textContent = stage.boss ? 'ボスの気配がする…！' : '野生の仲間が現れた！';
   $('#boss-tag').classList.toggle('hidden', !foe.boss);
@@ -95,6 +95,7 @@ function renderBattleField() {
   updateHp();
   updateFocus();
   $('#tactical-info').classList.toggle('hidden', !battle.tactical);
+  $('#battle-party').classList.toggle('hidden', !battle.tactical);
 }
 function updateHp() {
   $('#ally-hp-fill').style.width = `${battle.playerHp/battle.maxPlayerHp*100}%`;
@@ -127,6 +128,7 @@ function startStage(id, forcedMonster = null) {
 }
 const typeNames = {word:'ことば斬り',listen:'聞き耳ウェーブ',phrase:'フレーズ連結'};
 function beginMove(move) {
+  if (battle.tactical && battle.playerHp <= 0) return;
   if (move === 'phrase' && battle.focus < 1) return;
   currentMove = move;
   currentQuestion = currentStage === 1 ? forestBattleQuestion(move) : pickQuestion(move, save, random);
@@ -193,13 +195,13 @@ function resolveAnswer(correct) {
   if(currentQuestion.type==='phrase')line+=` ${currentQuestion.target} — ${currentQuestion.meaning}`;
   feedback.innerHTML=`<b>${escapeHtml(line)}</b><small>${escapeHtml(currentQuestion.tip||'')}</small>`;
   $('#after-answer').classList.remove('hidden');
-  $('#continue-battle').textContent=battle.enemyHp===0?'勝利を確認する':battle.playerHp===0?'このステージをもう一度':'次の手へ';
+  $('#continue-battle').textContent=battle.enemyHp===0?'勝利を確認する':battle.playerHp===0?(battle.ended?'このステージをもう一度':'仲間と交代する'):'次の手へ';
   if(correct){$('#battle-field').classList.add('pulse');playTone(440);floatDamage(lastOutcome.damage);} else {$('#battle-field').classList.add('shake');playTone(160);}
   setTimeout(()=>$('#battle-field').classList.remove('pulse','shake'),500);
 }
 function continueBattle() {
   if (battle.enemyHp===0) { if(currentStage===1){save.storyRun={phase:'speak',battle};persist();renderForest();} else finishEncounter(); return; }
-  if (battle.playerHp===0) { showDefeat(); return; }
+  if (battle.playerHp===0 && battle.ended) { showDefeat(); return; }
   $('#question-screen').classList.add('hidden');$('#move-screen').classList.remove('hidden');currentQuestion=null;
   if(currentStage===1) renderForestBattleMove();
 }
@@ -219,10 +221,17 @@ function showDefeat() {
 }
 function renderCamp() {
   const roster=save.roster;
+  const partyIds=save.partyIds||[save.activeCompanionId];
+  $('#party-slots').innerHTML=[0,1,2].map(slot=>{
+    const value=partyIds[slot]||'';
+    const options=[`<option value="">${slot===0?'相棒を選ぶ':'空き枠'}</option>`,...roster.map(member=>{const info=getCompanion(member.id)||getMonster(member.id);return `<option value="${member.id}" ${value===member.id?'selected':''} ${partyIds.includes(member.id)&&value!==member.id?'disabled':''}>${escapeHtml(info.name)} Lv.${member.level}</option>`;})].join('');
+    return `<label class="party-slot"><span>チーム ${slot+1}${slot===0?' · 先頭':''}</span><select data-party-slot="${slot}" ${slot>partyIds.length?'disabled':''}>${options}</select></label>`;
+  }).join('');
+  $$('#party-slots select').forEach(select=>select.addEventListener('change',()=>{try{persist(setPartySlot(save,Number(select.dataset.partySlot),select.value));$('#party-error').textContent='';renderCamp();}catch(error){$('#party-error').textContent=error.message;renderCamp();}}));
   $('#camp-hero').innerHTML=roster.map(entry=>{const info=getCompanion(entry.id)||getMonster(entry.id);return `<div class="companion-row ${entry.id===save.activeCompanionId?'active':''}">${avatar(info.id,'',entry.evolved)}<div class="companion-meta"><b>${escapeHtml(info.name)}${entry.id===save.activeCompanionId?' · 相棒':''}</b><small>Lv.${entry.level} · ${entry.xp}/${XP_PER_LEVEL} XP ${entry.evolved?' · 進化済み':''}</small><small class="trait-caption">${escapeHtml(traitFor(entry.id).name)}：${escapeHtml(traitFor(entry.id).detail)}</small></div>${entry.id!==save.activeCompanionId?`<button class="small-button switch-companion" data-id="${entry.id}">相棒にする</button>`:''}</div>`;}).join('');
   $$('.switch-companion').forEach(button=>button.addEventListener('click',()=>{persist(changeActiveCompanion(save,button.dataset.id));renderCamp();}));
   $('#dex-count').textContent=`${monsters.filter(monster=>save.captures.includes(monster.id)).length} / ${monsters.length}`;
-  $('#dex-grid').innerHTML=monsters.map(monster=>{const found=save.captures.includes(monster.id);const habitat=stages.find(stage=>stage.foes.includes(monster.id));return `<article class="dex-card ${found?'':'unknown'}">${avatar(monster.id)}<b>${found?escapeHtml(monster.name):'？？？'}</b><small>${found?escapeHtml(monster.kind):`${monster.boss?'ボス':'野生'} · ${escapeHtml(habitat.jp)}に生息`}</small>${!found?`<button class="hunt-button" data-hunt="${monster.id}">生息地を探す</button>`:''}</article>`;}).join('');
+  $('#dex-grid').innerHTML=monsters.map(monster=>{const found=save.captures.includes(monster.id);const habitat=stages.find(stage=>stage.foes.includes(monster.id));return `<article class="dex-card ${found?'':'unknown'}">${avatar(monster.id)}<b>${found?escapeHtml(monster.name):'？？？'}</b><small>${found?escapeHtml(monster.kind):`${monster.boss?'ボス':'野生'} · ${escapeHtml(habitat.jp)}に生息`}</small>${found?`<small class="trait-caption">${escapeHtml(traitFor(monster.id).name)}：${escapeHtml(traitFor(monster.id).detail)}</small>`:`<button class="hunt-button" data-hunt="${monster.id}">生息地を探す</button>`}</article>`;}).join('');
   $$('.hunt-button').forEach(button=>button.addEventListener('click',()=>{const monster=getMonster(button.dataset.hunt);const stage=stages.find(item=>item.foes.includes(monster.id));if(stage.id>unlockedStageCount(save)){showScreen('map-screen');return;}preferredMonster=monster.id;startStage(stage.id,monster.id);}));
 }
 function shuffle(list, rng=Math.random) { const array=[...list];for(let i=array.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[array[i],array[j]]=[array[j],array[i]];}return array; }
@@ -265,14 +274,33 @@ function startForest() {
 }
 function advanceForest(phase) {save.storyRun={...save.storyRun,phase};persist();renderForest();}
 function renderForestBattleMove() {
-  $$('.move-card').forEach(button=>{button.disabled=button.dataset.move==='phrase'&&battle.focus<1;button.classList.toggle('quest-move',button.dataset.move==='listen'&&enemyIntent(battle).strong);});
-  $('#move-screen h2').textContent='敵の次の一手を読んで、技を選ぼう';
+  $$('.move-card').forEach(button=>{button.disabled=battle.playerHp<=0||(button.dataset.move==='phrase'&&battle.focus<1);button.classList.toggle('quest-move',button.dataset.move==='listen'&&enemyIntent(battle).strong);});
+  $('#move-screen h2').textContent=battle.playerHp<=0?'相棒が倒れた！ 控えの仲間と交代しよう':'敵の次の一手を読んで、技を選ぼう';
   $('#battle-title').textContent='ミミップが道をふさいだ！';
   renderTacticalInfo();
+  renderBattleParty();
 }
+function renderBattleParty() {
+  const party=$('#battle-party');party.classList.toggle('hidden',!battle.tactical);
+  if(!battle.tactical)return;
+  party.innerHTML=`<p class="party-heading">パーティー · 交代には敵の1行動が必要</p><div class="battle-party-list">${battle.partyIds.map(id=>{
+    const info=getCompanion(id)||getMonster(id), current=id===battle.companionId, hp=battle.partyHp[id];
+    return `<button type="button" class="party-chip ${current?'current':''}" data-switch="${id}" ${current||hp<=0?'disabled':''}>${avatar(id)}<span><b>${escapeHtml(info.name)}${current?' · 前衛':''}</b><small>HP ${hp}/${battle.partyMaxHp[id]}</small></span></button>`;
+  }).join('')}</div><p id="party-notice" role="status">${escapeHtml(battle.swapNotice||'捕まえた仲間をキャンプで編成すると、戦闘中に交代できる。')}</p>`;
+}
+$('#battle-party').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-switch]');if(!button||!battle?.tactical)return;
+  try {
+    const result=switchBattleCompanion(battle,button.dataset.switch);
+    battle={...result.battle,swapNotice:`${getCompanion(button.dataset.switch)?.name||getMonster(button.dataset.switch)?.name}に交代！ 敵の「${result.outcome.enemyMove}」で${result.outcome.enemyAttack}ダメージ。`};
+    save.storyRun={...save.storyRun,phase:'battle',battle};persist();
+    renderBattleField();renderForestBattleMove();
+    if(battle.ended)showDefeat();
+  }catch(error){$('#party-notice').textContent=error.message;}
+});
 function enterForestBattle() {
   const walk=save.storyRun.walk || newForestWalk();
-  battle=save.storyRun.battle || {...makeBattle(1,chooseStageMonster(1,save),activeEntry().level),enemyHp:96,maxEnemyHp:96,focus:walk.shrine?2:1,shield:walk.chest?14:0,tactical:true,companionId:save.activeCompanionId};
+  battle=save.storyRun.battle || makePartyBattle(1,chooseStageMonster(1,save),save,{focus:walk.shrine?2:1,shield:walk.chest?14:0});
   save.storyRun={...save.storyRun,phase:'battle',battle};persist();
   renderBattleField();renderForestBattleMove();
   $('#move-screen').classList.remove('hidden');$('#question-screen').classList.add('hidden');$('#battle-result').classList.add('hidden');

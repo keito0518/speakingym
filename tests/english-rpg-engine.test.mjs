@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { companions, monsters, questions, stages } from '../prototype/english-rpg/rpg-data.js';
-import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, traitFor, unlockedStageCount, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
+import { FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getMonster, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, switchBattleCompanion, traitFor, unlockedStageCount, validateSave, walkForest } from '../prototype/english-rpg/rpg-engine.js';
 
 const winBattle = (stageId, monsterId, level=1, move='word') => {
   let battle=makeBattle(stageId,monsterId,level);
@@ -124,5 +124,41 @@ test('tactical turn has enemy telegraphs, focus management, shields and companio
   const koro=resolveTurn({...base,companionId:'koro',shield:0},'phrase',true);
   assert.equal(koro.outcome.damage,38);assert.equal(koro.battle.focus,0);
   assert.throws(()=>resolveTurn(koro.battle,'phrase',true),/focus/);
-  assert.equal(traitFor('mimip').name,'冒険のきずな');
+  assert.equal(traitFor('mimip').name,'道ふさぎ');
+});
+
+test('party grows through captures, bench selection, and prior saves can migrate',()=>{
+  const initial=createSave('momo');
+  assert.deepEqual(initial.partyIds,['momo']);
+  assert.deepEqual(validateSave({...initial,partyIds:undefined}).partyIds,['momo']);
+  const afterCatch=finishStage(initial,winBattle(1,'mimip'),()=>0).save;
+  assert.deepEqual(afterCatch.partyIds,['momo','mimip']);
+  assert.throws(()=>setPartySlot(afterCatch,2,'mimip'),/two slots/);
+  assert.throws(()=>setPartySlot(afterCatch,2,'unknown'),/not caught/);
+  assert.deepEqual(setPartySlot(afterCatch,1,null).partyIds,['momo']);
+  const changed=changeActiveCompanion(afterCatch,'mimip');
+  assert.deepEqual(changed.partyIds,['mimip','momo']);
+  assert.equal(changed.activeCompanionId,'mimip');
+  assert.equal(traitFor('pebblet').move,'listen');
+});
+
+test('tactical battle swaps to caught companions with their own HP and a real turn cost',()=>{
+  const save=finishStage(createSave('momo'),winBattle(1,'mimip'),()=>0).save;
+  const battle=makePartyBattle(1,'mimip',save,{focus:2,shield:14});
+  assert.deepEqual(battle.partyIds,['momo','mimip']);
+  assert.equal(battle.partyHp.mimip,70);
+  const swapped=switchBattleCompanion(battle,'mimip');
+  assert.equal(swapped.battle.companionId,'mimip');
+  assert.equal(swapped.battle.turn,1);
+  assert.equal(swapped.battle.partyHp.mimip,70);
+  assert.equal(swapped.battle.shield,4);
+  assert.throws(()=>switchBattleCompanion(swapped.battle,'mimip'),/Cannot switch/);
+  const low={...battle,shield:0,playerHp:5,partyHp:{momo:5,mimip:70}};
+  const downed=resolveTurn(low,'word',false).battle;
+  assert.equal(downed.playerHp,0);
+  assert.equal(downed.ended,false);
+  assert.equal(downed.partyHp.mimip,70);
+  const rescue=switchBattleCompanion(downed,'mimip').battle;
+  assert.equal(rescue.playerHp,49); // Next telegraphed hit costs 21 HP on swap
+  assert.equal(rescue.ended,false);
 });
