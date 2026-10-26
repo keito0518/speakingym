@@ -92,12 +92,19 @@ function renderHome() {
   renderDifficulty();
   showView('home');
 }
+function dueForestPhrases(){
+  const today=dayKey();
+  return PHRASES.filter(phrase=>{
+    const item=save.progress?.[phrase.id];
+    return item?.nextReviewDay && item.nextReviewDay<=today;
+  }).map(phrase=>phrase.id);
+}
 function startSession(mode) {
   clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
-  const firstWave=forestMode?buildForestWave({difficulty,wave:1}):null;
+  const firstWave=forestMode?buildForestWave({difficulty,wave:1,reviewPhraseIds:dueForestPhrases()}):null;
   const prompts=forestMode?firstWave.prompts:selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,
@@ -490,7 +497,7 @@ function advanceQuestion(){
       if(!play.endless){play.completedForest=true;finishSession();return;}
       play.seenIds=play.prompts.map(p=>p.id);
       play.wave++;
-      const wave=buildForestWave({difficulty:play.baseDifficulty,wave:play.wave,previousIds:play.seenIds});
+      const wave=buildForestWave({difficulty:play.baseDifficulty,wave:play.wave,previousIds:play.seenIds,reviewPhraseIds:dueForestPhrases()});
       play.prompts=wave.prompts;
       play.difficulty=wave.level;
       play.index=0;play.bossHits=0;play.usedPower=false;
