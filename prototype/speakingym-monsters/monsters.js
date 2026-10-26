@@ -109,7 +109,8 @@ function startSession(mode) {
     $('#forest-world-stage').dataset.renderedRoute='';
   }
   showView('play');
-  renderQuestion();
+  if(forestMode)showForestExplore(false);
+  else renderQuestion();
   if (mode === 'challenge') timer = setInterval(updateClock,200);
   updateClock();
 }
@@ -174,24 +175,53 @@ function renderForestHud() {
     `${foe.name} が現れた！ 英語の攻撃を3回当てよう。`:
     `${foe.name} が現れた。英語で応えて仲間に攻撃の合図を出そう。`;
 }
-function showForestRouteChoice() {
+function showForestExplore(routeChoice=false) {
   if(!play || play.mode!=='forest')return;
   stopAudio();
+  const view=$('#play-view'), map=$('#forest-explore-art');
+  const companion=monsterFor(play.companionId);
+  const evolved=getMonsterProgress(save,play.companionId).evolved;
+  const foe=opponentFor(play.index,play.wave);
+  const isBoss=play.index>=REGULAR_ENCOUNTERS;
+  const stage=Math.min(4,Math.max(0,play.index));
+  map.innerHTML=forestWorldArt(play.route)+
+    '<div class="forest-explore-companion">'+monsterArt(companion.id,evolved)+'</div>'+
+    '<div class="forest-explore-destination" aria-hidden="true"></div>';
+  map.dataset.step=String(stage);
+  map.dataset.route=play.route||'wild';
+  $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':isBoss?'森の奥に、強い気配がする':play.index===0?'冒険の始まり':`次の目的地へ · ${play.index+1}戦目`;
+  $('#forest-explore-description').textContent=routeChoice?'進む道を選ぼう。道によって見つかる宝物が変わるよ。':
+    isBoss?'この先に森のボスが待っている。準備ができたら進もう。':
+    play.index===0?'仲間と森を探検しよう。先に進むとモンスターが現れる。':
+    `${foe.japanese} の気配がする。次の戦闘へ進もう。`;
+  const options=$('#forest-explore-options');
+  options.hidden=!routeChoice;
+  options.innerHTML=routeChoice?FOREST_ROUTES.map(route=>
+    `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
+  const forward=$('#forest-explore-continue');
+  forward.hidden=routeChoice;
+  forward.textContent=isBoss?'ボス戦へ進む':play.index===0?'森へ出発する':'次の地点へ進む';
+  if(routeChoice){
+    $$('[data-forest-route]',options).forEach(button=>button.addEventListener('click',()=>{
+      if(!play || play.mode!=='forest'||play.route)return;
+      play.route=button.dataset.forestRoute;
+      showForestExplore(false);
+    }));
+  }
+  view.classList.add('forest-exploring');
+  $('#forest-explore-screen').hidden=false;
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function showForestRouteChoice() {
+  if(!play || play.mode!=='forest')return;
   play.revealed=true;
-  $('#answer-area').hidden=true;
-  $('#forest-journey').classList.add('forest-route-reveal');
-  renderForestHud();
-  $('#play-card').innerHTML=`<div class="forest-route-choice"><span class="forest-kicker">THE FIRST GATE IS OPEN</span><h1>森に二つの道が現れた。</h1><p class="forest-choice-intro">仲間とどっちへ進む？ 道によって見つかる宝物が変わるよ。英語の採点やXPは変わらない。</p><div class="forest-route-grid">${FOREST_ROUTES.map(route=>`<button type="button" class="forest-route-option" data-forest-route="${route.id}"><span class="forest-route-symbol" aria-hidden="true">${route.symbol}</span><strong>${route.name}</strong><small lang="en">${route.tag}</small><span>${route.detail}</span></button>`).join('')}</div></div>`;
-  $$('[data-forest-route]').forEach(button=>button.addEventListener('click',()=>{
-    if(!play||play.mode!=='forest'||play.route)return;
-    play.route=button.dataset.forestRoute;
-    $('#forest-journey').classList.remove('forest-route-reveal');
-    renderQuestion();
-  }));
+  showForestExplore(true);
 }
 
 function renderQuestion() {
   if (!play) return;
+  $('#play-view').classList.remove('forest-exploring');
+  $('#forest-explore-screen').hidden=true;
   stopAudio();
   $('#answer-area').hidden=false;
   $('#forest-journey').classList.remove('forest-victory');
@@ -432,9 +462,16 @@ function advanceQuestion(){
       play.index=0;play.bossHits=0;play.usedPower=false;
       play.encounterKey=null;
       $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${difficultyCopy[wave.level].label}`;
-      renderQuestion();return;
+      showForestExplore(false);return;
     }
-    renderQuestion();updateClock();return;
+    // The boss keeps its dedicated arena until defeated; normal encounters
+    // return to exploration before the next battle.
+    if(play.index>REGULAR_ENCOUNTERS && play.index<FOREST_WAVE_LENGTH){
+      renderQuestion();
+    } else {
+      showForestExplore(false);
+    }
+    updateClock();return;
   }
   play.index++;
   if(play.index===play.prompts.length){finishSession();return;}
@@ -529,6 +566,10 @@ $$('[data-difficulty]').forEach(button => button.addEventListener('click', () =>
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
 $('#start-forest').addEventListener('click',()=>startSession('forest'));
 $('#start-forest-endless').addEventListener('click',()=>startSession('forest-endless'));
+$('#forest-explore-continue').addEventListener('click',()=>{
+  if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
+  renderQuestion();
+});
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active');renderHome();});
