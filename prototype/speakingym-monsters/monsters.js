@@ -35,7 +35,7 @@ function micView(mode='ready') {
   if(button){
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.textContent=mode==='listening'?'■':'🎙';
+    button.textContent=mode==='listening'?'停止':'話す';
     button.title=mode==='listening'?'録音を停止する':'マイクで話す';
     button.setAttribute('aria-label',mode==='listening'?'録音を停止する':'マイクで話す');
     button.hidden=mode==='captured' || mode==='done';
@@ -72,7 +72,7 @@ function renderDifficulty() {
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);
   $('#hero-monster-art').innerHTML = monsterArt(creature.id,growth.evolved);
-  $('#hero-monster-name').textContent = (growth.evolved ? creature.evolvedName : creature.name) + (growth.evolved ? ' ✨' : '');
+  $('#hero-monster-name').textContent = (growth.evolved ? creature.evolvedName : creature.name) + (growth.evolved ? ' / 進化済み' : '');
   $('#hero-monster-species').textContent = `${creature.japaneseName} · ${creature.roots.map(root=>root.word).join(' + ')}`;
   $('#hero-level').textContent = `Lv.${growth.level}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
@@ -167,11 +167,11 @@ function renderForestHud() {
   bossMarker.classList.toggle('is-current',play.index>=REGULAR_ENCOUNTERS);
   bossMarker.classList.toggle('is-cleared',play.index>=REGULAR_ENCOUNTERS+BOSS_HITS);
   $('#forest-scene-story').textContent=play.index>=REGULAR_ENCOUNTERS?
-    '👑 森のトゲ王が立ちはだかる！ 英語を伝えて3回の攻撃で倒そう。':
-    `⚔ BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ 英語で応えて道を切り開こう。`;
+    '森のトゲ王が立ちはだかる！ 英語を伝えて3回の攻撃で倒そう。':
+    `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ 英語で応えて道を切り開こう。`;
   const log=$('#forest-battle-log');
   log.textContent=play.index>=REGULAR_ENCOUNTERS && play.bossHits===0?
-    `⚠ ${foe.name} が現れた！ 英語の攻撃を3回当てよう。`:
+    `${foe.name} が現れた！ 英語の攻撃を3回当てよう。`:
     `${foe.name} が現れた。英語で応えて仲間に攻撃の合図を出そう。`;
 }
 function showForestRouteChoice() {
@@ -214,7 +214,7 @@ function renderQuestion() {
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
-  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false">🎙</button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false">話す</button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
   $('#retry-mic').addEventListener('click',()=>{
     if(!play || play.revealed)return;
@@ -379,7 +379,7 @@ async function gradeAnswer() {
     $('#forest-world-stage').classList.add('forest-attack');
     $('#forest-world-stage').dataset.attack=play.companionId;
     $('#forest-damage').textContent=`−${special.strikes}`;
-    $('#forest-world-fx').textContent=special.ability?`✦ ${special.ability} ✦`:boss?'⚔ BOSS HIT!':'✦ ATTACK! ✦';
+    $('#forest-world-fx').textContent=special.ability?special.ability:boss?'BOSS HIT':'HIT';
     $('#forest-boss-hp').textContent='◆ '.repeat(Math.max(0,BOSS_HITS-play.bossHits))+'◇ '.repeat(play.bossHits);
     $('#forest-boss-hp').setAttribute('aria-valuenow',String(Math.max(0,BOSS_HITS-play.bossHits)));
     $('#forest-boss-hp').style.setProperty('--boss-health',`${100*(BOSS_HITS-play.bossHits)/BOSS_HITS}%`);
@@ -387,7 +387,7 @@ async function gradeAnswer() {
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     $('#forest-battle-log').textContent=`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
   }
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${play.mode==='forest'?'🌿 関門突破！':'✓ 内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${play.mode==='forest'?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
 }
 function skipAnswer(){
@@ -453,7 +453,7 @@ function finishSession(timedOut=false,defeated=false) {
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
   $('#result-title').textContent=ended.mode==='forest'?
-    (defeated?'⚔ 森の挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:'👑 森のボスを討伐！'):
+    (defeated?'森の挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
   $('#result-description').textContent=ended.mode==='forest'?
     (defeated?'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
@@ -514,7 +514,7 @@ function renderCollection(message = '') {
     try {
       const {save:next,reward}=feedMonster(save,id,amount);
       persist(next);
-      const message=`${monsterFor(id).name}に${reward.xp} XP！${reward.evolved?' ✨進化した！':reward.leveledUp?` Lv.${reward.after.level}になった！`:''}`;
+      const message=`${monsterFor(id).name}に${reward.xp} XP！${reward.evolved?' 進化した！':reward.leveledUp?` Lv.${reward.after.level}になった！`:''}`;
       renderCollection(message);
     } catch(error) { $('#feed-feedback').textContent=error.message; }
   }));
