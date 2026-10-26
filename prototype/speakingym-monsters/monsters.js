@@ -1,12 +1,14 @@
 import { MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, compareWithExamples, createSave, dayKey, feedMonster, finishRound, getMonsterProgress, learningSummary, masteryLevel, recordAnswer, selectMonster, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, recordAnswer, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
-import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from './forest-engine.js';
+import { cleanForest, FOREST_ROUTES, FOREST_RELICS, finishForest } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from './forest-battle.js';
 import { enemyArt } from './forest-enemies.js';
+import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
+import { createCollectionViews } from './monster-collection.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -58,7 +60,10 @@ function stopAudio() {
 }
 function clearTimer() { if (timer) clearInterval(timer); timer = null; }
 function showView(name) {
-  for (const id of ['home','play','result','collection']) $(`#${id}-view`).hidden = id !== name;
+  for (const id of ['home','play','result','collection','detail','training']) $(`#${id}-view`).hidden = id !== name;
+  stopAudio();
+  const heading = $(`#${name}-view h1`);
+  if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   window.scrollTo({top:0,behavior:'instant'});
 }
 function renderDifficulty() {
@@ -137,21 +142,21 @@ function renderForestHud() {
   $('#forest-companion-name').textContent=(evolved?companion.evolvedName:companion.name)+' と探検中';
   const world=$('#forest-world-stage');
   const currentRoute=play.route||'wild';
-  if(world.dataset.renderedRoute!==currentRoute){
-    $('#forest-world-backdrop').innerHTML=forestWorldArt(play.route);
-    world.dataset.renderedRoute=currentRoute;
+  const arenaKey=currentRoute+':'+(play.index>=REGULAR_ENCOUNTERS?'boss':'mob');
+  if(world.dataset.renderedRoute!==arenaKey){
+    $('#forest-world-backdrop').innerHTML=battleArenaArt(play.index>=REGULAR_ENCOUNTERS);
+    world.dataset.renderedRoute=arenaKey;
   }
-  world.dataset.stage=String(play.index<REGULAR_ENCOUNTERS?Math.min(2,Math.floor(play.index*3/REGULAR_ENCOUNTERS)):2);
+  world.dataset.stage='arena';
+  world.dataset.attack=companion.id;
+  world.dataset.evolved=String(evolved);
+  $('#forest-guard').innerHTML=guardArt();
   world.classList.toggle('forest-boss-stage',play.index>=REGULAR_ENCOUNTERS);
-  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated');
+  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding');
   const foe=opponentFor(play.index,play.wave);
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
   $('#forest-foe-name').textContent=foe.name+' · '+foe.japanese;
-  $('#forest-boss-hp').hidden=play.index<REGULAR_ENCOUNTERS;
-  $('#forest-boss-hp').textContent=play.index>=REGULAR_ENCOUNTERS?
-    '◆ '.repeat(Math.max(0,BOSS_HITS-play.bossHits))+'◇ '.repeat(play.bossHits):'';
-  $('#forest-boss-hp').setAttribute('aria-valuenow',String(Math.max(0,BOSS_HITS-play.bossHits)));
-  $('#forest-boss-hp').style.setProperty('--boss-health',`${100*(BOSS_HITS-play.bossHits)/BOSS_HITS}%`);
+  updateEnemyHealth();
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
     '英語で攻撃！';
   $('#forest-world-fx').textContent='';
@@ -175,6 +180,18 @@ function renderForestHud() {
     `${foe.name} が現れた！ 英語の攻撃を3回当てよう。`:
     `${foe.name} が現れた。英語で応えて仲間に攻撃の合図を出そう。`;
 }
+function updateEnemyHealth(hit=false) {
+  if(play?.mode!=='forest')return;
+  const boss=play.index>=REGULAR_ENCOUNTERS,max=boss?BOSS_HITS:1;
+  const left=boss?Math.max(0,BOSS_HITS-play.bossHits):hit?0:1;
+  const meter=$('#forest-boss-hp');
+  meter.hidden=false;
+  meter.textContent=`HP ${left} / ${max}`;
+  meter.setAttribute('aria-label',boss?'ボスのHP':'敵のHP');
+  meter.setAttribute('aria-valuemax',String(max));
+  meter.setAttribute('aria-valuenow',String(left));
+  meter.style.setProperty('--boss-health',`${100*left/max}%`);
+}
 function showForestExplore(routeChoice=false) {
   if(!play || play.mode!=='forest')return;
   stopAudio();
@@ -189,6 +206,7 @@ function showForestExplore(routeChoice=false) {
     '<div class="forest-explore-destination" aria-hidden="true"></div>';
   map.dataset.step=String(stage);
   map.dataset.route=play.route||'wild';
+  $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
   $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':isBoss?'森の奥に、強い気配がする':play.index===0?'冒険の始まり':`次の目的地へ · ${play.index+1}戦目`;
   $('#forest-explore-description').textContent=routeChoice?'進む道を選ぼう。道によって見つかる宝物が変わるよ。':
     isBoss?'この先に森のボスが待っている。準備ができたら進もう。':
@@ -210,6 +228,8 @@ function showForestExplore(routeChoice=false) {
   }
   view.classList.add('forest-exploring');
   $('#forest-explore-screen').hidden=false;
+  $('#forest-journey').hidden=true;
+  $('.forest-command-window').hidden=true;
   window.scrollTo({top:0,behavior:'instant'});
 }
 function showForestRouteChoice() {
@@ -222,6 +242,8 @@ function renderQuestion() {
   if (!play) return;
   $('#play-view').classList.remove('forest-exploring');
   $('#forest-explore-screen').hidden=true;
+  $('#forest-journey').hidden=play.mode!=='forest';
+  $('.forest-command-window').hidden=false;
   stopAudio();
   $('#answer-area').hidden=false;
   $('#forest-journey').classList.remove('forest-victory');
@@ -243,7 +265,7 @@ function renderQuestion() {
     ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
-  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio">▶ 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
+  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
   $('#answer-area').innerHTML=`<label class="answer-label" for="spoken-answer">英語で答えよう（音声認識または入力）</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   $('#mic-button').addEventListener('click',startRecognition);
   $('#retry-mic').addEventListener('click',()=>{
@@ -361,7 +383,14 @@ async function gradeAnswer() {
       $('#speech-helper').textContent='AI判定を利用できないため、教材の簡易判定で確認しています。';
   }
   if(grade.status!=='correct'){
-    if(play.mode==='forest' && raw)$('#forest-battle-log').textContent='判定保留。攻撃は発生しません。言い換えて再挑戦できます。';
+    if(play.mode==='forest' && raw){
+      const world=$('#forest-world-stage');
+      world.classList.remove('forest-attack','forest-guarding','forest-player-damaged');
+      void world.offsetWidth;
+      world.classList.add('forest-guarding');
+      $('#forest-world-fx').textContent='';
+      $('#forest-battle-log').textContent='敵が身構えた。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。';
+    }
     if(play.mode==='forest'&&play.endless&&grade.status==='review'&&raw){
       play.attemptReviewed=true;
       // Ambiguous recognizer output is explicitly not called wrong; limited attempts are a challenge rule.
@@ -369,9 +398,6 @@ async function gradeAnswer() {
       if(soxieShield){play.usedShield=true;$('#forest-world-fx').textContent='LOST & FOUND · SHIELD';}
       else play.remainingTries=Math.max(0,play.remainingTries-1);
       $('#forest-tries').textContent=`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`;
-      $('#forest-world-stage').classList.remove('forest-player-damaged');
-      void $('#forest-world-stage').offsetWidth;
-      $('#forest-world-stage').classList.add('forest-player-damaged');
       if(!play.remainingTries){
         $('#feedback-panel').innerHTML='<div class="feedback-box grading-review" role="status"><div class="feedback-head">挑戦回数を使い切った！</div><p class="grading-intro">簡易判定では確認できない回答もあるよ。今回はここまで。もう一度遊んでみよう！</p><button id="forest-exit" class="grading-next">冒険の結果を見る →</button></div>';
         $('#forest-exit').addEventListener('click',()=>finishSession(false,true));
@@ -404,15 +430,13 @@ async function gradeAnswer() {
     play.usedPower ||= special.usedPower;
     if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+special.strikes);
     $('#forest-journey').classList.add('forest-victory');
-    $('#forest-world-stage').classList.remove('forest-attack');
+    $('#forest-world-stage').classList.remove('forest-attack','forest-guarding');
     void $('#forest-world-stage').offsetWidth;
     $('#forest-world-stage').classList.add('forest-attack');
     $('#forest-world-stage').dataset.attack=play.companionId;
     $('#forest-damage').textContent=`−${special.strikes}`;
     $('#forest-world-fx').textContent=special.ability?special.ability:boss?'BOSS HIT':'HIT';
-    $('#forest-boss-hp').textContent='◆ '.repeat(Math.max(0,BOSS_HITS-play.bossHits))+'◇ '.repeat(play.bossHits);
-    $('#forest-boss-hp').setAttribute('aria-valuenow',String(Math.max(0,BOSS_HITS-play.bossHits)));
-    $('#forest-boss-hp').style.setProperty('--boss-health',`${100*(BOSS_HITS-play.bossHits)/BOSS_HITS}%`);
+    updateEnemyHealth(true);
     const defeated=boss&&play.bossHits>=BOSS_HITS;
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     $('#forest-battle-log').textContent=`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
@@ -500,64 +524,14 @@ function finishSession(timedOut=false,defeated=false) {
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
   $('#result-rewards').innerHTML=`<span class="reward-pill">自力で言えた ${ended.smooth} / ${ended.index}</span><span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
   const newMonsters=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
-  const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${FOREST_RELICS[id].emoji}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
+  const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
   $('#result-discoveries').innerHTML=newMonsters+newRelics;
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   $('#replay-run').textContent=ended.mode==='forest'?'森をもう一度探検する':ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode);
   showView('result');
 }
-function renderCollection(message = '') {
-  const summary=learningSummary(save);
-  $('#collection-wallet').textContent = `${save.xpWallet} XP`;
-  $('#feed-feedback').textContent = message;
-  const forest=cleanForest(save.forest);
-  $('#forest-collection-count').textContent=`踏破 ${forest.clears}回 · 発見した宝物 ${forest.relics.length}/${Object.keys(FOREST_RELICS).length}`;
-  $('#forest-collection-relics').innerHTML=forest.relics.length?forest.relics.map(id=>{
-    const relic=FOREST_RELICS[id];
-    return `<article class="forest-relic"><span aria-hidden="true">${relic.emoji}</span><div><strong lang="en">${escapeHtml(relic.name)}</strong><small>${escapeHtml(relic.meaning)}</small><p>${escapeHtml(relic.description)}</p></div></article>`;
-  }).join(''):'<p class="forest-empty">まだお宝はないよ。仲間を連れて森を探検してみよう！</p>';
-  $('#collection-grid').innerHTML=MONSTERS.map(creature=>{
-    const owned=save.ownedMonsters.includes(creature.id), active=save.selectedMonster===creature.id;
-    const growth=getMonsterProgress(save,creature.id);
-    const unlock=creature.masteryUnlock!==undefined?`MASTER ${creature.masteryUnlock}表現で出会える`:`自力で${creature.unlock}表現を話せると出会える`;
-    const walletActions=`<div class="feed-actions"><button data-feed-monster="${creature.id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>+10 XP</button><button data-feed-monster="${creature.id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>`;
-    const displayName = growth.evolved ? creature.evolvedName : creature.name;
-    const roots = creature.roots.map(root=>`<div class="word-row"><span><b lang="en">${escapeHtml(root.word)}</b><small>${escapeHtml(root.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${escapeHtml(root.word)}" aria-label="${escapeHtml(root.word)} の発音を聞く">▶ 聞く</button></div>`).join('');
-    const forestPower=creature.id==='medamago'
-      ? {name:'Double Yolk', description:'森のボス戦で一度だけ2回攻撃！進化すると隠し宝物も発見できる。'}
-      : creature.id==='katappo'
-      ? {name:'Lost & Found', description:'エンドレスで一度だけ失敗時の挑戦回数を守る。隠し宝物も発見できる。'}
-      : null;
-    const powerLabel=forestPower
-      ? `<strong lang="en">${escapeHtml(forestPower.name)}</strong><small>${escapeHtml(forestPower.description)}</small>`
-      : '<strong lang="en">???</strong><small>まだ未発見の能力。冒険エリアの拡張で追加予定！</small>';
-    const powerState=forestPower?(growth.evolved?'発動できるよ · 森へ一緒に行こう':'進化すると解放'):'今後のダンジョンで解放予定';
-    return `<article class="monster-card ${owned?'':'locked'}"><div class="monster-picture">${monsterArt(creature.id,owned&&growth.evolved)}</div><h3 lang="en">${owned?escapeHtml(displayName):'???'}</h3><p class="monster-japanese">${owned?escapeHtml(creature.japaneseName+' · '+creature.kind):escapeHtml(unlock)}</p>${owned?`<p class="monster-note">${escapeHtml(creature.note)}</p><div class="word-roots"><strong>NAME ORIGIN · 名前の由来</strong>${roots}</div><div class="monster-skill"><span>${powerState}</span>${powerLabel}</div><span class="mini-tag">Lv.${growth.level} ${growth.evolved?'· 進化済み':''}</span><div class="mini-xp-track"><span style="width:${100-growth.toNextLevel/XP_PER_LEVEL*100}%"></span></div><div class="monster-card-tools"><button class="select-companion" data-select-monster="${creature.id}" ${active?'disabled':''}>${active?'ホームに表示中':'ホームに表示'}</button>${walletActions}</div>`:'<span class="mini-tag">未発見</span>'}</article>`;
-  }).join('');
-  $$('[data-pronounce-word]').forEach(button=>button.addEventListener('click',()=>{
-    const word=button.dataset.pronounceWord;
-    if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){ $('#feed-feedback').textContent='このブラウザでは発音再生ができません。'; return; }
-    try{
-      window.speechSynthesis.cancel();
-      const utterance=new SpeechSynthesisUtterance(word);
-      utterance.lang='en-US'; utterance.rate=.82;
-      window.speechSynthesis.speak(utterance);
-    }catch { $('#feed-feedback').textContent='発音再生を開始できませんでした。'; }
-  }));
-  $$('[data-select-monster]').forEach(button=>button.addEventListener('click',()=>{persist(selectMonster(save,button.dataset.selectMonster));renderCollection(`${monsterFor(button.dataset.selectMonster).name}をホームに表示します。`);}));
-  $$('[data-feed-monster]').forEach(button=>button.addEventListener('click',()=>{
-    const id=button.dataset.feedMonster, amount=button.dataset.feedAmount==='all'?save.xpWallet:10;
-    try {
-      const {save:next,reward}=feedMonster(save,id,amount);
-      persist(next);
-      const message=`${monsterFor(id).name}に${reward.xp} XP！${reward.evolved?' 進化した！':reward.leveledUp?` Lv.${reward.after.level}になった！`:''}`;
-      renderCollection(message);
-    } catch(error) { $('#feed-feedback').textContent=error.message; }
-  }));
-  $('#phrase-grid').innerHTML=summary.entries.map(({phrase,entry,level})=>`<article class="phrase-card"><strong>${escapeHtml(phrase.label)}</strong><p>${escapeHtml(phrase.expression)}</p><div class="phrase-progress" aria-label="習得レベル ${level} / 3">${[1,2,3].map(index=>`<span class="${index<=level?'full':''}"></span>`).join('')}</div><p>${level===3?'MASTER · 別の場面と別の日でも使えた':level===2?'自力で言えた · 次は別場面と後日の確認':level===1?'練習中 · まずヒントなしで言ってみよう':'これから出会う表現'}${entry?.nextReviewDay?' · 次の目安 '+escapeHtml(entry.nextReviewDay):''}</p></article>`).join('');
-  if ($('#collection-view').hidden) showView('collection');
-}
+const {renderCollection} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));

@@ -8,7 +8,7 @@ on:
 jobs:
   node-and-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
@@ -29,11 +29,15 @@ jobs:
       - name: Start local preview
         run: python3 -m http.server 8766 >/tmp/monsters-preview.log 2>&1 &
       - name: Chromium mobile and learning QA
-        timeout-minutes: 2
-        run: timeout 90s node tests/monsters-browser.cjs
+        timeout-minutes: 4
+        run: |
+          timeout 90s node tests/monsters-browser.cjs
+          timeout 90s node tests/monsters-scenes-browser.cjs
       - name: WebKit mobile and learning QA
-        timeout-minutes: 2
-        run: timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
+        timeout-minutes: 4
+        run: |
+          timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
+          timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-scenes-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

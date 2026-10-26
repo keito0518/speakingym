@@ -311,3 +311,22 @@ test('unknown save formats are rejected, while old pre-wallet saves migrate safe
   assert.equal(validateSave({...createSave(),version:2}),null);
   assert.equal(validateSave({...createSave(),ownedMonsters:['unknown']}),null);
 });
+
+test('battle arena is independent artwork and game assets contain no platform pictographs', async () => {
+  const {battleArenaArt,guardArt,relicArt}=await import('../prototype/speakingym-monsters/game-visuals.js');
+  const {readdir,readFile}=await import('node:fs/promises');
+  const mob=battleArenaArt(), boss=battleArenaArt(true);
+  assert.match(mob,/data-arena="moonstone-court"/);
+  assert.match(boss,/data-arena="thorn-vault"/);
+  assert.notEqual(mob,boss);
+  for(const arena of [mob,boss]) {
+    assert.doesNotMatch(arena,/class="forest-world-svg"|data-landmark=|forest-world-trail/);
+    assert.notEqual(arena,forestWorldArt());
+  }
+  assert.match(guardArt(),/<svg/);
+  for(const id of Object.keys(FOREST_RELICS))assert.match(relicArt(id),/<svg/);
+  const dir=new URL('../prototype/speakingym-monsters/',import.meta.url);
+  for(const file of (await readdir(dir)).filter(f=>/\.(js|html|css)$/.test(f))) {
+    assert.doesNotMatch(await readFile(new URL(file,dir),'utf8'),/\p{Extended_Pictographic}/u,`${file} must not contain platform emoji`);
+  }
+});

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./monsters.css">
   <link rel="stylesheet" href="./forest-game.css">
   <link rel="stylesheet" href="./forest-battle.css">
+  <link rel="stylesheet" href="./character-screens.css">
   <script type="module" src="./monsters.js"></script>
 </head>
 <body>
@@ -75,16 +76,16 @@
             <div class="forest-companion-art" id="forest-companion-art" aria-hidden="true"></div>
             <div class="forest-journey-title"><span class="forest-kicker">SPEAKING FOREST</span><strong id="forest-companion-name">Yolkie と探検中</strong><small id="forest-route-status">まず森の入口へ</small></div>
           </div>
-          <div class="forest-world-stage" id="forest-world-stage" data-stage="0" data-route="wild" aria-label="森の冒険マップ">
+          <div class="forest-world-stage" id="forest-world-stage" data-stage="0" data-route="wild" aria-label="モンスターとの戦闘フィールド">
             <div id="forest-world-backdrop" class="forest-world-backdrop" aria-hidden="true"></div>
             <div class="forest-world-vignette" aria-hidden="true"></div>
-            <div class="forest-world-trail-label"><span class="forest-chapter-pin">01 / SPEAKING FOREST</span><span id="forest-world-counter" class="forest-world-counter">GATE 1 OF 3</span></div>
+            <div class="forest-world-trail-label"><span class="forest-chapter-pin">MOONSTONE ARENA</span><span id="forest-world-counter" class="forest-world-counter">GATE 1 OF 3</span></div>
             <div id="forest-party" class="forest-party" aria-hidden="true"><div id="forest-player-art" class="forest-player-art"></div><span class="forest-player-shadow"></span></div>
-            <div id="forest-enemy" class="forest-enemy" aria-hidden="true"></div><div id="forest-damage" class="forest-damage" aria-hidden="true"></div><div id="forest-world-fx" class="forest-world-fx" aria-live="off"></div>
+            <div id="forest-enemy" class="forest-enemy" aria-hidden="true"></div><div id="forest-guard" class="forest-guard" aria-hidden="true"></div><div id="forest-damage" class="forest-damage" aria-hidden="true"></div><div id="forest-world-fx" class="forest-world-fx" aria-live="off"></div>
           </div>
           <div class="forest-battle-info" aria-live="polite">
             <span class="forest-foe-name" id="forest-foe-name">Mossling</span>
-            <span id="forest-boss-hp" class="forest-boss-hp" hidden role="meter" aria-label="ボスのHP" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3">◆ ◆ ◆</span>
+            <span id="forest-boss-hp" class="forest-boss-hp" hidden role="meter" aria-label="ボスのHP" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3">HP 3 / 3</span>
             <span id="forest-tries" class="forest-tries">チャレンジ</span>
           </div>
           <div class="forest-gates" aria-label="5回のバトルとボス戦">
@@ -110,7 +111,7 @@
       </section>
 
       <section id="collection-view" class="view" hidden>
-        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、好きな仲間に自由にあげられます。</small></div><p id="feed-feedback" class="feed-feedback" role="status" aria-live="polite"></p></div>
+        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、仲間をタップして、育成画面であげられます。</small></div></div>
         <section class="forest-treasures" aria-labelledby="forest-treasures-title">
           <div class="forest-treasures-heading"><span class="tiny-caps">FOREST EXPEDITION</span><h2 id="forest-treasures-title">森で見つけた宝物</h2><p id="forest-collection-count">まだ見つけていないよ。</p></div>
           <div id="forest-collection-relics" class="forest-collection-relics"></div>
@@ -118,6 +119,14 @@
         <div id="collection-grid" class="collection-grid"></div>
         <div class="section-head phrase-head"><div><span class="tiny-caps">LANGUAGE GROWTH</span><h2>ことばの成長記録</h2></div></div>
         <div id="phrase-grid" class="phrase-grid"></div>
+      </section>
+      <section id="detail-view" class="view character-view" hidden aria-label="モンスターの詳細">
+        <button type="button" id="detail-back" class="back-button">← なかま・図鑑へ</button>
+        <div id="detail-content"></div>
+      </section>
+      <section id="training-view" class="view character-view" hidden aria-label="モンスターの育成">
+        <button type="button" id="training-back" class="back-button">← キャラの詳細へ</button>
+        <div id="training-content"></div>
       </section>
     </main>
 

@@ -2,11 +2,11 @@ import { ALL_PROMPTS } from './monster-data.js';
 
 // Speaking Forest: 5 encounters, then a three-hit boss. Unique tasks per wave.
 export const FOREST_MOBS=Object.freeze([
-  {id:'mossling',name:'Mossling',japanese:'こけのいたずらっ子',emoji:'🌿'},
-  {id:'thistlet',name:'Thistlet',japanese:'とげとげの番人',emoji:'🌾'},
-  {id:'spookap',name:'Spookap',japanese:'こだまキノコ',emoji:'🍄'},
-  {id:'bramblet',name:'Bramblet',japanese:'道をふさぐ木の実',emoji:'🌰'},
-  {id:'mothum',name:'Mothum',japanese:'月あかりの蛾',emoji:'🦋'}
+  {id:'mossling',name:'Mossling',japanese:'こけのいたずらっ子'},
+  {id:'thistlet',name:'Thistlet',japanese:'とげとげの番人'},
+  {id:'spookap',name:'Spookap',japanese:'こだまキノコ'},
+  {id:'bramblet',name:'Bramblet',japanese:'道をふさぐ木の実'},
+  {id:'mothum',name:'Mothum',japanese:'月あかりの蛾'}
 ]);
 export const FOREST_BOSS=Object.freeze({id:'thornking',name:'Thorn King',japanese:'森のトゲ王',hp:3});
 export const REGULAR_ENCOUNTERS=5;

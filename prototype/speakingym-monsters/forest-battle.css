@@ -251,3 +251,67 @@
 @media(prefers-reduced-motion:reduce){
  .forest-active .forest-explore-screen,.forest-explore-companion,.forest-explore-destination{animation:none!important}
 }
+
+/* Moonstone arena: fixed actor staging, independent from map coordinates. */
+[hidden]{display:none!important}
+.battle-arena-svg{display:block;width:100%;height:100%}
+.forest-active .forest-world-stage{background:#273e52}
+.forest-active .forest-world-stage .forest-party{left:24%;bottom:12%;width:clamp(72px,20vw,112px);height:clamp(72px,20vw,112px)}
+.forest-active .forest-world-stage .forest-enemy{right:14%;top:auto;bottom:17%;width:clamp(75px,20vw,111px);height:clamp(75px,20vw,111px)}
+.forest-active .forest-world-stage.forest-boss-stage .forest-enemy{right:9%;top:auto;bottom:14%;width:clamp(106px,28vw,152px);height:clamp(106px,28vw,152px)}
+.forest-active .forest-world-stage .forest-world-vignette{background:linear-gradient(0deg,#142d3955,transparent 40%),linear-gradient(90deg,#11253455,transparent 25%,transparent 75%,#11253455)}
+.forest-active .forest-chapter-pin{background:#203646c9;border-color:#a7b3a6;color:#ece4c8;font-size:8px}
+.forest-active:not(.forest-exploring) .forest-journey{animation:arena-enter .38s ease-out both}
+.forest-active:not(.forest-exploring) .forest-command-window{animation:command-enter .38s ease-out both}
+.forest-explore-screen.boss-approach .forest-explore-art{border-color:#dba594;box-shadow:inset 0 0 55px #65334c66,0 0 24px #e3a77d33}
+.forest-explore-screen.boss-approach .forest-explore-heading h2{color:#ffdbb2}
+.forest-explore-screen.boss-approach .forest-explore-destination{width:33px;height:33px;border-color:#e3ad98;background:#704b6d}
+.forest-active .forest-world-stage .forest-player-art{animation:companion-idle 2.8s ease-in-out infinite;transform-origin:50% 85%}
+.forest-active .forest-world-stage[data-attack="katappo"] .forest-player-art{animation-name:sock-idle}
+.forest-active .forest-world-stage[data-attack="purupun"] .forest-player-art{animation-name:pudding-idle}
+.forest-active .forest-world-stage[data-attack="amekurage"] .forest-player-art{animation-name:umbrella-idle}
+/* Nine personalities. Attack translation is on the party; idle motion stays inside it. */
+.forest-active .forest-world-stage.forest-attack[data-attack="medamago"] .forest-party{animation-name:yolk-dive}
+.forest-active .forest-world-stage.forest-attack[data-attack="katappo"] .forest-party{animation-name:sock-spring}
+.forest-active .forest-world-stage.forest-attack[data-attack="purupun"] .forest-party{animation-name:pudding-slam}
+.forest-active .forest-world-stage.forest-attack[data-attack="koge"] .forest-party{animation-name:toast-flip}
+.forest-active .forest-world-stage.forest-attack[data-attack="cone"] .forest-party{animation-name:cone-drill}
+.forest-active .forest-world-stage.forest-attack[data-attack="nororo"] .forest-party{animation-name:roll-charge}
+.forest-active .forest-world-stage.forest-attack[data-attack="keshipon"] .forest-party{animation-name:eraser-sweep}
+.forest-active .forest-world-stage.forest-attack[data-attack="donako"] .forest-party{animation-name:doughnut-spin}
+.forest-active .forest-world-stage.forest-attack[data-attack="amekurage"] .forest-party{animation-name:umbrella-float}
+.forest-active .forest-world-stage[data-evolved="true"] .forest-player-art::before{content:"";position:absolute;inset:6%;border:2px solid #ffe2a4;border-radius:50%;box-shadow:0 0 16px #f4c56c88;animation:evolved-aura 2s ease-in-out infinite}
+.forest-active .forest-world-stage.forest-attack[data-evolved="true"] .forest-player-art{filter:drop-shadow(0 0 14px #ffe29d);animation:evolved-strike 1.15s ease-out both}
+.forest-active .forest-world-stage.forest-attack[data-evolved="true"]::after{height:11px;background:#fff5c4;box-shadow:0 0 22px 9px #ffd57a}
+.forest-guard{position:absolute;z-index:5;right:10%;bottom:12%;width:28%;height:76%;opacity:0;pointer-events:none;transform-origin:center}
+.forest-guard svg{width:100%;height:100%;filter:drop-shadow(0 0 9px #b5e7ed)}
+.forest-guard::after{content:"GUARD";position:absolute;bottom:8%;left:0;right:0;text-align:center;color:#e5fbff;font-weight:900;font-size:clamp(12px,3vw,19px);letter-spacing:.1em;text-shadow:0 2px 0 #29495e}
+.forest-world-stage.forest-guarding .forest-enemy{animation:enemy-brace .8s ease-out both}
+.forest-world-stage.forest-guarding .forest-guard{animation:guard-rise 1s ease-out both}
+.forest-active .forest-world-stage.forest-guarding .forest-party{animation:none}
+.forest-world-stage.forest-guarding .forest-damage{opacity:0}
+@keyframes arena-enter{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes command-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes companion-idle{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+@keyframes sock-idle{0%,100%{transform:scaleY(1)}50%{transform:scale(.96,1.06) rotate(3deg)}}
+@keyframes pudding-idle{0%,100%{transform:scale(1)}50%{transform:scale(1.06,.94)}}
+@keyframes umbrella-idle{0%,100%{transform:translateY(2px) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+@keyframes yolk-dive{0%,100%{transform:translate(-50%,9%)}20%{transform:translate(-67%,18%) scale(1.1,.8)}44%{transform:translate(100%,-30%) rotate(-26deg) scale(1.15)}58%{transform:translate(140%,0) rotate(12deg)}80%{transform:translate(-30%,-12%) rotate(-8deg)}}
+@keyframes sock-spring{0%,100%{transform:translate(-50%,9%)}18%{transform:translate(-50%,25%) scale(1.2,.65)}35%{transform:translate(5%,-38%) scale(.8,1.5)}44%{transform:translate(55%,0) scale(1.1,.85)}58%{transform:translate(130%,-30%) scale(1.5,.85)}78%{transform:translate(15%,-30%) scale(.85,1.2)}}
+@keyframes pudding-slam{0%,100%{transform:translate(-50%,9%)}23%{transform:translate(-50%,22%) scale(1.3,.65)}44%{transform:translate(90%,-65%) scale(.8,1.25)}58%{transform:translate(135%,22%) scale(1.4,.55)}78%{transform:translate(0,-15%) scale(.9,1.1)}}
+@keyframes toast-flip{0%,100%{transform:translate(-50%,9%)}24%{transform:translate(-60%,-14%) rotate(-30deg)}50%{transform:translate(120%,-30%) rotate(360deg)}78%{transform:translate(0,-15%) rotate(380deg)}}
+@keyframes cone-drill{0%,100%{transform:translate(-50%,9%)}22%{transform:translate(-65%,10%) rotate(-25deg)}49%{transform:translate(140%,0) rotate(90deg)}63%{transform:translate(140%,0) rotate(105deg)}82%{transform:translate(0,-10%) rotate(-15deg)}}
+@keyframes roll-charge{0%,100%{transform:translate(-50%,9%) rotate(0)}25%{transform:translate(-55%,10%) rotate(-45deg)}53%{transform:translate(140%,9%) rotate(360deg)}80%{transform:translate(0,9%) rotate(0)}}
+@keyframes eraser-sweep{0%,100%{transform:translate(-50%,9%)}24%{transform:translate(-70%,15%) rotate(-15deg)}44%{transform:translate(100%,5%) rotate(22deg)}60%{transform:translate(145%,-18%) rotate(-22deg)}80%{transform:translate(-5%,9%) rotate(12deg)}}
+@keyframes doughnut-spin{0%,100%{transform:translate(-50%,9%) rotate(0)}25%{transform:translate(-50%,-30%) rotate(-90deg)}52%{transform:translate(135%,-35%) rotate(540deg) scale(1.1)}82%{transform:translate(-5%,-20%) rotate(720deg)}}
+@keyframes umbrella-float{0%,100%{transform:translate(-50%,9%)}25%{transform:translate(-20%,-70%) scale(.9,1.1)}50%{transform:translate(120%,-60%) rotate(12deg)}64%{transform:translate(140%,6%) scale(1.1,.85)}84%{transform:translate(0,-35%) rotate(-12deg)}}
+@keyframes evolved-aura{0%,100%{opacity:.4;transform:scale(.9)}50%{opacity:.85;transform:scale(1.1)}}
+@keyframes evolved-strike{0%,100%{transform:scale(1)}45%{transform:scale(1.18)}60%{transform:scale(1.05)}}
+@keyframes enemy-brace{0%,100%{transform:translateX(0) scale(1)}25%{transform:translateX(6px) scale(1.08,.86) rotate(8deg)}65%{transform:translateX(2px) scale(1.06,.9) rotate(4deg)}}
+@keyframes guard-rise{0%{opacity:0;transform:translateY(12px) scale(.6)}25%{opacity:1;transform:translateY(0) scale(1.1)}70%{opacity:.95;transform:scale(1)}100%{opacity:0;transform:scale(1.08)}}
+@media(prefers-reduced-motion:reduce){
+ .forest-active .forest-world-stage,.forest-active .forest-world-stage *,
+ .forest-active .forest-world-stage::before,.forest-active .forest-world-stage::after,
+ .forest-active:not(.forest-exploring) .forest-journey,.forest-active:not(.forest-exploring) .forest-command-window{animation:none!important;transition:none!important}
+ .forest-world-stage.forest-guarding .forest-guard{opacity:1}
+}

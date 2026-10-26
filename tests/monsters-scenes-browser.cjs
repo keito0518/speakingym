@@ -1,0 +1,152 @@
+const {chromium,webkit}=require('playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+(async()=>{
+  const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
+  const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+  const base=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
+  const shots=path.join(process.cwd(),'qa-screenshots');fs.mkdirSync(shots,{recursive:true});
+  const errors=[];
+  async function boot(width,reducedMotion='reduce'){
+    const context=await browser.newContext({viewport:{width,height:844},hasTouch:true,isMobile:engine==='webkit',reducedMotion});
+    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(base,{waitUntil:'networkidle'});
+    return {context,page};
+  }
+  async function seed(page,overrides={}){
+    await page.evaluate(async data=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const {MONSTERS}=await import('./monster-data.js');
+      const save={...createSave(),ownedMonsters:MONSTERS.map(c=>c.id),xpWallet:200,...data};
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
+    },overrides);
+    await page.reload();
+  }
+  async function noOverflow(page,label){
+    const m=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert.ok(m.scroll<=m.width+1,`${engine} ${label}: ${JSON.stringify(m)}`);
+  }
+  async function answer(page){
+    const example=await page.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await page.locator('#spoken-answer').fill(example);await page.locator('#show-answer').click();
+  }
+  try{
+    for(const width of [320,375,390,430]){
+      const {context,page}=await boot(width,'no-preference');await seed(page);
+      await page.locator('#open-collection').click();
+      assert.equal(await page.locator('[data-open-monster]').count(),9);
+      assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
+      await noOverflow(page,`${width} catalog`);
+      await page.screenshot({path:path.join(shots,`catalog-${engine}-${width}.png`),fullPage:true});
+      await page.locator('[data-open-monster="medamago"]').click();
+      assert.equal(await page.locator('#collection-view').isVisible(),false);
+      assert.match(await page.locator('#detail-content').innerText(),/Yolkie.*メダマゴ/s);
+      assert.match(await page.locator('#detail-content').innerText(),/卵の黄身/);
+      await page.evaluate(()=>{
+        window.__spoken=[];
+        window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
+        Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{cancel(){},speak(u){window.__spoken.push({text:u.text,lang:u.lang});}}});
+      });
+      await page.locator('[data-pronounce-word="sunny-side up"]').click();
+      assert.deepEqual(await page.evaluate(()=>window.__spoken),[{text:'sunny-side up',lang:'en-US'}]);
+      await noOverflow(page,`${width} detail`);
+      await page.screenshot({path:path.join(shots,`detail-${engine}-${width}.png`),fullPage:true});
+      await page.locator('#open-training').click();
+      assert.equal(await page.locator('#detail-view').isVisible(),false);
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle');
+      await page.locator('[data-feed-amount="10"]').click();
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'xp');
+      assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-xp');
+      assert.equal(await page.locator('#training-wallet').innerText(),'190 XP');
+      for(let i=0;i<6;i++) await page.locator('[data-feed-amount="10"]').click();
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'level');
+      assert.match(await page.locator('.training-level').innerText(),/Lv.2/);
+      assert.equal(await page.locator('.training-xp').getAttribute('aria-valuenow'),'0');
+      assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-level');
+      await noOverflow(page,`${width} training`);
+      await page.screenshot({path:path.join(shots,`training-${engine}-${width}-level.png`),fullPage:true});
+      await page.locator('[data-feed-amount="all"]').click();
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'evolution');
+      assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-evolution');
+      assert.match(await page.locator('.training-sheet h1').innerText(),/Sunnyolk/);
+      assert.match(await page.locator('#growth-feedback').innerText(),/進化した/);
+      assert.equal(await page.locator('#training-wallet').innerText(),'0 XP');
+      assert.equal(await page.locator('[data-feed-amount="all"]').isDisabled(),true);
+      await page.waitForTimeout(1400);
+      await page.screenshot({path:path.join(shots,`training-${engine}-${width}-evolution.png`),fullPage:true});
+      const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+      assert.equal(before.monsterXp.medamago,200);assert.equal(before.ownedMonsters.length,9);
+      await page.locator('#training-back').click();
+      assert.match(await page.locator('#detail-content').innerText(),/進化で解放済み/);
+      await page.locator('#detail-back').click();
+      assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.3.*進化済み/s);
+      await page.reload();
+      assert.equal(await page.locator('#home-wallet').innerText(),'0');
+      assert.match(await page.locator('#hero-monster-name').innerText(),/Sunnyolk/);
+      const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+      assert.deepEqual(after,before);
+      await context.close();
+    }
+    // Every owned character uses a distinct actual CSS attack with motion enabled.
+    const {context,page}=await boot(390,'no-preference');await seed(page);
+    const motions={medamago:'yolk-dive',katappo:'sock-spring',purupun:'pudding-slam',koge:'toast-flip',cone:'cone-drill',nororo:'roll-charge',keshipon:'eraser-sweep',donako:'doughnut-spin',amekurage:'umbrella-float'};
+    for(const [id,motion] of Object.entries(motions)){
+      await page.locator('#open-collection').click();await page.locator(`[data-open-monster="${id}"]`).click();
+      const select=page.locator(`[data-select-monster="${id}"]`);if(!await select.isDisabled()) await select.click();
+      await page.locator('#detail-back').click();await page.locator('#collection-home').click();
+      await page.locator('#start-forest').click();
+      assert.equal(await page.locator('#forest-journey').isVisible(),false);
+      assert.equal(await page.locator('#spoken-answer').isVisible(),false);
+      assert.equal(await page.locator('#forest-explore-art > .forest-world-svg').count(),1);
+      await page.locator('#forest-explore-continue').click();
+      assert.equal(await page.locator('#forest-explore-screen').isVisible(),false);
+      assert.equal(await page.locator('#forest-world-stage .forest-world-svg').count(),0);
+      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-stage'),'arena');
+      assert.notEqual(await page.locator('#forest-player-art').evaluate(e=>getComputedStyle(e).animationName),'none');
+      const hp=await page.locator('#forest-boss-hp').getAttribute('aria-valuenow');
+      await page.locator('#show-answer').click(); // Empty answer: no guard, no attempt.
+      assert.equal(await page.locator('.forest-guarding').count(),0);
+      await page.locator('#spoken-answer').fill('An unexpected but possibly valid expression.');
+      await page.locator('#show-answer').click();
+      assert.equal(await page.locator('#forest-guard').evaluate(e=>getComputedStyle(e).animationName),'guard-rise');
+      assert.equal(await page.locator('#forest-enemy').evaluate(e=>getComputedStyle(e).animationName),'enemy-brace');
+      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),hp);
+      assert.equal(await page.locator('.forest-attack').count(),0);
+      assert.match(await page.locator('#forest-battle-log').innerText(),/判定保留/);
+      assert.doesNotMatch(await page.locator('#forest-battle-log').innerText(),/不正解/);
+      await answer(page);
+      assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),motion);
+      assert.equal(await page.locator('.forest-guarding').count(),0);
+      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
+      await page.locator('#leave-play').click();
+    }
+    // Evolved versions preserve per-character motions and gain an independent aura.
+    await seed(page,{monsterXp:{medamago:160,katappo:160}});
+    for(const id of ['medamago','katappo']){
+      await page.locator('#open-collection').click();await page.locator(`[data-open-monster="${id}"]`).click();
+      const select=page.locator(`[data-select-monster="${id}"]`);if(!await select.isDisabled())await select.click();
+      await page.locator('#detail-back').click();await page.locator('#collection-home').click();
+      await page.locator('#start-forest').click();await page.locator('#forest-explore-continue').click();
+      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-evolved'),'true');
+      await answer(page);
+      assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),motions[id]);
+      assert.equal(await page.locator('#forest-player-art').evaluate(e=>getComputedStyle(e).animationName),'evolved-strike');
+      await page.locator('#leave-play').click();
+    }
+    await context.close();
+    const locked=await boot(320);await locked.page.locator('#open-collection').click();
+    await locked.page.locator('[data-open-monster="katappo"]').click();
+    assert.equal(await locked.page.locator('#open-training').count(),0);
+    assert.match(await locked.page.locator('#detail-content').innerText(),/まだ仲間になっていない/);
+    await locked.page.evaluate(()=>Object.defineProperty(window,'speechSynthesis',{configurable:true,value:null}));
+    await locked.page.locator('[data-pronounce-word="sock"]').click();
+    assert.match(await locked.page.locator('#pronounce-feedback').innerText(),/利用できません/);
+    await locked.context.close();
+    assert.deepEqual(errors,[]);
+    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 9 unique attacks, idle/evolved FX, guard/empty-answer, map isolation passed`);
+  } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

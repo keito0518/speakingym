@@ -3,23 +3,23 @@
 import { ALL_PROMPTS } from './monster-data.js';
 
 export const FOREST_ROUTES = Object.freeze([
-  { id:'sunlit', name:'ひだまりの小道', tag:'SUNLIT TRAIL', detail:'木漏れ日をたどって、金色の葉っぱを探そう。', symbol:'☀' },
-  { id:'moss', name:'こけむした抜け道', tag:'MOSS TRAIL', detail:'キノコの灯りに誘われて、静かな道を進もう。', symbol:'✦' }
+  { id:'sunlit', name:'ひだまりの小道', tag:'SUNLIT TRAIL', detail:'木漏れ日をたどって、金色の葉っぱを探そう。' },
+  { id:'moss', name:'こけむした抜け道', tag:'MOSS TRAIL', detail:'キノコの灯りに誘われて、静かな道を進もう。' }
 ]);
 export const FOREST_STAGES = Object.freeze([
-  { id:'wooden-gate', name:'森の入り口', chapter:'GATE 1', detail:'森の番人に、考える時間が欲しいことを英語で伝えよう。', emoji:'🌱' },
-  { id:'whispering-bridge', name:'ささやく橋', chapter:'GATE 2', detail:'橋の案内を聞き逃した！ 丁寧に聞き返して道を確かめよう。', emoji:'🌉' },
-  { id:'crossroads', name:'古い分かれ道', chapter:'GATE 3', detail:'森を抜ける道を選びたい。自分の希望を英語で伝えよう。', emoji:'🌳' }
+  { id:'wooden-gate', name:'森の入り口', chapter:'GATE 1', detail:'森の番人に、考える時間が欲しいことを英語で伝えよう。' },
+  { id:'whispering-bridge', name:'ささやく橋', chapter:'GATE 2', detail:'橋の案内を聞き逃した！ 丁寧に聞き返して道を確かめよう。' },
+  { id:'crossroads', name:'古い分かれ道', chapter:'GATE 3', detail:'森を抜ける道を選びたい。自分の希望を英語で伝えよう。' }
 ]);
 const BASE_SETS=Object.freeze([
   ['think-cafe','repeat-station','prefer-city'],
   ['think-trip','repeat-class','prefer-friend']
 ]);
 export const FOREST_RELICS=Object.freeze({
- 'sunlit-leaf':{name:'Sunleaf',meaning:'ひだまりの葉',description:'ひだまりの小道で拾った光る葉っぱ。',emoji:'🍃'},
- 'moss-lantern':{name:'Mosslight',meaning:'こけの灯り',description:'こけむした抜け道で見つけた不思議な光。',emoji:'✨'},
- 'golden-yolk':{name:'Golden Yolk',meaning:'金色の黄身',description:'進化したYolkieが見つけた秘密の卵。',emoji:'🥚'},
- 'lost-button':{name:'Lost Button',meaning:'落とし物のボタン',description:'進化したSoxieが拾った、小さな誰かの忘れ物。',emoji:'🔘'}
+ 'sunlit-leaf':{name:'Sunleaf',meaning:'ひだまりの葉',description:'ひだまりの小道で拾った光る葉っぱ。'},
+ 'moss-lantern':{name:'Mosslight',meaning:'こけの灯り',description:'こけむした抜け道で見つけた不思議な光。'},
+ 'golden-yolk':{name:'Golden Yolk',meaning:'金色の黄身',description:'進化したYolkieが見つけた秘密の卵。'},
+ 'lost-button':{name:'Lost Button',meaning:'落とし物のボタン',description:'進化したSoxieが拾った、小さな誰かの忘れ物。'}
 });
 export function cleanForest(input){
  const source=input&&typeof input==='object'?input:{};
