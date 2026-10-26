@@ -102,7 +102,7 @@ function finishChallenge(){
  $('transcript-label').textContent=heard?'今回の音声認識（参考）':'今回の音声認識';
  $('final-transcript').textContent=heard?heard:'認識された英文はありません。認識できなかった可能性があります。発話内容や英語の正確さは判定していません。';
  $('learn-note').textContent=heard?'音声認識の誤変換もあり得ます。英文の正しさを採点した結果ではありません。例文は別の伝え方のヒントです。':'音声認識の結果はありません。声に出した内容を記録・採点せず、例文だけ確認できます。';
- const examples=scene.examples.map((text,i)=>`<article class="sample"><div class="sample-head">LEVEL ${i+1} · ${['見えるものを描写','状況を控えめに推測','相手に状況を共有'][i]}</div><p lang="en">${escapeHtml(text)}</p></article>`).join('');
+ const examples=scene.examples.map((text,i)=>`<article class="sample"><div class="sample-head">${['BASIC · 見えるものを描写','NATURAL · 状況を控えめに推測','APPLIED · 相手に状況を共有'][i]}</div><p lang="en">${escapeHtml(text)}</p></article>`).join('');
  $('samples').innerHTML=examples;
  $('language-tip').innerHTML=`<strong>ワンポイント：</strong>${escapeHtml(scene.tip)}`;
  $('status').textContent='30秒終了。聞き取られた内容を見て、別の表現も比べてみよう。';

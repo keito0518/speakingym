@@ -57,6 +57,7 @@ const fs=require('node:fs');
    await page.clock.runFor(31_000);
    assert.equal(await page.locator('#learn-panel').isVisible(),true,'the 30-second round transitions directly to learning');
    assert.equal(await page.locator('#samples .sample').count(),3);
+   assert.match(await page.locator('#samples').textContent(),/BASIC · 見えるものを描写[\s\S]*NATURAL · 状況を控えめに推測[\s\S]*APPLIED · 相手に状況を共有/);
    assert.match(await page.locator('#final-transcript').textContent(),/A train is stopped/);
    assert.match(await page.locator('#learn-note').textContent(),/採点/,'recognition text is not presented as a score');
    assert.match(await page.locator('#language-tip').textContent(),/There is/);
