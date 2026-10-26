@@ -70,7 +70,7 @@
 
       <section id="play-view" class="view" hidden>
         <div class="play-topline"><button class="back-button" id="leave-play">← ホームへ</button><span id="play-mode-label" class="mode-chip">練習モード</span><span id="play-clock" class="clock" aria-live="off">自分のペースで</span></div>
-        <section id="forest-journey" class="forest-journey" hidden aria-label="スピーキングの森の進行状況">
+        <div class="forest-battle-shell"><section id="forest-journey" class="forest-journey" hidden aria-label="スピーキングの森の進行状況">
           <div class="forest-journey-header">
             <div class="forest-companion-art" id="forest-companion-art" aria-hidden="true"></div>
             <div class="forest-journey-title"><span class="forest-kicker">SPEAKING FOREST</span><strong id="forest-companion-name">Yolkie と探検中</strong><small id="forest-route-status">まず森の入口へ</small></div>
@@ -84,7 +84,7 @@
           </div>
           <div class="forest-battle-info" aria-live="polite">
             <span class="forest-foe-name" id="forest-foe-name">Mossling</span>
-            <span id="forest-boss-hp" class="forest-boss-hp" hidden>◆ ◆ ◆</span>
+            <span id="forest-boss-hp" class="forest-boss-hp" hidden role="meter" aria-label="ボスのHP" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3">◆ ◆ ◆</span>
             <span id="forest-tries" class="forest-tries">チャレンジ</span>
           </div>
           <div class="forest-gates" aria-label="5回のバトルとボス戦">
@@ -97,9 +97,12 @@
           </div>
           <div class="forest-mission-panel"><span class="forest-mission-icon" aria-hidden="true">✦</span><p id="forest-scene-story" class="forest-scene-story"></p></div>
         </section>
-        <div class="play-progress"><span id="play-progress-fill"></span></div>
-        <div id="play-card" class="play-card" aria-live="polite"></div>
-        <div id="answer-area" class="answer-area"></div>
+        <div class="forest-command-window">
+          <div class="play-progress"><span id="play-progress-fill"></span></div>
+          <div id="forest-battle-log" class="forest-battle-log" role="status" aria-live="polite" hidden></div>
+          <div id="play-card" class="play-card" aria-live="polite"></div>
+          <div id="answer-area" class="answer-area"></div>
+        </div></div>
       </section>
 
       <section id="result-view" class="view" hidden>
