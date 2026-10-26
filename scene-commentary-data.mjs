@@ -14,7 +14,7 @@ export const SCENE_COMMENTARY_PHOTOS=[
   'A train is at the platform, and one person is waiting.',
   'The platform looks quiet. Maybe the train has just arrived.',
   'I am at a quiet station. A train is here, so I will check the signs before boarding.'
- ],'There is / There are で場所にあるものを先に言うと、説明を始めやすくなります。',['電車や人、ホームの様子を見つけて言う','静かなホームの様子と、そう思う理由を言う','友人に駅の状況と乗車前に見るものを伝える']),
+ ],'There is / There are で場所にあるものを先に言うと、説明を始めやすくなります。',['電車や人、ホームの様子を見つけて言う','静かなホームの様子から理由を控えめに推測する','友人に駅の状況と乗車前に見るものを伝える']),
  photo('1740934295901-6c6f92f644b1','https://unsplash.com/photos/a-train-station-with-people-walking-on-the-platform-8pvVv2ZAs48','Ilker Ozmen','A person walking along a wet railway platform.','雨上がりのホーム','ホームにいる人と、床や周りの様子を伝えてみよう。',[
   'A person is walking along the platform. The ground is wet.',
   'It may have rained recently, and the station is almost empty.',
