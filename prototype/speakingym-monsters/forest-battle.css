@@ -154,10 +154,10 @@
  100%{opacity:0;transform:scale(1.9) rotate(45deg)}
 }
 @keyframes forest-impact-camera{
- 0%,38%,100%{filter:none}
- 43%{filter:brightness(1.45)}
- 48%{filter:brightness(.82)}
- 55%{filter:brightness(1.12)}
+ 0%,38%,100%{transform:translateX(0)}
+ 43%{transform:translateX(-2px)}
+ 48%{transform:translateX(2px)}
+ 55%{transform:translateX(-1px)}
 }
 @keyframes forest-lunge-strong{
  0%{transform:translate(-50%,9%) scale(1)}
@@ -167,11 +167,11 @@
  100%{transform:translate(-50%,9%) scale(1)}
 }
 @keyframes forest-foe-hit-strong{
- 0%,34%{transform:translateX(0) scale(1);opacity:1;filter:none}
- 43%{transform:translateX(11px) rotate(12deg) scale(1.13);filter:brightness(2.5);opacity:1}
- 53%{transform:translateX(-10px) rotate(-11deg) scale(.92);filter:brightness(.7);opacity:1}
- 67%{transform:translateX(13px) rotate(9deg) scale(1.08);filter:brightness(1.8);opacity:1}
- 100%{transform:translateX(0) scale(1);filter:none;opacity:1}
+ 0%,34%{transform:translateX(0) scale(1);opacity:1}
+ 43%{transform:translateX(11px) rotate(12deg) scale(1.13);opacity:.65}
+ 53%{transform:translateX(-10px) rotate(-11deg) scale(.92);opacity:1}
+ 67%{transform:translateX(13px) rotate(9deg) scale(1.08);opacity:.8}
+ 100%{transform:translateX(0) scale(1);opacity:1}
 }
 @media(max-width:690px){
  .forest-active .forest-battle-shell{overflow:visible;border-radius:16px}
@@ -281,7 +281,7 @@
 .forest-active .forest-world-stage.forest-attack[data-attack="donako"] .forest-party{animation-name:doughnut-spin}
 .forest-active .forest-world-stage.forest-attack[data-attack="amekurage"] .forest-party{animation-name:umbrella-float}
 .forest-active .forest-world-stage[data-evolved="true"] .forest-player-art::before{content:"";position:absolute;inset:6%;border:2px solid #ffe2a4;border-radius:50%;box-shadow:0 0 16px #f4c56c88;animation:evolved-aura 2s ease-in-out infinite}
-.forest-active .forest-world-stage.forest-attack[data-evolved="true"] .forest-player-art{filter:drop-shadow(0 0 14px #ffe29d);animation:evolved-strike 1.15s ease-out both}
+.forest-active .forest-world-stage.forest-attack[data-evolved="true"] .forest-player-art{animation:evolved-strike 1.15s ease-out both}
 .forest-active .forest-world-stage.forest-attack[data-evolved="true"]::after{height:11px;background:#fff5c4;box-shadow:0 0 22px 9px #ffd57a}
 .forest-guard{position:absolute;z-index:5;right:10%;bottom:12%;width:28%;height:76%;opacity:0;pointer-events:none;transform-origin:center}
 .forest-guard svg{width:100%;height:100%;filter:drop-shadow(0 0 9px #b5e7ed)}

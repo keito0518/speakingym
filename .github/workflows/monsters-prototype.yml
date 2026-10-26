@@ -28,6 +28,9 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Start local preview
         run: python3 -m http.server 8766 >/tmp/monsters-preview.log 2>&1 &
+      - name: WebKit animated battle interaction
+        timeout-minutes: 2
+        run: timeout 90s node tests/monsters-webkit-interaction.cjs
       - name: Chromium mobile and learning QA
         timeout-minutes: 8
         run: |
