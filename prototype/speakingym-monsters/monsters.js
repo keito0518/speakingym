@@ -139,7 +139,7 @@ function renderForestHud() {
     $('#forest-party').dataset.companion=companion.id;
     $('#forest-party').dataset.evolved=String(evolved);
   }
-  $('#forest-companion-name').textContent=(evolved?companion.evolvedName:companion.name)+' と探検中';
+  $('#forest-companion-name').textContent=(evolved?companion.evolvedName:companion.name)+' と戦闘中';
   const world=$('#forest-world-stage');
   const currentRoute=play.route||'wild';
   const arenaKey=currentRoute+':'+(play.index>=REGULAR_ENCOUNTERS?'boss':'mob');
@@ -152,6 +152,7 @@ function renderForestHud() {
   world.dataset.evolved=String(evolved);
   $('#forest-guard').innerHTML=guardArt();
   world.classList.toggle('forest-boss-stage',play.index>=REGULAR_ENCOUNTERS);
+  $('.forest-chapter-pin').textContent=play.index>=REGULAR_ENCOUNTERS?'THORN VAULT':'MOONSTONE ARENA';
   world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding');
   const foe=opponentFor(play.index,play.wave);
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
