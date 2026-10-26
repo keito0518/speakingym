@@ -121,7 +121,9 @@ const path=require('node:path');
       assert.match(await page.locator('#forest-battle-log').innerText(),/判定保留/);
       assert.doesNotMatch(await page.locator('#forest-battle-log').innerText(),/不正解/);
       await answer(page);
-      assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),motion);
+      const action=await page.locator('#forest-world-stage').getAttribute('data-action');
+      const expected=action==='defense'?'companion-shield':action==='reading'?'companion-reading-strike':motion;
+      assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),expected);
       assert.equal(await page.locator('.forest-guarding').count(),0);
       assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
       await page.waitForTimeout(1400); // Verify the whole motion, then navigate out.
@@ -137,7 +139,9 @@ const path=require('node:path');
       await page.locator('#start-forest').click();await page.locator('#forest-explore-continue').click();
       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-evolved'),'true');
       await answer(page);
-      assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),motions[id]);
+      const action=await page.locator('#forest-world-stage').getAttribute('data-action');
+      const expected=action==='defense'?'companion-shield':action==='reading'?'companion-reading-strike':motions[id];
+      assert.equal(await page.locator('#forest-party').evaluate(e=>getComputedStyle(e).animationName),expected);
       assert.equal(await page.locator('#forest-player-art').evaluate(e=>getComputedStyle(e).animationName),'evolved-strike');
       await page.waitForTimeout(1400);
       // The motion test ends here; the normal QA covers the Leave button.
