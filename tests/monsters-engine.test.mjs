@@ -10,21 +10,23 @@ import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, com
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
-test('curriculum has six expressions, two situations, and three authored difficulty levels', () => {
-  assert.equal(PHRASES.length,6);assert.equal(PROMPTS.length,12);assert.equal(MONSTERS.length,9);
+test('curriculum has 16 expressions and 52 authored tasks at each difficulty level', () => {
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,36);
+  assert.equal(ALL_PROMPTS.length,156);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,12);
-    assert.equal(new Set(level.map(p=>p.id)).size,12);
-    assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&p.kind==='speak'));
+    assert.equal(level.length,52);
+    assert.equal(new Set(level.map(p=>p.id)).size,52);
+    assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read'].includes(p.kind)));
+    assert.ok(level.filter(p=>p.kind==='listen').length>=8);
+    assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
     assert.ok(level.every(p=>PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
   }
-  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/12;
-  assert.ok(averageLength('hard')>averageLength('normal')*1.3);
-  assert.equal(new Set(PROMPTS.map(p => p.id)).size,12);
+  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/52;
+  assert.ok(averageLength('hard')>averageLength('normal')*1.1);
+  assert.equal(new Set(PROMPTS.map(p => p.id)).size,52);
   assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
   assert.ok(MONSTERS.every(monster=>monster.name&&monster.kind&&monster.note));
   assert.ok(MONSTERS.every(monster => /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(monster.name) && monster.japaneseName && monster.evolvedName));
@@ -33,7 +35,7 @@ test('curriculum has six expressions, two situations, and three authored difficu
   assert.ok(MONSTERS.every(monster => monster.skill?.name && monster.skill?.description));
   assert.deepEqual(MONSTERS.find(monster=>monster.id==='medamago').roots.map(root=>root.word),['yolk','sunny-side up']);
   for(const phrase of PHRASES) {
-    assert.equal(PROMPTS.filter(prompt=>prompt.phraseId===phrase.id).length,2);
+    assert.equal(PROMPTS.filter(prompt=>prompt.phraseId===phrase.id).length,phrase.id==='think'||['repeat','agree','late','clarify','prefer'].includes(phrase.id)?2:4);
     assert.ok(phrase.hint&&phrase.tip);
   }
   for(const prompt of PROMPTS) {assert.ok(prompt.scene&&prompt.cue&&prompt.answer);if(prompt.kind==='listen')assert.ok(prompt.audio);}
@@ -66,6 +68,9 @@ test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endles
  assert.equal(new Set(a.prompts.map(x=>x.id)).size,8);
  assert.notDeepEqual(a.prompts.map(x=>x.id),b.prompts.map(x=>x.id));
  assert.ok(a.prompts.every(x=>!x.difficulty||x.difficulty==='easy'));
+ assert.ok(a.prompts.some(x=>x.kind==='listen'));
+ assert.ok(a.prompts.some(x=>x.kind==='read'));
+ assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=7);
  assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=6);
  assert.equal(forestLevel('easy',1),'easy');
  assert.equal(forestLevel('easy',2),'easy');
@@ -152,7 +157,7 @@ test('practice and challenge pick distinct expressions and prioritize overdue re
   save=rate(save,'think-cafe','again','2026-10-23').save;
   const review=selectRoundPrompts(save,1,()=>0,'2026-10-26');
   assert.equal(review[0].phraseId,'think');
-  assert.throws(()=>selectRoundPrompts(save,7),/Choose/);
+  assert.throws(()=>selectRoundPrompts(save,17),/Choose/);
 });
 
 test('difficulty selection preserves progress and rewards, and variants share scene mastery', () => {
