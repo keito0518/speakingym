@@ -179,7 +179,7 @@ function renderForestHud() {
   $('#forest-guard').innerHTML=guardArt();
   world.classList.toggle('forest-boss-stage',play.index>=REGULAR_ENCOUNTERS);
   $('.forest-chapter-pin').textContent=play.index>=REGULAR_ENCOUNTERS?'THORN VAULT':'MOONSTONE ARENA';
-  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding');
+  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding','forest-defended','forest-reading-hit');
   const foe=opponentFor(play.index,play.wave);
   const tactic=enemyTacticFor(play.index,play.wave);
   world.dataset.foe=foe.id;
