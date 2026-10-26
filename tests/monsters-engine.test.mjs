@@ -275,14 +275,14 @@ test('monsters unlock through skill growth; evolution occurs when banked XP is s
   let save=createSave();
   const dayOne=PROMPTS.filter((p,index)=>index%2===0);
   for(const prompt of dayOne)save=rate(save,prompt.id).save;
-  assert.equal(learningSummary(save).independent,6);
+  assert.equal(learningSummary(save).independent,16);
   assert.ok(save.ownedMonsters.includes('purupun'));
   assert.ok(save.ownedMonsters.includes('nororo'));
   assert.ok(save.ownedMonsters.includes('keshipon'));
   assert.ok(save.ownedMonsters.includes('amekurage'));
   assert.equal(getMonsterProgress(save).evolved,false);
   for(const prompt of PROMPTS.filter((p,index)=>index%2===1))save=rate(save,prompt.id,'smooth','2026-10-27').save;
-  assert.equal(learningSummary(save,'2026-10-27').mastered,6);
+  assert.equal(learningSummary(save,'2026-10-27').mastered,16);
   assert.ok(save.ownedMonsters.includes('koge'));
   assert.ok(save.ownedMonsters.includes('cone'));
   assert.ok(save.ownedMonsters.includes('donako'));
@@ -302,7 +302,7 @@ test('manual and hinted ratings keep review due, and a completed challenge track
   assert.equal(addDays('2026-12-31',1),'2027-01-01');
   save=finishRound(save,3);save=finishRound(save,1);
   assert.equal(save.completedRuns,2);assert.equal(save.bestSmooth,3);
-  assert.throws(()=>finishRound(save,7),/Invalid/);
+  assert.throws(()=>finishRound(save,PHRASES.length+1),/Invalid/);
 });
 
 test('unknown save formats are rejected, while old pre-wallet saves migrate safely', () => {
