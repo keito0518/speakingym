@@ -28,7 +28,7 @@ function loadSave() {
   try { return validateSave(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')); }
   catch { return null; }
 }
-function showScreen(id) { for (const screen of screens) $(`#${screen}`).classList.toggle('hidden', screen !== id); window.scrollTo({top:0,behavior:'smooth'}); }
+function showScreen(id) { for (const screen of screens) $(`#${screen}`).classList.toggle('hidden', screen !== id); window.scrollTo(0,0); }
 function avatar(id, sizeClass = '', evolved = false) {
   const info = getCompanion(id) || getMonster(id);
   const color = info?.color || '#a9c28a', accent = info?.accent || '#6d8b61';
@@ -240,7 +240,7 @@ function startForest() {
 function advanceForest(phase) {save.storyRun={...save.storyRun,phase};persist();renderForest();}
 function renderForestBattleMove() {
   $$('.move-card').forEach(button=>{button.disabled=button.dataset.move!==stageOneMove;button.classList.toggle('quest-move',button.dataset.move===stageOneMove);});
-  $('#battle-title').textContent=stageOneMove==='word'?'道をふさぐミミップが現れた！':'力を合わせて、道をあけよう！';
+  $('#battle-title').textContent=stageOneMove==='word'?'ミミップが道をふさいだ！':'力を合わせて道をあけよう！';
 }
 function enterForestBattle() {
   stageOneMove=save.storyRun.move||'word';
@@ -260,8 +260,8 @@ function renderForest() {
   $('#story-character').innerHTML=phase==='speak'||phase==='learn'?avatar(save.activeCompanionId,'',activeEntry().evolved):`<svg class="traveler-art" viewBox="0 0 120 145" role="img" aria-label="迷っている旅人"><ellipse cx="60" cy="138" rx="42" ry="6" fill="#22473588"/><path d="M44 82 31 135h23l9-31 8 31h23L78 82" fill="#415b70" stroke="#263e49" stroke-width="3"/><path d="M33 133h24v8H27q-3-7 6-8m44 0h24q8 1 8 8H76z" fill="#523d3a"/><path d="M34 72q25-18 52 0l8 53-23 5-10-16-12 16-25-5z" fill="#d58c64" stroke="#754f45" stroke-width="4"/><path d="m39 79-21 33 10 8 20-25m32-16 20 29-9 9-22-23" fill="#e5aa7d" stroke="#754f45" stroke-width="3"/><path d="M22 115q-10 14 5 15l7-11m62-8q13 12 1 19l-9-14" fill="#edbd91"/><path d="M33 72q-12 1-12 22l7 11 13-20" fill="#587666" stroke="#3d5e53" stroke-width="3"/><circle cx="60" cy="50" r="26" fill="#efc69a" stroke="#754f45" stroke-width="3"/><path d="M36 45q-3-30 25-28 25 1 23 29-18-12-37-5z" fill="#513d3c"/><path d="M30 36q17-39 50-18l11 20q-28 11-61-2" fill="#809765" stroke="#4b684c" stroke-width="4"/><circle cx="51" cy="52" r="2.5" fill="#373c36"/><circle cx="70" cy="52" r="2.5" fill="#373c36"/><path d="M53 65q9 5 16-1" fill="none" stroke="#a56e5d" stroke-width="2" stroke-linecap="round"/><path d="M83 78q22-6 18 23l-11 10-7-17" fill="#7c9a6d" stroke="#486750" stroke-width="3"/></svg>`;
   const task=$('#story-task');
   if(phase==='listen'){
-    $('#story-speaker').textContent='森で出会った旅人';$('#story-line').textContent='橋を探しているみたい。まず声を聞いてみよう。';
-    task.innerHTML=`<p class="eyebrow">01 · LISTEN</p><h2>旅人は何に困っている？</h2><p>英語は最初は伏せてあります。音声を聞いて、用件を選ぼう。</p><button class="sound-button" data-action="listen-audio">▶ 旅人の声を聞く</button><button class="small-button" data-action="reveal-transcript">英文を見る</button><p id="story-transcript" class="transcript hidden" lang="en">${escapeHtml(forest.listen)}</p><div class="answer-options"><button data-action="listen-choice" data-correct="false">村に行きたいが、切符をなくした</button><button data-action="listen-choice" data-correct="true">村に行きたいが、橋が見つからない</button><button data-action="listen-choice" data-correct="false">橋を見つけたが、村が見つからない</button></div><div id="story-feedback" class="feedback hidden" role="status"></div>`;
+    $('#story-speaker').textContent='森で出会った旅人';$('#story-line').textContent='旅人は橋を探している。声を聞こう。';
+    task.innerHTML=`<p class="eyebrow">01 · LISTEN</p><h2>旅人は何に困っている？</h2><p>最初は英文を伏せて、声を聞こう。</p><button class="sound-button" data-action="listen-audio">▶ 旅人の声を聞く</button><button class="small-button" data-action="reveal-transcript">英文を見る</button><p id="story-transcript" class="transcript hidden" lang="en">${escapeHtml(forest.listen)}</p><div class="answer-options"><button data-action="listen-choice" data-correct="false">村への切符をなくした</button><button data-action="listen-choice" data-correct="true">橋が見つからない</button><button data-action="listen-choice" data-correct="false">村が見つからない</button></div><div id="story-feedback" class="feedback hidden" role="status"></div>`;
     shuffle($$('.answer-options button',task),random).forEach(button=>$('.answer-options',task).append(button));
   }else if(phase==='read'){
     $('#story-speaker').textContent='古い道標';$('#story-line').textContent='二つの道に分かれている。道標を読んで橋へ向かおう。';
