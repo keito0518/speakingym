@@ -277,7 +277,7 @@ function startForest() {
 function advanceForest(phase) {save.storyRun={...save.storyRun,phase};persist();renderForest();}
 function renderForestBattleMove() {
   $$('.move-card').forEach(button=>{button.disabled=battle.playerHp<=0||(button.dataset.move==='phrase'&&battle.focus<1);button.classList.toggle('quest-move',button.dataset.move==='listen'&&enemyIntent(battle).strong);});
-  $('#move-screen h2').textContent=battle.playerHp<=0?'相棒が倒れた！ 控えの仲間と交代しよう':'敵の次の一手を読んで、技を選ぼう';
+  $('#move-screen h2').textContent=battle.playerHp<=0?'相棒が倒れた！ 控えと交代しよう':'敵の動きを見て技を選ぼう';
   $('#battle-title').textContent='ミミップが道をふさいだ！';
   renderTacticalInfo();
   renderBattleParty();
@@ -289,7 +289,7 @@ function renderBattleParty() {
   party.innerHTML=`<p class="party-heading">パーティー · 交代には敵の1行動が必要</p><div class="battle-party-list">${battle.partyIds.map(id=>{
     const info=getCompanion(id)||getMonster(id), current=id===battle.companionId, hp=battle.partyHp[id];
     return `<button type="button" class="party-chip ${current?'current':''}" data-switch="${id}" ${current||hp<=0?'disabled':''}>${avatar(id)}<span><b>${escapeHtml(info.name)}${current?' · 前衛':''}</b><small>HP ${hp}/${battle.partyMaxHp[id]}</small></span></button>`;
-  }).join('')}</div><button type="button" class="companion-skill" data-skill ${battle.playerHp<=0||battle.skillUsed?.[battle.companionId]?'disabled':''}><b>${escapeHtml(activeSkill.name)}</b><small>${escapeHtml(activeSkill.detail)} · この戦闘で1回、使用時に敵が行動</small></button><p id="party-notice" role="status">${escapeHtml(battle.swapNotice||'仲間の役割を生かして戦おう。補助技の後にも敵は行動する。')}</p>`;
+  }).join('')}</div><button type="button" class="companion-skill" data-skill ${battle.playerHp<=0||battle.skillUsed?.[battle.companionId]?'disabled':''}><b>${escapeHtml(activeSkill.name)}</b><small>${escapeHtml(activeSkill.detail)} · 1戦1回・敵が反撃</small></button><p id="party-notice" role="status">${escapeHtml(battle.swapNotice||'仲間の役割を生かして戦おう。補助技の後にも敵は行動する。')}</p>`;
 }
 $('#battle-party').addEventListener('click',event=>{
   const skillButton=event.target.closest('button[data-skill]');
