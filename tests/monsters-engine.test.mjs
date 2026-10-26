@@ -196,6 +196,8 @@ test('example matching is intentionally narrow, not a claim to grade free-form s
   const prompt=PROMPTS.find(p=>p.id==='late-bus');
   assert.equal(compareWithExamples(prompt,"I'm running a little late!").matchesExample,true);
   assert.equal(compareWithExamples(prompt,'I am running a little late').matchesExample,true);
+  assert.equal(compareWithExamples(PROMPTS.find(p=>p.id==='help-bag'),'Excuse me, can you help me with this bag, please?').matchesExample,true);
+  assert.equal(compareWithExamples(PROMPTS.find(p=>p.id==='help-bag'),'Can you NOT help me with this bag?').matchesExample,false);
   assert.equal(compareWithExamples(prompt,'I might not arrive on time').matchesExample,false);
   assert.equal(compareWithExamples(prompt,'').empty,true);
   assert.equal(normalizeEnglish('  THAT works for me!  '),'that works for me');
