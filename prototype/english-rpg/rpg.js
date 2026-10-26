@@ -157,7 +157,10 @@ function answerPhrase() {
 }
 function resolveAnswer(correct) {
   const result=resolveTurn(battle,currentMove,correct);
-  battle=result.battle;lastOutcome=result.outcome;updateHp();updateFocus();
+  battle=result.battle;lastOutcome=result.outcome;
+  // A missed story action can be retried without trapping the player behind focus.
+  if(currentStage===1 && currentMove==='phrase' && !correct) battle.focus=1;
+  updateHp();updateFocus();
   if(currentStage===1){save.storyRun={phase:'battle',battle,move:stageOneMove};persist();}
   const feedback=$('#feedback');feedback.classList.remove('hidden','incorrect');
   if(!correct)feedback.classList.add('incorrect');
