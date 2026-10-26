@@ -136,10 +136,19 @@ export function normalizeEnglish(value) {
   return String(value || '').toLowerCase().replace(/[’‘]/g, "'").replace(/\b(i am)\b/g, "i'm").replace(/\b(i would)\b/g, "i'd").replace(/[^a-z0-9\s']/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Safe surface variants only: polite openers/endings and can/could requests.
+// Do not remove negation or compare keyword overlap; an uncertain meaning stays review.
+function canonicalVettedReply(value) {
+  return normalizeEnglish(value)
+    .replace(/^(?:(?:excuse me|hello|hi) )+/, '')
+    .replace(/(?: please| thank you| thanks)$/, '')
+    .replace(/^can (you|i) /, 'could $1 ');
+}
 export function compareWithExamples(prompt, answer) {
   const normalized = normalizeEnglish(answer);
   if (!normalized) return { matchesExample: false, empty: true };
-  return { matchesExample: [prompt.answer, ...(prompt.alternatives || [])].some(example => normalizeEnglish(example) === normalized), empty: false };
+  const canonical = canonicalVettedReply(answer);
+  return { matchesExample: [prompt.answer, ...(prompt.alternatives || [])].some(example => canonicalVettedReply(example) === canonical), empty: false };
 }
 
 export function recordAnswer(save, promptId, rating, today = dayKey()) {
