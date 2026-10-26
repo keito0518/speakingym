@@ -81,6 +81,11 @@ test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endles
  const boosted=buildForestWave({difficulty:'easy',wave:3,previousIds:a.prompts.map(x=>x.id),random:()=>0.2});
  assert.equal(boosted.level,'normal');
  assert.ok(boosted.prompts.every(x=>x.difficulty==='normal'));
+ const reviewWave=buildForestWave({difficulty:'easy',wave:2,reviewPhraseIds:['booking','price'],random:()=>0.31});
+ assert.ok(reviewWave.prompts.some(p=>p.phraseId==='booking'));
+ assert.ok(reviewWave.prompts.some(p=>p.phraseId==='price'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='listen'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='read'));
  assert.equal(opponentFor(0,1).id,'mossling');
  assert.equal(opponentFor(4,1).id,'mothum');
  assert.equal(opponentFor(5,1).id,'thornking');
@@ -210,6 +215,9 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'Sorry! My bus has been cancelled, so I will be around 20 minutes late. Please wait inside.').status,'correct');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'My bus was canceled.').status,'review');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'I have no idea.').status,'review');
+  assert.equal(gradeLocalResponse(byId('help-bag'),'Could you help me with this bag?').status,'correct');
+  assert.equal(gradeLocalResponse(byId('help-bag'),'Would you mind giving me a hand with my suitcase?').status,'review');
+  assert.equal(gradeLocalResponse(byId('booking-table-hard'),'I do not know').status,'review');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'').status,'empty');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'OK').status,'empty');
   assert.equal(gradeLocalResponse(null,'hello').status,'ungraded');
