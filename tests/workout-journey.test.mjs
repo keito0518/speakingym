@@ -14,7 +14,7 @@ test('beginner guide clearly separates Japanese-to-English recall from photo-bas
  assert.match(home,/href="\.\/phrasebook\.html"/);
  assert.match(sprint,/日本語 → 英語 \/ 瞬発力トレーニング/);
  assert.match(freeze,/シーン実況チャレンジ/);
- assert.match(freeze,/写真を見て、自分の英語で説明する/);
+ assert.match(freeze,/写真を見て、状況を英語で話す/);
  assert.match(freeze,/30秒チャレンジを始める/);
  assert.match(freeze,/LEVEL 1 · 描写/);
  assert.match(freeze,/LEVEL 2 · 推測/);
