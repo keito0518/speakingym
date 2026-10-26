@@ -117,7 +117,7 @@ export function chooseDifficulty(save, difficulty) {
 }
 
 export function selectRoundPrompts(save, count = 6, random = Math.random, today = dayKey(), difficulty = save.difficulty || 'easy') {
-  if (!Number.isInteger(count) || count < 1 || count > PHRASES.length) throw new Error('Choose 1–6 prompts.');
+  if (!Number.isInteger(count) || count < 1 || count > PHRASES.length) throw new Error(`Choose 1–${PHRASES.length} prompts.`);
   if (!DIFFICULTIES.includes(difficulty)) throw new Error('Invalid difficulty.');
   const groups = PHRASES.map(phrase => {
     const entry = save.progress[phrase.id];
