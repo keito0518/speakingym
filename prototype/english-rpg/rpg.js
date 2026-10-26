@@ -150,6 +150,7 @@ function answer(value) {
   resolveAnswer(correct);
 }
 function answerPhrase() {
+  if(!currentQuestion || !$('#after-answer').classList.contains('hidden')) return;
   const assembled = phraseBuilt.map(index=>currentQuestion.tokens[index]).join(' ');
   const correct = normalize(assembled)===normalize(currentQuestion.target);
   resolveAnswer(correct);
@@ -275,7 +276,7 @@ function startRecognition() {
   const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SpeechRecognition){$('#speech-status').textContent='この端末では音声認識を使えません。声に出してから入力してください。';return;}
   recognition?.abort();
-  try {recognition=new SpeechRecognition();recognition.lang='en-US';recognition.interimResults=true;recognition.continuous=true;const existing=$('#forest-speech').value.trim();recognition.onresult=event=>{let finalText=existing, interim='';for(let i=event.resultIndex;i<event.results.length;i++){const phrase=event.results[i][0].transcript;if(event.results[i].isFinal)finalText+=` ${phrase}`;else interim+=` ${phrase}`;}$('#forest-speech').value=(finalText+interim).trim();$('#forest-speech').dispatchEvent(new Event('input'));};recognition.onerror=()=>{$('#speech-status').textContent='認識できませんでした。もう一度試すか、英文を入力してください。';};recognition.onend=()=>{$('[data-action="record"]').textContent='🎙 もう一度話す';};recognition.start();$('#speech-status').textContent='聞き取り中… 話し終えたら文を確認してください。';$('[data-action="record"]').textContent='■ 停止';}catch{$('#speech-status').textContent='マイクを開始できません。英文入力で続けられます。';}
+  try {recognition=new SpeechRecognition();recognition.lang='en-US';recognition.interimResults=true;recognition.continuous=true;const existing=$('#forest-speech').value.trim();recognition.onresult=event=>{let finalText=existing, interim='';for(let i=0;i<event.results.length;i++){const phrase=event.results[i][0].transcript;if(event.results[i].isFinal)finalText+=` ${phrase}`;else interim+=` ${phrase}`;}$('#forest-speech').value=(finalText+interim).trim();$('#forest-speech').dispatchEvent(new Event('input'));};recognition.onerror=()=>{$('#speech-status').textContent='認識できませんでした。もう一度試すか、英文を入力してください。';};recognition.onend=()=>{$('[data-action="record"]').textContent='🎙 もう一度話す';};recognition.start();$('#speech-status').textContent='聞き取り中… 話し終えたら文を確認してください。';$('[data-action="record"]').textContent='■ 停止';}catch{$('#speech-status').textContent='マイクを開始できません。英文入力で続けられます。';}
 }
 $('#story-task').addEventListener('click',event=>{
   const button=event.target.closest('button[data-action]');if(!button)return;
