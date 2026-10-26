@@ -1,5 +1,5 @@
 import { companions, monsters, stages, questions } from './rpg-data.js';
-import { EVOLUTION_HP_BONUS, EVOLUTION_TRAIT_BONUS, FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getCompanion, getMonster, getStage, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, switchBattleCompanion, traitFor, unlockedStageCount, validateSave, walkForest } from './rpg-engine.js';
+import { EVOLUTION_HP_BONUS, EVOLUTION_TRAIT_BONUS, FOREST_TILES, STORAGE_KEY, XP_PER_LEVEL, changeActiveCompanion, chooseStageMonster, createSave, enemyIntent, finishStage, getCompanion, getMonster, getStage, makeBattle, makePartyBattle, newForestWalk, pickQuestion, rememberQuestion, resolveTurn, setPartySlot, skillFor, switchBattleCompanion, traitFor, unlockedStageCount, useCompanionSkill, validateSave, walkForest } from './rpg-engine.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -108,7 +108,8 @@ function renderTacticalInfo() {
   if (!battle?.tactical) return;
   const tell = enemyIntent(battle), trait = traitFor(battle.companionId);
   const evolved = battle.partyEvolved?.[battle.companionId];
-  $('#tactical-info').innerHTML = `<span class="tactical-label">敵の次の行動</span><strong>${escapeHtml(tell.name)} · 予告 ${tell.damage} ダメージ</strong><span>${tell.strong?'⚠ 強攻撃！ 聞き耳で受け流そう。':'次は軽い攻撃。今のうちに攻めてもいい。'}</span><span class="tactical-trait">${escapeHtml(trait.name)}：${escapeHtml(trait.detail)}${evolved?` · 進化で特性 +${EVOLUTION_TRAIT_BONUS}`:''}　｜　探索で得た盾：${battle.shield || 0}</span>`;
+  const weakened=battle.weakenTurns>0?Math.max(0,tell.damage-battle.weakenPower):tell.damage;
+  $('#tactical-info').innerHTML = `<span class="tactical-label">敵の次の行動</span><strong>${escapeHtml(tell.name)} · 予告 ${weakened} ダメージ</strong><span>${tell.strong?'⚠ 強攻撃！ 守るか、仲間と連携しよう。':'次は軽い攻撃。攻める準備もできる。'}</span><span class="tactical-trait">${escapeHtml(trait.name)}：${escapeHtml(trait.detail)}${evolved?` · 進化で特性 +${EVOLUTION_TRAIT_BONUS}`:''}　｜　盾 ${battle.shield||0}${battle.weakenTurns?` · 弱体化 あと${battle.weakenTurns}回`:''}${battle.combo?` · 連携 +${battle.combo}`:''}${battle.empower?` · 連結強化 +${battle.empower}`:''}</span>`;
 }
 function updateFocus() { $('#focus-count').textContent = `集中 ${'●'.repeat(battle.focus)}${'○'.repeat(2-battle.focus)}`; $$('.move-card[data-move="phrase"]').forEach(b=>b.disabled=battle.focus<1); }
 function startStage(id, forcedMonster = null) {
@@ -229,7 +230,7 @@ function renderCamp() {
     return `<label class="party-slot"><span>チーム ${slot+1}${slot===0?' · 先頭':''}</span><select data-party-slot="${slot}" ${slot>partyIds.length?'disabled':''}>${options}</select></label>`;
   }).join('');
   $$('#party-slots select').forEach(select=>select.addEventListener('change',()=>{try{persist(setPartySlot(save,Number(select.dataset.partySlot),select.value));$('#party-error').textContent='';renderCamp();}catch(error){$('#party-error').textContent=error.message;renderCamp();}}));
-  $('#camp-hero').innerHTML=roster.map(entry=>{const info=getCompanion(entry.id)||getMonster(entry.id);return `<div class="companion-row ${entry.id===save.activeCompanionId?'active':''}">${avatar(info.id,'',entry.evolved)}<div class="companion-meta"><b>${escapeHtml(info.name)}${entry.id===save.activeCompanionId?' · 相棒':''}</b><small>Lv.${entry.level} · ${entry.xp}/${XP_PER_LEVEL} XP ${entry.evolved?` · 進化済み（HP +${EVOLUTION_HP_BONUS}・特性 +${EVOLUTION_TRAIT_BONUS}）`:''}</small><small class="trait-caption">${escapeHtml(traitFor(entry.id).name)}：${escapeHtml(traitFor(entry.id).detail)}</small></div>${entry.id!==save.activeCompanionId?`<button class="small-button switch-companion" data-id="${entry.id}">相棒にする</button>`:''}</div>`;}).join('');
+  $('#camp-hero').innerHTML=roster.map(entry=>{const info=getCompanion(entry.id)||getMonster(entry.id),skill=skillFor(entry.id,entry.level,entry.evolved);return `<div class="companion-row ${entry.id===save.activeCompanionId?'active':''}">${avatar(info.id,'',entry.evolved)}<div class="companion-meta"><b>${escapeHtml(info.name)}${entry.id===save.activeCompanionId?' · 相棒':''}</b><small>Lv.${entry.level} · ${entry.xp}/${XP_PER_LEVEL} XP ${entry.evolved?` · 進化済み（HP +${EVOLUTION_HP_BONUS}・特性 +${EVOLUTION_TRAIT_BONUS}）`:''}</small><small class="trait-caption">${escapeHtml(traitFor(entry.id).name)}：${escapeHtml(traitFor(entry.id).detail)}</small><small class="trait-caption">補助技 ${escapeHtml(skill.name)}：${escapeHtml(skill.detail)}${entry.level<2?' · Lv.2で強化':''}</small></div>${entry.id!==save.activeCompanionId?`<button class="small-button switch-companion" data-id="${entry.id}">相棒にする</button>`:''}</div>`;}).join('');
   $$('.switch-companion').forEach(button=>button.addEventListener('click',()=>{persist(changeActiveCompanion(save,button.dataset.id));renderCamp();}));
   $('#dex-count').textContent=`${monsters.filter(monster=>save.captures.includes(monster.id)).length} / ${monsters.length}`;
   $('#dex-grid').innerHTML=monsters.map(monster=>{const found=save.captures.includes(monster.id);const habitat=stages.find(stage=>stage.foes.includes(monster.id));return `<article class="dex-card ${found?'':'unknown'}">${avatar(monster.id)}<b>${found?escapeHtml(monster.name):'？？？'}</b><small>${found?escapeHtml(monster.kind):`${monster.boss?'ボス':'野生'} · ${escapeHtml(habitat.jp)}に生息`}</small>${found?`<small class="trait-caption">${escapeHtml(traitFor(monster.id).name)}：${escapeHtml(traitFor(monster.id).detail)}</small>`:`<button class="hunt-button" data-hunt="${monster.id}">生息地を探す</button>`}</article>`;}).join('');
@@ -284,12 +285,18 @@ function renderForestBattleMove() {
 function renderBattleParty() {
   const party=$('#battle-party');party.classList.toggle('hidden',!battle.tactical);
   if(!battle.tactical)return;
+  const activeSkill=skillFor(battle.companionId,battle.partyLevels?.[battle.companionId],battle.partyEvolved?.[battle.companionId]);
   party.innerHTML=`<p class="party-heading">パーティー · 交代には敵の1行動が必要</p><div class="battle-party-list">${battle.partyIds.map(id=>{
     const info=getCompanion(id)||getMonster(id), current=id===battle.companionId, hp=battle.partyHp[id];
     return `<button type="button" class="party-chip ${current?'current':''}" data-switch="${id}" ${current||hp<=0?'disabled':''}>${avatar(id)}<span><b>${escapeHtml(info.name)}${current?' · 前衛':''}</b><small>HP ${hp}/${battle.partyMaxHp[id]}</small></span></button>`;
-  }).join('')}</div><p id="party-notice" role="status">${escapeHtml(battle.swapNotice||'捕まえた仲間をキャンプで編成すると、戦闘中に交代できる。')}</p>`;
+  }).join('')}</div><button type="button" class="companion-skill" data-skill ${battle.playerHp<=0||battle.skillUsed?.[battle.companionId]?'disabled':''}><b>${escapeHtml(activeSkill.name)}</b><small>${escapeHtml(activeSkill.detail)} · この戦闘で1回、使用時に敵が行動</small></button><p id="party-notice" role="status">${escapeHtml(battle.swapNotice||'仲間の役割を生かして戦おう。補助技の後にも敵は行動する。')}</p>`;
 }
 $('#battle-party').addEventListener('click',event=>{
+  const skillButton=event.target.closest('button[data-skill]');
+  if(skillButton && battle?.tactical){
+    try {const result=useCompanionSkill(battle);battle={...result.battle,swapNotice:`${result.outcome.skill}！ 敵の「${result.outcome.enemyMove}」で${result.outcome.enemyAttack}ダメージ。`};save.storyRun={...save.storyRun,phase:'battle',battle};persist();renderBattleField();renderForestBattleMove();$('#battle-field').classList.add('pulse');playTone(520);setTimeout(()=>$('#battle-field').classList.remove('pulse'),500);if(battle.ended)showDefeat();}catch(error){$('#party-notice').textContent=error.message;}
+    return;
+  }
   const button=event.target.closest('button[data-switch]');if(!button||!battle?.tactical)return;
   try {
     const result=switchBattleCompanion(battle,button.dataset.switch);
