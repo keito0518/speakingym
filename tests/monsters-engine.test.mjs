@@ -18,9 +18,59 @@ import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/s
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
+import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
+test('five-minute gym mixes new, due and transfer tasks without duplicates or paid AI calls',()=>{
+ const today='2026-10-27';
+ let save=createSave();
+ const fresh=dailyTrainingPlan(save,{today});
+ assert.equal(fresh.prompts.length,8);
+ assert.equal(new Set(fresh.prompts.map(p=>p.id)).size,8);
+ assert.ok(fresh.prompts.every(p=>(p.difficulty||'easy')==='easy'));
+ assert.equal(fresh.counts.review,0);
+ assert.equal(fresh.counts.transfer,0);
+ assert.equal(fresh.counts.new,3);
+ assert.equal(fresh.counts.mixed,5);
+ assert.deepEqual(dailyTrainingPlan(save,{today}).prompts.map(p=>p.id),fresh.prompts.map(p=>p.id));
+ save=recordAnswer(save,'think-cafe','smooth','2026-10-20').save;
+ save=recordAnswer(save,'repeat-station','again','2026-10-20').save;
+ const mixed=dailyTrainingPlan(save,{today});
+ assert.equal(mixed.prompts.length,8);
+ assert.equal(new Set(mixed.prompts.map(p=>p.id)).size,8);
+ assert.ok(mixed.prompts.some(p=>p.id==='repeat-station'));
+ assert.ok(mixed.phases.includes('review'));
+ assert.ok(mixed.phases.includes('transfer'));
+ assert.ok(mixed.phases.includes('new'));
+ for(const difficulty of ['normal','hard']){
+  const plan=dailyTrainingPlan(save,{difficulty,today});
+  assert.equal(plan.prompts.length,8);
+  assert.ok(plan.prompts.every(p=>p.difficulty===difficulty));
+  assert.equal(new Set(plan.prompts.map(p=>p.id)).size,8);
+ }
+ assert.throws(()=>dailyTrainingPlan(save,{difficulty:'impossible',today}),/Invalid/);
+});
+test('daily gym stores safe local-only verified summaries and 7-day same-level comparison',()=>{
+ const base=createSave();
+ assert.deepEqual(base.dailyHistory,[]);
+ const a=recordDailyCompletion(base,{date:'2026-10-20',difficulty:'easy',total:8,independent:3,hinted:1,elapsedSeconds:322.4});
+ assert.equal(a.dailyHistory[0].elapsedSeconds,322);
+ assert.equal(a.dailyHistory[0].independent,3);
+ assert.deepEqual(base.dailyHistory,[]);
+ assert.equal(dailyGrowthSummary(a).changeSevenDays,null);
+ const b=recordDailyCompletion(a,{date:'2026-10-27',difficulty:'normal',total:8,independent:7,hinted:0,elapsedSeconds:240});
+ assert.equal(dailyGrowthSummary(b).changeSevenDays,null,'Do not compare different levels');
+ const c=recordDailyCompletion(b,{date:'2026-10-27',difficulty:'easy',total:8,independent:6,hinted:1,elapsedSeconds:280});
+ const stats=dailyGrowthSummary(c);
+ assert.equal(stats.sessions,3);
+ assert.equal(stats.weekBeforeRate,38);
+ assert.equal(stats.lastRate,75);
+ assert.equal(stats.changeSevenDays,37);
+ assert.equal(validateSave(c).dailyHistory.length,3);
+ assert.deepEqual(validateSave({...base,dailyHistory:[{date:'bad',difficulty:'easy',total:999}]}).dailyHistory,[]);
+ assert.throws(()=>recordDailyCompletion(base,{date:'2026-10-27',total:8,independent:9,hinted:0,elapsedSeconds:99}),/Invalid/);
+});
 test('curated speech checks cannot reward conflicting key details',()=>{
  const prompt=id=>ALL_PROMPTS.find(item=>item.id===id);
  for(const [id,answers] of [
