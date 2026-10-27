@@ -425,6 +425,7 @@ const path=require('node:path');
     assert.match(await page.locator('#feedback-panel').innerText(),/\+8 XP/); // Hint lowers awarded XP.
     await page.locator('#next-question').click();
     for(let i=0;i<2;i++){
+      await unlockListening(page);
       await page.locator('#spoken-answer').fill(i===0?'Could you say that again?':'That works for me.');
       await page.locator('#show-answer').click();
       assert.match(await page.locator('#feedback-panel').innerText(),/\+16 XP/);
