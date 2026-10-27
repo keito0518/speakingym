@@ -76,3 +76,30 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){.view,.catalog-card,.character-view *,.character-view *::before{animation:none!important;transition:none!important}.growth-before{display:none}.growth-label{opacity:1}}
 .listen-control .audio-glyph{display:inline-block;vertical-align:middle;margin-right:3px}
 @media(max-width:370px){.forest-active .question-top{gap:7px}.forest-active .question-top>span:first-child{white-space:nowrap;font-size:9px}.forest-active .question-tag{font-size:8px;padding:7px 8px}}
+
+
+/* Persistent forest compendium, all records are derived from validated saves. */
+.forest-journal{max-width:1040px;margin:30px auto;padding:20px 17px;border-radius:19px;background:#f7f1e0;border:1px solid #d7c79e}
+.forest-journal .forest-treasures-heading{margin-bottom:16px}
+.forest-journal .forest-treasures-heading h2{font-size:clamp(20px,4.5vw,28px);color:#2c503c}
+.forest-journal-areas,.forest-journal-events,.forest-journal-badges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 22px}
+.forest-journal-area,.forest-journal-entry,.forest-journal-badge{min-width:0;display:flex;flex-direction:column;gap:5px;border-radius:12px;padding:12px 13px;background:#fffcf2;border:1px solid #d9ccad;color:#294a3c}
+.forest-journal-area.is-cleared{border-color:#81a783;background:#ecf4e5}
+.forest-journal-area.is-locked,.forest-journal-entry.is-hidden{background:#f2eddf;color:#677568}
+.journal-number{font-size:10px;color:#8a764f;letter-spacing:.09em;font-weight:800}
+.forest-journal-area strong,.forest-journal-entry strong{font-size:14px;line-height:1.4}
+.forest-journal-area small,.forest-journal-entry small,.forest-journal-badge span,.forest-journal-badge small{font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.journal-status{align-self:flex-start;font-size:10px;padding:4px 7px;border-radius:7px;background:#dfe8db}
+.forest-journal-entry.is-found{border-left:4px solid #b8955b}
+.forest-journal-choices{display:grid;gap:6px}
+.forest-journal-choices p{display:grid;gap:4px;margin:0;padding:8px;border-radius:8px;background:#f5f0dc;font-size:12px;line-height:1.55}
+.forest-journal-choices b{color:#735529}
+.forest-journal-choices span{color:#4f594c}
+.forest-journal-badge.earned{border-color:#b9a464;background:#f8edd1}
+.forest-journal-badge.locked{filter:grayscale(.55)}
+.forest-journal-badge strong{font-size:13px}
+.catalog-card.catalog-rare:not(.locked){border-color:#c5a057;box-shadow:inset 0 0 0 1px #dbcd95}
+.catalog-card.catalog-rare.locked .catalog-portrait{filter:grayscale(.78) brightness(.88)}
+.catalog-card .catalog-evolution{overflow-wrap:anywhere}
+@media(max-width:540px){.forest-journal{padding:14px 10px}.forest-journal-areas,.forest-journal-events,.forest-journal-badges{gap:7px}.forest-journal-area,.forest-journal-entry,.forest-journal-badge{padding:10px 8px}.forest-journal-area strong,.forest-journal-entry strong{font-size:12px}}
+@media(max-width:360px){.forest-journal-events{grid-template-columns:1fr}}
