@@ -4,7 +4,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
-import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
+import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, regularEncountersFor, forestWaveLengthFor, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { gradeDelayMeaning } from '../prototype/speakingym-monsters/speaking-meaning.js';
@@ -348,7 +348,7 @@ test('four Forest areas unlock one at a time, preserve earlier progress and avoi
    const run=buildForestWave({difficulty:'easy',wave:i+1,areaId:area.id,progression:'story',
      previousIds:save.forest.recentPromptIds,random:()=>.47,bossConversation:true});
    assert.equal(run.level,'easy','Story chapters preserve the chosen learner difficulty');
-   assert.equal(run.prompts.length,8);
+   assert.equal(run.prompts.length,forestWaveLengthFor(area.id));
    assert.equal(new Set(run.prompts.map(p=>p.id)).size,8);
    assert.ok(['speak','listen','vocab','grammar','read'].every(kind=>run.prompts.some(p=>p.kind===kind)||area.id==='entry'&&kind==='read'));
    for(const prompt of run.prompts){
@@ -358,7 +358,7 @@ test('four Forest areas unlock one at a time, preserve earlier progress and avoi
    const boss=opponentFor(7,i+1,area.id);
    bosses.add(boss.id);
    assert.match(enemyArt(boss.id),/forest-enemy-svg/);
-   for(let j=0;j<5;j++){
+   for(let j=0;j<regularEncountersFor(area.id);j++){
      const foe=opponentFor(j,i+1,area.id);
      enemies.add(foe.id);
      assert.equal(run.prompts[j].kind,enemyTacticFor(j,i+1,area.id).preferredKind);
@@ -371,7 +371,7 @@ test('four Forest areas unlock one at a time, preserve earlier progress and avoi
    assert.ok(save.forest.recentPromptIds.length>=8);
    assert.deepEqual(validateSave(save).forest,save.forest);
  }
- assert.equal(visitedIds.size,32,'Four chapters should deliver 32 distinct prompts on a fresh campaign');
+ assert.equal(visitedIds.size,44,'Four chapters should deliver 44 distinct prompts on a fresh campaign');
  assert.equal(bosses.size,4);
  assert.equal(enemies.size,20);
  assert.equal(save.forest.relics.length,5,'Three chapter relics plus two route relics');
@@ -801,7 +801,8 @@ test('all four chapter bosses stage listening, language puzzle and speaking with
   for(const area of FOREST_AREAS){
     for(const level of DIFFICULTIES){
       const wave=buildForestWave({difficulty:level,wave:1,areaId:area.id,progression:'story',bossConversation:true,random:()=>.44});
-      const phases=wave.prompts.slice(5).map((prompt,i)=>forestBossPhase({areaId:area.id,index:i+5,wave:1,level,prompt}));
+      const start=regularEncountersFor(area.id);
+      const phases=wave.prompts.slice(start).map((prompt,i)=>forestBossPhase({areaId:area.id,index:i+start,wave:1,level,prompt}));
       assert.equal(phases.length,3);
       assert.deepEqual(phases.map(p=>p.turn),[1,2,3]);
       assert.deepEqual(phases.map(p=>p.kind),['listen',area.id==='entry'?'grammar':area.id==='thicket'?'grammar':'vocab','speak']);
