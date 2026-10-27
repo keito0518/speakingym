@@ -39,7 +39,7 @@ const path=require('node:path');
   try{
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
-      assert.equal(await page.getByRole('heading',{name:/今日は、何を練習する/}).isVisible(),true);
+      assert.equal(await page.getByRole('heading',{name:/今日のひとことが/}).isVisible(),true);
       assert.equal(await page.locator('#hero-monster-name').innerText(),'Yolkie');
       assert.match(await page.locator('#hero-vocab').innerText(),/yolk/);
       assert.equal(await page.locator('#home-wallet').innerText(),'0');
