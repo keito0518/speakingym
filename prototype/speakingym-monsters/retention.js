@@ -7,13 +7,13 @@ const days=(date,count)=>{
  const t=new Date(date+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+count);
  return t.toISOString().slice(0,10);
 };
-export const RETENTION_INTERVALS=Object.freeze([1,3,7]);
+export const RETENTION_INTERVALS=Object.freeze([1,3,7,14]);
 export const retentionKey=prompt=>prompt.id;
 export function sanitizeRetention(raw){
  const ids=new Set(ALL_PROMPTS.map(p=>p.id));
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};
  return Object.fromEntries(Object.entries(raw).filter(([id,v])=>
-  ids.has(id)&&v&&Number.isInteger(v.stage)&&v.stage>=0&&v.stage<=3&&
+  ids.has(id)&&v&&Number.isInteger(v.stage)&&v.stage>=0&&v.stage<=4&&
   validDate(v.lastDay)&&validDate(v.nextDay)&&v.nextDay>=v.lastDay
  ).slice(-256).map(([id,v])=>[id,{stage:v.stage,lastDay:v.lastDay,nextDay:v.nextDay}]));
 }
@@ -25,7 +25,7 @@ export function recordRetention(save,promptId,rating,today){
  let stage=before?.stage||0;
  if(rating==='again'){stage=0;}
  else if(rating==='smooth'&&(!before||today>=before.nextDay&&today>before.lastDay)){
-  stage=Math.min(3,stage+1);
+  stage=Math.min(4,stage+1);
  }
  // A hint does not erase previously established spaced practice, but moves
  // its next test to tomorrow. Same-day repeats never skip a calendar interval.
@@ -45,8 +45,8 @@ export function retentionOverview(save,today){
    due:record.nextDay<=today};
  }).sort((a,b)=>Number(b.due)-Number(a.due)||a.nextDay.localeCompare(b.nextDay)||a.id.localeCompare(b.id));
  return {due:pending.filter(v=>v.due),upcoming:pending.filter(v=>!v.due),
-  stable:pending.filter(v=>v.stage===3),total:pending.length};
+  stable:pending.filter(v=>v.stage===4),total:pending.length};
 }
 export function retentionTitle(stage){
- return ['もう一度確認','翌日チェック達成','3日後チェック達成','7日後チェック達成'][Math.max(0,Math.min(3,stage))];
+ return ['もう一度確認','初回練習完了','翌日チェック達成','3日後チェック達成','7日後チェック達成'][Math.max(0,Math.min(4,stage))];
 }
