@@ -106,6 +106,34 @@ function passes(text, requirement) {
    catch { return false; }
  });
 }
+// Detect changes of intent that keyword rubrics would otherwise mistake
+// for success. Ambiguity -> review, NOT incorrect: spoken English remains open.
+function conflictingDetails(base,text){
+  const note=message=>({status:'review',reasons:[message],confidence:'low',method:'context-safety'});
+  if(/\b(?:but actually|actually i (?:want|prefer|need)|instead of|rather than)\b/.test(text))
+    return note('途中で希望を変更している可能性があります。最終的に伝えたい内容を一文で確認してみよう。');
+  if(base==='booking-table'){
+    const sizes=[...text.matchAll(/\b(?:table for|party of|for) (one|two|three|four|five|six|seven|eight|[1-9])\b/g)];
+    if(sizes.some(m=>!['two','2'].includes(m[1])))
+      return note('この場面で必要なのは2人分の席です。人数を確認してみよう。');
+  }
+  if(base==='order-coffee'&&/\b(?:hot coffee|warm coffee|hot tea|tea instead|without ice)\b/.test(text))
+    return note('この場面はアイスコーヒーの注文です。温かい飲み物と取り違えていないか確認しよう。');
+  if(base==='direction-station'&&/\b(?:bus stop|airport|hospital|supermarket)\b/.test(text))
+    return note('行き先は駅です。別の施設を尋ねていないか確認しよう。');
+  if(base==='agree-friend'){
+    if(/\b(?:sunday|monday|tuesday|wednesday|thursday|friday)\b/.test(text)||
+       /\b(?:at|around|about) (?:one|two|four|five|six|seven|eight|nine|ten|eleven|twelve|[124-9])\b/.test(text))
+      return note('提案された午後3時と違う日時が含まれているようです。確認してみよう。');
+  }
+  if(base==='agree-work'&&/\b(?:monday|tuesday|wednesday|thursday|saturday|sunday)\b/.test(text))
+    return note('提案された金曜日以外の日が含まれています。');
+  if(base==='prefer-city'||base==='prefer-friend'){
+    if(/\b(?:prefer|rather (?:take|use)|choose|want to take) (?:the )?bus\b/.test(text))
+      return note('この場面では電車を選ぶ必要があります。希望の乗り物を確認してみよう。');
+  }
+  return null;
+}
 export function gradeLocalResponse(prompt, raw) {
  if(!prompt || !known.has(prompt.id)) return {status:'ungraded',reasons:['未登録の問題です。'],confidence:'none'};
  const text=normalizeEnglish(raw);
@@ -151,6 +179,10 @@ export function gradeLocalResponse(prompt, raw) {
  );
  if(hasNegation&&!intendedNegative)
    return {status:'review',reasons:['否定表現が含まれているため、伝えたい意味が逆になっていないか確認しよう。'],confidence:'low',method:'polarity-review'};
+ // A rubric can match a keyword from an abandoned or conflicting choice.
+ // Guard *before* crediting any non-exact spoken phrase.
+ const conflict=conflictingDetails(base,text);
+ if(conflict)return conflict;
  const list=difficulty==='hard'?hard[base]:difficulty==='easy'?(easy[base]||rubric[base]):rubric[base];
  if(!list?.length) return {status:'review',reasons:['この場面では、登録済みの例文や言い換えとは異なる表現でした。自然な英語の可能性があるので誤答とは判定しません。'],confidence:'low',method:'example-review'};
  const missing=list.filter(item=>!passes(text,item)).map(item=>item.label);
