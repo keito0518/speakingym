@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -159,10 +159,14 @@ function renderHome() {
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
   $('#home-wallet').textContent = save.xpWallet;
-  const bookmarked=savedReviewPrompts(save);
+  const bookmarked=savedReviewQueue(save);
+  const needsReview=bookmarked.filter(item=>item.due);
   $('#start-saved-review').disabled=!bookmarked.length;
   $('#start-saved-review').textContent=`保存した問題を解く（${bookmarked.length}問）`;
-  $('#saved-question-list').innerHTML=bookmarked.length?bookmarked.map(prompt=>`<div class="saved-question"><span>${escapeHtml(prompt.scene)} · ${escapeHtml(prompt.difficulty||'easy')}</span><strong>${escapeHtml(prompt.cue)}</strong><button type="button" data-remove-saved="${escapeHtml(prompt.id)}" aria-label="${escapeHtml(prompt.scene)}の保存を解除">保存解除</button></div>`).join(''):'<p class="review-journal-empty">まだ保存した問題はありません。問題画面の「☆ 問題を保存」から追加できるよ。</p>';
+  $('#start-due-saved-review').disabled=!needsReview.length;
+  $('#start-due-saved-review').textContent=`要復習から練習（${needsReview.length}問）`;
+  $('#saved-question-list').innerHTML=bookmarked.length?bookmarked.map(({prompt,due,weak})=>
+    `<div class="saved-question"><span>${escapeHtml(prompt.scene)} · ${escapeHtml(prompt.difficulty||'easy')} · ${due?'今日の復習':weak?'苦手を練習':'保存済み'}</span><strong>${escapeHtml(prompt.cue)}</strong><button type="button" data-remove-saved="${escapeHtml(prompt.id)}" aria-label="${escapeHtml(prompt.scene)}の保存を解除">保存解除</button></div>`).join(''):'<p class="review-journal-empty">まだ保存した問題はありません。問題画面の「☆ 問題を保存」から追加できるよ。</p>';
   $$('[data-remove-saved]').forEach(button=>button.addEventListener('click',()=>{persist(toggleSavedPrompt(save,button.dataset.removeSaved));renderHome();}));
   const forest=cleanForest(save.forest);
   $('#forest-home-progress').textContent = `攻略 ${forest.completedAreas.length}/${FOREST_AREAS.length}エリア · 討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個`;
@@ -211,15 +215,15 @@ function dueForestPromptIds(){
   return Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id);
 }
 function dueQuizWeaknessIds(){return quizWeaknessOverview(save).due.map(item=>item.id);}
-function startSession(mode,requestedAreaId=null) {
+function startSession(mode,requestedAreaId=null,onlyDue=false) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
-  if(mode==='saved'&&!savedReviewPrompts(save).length){renderHome();return;}
+  if(mode==='saved'&&!savedReviewQueue(save).some(item=>!onlyDue||item.due)){renderHome();return;}
   const area=forestMode?(endless?FOREST_AREAS[0]:unlockedForestAreas(save).find(a=>a.id===requestedAreaId)||nextForestArea(save)):null;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
-  const prompts=forestMode?firstWave.prompts:mode==='saved'?savedReviewPrompts(save):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
+  const prompts=forestMode?firstWave.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
@@ -454,12 +458,13 @@ function renderQuestion() {
   const bookmark=document.createElement('button');
   bookmark.type='button';bookmark.id='bookmark-question';bookmark.className='bookmark-question';
   bookmark.setAttribute('aria-pressed',String(saved));
-  bookmark.textContent=saved?'★ 保存済み':'☆ 問題を保存';
+  const bookmarkText=enabled=>englishMode?(enabled?'★ Saved':'☆ Save this question'):(enabled?'★ 保存済み':'☆ 問題を保存');
+  bookmark.textContent=bookmarkText(saved);
   bookmark.addEventListener('click',()=>{
     persist(toggleSavedPrompt(save,prompt.id));
     const active=save.savedPromptIds.includes(prompt.id);
     bookmark.setAttribute('aria-pressed',String(active));
-    bookmark.textContent=active?'★ 保存済み':'☆ 問題を保存';
+    bookmark.textContent=bookmarkText(active);
   });
   $('#play-card').querySelector('.question-top').after(bookmark);
   if(play.mode==='forest'&&quizMode&&quizWeaknessOverview(save).due.some(item=>item.id===prompt.id||item.baseId===(prompt.baseId||prompt.id))){
@@ -943,6 +948,7 @@ $('#start-forest').addEventListener('click',()=>startSession('forest'));
 $('#start-forest-endless').addEventListener('click',()=>startSession('forest-endless'));
 $('#start-review-practice').addEventListener('click',()=>startSession('practice'));
 $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
+$('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   cancelAutoAdvance();
