@@ -143,7 +143,7 @@ const path=require('node:path');
     assert.equal(await recallPage.locator('#play-card').getAttribute('data-prompt-id'),'think-cafe');
     await recallPage.locator('#spoken-answer').fill('Let me think about it.');
     await recallPage.locator('#show-answer').click();
-    assert.match(await recallPage.locator('.retention-result').innerText(),/3日後チェック達成/);
+    assert.match(await recallPage.locator('.retention-result').innerText(),/翌日チェック達成/);
     assert.match(await recallPage.locator('.retention-result').innerText(),/仲間との絆/);
     await recallPage.locator('#next-question').click();
     const afterReview=await recallPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
