@@ -223,6 +223,15 @@ export function captureEligibleMonsters(save,today=dayKey()){
   }
   return {save:next,captured};
 }
+// Cosmetic friendship tiers require separated-day English recall. They do not
+// affect grading, defeat odds, premium access, or new monster recruitment.
+export function getMonsterBondProgress(save,id=save.selectedMonster){
+ const points=save.monsterBonds?.[id]||0;
+ const thresholds=[0,1,3,6,10];
+ const rank=thresholds.reduce((n,min)=>points>=min?n+1:n,0)-1;
+ return {points,rank,next:thresholds[Math.min(rank+1,thresholds.length-1)]-points,
+   maxed:rank===thresholds.length-1};
+}
 export function getMonsterProgress(save, id = save.selectedMonster) {
   const xp = save.monsterXp[id] || 0;
   return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), evolved: xp >= EVOLUTION_XP, toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
