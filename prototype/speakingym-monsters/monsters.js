@@ -163,7 +163,7 @@ function renderHome() {
   $('#start-saved-review').disabled=!bookmarked.length;
   $('#start-saved-review').textContent=`保存した問題を解く（${bookmarked.length}問）`;
   $('#saved-question-list').innerHTML=bookmarked.length?bookmarked.map(prompt=>`<div class="saved-question"><span>${escapeHtml(prompt.scene)} · ${escapeHtml(prompt.difficulty||'easy')}</span><strong>${escapeHtml(prompt.cue)}</strong><button type="button" data-remove-saved="${escapeHtml(prompt.id)}" aria-label="${escapeHtml(prompt.scene)}の保存を解除">保存解除</button></div>`).join(''):'<p class="review-journal-empty">まだ保存した問題はありません。問題画面の「☆ 問題を保存」から追加できるよ。</p>';
-  $('[data-remove-saved]').forEach(button=>button.addEventListener('click',()=>{persist(toggleSavedPrompt(save,button.dataset.removeSaved));renderHome();}));
+  $$('[data-remove-saved]').forEach(button=>button.addEventListener('click',()=>{persist(toggleSavedPrompt(save,button.dataset.removeSaved));renderHome();}));
   const forest=cleanForest(save.forest);
   $('#forest-home-progress').textContent = `攻略 ${forest.completedAreas.length}/${FOREST_AREAS.length}エリア · 討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個`;
   const unlocked=new Set(unlockedForestAreas(save).map(area=>area.id));
