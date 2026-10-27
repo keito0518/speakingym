@@ -128,6 +128,14 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
      if(unseen.length)candidates=unseen;
    }
    const focus=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
+   // The chapter's final speaking boss should transfer the expressions
+   // practiced in that chapter to a situation, not draw an unrelated task.
+   // Respect any explicit due review above this tie-breaker.
+   if(areaId!=='entry'&&slot===regular+2&&
+       !candidates.some(p=>dueIds.has(p.id)||weakQuizIds.has(p.id))){
+     const chapterResponses=candidates.filter(p=>focus.has(p.phraseId));
+     if(chapterResponses.length)candidates=chapterResponses;
+   }
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
      previous.has(p.id)?1:0,
