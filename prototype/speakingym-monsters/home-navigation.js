@@ -53,7 +53,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
  <button type="button" class="home-feature-cta" data-feature-daily>今日の5分をスタート <span aria-hidden="true">›</span></button></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
- feature.querySelector('[data-feature-daily]').addEventListener('click',()=>showPage('daily'));
+ feature.querySelector('[data-feature-daily]').addEventListener('click',()=>startMode('daily'));
  const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>トレーニングを選ぶ</h2><p>目的に合わせて、自分のペースで</p>';
  const grid=document.createElement('div');grid.className='home-navigation-grid';
  for(const item of buttons){
