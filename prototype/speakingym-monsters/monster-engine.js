@@ -18,6 +18,7 @@ export function createSave() {
     difficulty: 'easy',
     ownedMonsters: ['medamago'],
     monsterXp: { medamago: 0 },
+    monsterBonds: { medamago: 0 },
     xpWallet: 0,
     progress: {},
     reviewPrompts: {},
@@ -76,6 +77,7 @@ export function validateSave(value) {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
     difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
     monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, Math.max(0, Number(value.monsterXp?.[id]) || 0)])),
+    monsterBonds: Object.fromEntries(ownedMonsters.map(id=>[id,Number.isSafeInteger(value.monsterBonds?.[id])?Math.max(0,Math.min(999,value.monsterBonds[id])):0])),
     // Older prototype saves put XP straight onto companions. Keep that growth,
     // and initialize the new spendable wallet without duplicating historical XP.
     xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
@@ -215,6 +217,8 @@ export function captureEligibleMonsters(save,today=dayKey()){
     if(!companionUnlockProgress(next,creature,today).ready)continue;
     next.ownedMonsters.push(creature.id);
     next.monsterXp[creature.id]=0;
+    next.monsterBonds ||= {};
+    next.monsterBonds[creature.id]=0;
     captured.push(creature.id);
   }
   return {save:next,captured};
@@ -470,6 +474,18 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   next.totalAnswers++;
   const retentionRecord=recordRetention(next,prompt.id,rating,today);
   next.retention=retentionRecord.save.retention;
+  // Reward a *verified spaced revisit* with a purely cosmetic bond milestone.
+  // Same-day repeats, listening recognition failures and hints grant no bond.
+  // Bond XP is never spendable and does not bypass recruitment prerequisites.
+  let bondGained=0;
+  if(rating==='smooth'&&retentionRecord.stageChanged&&retentionRecord.stage>=2){
+    bondGained=retentionRecord.stage===3?2:1;
+    next.monsterBonds ||= {};
+    const id=next.selectedMonster;
+    if(next.ownedMonsters.includes(id))
+      next.monsterBonds[id]=Math.min(999,(next.monsterBonds[id]||0)+bondGained);
+    else bondGained=0;
+  }
 
   // Each completed prompt earns spendable XP. Training does not silently level
   // the selected monster; learners choose whom to grow in their collection.
@@ -480,7 +496,7 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   next.xpWallet = (next.xpWallet || 0) + xp;
 
   const {save:awarded,captured}=captureEligibleMonsters(next,today);
-  return { save: awarded, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: awarded.xpWallet,retentionStage:retentionRecord.stage,retentionAdvanced:retentionRecord.stageChanged,nextRetentionDay:retentionRecord.nextDay } };
+  return { save: awarded, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: awarded.xpWallet,retentionStage:retentionRecord.stage,retentionAdvanced:retentionRecord.stageChanged,nextRetentionDay:retentionRecord.nextDay,bondGained } };
 }
 
 export function finishRound(save, smoothCount) {
