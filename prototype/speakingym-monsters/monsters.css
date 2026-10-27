@@ -426,3 +426,30 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 @media(max-width:340px){
  .home-navigation-head h1{font-size:24px}
 }
+
+
+/* Dungeon reflection: focus on verified English skills, not meaningless XP. */
+.dungeon-learning-report{margin:25px 0 22px;padding:21px 18px;border:1px solid #b9d2c5;border-radius:19px;background:linear-gradient(150deg,#eff7ed,#fffdf1);color:#234b39}
+.dungeon-learning-report[hidden]{display:none!important}
+.dungeon-report-top .tiny-caps{color:#47735b}
+.dungeon-report-top h2{font-size:clamp(20px,4vw,27px);line-height:1.4;margin:9px 0}
+.dungeon-report-top>p{font-size:13px;line-height:1.6;color:#60725e}
+.dungeon-report-status{display:inline-block;margin-top:10px;background:#e1efdd;border-radius:10px;padding:5px 10px;color:#2d6046;font-size:11px;font-weight:800}
+.dungeon-report-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:17px 0}
+.dungeon-report-stats>div{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 7px;border:1px solid #d9e4d6;border-radius:12px;background:#fffef7}
+.dungeon-report-stats strong{font-size:28px;line-height:1.15;color:#336749;font-variant-numeric:tabular-nums}
+.dungeon-report-stats small{text-align:center;font-size:10px;line-height:1.5;color:#597360}
+.dungeon-report-skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.dungeon-report-skill{padding:13px 11px;border-radius:12px;background:#ffffffdf;border:1px solid #d8e7da}
+.dungeon-report-skill-head{display:flex;justify-content:space-between;align-items:baseline;gap:7px;margin-bottom:8px}
+.dungeon-report-skill-head strong{font-size:13px;color:#254c39}
+.dungeon-report-skill-head span{font-size:10px;color:#577461;white-space:nowrap}
+.dungeon-report-meter{height:8px;width:100%;background:#e2e8d9;overflow:hidden;border-radius:99px;margin-bottom:8px}
+.dungeon-report-meter span{display:block;background:#5a9970;height:100%;border-radius:99px}
+.dungeon-report-skill small{font-size:11px;color:#68766b}
+.dungeon-report-coach{font-size:13px;line-height:1.75;padding:11px 12px;background:#e8f3e5;border-left:3px solid #7aad87;border-radius:9px;margin:15px 0 6px}
+.dungeon-report-practice{font-size:12px;line-height:1.65;color:#617261}
+.dungeon-report-retry{display:block;width:100%;max-width:420px;min-height:49px;border-radius:12px;border:1px solid #326b4d;background:#2e704f;color:#fffefa;font-weight:800;font-size:13px;padding:12px 15px;margin:14px auto 0;cursor:pointer}
+.dungeon-report-retry:disabled{opacity:.6;cursor:default;background:#d8e5da;border-color:#b9cebe;color:#45644d}
+.dungeon-report-retry:focus-visible{outline:3px solid #edc266;outline-offset:3px}
+@media(max-width:430px){.dungeon-learning-report{padding:15px 10px}.dungeon-report-skills{grid-template-columns:1fr}.dungeon-report-stats{gap:5px}.dungeon-report-stats strong{font-size:24px}.dungeon-report-stats small{font-size:9px}}
