@@ -22,6 +22,10 @@ const path=require('node:path');
     await page.goto(base,{waitUntil:'networkidle'});
     return {context,page};
   };
+  const enterHomePanel=async(page,target)=>{
+    if(await page.locator('#home-navigation').isVisible())
+      await page.locator(`[data-home-page="${target}"]`).click();
+  };
   const unlockListening=async page=>{
     if(!await page.locator('#play-audio').count())return;
     await page.locator('#play-audio').click();
@@ -35,7 +39,7 @@ const path=require('node:path');
   try{
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
-      assert.equal(await page.getByRole('heading',{name:/英語を話すほど/}).isVisible(),true);
+      assert.equal(await page.getByRole('heading',{name:/今日は、何を練習する/}).isVisible(),true);
       assert.equal(await page.locator('#hero-monster-name').innerText(),'Yolkie');
       assert.match(await page.locator('#hero-vocab').innerText(),/yolk/);
       assert.equal(await page.locator('#home-wallet').innerText(),'0');
@@ -46,17 +50,41 @@ const path=require('node:path');
       const credits=await page.getByRole('link',{name:'音声クレジット'}).getAttribute('href');
       assert.equal(credits,'./audio-credits.html');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-home.png`),fullPage:true});
-      await page.getByRole('button',{name:/まず練習する/}).click();
+      await enterHomePanel(page,'training');
+    await page.getByRole('button',{name:/まず練習する/}).click();
       const playMetrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(playMetrics.scroll<=playMetrics.inner+1,`${engine}/${width} question horizontal overflow: ${JSON.stringify(playMetrics)}`);
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-question.png`),fullPage:true});
       await context.close();
     }
+    // The home is an actual menu, not eight stacked screens. Tutorial works on mobile.
+    const {context:menuContext,page:menuPage}=await boot(390);
+    assert.equal(await menuPage.locator('#home-navigation [data-home-page]').count(),8);
+    assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
+    assert.equal(await menuPage.locator('.home-destination:visible').count(),0);
+    await menuPage.locator('[data-home-page="tutorial"]').click();
+    assert.equal(await menuPage.locator('#monsters-tutorial').isVisible(),true);
+    assert.match(await menuPage.locator('#tutorial-heading').innerText(),/今日の5分ジム/);
+    await menuPage.locator('#tutorial-next').click();
+    await menuPage.locator('#tutorial-next').click();
+    assert.match(await menuPage.locator('#tutorial-description').innerText(),/iPhone/);
+    await menuPage.locator('#tutorial-close').click();
+    assert.equal(await menuPage.locator('#monsters-tutorial').isVisible(),false);
+    await menuPage.locator('[data-home-page="forest"]').click();
+    assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
+    await menuPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
+    assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
+    await menuPage.locator('[data-home-page="review"]').click();
+    assert.equal(await menuPage.locator('#saved-review-title').isVisible(),true);
+    assert.equal(await menuPage.locator('#review-journal-title').isVisible(),true);
+    await menuContext.close();
     // Daily five-minute workout stays calm, explains answers and records
     // completed offline work without a hard timer or a battle animation.
     const {context:gymContext,page:gymPage}=await boot(390);
+    await enterHomePanel(gymPage,'daily');
     assert.equal(await gymPage.locator('#start-daily-gym').isVisible(),true);
     assert.match(await gymPage.locator('#daily-plan-status').innerText(),/8問/);
+    await enterHomePanel(gymPage,'daily');
     await gymPage.locator('#start-daily-gym').click();
     assert.match(await gymPage.locator('#play-mode-label').innerText(),/今日の5分ジム/);
     assert.equal(await gymPage.locator('#play-view').evaluate(e=>e.classList.contains('review-only')),true);
@@ -100,7 +128,8 @@ const path=require('node:path');
       for (const difficulty of ['normal','hard']) {
         await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
-        await levelPage.getByRole('button',{name:/まず練習する/}).click();
+        await enterHomePanel(levelPage,'training');
+    await levelPage.getByRole('button',{name:/まず練習する/}).click();
         assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH/);
         if(await levelPage.locator('#play-audio').count()){
           assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening task text must start hidden');
@@ -153,6 +182,7 @@ const path=require('node:path');
       localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
     });
     await listenPage.reload();
+    await enterHomePanel(listenPage,'training');
     await listenPage.getByRole('button',{name:/まず練習する/}).click();
     assert.equal(await listenPage.locator('#play-card').getAttribute('data-prompt-id'),'late-call');
     assert.equal(await listenPage.locator('#answer-area').isVisible(),false);
@@ -193,6 +223,7 @@ const path=require('node:path');
     await reviewPage.reload();
     assert.equal(await reviewPage.locator('#review-due-count').innerText(),'1');
     assert.match(await reviewPage.locator('#review-journal-list').innerText(),/助けを求める/);
+    await enterHomePanel(reviewPage,'review');
     await reviewPage.locator('#start-review-practice').click();
     assert.equal(await reviewPage.locator('#play-card').getAttribute('data-prompt-id'),'help-bag');
     assert.match(await reviewPage.locator('#speech-helper').innerText(),/復習問題/);
@@ -212,6 +243,7 @@ const path=require('node:path');
       localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
     });
     await coachPage.reload();
+    await enterHomePanel(coachPage,'training');
     await coachPage.getByRole('button',{name:/まず練習する/}).click();
     assert.equal(await coachPage.locator('#play-card').getAttribute('data-prompt-id'),'late-traffic-easy');
     await coachPage.locator('#spoken-answer').fill("I'll be late five minutes.");
@@ -231,6 +263,7 @@ const path=require('node:path');
     });
     await weakPage.reload();
     assert.match(await weakPage.locator('#forest-weakness-summary').innerText(),/苦手の復習 1問/);
+    await enterHomePanel(weakPage,'forest');
     await weakPage.locator('#start-forest').click();
     await weakPage.locator('#forest-explore-continue').click();
     const firstAnswer=await weakPage.evaluate(async()=>{
@@ -267,6 +300,7 @@ const path=require('node:path');
     // A natural-sounding but locally unverified reply must not trap learners
     // in the forest. They may choose a non-rewarded practice route instead.
     const {context:practiceContext,page:practicePage}=await boot(390);
+    await enterHomePanel(practicePage,'forest');
     await practicePage.locator('#start-forest').click();
     await practicePage.locator('#forest-explore-continue').click();
     const recordedPrompt=await practicePage.locator('#play-card').getAttribute('data-prompt-id');
@@ -281,8 +315,10 @@ const path=require('node:path');
     assert.equal(await practicePage.locator('#forest-explore-options').isVisible(),true,'Opt-in practice should advance without demanding the model sentence');
     assert.equal(await practicePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),practiceXp,'No XP for unverified expression');
     await practicePage.locator('#leave-play').click();
+    await enterHomePanel(practicePage,'review');
     assert.match(await practicePage.locator('#start-saved-review').innerText(),/1問/);
     assert.match(await practicePage.locator('#saved-question-list').innerText(),/森|カフェ|待ち合わせ|旅行|英語|聞/);
+    await enterHomePanel(practicePage,'review');
     await practicePage.locator('#start-saved-review').click();
     assert.equal(await practicePage.locator('#play-card').getAttribute('data-prompt-id'),recordedPrompt);
     assert.equal(await practicePage.locator('#forest-journey').isVisible(),false,'Saved review must have no RPG battles');
@@ -292,7 +328,8 @@ const path=require('node:path');
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);
-      await forestPage.locator('#start-forest').click();
+      await enterHomePanel(forestPage,'forest');
+    await forestPage.locator('#start-forest').click();
       assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),false);
       assert.equal(await forestPage.locator('#forest-explore-art > svg').count(),1);
@@ -475,7 +512,7 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#forest-journal-summary').innerText(),/イベント 1\/8種類/);
       assert.match(await forestPage.locator('#forest-journal-events').innerText(),/光るキノコの輪/);
       await forestPage.reload();
-      await forestPage.locator('#open-collection').click();
+      await forestPage.locator('[data-home-page="collection"]').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
       await forestPage.locator('#collection-home').click();
       assert.match(await forestPage.locator('#forest-home-progress').innerText(),/討伐 1回/);
@@ -499,6 +536,7 @@ const path=require('node:path');
       await autoPage.locator('#spoken-answer').fill(answer);
       await autoPage.locator('#show-answer').click();
     };
+    await enterHomePanel(autoPage,'forest');
     await autoPage.locator('#start-forest').click();
     await autoPage.locator('#forest-explore-continue').click();
     await autoAnswer();
@@ -532,6 +570,7 @@ const path=require('node:path');
     // Endless mode limits attempts by difficulty; ambiguous results are not falsely called wrong.
     const {context:endlessContext,page:endlessPage}=await boot(390);
     await endlessPage.locator('[data-difficulty="hard"]').click();
+    await enterHomePanel(endlessPage,'forest');
     await endlessPage.locator('#start-forest-endless').click();
     assert.equal(await endlessPage.locator('#forest-explore-screen').isVisible(),true);
     await endlessPage.locator('#forest-explore-continue').click();
@@ -601,6 +640,7 @@ const path=require('node:path');
       }
       window.SpeechRecognition=FakeRecognition;
     });
+    await enterHomePanel(micPage,'training');
     await micPage.getByRole('button',{name:/まず練習する/}).click();
     assert.equal(await micPage.locator('#play-card').getAttribute('data-prompt-id'),'think-cafe');
     await unlockListening(micPage);
@@ -670,6 +710,7 @@ const path=require('node:path');
       localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
     });
     await page.reload();
+    await enterHomePanel(page,'training');
     await page.getByRole('button',{name:/まず練習する/}).click();
     assert.match(await page.locator('#play-mode-label').innerText(),/練習モード/);
     assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'think-trip');
