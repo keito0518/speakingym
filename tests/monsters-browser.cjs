@@ -365,7 +365,12 @@ const path=require('node:path');
             assert.match(await forestPage.locator('#forest-explore-event').innerText(),/探索の記録|EXPEDITION MEMORY/);
             assert.equal(await forestPage.locator('[data-forest-event-option]').count(),0);
             const afterChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-            assert.deepEqual(afterChoice,beforeChoice,'Story events are cosmetic and cannot award XP or rewrite learner records');
+            assert.equal(afterChoice.xpWallet,beforeChoice.xpWallet,'Story choices cannot award XP');
+            assert.deepEqual(afterChoice.ownedMonsters,beforeChoice.ownedMonsters);
+            assert.deepEqual(afterChoice.progress,beforeChoice.progress);
+            assert.deepEqual(afterChoice.reviewPrompts,beforeChoice.reviewPrompts);
+            assert.equal(afterChoice.forest.journal.length,beforeChoice.forest.journal.length+1,'Events should persist to the adventure journal');
+            assert.equal(afterChoice.forest.journal.at(-1).eventId,'entry-moss');
           }
           await forestPage.locator('#forest-explore-continue').click();
         }
@@ -397,6 +402,8 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#result-rewards').innerText(),/120 XP/);
       await forestPage.locator('#result-collection').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
+      assert.match(await forestPage.locator('#forest-journal-summary').innerText(),/イベント 1\/8種類/);
+      assert.match(await forestPage.locator('#forest-journal-events').innerText(),/光るキノコの輪/);
       await forestPage.reload();
       await forestPage.locator('#open-collection').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
@@ -405,6 +412,8 @@ const path=require('node:path');
       const saved=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.equal(saved.forest.clears,1);
       assert.deepEqual(saved.forest.relics,['moss-lantern']);
+      assert.equal(saved.forest.journal.length,1);
+      assert.equal(saved.forest.journal[0].eventId,'entry-moss');
       assert.equal(saved.xpWallet,120);
       await forestContext.close();
     }
@@ -568,8 +577,11 @@ const path=require('node:path');
     await micContext.close();
     const {context,page}=await boot(390);
     await page.evaluate(async()=>{
-      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
-      const seeded=createSave();
+      const {createSave,recordAnswer,STORAGE_KEY}=await import('./monster-engine.js');
+      // One authentic prior expression keeps the short flow focused on rewards
+      // while Soxie still requires FOUR independent expressions to recruit.
+      const seeded=recordAnswer(createSave(),'help-bag','smooth','2026-10-25').save;
+      seeded.xpWallet=0;
       for(const id of ['think-trip','repeat-station','agree-friend'])seeded.reviewPrompts[id]='2020-01-01';
       localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
     });
@@ -632,7 +644,7 @@ const path=require('node:path');
     await page.locator('[data-select-monster="katappo"]').click();
     await page.locator('#detail-back').click();
     await page.locator('#collection-home').click();
-    assert.match(await page.locator('#stat-independent').innerText(),/2 \/ 16/);
+    assert.match(await page.locator('#stat-independent').innerText(),/4 \/ 16/);
     assert.match(await page.locator('#hero-monster-name').innerText(),/Soxie/);
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
