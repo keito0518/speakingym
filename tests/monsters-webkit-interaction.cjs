@@ -13,7 +13,11 @@ const assert=require('node:assert/strict');
     page.on('crash',()=>errors.push('Page crashed'));
     await page.goto(process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/');
     await page.locator('#start-forest').click();
-    await page.locator('#forest-explore-continue').click();
+    // The intro may already advance straight into combat on WebKit. Only
+    // click the explore Continue button when that panel is actually visible.
+    if(await page.locator('#forest-explore-continue').isVisible())
+      await page.locator('#forest-explore-continue').click();
+    await page.locator('#forest-journey').waitFor({state:'visible'});
     await page.locator('#spoken-answer').fill('I have an unexpected answer.');
     await page.locator('#show-answer').click();
     assert.equal(await page.locator('.forest-guarding').count(),1);
