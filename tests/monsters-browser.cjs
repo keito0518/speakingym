@@ -57,7 +57,13 @@ const path=require('node:path');
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
         await levelPage.getByRole('button',{name:/まず練習する/}).click();
         assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH/);
-        assert.equal(await levelPage.locator('.task-panel').isVisible(),true);
+        if(await levelPage.locator('#play-audio').count()){
+          assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening task text must start hidden');
+          assert.equal(await levelPage.locator('#answer-area').isVisible(),false);
+          await unlockListening(levelPage);
+          assert.equal(await levelPage.locator('[data-listening-choice]').count(),difficulty==='hard'?4:3);
+          assert.equal(await levelPage.locator('.task-panel').isVisible(),true,'Response context appears after audio comprehension');
+        }else assert.equal(await levelPage.locator('.task-panel').isVisible(),true);
         assert.equal(await levelPage.locator('#play-card').evaluate(el=>/[ぁ-んァ-ン一-龯]/.test(el.innerText)),false);
         const metrics=await levelPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
         assert.ok(metrics.scroll<=metrics.inner+1,`${engine}/${width} ${difficulty} overflow: ${JSON.stringify(metrics)}`);
