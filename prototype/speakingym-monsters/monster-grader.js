@@ -65,6 +65,14 @@ function passes(text, requirement) {
 export function gradeLocalResponse(prompt, raw) {
  if(!prompt || !known.has(prompt.id)) return {status:'ungraded',reasons:['未登録の問題です。'],confidence:'none'};
  const text=normalizeEnglish(raw);
+ // Quiz controls have a complete authored answer: a wrong option or word
+ // order is objectively incorrect, unlike open-ended spoken English.
+ if(prompt.kind==='vocab'||prompt.kind==='grammar'){
+   if(!text)return {status:'empty',reasons:['単語を選ぶか、カードを並べて答えてください。'],confidence:'none'};
+   if(text===normalizeEnglish(prompt.answer))
+     return {status:'correct',reasons:[],confidence:'high',method:'exact-quiz'};
+   return {status:'incorrect',reasons:[prompt.kind==='vocab'?'別の単語を選んでみよう。':'語順をもう一度考えてみよう。'],confidence:'high',method:'exact-quiz'};
+ }
  if (!text || text.length<5 || text.split(' ').length<2) return {status:'empty',reasons:['英語で回答を入力するか、マイクで話してください。'],confidence:'none'};
  if(text.length>550) return {status:'ungraded',reasons:['回答は550文字以内にしてください。'],confidence:'none'};
  // Author-vetted example answers are the narrowest high-confidence path.
