@@ -118,7 +118,7 @@ html[lang="ja"] .question-caption,html[lang="ja"] .result-surface,
 html[lang="ja"] .collection-head,html[lang="ja"] .stat-card p{
  word-break:normal;overflow-wrap:break-word;line-break:strict;hyphens:none;
 }
-html[lang="ja"] button{word-break:keep-all;overflow-wrap:normal;line-break:strict}
+html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:strict;text-wrap:balance}
 @media(max-width:690px){
  .hero-copy h1{font-size:clamp(30px,8.8vw,42px);letter-spacing:-.035em}
  .forest-invite h2{word-break:keep-all}

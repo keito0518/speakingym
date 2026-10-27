@@ -128,6 +128,10 @@ const path=require('node:path');
         if(action==='defense')assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-defended')),true);
         if(action==='reading')assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-reading-hit')),true);
       };
+      const moveOn=async()=>{
+        const next=forestPage.locator('#next-question');
+        if(await next.isVisible())await next.click();
+      };
       // Seeing a model answer cannot open a gate or mint any XP.
       await forestPage.locator('#spoken-answer').fill('I have no idea.');
       await forestPage.locator('#show-answer').click();
@@ -137,10 +141,10 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-guard svg').count(),1);
       assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1');
       await forestPage.locator('#show-example').click();
-      await forestPage.locator('#next-question').click();
+      await moveOn();
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
       await answer();
-      await forestPage.locator('#next-question').click();
+      await moveOn();
       assert.match(await forestPage.locator('#forest-explore-title').innerText(),/分かれ道/);
       assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
       assert.equal(await forestPage.locator('#answer-area').isVisible(),false);
@@ -150,7 +154,8 @@ const path=require('node:path');
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-route.png`),fullPage:true});
       await forestPage.locator('[data-forest-route="moss"]').click();
       assert.equal(await forestPage.locator('#forest-explore-art').getAttribute('data-route'),'moss');
-      await forestPage.locator('#forest-explore-continue').click();
+      if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
+      await forestPage.locator('#forest-journey').waitFor({state:'visible'});
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'moss');
       for(let mob=2;mob<=5;mob++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('ENCOUNTER '+mob+' \/ 5'));
@@ -199,9 +204,9 @@ const path=require('node:path');
           assert.match(await forestPage.locator('#forest-grammar-built').innerText(),/ /);
         }
         await answer();
-        await forestPage.locator('#next-question').click();
-        assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
-        await forestPage.locator('#forest-explore-continue').click();
+        await moveOn();
+        if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
+        await forestPage.locator('#forest-journey').waitFor({state:'visible'});
       }
       assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
       assert.equal(await forestPage.locator('.battle-arena-svg').getAttribute('data-arena'),'thorn-vault');
@@ -215,7 +220,7 @@ const path=require('node:path');
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
         if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').innerText(),/Thorn Kingをたおした！/);
-        await forestPage.locator('#next-question').click();
+        await moveOn();
       }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
@@ -234,6 +239,43 @@ const path=require('node:path');
       assert.equal(saved.xpWallet,120);
       await forestContext.close();
     }
+    // A forest clear automatically plays the hit, pauses for the learner to
+    // see it, then enters the next encounter. A route choice remains manual.
+    const {context:autoContext,page:autoPage}=await boot(390);
+    const autoAnswer=async()=>{
+      const answer=await autoPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+      });
+      await autoPage.locator('#spoken-answer').fill(answer);
+      await autoPage.locator('#show-answer').click();
+    };
+    await autoPage.locator('#start-forest').click();
+    await autoPage.locator('#forest-explore-continue').click();
+    await autoAnswer();
+    assert.match(await autoPage.locator('#forest-auto-status').innerText(),/自動で次へ/);
+    await autoPage.locator('#forest-explore-options').waitFor({state:'visible',timeoutMs:6500});
+    assert.match(await autoPage.locator('#forest-explore-title').innerText(),/分かれ道/);
+    await autoPage.waitForTimeout(1350);
+    assert.equal(await autoPage.locator('#forest-explore-options').isVisible(),true,'A route must never be chosen automatically');
+    await autoPage.locator('[data-forest-route="sunlit"]').click();
+    await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
+    assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 2/);
+    await autoAnswer();
+    assert.match(await autoPage.locator('#forest-combo').innerText(),/2 HIT COMBO/);
+    await autoPage.locator('#forest-world-stage[data-foe="spookap"]').waitFor({state:'visible',timeoutMs:6500});
+    assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 3/);
+    await autoAnswer();
+    await autoPage.locator('#pause-auto').click();
+    const pausedPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
+    await autoPage.waitForTimeout(2850);
+    assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),pausedPrompt,'Pause must cancel automatic advancement');
+    await autoPage.locator('#next-question').click();
+    await autoPage.locator('#forest-world-stage[data-foe="bramblet"]').waitFor({state:'visible',timeoutMs:4500});
+    assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 4/);
+    await autoPage.locator('#leave-play').click();
+    assert.equal(await autoPage.locator('#home-view').isVisible(),true);
+    await autoContext.close();
     // Endless mode limits attempts by difficulty; ambiguous results are not falsely called wrong.
     const {context:endlessContext,page:endlessPage}=await boot(390);
     await endlessPage.locator('[data-difficulty="hard"]').click();

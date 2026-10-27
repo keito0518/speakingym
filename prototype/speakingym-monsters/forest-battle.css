@@ -393,6 +393,58 @@
 .forest-active .forest-world-stage.forest-weakness-hit .forest-enemy{animation:enemy-strategy-break 1s ease both!important}
 .forest-active .forest-world-stage.forest-spell-cast .forest-party{animation:companion-reading-strike 1.15s ease-out both!important}
 .forest-world-stage.forest-spell-cast::before{background:radial-gradient(circle at 60% 45%,#d6bfffba,transparent 45%);opacity:1}
+
+/* A deliberate hit-stop, knockout and chain reward make verified answers feel
+   powerful without changing the language grade or amount of XP awarded. */
+.forest-combo{position:absolute;z-index:8;left:7%;top:29%;max-width:48%;pointer-events:none;
+ color:#fff3b5;font-weight:1000;font-size:clamp(15px,3.7vw,27px);letter-spacing:.035em;
+ text-shadow:0 3px 0 #744622,0 0 15px #ffe17f;opacity:0;transform:rotate(-7deg)}
+.forest-active .forest-world-stage.forest-attack .forest-combo:not(:empty){animation:forest-combo-pop 1.65s cubic-bezier(.16,.78,.23,1) both}
+.forest-active .forest-world-stage.forest-attack.forest-combo-boost{box-shadow:inset 0 0 34px #fbd97c83,0 0 17px #e7bd6288}
+.forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage) .forest-enemy{animation:forest-mob-knockout 1.18s cubic-bezier(.22,.8,.2,1) both!important}
+.forest-active .forest-world-stage.forest-attack .forest-world-vignette{animation:forest-flash-pulse .75s ease-out both}
+.forest-active .forest-world-stage.forest-attack .forest-damage{font-size:clamp(28px,6vw,45px);text-shadow:0 4px 0 #742d20,0 0 24px #ffe49a,0 0 9px #ffffff}
+.forest-active .forest-world-stage.forest-attack .forest-damage::after{content:" DAMAGE";display:block;font-size:.29em;letter-spacing:.18em;text-align:center;color:#fff8da}
+.forest-active .grading-correct{animation:forest-reward-in .5s ease-out both;border-color:#efcf73;background:linear-gradient(120deg,#fffaf0,#fff1ca)}
+.forest-auto-status{margin:13px 0 2px;padding:9px 11px;border-radius:9px;background:#e5f3e6;color:#235c45;font-size:12px;font-weight:800;line-height:1.7;text-wrap:pretty}
+.forest-auto-pause{width:100%;border:1px solid #c4d8c7;border-radius:10px;min-height:39px;margin-top:7px;background:#fffef6;color:#2b6b50;font-size:12px;font-weight:800}
+.forest-auto-pause[hidden]{display:none!important}
+.forest-active .grading-correct .grading-next{margin-top:8px}
+@keyframes forest-combo-pop{0%,14%{opacity:0;transform:translateY(20px) rotate(-13deg) scale(.65)}
+ 30%{opacity:1;transform:translateY(-9px) rotate(-7deg) scale(1.22)}
+ 45%,72%{opacity:1;transform:translateY(-6px) rotate(-7deg) scale(1)}
+ 100%{opacity:0;transform:translateY(-25px) rotate(-4deg) scale(1.04)}}
+@keyframes forest-mob-knockout{0%,32%{opacity:1;transform:translateX(0) scale(1)}
+ 41%{opacity:1;transform:translateX(12px) rotate(11deg) scale(1.14,.87)}
+ 51%{opacity:1;transform:translateX(-13px) rotate(-12deg) scale(.91,1.1)}
+ 70%{opacity:.95;transform:translate(18px,-5px) rotate(22deg) scale(.82)}
+ 100%{opacity:0;transform:translate(42px,18px) rotate(35deg) scale(.36)}}
+@keyframes forest-flash-pulse{0%,32%{filter:brightness(1)}45%{filter:brightness(2.1)}62%{filter:brightness(1.3)}100%{filter:brightness(1)}}
+@keyframes forest-reward-in{from{opacity:.65;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+
+/* Prevent arbitrary breaks inside the Japanese monster name and cramped
+   inner scrolling on small screens; ordinary page scrolling stays available. */
+.forest-foe-name{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:7px;row-gap:2px;min-width:0;overflow-wrap:normal}
+.forest-foe-english,.forest-foe-japanese{white-space:nowrap;word-break:keep-all}
+.forest-foe-japanese{font-family:system-ui,'Hiragino Kaku Gothic ProN',sans-serif;font-size:.88em;color:#e2e9c6}
+.forest-active .forest-battle-log{line-height:1.7;word-break:normal;overflow-wrap:break-word;text-wrap:pretty}
+.forest-active .forest-scene-story,.forest-explore-heading p,.forest-explore-route small,
+.forest-active .feedback-box,.forest-auto-status{line-break:strict;word-break:normal;overflow-wrap:break-word;text-wrap:pretty}
+.forest-active .play-card h1{line-height:1.6}
+.forest-active .question-caption{line-height:1.6}
+@media(max-width:690px){
+ .forest-active .play-card{max-height:none;overflow:visible}
+ .forest-active .forest-battle-log{font-size:12px}
+ .forest-active .forest-scene-story{font-size:12px;line-height:1.7}
+}
+@media(prefers-reduced-motion:reduce){
+ .forest-active .forest-world-stage.forest-attack .forest-combo,
+ .forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage) .forest-enemy,
+ .forest-active .forest-world-stage.forest-attack .forest-world-vignette,
+ .forest-active .grading-correct{animation:none!important}
+ .forest-active .forest-world-stage.forest-attack .forest-combo:not(:empty){opacity:1}
+ .forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage) .forest-enemy{opacity:0}
+}
 @media(max-width:370px){
  .forest-quiz{padding:10px}
  .forest-vocab-options{gap:5px}

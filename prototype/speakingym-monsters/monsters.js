@@ -22,7 +22,27 @@ const difficultyCopy = {
   hard: { label: 'むずかしい', description: '長めの英文を読み、複数の条件を満たして英語で答える。' }
 };
 let save = loadSave() || createSave();
-let play = null, timer = null, recognition = null, recognitionWatchdog = null;
+let play = null, timer = null, recognition = null, recognitionWatchdog = null, autoAdvanceTimer = null;
+
+function cancelAutoAdvance(){
+  if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
+  autoAdvanceTimer=null;
+}
+function queueAutoAdvance(callback,delay){
+  cancelAutoAdvance();
+  const session=play,index=play?.index;
+  autoAdvanceTimer=setTimeout(()=>{
+    autoAdvanceTimer=null;
+    if(play!==session||play?.index!==index||document.hidden)return;
+    callback();
+  },delay);
+}
+function queueForestEncounter(){
+  if(play?.mode!=='forest'||!$('#forest-explore-options').hidden)return;
+  queueAutoAdvance(()=>{
+    if($('#play-view').classList.contains('forest-exploring')&&$('#forest-explore-options').hidden)renderQuestion();
+  },1050);
+}
 
 function loadSave() {
   try { return validateSave(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')); }
@@ -61,6 +81,7 @@ function stopAudio() {
 }
 function clearTimer() { if (timer) clearInterval(timer); timer = null; }
 function showView(name) {
+  cancelAutoAdvance();
   for (const id of ['home','play','result','collection','detail','training']) $(`#${id}-view`).hidden = id !== name;
   stopAudio();
   const heading = $(`#${name}-view h1`);
@@ -120,7 +141,7 @@ function dueForestPromptIds(){
   return Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id);
 }
 function startSession(mode) {
-  clearTimer(); stopAudio();
+  cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
@@ -130,7 +151,7 @@ function startSession(mode) {
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
-    route:null,companionId:save.selectedMonster};
+    route:null,companionId:save.selectedMonster,combo:0};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':'はじまりの森'):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -185,12 +206,15 @@ function renderForestHud() {
   const tactic=enemyTacticFor(play.index,play.wave);
   world.dataset.foe=foe.id;
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
-  $('#forest-foe-name').textContent=foe.name+' · '+foe.japanese;
+  // Separate the English name and Japanese epithet at a meaningful line break.
+  $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
   $('#forest-foe-pattern').textContent=tactic.name;
   updateEnemyHealth();
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
     '英語で攻撃！';
   $('#forest-world-fx').textContent='';
+  $('#forest-combo').textContent='';
+  world.classList.remove('forest-combo-boost');
   world.dataset.route=currentRoute;
   $('#forest-world-counter').textContent=play.index>=REGULAR_ENCOUNTERS?`WAVE ${play.wave} · BOSS ${play.bossHits+1}/${BOSS_HITS}`:`WAVE ${play.wave} · BATTLE ${play.index+1}/${REGULAR_ENCOUNTERS}`;
   const route=FOREST_ROUTES.find(entry=>entry.id===play.route);
@@ -225,6 +249,7 @@ function updateEnemyHealth(hit=false) {
 }
 function showForestExplore(routeChoice=false) {
   if(!play || play.mode!=='forest')return;
+  cancelAutoAdvance();
   stopAudio();
   const view=$('#play-view'), map=$('#forest-explore-art');
   const companion=monsterFor(play.companionId);
@@ -255,6 +280,7 @@ function showForestExplore(routeChoice=false) {
       if(!play || play.mode!=='forest'||play.route)return;
       play.route=button.dataset.forestRoute;
       showForestExplore(false);
+      queueForestEncounter();
     }));
   }
   view.classList.add('forest-exploring');
@@ -271,6 +297,7 @@ function showForestRouteChoice() {
 
 function renderQuestion() {
   if (!play) return;
+  cancelAutoAdvance();
   $('#play-view').classList.remove('forest-exploring');
   $('#forest-explore-screen').hidden=true;
   $('#forest-journey').hidden=play.mode!=='forest';
@@ -435,6 +462,7 @@ async function gradeAnswer() {
       // Deterministic quiz miss: save for next-day review but never mint XP.
       persist(recordAnswer(save,prompt.id,'again').save);
       play.hintUsed=true;
+      if(play.mode==='forest')play.combo=0;
     }
     if(play.mode==='forest' && raw){
       const world=$('#forest-world-stage');
@@ -500,17 +528,30 @@ async function gradeAnswer() {
     $('#forest-world-fx').textContent=prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss&&play.bossHits>=BOSS_HITS;
+    play.combo++;
+    $('#forest-combo').textContent=play.combo>=2?`${play.combo} HIT COMBO`:'';
+    stage.classList.toggle('forest-combo-boost',play.combo>=3);
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     $('#forest-battle-log').textContent=prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
   }
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${play.mode==='forest'?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div><button id="next-question" class="grading-next">次の問題へ →</button></div>`;
+  const autoForest=play.mode==='forest';
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div>${autoForest?'<p class="forest-auto-status" id="forest-auto-status" role="status">攻撃演出のあと、自動で次へ進むよ。</p><button type="button" id="pause-auto" class="forest-auto-pause">例文をもう少し読む</button>':''}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
+  if(autoForest){
+    $('#pause-auto').addEventListener('click',()=>{
+      cancelAutoAdvance();
+      $('#forest-auto-status').textContent='自動送りを停止したよ。読み終えたら「今すぐ次へ」を押してね。';
+      $('#pause-auto').hidden=true;
+    });
+    queueAutoAdvance(advanceQuestion,play.index>=REGULAR_ENCOUNTERS?3100:2450);
+  }
 }
 function skipAnswer(){
   if(!play || play.revealed)return;
   const prompt=currentPrompt(),{save:next}=recordAnswer(save,prompt.id,'again');
   persist(next);
   play.revealed=true;stopAudio();
+  if(play.mode==='forest')play.combo=0;
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
   $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">例文を確認しよう · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p><button id="next-question" class="grading-next">${play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',()=>{
@@ -527,6 +568,7 @@ function skipAnswer(){
 }
 function advanceQuestion(){
   if(!play || !play.revealed)return;
+  cancelAutoAdvance();
   if(play.mode==='forest' && play.index===0 && !play.route){
     play.index=1;
     showForestRouteChoice();
@@ -546,9 +588,10 @@ function advanceQuestion(){
       play.prompts=wave.prompts;
       play.difficulty=wave.level;
       play.index=0;play.bossHits=0;play.usedPower=false;
+      play.combo=0;
       play.encounterKey=null;
       $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${difficultyCopy[wave.level].label}`;
-      showForestExplore(false);return;
+      showForestExplore(false);queueForestEncounter();return;
     }
     // The boss keeps its dedicated arena until defeated; normal encounters
     // return to exploration before the next battle.
@@ -556,6 +599,7 @@ function advanceQuestion(){
       renderQuestion();
     } else {
       showForestExplore(false);
+      queueForestEncounter();
     }
     updateClock();return;
   }
@@ -566,6 +610,7 @@ function advanceQuestion(){
 }
 function finishSession(timedOut=false,defeated=false) {
   if(!play)return;
+  cancelAutoAdvance();
   const ended=play;play=null;clearTimer();stopAudio();
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
   $('#play-view').classList.remove('forest-active');
@@ -605,15 +650,22 @@ $('#start-forest-endless').addEventListener('click',()=>startSession('forest-end
 $('#start-review-practice').addEventListener('click',()=>startSession('practice'));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
+  cancelAutoAdvance();
   renderQuestion();
 });
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
-$('#leave-play').addEventListener('click',()=>{clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active');renderHome();});
+$('#leave-play').addEventListener('click',()=>{cancelAutoAdvance();clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active');renderHome();});
 $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
 $('#collection-home').addEventListener('click',renderHome);
 persist(save);
-window.addEventListener('pagehide',()=>stopAudio());
-document.addEventListener('visibilitychange',()=>{if(document.hidden && recognition)stopRecognition();});
+window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    cancelAutoAdvance();
+    if(recognition)stopRecognition();
+    if($('#forest-auto-status'))$('#forest-auto-status').textContent='戻ってきたら「今すぐ次へ」で再開できるよ。';
+  }
+});
 renderHome();
