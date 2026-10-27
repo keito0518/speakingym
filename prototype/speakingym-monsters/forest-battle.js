@@ -1,4 +1,5 @@
 import { ALL_PROMPTS } from './monster-data.js';
+import { bossConversationFor } from './forest-boss-story.js';
 
 // Speaking Forest: 5 encounters, then a three-hit boss. Unique tasks per wave.
 export const FOREST_MOBS=Object.freeze([
@@ -40,15 +41,17 @@ function shuffle(items,random) {
  }
  return pool;
 }
-export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewPhraseIds=[],reviewPromptIds=[],quizWeaknessIds=[],random=Math.random}={}){
+export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewPhraseIds=[],reviewPromptIds=[],quizWeaknessIds=[],bossConversation=false,random=Math.random}={}){
  const level=forestLevel(difficulty,wave);
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level);
+ const bossStages=bossConversation?bossConversationFor(wave,level):null;
+ const reservedBossIds=new Set((bossStages||[]).map(turn=>turn.id));
  const previous=new Set(previousIds);
  const dueIds=new Set(reviewPromptIds);
  const duePhrases=new Set(reviewPhraseIds);
  const weakQuizIds=new Set(quizWeaknessIds);
  const weakTopics=new Set(quizWeaknessIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean).map(p=>p.baseId||p.id));
- const shuffled=shuffle(pool,random);
+ const shuffled=shuffle(pool.filter(prompt=>!prompt.bossOnly),random);
  const usedIds=new Set(),usedPhrases=new Set(),prompts=[];
  // Each enemy presents its own skill. The last three encounters form a
  // listening -> grammar/vocabulary -> speaking boss gauntlet.
@@ -57,10 +60,16 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
  kinds.push('listen',bossMiddle,'speak');
  for(let slot=0;slot<kinds.length;slot++){
    const kind=kinds[slot];
+   if(bossStages&&slot>=REGULAR_ENCOUNTERS){
+     const chosen=pool.find(p=>p.id===bossStages[slot-REGULAR_ENCOUNTERS].id);
+     if(!chosen||chosen.kind!==kind||usedIds.has(chosen.id))throw Error('Invalid authored boss conversation turn');
+     prompts.push(chosen);usedIds.add(chosen.id);usedPhrases.add(chosen.phraseId);
+     continue;
+   }
    // An overdue reading response still belongs in a speaking encounter:
    // learners read a short clue then answer in English, preserving old reviews.
    const matches=p=>p.kind===kind||(kind==='speak'&&slot<REGULAR_ENCOUNTERS&&p.kind==='read'&&dueIds.has(p.id));
-   let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id));
+   let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id)&&!reservedBossIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
    // A missed vocabulary/grammar target beats generic phrase diversity.
    // When players switch difficulty, bring back the related topic instead.

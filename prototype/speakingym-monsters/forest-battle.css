@@ -85,6 +85,18 @@
 .forest-active .reveal-button,.forest-active .grading-next{min-height:45px}
 .forest-active .feedback-box{margin-top:9px;padding:11px}
 .forest-active .forest-quiz-review-status{margin:7px 0 0;padding:8px 10px;border-radius:8px;background:#e8f1da;color:#396449;font-size:12px;font-weight:800;line-height:1.5}
+.forest-active .forest-boss-dialogue{display:grid;gap:3px;margin:9px 0 11px;padding:10px 12px;border:1px solid #d4b16d;border-left:4px solid #bd8356;border-radius:10px;background:#f5e9ce;color:#63442c;line-height:1.5;line-break:strict;overflow-wrap:break-word}
+.forest-active .forest-boss-dialogue-turn{font-size:10px;letter-spacing:.1em;font-weight:900;color:#8c562b}
+.forest-active .forest-boss-dialogue strong{font-size:clamp(13px,3vw,16px);line-height:1.5}
+.forest-active .forest-boss-dialogue p{margin:0;font-size:12px;color:#644d39;line-height:1.65}
+.forest-active .forest-teaching,.forest-active .forest-teaching-nudge{margin:10px 0;padding:11px 12px;border:1px solid #ddc997;border-radius:10px;background:#fff6df;color:#624e31;line-height:1.7;line-break:strict;overflow-wrap:break-word}
+.forest-active .forest-teaching-title{display:block;margin-bottom:5px;font-size:13px;color:#755326}
+.forest-active .forest-teaching p{margin:5px 0;font-size:12px}
+.forest-active .forest-teaching-learner span{display:block;color:#845443;font-weight:700;overflow-wrap:break-word}
+.forest-active .forest-teaching-transfer{padding:9px 10px;border-radius:8px;background:#fffdf4}
+.forest-active .forest-teaching-transfer strong,.forest-active .forest-teaching-nudge strong{display:block;margin-bottom:3px;color:#775523}
+.forest-active .forest-teaching-nudge{font-size:12px}
+.forest-active .forest-checking-note{margin:8px 0 0;font-size:11px;line-height:1.6;color:#6b776a}
 .forest-active .forest-boss-hp{position:relative;isolation:isolate;padding:7px 10px;border:1px solid #eebd75;border-radius:8px;background:#402f34;white-space:nowrap;font-size:14px;letter-spacing:1px}
 .forest-active .forest-boss-hp::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--boss-health,100%);z-index:-1;background:linear-gradient(90deg,#aa5945,#dd9c65);transition:width .45s ease}
 .forest-active .forest-world-stage.forest-boss-stage{box-shadow:inset 0 0 33px #6c293e88,0 4px 12px #101d1b}

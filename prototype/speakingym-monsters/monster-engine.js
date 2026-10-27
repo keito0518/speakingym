@@ -208,7 +208,7 @@ export function selectRoundPrompts(save, count = 6, random = Math.random, today 
   if (!DIFFICULTIES.includes(difficulty)) throw new Error('Invalid difficulty.');
   const groups = PHRASES.map(phrase => {
     const entry = save.progress[phrase.id];
-    const candidates = ALL_PROMPTS.filter(prompt => prompt.phraseId === phrase.id && !['vocab','grammar'].includes(prompt.kind) && (prompt.difficulty || 'easy') === difficulty);
+    const candidates = ALL_PROMPTS.filter(prompt => prompt.phraseId === phrase.id && !prompt.bossOnly && !['vocab','grammar'].includes(prompt.kind) && (prompt.difficulty || 'easy') === difficulty);
     const unseen = candidates.filter(prompt => !entry?.smoothContexts?.includes(prompt.baseId || prompt.id));
     const dueCandidates=candidates.filter(prompt=>save.reviewPrompts?.[prompt.id] && save.reviewPrompts[prompt.id]<=today);
     const pool = dueCandidates.length?dueCandidates:unseen.length?unseen:candidates;

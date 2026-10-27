@@ -28,6 +28,9 @@ const rubric = {
  'clarify-office': [row('確認する',intent.clarify),row('昼食前の締め切りに触れる','before lunch','by lunch','lunchtime')],
  'prefer-city': [row('電車を希望する', intent.prefer),row('理由を伝える','because','since','as it is','faster','quicker','speed')],
  'prefer-friend': [row('電車を希望する', intent.prefer)],
+ 'boss-delay-apology':[row('遅れを謝る','sorry','apologiz'),
+   row('バスが遅れている理由を伝える','bus.*(delay|late|cancel|stuck)','(delay|late).*bus'),
+   row('屋内で待つ提案をする','(wait|go|stay).*inside','wait indoors','somewhere warm','go into')]
 };
 // Easy cues do not demand extra details that appear only in the English instructions.
 const easy = {
@@ -51,7 +54,11 @@ const hard = {
  'clarify-hotel':[row('時間の確認',intent.clarify,'which time'),row('11時と10時の相違','eleven.*ten','ten.*eleven','11.*10','10.*11'),row('荷物を預けたい','luggage','bags','suitcase','store.*bag')],
  'clarify-office':[row('確認する',intent.clarify),row('金曜日の日本時間17時','friday'),row('時刻と時間帯','five','5 pm','5 p.m','17:00','17\.00'),row('日本時間','japan','jst','tokyo'),row('PDF形式','pdf','file format')],
  'prefer-city':[row('電車を選ぶ',intent.prefer),row('バスの直行という利点に言及','bus','direct'),row('速さを理由に挙げる','fast','quick','speed','time')],
- 'prefer-friend':[row('電車を選ぶ',intent.prefer),row('費用を理由に挙げる','cheap','cost','save money','afford','expensive'),row('天気次第で再検討','rain','weather','storm'),row('タクシーも検討','taxi','cab')]
+ 'prefer-friend':[row('電車を選ぶ',intent.prefer),row('費用を理由に挙げる','cheap','cost','save money','afford','expensive'),row('天気次第で再検討','rain','weather','storm'),row('タクシーも検討','taxi','cab')],
+ 'boss-delay-apology':[row('謝る','sorry','apologiz'),
+   row('バスの運休を説明する','bus.*(cancel(?:l?ed|l?ation)?|not run|not coming)','cancel(?:l?ed|l?ation)?.*bus','not run.*bus'),
+   row('20分遅れる見込みを伝える','twenty','20'),
+   row('屋内など暖かい場所で待つ提案をする','(wait|go|stay).*inside','wait indoors','somewhere warm','go into')]
 };
 // Some prompts cannot be reliably marked "correct" without an explicit signal.
 // The criteria intentionally bias toward abstention rather than over-crediting.

@@ -167,9 +167,12 @@ const path=require('node:path');
     assert.match(await weakPage.locator('.forest-review-banner').innerText(),/苦手の再挑戦/);
     await weakPage.locator('#spoken-answer').fill('wrong vocabulary word');
     await weakPage.locator('#show-answer').click();
+    assert.match(await weakPage.locator('.forest-teaching-nudge').innerText(),/考え方のヒント/);
     const afterMiss=await weakPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).quizProgress['forest-vocab-ticket-easy'].misses);
     assert.equal(afterMiss,2);
     await weakPage.locator('#show-example').click();
+    assert.match(await weakPage.locator('.forest-teaching-title').innerText(),/なぜこの単語を使う/);
+    assert.match(await weakPage.locator('.forest-teaching-transfer').innerText(),/別の場面でも使おう/);
     const afterReveal=await weakPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).quizProgress['forest-vocab-ticket-easy'].misses);
     assert.equal(afterReveal,afterMiss,'Revealing an answer must not double-count the same wrong tap');
     await weakContext.close();
@@ -267,6 +270,7 @@ const path=require('node:path');
           assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.options[bad]);
           await forestPage.locator('#show-answer').click();
           assert.match(await forestPage.locator('#feedback-panel').innerText(),/もう一度挑戦/);
+          assert.match(await forestPage.locator('.forest-teaching-nudge').innerText(),/考え方のヒント/);
           assert.equal(await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),originalXp);
           await forestPage.locator(`[data-vocab-option="${good}"]`).click();
           assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.answer);
@@ -298,7 +302,7 @@ const path=require('node:path');
         }
         await answer();
         if(mob===3 || mob===4){
-          assert.match(await forestPage.locator('#feedback-panel').innerText(),mob===3?/単語の使い分け/:/文法・語順のポイント/);
+          assert.match(await forestPage.locator('.forest-teaching-title').innerText(),mob===3?/なぜこの単語を使う/:/なぜこの語順になる/);
           assert.match(await forestPage.locator('#pause-auto').innerText(),/解説をもう少し読む/);
           assert.ok((await forestPage.locator('.feedback-note').innerText()).length>35,'Objective quizzes should explain the answer, not only mark it right');
         }
@@ -314,6 +318,8 @@ const path=require('node:path');
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-boss.png`),fullPage:true});
       for(let hit=1;hit<=3;hit++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('BOSS ATTACK '+hit+' \/ 3'));
+        assert.match(await forestPage.locator('.forest-boss-dialogue').innerText(),new RegExp('BOSS DIALOGUE · '+hit+'\/3'));
+        assert.equal(await forestPage.locator('#play-card').getAttribute('data-prompt-id'),['late-call','forest-grammar-arrive-easy','boss-delay-apology-easy'][hit-1]);
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));

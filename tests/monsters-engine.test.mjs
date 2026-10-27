@@ -8,6 +8,8 @@ import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
+import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
+import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
@@ -15,20 +17,20 @@ const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordA
 test('curriculum retains 156 speaking exercises and expands to 72 forest quizzes', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,228);
+  assert.equal(ALL_PROMPTS.length,231);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,76);
-    assert.equal(new Set(level.map(p=>p.id)).size,76);
+    assert.equal(level.length,77);
+    assert.equal(new Set(level.map(p=>p.id)).size,77);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
     assert.equal(level.filter(p=>p.kind==='vocab').length,12);
     assert.equal(level.filter(p=>p.kind==='grammar').length,12);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
-    assert.ok(level.every(p=>['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
+    assert.ok(level.every(p=>p.bossOnly||['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
   }
-  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/76;
+  const averageLength = level => {const prompts=ALL_PROMPTS.filter(p=>p.difficulty===level);return prompts.reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/prompts.length;};
   assert.ok(averageLength('hard')>averageLength('normal')*1.1);
   assert.equal(new Set(PROMPTS.map(p => p.id)).size,52);
   assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
@@ -483,6 +485,62 @@ test('an overdue word or grammar point takes priority in a later forest encounte
   assert.equal(harder.prompts[2].baseId,'forest-vocab-ticket');
   assert.equal(harder.prompts[2].difficulty,'normal');
   assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
+});
+test('all 72 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
+  const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
+  assert.equal(quizzes.length,72);
+  for(const prompt of quizzes){
+    const lesson=quizTeachingFor(prompt);
+    assert.ok(lesson?.label&&lesson.clue.length>=22,`Missing explanatory clue: ${prompt.id}`);
+    assert.ok(lesson.detail.length>=16,`Missing example reasoning: ${prompt.id}`);
+    assert.ok(lesson.transfer.length>=30,`Missing transfer context: ${prompt.id}`);
+    assert.ok(!lesson.clue.includes('<')&&!lesson.transfer.includes('<'),`Unsafe markup in ${prompt.id}`);
+  }
+  const order=quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-arrive-easy'));
+  assert.match(order.clue,/late の前/);
+  assert.match(order.transfer,/late ten minutes/);
+  const advancedPrice=quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-price-hard'));
+  assert.match(advancedPrice.clue,/複数形/);
+  assert.equal(quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak')),null);
+});
+test('first-wave boss conversation joins listening, word order and speaking without duplicating encounters',()=>{
+  for(const level of DIFFICULTIES){
+    const turns=bossConversationFor(1,level);
+    assert.equal(turns.length,3);
+    assert.deepEqual(turns.map(turn=>turn.turn),[1,2,3]);
+    for(const [i,kind] of ['listen','grammar','speak'].entries()){
+      const prompt=ALL_PROMPTS.find(item=>item.id===turns[i].id);
+      assert.ok(prompt,`Missing ${level} boss turn ${i+1}`);
+      assert.equal(prompt.kind,kind);
+      assert.equal(prompt.difficulty||'easy',level);
+      assert.ok(turns[i].title&&turns[i].context);
+      assert.deepEqual(bossConversationTurn(1,level,i+5),turns[i]);
+    }
+    const reply=ALL_PROMPTS.find(prompt=>prompt.id===turns[2].id);
+    assert.equal(reply.bossOnly,true);
+    assert.equal(gradeLocalResponse(reply,reply.answer).status,'correct');
+    assert.equal(gradeLocalResponse(reply,'I have no idea.').status,'review','Unverified natural speech must never be labeled objectively wrong');
+    const wave=buildForestWave({difficulty:level,wave:1,bossConversation:true,random:()=>.99});
+    assert.deepEqual(wave.prompts.slice(5).map(p=>p.id),turns.map(t=>t.id));
+    assert.equal(new Set(wave.prompts.map(p=>p.id)).size,8);
+    assert.deepEqual(wave.prompts.map(p=>p.kind),['speak','listen','vocab','grammar','speak','listen','grammar','speak']);
+  }
+  assert.equal(bossConversationFor(2,'easy'),null);
+  assert.equal(bossConversationTurn(1,'easy',4),null);
+  assert.equal(bossConversationTurn(1,'easy',8),null);
+  assert.equal(bossConversationFor(1,'invalid'),null);
+  const later=buildForestWave({difficulty:'easy',wave:2,bossConversation:true,random:()=>.51});
+  assert.equal(later.prompts[6].kind,'vocab','Endless later waves retain alternating boss skills');
+  assert.ok(!later.prompts.some(prompt=>prompt.bossOnly));
+  const normal=ALL_PROMPTS.find(prompt=>prompt.id==='boss-delay-apology-normal');
+  assert.equal(gradeLocalResponse(normal,'Sorry, the bus is running late, please go inside.').status,'correct');
+  assert.equal(gradeLocalResponse(normal,'I am having a lovely day.').status,'review');
+  const hard=ALL_PROMPTS.find(prompt=>prompt.id==='boss-delay-apology-hard');
+  assert.equal(gradeLocalResponse(hard,'Sorry, my bus was canceled. I will be 20 minutes late. Please stay inside.').status,'correct');
+  for(const level of DIFFICULTIES){
+    const selected=selectRoundPrompts(createSave(),16,()=>.5,'2026-10-27',level);
+    assert.ok(selected.every(prompt=>!prompt.bossOnly),`${level} normal practice must not include boss-only dialogue`);
+  }
 });
 test('expanded forest quizzes change targets across levels and explain the language point',()=>{
   const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
