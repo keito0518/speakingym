@@ -45,12 +45,15 @@ export function enemyTacticFor(index,wave=1,areaId='entry'){
  const original=index>=REGULAR_ENCOUNTERS?FOREST_TACTICS.thornking:
    FOREST_TACTICS[FOREST_MOBS[(index+wave-1)%FOREST_MOBS.length].id];
  const theme={glade:'光',thicket:'霧',sanctuary:'古木'}[areaId];
- return {preferredKind:AREA_SKILLS[areaId][index]||'mixed',name:`${theme}の${original.name}`,
+ return {preferredKind:AREA_SKILLS[areaId][index%AREA_SKILLS[areaId].length]||'mixed',name:`${theme}の${original.name}`,
    tell:`${theme}の力をまとっている。${original.tell}`,guard:`${theme}の力で防御した`};
 }
 export const REGULAR_ENCOUNTERS=5;
 export const BOSS_HITS=3;
 export const FOREST_WAVE_LENGTH=REGULAR_ENCOUNTERS+BOSS_HITS;
+export const REGULAR_BY_AREA=Object.freeze({entry:5,glade:7,thicket:10,sanctuary:10});
+export function regularEncountersFor(areaId='entry'){return REGULAR_BY_AREA[areaId]||REGULAR_ENCOUNTERS;}
+export function forestWaveLengthFor(areaId='entry'){return regularEncountersFor(areaId)+BOSS_HITS;}
 export const DIFFICULTY_TRIES=Object.freeze({easy:3,normal:2,hard:1});
 export function forestLevel(start='easy',wave=1){
  if(!Object.hasOwn(DIFFICULTY_TRIES,start)||!Number.isInteger(wave)||wave<1)throw Error('Invalid forest difficulty or wave');
@@ -79,23 +82,24 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
  const weakTopics=new Set(quizWeaknessIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean).map(p=>p.baseId||p.id));
  const shuffled=shuffle(pool.filter(prompt=>!prompt.bossOnly),random);
  const usedIds=new Set(),usedPhrases=new Set(),prompts=[];
+ const regular=regularEncountersFor(areaId);
  // Each enemy presents its own skill. The last three encounters form a
  // listening -> grammar/vocabulary -> speaking boss gauntlet.
- const kinds=areaId==='entry'?Array.from({length:REGULAR_ENCOUNTERS},(_,index)=>enemyTacticFor(index,wave).preferredKind):[...AREA_SKILLS[areaId]];
+ const kinds=Array.from({length:regular},(_,index)=>areaId==='entry'?enemyTacticFor(index,wave,areaId).preferredKind:AREA_SKILLS[areaId][index%AREA_SKILLS[areaId].length]);
  const bossMiddle=areaId==='entry'?(wave%2===1?'grammar':'vocab'):
    areaId==='glade'||areaId==='sanctuary'?'vocab':'grammar';
  kinds.push('listen',bossMiddle,'speak');
  for(let slot=0;slot<kinds.length;slot++){
    const kind=kinds[slot];
-   if(bossStages&&slot>=REGULAR_ENCOUNTERS){
-     const chosen=pool.find(p=>p.id===bossStages[slot-REGULAR_ENCOUNTERS].id);
+   if(bossStages&&slot>=regular){
+     const chosen=pool.find(p=>p.id===bossStages[slot-regular].id);
      if(!chosen||chosen.kind!==kind||usedIds.has(chosen.id))throw Error('Invalid authored boss conversation turn');
      prompts.push(chosen);usedIds.add(chosen.id);usedPhrases.add(chosen.phraseId);
      continue;
    }
    // An overdue reading response still belongs in a speaking encounter:
    // learners read a short clue then answer in English, preserving old reviews.
-   const matches=p=>p.kind===kind||(kind==='speak'&&slot<REGULAR_ENCOUNTERS&&p.kind==='read'&&dueIds.has(p.id));
+   const matches=p=>p.kind===kind||(kind==='speak'&&slot<regular&&p.kind==='read'&&dueIds.has(p.id));
    let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id)&&!reservedBossIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
    // A missed vocabulary/grammar target beats generic phrase diversity.
@@ -122,15 +126,15 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    const chosen=candidates[0];
    prompts.push(chosen);usedIds.add(chosen.id);usedPhrases.add(chosen.phraseId);
  }
- if(prompts.length!==FOREST_WAVE_LENGTH||new Set(prompts.map(p=>p.id)).size!==FOREST_WAVE_LENGTH)
+ if(prompts.length!==forestWaveLengthFor(areaId)||new Set(prompts.map(p=>p.id)).size!==forestWaveLengthFor(areaId))
    throw Error('Invalid forest wave content');
  return {prompts,level,wave,areaId};
 }
 export function opponentFor(index,wave=1,areaId='entry'){
  if(!AREA_MOBS[areaId])throw Error('Unknown forest area');
- if(index>=REGULAR_ENCOUNTERS)return AREA_BOSSES[areaId];
+ if(index>=regularEncountersFor(areaId))return AREA_BOSSES[areaId];
  if(index<0)throw Error('Invalid encounter index');
- return AREA_MOBS[areaId][(index+wave-1)%REGULAR_ENCOUNTERS];
+ return AREA_MOBS[areaId][(index+wave-1)%AREA_MOBS[areaId].length];
 }
 export function battleStatus({index=0,level='easy',endless=false,remaining=null}={}){
  const boss=index>=REGULAR_ENCOUNTERS;
