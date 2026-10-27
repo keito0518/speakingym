@@ -232,8 +232,17 @@ function renderHome() {
   renderDifficulty();
   homeNavigation?.updateHero({
     art:monsterArt(creature.id,growth.evolved),name:growth.evolved?creature.evolvedName:creature.name,
-    level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet
+    level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,
+    areasCleared:forest.completedAreas.length
   });
+  // Reuse art for already recruited creatures only; never preview locked ones.
+  // Pick the selected companion first so that the home genuinely reflects
+  // the user's own team, and cap moving sprites at three for mobile performance.
+  const walkingIds=[save.selectedMonster,...save.ownedMonsters.filter(id=>id!==save.selectedMonster)].slice(0,3);
+  homeNavigation?.updateWalkers(walkingIds.map(id=>{
+    const progress=getMonsterProgress(save,id);
+    return {art:monsterArt(id,progress.evolved)};
+  }));
   showView('home');
 }
 function dueForestPhrases(){
