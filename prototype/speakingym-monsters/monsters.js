@@ -652,7 +652,13 @@ function speakLine(line,onUnavailable,level='easy',promptId=''){
         browserSpeakLine(line,onUnavailable,level);
       };
       audio.onerror=fallback;
-      audio.onended=()=>{if(spokenAudio===audio)spokenAudio=null;};
+      audio.onended=()=>{
+        if(spokenAudio===audio)spokenAudio=null;
+        // On iOS a retained HTMLAudioElement can hold on to the audio session
+        // and suppress the following WebSpeech onresult callback.
+        audio.onerror=null;
+        try{audio.pause();audio.removeAttribute('src');audio.load();}catch{}
+      };
       const pending=audio.play();
       if(pending?.catch)pending.catch(fallback);
       return;
@@ -667,6 +673,10 @@ function startRecognition() {
     finishRecognition();
     return;
   }
+  // Release the preceding listening clip before opening a microphone.
+  // This can mitigate an iOS WebKit audio-session conflict but is not a
+  // substitute for native speech recognition in restricted in-app browsers.
+  stopListeningPlayback();
   const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Constructor){
     micView('ready');
