@@ -50,7 +50,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">SPEAKINGYM MONSTERS · YOUR JOURNEY</span><h2>英語が使えるほど、<br>世界が広がる。</h2><p>今日のトレーニングをクリアして、仲間と次のステージへ。</p>
- <div class="home-feature-info"><span id="home-menu-mastered">使える表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
+ <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
  <button type="button" class="home-feature-cta" data-feature-daily>今日の5分をスタート <span aria-hidden="true">›</span></button></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
  feature.querySelector('[data-feature-daily]').addEventListener('click',()=>showPage('daily'));
@@ -106,7 +106,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
      menu.querySelector('#home-menu-level').textContent='Lv.'+level+' · 今日も一緒に';
-     menu.querySelector('#home-menu-mastered').textContent='使える表現 '+mastered;
+     menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
    }
