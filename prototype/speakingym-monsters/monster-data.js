@@ -276,11 +276,17 @@ export const ALL_PROMPTS = Object.freeze([
   ...PROMPTS,
   ...ADDITIONAL_PROMPTS.filter(p=>p.difficulty),
   ...FOREST_QUIZZES,
-  ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => ({
-    id: `${baseId}-${difficulty}`, baseId,
-    phraseId: PROMPTS.find(prompt => prompt.id === baseId).phraseId,
-    kind: 'speak', difficulty, scene, cue, task, answer, hint, tip
-  }))
+  ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => {
+    const base=PROMPTS.find(prompt=>prompt.id===baseId);
+    return {
+    id: `${baseId}-${difficulty}`, baseId,phraseId:base.phraseId,
+    // Retain the original listening skill when adapting legacy situations.
+    // Otherwise normal/hard versions silently turned into reading tasks,
+    // despite having an authored levelled audio-first comprehension check.
+    kind:base.kind==='listen'?'listen':'speak',
+    ...(base.audio?{audio:base.audio}:{}),
+    difficulty, scene, cue, task, answer, hint, tip
+  };})
 ]);
 
 export const MONSTERS = Object.freeze([

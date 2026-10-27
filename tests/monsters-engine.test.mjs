@@ -66,7 +66,8 @@ test('every reading encounter has an authored passage, including higher difficul
 
 test('every listening task requires an authored audio-first meaning check at its own difficulty',()=>{
   const listening=ALL_PROMPTS.filter(p=>p.kind==='listen');
-  assert.ok(listening.length>=50);
+  assert.equal(listening.length,81);
+  for(const level of ['easy','normal','hard'])assert.equal(listening.filter(p=>(p.difficulty||'easy')===level).length,27);
   for(const prompt of listening){
     const challenge=listeningChallengeFor(prompt);
     assert.ok(challenge.audio.length>=prompt.audio.length,`Audio must not be shorter at higher levels: ${prompt.id}`);
