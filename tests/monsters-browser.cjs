@@ -75,6 +75,14 @@ const path=require('node:path');
     assert.match(await menuPage.locator('.home-feature h2').innerText(),/English\s*ダンジョン/);
     assert.equal(await menuPage.locator('[data-feature-dungeon]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),1,'Only the one unlocked starter companion walks');
+    assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'false');
+    await menuPage.locator('#toggle-simple-motion').click();
+    assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'true');
+    assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).animationName),'none');
+    await menuPage.reload();
+    assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'true','Lightweight mode persists across reload');
+    await menuPage.locator('#toggle-simple-motion').click();
+    assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'false');
     assert.equal(await menuPage.locator('.home-walker').getAttribute('aria-hidden'),'true');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).animationName),'none','Reduced motion setting stops movement');
@@ -116,6 +124,32 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#saved-review-title').isVisible(),true);
     assert.equal(await menuPage.locator('#review-journal-title').isVisible(),true);
     await menuContext.close();
+    // Retention mode is deliberately no-animation, honors completed review
+    // dates and records a single companion bond for the spaced second day.
+    const {context:recallContext,page:recallPage}=await boot(390);
+    await recallPage.evaluate(()=>{
+      const raw=JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1'));
+      raw.retention={'think-cafe':{stage:1,lastDay:'2026-10-20',nextDay:'2026-10-21'}};
+      raw.progress.think={attempts:1,smoothContexts:['think-cafe'],smoothDays:['2026-10-20'],lastDay:'2026-10-20',nextReviewDay:'2026-10-21',lastRating:'smooth'};
+      localStorage.setItem('speakingym-monsters-prototype-v1',JSON.stringify(raw));
+    });
+    await recallPage.reload();
+    await enterHomePanel(recallPage,'review');
+    assert.equal(await recallPage.locator('#start-retention-review').isEnabled(),true);
+    assert.match(await recallPage.locator('#retention-due-label').innerText(),/1問/);
+    await recallPage.locator('#start-retention-review').click();
+    assert.match(await recallPage.locator('#play-mode-label').innerText(),/定着チェック/);
+    assert.equal(await recallPage.locator('#forest-journey').isVisible(),false);
+    assert.equal(await recallPage.locator('#play-card').getAttribute('data-prompt-id'),'think-cafe');
+    await recallPage.locator('#spoken-answer').fill('Let me think about it.');
+    await recallPage.locator('#show-answer').click();
+    assert.match(await recallPage.locator('.retention-result').innerText(),/3日後チェック達成/);
+    assert.match(await recallPage.locator('.retention-result').innerText(),/仲間との絆/);
+    await recallPage.locator('#next-question').click();
+    const afterReview=await recallPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+    assert.equal(afterReview.monsterBonds.medamago,1);
+    assert.equal(afterReview.retention['think-cafe'].stage,2);
+    await recallContext.close();
     // Daily five-minute workout stays calm, explains answers and records
     // completed offline work without a hard timer or a battle animation.
     const {context:gymContext,page:gymPage}=await boot(390);
