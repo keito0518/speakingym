@@ -17,7 +17,17 @@ const assert=require('node:assert/strict');
     // click the explore Continue button when that panel is actually visible.
     if(await page.locator('#forest-explore-continue').isVisible())
       await page.locator('#forest-explore-continue').click();
-    await page.locator('#forest-journey').waitFor({state:'visible'});
+    try { await page.locator('#forest-journey').waitFor({state:'visible'}); }
+    catch (error) {
+      const debug=await page.evaluate(()=>({
+        state:document.querySelector('#play-view')?.hidden,
+        explore:document.querySelector('#forest-explore-screen')?.hidden,
+        home:document.querySelector('#home-view')?.hidden,
+        label:document.querySelector('#play-mode-label')?.textContent,
+        answer:document.querySelector('#answer-area')?.hidden
+      }));
+      throw new Error(`WebKit start failed: ${JSON.stringify(debug)}; page errors: ${errors.join(' | ')}; ${error.message}`);
+    }
     await page.locator('#spoken-answer').fill('I have an unexpected answer.');
     await page.locator('#show-answer').click();
     assert.equal(await page.locator('.forest-guarding').count(),1);
