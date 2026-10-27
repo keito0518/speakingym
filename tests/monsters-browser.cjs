@@ -793,7 +793,7 @@ const path=require('node:path');
     await page.reload();
     await enterHomePanel(page,'training');
     await page.getByRole('button',{name:/スピーキングを始める/}).click();
-    assert.match(await page.locator('#play-mode-label').innerText(),/練習モード/);
+    assert.match(await page.locator('#play-mode-label').innerText(),/スピーキング道場/);
     assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'think-trip');
     assert.equal(await page.locator('#answer-area').isVisible(),false,'Cannot answer listening without comprehension');
     assert.equal(await page.locator('#listening-meaning').isVisible(),false);
