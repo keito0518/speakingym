@@ -42,6 +42,8 @@ const path=require('node:path');
       assert.match(await page.locator('#review-journal-list').innerText(),/今日の復習はありません/);
       const metrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(metrics.scroll<=metrics.inner+1,`${engine}/${width} horizontal overflow: ${JSON.stringify(metrics)}`);
+      const credits=await page.getByRole('link',{name:'音声クレジット'}).getAttribute('href');
+      assert.equal(credits,'./audio-credits.html');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-home.png`),fullPage:true});
       await page.getByRole('button',{name:/まず練習する/}).click();
       const playMetrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -91,6 +93,13 @@ const path=require('node:path');
     // Audio-first gate: guessing the meaning incorrectly cannot expose the
     // response or grant XP; a later successful reply is marked as hinted.
     const {context:listenContext,page:listenPage}=await boot(320);
+    const auPath=await listenPage.evaluate(async()=>{
+      const {LISTENING_AUDIO}=await import('./listening-audio-manifest.js');
+      return LISTENING_AUDIO['recommend-gift'].src;
+    });
+    assert.match(auPath,/-au-[a-f0-9]{12}\.mp3$/);
+    const auResponse=await listenPage.request.get(new URL(auPath,base).toString());
+    assert.equal(auResponse.status(),200,'Australian accent audio must be served as a real MP3 file');
     // With the expanded speaking pool, the first random practice prompt is
     // no longer guaranteed to be listening. Seed one due listening review so
     // this test reliably exercises the audio-first gate, not shuffle order.

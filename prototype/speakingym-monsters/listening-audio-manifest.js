@@ -68,13 +68,13 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "recommend-gift": {
     "text": "Are you looking for a gift?",
-    "src": "./audio/listening/recommend-gift-8cd1ebba8f48.mp3",
-    "voice": "am_michael"
+    "src": "./audio/listening/recommend-gift-au-8cd1ebba8f48.mp3",
+    "voice": "au_magdalena"
   },
   "booking-table": {
     "text": "Do you have a reservation?",
-    "src": "./audio/listening/booking-table-bc2b5daf45a1.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/booking-table-au-bc2b5daf45a1.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "booking-tour": {
     "text": "Would you like to join tomorrow's tour?",
@@ -83,8 +83,8 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "apology-late": {
     "text": "I've been waiting for you.",
-    "src": "./audio/listening/apology-late-8e8fa775b855.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/apology-late-au-8e8fa775b855.mp3",
+    "voice": "au_magdalena"
   },
   "apology-email": {
     "text": "Did you get my last email?",
@@ -103,8 +103,8 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "price-ticket": {
     "text": "One ticket?",
-    "src": "./audio/listening/price-ticket-aa86624e52fd.mp3",
-    "voice": "af_heart"
+    "src": "./audio/listening/price-ticket-au-aa86624e52fd.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "price-rental": {
     "text": "How many days do you need it?",
@@ -113,8 +113,8 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "change-time": {
     "text": "Does two o'clock still work?",
-    "src": "./audio/listening/change-time-1d3b890789bc.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/change-time-au-1d3b890789bc.mp3",
+    "voice": "au_magdalena"
   },
   "change-seat": {
     "text": "Do you need anything else?",
@@ -133,8 +133,8 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "problem-train": {
     "text": "Can I help you with your journey?",
-    "src": "./audio/listening/problem-train-4bf982ecfa59.mp3",
-    "voice": "af_heart"
+    "src": "./audio/listening/problem-train-au-4bf982ecfa59.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "help-phone-normal": {
     "text": "You look a bit worried. Is everything all right?",
@@ -208,23 +208,23 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "recommend-gift-normal": {
     "text": "Are you looking for a gift for someone, or just browsing?",
-    "src": "./audio/listening/recommend-gift-normal-85c3b12775d5.mp3",
-    "voice": "am_michael"
+    "src": "./audio/listening/recommend-gift-normal-au-85c3b12775d5.mp3",
+    "voice": "au_magdalena"
   },
   "recommend-gift-hard": {
     "text": "We have some local handmade items on display this week. Are you looking for a gift for somebody, or are you shopping for yourself?",
-    "src": "./audio/listening/recommend-gift-hard-887fa6f7360d.mp3",
-    "voice": "am_michael"
+    "src": "./audio/listening/recommend-gift-hard-au-887fa6f7360d.mp3",
+    "voice": "au_magdalena"
   },
   "booking-table-normal": {
     "text": "Good evening. Do you have a reservation for tonight?",
-    "src": "./audio/listening/booking-table-normal-29157850ebb6.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/booking-table-normal-au-29157850ebb6.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "booking-table-hard": {
     "text": "Before I show you to a table, may I check whether you already have a reservation? We are fairly busy after seven this evening.",
-    "src": "./audio/listening/booking-table-hard-4a49109103aa.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/booking-table-hard-au-4a49109103aa.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "booking-tour-normal": {
     "text": "We are running a guided tour tomorrow. Would you like to join?",
@@ -238,13 +238,13 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "apology-late-normal": {
     "text": "I got here quite a while ago, and I have been waiting for you.",
-    "src": "./audio/listening/apology-late-normal-55a502860e51.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/apology-late-normal-au-55a502860e51.mp3",
+    "voice": "au_magdalena"
   },
   "apology-late-hard": {
     "text": "I arrived at the station twenty minutes ago, and I have been standing near the ticket gate waiting for you ever since.",
-    "src": "./audio/listening/apology-late-hard-3d7c0f18c561.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/apology-late-hard-au-3d7c0f18c561.mp3",
+    "voice": "au_magdalena"
   },
   "apology-email-normal": {
     "text": "I sent you a message earlier this week. Did you get my last email?",
@@ -278,13 +278,13 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "price-ticket-normal": {
     "text": "Just to confirm, would that be one ticket?",
-    "src": "./audio/listening/price-ticket-normal-fc85f7f0150c.mp3",
-    "voice": "af_heart"
+    "src": "./audio/listening/price-ticket-normal-au-fc85f7f0150c.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "price-ticket-hard": {
     "text": "Before I take your payment, could I confirm that you are buying one admission ticket rather than a pair?",
-    "src": "./audio/listening/price-ticket-hard-52ab65599111.mp3",
-    "voice": "af_heart"
+    "src": "./audio/listening/price-ticket-hard-au-52ab65599111.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "price-rental-normal": {
     "text": "How many days will you need the rental car for?",
@@ -298,13 +298,13 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "change-time-normal": {
     "text": "I have you down for two o’clock. Does that time still work?",
-    "src": "./audio/listening/change-time-normal-3d2984dcba28.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/change-time-normal-au-3d2984dcba28.mp3",
+    "voice": "au_magdalena"
   },
   "change-time-hard": {
     "text": "We are scheduled to meet at two this afternoon. Does two o’clock still suit you, or have your plans changed?",
-    "src": "./audio/listening/change-time-hard-e702ef0f347d.mp3",
-    "voice": "bf_emma"
+    "src": "./audio/listening/change-time-hard-au-e702ef0f347d.mp3",
+    "voice": "au_magdalena"
   },
   "change-seat-normal": {
     "text": "I have finished checking your boarding pass. Do you need anything else?",
@@ -338,13 +338,13 @@ export const LISTENING_AUDIO=Object.freeze({
   },
   "problem-train-normal": {
     "text": "Good morning. Can I help you with your journey today?",
-    "src": "./audio/listening/problem-train-normal-5a61df69c30e.mp3",
-    "voice": "af_heart"
+    "src": "./audio/listening/problem-train-normal-au-5a61df69c30e.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "problem-train-hard": {
     "text": "Welcome to the information counter. Are you having trouble planning your journey, or is there anything else I can assist you with?",
-    "src": "./audio/listening/problem-train-hard-24611a4a1a3c.mp3",
-    "voice": "af_heart"
+    "src": "./audio/listening/problem-train-hard-au-24611a4a1a3c.mp3",
+    "voice": "au_timothy_ferguson"
   },
   "think-trip-normal": {
     "text": "The tour is filling up. Would you like to book it now?",

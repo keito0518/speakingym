@@ -23,6 +23,7 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
   assert.equal(prompts.length,81);
   assert.equal(Object.keys(LISTENING_AUDIO).length,prompts.length);
   const voices=new Set();
+  const australian=new Map();
   for(const prompt of prompts){
     const clip=LISTENING_AUDIO[prompt.id];
     assert.ok(clip,'Missing voice clip for '+prompt.id);
@@ -34,8 +35,17 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
     const header=readFileSync(path).subarray(0,3).toString('ascii');
     assert.equal(header,'ID3','MP3 metadata header is missing: '+prompt.id);
     voices.add(clip.voice);
+    if(clip.voice.startsWith('au_')){
+      const scene=prompt.baseId||prompt.id.replace(/-(normal|hard)$/,'');
+      australian.set(scene,(australian.get(scene)||0)+1);
+      assert.match(clip.src,/-au-[a-f0-9]{12}\.mp3$/,'Australian audio must bust stale US/UK caches: '+prompt.id);
+    }
   }
-  assert.ok(voices.size>=3,'Listening should include several distinct English voices');
+  assert.equal([...australian.values()].reduce((sum,count)=>sum+count,0),18);
+  assert.equal(australian.size,6,'Australian accent must be mixed into six distinct scenarios');
+  assert.ok([...australian.values()].every(count=>count===3),'Keep the same AU voice at all difficulties of each scene');
+  assert.ok(voices.has('au_magdalena')&&voices.has('au_timothy_ferguson'));
+  assert.ok(voices.size>=6,'Listening should include six distinct English voices including both Australian narrators');
 });
 
 test('curriculum contains 156 original situations, 24 new adventures, 72 quizzes and three boss replies', () => {
