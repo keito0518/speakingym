@@ -131,7 +131,7 @@ function startSession(mode) {
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':'森のボス討伐'):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':'はじまりの森'):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
@@ -180,7 +180,7 @@ function renderForestHud() {
   $('#forest-guard').innerHTML=guardArt();
   world.classList.toggle('forest-boss-stage',play.index>=REGULAR_ENCOUNTERS);
   $('.forest-chapter-pin').textContent=play.index>=REGULAR_ENCOUNTERS?'THORN VAULT':'MOONSTONE ARENA';
-  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding','forest-defended','forest-reading-hit');
+  world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding','forest-defended','forest-reading-hit','forest-weakness-hit','forest-spell-cast');
   const foe=opponentFor(play.index,play.wave);
   const tactic=enemyTacticFor(play.index,play.wave);
   world.dataset.foe=foe.id;
@@ -483,12 +483,12 @@ async function gradeAnswer() {
     const companion=monsterFor(play.companionId);
     const companionName=getMonsterProgress(save,play.companionId).evolved?companion.evolvedName:companion.name;
     const special=specialStrike({companionId:play.companionId,
-      evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower});
+      evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower||!play.endless});
     play.usedPower ||= special.usedPower;
     if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+special.strikes);
     $('#forest-journey').classList.add('forest-victory');
     const stage=$('#forest-world-stage');
-    stage.classList.remove('forest-attack','forest-guarding','forest-defended','forest-reading-hit');
+    stage.classList.remove('forest-attack','forest-guarding','forest-defended','forest-reading-hit','forest-weakness-hit','forest-spell-cast');
     void stage.offsetWidth;
     stage.classList.add('forest-attack');
     if(prompt.kind==='listen')stage.classList.add('forest-defended');
