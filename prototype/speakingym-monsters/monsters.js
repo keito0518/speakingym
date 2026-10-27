@@ -41,6 +41,22 @@ function speakingTeachingHtml(prompt,learnerAnswer='',reveal=false){
   const details=reveal?`<p>${escapeHtml(note.detail)}</p>`:'';
   return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${response}<p>${escapeHtml(note.clue)}</p>${details}</section>`;
 }
+// Keep the useful learning point visible after a correct spoken response.
+// The reference is ONE example, never a mandated script.
+function speakingSuccessHtml(prompt,learnerAnswer){
+ const alternatives=[...(prompt.alternatives||[])].filter(reply=>reply?.trim()&&
+   reply.trim().toLowerCase()!==learnerAnswer.trim().toLowerCase()&&
+   reply.trim().toLowerCase()!==prompt.answer.trim().toLowerCase()).slice(0,2);
+ const task=prompt.task||prompt.cue;
+ const takeaway=prompt.tip||phraseFor(prompt.phraseId)?.tip||'同じ意味をほかの表現でも言ってみよう。';
+ return `<section class="forest-teaching speaking-success-guide" aria-label="英語を身につけるポイント">
+  <strong class="forest-teaching-title">今回伝えられたこと</strong>
+  <p>${escapeHtml(task)}</p>
+  <p class="forest-teaching-learner"><strong>あなたの回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>
+  <p><strong>覚えておくポイント</strong> ${escapeHtml(takeaway)}</p>
+  ${alternatives.length?`<p class="forest-teaching-transfer"><strong>こんな言い方もできる</strong> <span lang="en">${alternatives.map(escapeHtml).join(' / ')}</span></p>`:''}
+  </section>`;
+}
 let save = loadSave() || createSave();
 let play = null, timer = null, recognition = null, recognitionWatchdog = null, recognitionStopping = false, autoAdvanceTimer = null, spokenAudio = null;
 
@@ -826,7 +842,7 @@ async function gradeAnswer() {
   const explanationTitle=objectiveQuiz?(prompt.kind==='vocab'?'単語の使い分け':'文法・語順のポイント'):'使える表現の一例';
   const quizState=next.quizProgress?.[prompt.id];
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
-  const explanationHtml=objectiveQuiz?quizTeachingHtml(prompt):`<div class="feedback-note"><strong>${explanationTitle}</strong> ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</div>${speakingTeachingHtml(prompt,raw,true)}`;
+  const explanationHtml=objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
   const checkingNote=objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
