@@ -460,6 +460,7 @@ function renderQuestion() {
   $('.forest-command-window').hidden=false;
   stopAudio();
   $('#answer-area').hidden=false;
+  $('#answer-area').classList.remove('listening-result-only');
   $('#forest-journey').classList.remove('forest-victory');
   play.hintUsed=false;play.revealed=false;play.speechState='';play.quizMissRecorded=false;
   if(play.mode==='forest'){
@@ -614,15 +615,17 @@ function renderQuestion() {
       state.understood=true;
       stopListeningPlayback();
       button.classList.add('is-correct');
-      $('#listening-status').textContent=englishMode?'You understood it. Now respond.':'聞き取れた！次は英語で返してみよう。';
-      $('#listening-response').hidden=false;
-      $('#answer-area').hidden=false;
+      $('#listening-status').textContent=englishMode?'Correct! Listening complete.':'正解！聞き取れたね。スピーキングは別の問題で練習できるよ。';
       $('#play-audio').disabled=true;
-      $$('[data-listening-choice]').forEach(choice=>choice.disabled=true);
+      $('[data-listening-choice]').forEach(choice=>choice.disabled=true);
       $('#reveal-transcript').hidden=true;
-      // Do not focus the input here. On iPhone this opens the software
-      // keyboard over the battle immediately after selecting an audio answer.
-      // Learners can tap the input themselves if they want to type.
+      $('#transcript').hidden=false;
+      $('#transcript').textContent=comprehension.audio;
+      $('#answer-area').hidden=false;
+      $('#answer-area').classList.add('listening-result-only');
+      // The selection itself is the complete assessed task: NO mic, WebSpeech,
+      // hidden typing requirement, or false claim of speaking proficiency.
+      void gradeAnswer();
     }));
   }
 }
@@ -774,8 +777,10 @@ async function gradeAnswer() {
   // Grading during active listening would abort Safari's pending final
   // transcript. Finish recognition first, then let the learner review it.
   if(recognition){finishRecognition();return;}
-  const session=play,prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
-  let grade=gradeLocalResponse(prompt,raw);
+  const session=play,prompt=currentPrompt();
+  const listeningComplete=prompt.kind==='listen'&&play.listeningState?.understood===true;
+  const raw=listeningComplete?'':$('#spoken-answer').value.trim();
+  let grade=listeningComplete?{status:'correct',reasons:[],method:'listening-check'}:gradeLocalResponse(prompt,raw);
   if(grade.status==='review' && grade.method!=='context-safety' && !['vocab','grammar'].includes(prompt.kind) && STAGING_SEMANTIC_GRADER_ENDPOINT){
     session.grading=true;
     $('#show-answer').disabled=true;
@@ -910,10 +915,12 @@ async function gradeAnswer() {
   const explanationTitle=objectiveQuiz?(prompt.kind==='vocab'?'単語の使い分け':'文法・語順のポイント'):'使える表現の一例';
   const quizState=next.quizProgress?.[prompt.id];
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
-  const explanationHtml=objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
-  const checkingNote=objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
+  const explanationHtml=prompt.kind==='listen'
+    ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">聞き取れたポイント</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
+    :objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
+  const checkingNote=prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
