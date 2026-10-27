@@ -52,6 +52,7 @@ export const FOREST_EVENTS=Object.freeze({
     {id:'arrange',label:'小石を並べ直す',detail:'模様を壊さず並びを確かめる',outcome:'石は古木の葉と同じ形になった。仲間は守護者への道を感じ取る。',memento:'葉の形の石'},
     {id:'leave',label:'そのまま見守る',detail:'足元を傷つけずに観察する',outcome:'木の根が小さく動いたように見えた。仲間は自然の静けさを大切にした。',memento:'木の根のささやき'}
    ])
+  })
 });
 export function forestEventFor({areaId='entry',route=null,index=-1}={}){
  if(index!==4)return null;
