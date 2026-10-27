@@ -261,6 +261,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
   $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily');
+  $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
     $('#forest-world-stage').dataset.route='wild';
@@ -494,6 +495,14 @@ function renderQuestion() {
     bookmark.textContent=bookmarkText(active);
   });
   $('#play-card').querySelector('.question-top').after(bookmark);
+  if(play.mode==='daily'){
+    const category=play.dailyPhases[play.index]||'mixed';
+    const stage=document.createElement('p');
+    stage.className='daily-question-kind';
+    stage.textContent=englishMode?({review:'REVIEW',transfer:'TRANSFER',new:'NEW SKILL',mixed:'PRACTICE'}[category]):
+      ({review:'苦手を復習',transfer:'別の場面で応用',new:'新しい表現',mixed:'今日の練習'}[category]);
+    bookmark.after(stage);
+  }
   if(play.mode==='forest'&&quizMode&&quizWeaknessOverview(save).due.some(item=>item.id===prompt.id||item.baseId===(prompt.baseId||prompt.id))){
     const banner=document.createElement('p');
     banner.className='forest-review-banner';
