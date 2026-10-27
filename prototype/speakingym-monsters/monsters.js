@@ -330,7 +330,7 @@ function showForestExplore(routeChoice=false) {
       : `<p class="forest-event-label">STORY EVENT · 行動を選ぼう</p><div class="forest-event-choices">${storyEvent.options.map(choice=>
         `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong>${escapeHtml(choice.label)}</strong><small>${escapeHtml(choice.detail)}</small></button>`).join('')}</div><small>どちらを選んでも英語の問題・XPは同じです。</small>`;
     if(!selected){
-      $('[data-forest-event-option]',eventPanel).forEach(button=>button.addEventListener('click',()=>{
+      $$('[data-forest-event-option]',eventPanel).forEach(button=>button.addEventListener('click',()=>{
         if(!play || play.mode!=='forest'||play.eventChoices[storyKey])return;
         const choice=forestEventChoice(storyEvent,button.dataset.forestEventOption);
         if(!choice)return;
