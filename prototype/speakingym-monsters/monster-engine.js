@@ -176,6 +176,32 @@ export function quizWeaknessOverview(save,today=dayKey()) {
   };
 }
 
+// Two independent milestones are required for the newly discovered forest
+// creatures: transferable English skill and story chapter progress. No RNG,
+// arbitrary timer or paid resource can bypass them. Previously owned creatures
+// remain owned even if thresholds increase in this prototype.
+export function companionUnlockProgress(save, monster, today=dayKey()){
+  const learned=learningSummary(save,today);
+  const areaCount=cleanForest(save.forest).completedAreas.length;
+  const useMastery=monster.masteryUnlock!==undefined;
+  const requiredSkill=useMastery?monster.masteryUnlock:monster.unlock||0;
+  const currentSkill=useMastery?learned.mastered:learned.independent;
+  const requiredAreas=monster.forestAreas||0;
+  return {skillLabel:useMastery?'MASTERした表現':'自力で使える表現',
+    currentSkill,requiredSkill,areaCount,requiredAreas,
+    ready:currentSkill>=requiredSkill&&areaCount>=requiredAreas};
+}
+export function captureEligibleMonsters(save,today=dayKey()){
+  const next=clone(save),captured=[];
+  for(const creature of MONSTERS){
+    if(next.ownedMonsters.includes(creature.id))continue;
+    if(!companionUnlockProgress(next,creature,today).ready)continue;
+    next.ownedMonsters.push(creature.id);
+    next.monsterXp[creature.id]=0;
+    captured.push(creature.id);
+  }
+  return {save:next,captured};
+}
 export function getMonsterProgress(save, id = save.selectedMonster) {
   const xp = save.monsterXp[id] || 0;
   return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), evolved: xp >= EVOLUTION_XP, toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
@@ -408,19 +434,8 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   const xp = Math.round(baseXp * multiplier);
   next.xpWallet = (next.xpWallet || 0) + xp;
 
-  const summary = learningSummary(next, today);
-  const captured = [];
-  for (const monster of MONSTERS) {
-    if (next.ownedMonsters.includes(monster.id)) continue;
-    const meetsIndependent = monster.unlock !== undefined && summary.independent >= monster.unlock;
-    const meetsMastery = monster.masteryUnlock !== undefined && summary.mastered >= monster.masteryUnlock;
-    if (meetsIndependent || meetsMastery) {
-      next.ownedMonsters.push(monster.id);
-      next.monsterXp[monster.id] = 0;
-      captured.push(monster.id);
-    }
-  }
-  return { save: next, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: next.xpWallet } };
+  const {save:awarded,captured}=captureEligibleMonsters(next,today);
+  return { save: awarded, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: awarded.xpWallet } };
 }
 
 export function finishRound(save, smoothCount) {
