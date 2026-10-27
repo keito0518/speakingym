@@ -236,3 +236,46 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .daily-question-kind{display:inline-block;padding:6px 10px;margin:0 0 10px;border-radius:8px;background:#e8f3e4;color:#335c41;font-size:12px;font-weight:800}
 .speaking-success-guide .forest-teaching-transfer{margin-top:9px}
 @media(max-width:560px){.daily-gym{grid-template-columns:1fr;gap:12px;padding:16px}.daily-gym-progress{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px}.daily-gym-progress .tiny-caps{grid-column:1/-1}.daily-gym-progress strong{grid-row:2/4}.daily-gym-progress p{grid-column:1/-1}.daily-gym-copy button{width:100%}}
+
+
+/* Clear, single-screen homepage replaces the formerly stacked long dashboard. */
+.home-navigation{margin:24px auto 48px;max-width:920px}
+.home-navigation-head{margin:0 0 22px}
+.home-navigation-head h1{font-size:clamp(25px,4vw,39px);color:#244634;line-height:1.35;margin:10px 0}
+.home-navigation-head p{color:#607467;font-size:13px;line-height:1.7}
+.home-navigation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.home-navigation-tile{display:flex;align-items:center;gap:15px;min-width:0;min-height:110px;text-align:left;padding:20px 18px;background:#fffef8;border:1px solid #dce5d8;border-radius:19px;color:#284937;box-shadow:0 5px 16px #284d3010;transition:transform .15s,border-color .15s}
+.home-navigation-tile:hover{transform:translateY(-2px);border-color:#8cba9d;background:#f5faef}
+.home-navigation-tile:focus-visible,.home-menu-back:focus-visible{outline:3px solid #e0af57;outline-offset:3px}
+.home-navigation-icon{display:grid;place-items:center;flex:0 0 50px;width:50px;height:50px;border-radius:14px;background:#e8f3e6;font-size:26px}
+.home-navigation-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.home-navigation-copy strong{font-size:17px;line-height:1.3}
+.home-navigation-copy small{font-size:12px;color:#6e8273;line-height:1.5}
+.home-navigation-arrow{font-size:25px;color:#76a184;font-weight:900}
+.home-navigation-tile[data-home-page="daily"]{background:linear-gradient(120deg,#e3f1dc,#f8f3df);border-color:#a9ceb0}
+.home-navigation-tile[data-home-page="forest"] .home-navigation-icon{background:#ddecd9}
+.home-navigation-tile[data-home-page="review"] .home-navigation-icon{background:#f4e9cd}
+.home-navigation-tile[data-home-page="tutorial"] .home-navigation-icon{background:#f5ecdf}
+.home-destination{max-width:1000px;margin:17px auto 52px;min-width:0}
+.home-destination[hidden],.home-navigation[hidden]{display:none!important}
+.home-menu-back{margin-bottom:18px;padding:12px 15px;border:1px solid #c8dcca;border-radius:12px;background:#fffdf7;color:#256d4c;font-size:13px;font-weight:800}
+.home-destination .hero-grid{padding-top:0}
+.home-destination .forest-invite{max-width:850px;margin:0 auto 25px}
+.home-destination .daily-gym{margin-top:0}
+.home-destination .review-journal{margin-bottom:40px}
+.tutorial-backdrop{position:fixed;inset:0;z-index:5000;background:#172a21b8;display:grid;place-items:center;padding:20px;overflow-y:auto}
+.tutorial-backdrop[hidden]{display:none!important}
+.tutorial-dialog{position:relative;background:#fffdf5;border:1px solid #d7dfcf;border-radius:23px;max-width:550px;width:100%;padding:33px 26px;box-shadow:0 20px 50px #15271d53}
+.tutorial-dialog h2{font-size:clamp(21px,4vw,28px);line-height:1.4;color:#284a37;margin:16px 0}
+.tutorial-dialog>p:not(.tiny-caps){font-size:15px;line-height:1.85;color:#4c6554;min-height:96px}
+.tutorial-close{position:absolute;right:15px;top:12px;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;border:1px solid #d8e1d1;background:white;color:#315943}
+.tutorial-actions{display:flex;justify-content:space-between;gap:12px;margin-top:23px}
+.tutorial-actions button{border:1px solid #a9c3ab;background:#f3f7ec;color:#2f6344;border-radius:12px;font-weight:800;min-height:47px;padding:10px 24px}
+.tutorial-actions #tutorial-next{background:#247951;color:white;border-color:#247951}
+.speech-alternatives{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding:12px;border-radius:13px;border:1px solid #bcd8c4;background:#eff8ef}
+.speech-alternatives[hidden]{display:none!important}
+.speech-alternatives button{flex:1 1 200px;border:1px solid #9ebfa6;background:#fffdf6;color:#276549;border-radius:9px;padding:11px 9px;font-size:12px;min-height:44px;font-weight:800;line-height:1.45}
+.speech-alternatives .speech-native-button{background:#dbefdf}
+.speech-alternatives p{width:100%;font-size:12px;line-height:1.7;color:#406650}
+@media(max-width:600px){.home-navigation{margin:9px 0 33px}.home-navigation-grid{grid-template-columns:1fr;gap:10px}.home-navigation-tile{min-height:83px;padding:13px 14px;border-radius:15px}.home-navigation-icon{width:45px;height:45px;flex-basis:45px;font-size:24px}.home-navigation-copy strong{font-size:16px}.home-navigation-copy small{font-size:11px}.tutorial-dialog{padding:28px 18px}.tutorial-dialog>p:not(.tiny-caps){min-height:130px}}
+@media(prefers-reduced-motion:reduce){.home-navigation-tile{transition:none}}
