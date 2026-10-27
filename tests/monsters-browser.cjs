@@ -700,6 +700,36 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#home-view').isVisible(),true);
     assert.equal(await micPage.locator('#play-view').isVisible(),false);
     await micContext.close();
+    // Simulate an iPhone embedded browser which exposes SpeechRecognition but
+    // returns no words. Never keep a fake active microphone indefinitely.
+    const {context:iosContext,page:iosPage}=await boot(390);
+    await iosPage.addInitScript(()=>{
+      Object.defineProperty(navigator,'userAgent',{configurable:true,get:()=>'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15'});
+      class SilentSpeech{
+        start(){window.__silentSpeech=this;queueMicrotask(()=>this.onstart?.());}
+        stop(){this.stopped=true;queueMicrotask(()=>this.onend?.());}
+        abort(){this.aborted=true;}
+      }
+      Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:SilentSpeech});
+    });
+    await iosPage.reload();
+    await enterHomePanel(iosPage,'training');
+    await iosPage.getByRole('button',{name:/まず練習する/}).click();
+    await unlockListening(iosPage);
+    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),true);
+    assert.equal(await iosPage.locator('#native-dictation').isVisible(),true);
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+    await iosPage.evaluate(()=>window.__silentSpeech.onend());
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
+    await iosPage.locator('#mic-button').click();
+    await iosPage.evaluate(()=>window.__silentSpeech.onend());
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/声を文字にできていません/);
+    await iosPage.locator('#native-dictation').click();
+    assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true,'Native keyboard fallback must focus the editable field after an explicit tap');
+    await iosPage.locator('#spoken-answer').fill('That is fine with me.');
+    assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'That is fine with me.');
+    await iosContext.close();
     const {context,page}=await boot(390);
     await page.evaluate(async()=>{
       const {createSave,recordAnswer,STORAGE_KEY}=await import('./monster-engine.js');
