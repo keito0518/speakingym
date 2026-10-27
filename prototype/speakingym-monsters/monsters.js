@@ -19,7 +19,7 @@ import { forestEventFor, forestEventChoice } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { retentionOverview, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
-import { summarizeDungeonAttempt, dungeonBossBrief } from './dungeon-learning.js';
+import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -391,7 +391,11 @@ function renderForestHud() {
   const bossMarker=$('[data-forest-boss]');
   bossMarker.classList.toggle('is-current',play.index>=regularCount());
   bossMarker.classList.toggle('is-cleared',play.index>=regularCount()+BOSS_HITS);
-  $('#forest-scene-story').textContent=play.index>=regularCount()?`最後の確認：聞く・ことば・話す（${play.bossHits+1}/3）`:`${play.index+1}/${regularCount()}問 · 内容を理解して英語で答えよう。`;
+  const kind=currentPrompt()?.kind;
+  const objective=DUNGEON_SKILLS[kind]||DUNGEON_SKILLS.speak;
+  const brief=bossPhase?dungeonBossBrief(play.areaId,bossPhase.turn):null;
+  $('#forest-scene-story').textContent=brief?`ボス確認 ${brief.phase}/3 · ${brief.objective}`:
+    `${play.index+1}/${regularCount()}問 · ${objective.label}：${objective.goal}`;
   const log=$('#forest-battle-log');
   log.textContent=bossPhase?`最後の確認 ${bossPhase.turn}/3 · ${bossPhase.kind==='listen'?'聞き取り':bossPhase.kind==='speak'?'英語で話す':'言葉の問題'}`:'まず問題に集中しよう。';
 }
