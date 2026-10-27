@@ -42,11 +42,13 @@ const path=require('node:path');
       });
       await page.locator(`[data-listening-choice="${correct}"]`).click();
     }
-    const example=await page.evaluate(async()=>{
-      const {ALL_PROMPTS}=await import('./monster-data.js');
-      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
-    });
-    await page.locator('#spoken-answer').fill(example);await page.locator('#show-answer').click();
+    if(!await page.locator('#play-audio').count()){
+      const example=await page.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+      });
+      await page.locator('#spoken-answer').fill(example);await page.locator('#show-answer').click();
+    }
   }
   try{
     for(const width of [320,375,390,430]){
