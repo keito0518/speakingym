@@ -374,3 +374,33 @@
 @media(prefers-reduced-motion:reduce){
  .forest-active .forest-world-stage[data-foe]:not(.forest-attack):not(.forest-guarding) .forest-enemy{animation:none!important}
 }
+
+/* Forest skill encounters: own controls, built for 320 px mobile screens. */
+.forest-quiz{margin:3px 0 13px;padding:13px;border:1px solid #c8d9ca;border-radius:15px;background:linear-gradient(160deg,#f8fdf6,#eaf3e7)}
+.forest-quiz-guide{color:#36654e;font-size:12px;line-height:1.6;font-weight:800;margin-bottom:12px}
+.forest-vocab-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.forest-vocab-options button,.forest-grammar-tiles button{min-width:0;min-height:47px;padding:9px 7px;border:2px solid #d4e3d1;border-radius:11px;background:white;color:#28543f;font-size:14px;line-height:1.3;font-weight:800;overflow-wrap:anywhere;transition:background .15s,border-color .15s}
+.forest-vocab-options button[aria-pressed="true"]{border-color:#218760;background:#d6f0e1;box-shadow:inset 0 0 0 1px #59a680}
+.forest-quiz-question{font-size:clamp(18px,4.5vw,24px)!important;line-height:1.55!important;margin:9px 0 14px!important;overflow-wrap:break-word}
+.forest-grammar-built{padding:13px 12px;border:2px dashed #a8bfa9;border-radius:10px;background:#fffef8;color:#325944;font-size:15px;line-height:1.65;min-height:56px;overflow-wrap:break-word;margin-bottom:11px}
+.forest-grammar-tiles{display:flex;align-items:stretch;flex-wrap:wrap;gap:7px}
+.forest-grammar-tiles button{min-height:41px;padding:8px 12px}
+.forest-grammar-tiles button:disabled{opacity:.38;background:#dce5d9;text-decoration:line-through}
+.forest-grammar-tools{display:flex;gap:8px;margin-top:10px}
+.forest-grammar-tools button{border:1px solid #a9c4ad;border-radius:10px;padding:9px 13px;font-size:12px;background:#f8fff8;color:#3a7659;font-weight:800;min-height:40px}
+.forest-active .forest-world-stage[data-action="weakness"] .forest-enemy{filter:drop-shadow(0 0 14px #e7db78)}
+.forest-active .forest-world-stage[data-action="spell"] .forest-world-vignette{box-shadow:inset 0 0 36px 12px #b59de84d}
+.forest-active .forest-world-stage.forest-weakness-hit .forest-enemy{animation:enemy-strategy-break 1s ease both!important}
+.forest-active .forest-world-stage.forest-spell-cast .forest-party{animation:companion-reading-strike 1.15s ease-out both!important}
+.forest-world-stage.forest-spell-cast::before{background:radial-gradient(circle at 60% 45%,#d6bfffba,transparent 45%);opacity:1}
+@media(max-width:370px){
+ .forest-quiz{padding:10px}
+ .forest-vocab-options{gap:5px}
+ .forest-vocab-options button{font-size:12px;padding:8px 3px}
+ .forest-grammar-tiles button{font-size:12px;padding:7px 9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .forest-vocab-options button,.forest-grammar-tiles button{transition:none}
+ .forest-active .forest-world-stage.forest-weakness-hit .forest-enemy,
+ .forest-active .forest-world-stage.forest-spell-cast .forest-party{animation:none!important}
+}
