@@ -4,7 +4,10 @@ export function relicArt(id) {
     'sunlit-leaf': '<path d="M15 47Q5 14 49 10Q56 42 23 49Z" fill="#aaca78"/><path d="M12 55L44 20M25 42L22 29M34 33L45 34"/>',
     'moss-lantern': '<path d="M23 14H41L45 24V47L32 54L19 47V24Z" fill="#b6d8bb"/><path d="M24 14V9H40V14M19 26H45M19 44H45"/><ellipse cx="32" cy="35" rx="6" ry="10" fill="#ffe39c" stroke="none"/>',
     'golden-yolk': '<path d="M16 39C16 26 25 10 32 10S48 26 48 39A16 16 0 0 1 16 39Z" fill="#f8d17b"/><ellipse cx="28" cy="30" rx="5" ry="9" fill="#fff3be" stroke="none"/>',
-    'lost-button': '<circle cx="32" cy="32" r="23" fill="#b7a6da"/><circle cx="32" cy="32" r="17"/><path d="M26 26L38 38M38 26L26 38"/><g fill="#493e66"><circle cx="26" cy="26" r="2"/><circle cx="38" cy="26" r="2"/><circle cx="26" cy="38" r="2"/><circle cx="38" cy="38" r="2"/></g>'
+    'lost-button': '<circle cx="32" cy="32" r="23" fill="#b7a6da"/><circle cx="32" cy="32" r="17"/><path d="M26 26L38 38M38 26L26 38"/><g fill="#493e66"><circle cx="26" cy="26" r="2"/><circle cx="38" cy="26" r="2"/><circle cx="26" cy="38" r="2"/><circle cx="38" cy="38" r="2"/></g>',
+    'sunbeam': '<path d="M32 5L40 22L58 32L41 40L32 59L23 41L6 32L24 23Z" fill="#f8dd91"/><circle cx="32" cy="32" r="9" fill="#fff9d6" stroke="#c6a75a"/><path d="M32 7V17M32 47V57M7 32H16M48 32H57"/>',
+    'mist-seal': '<circle cx="32" cy="32" r="23" fill="#aec3d7"/><path d="M17 40Q28 19 49 28M14 27Q27 13 48 19M17 48Q32 38 48 48" stroke="#617e9d" stroke-width="4" fill="none"/><circle cx="32" cy="32" r="5" fill="#f2f4ef" stroke="#617e9d"/>',
+    'ancient-acorn': '<path d="M18 28Q16 15 32 12Q50 15 46 29L45 45Q32 59 19 45Z" fill="#ba9762"/><path d="M14 26Q15 13 33 15Q49 13 50 26L44 35H20Z" fill="#7e935c"/><path d="M29 14Q27 6 36 5M24 23L32 19L40 24M24 32L31 29L39 32" stroke="#566d4b" fill="none"/>'
   };
   return `<svg class="relic-svg" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g stroke="#655b40" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">${shapes[id] || shapes['sunlit-leaf']}</g></svg>`;
 }
