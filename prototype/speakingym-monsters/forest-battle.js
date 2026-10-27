@@ -57,7 +57,7 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
    const kind=kinds[slot];
    // An overdue reading response still belongs in a speaking encounter:
    // learners read a short clue then answer in English, preserving old reviews.
-   const matches=p=>p.kind===kind||(kind==='speak'&&slot<REGULAR_ENCOUNTERS&&p.kind==='read');
+   const matches=p=>p.kind===kind||(kind==='speak'&&slot<REGULAR_ENCOUNTERS&&p.kind==='read'&&dueIds.has(p.id));
    let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
    // Prioritize exact missed tasks, then scheduled expressions and fresh scenes.
