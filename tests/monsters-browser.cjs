@@ -79,7 +79,7 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).animationName),'none','Reduced motion setting stops movement');
     assert.equal(await menuPage.locator('[data-home-page="forest"] .home-navigation-icon svg').count(),1);
-    const forestColumnSpan=await menuPage.locator('[data-home-page="forest"]').evaluate(el=>getComputedStyle(el).gridColumnEnd);
+    const forestColumnSpan=await menuPage.locator('[data-home-page="forest"]').evaluate(el=>getComputedStyle(el).gridColumnStart);
     assert.equal(forestColumnSpan,'span 2','Dungeon takes the featured menu space');
     assert.match(await menuPage.locator('.home-feature').innerText(),/英語/);
     assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
