@@ -461,6 +461,8 @@ const path=require('node:path');
     await endlessPage.locator('#spoken-answer').fill(endlessListeningAnswer);
     await endlessPage.locator('#show-answer').click();
     await endlessPage.locator('#next-question').click();
+    await endlessPage.locator('#forest-journey').waitFor({state:'visible',timeout:6500});
+    assert.match(await endlessPage.locator('.question-top').innerText(),/ENCOUNTER 3/);
     const xpBeforeWrong=await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
     const wrongVocab=await endlessPage.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
