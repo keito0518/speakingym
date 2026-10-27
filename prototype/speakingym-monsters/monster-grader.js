@@ -113,7 +113,7 @@ function conflictingDetails(base,text){
   if(/\b(?:but actually|actually i (?:want|prefer|need)|instead of|rather than)\b/.test(text))
     return note('途中で希望を変更している可能性があります。最終的に伝えたい内容を一文で確認してみよう。');
   if(base==='booking-table'){
-    const sizes=[...text.matchAll(/\b(?:table for|party of|for) (one|two|three|four|five|six|seven|eight|[1-9])\b/g)];
+    const sizes=[...text.matchAll(/\b(?:table for|party of|for|or|and|actually) (one|two|three|four|five|six|seven|eight|[1-9])\b/g)];
     if(sizes.some(m=>!['two','2'].includes(m[1])))
       return note('この場面で必要なのは2人分の席です。人数を確認してみよう。');
   }
