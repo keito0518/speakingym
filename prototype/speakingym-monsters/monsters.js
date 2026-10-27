@@ -599,6 +599,12 @@ async function gradeAnswer() {
   }
   if(grade.status!=='correct'){
     if(['review','incomplete'].includes(grade.status) && raw)persist(flagUncertainReview(save,prompt.id));
+    if(grade.status==='incomplete' && raw){
+      // A confirmed missing detail is instructional feedback. A later
+      // corrected answer is earned, but cannot count as a first-try combo.
+      play.hintUsed=true;
+      if(play.mode==='forest')play.combo=0;
+    }
     if(grade.status==='incorrect' && raw){
       // Only a confident contradiction or an objective wrong quiz is a miss.
       if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
