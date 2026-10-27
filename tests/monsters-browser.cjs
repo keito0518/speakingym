@@ -154,6 +154,42 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'moss');
       for(let mob=2;mob<=5;mob++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('ENCOUNTER '+mob+' \/ 5'));
+        if(mob===3){
+          // Word-weakness buttons are functional, and a wrong choice gives no XP.
+          assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),'weakness');
+          const info=await forestPage.evaluate(async()=>{
+            const {ALL_PROMPTS}=await import('./monster-data.js');
+            const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+            return {answer:prompt.answer,options:prompt.options};
+          });
+          const bad=info.options.findIndex(x=>x!==info.answer);
+          const good=info.options.indexOf(info.answer);
+          const originalXp=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
+          await forestPage.locator(`[data-vocab-option="${bad}"]`).click();
+          assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.options[bad]);
+          await forestPage.locator('#show-answer').click();
+          assert.match(await forestPage.locator('#feedback-panel').innerText(),/もう一度挑戦/);
+          assert.equal(await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),originalXp);
+          await forestPage.locator(`[data-vocab-option="${good}"]`).click();
+          assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.answer);
+        }
+        if(mob===4){
+          assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),'spell');
+          const info=await forestPage.evaluate(async()=>{
+            const {ALL_PROMPTS}=await import('./monster-data.js');
+            const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+            return {answer:prompt.answer,tokens:prompt.tokens};
+          });
+          const words=info.answer.replace(/[.!?]/g,'').split(' '),used=new Set();
+          for(const word of words){
+            const i=info.tokens.findIndex((candidate,i)=>candidate===word&&!used.has(i));
+            assert.ok(i>=0,`Missing word ${word}`);
+            used.add(i);
+            await forestPage.locator(`[data-grammar-piece="${i}"]`).click();
+          }
+          assert.equal(await forestPage.locator('#spoken-answer').inputValue(),words.join(' '));
+          assert.match(await forestPage.locator('#forest-grammar-built').innerText(),/ /);
+        }
         await answer();
         await forestPage.locator('#next-question').click();
         assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
@@ -167,6 +203,7 @@ const path=require('node:path');
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-boss.png`),fullPage:true});
       for(let hit=1;hit<=3;hit++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('BOSS ATTACK '+hit+' \/ 3'));
+        assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
         if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').innerText(),/Thorn Kingをたおした！/);
