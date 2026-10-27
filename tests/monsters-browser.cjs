@@ -313,7 +313,9 @@ const path=require('node:path');
           await forestPage.locator(`[data-vocab-option="${bad}"]`).click();
           assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.options[bad]);
           await forestPage.locator('#show-answer').click();
-          assert.match(await forestPage.locator('#feedback-panel').innerText(),/もう一度挑戦/);
+          // Incorrect choices now display a specific meaning-error category
+          // instead of the former generic retry heading.
+          assert.match(await forestPage.locator('#feedback-panel').innerText(),/伝わる意味が違うよ/);
           assert.match(await forestPage.locator('.forest-teaching-nudge').innerText(),/考え方のヒント/);
           assert.equal(await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),originalXp);
           await forestPage.locator(`[data-vocab-option="${good}"]`).click();
