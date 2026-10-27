@@ -586,9 +586,9 @@ async function gradeAnswer() {
       $('#speech-helper').textContent='AI判定を利用できないため、教材の簡易判定で確認しています。';
   }
   if(grade.status!=='correct'){
-    if(grade.status==='review' && raw)persist(flagUncertainReview(save,prompt.id));
+    if(['review','incomplete'].includes(grade.status) && raw)persist(flagUncertainReview(save,prompt.id));
     if(grade.status==='incorrect' && raw){
-      // A wrong quiz tap is one miss even if the learner then reveals the example.
+      // Only a confident contradiction or an objective wrong quiz is a miss.
       if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
       play.hintUsed=true;
       if(play.mode==='forest')play.combo=0;
@@ -604,31 +604,32 @@ async function gradeAnswer() {
         ? `${tactic.guard}。今回は攻撃できなかった。別の答えを試そう。`
         : `${tactic.guard}。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。`;
     }
-    if(play.mode==='forest'&&play.endless&&grade.status==='review'&&raw){
+    if(play.mode==='forest'&&play.endless&&['incorrect','incomplete'].includes(grade.status)&&raw){
       play.attemptReviewed=true;
-      // Ambiguous recognizer output is explicitly not called wrong; limited attempts are a challenge rule.
+      // An uncertain paraphrase or failed recognizer never consumes a try.
       const soxieShield=play.companionId==='katappo'&&getMonsterProgress(save,play.companionId).evolved&&!play.usedShield;
       if(soxieShield){play.usedShield=true;$('#forest-world-fx').textContent='LOST & FOUND · SHIELD';}
       else play.remainingTries=Math.max(0,play.remainingTries-1);
       $('#forest-tries').textContent=`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`;
       if(!play.remainingTries){
-        $('#feedback-panel').innerHTML='<div class="feedback-box grading-review" role="status"><div class="feedback-head">挑戦回数を使い切った！</div><p class="grading-intro">簡易判定では確認できない回答もあるよ。今回はここまで。もう一度遊んでみよう！</p><button id="forest-exit" class="grading-next">冒険の結果を見る →</button></div>';
+        $('#feedback-panel').innerHTML='<div class="feedback-box grading-review" role="status"><div class="feedback-head">挑戦回数を使い切った！</div><p class="grading-intro">今回の回答では必要な意味が伝わりませんでした。例文を復習して再挑戦しよう！</p><button id="forest-exit" class="grading-next">冒険の結果を見る →</button></div>';
         $('#forest-exit').addEventListener('click',()=>finishSession(false,true));
         micView('done');return;
       }
     }
     const empty=grade.status==='empty';
     const incorrect=grade.status==='incorrect';
+    const incomplete=grade.status==='incomplete';
     const uncertain=grade.status==='review'||grade.status==='ungraded';
     const teaching=incorrect?quizTeachingFor(prompt):null;
-    const speakingLesson=grade.status==='review'&&raw?speakingFeedbackFor(prompt,raw):null;
+    const speakingLesson=['review','incomplete','incorrect'].includes(grade.status)&&raw?speakingFeedbackFor(prompt,raw):null;
     // A concrete correction is instructional help, so subsequent success
     // cannot quietly earn the same XP as an independent first attempt.
     if(speakingLesson?.specific)play.hintUsed=true;
     const nudge=teaching?`<p class="forest-teaching-nudge"><strong>考え方のヒント</strong> ${escapeHtml(teaching.clue)}</p>`:'';
     const speakingNudge=speakingLesson?speakingTeachingHtml(prompt,raw):'';
     const aidedNote=speakingLesson?.specific?'<p class="forest-checking-note">語順などのヒントを表示したため、次の正答はヒントありXPになります。</p>':'';
-    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incorrect?'もう一度挑戦！':'自動判定では確認できませんでした'}</div><p class="grading-intro">${incorrect?'答えが違ったよ。考え方を確認して、もう一度挑戦しよう。復習にも登録したよ。':uncertain?'簡易判定で確認できない部分があります。正しい別表現の可能性もあるので、言い換えてみてね。今回の表現は復習にも登録しました。':'回答を入力または音声認識で取り込んでね。'}</p>${nudge}${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}</div>`;
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'別の意味だと判断できました。必要な情報を確認して言い直してみよう。':incomplete?'伝わった部分は合っているよ。抜けている情報を付け足してみよう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${nudge}${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}</div>`;
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     if(!['vocab','grammar'].includes(prompt.kind))micView('ready');
     return;

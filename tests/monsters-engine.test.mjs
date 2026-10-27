@@ -7,6 +7,7 @@ import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
+import { gradeDelayMeaning } from '../prototype/speakingym-monsters/speaking-meaning.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
@@ -17,6 +18,34 @@ import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEV
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
+
+test('arrival meaning distinguishes natural replies, missing time, contradiction and uncertainty',()=>{
+ for(const [answer,status] of [
+   ["I'll be ten minutes late.",'correct'],
+   ["I'm running ten minutes late.",'correct'],
+   ['I will arrive 10 minutes late.','correct'],
+   ["I'm delayed by ten minutes.",'correct'],
+   ["I'll be late.",'incomplete'],
+   ["I'll be there in ten minutes.",'review'],
+   ["I won't be ten minutes late.",'incorrect'],
+   ["I will not be ten minutes late.",'incorrect'],
+   ["I'm ten minutes early.",'incorrect'],
+   ["I'll be twenty minutes late.",'incorrect'],
+   ["I'm not sure if I'll be ten minutes late.",'review'],
+   ['The bus is ten minutes late.','review']
+ ])assert.equal(gradeDelayMeaning(answer,10).status,status,answer);
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const answer of ["I'm running five minutes late.","I'm delayed by 5 minutes."])
+   assert.equal(gradeLocalResponse(byId('late-traffic-easy'),answer).status,'correct',answer);
+ for(const [answer,status] of [
+   ["I'll be late.",'incomplete'],
+   ["I'll be there in five minutes.",'review'],
+   ["I won't be five minutes late.",'incorrect'],
+   ["I'll be ten minutes late.",'incorrect']
+ ])assert.equal(gradeLocalResponse(byId('late-traffic-easy'),answer).status,status,answer);
+ assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be thirty minutes late.").status,'review','More conditions are required at hard difficulty');
+ assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be twenty minutes late.").status,'incorrect');
+});
 
 test('all listening prompts have a real, matching and locally hosted humanlike AI voice clip',()=>{
   const prompts=ALL_PROMPTS.filter(prompt=>prompt.kind==='listen');
@@ -106,7 +135,7 @@ test('eight new speaking contexts each grow from one simple idea into a differen
     }
   }
   assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-easy'),"I'll be five minutes late.").status,'correct');
-  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-hard'),"I'll be five minutes late.").status,'review');
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-hard'),"I'll be five minutes late.").status,'incorrect');
   assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='help-locker-hard'),'Could you help me open this locker?').status,'review');
   // The extra story pool can appear in a shuffled Forest without replacing
   // its required five foe skills or the three connected boss turns.

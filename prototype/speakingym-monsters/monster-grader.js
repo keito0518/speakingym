@@ -4,6 +4,7 @@
 // 'review', not 'wrong'. No reward is ever minted from empty/unsupported answers.
 import { ALL_PROMPTS } from './monster-data.js';
 import { normalizeEnglish, compareWithExamples } from './monster-engine.js';
+import { gradeDelayMeaning } from './speaking-meaning.js';
 
 const OR = (...parts) => parts.join('|');
 const intent = {
@@ -87,6 +88,18 @@ export function gradeLocalResponse(prompt, raw) {
  if(exact) return {status:'correct',reasons:[],confidence:'high',method:'registered-example'};
  const difficulty=prompt.difficulty||'easy';
  const base=prompt.baseId || prompt.id;
+ // Only the easiest traffic prompt asks for exactly one piece of information.
+ // More advanced variants require additional reasons, apologies and proposals:
+ // their numerical checks can reject contradictions but cannot grant XP alone.
+ if(base==='late-traffic'){
+   const expected={easy:5,normal:15,hard:30}[difficulty];
+   const meaning=gradeDelayMeaning(raw,expected);
+   if(meaning.status==='incorrect'||meaning.status==='incomplete'||
+       (difficulty==='easy'&&meaning.status==='correct'))
+     return {...meaning,confidence:'high',method:'arrival-meaning'};
+   if(difficulty!=='easy'&&meaning.status==='correct')
+     return {status:'review',reasons:['遅れる分数は伝わりました。理由や追加の依頼も必要です。'],confidence:'low',method:'arrival-meaning'};
+ }
  // A vocabulary signal within a negated sentence is not evidence that the
  // requested meaning was conveyed. Only narrow, positive-intent negatives
  // ("not on time" and "not sure yet") may use the heuristic rubric.
