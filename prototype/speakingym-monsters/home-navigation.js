@@ -48,6 +48,23 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  menu.className='home-navigation';menu.id='home-navigation';
  const head=document.createElement('div');head.className='home-navigation-head';
  head.innerHTML='<span class="tiny-caps">WELCOME TO SPEAKINGYM MONSTERS</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>知っている英語を、実際に使える英語へ。今日はどこまで進める？</p>';
+ // Optional lower-motion UI for iPhone users; CSS still honors system
+ // Reduced Motion. This setting changes visuals only, not English grading.
+ const motionToggle=document.createElement('button');
+ motionToggle.type='button';motionToggle.id='toggle-simple-motion';motionToggle.className='motion-toggle';
+ let quiet=false;
+ try{quiet=localStorage.getItem('speakingym-monsters-reduce-motion')==='1';}catch{}
+ const applyMotion=()=>{
+  document.documentElement.classList.toggle('monsters-quiet-motion',quiet);
+  motionToggle.setAttribute('aria-pressed',String(quiet));
+  motionToggle.textContent=quiet?'演出：ひかえめ（変更）':'演出：通常（ひかえめにする）';
+ };
+ motionToggle.addEventListener('click',()=>{
+  quiet=!quiet;
+  try{localStorage.setItem('speakingym-monsters-reduce-motion',quiet?'1':'0');}catch{}
+  applyMotion();
+ });
+ applyMotion();head.append(motionToggle);
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 4 CHAPTERS</span><h2>English<br>ダンジョン</h2><p>英語で敵の試練に挑み、新しい仲間やエリアを解放しよう。</p>
