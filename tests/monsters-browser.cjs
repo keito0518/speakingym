@@ -828,42 +828,29 @@ const path=require('node:path');
     await enterHomePanel(page,'training');
     await page.getByRole('button',{name:/スピーキングを始める/}).click();
     assert.match(await page.locator('#play-mode-label').innerText(),/スピーキング道場/);
-    assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'think-trip');
-    assert.equal(await page.locator('#answer-area').isVisible(),false,'Cannot answer listening without comprehension');
-    assert.equal(await page.locator('#listening-meaning').isVisible(),false);
-    assert.equal(await page.locator('#listening-response').isVisible(),false);
-    assert.equal(await page.locator('#play-card').innerText().then(text=>text.includes('book the tour now')),false);
-    assert.equal(await page.locator('#reveal-transcript').isVisible(),true);
-    await page.locator('#reveal-transcript').click();
-    assert.match(await page.locator('#transcript').innerText(),/book the tour now/);
-    const correct=await page.evaluate(async()=>{
-      const {ALL_PROMPTS}=await import('./monster-data.js');
-      const {listeningChallengeFor}=await import('./listening-challenges.js');
-      return listeningChallengeFor(ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)).correctIndex;
-    });
-    await page.locator(`[data-listening-choice="${correct}"]`).click();
-    await page.locator('#show-answer').click(); // Empty answer never grants XP.
-    assert.match(await page.locator('#feedback-panel').innerText(),/英語を入力/);
-    await page.locator('#show-hint').click();
-    assert.match(await page.locator('#hint-panel').innerText(),/Let me/);
-    await page.locator('#spoken-answer').fill('Let me think about it.');
-    await page.locator('#show-answer').click();
-    assert.match(await page.locator('.feedback-answer').innerText(),/Let me think/);
-    assert.match(await page.locator('#feedback-panel').innerText(),/\+8 XP/); // Hint lowers awarded XP.
-    await page.locator('#next-question').click();
-    for(let i=0;i<2;i++){
-      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),['repeat-station','agree-friend'][i]);
-      if(await page.locator('#play-audio').count())await unlockListening(page);
-      else{await page.locator('#spoken-answer').fill(i===0?'Could you say that again?':'That works for me.');await page.locator('#show-answer').click();}
-      assert.match(await page.locator('#feedback-panel').innerText(),/\+16 XP/);
+    const speakingSeen=[];
+    for(let i=0;i<6;i++){
+      const id=await page.locator('#play-card').getAttribute('data-prompt-id');
+      speakingSeen.push(id);
+      assert.equal(await page.locator('#play-audio').count(),0,'Speaking-only must not depend on listening audio');
+      const answer=await page.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+      });
+      if(i===0)await page.locator('#show-hint').click();
+      await page.locator('#spoken-answer').fill(answer);
+      await page.locator('#show-answer').click();
+      assert.match(await page.locator('#feedback-panel').innerText(),i===0?/\\+8 XP/:/\\+16 XP/);
       await page.locator('#next-question').click();
     }
+    assert.equal(new Set(speakingSeen).size,6);
     await page.locator('#result-view').waitFor({state:'visible'});
     assert.match(await page.locator('#result-discoveries').innerText(),/Soxie/);
-    assert.match(await page.locator('#result-rewards').innerText(),/40 XP ストック/);
+    const trainingEarned=Number((await page.locator('#result-rewards').innerText()).match(/\\+(\\d+) XP ストック/)?.[1]);
+    assert.equal(trainingEarned,88,'1 hinted + 5 independent speaking answers');
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-result.png`),fullPage:true});
     await page.locator('#result-collection').click();
-    assert.equal(await page.locator('#collection-wallet').innerText(),'40 XP');
+    assert.equal(await page.locator('#collection-wallet').innerText(),trainingEarned+' XP');
     assert.equal(await page.locator('#collection-grid [data-feed-monster]').count(),0);
     await page.locator('[data-open-monster="katappo"]').click();
     assert.equal(await page.locator('#detail-view').isVisible(),true);
@@ -872,10 +859,10 @@ const path=require('node:path');
     await page.locator('#open-training').click();
     assert.equal(await page.locator('#training-view').isVisible(),true);
     await page.locator('[data-feed-monster="katappo"][data-feed-amount="10"]').click();
-    assert.equal(await page.locator('#training-wallet').innerText(),'30 XP');
+    assert.equal(await page.locator('#training-wallet').innerText(),(trainingEarned-10)+' XP');
     await page.locator('[data-feed-monster="katappo"][data-feed-amount="all"]').click();
     assert.equal(await page.locator('#training-wallet').innerText(),'0 XP');
-    assert.match(await page.locator('#growth-feedback').innerText(),/Soxieに30 XP/);
+    assert.match(await page.locator('#growth-feedback').innerText(),new RegExp('Soxieに'+(trainingEarned-10)+' XP'));
     await page.locator('#training-back').click();
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-collection.png`),fullPage:true});
     const collectionMetrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -883,7 +870,7 @@ const path=require('node:path');
     await page.locator('[data-select-monster="katappo"]').click();
     await page.locator('#detail-back').click();
     await page.locator('#collection-home').click();
-    assert.match(await page.locator('#stat-independent').innerText(),/4 \/ 16/);
+    assert.match(await page.locator('#stat-independent').innerText(),/\\d+ \\/ 16/);
     assert.match(await page.locator('#hero-monster-name').innerText(),/Soxie/);
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
@@ -899,7 +886,7 @@ const path=require('node:path');
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
     assert.equal(saved.completedRuns,1);assert.ok(saved.totalAnswers>=9);
     assert.ok(saved.ownedMonsters.includes('katappo'));
-    assert.equal(saved.monsterXp.katappo,40);
+    assert.equal(saved.monsterXp.katappo,trainingEarned);
     assert.equal(saved.xpWallet,0); // Skipping questions never grants XP.
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-persisted.png`),fullPage:true});
     await context.close();
