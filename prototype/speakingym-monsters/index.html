@@ -22,6 +22,20 @@
 
     <main id="main-content">
       <section id="home-view" class="view">
+        <section class="daily-gym" aria-labelledby="daily-gym-title">
+          <div class="daily-gym-copy">
+            <span class="tiny-caps">TODAY'S FIVE-MINUTE TRAINING</span>
+            <h2 id="daily-gym-title">今日の5分ジム</h2>
+            <p>苦手を確認 → 新しい表現 → 別の場面で応用。8問で自分の英語を育てよう。解説は好きなだけ読めるよ。</p>
+            <p id="daily-plan-status" class="daily-plan-status" role="status">今日の練習を準備中…</p>
+            <button type="button" id="start-daily-gym" class="button button-primary">今日の5分を始める →</button>
+          </div>
+          <div class="daily-gym-progress" aria-label="自力で言えた割合の記録">
+            <span class="tiny-caps">YOUR PROGRESS</span>
+            <strong id="daily-last-rate">―</strong><small>直近の自力正解率</small>
+            <p id="daily-growth-note">5分ジムを完了すると、成長を記録できるよ。</p>
+          </div>
+        </section>
         <section class="saved-review" aria-labelledby="saved-review-title">
           <div class="saved-review-heading"><span class="tiny-caps">MY SAVED QUESTIONS</span><h2 id="saved-review-title">保存した問題を復習</h2>
             <p>自分が残した問題を、戦闘演出なしで何度でも練習。</p>
