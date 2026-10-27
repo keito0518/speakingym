@@ -53,6 +53,15 @@ const path=require('node:path');
   try{
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width,'no-preference');await seed(page);
+      assert.equal(await page.locator('#home-navigation .home-walker').count(),3,'Three recruited friends decorate the menu, no more');
+      assert.equal(await page.locator('[data-home-page="forest"] .home-walker svg').count(),1);
+      assert.equal(await page.locator('[data-home-page="collection"] .home-walker svg').count(),1);
+      assert.equal(await page.locator('[data-home-page="daily"] .home-walker svg').count(),1);
+      assert.equal(await page.locator('[data-home-page="review"] .home-walker').count(),0,'Decorations do not cover every menu');
+      assert.equal(await page.locator('.home-walker').first().evaluate(el=>getComputedStyle(el).animationName),'home-roam');
+      assert.equal(await page.locator('.home-walker').first().evaluate(el=>getComputedStyle(el).pointerEvents),'none');
+      await noOverflow(page,`${width} colorful home and companion walkers`);
+      await page.screenshot({path:path.join(shots,`home-runners-${engine}-${width}.png`),fullPage:true});
       await page.locator('[data-home-page="collection"]').click();
       assert.equal(await page.locator('[data-open-monster]').count(),13);
       assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
