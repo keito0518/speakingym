@@ -580,7 +580,10 @@ async function gradeAnswer() {
     $('#forest-battle-log').textContent=prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
   }
   const autoForest=play.mode==='forest';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note">使える表現の一例。 ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。'}</p></div>${autoForest?'<p class="forest-auto-status" id="forest-auto-status" role="status">攻撃演出のあと、自動で次へ進むよ。</p><button type="button" id="pause-auto" class="forest-auto-pause">例文をもう少し読む</button>':''}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  const objectiveQuiz=prompt.kind==='vocab'||prompt.kind==='grammar';
+  const explanationTitle=objectiveQuiz?(prompt.kind==='vocab'?'単語の使い分け':'文法・語順のポイント'):'使える表現の一例';
+  const checkingNote=objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note"><strong>${explanationTitle}</strong> ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${checkingNote}</p></div>${autoForest?'<p class="forest-auto-status" id="forest-auto-status" role="status">攻撃演出のあと、自動で次へ進むよ。</p><button type="button" id="pause-auto" class="forest-auto-pause">${objectiveQuiz?'解説をもう少し読む':'例文をもう少し読む'}</button>':''}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
   if(autoForest){
     $('#pause-auto').addEventListener('click',()=>{
@@ -588,7 +591,9 @@ async function gradeAnswer() {
       $('#forest-auto-status').textContent='自動送りを停止したよ。読み終えたら「今すぐ次へ」を押してね。';
       $('#pause-auto').hidden=true;
     });
-    queueAutoAdvance(advanceQuestion,play.index>=REGULAR_ENCOUNTERS?3100:2450);
+    // A correct quiz answer should teach *why*, while still proceeding
+    // automatically without requiring a tap after every cleared gate.
+    queueAutoAdvance(advanceQuestion,objectiveQuiz?(play.index>=REGULAR_ENCOUNTERS?4500:3900):(play.index>=REGULAR_ENCOUNTERS?3100:2450));
   }
 }
 function skipAnswer(){
@@ -598,7 +603,7 @@ function skipAnswer(){
   play.revealed=true;stopAudio();
   if(play.mode==='forest')play.combo=0;
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
-  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">例文を確認しよう · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p><button id="next-question" class="grading-next">${play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'解説を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p><button id="next-question" class="grading-next">${play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',()=>{
     if(play?.mode==='forest'&&play.endless&&!play.attemptReviewed){
       play.remainingTries=Math.max(0,play.remainingTries-1);

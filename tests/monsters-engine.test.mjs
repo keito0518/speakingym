@@ -12,23 +12,23 @@ import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, com
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
-test('curriculum retains 156 speaking exercises and includes 36 forest quizzes', () => {
+test('curriculum retains 156 speaking exercises and expands to 72 forest quizzes', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,192);
+  assert.equal(ALL_PROMPTS.length,228);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,64);
-    assert.equal(new Set(level.map(p=>p.id)).size,64);
+    assert.equal(level.length,76);
+    assert.equal(new Set(level.map(p=>p.id)).size,76);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
-    assert.equal(level.filter(p=>p.kind==='vocab').length,6);
-    assert.equal(level.filter(p=>p.kind==='grammar').length,6);
+    assert.equal(level.filter(p=>p.kind==='vocab').length,12);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,12);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
     assert.ok(level.every(p=>['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
   }
-  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/64;
+  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/76;
   assert.ok(averageLength('hard')>averageLength('normal')*1.1);
   assert.equal(new Set(PROMPTS.map(p => p.id)).size,52);
   assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
@@ -387,9 +387,9 @@ test('objective local checks accept authored examples and some natural paraphras
 test('forest four-skill questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
-    assert.equal(quizzes.length,12);
-    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,6);
-    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,6);
+    assert.equal(quizzes.length,24);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,12);
+    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,12);
     assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
     for(const p of quizzes){
       assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
@@ -403,6 +403,7 @@ test('forest four-skill questions grade deterministically and never reward incor
         assert.ok(p.tokens.length>=4);
         const original=p.answer.replace(/[.!?]/g,'').split(' ');
         assert.deepEqual([...p.tokens].sort(),[...original].sort());
+        assert.notDeepEqual(p.tokens,original,`Grammar tiles should not already be solved: ${p.id}`);
       }
       const earned=recordAnswer(createSave(),p.id,'smooth','2026-10-27');
       assert.ok(earned.reward.xp>0);
@@ -414,6 +415,32 @@ test('forest four-skill questions grade deterministically and never reward incor
       assert.equal(validateSave(miss.save).reviewPrompts[p.id],'2026-10-28');
     }
   }
+});
+test('expanded forest quizzes change targets across levels and explain the language point',()=>{
+  const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
+  assert.equal(quizzes.length,72);
+  assert.equal(new Set(quizzes.map(p=>p.id)).size,72);
+  const baseIds=new Set(quizzes.map(p=>p.baseId));
+  assert.equal(baseIds.size,24);
+  for(const baseId of baseIds){
+    const variants=quizzes.filter(p=>p.baseId===baseId);
+    assert.deepEqual(variants.map(p=>p.difficulty),['easy','normal','hard']);
+    for(const p of variants){
+      assert.ok(p.hint.length>=12,`${p.id} needs a useful hint`);
+      assert.ok(p.tip.length>=24,`${p.id} needs a useful explanation`);
+      assert.ok(!p.cue.includes('<')&&!p.tip.includes('<'),`${p.id} must remain plain text`);
+    }
+  }
+  // Harder *new* topics are not a padded restatement of the same answer.
+  for(const baseId of ['forest-vocab-bill','forest-vocab-route','forest-vocab-allergy','forest-vocab-timing','forest-vocab-hotel','forest-vocab-details']){
+    assert.equal(new Set(quizzes.filter(p=>p.baseId===baseId).map(p=>p.answer)).size,3,baseId);
+  }
+  const drink=ALL_PROMPTS.find(p=>p.id==='recommend-drink');
+  assert.match(drink.cue,/甘すぎない/);
+  assert.match(drink.answer,/not?\s+too\s+sweet|isn't\s+too\s+sweet/i);
+  assert.ok(drink.alternatives.every(answer=>/not too sweet|isn't too sweet/i.test(answer)),
+    'All model answers must retain the key sweetness constraint');
+  assert.equal(gradeLocalResponse(drink,drink.answer).status,'correct');
 });
 test('forest quiz controls respect English-only difficulty and keep typed vocabulary choices in sync',()=>{
   for(const difficulty of DIFFICULTIES){

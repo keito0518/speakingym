@@ -1,6 +1,7 @@
 // Authored vocabulary and grammar combat for the Beginning Forest.
 // Choices rotate by scene and level: correct answers are not consistently first.
 // Four skills share a battle; quiz grading is deterministic without AI calls.
+import { EXTRA_FOREST_QUIZZES } from './forest-quizzes-extra.js';
 export const FOREST_QUIZZES=Object.freeze([
   {
     "id": "forest-vocab-ticket-easy",
@@ -12,12 +13,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "駅で切符を買いたい。空欄に入る単語を選ぼう。 I need to _____ a ticket.",
     "answer": "buy",
     "options": [
-      "invite",
+      "refund",
       "buy",
-      "borrow"
+      "cancel"
     ],
     "hint": "お金を払って入手する動詞を選ぼう。",
-    "tip": "buy a ticket は『切符を買う』。borrow は借りる、invite は招待する。"
+    "tip": "buy a ticket は『切符を買う』。refund は返金する、cancel は取り消す。券売機で新たに買う場面では buy。"
   },
   {
     "id": "forest-vocab-order-easy",
@@ -29,12 +30,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "カフェで飲み物を注文する。 Could I _____ a coffee?",
     "answer": "have",
     "options": [
-      "drive",
-      "wear",
+      "borrow",
+      "return",
       "have"
     ],
     "hint": "Could I ...? で注文するときによく使う動詞。",
-    "tip": "Could I have ...? は自然で丁寧な注文表現。"
+    "tip": "Could I have ...? は自然で丁寧な注文表現。borrow は借りる、return は返品するので注文とは違う。"
   },
   {
     "id": "forest-vocab-transfer-easy",
@@ -47,11 +48,11 @@ export const FOREST_QUIZZES=Object.freeze([
     "answer": "change",
     "options": [
       "change",
-      "wash",
-      "cook"
+      "board",
+      "miss"
     ],
     "hint": "ここでは『変更する／乗り換える』という意味。",
-    "tip": "change trains は『電車を乗り換える』。"
+    "tip": "change trains は『電車を乗り換える』。board は乗車する、miss は乗り損ねる。別の路線に移るなら change。"
   },
   {
     "id": "forest-vocab-appointment-easy",
@@ -63,12 +64,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "予約を取りたい。 I'd like to _____ an appointment.",
     "answer": "make",
     "options": [
-      "paint",
+      "cancel",
       "make",
-      "lose"
+      "confirm"
     ],
     "hint": "appointment と一緒によく使う動詞。",
-    "tip": "make an appointment は『予約を取る』という定番表現。"
+    "tip": "make an appointment は『新しく予約を取る』。cancel は取り消す、confirm は既存の予約を確認する。"
   },
   {
     "id": "forest-vocab-refund-easy",
@@ -81,11 +82,11 @@ export const FOREST_QUIZZES=Object.freeze([
     "answer": "refund",
     "options": [
       "receipt",
-      "menu",
+      "replacement",
       "refund"
     ],
     "hint": "商品を返したときにお金を戻してもらうこと。",
-    "tip": "refund は『返金』。receipt は領収書・レシート。"
+    "tip": "refund は返金、replacement は交換品、receipt はレシート。お金を戻してほしいなら refund。"
   },
   {
     "id": "forest-vocab-recommend-easy",
@@ -98,11 +99,11 @@ export const FOREST_QUIZZES=Object.freeze([
     "answer": "recommend",
     "options": [
       "recommend",
-      "repair",
-      "repeat"
+      "prefer",
+      "serve"
     ],
     "hint": "『おすすめする』という動詞。",
-    "tip": "recommend は『すすめる』。What do you recommend? とセットで覚えよう。"
+    "tip": "recommend はおすすめする、prefer は好む、serve は提供する。相手のおすすめを尋ねるなら recommend。"
   },
   {
     "id": "forest-grammar-yesterday-easy",
@@ -228,12 +229,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "buy",
     "options": [
-      "borrow",
-      "invite",
+      "cancel",
+      "refund",
       "buy"
     ],
     "hint": "お金を払って入手する動詞を選ぼう。",
-    "tip": "buy a ticket は『切符を買う』。borrow は借りる、invite は招待する。"
+    "tip": "buy a ticket は『切符を買う』。cancel は取り消す、refund は返金する。券売機で購入するなら buy。"
   },
   {
     "id": "forest-vocab-order-normal",
@@ -247,11 +248,11 @@ export const FOREST_QUIZZES=Object.freeze([
     "answer": "have",
     "options": [
       "have",
-      "drive",
-      "wear"
+      "collect",
+      "return"
     ],
     "hint": "Could I ...? で注文するときによく使う動詞。",
-    "tip": "Could I have ...? は自然で丁寧な注文表現。"
+    "tip": "Could I have ...? は注文の定番。collect は用意済みの品を受け取る、return は返品する。"
   },
   {
     "id": "forest-vocab-transfer-normal",
@@ -264,12 +265,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "change",
     "options": [
-      "cook",
+      "board",
       "change",
-      "wash"
+      "miss"
     ],
     "hint": "ここでは『変更する／乗り換える』という意味。",
-    "tip": "change trains は『電車を乗り換える』。"
+    "tip": "change trains at ... はその駅で乗り換える。board は乗る、miss は乗り損ねる。"
   },
   {
     "id": "forest-vocab-appointment-normal",
@@ -282,12 +283,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "make",
     "options": [
-      "lose",
-      "paint",
+      "confirm",
+      "cancel",
       "make"
     ],
     "hint": "appointment と一緒によく使う動詞。",
-    "tip": "make an appointment は『予約を取る』という定番表現。"
+    "tip": "make an appointment は新たな予約。confirm は確認、cancel は取り消しなので状況で使い分けよう。"
   },
   {
     "id": "forest-vocab-refund-normal",
@@ -296,16 +297,16 @@ export const FOREST_QUIZZES=Object.freeze([
     "kind": "vocab",
     "difficulty": "normal",
     "scene": "Returning an item",
-    "cue": "You received the wrong item. Complete: Could I get a _____?",
+    "cue": "You received the wrong item and the store cannot replace it. Complete: Could I get a _____?",
     "task": "Select the word that completes the sentence.",
     "answer": "refund",
     "options": [
       "refund",
       "receipt",
-      "menu"
+      "replacement"
     ],
     "hint": "商品を返したときにお金を戻してもらうこと。",
-    "tip": "refund は『返金』。receipt は領収書・レシート。"
+    "tip": "refund は返金、replacement は交換品、receipt はレシート。交換ができないなら返金を求める。"
   },
   {
     "id": "forest-vocab-recommend-normal",
@@ -318,12 +319,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "recommend",
     "options": [
-      "repeat",
+      "serve",
       "recommend",
-      "repair"
+      "prefer"
     ],
     "hint": "『おすすめする』という動詞。",
-    "tip": "recommend は『すすめる』。What do you recommend? とセットで覚えよう。"
+    "tip": "recommend はおすすめする。prefer は好みを言う、serve は提供する。店のおすすめを聞くなら recommend。"
   },
   {
     "id": "forest-grammar-yesterday-normal",
@@ -468,11 +469,11 @@ export const FOREST_QUIZZES=Object.freeze([
     "answer": "buy",
     "options": [
       "buy",
-      "borrow",
-      "invite"
+      "cancel",
+      "refund"
     ],
     "hint": "お金を払って入手する動詞を選ぼう。",
-    "tip": "buy a ticket は『切符を買う』。borrow は借りる、invite は招待する。"
+    "tip": "buy a ticket は『切符を買う』。cancel は取り消す、refund は返金する。直前に買う状況では buy。"
   },
   {
     "id": "forest-vocab-order-hard",
@@ -485,12 +486,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "have",
     "options": [
-      "wear",
+      "return",
       "have",
-      "drive"
+      "borrow"
     ],
     "hint": "Could I ...? で注文するときによく使う動詞。",
-    "tip": "Could I have ...? は自然で丁寧な注文表現。"
+    "tip": "Could I have ...? は飲み物を注文する表現。return は返品する、borrow は借りる。"
   },
   {
     "id": "forest-vocab-transfer-hard",
@@ -503,12 +504,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "change",
     "options": [
-      "wash",
-      "cook",
+      "board",
+      "miss",
       "change"
     ],
     "hint": "ここでは『変更する／乗り換える』という意味。",
-    "tip": "change trains は『電車を乗り換える』。"
+    "tip": "change trains at ... は乗り換え。board は乗車、miss は乗り損ねることで、路線変更とは違う。"
   },
   {
     "id": "forest-vocab-appointment-hard",
@@ -522,11 +523,11 @@ export const FOREST_QUIZZES=Object.freeze([
     "answer": "make",
     "options": [
       "make",
-      "lose",
-      "paint"
+      "cancel",
+      "confirm"
     ],
     "hint": "appointment と一緒によく使う動詞。",
-    "tip": "make an appointment は『予約を取る』という定番表現。"
+    "tip": "make an appointment は新たに予約する。cancel は取り消す、confirm は既存の予約を確認する。"
   },
   {
     "id": "forest-vocab-refund-hard",
@@ -539,12 +540,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "refund",
     "options": [
-      "menu",
+      "replacement",
       "refund",
       "receipt"
     ],
     "hint": "商品を返したときにお金を戻してもらうこと。",
-    "tip": "refund は『返金』。receipt は領収書・レシート。"
+    "tip": "refund は返金、replacement は交換品。交換不可ならお金を返してもらう refund が適切。"
   },
   {
     "id": "forest-vocab-recommend-hard",
@@ -557,12 +558,12 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "recommend",
     "options": [
-      "repair",
-      "repeat",
+      "prefer",
+      "serve",
       "recommend"
     ],
     "hint": "『おすすめする』という動詞。",
-    "tip": "recommend は『すすめる』。What do you recommend? とセットで覚えよう。"
+    "tip": "recommend は人におすすめする、prefer は本人の好み、serve は提供する。おすすめを聞くときは recommend。"
   },
   {
     "id": "forest-grammar-yesterday-hard",
@@ -708,5 +709,6 @@ export const FOREST_QUIZZES=Object.freeze([
     ],
     "hint": "丁寧な断り方は I'm afraid ... を使える。",
     "tip": "I'm afraid I can't ... は丁寧に断るときの表現。"
-  }
+  },
+  ...EXTRA_FOREST_QUIZZES
 ]);

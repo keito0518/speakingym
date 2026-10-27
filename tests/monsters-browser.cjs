@@ -258,6 +258,11 @@ const path=require('node:path');
           assert.match(await forestPage.locator('#forest-grammar-built').innerText(),/ /);
         }
         await answer();
+        if(mob===3 || mob===4){
+          assert.match(await forestPage.locator('#feedback-panel').innerText(),mob===3?/単語の使い分け/:/文法・語順のポイント/);
+          assert.match(await forestPage.locator('#pause-auto').innerText(),/解説をもう少し読む/);
+          assert.ok((await forestPage.locator('.feedback-note').innerText()).length>35,'Objective quizzes should explain the answer, not only mark it right');
+        }
         await moveOn();
         if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
         await forestPage.locator('#forest-journey').waitFor({state:'visible'});
