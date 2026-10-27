@@ -58,6 +58,32 @@ test('arrival meaning distinguishes natural replies, missing time, contradiction
  assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be twenty minutes late.").status,'incorrect');
 });
 
+test('natural everyday replies pass meaning checks without exact model wording',()=>{
+ const get=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,examples] of [
+  ['apology-late',[
+   "Sorry I'm late.",'Sorry for keeping you waiting.',"I'm really sorry I kept you waiting.",
+   'I apologize for the wait.','Sorry I made you wait.','Sorry it took me so long.'
+  ]],
+  ['help-bag',['Can you help me with this bag?','Could you give me a hand with my suitcase?','Can I get some help with my luggage?']],
+  ['order-coffee',['I would like an iced coffee.','Could I get an iced coffee?','One iced coffee please.']],
+  ['direction-station',['Where is the train station?','How can I get to the station?']],
+  ['booking-table',['Can I reserve a table for two?','I would like to book a table for 2.']],
+  ['price-ticket',['How much is the ticket?','What is the entry fee?']]
+ ]){
+  const prompt=get(id);
+  assert.ok(prompt,'Missing source prompt '+id);
+  for(const answer of examples)assert.equal(gradeLocalResponse(prompt,answer).status,'correct',id+': '+answer);
+ }
+ // A mere apology, an opposite claim or unrelated words may NOT mint XP.
+ for(const answer of ['Sorry.','I never kept you waiting.','Sorry I was not late.']){
+  assert.notEqual(gradeLocalResponse(get('apology-late'),answer).status,'correct',answer);
+ }
+ assert.notEqual(gradeLocalResponse(get('booking-table'),'Can I book a table for five?').status,'correct');
+ assert.notEqual(gradeLocalResponse(get('order-coffee'),'I would like hot tea.').status,'correct');
+ // Hard tasks have additional context; easy rubrics do not leak upward.
+ assert.notEqual(gradeLocalResponse(get('apology-late-hard'),'Sorry I am late.').status,'correct');
+});
 test('all listening prompts have a real, matching and locally hosted humanlike AI voice clip',()=>{
   const prompts=ALL_PROMPTS.filter(prompt=>prompt.kind==='listen');
   assert.equal(prompts.length,81);
