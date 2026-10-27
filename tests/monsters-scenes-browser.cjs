@@ -52,8 +52,11 @@ const path=require('node:path');
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width,'no-preference');await seed(page);
       await page.locator('#open-collection').click();
-      assert.equal(await page.locator('[data-open-monster]').count(),9);
+      assert.equal(await page.locator('[data-open-monster]').count(),13);
       assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
+      assert.equal(await page.locator('#forest-journal-areas .forest-journal-area').count(),4);
+      assert.equal(await page.locator('#forest-journal-events .forest-journal-entry').count(),8);
+      assert.equal(await page.locator('#forest-journal-badges .forest-journal-badge').count(),6);
       await noOverflow(page,`${width} catalog`);
       await page.waitForTimeout(300); // Let the entry fade finish before visual QA.
       await page.screenshot({path:path.join(shots,`catalog-${engine}-${width}.png`),fullPage:true});
@@ -95,7 +98,7 @@ const path=require('node:path');
       await page.waitForTimeout(1400);
       await page.screenshot({path:path.join(shots,`training-${engine}-${width}-evolution.png`),fullPage:true});
       const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-      assert.equal(before.monsterXp.medamago,200);assert.equal(before.ownedMonsters.length,9);
+      assert.equal(before.monsterXp.medamago,200);assert.equal(before.ownedMonsters.length,13);
       await page.locator('#training-back').click();
       assert.match(await page.locator('#detail-content').innerText(),/進化で解放済み/);
       await page.locator('#detail-back').click();
@@ -108,7 +111,7 @@ const path=require('node:path');
       await context.close();
     }
     // Every owned character uses a distinct actual CSS attack with motion enabled.
-    const motions={medamago:'yolk-dive',katappo:'sock-spring',purupun:'pudding-slam',koge:'toast-flip',cone:'cone-drill',nororo:'roll-charge',keshipon:'eraser-sweep',donako:'doughnut-spin',amekurage:'umbrella-float'};
+    const motions={medamago:'yolk-dive',katappo:'sock-spring',purupun:'pudding-slam',koge:'toast-flip',cone:'cone-drill',nororo:'roll-charge',keshipon:'eraser-sweep',donako:'doughnut-spin',amekurage:'umbrella-float',fuwari:'cloud-gust',kompass:'compass-dash',pikap:'firefly-flash',mokuryu:'dragon-leap'};
     for(const [id,motion] of Object.entries(motions)){
       const {context,page}=await boot(390,'no-preference');
       await seed(page,{selectedMonster:id});
@@ -170,6 +173,6 @@ const path=require('node:path');
     assert.match(await locked.page.locator('#pronounce-feedback').innerText(),/利用できません/);
     await locked.context.close();
     assert.deepEqual(errors,[]);
-    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 9 unique attacks, idle/evolved FX, guard/empty-answer, map isolation passed`);
+    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 13 unique attacks, idle/evolved FX, guard/empty-answer, map isolation passed`);
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
