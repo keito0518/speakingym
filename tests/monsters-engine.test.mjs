@@ -10,7 +10,7 @@ import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-mons
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -363,6 +363,49 @@ test('example matching is intentionally narrow, not a claim to grade free-form s
   assert.equal(normalizeEnglish('  THAT works for me!  '),'that works for me');
 });
 
+test('all 52 easy speaking situations recognize reviewed natural paraphrases without guessing contradictory answers',()=>{
+  assert.equal(Object.keys(VETTED_PARAPHRASES).length,PROMPTS.length);
+  for(const prompt of PROMPTS){
+    const replies=VETTED_PARAPHRASES[prompt.id];
+    assert.ok(Array.isArray(replies)&&replies.length>=1,'Missing curated paraphrase: '+prompt.id);
+    const unique=new Set(replies.map(normalizeEnglish));
+    assert.equal(unique.size,replies.length,'Duplicate paraphrase: '+prompt.id);
+    for(const reply of replies){
+      assert.equal(compareWithExamples(prompt,reply).matchesExample,true,prompt.id+' / '+reply);
+      const graded=gradeLocalResponse(prompt,reply);
+      assert.equal(graded.status,'correct',prompt.id+' / '+reply);
+      assert.equal(graded.method,'registered-example',prompt.id);
+    }
+  }
+  const overtime=PROMPTS.find(p=>p.id==='decline-overtime');
+  assert.equal(gradeLocalResponse(overtime,"I can't work overtime today.").status,'correct');
+  for(const reply of ['I can work overtime today.',"I can't work overtime tomorrow.","I can't work overtime today, but I can stay late today."]){
+    assert.notEqual(gradeLocalResponse(overtime,reply).status,'correct','Do not reward a contradictory / changed / unvetted response: '+reply);
+  }
+  const help=PROMPTS.find(p=>p.id==='help-bag');
+  assert.equal(gradeLocalResponse(help,'Would you mind giving me a hand with my suitcase?').status,'correct');
+  assert.notEqual(gradeLocalResponse(help,'I do not need help with my suitcase.').status,'correct');
+  assert.notEqual(gradeLocalResponse(PROMPTS.find(p=>p.id==='direction-station'),'Could you show me the way to the bus stop?').status,'correct');
+  assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='decline-overtime-hard'),"I can't work overtime today.").status,'correct','Hard tasks have additional requirements');
+});
+
+test('additional natural examples at normal and hard levels never inherit easier conditions',()=>{
+  const entries=Object.entries(VETTED_LEVEL_PARAPHRASES);
+  assert.ok(entries.length>=23);
+  for(const [id,replies] of entries){
+    const prompt=ALL_PROMPTS.find(p=>p.id===id);
+    assert.ok(prompt&&['normal','hard'].includes(prompt.difficulty),'Invalid level-specific scene: '+id);
+    for(const reply of replies){
+      assert.equal(gradeLocalResponse(prompt,reply).status,'correct',id+' / '+reply);
+      assert.equal(compareWithExamples(prompt,reply).matchesExample,true,id+' / '+reply);
+    }
+  }
+  const hard=ALL_PROMPTS.find(p=>p.id==='decline-overtime-hard');
+  assert.notEqual(gradeLocalResponse(hard,"Sorry, I can't work overtime today.").status,'correct','Hard refusal requires reason and alternative');
+  assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='booking-table-hard'),'Can I reserve a table for two for dinner?').status,'correct','Hard booking requires time and seating preference');
+  assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='prefer-city-hard'),'I prefer taking the train.').status,'correct','Hard travel preference needs bus tradeoff and reason');
+});
+
 
 test('objective local checks accept authored examples and some natural paraphrases, abstain on ambiguous content', () => {
   for(const prompt of ALL_PROMPTS) {
@@ -378,7 +421,7 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'My bus was canceled.').status,'review');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'I have no idea.').status,'review');
   assert.equal(gradeLocalResponse(byId('help-bag'),'Could you help me with this bag?').status,'correct');
-  assert.equal(gradeLocalResponse(byId('help-bag'),'Would you mind giving me a hand with my suitcase?').status,'review');
+  assert.equal(gradeLocalResponse(byId('help-bag'),'Would you mind giving me a hand with my suitcase?').status,'correct');
   assert.equal(gradeLocalResponse(byId('booking-table-hard'),'I do not know').status,'review');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'').status,'empty');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'OK').status,'empty');

@@ -232,20 +232,89 @@ function canonicalVettedReply(value) {
     .replace(/(?: please| thank you| thanks)$/, '')
     .replace(/^can (you|i) /, 'could $1 ');
 }
-// Fully authored, narrow equivalents for selected practical situations.
-const VETTED_PARAPHRASES=Object.freeze({
-  'help-bag':['Could you give me a hand with this bag?'],
-  'help-phone':['Would you mind helping me with my phone?'],
-  'order-coffee':['May I have an iced coffee, please?'],
-  'order-veg':['May I have the vegetable dish, please?'],
-  'direction-station':['Could you show me the way to the station?'],
-  'recommend-food':['Do you have a local dish you would suggest?'],
-  'booking-table':['Could I reserve a table for two?'],
-  'apology-email':['I apologize for taking so long to reply.'],
-  'decline-dinner':['Sorry, I will not be able to make dinner tonight.'],
-  'price-ticket':['What is the admission fee?'],
-  'change-room':['Would it be possible to move to another room?'],
-  'problem-wifi':['I cannot get the Wi-Fi to work in my room.']
+// Human-reviewed, narrow equivalents for every easy-level situation.
+// These are deliberately complete sentences, not keyword-overlap / AI scores.
+// A different date, opposite meaning, or unknown phrasing still requires review.
+export const VETTED_PARAPHRASES=Object.freeze({
+  'think-cafe':['Could I have a minute to decide?'],
+  'think-trip':['I need a little time to decide.'],
+  'repeat-station':['Could you repeat that for me?'],
+  'repeat-class':['Could you explain that again, please?'],
+  'agree-friend':['Three o’clock works for me.'],
+  'agree-work':['Sure, Friday is fine with me.'],
+  'late-bus':["I'll be a little late."],
+  'late-call':["I'm going to be late."],
+  'clarify-hotel':['Could you confirm that checkout is at eleven?'],
+  'clarify-office':['Do you need the file before lunch?'],
+  'prefer-city':['I prefer taking the train.'],
+  'prefer-friend':["Let's go by train."],
+  'help-bag':['Could you give me a hand with this bag?','Would you mind giving me a hand with my suitcase?'],
+  'help-phone':['Would you mind helping me with my phone?','Can you give me a hand with my phone?'],
+  'help-form':['Could you show me how to fill in this form?'],
+  'help-ticket':['Can you show me how to buy a ticket?'],
+  'order-coffee':['May I have an iced coffee, please?','Can I get an iced coffee?'],
+  'order-veg':['May I have the vegetable dish, please?','Can I order the vegetable dish?'],
+  'order-breakfast':["I'd like a cup of tea."],
+  'order-extra':['Can I get a pizza with extra cheese?'],
+  'direction-station':['Could you show me the way to the station?','Could you tell me how to get to the train station?'],
+  'direction-bus':['Could you tell me where the bus stop for the airport is?'],
+  'direction-museum':['Is the museum within walking distance?'],
+  'direction-transfer':['At which station should I change trains?'],
+  'recommend-food':['Do you have a local dish you would suggest?', "What's your most popular dish?"],
+  'recommend-visit':['Is there anywhere interesting to visit nearby?'],
+  'recommend-gift':['Can you suggest a gift for my friend?'],
+  'recommend-drink':["Can you recommend a drink that isn't very sweet?"],
+  'booking-table':['Could I reserve a table for two?','Can I reserve a table for two people?'],
+  'booking-hotel':['Can I book a room for tonight?'],
+  'booking-tour':["Could I book a place on tomorrow's tour?"],
+  'booking-haircut':['Can I book a haircut for Saturday?'],
+  'apology-late':['Sorry I kept you waiting.'],
+  'apology-spill':['Sorry about spilling my drink.'],
+  'apology-email':['I apologize for taking so long to reply.','Sorry for getting back to you so late.'],
+  'apology-noise':['I apologize for making so much noise.'],
+  'decline-dinner':['Sorry, I will not be able to make dinner tonight.',"I can't come to dinner tonight, sorry."],
+  'decline-overtime':["I can't work overtime today.","I cannot work overtime today.","I can't stay late today.","Sorry, I can't do overtime today."],
+  'decline-purchase':["Thanks, but I'm not going to buy it today."],
+  'decline-invite':["I can't come after class. Sorry."],
+  'price-ticket':['What is the admission fee?','How much is the entrance fee?'],
+  'price-delivery':['How much will it cost to send this package?'],
+  'price-rental':['How much does the car rental cost per day?'],
+  'price-service':["What's the price for cleaning a coat?"],
+  'change-time':['Could we push the meeting back by an hour?'],
+  'change-room':['Would it be possible to move to another room?','Can I switch to a different room?'],
+  'change-seat':['Can you move me to a window seat?'],
+  'change-date':['Could you move my booking to next Monday?'],
+  'problem-wifi':['I cannot get the Wi-Fi to work in my room.',"The internet in my room isn't working."],
+  'problem-food':['Excuse me, I think you brought me the wrong order.'],
+  'problem-bill':["The amount on my bill doesn't match my reservation."],
+  'problem-train':['My train was canceled. Is there another option?']
+});
+// Higher-level prompts require their own details. Do not inherit easy
+// paraphrases: they would wrongly award XP for omitting the harder conditions.
+export const VETTED_LEVEL_PARAPHRASES=Object.freeze({
+  'help-bag-normal':['Could you give me a hand carrying my suitcase upstairs?'],
+  'order-coffee-normal':['Can I get an iced coffee, please?'],
+  'direction-station-normal':['Could you tell me the way to the closest train station?'],
+  'recommend-food-normal':['What traditional dish would you suggest?'],
+  'booking-table-normal':['Can I reserve a table for two for dinner?'],
+  'apology-late-normal':['Sorry to have kept you waiting.'],
+  'decline-dinner-normal':["Sorry, I can't come to dinner because I've already made plans."],
+  'price-ticket-normal':["What's the price of one adult admission ticket?"],
+  'change-time-normal':['Could we reschedule the meeting for 3 pm?'],
+  'problem-wifi-normal':["My room's Wi-Fi doesn't work. Could you help me?"],
+  'think-cafe-normal':['Could you give me a moment to decide?'],
+  'repeat-station-normal':['Could you repeat which platform it is?'],
+  'agree-friend-normal':["I'm free at three on Saturday."],
+  'late-bus-normal':['Sorry, my bus is running late.'],
+  'clarify-hotel-normal':['Could you please confirm whether checkout is at 11 am?'],
+  'prefer-city-normal':['I prefer the train because it is quicker.'],
+  'help-bag-hard':['I have two heavy suitcases, and the elevator is broken. Could you help me carry them?'],
+  'order-coffee-hard':['Can I get a large iced coffee with no sugar to go, please?'],
+  'booking-table-hard':['Could you book a table for two at seven tonight, away from the door?'],
+  'decline-overtime-hard':["I have a family appointment so I can't work overtime, but I can finish the urgent work before I go."],
+  'late-bus-hard':["Sorry, the bus was canceled, so I'm going to be 20 minutes late. You can wait indoors."],
+  'problem-wifi-hard':['My Wi-Fi keeps cutting out and I need to join a video call soon. Can you fix it?'],
+  'prefer-city-hard':["The bus goes straight there, but I'd prefer the train because it's quicker despite having to change."]
 });
 export function flagUncertainReview(save,promptId,today=dayKey()) {
   if(!ALL_PROMPTS.some(item=>item.id===promptId)||!/^\d{4}-\d{2}-\d{2}$/.test(today))
@@ -261,7 +330,7 @@ export function compareWithExamples(prompt, answer) {
   const normalized = normalizeEnglish(answer);
   if (!normalized) return { matchesExample: false, empty: true };
   const canonical = canonicalVettedReply(answer);
-  return { matchesExample: [prompt.answer, ...(prompt.alternatives || []), ...(!prompt.difficulty ? VETTED_PARAPHRASES[prompt.id]||[] : [])]
+  return { matchesExample: [prompt.answer, ...(prompt.alternatives || []), ...(!prompt.difficulty ? VETTED_PARAPHRASES[prompt.id]||[] : []), ...(VETTED_LEVEL_PARAPHRASES[prompt.id]||[])]
     .some(example => canonicalVettedReply(example) === canonical), empty: false };
 }
 
