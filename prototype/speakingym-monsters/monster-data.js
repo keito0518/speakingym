@@ -1,4 +1,5 @@
 import { ADDITIONAL_PHRASES, ADDITIONAL_PROMPTS } from './expanded-curriculum.js';
+import { FOREST_QUIZZES } from './forest-quizzes.js';
 // A compact, curated speaking curriculum: one useful expression, two situations.
 // The prototype does not claim that speech recognition can grade arbitrary English.
 export const PHRASES = Object.freeze([
@@ -274,6 +275,7 @@ const ADVANCED_TASKS = Object.freeze([
 export const ALL_PROMPTS = Object.freeze([
   ...PROMPTS,
   ...ADDITIONAL_PROMPTS.filter(p=>p.difficulty),
+  ...FOREST_QUIZZES,
   ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => ({
     id: `${baseId}-${difficulty}`, baseId,
     phraseId: PROMPTS.find(prompt => prompt.id === baseId).phraseId,
