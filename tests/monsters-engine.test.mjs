@@ -10,25 +10,26 @@ import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-mons
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
+import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
-test('curriculum retains 156 speaking exercises and expands to 72 forest quizzes', () => {
+test('curriculum contains 156 original situations, 24 new adventures, 72 quizzes and three boss replies', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,231);
+  assert.equal(ALL_PROMPTS.length,255);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,77);
-    assert.equal(new Set(level.map(p=>p.id)).size,77);
+    assert.equal(level.length,85);
+    assert.equal(new Set(level.map(p=>p.id)).size,85);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
     assert.equal(level.filter(p=>p.kind==='vocab').length,12);
     assert.equal(level.filter(p=>p.kind==='grammar').length,12);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
-    assert.ok(level.every(p=>p.bossOnly||['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
+    assert.ok(level.every(p=>p.bossOnly||p.extraAdventure||['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
   }
   const averageLength = level => {const prompts=ALL_PROMPTS.filter(p=>p.difficulty===level);return prompts.reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/prompts.length;};
   assert.ok(averageLength('hard')>averageLength('normal')*1.1);
@@ -45,6 +46,44 @@ test('curriculum retains 156 speaking exercises and expands to 72 forest quizzes
     assert.ok(phrase.hint&&phrase.tip);
   }
   for(const prompt of PROMPTS) {assert.ok(prompt.scene&&prompt.cue&&prompt.answer);if(prompt.kind==='listen')assert.ok(prompt.audio);}
+});
+
+test('eight new speaking contexts each grow from one simple idea into a different advanced task',()=>{
+  assert.equal(SPEAKING_ADVENTURES.length,24);
+  assert.equal(new Set(SPEAKING_ADVENTURES.map(p=>p.id)).size,24);
+  const names=new Set(SPEAKING_ADVENTURES.map(p=>p.baseId));
+  assert.equal(names.size,8);
+  for(const baseId of names){
+    const tasks=DIFFICULTIES.map(level=>SPEAKING_ADVENTURES.find(p=>p.baseId===baseId&&p.difficulty===level));
+    assert.ok(tasks.every(Boolean),'Missing difficulty in '+baseId);
+    assert.equal(new Set(tasks.map(p=>p.answer)).size,3,'Difficulty must change what learners say: '+baseId);
+    assert.ok(tasks[2].cue.length>tasks[1].cue.length&&tasks[1].cue.length>15,'Hard must describe a richer scenario: '+baseId);
+    assert.ok(tasks[2].answer.length>tasks[0].answer.length*1.2,'Hard answers must do more than repeat an easy phrase: '+baseId);
+    assert.ok(/[\u3040-\u30ff\u3400-\u9fff]/.test(tasks[0].cue),'Easy requires Japanese guidance: '+baseId);
+    for(const task of tasks){
+      assert.equal(task.kind,'speak');
+      assert.equal(task.extraAdventure,true);
+      assert.ok(PHRASES.some(p=>p.id===task.phraseId));
+      assert.ok(task.scene&&task.cue&&task.task&&task.hint&&task.tip);
+      assert.ok(task.alternatives.length>=1);
+      assert.ok(ALL_PROMPTS.some(p=>p.id===task.id));
+      assert.equal(gradeLocalResponse(task,task.answer).status,'correct');
+      assert.equal(gradeLocalResponse(task,task.alternatives[0]).status,'correct');
+      assert.equal(gradeLocalResponse(task,'I have no idea.').status,'review');
+    }
+  }
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-easy'),"I'll be five minutes late.").status,'correct');
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-hard'),"I'll be five minutes late.").status,'review');
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='help-locker-hard'),'Could you help me open this locker?').status,'review');
+  // The extra story pool can appear in a shuffled Forest without replacing
+  // its required five foe skills or the three connected boss turns.
+  let foundNew=false;
+  for(let i=1;i<=24;i++){
+    const wave=buildForestWave({difficulty:'easy',wave:1,bossConversation:true,random:()=>i/25});
+    if(wave.prompts.slice(0,5).some(p=>p.extraAdventure))foundNew=true;
+    assert.deepEqual(wave.prompts.map(p=>p.kind),['speak','listen','vocab','grammar','speak','listen','grammar','speak']);
+  }
+  assert.ok(foundNew,'New situation prompts must be reachable during Forest encounters');
 });
 
 test('every reading encounter has an authored passage, including higher difficulty levels', () => {
