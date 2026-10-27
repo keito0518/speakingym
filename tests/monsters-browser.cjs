@@ -40,6 +40,17 @@ const path=require('node:path');
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
       assert.equal(await page.getByRole('heading',{name:/英語で戦って/}).isVisible(),true);
+      // Regression for actual iPhone screenshot: do NOT orphan the final 「へ。」
+      // as a third line. Verify rendered line boxes, not just CSS declarations.
+      const headingLines=await page.locator('.home-navigation-head h1 .home-title-phrase').evaluateAll(items=>items.map(el=>{
+        const css=getComputedStyle(el),rect=el.getBoundingClientRect(),range=document.createRange();
+        range.selectNodeContents(el);
+        return {display:css.display,whiteSpace:css.whiteSpace,height:rect.height,lineHeight:parseFloat(css.lineHeight),
+          text:el.textContent,renderedLines:range.getClientRects().length,overflow:el.scrollWidth>el.clientWidth+1};
+      }));
+      assert.deepEqual(headingLines.map(x=>x.text),['英語で戦って、','仲間と冒険へ。']);
+      assert.ok(headingLines.every(x=>x.display==='block'&&x.whiteSpace==='nowrap'&&x.renderedLines===1&&!x.overflow&&x.height<=x.lineHeight+2),
+        `${engine}/${width} unnatural Japanese wrapping: ${JSON.stringify(headingLines)}`);
       assert.equal(await page.locator('#hero-monster-name').innerText(),'Yolkie');
       assert.match(await page.locator('#hero-vocab').innerText(),/yolk/);
       assert.equal(await page.locator('#home-wallet').innerText(),'0');
