@@ -33,14 +33,14 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  move('.stat-grid','progress');
  move('.notice-card','progress');
  const buttons=[
-  {id:'daily',icon:'⚡',title:'今日の5分ジム',desc:'まずは8問、短く続ける',action:()=>showPage('daily')},
-  {id:'forest',icon:'🌲',title:'はじまりの森',desc:'英語を使いながら冒険する',action:()=>showPage('forest')},
-  {id:'training',icon:'🎤',title:'スピーキング練習',desc:'自分のペースで話す',action:()=>showPage('training')},
-  {id:'review',icon:'📚',title:'復習する',desc:'保存した問題と苦手を解き直す',action:()=>showPage('review')},
-  {id:'challenge',icon:'⏱️',title:'60秒チャレンジ',desc:'瞬発力を鍛える短時間練習',action:()=>startMode('challenge')},
-  {id:'collection',icon:'✨',title:'なかま・図鑑',desc:'仲間と冒険の記録を確認',action:showCollection},
-  {id:'progress',icon:'📈',title:'学習記録',desc:'復習や定着度を確認する',action:()=>showPage('progress')},
-  {id:'tutorial',icon:'❔',title:'はじめての方へ',desc:'操作方法と音声入力のコツ',action:openTutorial}
+  {id:'daily',icon:'01',title:'今日の5分ジム',desc:'まずは8問、短く続ける',action:()=>showPage('daily')},
+  {id:'forest',icon:'02',title:'はじまりの森',desc:'英語を使いながら冒険する',action:()=>showPage('forest')},
+  {id:'training',icon:'03',title:'スピーキング練習',desc:'自分のペースで話す',action:()=>showPage('training')},
+  {id:'review',icon:'04',title:'復習する',desc:'保存した問題と苦手を解き直す',action:()=>showPage('review')},
+  {id:'challenge',icon:'05',title:'60秒チャレンジ',desc:'瞬発力を鍛える短時間練習',action:()=>startMode('challenge')},
+  {id:'collection',icon:'06',title:'なかま・図鑑',desc:'仲間と冒険の記録を確認',action:showCollection},
+  {id:'progress',icon:'07',title:'学習記録',desc:'復習や定着度を確認する',action:()=>showPage('progress')},
+  {id:'tutorial',icon:'08',title:'はじめての方へ',desc:'操作方法と音声入力のコツ',action:openTutorial}
  ];
  const menu=document.createElement('section');
  menu.className='home-navigation';menu.id='home-navigation';
