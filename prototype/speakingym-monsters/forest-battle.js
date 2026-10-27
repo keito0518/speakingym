@@ -102,6 +102,35 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    const matches=p=>p.kind===kind||(kind==='speak'&&slot<regular&&p.kind==='read'&&dueIds.has(p.id));
    let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id)&&!reservedBossIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
+   const bossSlot=areaId!=='entry'&&slot>=regular;
+   let transferBoss=false;
+   if(bossSlot){
+     // The boss must assess the topic actually taught in this chapter, not
+     // an unrelated random phrase. Reuse a TOPIC, never an identical task:
+     // the final speaking challenge asks the learner to transfer language
+     // from a previous encounter into a different real-world scene.
+     const focus=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
+     const focused=candidates.filter(p=>focus.has(p.phraseId));
+     // Listening has a smaller fixed-audio bank than the other skills.
+     // If the entire chapter-focused bank was heard in earlier chapters,
+     // prefer a fresh listening clip to an identical replay.
+     if(focused.some(p=>!previous.has(p.id)))candidates=focused;
+     if(slot===regular+2){
+       const freshFocused=candidates.filter(p=>!previous.has(p.id));
+       const transfer=freshFocused.filter(p=>prompts.slice(0,regular).some(prior=>
+         prior.phraseId===p.phraseId&&(prior.baseId||prior.id)!==(p.baseId||p.id)));
+       if(transfer.length){candidates=transfer;transferBoss=true;}
+       else if(freshFocused.length){
+         // A new scene within the taught area beats replaying a previous
+         // chapter verbatim just to force an exact same-topic transfer.
+         candidates=freshFocused;
+       }else{
+         const earlierTransfer=candidates.filter(p=>prompts.slice(0,regular).some(prior=>
+           prior.phraseId===p.phraseId&&(prior.baseId||prior.id)!==(p.baseId||p.id)));
+         if(earlierTransfer.length){candidates=earlierTransfer;transferBoss=true;}
+       }
+     }
+   }
    // Apply cross-chapter novelty BEFORE filtering for a new phrase within the
    // current chapter. Otherwise a repeated grammar question can win simply
    // because its phrase has not yet appeared in this chapter.
@@ -116,16 +145,11 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    if(exactWeakness.length)candidates=exactWeakness;
    else if(relatedWeakness.length)candidates=relatedWeakness;
    else {
-     // Reserve a chapter-relevant transfer question for its speaking boss.
-     // Select the focus BEFORE generic phrase diversity would discard it.
-     if(areaId!=='entry'&&slot===regular+2){
-       const focusIds=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
-       const relevant=candidates.filter(p=>focusIds.has(p.phraseId));
-       if(relevant.length)candidates=relevant;
-     }
      // Otherwise avoid repeating expressions within one adventure.
-     const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
-     if(newPhrase.length)candidates=newPhrase;
+     if(!transferBoss){
+       const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
+       if(newPhrase.length)candidates=newPhrase;
+     }
    }
    // Longer chapters should not recycle an earlier encounter merely because
    // a phrase-focus heuristic happens to prefer it. Explicit due reviews still

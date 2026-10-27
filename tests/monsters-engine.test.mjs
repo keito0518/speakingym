@@ -74,6 +74,49 @@ test('four dungeon bosses have three grounded learning objectives, not new manda
    }
  }
 });
+test('later chapter bosses examine the same taught themes in a fresh speaking situation',()=>{
+ for(const area of FOREST_AREAS.slice(1)){
+  for(const difficulty of DIFFICULTIES){
+   const finalScenes=new Set();
+   for(let seed=1;seed<=20;seed++){
+    let state=seed;
+    const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+    const wave=buildForestWave({areaId:area.id,difficulty,progression:'story',bossConversation:true,
+     // Due unrelated expressions belong to normal review, not the final exam.
+     reviewPromptIds:['order-coffee'],random});
+    const regular=regularEncountersFor(area.id);
+    const practiced=wave.prompts.slice(0,regular),boss=wave.prompts.slice(regular);
+    assert.equal(new Set(wave.prompts.map(p=>p.id)).size,wave.prompts.length);
+    assert.ok(boss.every(p=>area.focus.includes(p.phraseId)),`${area.id}/${difficulty}: boss left its curriculum`);
+    const reply=boss.at(-1);
+    assert.equal(reply.kind,'speak');
+    assert.ok(practiced.some(p=>p.phraseId===reply.phraseId&&(p.baseId||p.id)!==(reply.baseId||reply.id)),
+     `${area.id}/${difficulty}: speaking boss must apply previously encountered language in a new scene`);
+    finalScenes.add(reply.id);
+   }
+   assert.ok(finalScenes.size>=3,`${area.id}/${difficulty}: boss speaking should not repeat one scripted answer`);
+  }
+ }
+});
+test('full four-chapter campaigns select 44 distinct questions across randomized routes',()=>{
+ for(const difficulty of DIFFICULTIES){
+  for(let seed=1;seed<=100;seed++){
+   let state=seed;
+   const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+   const previousIds=[];
+   for(const [index,area] of FOREST_AREAS.entries()){
+    const wave=buildForestWave({areaId:area.id,difficulty,progression:'story',wave:index+1,
+     previousIds,bossConversation:true,random});
+    assert.equal(wave.prompts.length,forestWaveLengthFor(area.id));
+    for(const prompt of wave.prompts){
+     assert.ok(!previousIds.includes(prompt.id),`${difficulty}/seed${seed}/${area.id}: repeated ${prompt.id}`);
+     previousIds.push(prompt.id);
+    }
+   }
+   assert.equal(previousIds.length,44);
+  }
+ }
+});
 test('five-minute gym mixes new, due and transfer tasks without duplicates or paid AI calls',()=>{
  const today='2026-10-27';
  let save=createSave();
@@ -240,16 +283,16 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
   assert.ok(voices.size>=6,'Listening should include six distinct English voices including both Australian narrators');
 });
 
-test('curriculum contains 156 original situations, 24 new adventures, 72 quizzes and three boss replies', () => {
+test('curriculum contains 156 original situations, 24 new adventures, 84 quizzes and three boss replies', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,13);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,255);
+  assert.equal(ALL_PROMPTS.length,267);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,85);
-    assert.equal(new Set(level.map(p=>p.id)).size,85);
+    assert.equal(level.length,89);
+    assert.equal(new Set(level.map(p=>p.id)).size,89);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
-    assert.equal(level.filter(p=>p.kind==='vocab').length,12);
+    assert.equal(level.filter(p=>p.kind==='vocab').length,16);
     assert.equal(level.filter(p=>p.kind==='grammar').length,12);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
@@ -888,8 +931,8 @@ test('objective local checks accept authored examples and some natural paraphras
 test('forest four-skill questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
-    assert.equal(quizzes.length,24);
-    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,12);
+    assert.equal(quizzes.length,28);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,16);
     assert.equal(quizzes.filter(p=>p.kind==='grammar').length,12);
     assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
     for(const p of quizzes){
@@ -985,9 +1028,9 @@ test('an overdue word or grammar point takes priority in a later forest encounte
   assert.equal(harder.prompts[2].difficulty,'normal');
   assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
 });
-test('all 72 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
+test('all 84 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
   const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
-  assert.equal(quizzes.length,72);
+  assert.equal(quizzes.length,84);
   for(const prompt of quizzes){
     const lesson=quizTeachingFor(prompt);
     assert.ok(lesson?.label&&lesson.clue.length>=22,`Missing explanatory clue: ${prompt.id}`);
@@ -1101,10 +1144,10 @@ test('first-wave boss conversation joins listening, word order and speaking with
 });
 test('expanded forest quizzes change targets across levels and explain the language point',()=>{
   const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
-  assert.equal(quizzes.length,72);
-  assert.equal(new Set(quizzes.map(p=>p.id)).size,72);
+  assert.equal(quizzes.length,84);
+  assert.equal(new Set(quizzes.map(p=>p.id)).size,84);
   const baseIds=new Set(quizzes.map(p=>p.baseId));
-  assert.equal(baseIds.size,24);
+  assert.equal(baseIds.size,28);
   for(const baseId of baseIds){
     const variants=quizzes.filter(p=>p.baseId===baseId);
     assert.deepEqual(variants.map(p=>p.difficulty),['easy','normal','hard']);
@@ -1115,7 +1158,7 @@ test('expanded forest quizzes change targets across levels and explain the langu
     }
   }
   // Harder *new* topics are not a padded restatement of the same answer.
-  for(const baseId of ['forest-vocab-bill','forest-vocab-route','forest-vocab-allergy','forest-vocab-timing','forest-vocab-hotel','forest-vocab-details']){
+  for(const baseId of ['forest-vocab-bill','forest-vocab-route','forest-vocab-allergy','forest-vocab-timing','forest-vocab-agreement','forest-vocab-preference','forest-vocab-arrival-update','forest-vocab-suggestion','forest-vocab-hotel','forest-vocab-details']){
     assert.equal(new Set(quizzes.filter(p=>p.baseId===baseId).map(p=>p.answer)).size,3,baseId);
   }
   const drink=ALL_PROMPTS.find(p=>p.id==='recommend-drink');

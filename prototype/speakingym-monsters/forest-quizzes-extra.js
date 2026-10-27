@@ -1,4 +1,4 @@
-// Twelve additional authored topics for Beginning Forest, each with three
+// Sixteen additional authored topics for Beginning Forest, each with three
 // level-specific tasks. The same topic changes its language target as the
 // difficulty rises; it is not the same blank repeated with longer filler.
 const LEVELS = ['easy', 'normal', 'hard'];
@@ -45,6 +45,38 @@ const TOPICS = [
       {scene:'電車の遅れ', cue:'列車は運行しているが10分遅れている。 There is a ten-minute _____.', answer:'delay', options:['delay','cancellation','departure'], hint:'中止ではなく、予定より遅れること。', tip:'delay は遅延。cancellation は運休・中止、departure は出発。'},
       {scene:'A late appointment', cue:'The doctor is unavailable today, but the appointment will happen next week instead. It has been _____.', answer:'postponed', options:['confirmed','postponed','canceled'], hint:'なくなるのではなく、後の日程にずれる。', tip:'postponed は延期された。canceled は中止された、confirmed は確定した。'},
       {scene:'Changing a meeting', cue:'You cannot attend the original meeting on Tuesday, and you want to agree on a new date instead. Could we _____ it for Thursday?', answer:'reschedule', options:['reschedule','confirm','refund'], hint:'新しい日時を決め直す動詞。', tip:'reschedule は日程を組み直す。postpone は単に後に延ばすことで、新しい日程を決めない場合もある。'}
+    ]
+  },
+  {
+    id:'agreement', kind:'vocab', phraseId:'agree',
+    levels:[
+      {scene:'友人との相談', cue:'友人が提案した予定に賛成している。 I _____ with your plan.', answer:'agree', options:['forget','agree','refuse'], hint:'意見に賛成するとき、with と組み合わせる動詞。', tip:'agree with a plan は計画に賛成する。refuse は断る、forget は忘れる。'},
+      {scene:'Choosing a meeting date', cue:'After discussing several possible dates, everyone has accepted Friday. We have finally _____ on Friday.', answer:'agreed', options:['argued','arrived','agreed'], hint:'have finally の後ろは過去分詞。全員が同じ日程に同意した。', tip:'agree on a date は日程について合意する。現在完了では have agreed とする。argue は言い争う。'},
+      {scene:'A group decision', cue:'Five teammates discussed two competing plans, and all five now support the same one. The team has reached a _____.', answer:'consensus', options:['consensus','deadline','disagreement'], hint:'複数人が話し合った結果として達した、共通の合意。', tip:'reach a consensus は話し合いで合意に達する。deadline は期限、disagreement は意見の相違。'}
+    ]
+  },
+  {
+    id:'preference', kind:'vocab', phraseId:'prefer',
+    levels:[
+      {scene:'移動手段を選ぶ', cue:'バスより電車の方が好きだと伝えよう。 I _____ the train to the bus.', answer:'prefer', options:['cancel','borrow','prefer'], hint:'AをBより好むとき、A to B の前に置く動詞。', tip:'prefer A to B は「BよりAを好む」。prefer the train to the bus の形で比較できる。'},
+      {scene:'A quieter place to stay', cue:'You want a calm hotel instead of a crowded hostel. I would _____ stay somewhere quiet.', answer:'rather', options:['prefer','rather','possibly'], hint:'would の直後に置いて「むしろ〜したい」を表す語。', tip:'would rather + 動詞の原形 は「むしろ〜したい」。would prefer の後には to stay が必要。'},
+      {scene:'Picking between two departures', cue:'Both trains work, but the early one fits your plans better. My personal _____ would be the earlier train.', answer:'preference', options:['permission','preference','promise'], hint:'二つの候補から自分がより望む方を指す名詞。', tip:'my preference would be ... は自分がより望む選択肢を丁寧に表す。permission は許可、promise は約束。'}
+    ]
+  },
+  {
+    id:'arrival-update', kind:'vocab', phraseId:'late',
+    levels:[
+      {scene:'バスを待つ', cue:'予定時刻を過ぎてもバスが来ない。 The bus is _____.', answer:'late', options:['early','late','empty'], hint:'予定の時刻より後になっている状態。', tip:'be late は「遅れている」。early は早い、empty は空っぽで、運行時刻とは関係しない。'},
+      {scene:'An updated train notice', cue:'The train is currently _____ fifteen minutes behind schedule because of heavy snow.', answer:'running', options:['waiting','driving','running'], hint:'電車が現在、予定より遅れて運行していることを表す。', tip:'The train is running fifteen minutes behind schedule. は「列車が15分遅れで運行中」。running は交通機関にも使える。'},
+      {scene:'A delayed delivery', cue:'The courier was due at noon, but heavy traffic means the estimated arrival is now 12:25. The delivery is _____ by about 25 minutes.', answer:'delayed', options:['booked','advanced','delayed'], hint:'予定より25分後になること。by about 25 minutes と続けよう。', tip:'be delayed by about 25 minutes は「約25分遅延する」。advanced は前倒しの意味で、今の状況とは逆。'}
+    ]
+  },
+  {
+    id:'suggestion', kind:'vocab', phraseId:'recommend',
+    levels:[
+      {scene:'おすすめを聞く', cue:'地元の人に良い店を紹介してほしい。 What restaurant would you _____?', answer:'recommend', options:['recommend','cancel','refund'], hint:'相手によい選択肢をすすめてもらう動詞。', tip:'What would you recommend? はおすすめを聞く自然な形。cancel はキャンセル、refund は返金。'},
+      {scene:'Advice for a first visit', cue:'Your friend is visiting for the first time. I _____ visiting the morning market.', answer:'suggest', options:['refuse','suggest','postpone'], hint:'suggest の後は visiting のように動名詞を続けられる。', tip:'I suggest visiting ... は「〜に行くことを提案する」。I suggest to visit ... とは通常言わない。'},
+      {scene:'A particularly good option', cue:'The local guide is confident that this route suits families better than the alternatives. I _____ recommend the lakeside walk.', answer:'highly', options:['barely','nearly','highly'], hint:'recommend を強めて「強くおすすめする」という副詞。', tip:'highly recommend は「強くおすすめする」。barely は「かろうじて／ほとんど〜ない」、nearly は「ほぼ」。'}
     ]
   },
   {
