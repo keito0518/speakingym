@@ -20,6 +20,7 @@ export function createSave() {
     xpWallet: 0,
     progress: {},
     reviewPrompts: {},
+    savedPromptIds: [],
     quizProgress: {},
     rewardedDays: [],
     completedRuns: 0,
@@ -76,7 +77,7 @@ export function validateSave(value) {
     // and initialize the new spendable wallet without duplicating historical XP.
     xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
     progress: cleanProgress,
-    reviewPrompts, quizProgress,
+    reviewPrompts, savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255), quizProgress,
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: Math.max(0, Number(value.completedRuns) || 0),
     bestSmooth: Math.max(0, Number(value.bestSmooth) || 0),
@@ -354,6 +355,20 @@ export const VETTED_LEVEL_PARAPHRASES=Object.freeze({
   'problem-wifi-hard':['My Wi-Fi keeps cutting out and I need to join a video call soon. Can you fix it?'],
   'prefer-city-hard':["The bus goes straight there, but I'd prefer the train because it's quicker despite having to change."]
 });
+// Explicit learner bookmarks. Keep exact prompt IDs across sessions, so
+// review replays the very same difficulty/scene instead of randomizing.
+export function toggleSavedPrompt(save,promptId){
+ if(!ALL_PROMPTS.some(prompt=>prompt.id===promptId))throw Error('Unknown prompt for bookmark');
+ const next=clone(save),ids=new Set(next.savedPromptIds||[]);
+ if(ids.has(promptId))ids.delete(promptId);
+ else ids.add(promptId);
+ next.savedPromptIds=[...ids].slice(0,255);
+ return next;
+}
+export function savedReviewPrompts(save){
+ const ids=new Set(save.savedPromptIds||[]);
+ return ALL_PROMPTS.filter(prompt=>ids.has(prompt.id));
+}
 export function flagUncertainReview(save,promptId,today=dayKey()) {
   if(!ALL_PROMPTS.some(item=>item.id===promptId)||!/^\d{4}-\d{2}-\d{2}$/.test(today))
     throw new Error('Invalid review prompt.');
