@@ -353,6 +353,7 @@ const path=require('node:path');
       window.SpeechRecognition=FakeRecognition;
     });
     await micPage.getByRole('button',{name:/まず練習する/}).click();
+    await unlockListening(micPage);
     const micButton=micPage.locator('#mic-button');
     await micButton.click();
     assert.equal(await micButton.getAttribute('aria-pressed'),'true');
