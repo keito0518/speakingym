@@ -21,6 +21,7 @@ export function createSave() {
     progress: {},
     reviewPrompts: {},
     savedPromptIds: [],
+    dailyHistory: [],
     quizProgress: {},
     rewardedDays: [],
     completedRuns: 0,
@@ -77,7 +78,16 @@ export function validateSave(value) {
     // and initialize the new spendable wallet without duplicating historical XP.
     xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
     progress: cleanProgress,
-    reviewPrompts, savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255), quizProgress,
+    reviewPrompts, savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255),
+    dailyHistory:(Array.isArray(value.dailyHistory)?value.dailyHistory:[]).filter(row=>
+      row&&typeof row==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&DIFFICULTIES.includes(row.difficulty)&&
+      Number.isInteger(row.total)&&row.total>=1&&row.total<=12&&
+      Number.isInteger(row.independent)&&row.independent>=0&&row.independent<=row.total&&
+      Number.isInteger(row.hinted)&&row.hinted>=0&&row.hinted<=row.total-row.independent&&
+      Number.isInteger(row.elapsedSeconds)&&row.elapsedSeconds>=0&&row.elapsedSeconds<=86400
+    ).slice(-40).map(row=>({date:row.date,difficulty:row.difficulty,total:row.total,
+      independent:row.independent,hinted:row.hinted,elapsedSeconds:row.elapsedSeconds})),
+    quizProgress,
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: Math.max(0, Number(value.completedRuns) || 0),
     bestSmooth: Math.max(0, Number(value.bestSmooth) || 0),
