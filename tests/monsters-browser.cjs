@@ -874,9 +874,16 @@ const path=require('node:path');
     assert.match(await page.locator('#hero-monster-name').innerText(),/Soxie/);
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
+    let listeningXp=0;
     for(let i=0;i<6;i++){
-      if(await page.locator('#play-audio').count())await unlockListening(page);
-      else{await page.locator('#spoken-answer').fill('I do not know yet.');await page.locator('#show-answer').click();await page.locator('#show-example').click();}
+      if(await page.locator('#play-audio').count()){
+        await unlockListening(page);
+        listeningXp+=16; // Verified comprehension is rewarded, unlike skipped speaking.
+      }else{
+        await page.locator('#spoken-answer').fill('I do not know yet.');
+        await page.locator('#show-answer').click();
+        await page.locator('#show-example').click();
+      }
       await page.locator('#next-question').click();
     }
     assert.equal(await page.locator('#result-view').isVisible(),true);
@@ -887,7 +894,7 @@ const path=require('node:path');
     assert.equal(saved.completedRuns,1);assert.ok(saved.totalAnswers>=9);
     assert.ok(saved.ownedMonsters.includes('katappo'));
     assert.equal(saved.monsterXp.katappo,trainingEarned);
-    assert.equal(saved.xpWallet,0); // Skipping questions never grants XP.
+    assert.equal(saved.xpWallet,listeningXp); // Skips give zero XP; genuine listening comprehension earns XP.
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-persisted.png`),fullPage:true});
     await context.close();
     console.log(`${engine}: 320/375/390/430 responsive, listening fallback, capture, XP banking/allocation, 60-sec flow and persistence passed`);
