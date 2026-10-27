@@ -134,6 +134,45 @@ const path=require('node:path');
     assert.equal(queued.xpWallet,0);
     assert.equal(queued.reviewPrompts['help-bag'],'2020-01-01');
     await reviewContext.close();
+    // Missed objective answers remain visible at home and return as a specific
+    // vocabulary battle instead of becoming a generic speaking review.
+    const {context:weakContext,page:weakPage}=await boot(320);
+    await weakPage.evaluate(async()=>{
+      const {createSave,recordAnswer,STORAGE_KEY}=await import('./monster-engine.js');
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(recordAnswer(createSave(),'forest-vocab-ticket-easy','again').save));
+    });
+    await weakPage.reload();
+    assert.match(await weakPage.locator('#forest-weakness-summary').innerText(),/苦手の復習 1問/);
+    await weakPage.locator('#start-forest').click();
+    await weakPage.locator('#forest-explore-continue').click();
+    const firstAnswer=await weakPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await weakPage.locator('#spoken-answer').fill(firstAnswer);
+    await weakPage.locator('#show-answer').click();
+    await weakPage.locator('#next-question').click();
+    await weakPage.locator('[data-forest-route="moss"]').click();
+    if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
+    await unlockListening(weakPage);
+    const listeningAnswer=await weakPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await weakPage.locator('#spoken-answer').fill(listeningAnswer);
+    await weakPage.locator('#show-answer').click();
+    await weakPage.locator('#next-question').click();
+    if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
+    assert.equal(await weakPage.locator('#play-card').getAttribute('data-prompt-id'),'forest-vocab-ticket-easy');
+    assert.match(await weakPage.locator('.forest-review-banner').innerText(),/苦手の再挑戦/);
+    await weakPage.locator('#spoken-answer').fill('wrong vocabulary word');
+    await weakPage.locator('#show-answer').click();
+    const afterMiss=await weakPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).quizProgress['forest-vocab-ticket-easy'].misses);
+    assert.equal(afterMiss,2);
+    await weakPage.locator('#show-example').click();
+    const afterReveal=await weakPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).quizProgress['forest-vocab-ticket-easy'].misses);
+    assert.equal(afterReveal,afterMiss,'Revealing an answer must not double-count the same wrong tap');
+    await weakContext.close();
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);

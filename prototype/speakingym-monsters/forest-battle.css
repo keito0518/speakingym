@@ -84,6 +84,7 @@
 .forest-active .learning-controls{margin-top:7px}
 .forest-active .reveal-button,.forest-active .grading-next{min-height:45px}
 .forest-active .feedback-box{margin-top:9px;padding:11px}
+.forest-active .forest-quiz-review-status{margin:7px 0 0;padding:8px 10px;border-radius:8px;background:#e8f1da;color:#396449;font-size:12px;font-weight:800;line-height:1.5}
 .forest-active .forest-boss-hp{position:relative;isolation:isolate;padding:7px 10px;border:1px solid #eebd75;border-radius:8px;background:#402f34;white-space:nowrap;font-size:14px;letter-spacing:1px}
 .forest-active .forest-boss-hp::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--boss-health,100%);z-index:-1;background:linear-gradient(90deg,#aa5945,#dd9c65);transition:width .45s ease}
 .forest-active .forest-world-stage.forest-boss-stage{box-shadow:inset 0 0 33px #6c293e88,0 4px 12px #101d1b}

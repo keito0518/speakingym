@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -108,6 +108,10 @@ function renderHome() {
   $('#home-wallet').textContent = save.xpWallet;
   const forest=cleanForest(save.forest);
   $('#forest-home-progress').textContent = forest.clears ? `討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個 · 最長 ${forest.bestWave||0}W` : 'まだ未踏の森';
+  const weak=quizWeaknessOverview(save);
+  const weakSummary=$('#forest-weakness-summary');
+  weakSummary.hidden=weak.due.length===0&&weak.upcoming.length===0;
+  weakSummary.textContent=weak.due.length?`苦手の復習 ${weak.due.length}問 · 次の冒険で優先出題するよ。`:`苦手の復習 ${weak.upcoming.length}問 · 次の復習日にもう一度挑戦しよう。`;
   $('#stat-independent').innerHTML = `${summary.independent}<span> / ${summary.total}</span>`;
   $('#stat-review').textContent = summary.reviewCount;
   const journal=reviewOverview(save);
@@ -141,12 +145,13 @@ function dueForestPromptIds(){
   const today=dayKey();
   return Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id);
 }
+function dueQuizWeaknessIds(){return quizWeaknessOverview(save).due.map(item=>item.id);}
 function startSession(mode) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
-  const firstWave=forestMode?buildForestWave({difficulty,wave:1,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds()}):null;
+  const firstWave=forestMode?buildForestWave({difficulty,wave:1,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds()}):null;
   const prompts=forestMode?firstWave.prompts:selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,
@@ -306,7 +311,7 @@ function renderQuestion() {
   stopAudio();
   $('#answer-area').hidden=false;
   $('#forest-journey').classList.remove('forest-victory');
-  play.hintUsed=false;play.revealed=false;play.speechState='';
+  play.hintUsed=false;play.revealed=false;play.speechState='';play.quizMissRecorded=false;
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
@@ -338,6 +343,12 @@ function renderQuestion() {
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'LISTENING DEFENSE':play.mode==='forest'&&prompt.kind==='read'?'READING STRIKE':prompt.kind==='vocab'?'VOCAB WEAKNESS':prompt.kind==='grammar'?'GRAMMAR MAGIC':englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'敵の声を聞いて、意味を見抜こう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div><p id="listening-status" class="listening-status" role="status" aria-live="polite">${englishMode?'Choose what you heard, then respond in English.':'聞き取れた内容を選ぼう。'}</p></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p><div class="listening-response" id="listening-response" hidden><p class="scenario-label">${englishMode?'YOUR REPLY':'次は英語で返そう'}</p>${questionBody}</div></div>`:`${readingPassage}${questionBody}`}`;
+  if(play.mode==='forest'&&quizMode&&quizWeaknessOverview(save).due.some(item=>item.id===prompt.id||item.baseId===(prompt.baseId||prompt.id))){
+    const banner=document.createElement('p');
+    banner.className='forest-review-banner';
+    banner.textContent='苦手の再挑戦 · 前回つまずいたポイントを考えよう';
+    $('#play-card').querySelector('.question-top').after(banner);
+  }
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
@@ -359,7 +370,7 @@ function renderQuestion() {
     if(!recognition&&!quizMode)micView('ready');
   });
   if(!quizMode)micView('ready');
-  if(reviewing)$('#speech-helper').textContent='復習問題です。前回とは違う言い方でも挑戦してみよう。';
+  if(reviewing)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(listenMode){
     $('#answer-area').hidden=true;
     const state=play.listeningState;
@@ -504,8 +515,8 @@ async function gradeAnswer() {
   if(grade.status!=='correct'){
     if(grade.status==='review' && raw)persist(flagUncertainReview(save,prompt.id));
     if(grade.status==='incorrect' && raw){
-      // Deterministic quiz miss: save for next-day review but never mint XP.
-      persist(recordAnswer(save,prompt.id,'again').save);
+      // A wrong quiz tap is one miss even if the learner then reveals the example.
+      if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
       play.hintUsed=true;
       if(play.mode==='forest')play.combo=0;
     }
@@ -542,6 +553,7 @@ async function gradeAnswer() {
     return;
   }
   const rating=play.hintUsed?'hint':'smooth';
+  const wasQuizResolved=save.quizProgress?.[prompt.id]?.resolved===true;
   const {save:next,reward}=recordAnswer(save,prompt.id,rating);
   persist(next);
   play.earnedXp+=reward.xp;
@@ -582,9 +594,11 @@ async function gradeAnswer() {
   const autoForest=play.mode==='forest';
   const objectiveQuiz=prompt.kind==='vocab'||prompt.kind==='grammar';
   const explanationTitle=objectiveQuiz?(prompt.kind==='vocab'?'単語の使い分け':'文法・語順のポイント'):'使える表現の一例';
+  const quizState=next.quizProgress?.[prompt.id];
+  const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
   const checkingNote=objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">攻撃演出のあと、自動で次へ進むよ。</p><button type="button" id="pause-auto" class="forest-auto-pause">${objectiveQuiz?'解説をもう少し読む':'例文をもう少し読む'}</button>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note"><strong>${explanationTitle}</strong> ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${checkingNote}</p></div>${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div><div class="feedback-note"><strong>${explanationTitle}</strong> ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}<p>${checkingNote}</p>${quizLearningNote}</div>${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
   if(autoForest){
     $('#pause-auto').addEventListener('click',()=>{
@@ -599,8 +613,8 @@ async function gradeAnswer() {
 }
 function skipAnswer(){
   if(!play || play.revealed)return;
-  const prompt=currentPrompt(),{save:next}=recordAnswer(save,prompt.id,'again');
-  persist(next);
+  const prompt=currentPrompt();
+  if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
   play.revealed=true;stopAudio();
   if(play.mode==='forest')play.combo=0;
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
@@ -635,7 +649,7 @@ function advanceQuestion(){
       if(!play.endless){play.completedForest=true;finishSession();return;}
       play.seenIds=play.prompts.map(p=>p.id);
       play.wave++;
-      const wave=buildForestWave({difficulty:play.baseDifficulty,wave:play.wave,previousIds:play.seenIds,reviewPhraseIds:dueForestPhrases()});
+      const wave=buildForestWave({difficulty:play.baseDifficulty,wave:play.wave,previousIds:play.seenIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds()});
       play.prompts=wave.prompts;
       play.difficulty=wave.level;
       play.index=0;play.bossHits=0;play.usedPower=false;

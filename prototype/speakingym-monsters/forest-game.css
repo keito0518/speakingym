@@ -16,6 +16,9 @@
 .forest-invite .forest-kicker{color:#f0d38f;letter-spacing:.2em!important}
 .forest-invite h2{font-family:Georgia,'Hiragino Mincho ProN',serif;font-weight:900;font-size:26px!important;letter-spacing:.025em!important;color:#fff2c3!important;text-shadow:0 2px 10px #07271f55}
 .forest-invite p{max-width:370px!important;color:#d9e9d5!important}
+.forest-invite .forest-weakness-summary{display:inline-flex;align-items:center;gap:8px;max-width:100%!important;margin:12px 0 0!important;padding:9px 12px;border:1px solid #d8bd77a8;border-radius:10px;background:#173d30ee;color:#ffe6a5!important;font-size:12px;font-weight:800;line-height:1.55;overflow-wrap:break-word}
+.forest-invite .forest-weakness-summary[hidden]{display:none}
+.forest-invite .forest-weakness-summary::before{content:"↻";flex:0 0 auto;font-size:18px;line-height:1}
 .forest-primary{border:2px solid #fff4bd!important;background:linear-gradient(180deg,#fff2cb,#e9c980)!important;box-shadow:0 4px 0 #9b722d,0 8px 18px #091f1845!important;color:#35523c!important;transition:transform .15s,box-shadow .15s}
 .forest-primary:hover{transform:translateY(-2px);box-shadow:0 6px 0 #9b722d,0 12px 18px #091f1845!important}
 .forest-primary:active{transform:translateY(3px);box-shadow:0 1px 0 #9b722d!important}
@@ -77,6 +80,7 @@
 .forest-active .play-card{border:2px solid #cebd91;border-top:5px solid #d4a95b;
  background:linear-gradient(135deg,#fffdf5,#f8f3e7);box-shadow:0 7px 0 #d8d4c8,0 22px 34px #203e3020}
 .forest-active .play-card .question-top{color:#887b5b}
+.forest-active .forest-review-banner{margin:9px 0 5px;padding:8px 11px;border-left:4px solid #bb8432;border-radius:6px;background:#f8e8c7;color:#6c481c;font-size:12px;font-weight:800;line-height:1.6;line-break:strict;overflow-wrap:break-word}
 .forest-active .question-tag{border-color:#e1d2a8;color:#8a6940;background:#fbf2dd}
 .forest-active .answer-area{border-color:#e3ddcb}
 .forest-active .grading-correct{border:2px solid #a0cda4;background:linear-gradient(120deg,#eef8e7,#fff8e4)}

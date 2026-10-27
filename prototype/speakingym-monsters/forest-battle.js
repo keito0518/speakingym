@@ -40,12 +40,14 @@ function shuffle(items,random) {
  }
  return pool;
 }
-export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewPhraseIds=[],reviewPromptIds=[],random=Math.random}={}){
+export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewPhraseIds=[],reviewPromptIds=[],quizWeaknessIds=[],random=Math.random}={}){
  const level=forestLevel(difficulty,wave);
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level);
  const previous=new Set(previousIds);
  const dueIds=new Set(reviewPromptIds);
  const duePhrases=new Set(reviewPhraseIds);
+ const weakQuizIds=new Set(quizWeaknessIds);
+ const weakTopics=new Set(quizWeaknessIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean).map(p=>p.baseId||p.id));
  const shuffled=shuffle(pool,random);
  const usedIds=new Set(),usedPhrases=new Set(),prompts=[];
  // Each enemy presents its own skill. The last three encounters form a
@@ -60,10 +62,17 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
    const matches=p=>p.kind===kind||(kind==='speak'&&slot<REGULAR_ENCOUNTERS&&p.kind==='read'&&dueIds.has(p.id));
    let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
-   // Prioritize exact missed tasks, then scheduled expressions and fresh scenes.
-   // Do not repeat the same expression unless all available have already appeared.
-   const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
-   if(newPhrase.length)candidates=newPhrase;
+   // A missed vocabulary/grammar target beats generic phrase diversity.
+   // When players switch difficulty, bring back the related topic instead.
+   const exactWeakness=candidates.filter(p=>weakQuizIds.has(p.id));
+   const relatedWeakness=candidates.filter(p=>weakTopics.has(p.baseId||p.id));
+   if(exactWeakness.length)candidates=exactWeakness;
+   else if(relatedWeakness.length)candidates=relatedWeakness;
+   else {
+     // Otherwise avoid repeating expressions within one adventure.
+     const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
+     if(newPhrase.length)candidates=newPhrase;
+   }
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
      previous.has(p.id)?1:0

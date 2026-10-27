@@ -20,6 +20,7 @@ export function createSave() {
     xpWallet: 0,
     progress: {},
     reviewPrompts: {},
+    quizProgress: {},
     rewardedDays: [],
     completedRuns: 0,
     bestSmooth: 0,
@@ -50,6 +51,23 @@ export function validateSave(value) {
   const reviewPrompts=Object.fromEntries(Object.entries(value.reviewPrompts && typeof value.reviewPrompts==='object' && !Array.isArray(value.reviewPrompts)?value.reviewPrompts:{})
     .filter(([id,due])=>validPromptIds.has(id)&&typeof due==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(due))
     .slice(-156));
+  const validQuizIds=new Set(ALL_PROMPTS.filter(prompt=>prompt.kind==='vocab'||prompt.kind==='grammar').map(prompt=>prompt.id));
+  const validDay=day=>typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day);
+  const rawQuizzes=value.quizProgress&&typeof value.quizProgress==='object'&&!Array.isArray(value.quizProgress)?value.quizProgress:{};
+  const quizProgress=Object.fromEntries(Object.entries(rawQuizzes)
+    .filter(([id,entry])=>validQuizIds.has(id)&&entry&&typeof entry==='object'&&!Array.isArray(entry))
+    .slice(-72).map(([id,entry])=>{
+      const misses=Number.isSafeInteger(entry.misses)?Math.max(0,Math.min(10000,entry.misses)):0;
+      return [id,{
+        misses,
+        cleanStreak:Number.isSafeInteger(entry.cleanStreak)?Math.max(0,Math.min(2,entry.cleanStreak)):0,
+        lastMissDay:validDay(entry.lastMissDay)?entry.lastMissDay:null,
+        lastCleanDay:validDay(entry.lastCleanDay)?entry.lastCleanDay:null,
+        lastHintDay:validDay(entry.lastHintDay)?entry.lastHintDay:null,
+        nextReviewDay:validDay(entry.nextReviewDay)?entry.nextReviewDay:null,
+        resolved:entry.resolved===true&&misses>0&&entry.cleanStreak>=2
+      }];
+    }).filter(([,entry])=>entry.misses>0));
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
     difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
@@ -58,7 +76,7 @@ export function validateSave(value) {
     // and initialize the new spendable wallet without duplicating historical XP.
     xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
     progress: cleanProgress,
-    reviewPrompts,
+    reviewPrompts, quizProgress,
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: Math.max(0, Number(value.completedRuns) || 0),
     bestSmooth: Math.max(0, Number(value.bestSmooth) || 0),
@@ -128,6 +146,33 @@ export function reviewOverview(save,today=dayKey()) {
     learned:PHRASES.filter(phrase=>masteryLevel(save.progress?.[phrase.id])>=2).length,
     mastered:PHRASES.filter(phrase=>masteryLevel(save.progress?.[phrase.id])===3).length,
     total:PHRASES.length
+  };
+}
+
+// A missed objective quiz is a *specific weakness*, not proof that an entire
+// speaking expression is unknown. Retain old reviewPrompt entries from saves
+// created before this field existed, without counting them twice.
+export function quizWeaknessOverview(save,today=dayKey()) {
+  const quizzes=new Map(ALL_PROMPTS.filter(p=>p.kind==='vocab'||p.kind==='grammar').map(p=>[p.id,p]));
+  const items=[];
+  for(const [id,entry] of Object.entries(save.quizProgress||{})){
+    const prompt=quizzes.get(id);
+    if(!prompt || !entry?.misses)continue;
+    items.push({id,baseId:prompt.baseId||id,kind:prompt.kind,scene:prompt.scene,
+      misses:entry.misses,cleanStreak:entry.cleanStreak||0,
+      nextReviewDay:entry.nextReviewDay||today,resolved:entry.resolved===true});
+  }
+  for(const [id,due] of Object.entries(save.reviewPrompts||{})){
+    const prompt=quizzes.get(id);
+    if(prompt&&!items.some(item=>item.id===id))
+      items.push({id,baseId:prompt.baseId||id,kind:prompt.kind,scene:prompt.scene,misses:1,cleanStreak:0,nextReviewDay:due,resolved:false});
+  }
+  const sorted=items.sort((a,b)=>a.nextReviewDay.localeCompare(b.nextReviewDay)||b.misses-a.misses||a.id.localeCompare(b.id));
+  return {
+    due:sorted.filter(item=>!item.resolved&&item.nextReviewDay<=today),
+    upcoming:sorted.filter(item=>!item.resolved&&item.nextReviewDay>today),
+    resolved:sorted.filter(item=>item.resolved),
+    total:items.length
   };
 }
 
@@ -242,6 +287,36 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   next.reviewPrompts ||= {};
   if(rating==='again'||Object.hasOwn(next.reviewPrompts,promptId))
     next.reviewPrompts[promptId]=addDays(today,rating==='smooth'?(masteryLevel(entry)===3?7:3):rating==='hint'?3:1);
+  if(prompt.kind==='vocab'||prompt.kind==='grammar'){
+    next.quizProgress ||= {};
+    const previous=next.quizProgress[promptId] ||
+      (rating!=='again'&&Object.hasOwn(next.reviewPrompts,promptId)?{
+        misses:1,cleanStreak:0,lastMissDay:null,lastCleanDay:null,lastHintDay:null,nextReviewDay:today,resolved:false
+      }:null);
+    if(rating==='again'){
+      next.quizProgress[promptId]={
+        misses:(previous?.misses||0)+1,cleanStreak:0,lastMissDay:today,lastCleanDay:null,lastHintDay:null,
+        nextReviewDay:today,resolved:false
+      };
+    }else if(previous?.misses){
+      const wasRecentlyWrong=previous.lastMissDay===today;
+      const isNewCleanDay=rating==='smooth'&&!wasRecentlyWrong&&previous.lastHintDay!==today&&
+        previous.lastCleanDay!==today&&(!previous.nextReviewDay||previous.nextReviewDay<=today);
+      const cleanStreak=Math.min(2,(previous.cleanStreak||0)+(isNewCleanDay?1:0));
+      const resolved=cleanStreak>=2;
+      const nextReviewDay=resolved?null:isNewCleanDay?addDays(today,3):
+        wasRecentlyWrong&&rating==='hint'?today:rating==='hint'?addDays(today,1):
+        previous.nextReviewDay&&previous.nextReviewDay>today?previous.nextReviewDay:addDays(today,1);
+      next.quizProgress[promptId]={
+        ...previous,cleanStreak,lastCleanDay:rating==='smooth'?today:previous.lastCleanDay,
+        lastHintDay:rating==='hint'?today:previous.lastHintDay,
+        nextReviewDay,resolved
+      };
+    }
+    const quiz=next.quizProgress[promptId];
+    if(quiz?.resolved)delete next.reviewPrompts[promptId];
+    else if(quiz)next.reviewPrompts[promptId]=quiz.nextReviewDay;
+  }
   next.totalAnswers++;
 
   // Each completed prompt earns spendable XP. Training does not silently level

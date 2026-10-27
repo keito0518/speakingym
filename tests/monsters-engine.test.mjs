@@ -8,7 +8,7 @@ import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -411,10 +411,78 @@ test('forest four-skill questions grade deterministically and never reward incor
       assert.equal(learningSummary(earned.save,'2026-10-27').independent,0);
       const miss=recordAnswer(createSave(),p.id,'again','2026-10-27');
       assert.equal(miss.reward.xp,0);
-      assert.equal(miss.save.reviewPrompts[p.id],'2026-10-28');
-      assert.equal(validateSave(miss.save).reviewPrompts[p.id],'2026-10-28');
+      assert.equal(miss.save.reviewPrompts[p.id],'2026-10-27');
+      assert.equal(validateSave(miss.save).reviewPrompts[p.id],'2026-10-27');
     }
   }
+});
+test('objective quiz weaknesses are stored safely and survive old-save migration',()=>{
+  const initial=createSave();
+  assert.deepEqual(initial.quizProgress,{});
+  assert.deepEqual(validateSave({...initial,quizProgress:undefined}).quizProgress,{});
+  const wrong=rate(initial,'forest-vocab-ticket-easy','again','2026-10-27').save;
+  assert.equal(wrong.quizProgress['forest-vocab-ticket-easy'].misses,1);
+  assert.equal(wrong.quizProgress['forest-vocab-ticket-easy'].nextReviewDay,'2026-10-27');
+  assert.deepEqual(quizWeaknessOverview(wrong,'2026-10-27').due.map(entry=>entry.id),['forest-vocab-ticket-easy']);
+  assert.equal(quizWeaknessOverview(wrong,'2026-10-26').upcoming.length,1);
+  assert.deepEqual(validateSave(JSON.parse(JSON.stringify(wrong))).quizProgress,wrong.quizProgress);
+  const legacy=validateSave({...initial,reviewPrompts:{'forest-grammar-yesterday-easy':'2026-10-25'}});
+  assert.deepEqual(quizWeaknessOverview(legacy,'2026-10-27').due.map(entry=>entry.id),['forest-grammar-yesterday-easy']);
+  const polluted=validateSave({...wrong,quizProgress:{
+    'forest-vocab-ticket-easy':{misses:999999999,cleanStreak:45,lastMissDay:'javascript:bad',lastCleanDay:'2026-10-27',nextReviewDay:'not-a-date',resolved:true},
+    'think-cafe':{misses:100},'fake-quiz':{misses:100}
+  }});
+  assert.deepEqual(Object.keys(polluted.quizProgress),['forest-vocab-ticket-easy']);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].misses,10000);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].cleanStreak,2);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].lastMissDay,null);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].nextReviewDay,null);
+});
+
+test('quiz mastery takes two clean spaced reviews, not same-day retries or hints',()=>{
+  const id='forest-vocab-ticket-easy';
+  const empty=createSave();
+  assert.equal(quizWeaknessOverview(rate(empty,id,'smooth','2026-10-27').save,'2026-10-27').total,0);
+  let save=rate(empty,id,'again','2026-10-27').save;
+  save=rate(save,id,'hint','2026-10-27').save;
+  assert.equal(save.quizProgress[id].cleanStreak,0);
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-27');
+  save=rate(save,id,'smooth','2026-10-27').save;
+  assert.equal(save.quizProgress[id].cleanStreak,0);
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-28');
+  save=rate(save,id,'smooth','2026-10-27').save;
+  assert.equal(save.quizProgress[id].cleanStreak,0);
+  save=rate(save,id,'smooth','2026-10-28').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1);
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-31');
+  save=rate(save,id,'smooth','2026-10-29').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1,'Replaying before the scheduled date is not a spaced review');
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-31');
+  save=rate(save,id,'hint','2026-10-31').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1,'Hinted answer cannot count toward mastery');
+  save=rate(save,id,'smooth','2026-10-31').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1,'Earlier hint on the same day disqualifies a clean review');
+  save=rate(save,id,'smooth','2026-11-01').save;
+  assert.equal(save.quizProgress[id].cleanStreak,2);
+  assert.equal(save.quizProgress[id].resolved,true);
+  assert.equal(save.reviewPrompts[id],undefined);
+  assert.equal(quizWeaknessOverview(save,'2026-11-01').resolved.length,1);
+  assert.equal(quizWeaknessOverview(save,'2026-11-01').due.length,0);
+  const relapsed=rate(save,id,'again','2026-11-02').save;
+  assert.equal(relapsed.quizProgress[id].cleanStreak,0);
+  assert.equal(relapsed.quizProgress[id].resolved,false);
+  assert.equal(quizWeaknessOverview(relapsed,'2026-11-02').due.length,1);
+});
+
+test('an overdue word or grammar point takes priority in a later forest encounter',()=>{
+  const repeatVocabulary=buildForestWave({difficulty:'easy',wave:1,quizWeaknessIds:['forest-vocab-ticket-easy'],random:()=>.25});
+  assert.equal(repeatVocabulary.prompts[2].id,'forest-vocab-ticket-easy');
+  const repeatGrammar=buildForestWave({difficulty:'easy',wave:1,quizWeaknessIds:['forest-grammar-yesterday-easy'],random:()=>.25});
+  assert.equal(repeatGrammar.prompts[3].id,'forest-grammar-yesterday-easy');
+  const harder=buildForestWave({difficulty:'normal',wave:1,quizWeaknessIds:['forest-vocab-ticket-easy'],random:()=>.25});
+  assert.equal(harder.prompts[2].baseId,'forest-vocab-ticket');
+  assert.equal(harder.prompts[2].difficulty,'normal');
+  assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
 });
 test('expanded forest quizzes change targets across levels and explain the language point',()=>{
   const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
