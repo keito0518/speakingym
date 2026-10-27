@@ -379,6 +379,10 @@ test('forest four-skill questions grade deterministically and never reward incor
         const original=p.answer.replace(/[.!?]/g,'').split(' ');
         assert.deepEqual([...p.tokens].sort(),[...original].sort());
       }
+      const earned=recordAnswer(createSave(),p.id,'smooth','2026-10-27');
+      assert.ok(earned.reward.xp>0);
+      assert.equal(masteryLevel(earned.save.progress[p.phraseId]),1,'Quiz XP must not create spoken fluency mastery');
+      assert.equal(learningSummary(earned.save,'2026-10-27').independent,0);
       const miss=recordAnswer(createSave(),p.id,'again','2026-10-27');
       assert.equal(miss.reward.xp,0);
       assert.equal(miss.save.reviewPrompts[p.id],'2026-10-28');
