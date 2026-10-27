@@ -128,10 +128,11 @@ function finishRecognition(){
   recognitionWatchdog=setTimeout(()=>{
     if(recognition!==active)return;
     const text=$('#spoken-answer')?.value.trim();
+    if(!text)recognitionFailures++;
     stopRecognition(text?'captured':'ready');
     if(helper)helper.textContent=text
       ?'聞き取れた部分を残しました。英文を確認して判定してね。'
-      :'音声を文字にできませんでした。Safariで開くか、iPhoneのキーボードの音声入力も試してね。';
+      :'内蔵ブラウザで文字にできませんでした。下のiPhone標準音声入力またはSafariを使ってね。';
   },4500);
   try{active.stop();}catch{
     const text=$('#spoken-answer')?.value.trim();
@@ -682,13 +683,24 @@ function startRecognition() {
     instance.lang='en-US';instance.interimResults=true;instance.continuous=false;instance.maxAlternatives=1;
     instance.onstart=()=>{
       if(recognition!==instance||play!==session)return;
-      if(helper&&!recognitionStopping)helper.textContent='聞き取り中です。話すと英文が表示されます。終わったら「停止」を押してね。';
+      if(helper&&!recognitionStopping)helper.textContent='音声認識中です。英語が文字にならなければ標準の音声入力に切り替えられます。';
+      recognitionNoResultTimer=setTimeout(()=>{
+        if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
+        if(helper)helper.textContent='まだ英文が届いていません。内蔵ブラウザではマイク認識が使えない場合があります。';
+      },7000);
+      recognitionWatchdog=setTimeout(()=>{
+        if(recognition!==instance||recognitionStopping)return;
+        finishRecognition(); // stop() allows WebKit to deliver pending speech.
+      },14000);
     };
     instance.onresult=event=>{
       if(recognition!==instance || play!==session || !$('#spoken-answer'))return;
       const segments=[...event.results];
       const transcript=segments.map(result=>result[0]?.transcript||'').join(' ').replace(/\s+/g,' ').trim();
       if(!transcript)return;
+      if(recognitionNoResultTimer)clearTimeout(recognitionNoResultTimer);
+      recognitionNoResultTimer=null;
+      recognitionFailures=0;
       // Display partial recognition immediately, without counting it as a final answer.
       // The orange recording button stays only while recognition is actually active.
       const finalized=segments.length>0 && segments.every(result=>result.isFinal===true);
@@ -703,6 +715,7 @@ function startRecognition() {
     };
     instance.onerror=event=>{
       if(recognition!==instance || play!==session)return;
+      recognitionFailures++;
       stopRecognition();
       if(helper){
         const error=event?.error;
@@ -712,26 +725,23 @@ function startRecognition() {
           ?'このブラウザの音声認識サービスに接続できません。Safariで開くか、iPhoneキーボードのマイクを使ってね。'
           :error==='audio-capture'
           ?'マイクを利用できませんでした。Safariのマイク許可を確認してね。'
-          :'英語を認識できませんでした。静かな場所で再度話すか、文字で入力してね。';
+          :recognitionFailures>=2?'このブラウザでは音声認識が続けて失敗しています。下のiPhone標準音声入力を試してね。':'英語を認識できませんでした。再試行か標準の音声入力を試してね。';
       }
     };
     instance.onend=()=>{
       if(recognition!==instance || play!==session)return;
       const transcript=$('#spoken-answer')?.value.trim();
       $('#spoken-answer')?.classList.remove('transcript-interim');
+      if(!transcript)recognitionFailures++;
+      else recognitionFailures=0;
       stopRecognition(transcript?'captured':'ready');
       if(helper)helper.textContent=transcript
         ?'音声認識が終了しました。表示された英文を確認してから判定してね。'
-        :'録音が終了しました。もう一度マイクを押すか英文を入力してね。';
+        :recognitionFailures>=2?'このブラウザは声を文字にできていません。iPhone標準音声入力かSafariを使ってね。':'声を文字にできませんでした。下に別の入力方法があるよ。';
     };
-    recognitionWatchdog=setTimeout(()=>{
-      if(recognition!==instance)return;
-      stopRecognition();
-      if(helper)helper.textContent='録音が長く続いたため自動停止しました。もう一度試すか英文を入力してね。';
-    },30000);
     instance.start();
     micView('listening');
-    if(helper)helper.textContent='録音中です。英文が表示されなければ、話し終わって「停止」を押してね。';
+    if(helper)helper.textContent='音声認識を開始しています。7秒たっても文字にならなければ、標準の音声入力を試してね。';
   }catch{
     stopRecognition();
     if(helper)helper.textContent='マイクを開始できません。英文入力で続けられます。';
