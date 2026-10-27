@@ -581,7 +581,10 @@ const path=require('node:path');
       const {createSave,recordAnswer,STORAGE_KEY}=await import('./monster-engine.js');
       // One authentic prior expression keeps the short flow focused on rewards
       // while Soxie still requires FOUR independent expressions to recruit.
-      const seeded=recordAnswer(createSave(),'help-bag','smooth','2026-10-25').save;
+      let seeded=recordAnswer(createSave(),'help-bag','smooth','2026-10-25').save;
+      seeded=recordAnswer(seeded,'prefer-city','smooth','2026-10-25').save;
+      // The first exercise in this scenario uses a hint, so it does not
+      // increase the independent expression count.
       seeded.xpWallet=0;
       for(const id of ['think-trip','repeat-station','agree-friend'])seeded.reviewPrompts[id]='2020-01-01';
       localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
