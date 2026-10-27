@@ -150,10 +150,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
    });
  }
  return {showMenu,showPage,openTutorial,updateWalkers,
-   updateHero({art,name,level,mastered,due,xp,areasCleared=0}){
+   updateHero({art,name,level,mastered,due,xp,areasCleared=0,bondRank=0}){
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
-     menu.querySelector('#home-menu-level').textContent='Lv.'+level+' · 今日も一緒に';
+     menu.querySelector('#home-menu-level').textContent='Lv.'+level+' · 絆 Lv.'+bondRank;
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
