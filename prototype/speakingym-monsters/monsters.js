@@ -709,7 +709,7 @@ async function gradeAnswer() {
   if(recognition){finishRecognition();return;}
   const session=play,prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
   let grade=gradeLocalResponse(prompt,raw);
-  if(grade.status==='review' && !['vocab','grammar'].includes(prompt.kind) && STAGING_SEMANTIC_GRADER_ENDPOINT){
+  if(grade.status==='review' && grade.method!=='context-safety' && !['vocab','grammar'].includes(prompt.kind) && STAGING_SEMANTIC_GRADER_ENDPOINT){
     session.grading=true;
     $('#show-answer').disabled=true;
     $('#speech-helper').textContent='意味を確認中…';
