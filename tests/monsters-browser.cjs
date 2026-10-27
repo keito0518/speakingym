@@ -353,7 +353,22 @@ const path=require('node:path');
           assert.ok((await forestPage.locator('.feedback-note').innerText()).length>35,'Objective quizzes should explain the answer, not only mark it right');
         }
         await moveOn();
-        if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
+        if(await forestPage.locator('#forest-explore-screen').isVisible()){
+          if(mob===4){
+            // One interactive story event per chapter, before the fifth foe.
+            // Choosing a scene must not affect XP, attempts or language gates.
+            assert.equal(await forestPage.locator('#forest-explore-event').isVisible(),true);
+            assert.equal(await forestPage.locator('[data-forest-event-option]').count(),2);
+            assert.equal(await forestPage.locator('#forest-explore-continue').isVisible(),false);
+            const beforeChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+            await forestPage.locator('[data-forest-event-option]').first().click();
+            assert.match(await forestPage.locator('#forest-explore-event').innerText(),/探索の記録|EXPEDITION MEMORY/);
+            assert.equal(await forestPage.locator('[data-forest-event-option]').count(),0);
+            const afterChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+            assert.deepEqual(afterChoice,beforeChoice,'Story events are cosmetic and cannot award XP or rewrite learner records');
+          }
+          await forestPage.locator('#forest-explore-continue').click();
+        }
         await forestPage.locator('#forest-journey').waitFor({state:'visible'});
       }
       assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
@@ -361,12 +376,15 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Thorn King/);
       assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
       assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-stage')),true);
+      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-boss-power'),'echo');
+      assert.match(await forestPage.locator('.forest-boss-special').innerText(),/いばらのこだま/);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-boss.png`),fullPage:true});
       for(let hit=1;hit<=3;hit++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('BOSS ATTACK '+hit+' \/ 3'));
         assert.match(await forestPage.locator('.forest-boss-dialogue').innerText(),new RegExp('BOSS DIALOGUE · '+hit+'\/3'));
         assert.equal(await forestPage.locator('#play-card').getAttribute('data-prompt-id'),['late-call','forest-grammar-arrive-easy','boss-delay-apology-easy'][hit-1]);
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
+        assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/こだま|暗号|トゲ王の問い/);
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
         if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').innerText(),/Thorn Kingをたおした！/);
@@ -375,6 +393,7 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
       assert.match(await forestPage.locator('#result-discoveries').innerText(),/Mosslight/);
+      assert.match(await forestPage.locator('#result-discoveries').innerText(),/探索の記録/);
       assert.match(await forestPage.locator('#result-rewards').innerText(),/120 XP/);
       await forestPage.locator('#result-collection').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
