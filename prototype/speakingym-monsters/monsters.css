@@ -486,3 +486,13 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
  .answer-area textarea.answer-input{font-size:16px;max-height:45vh}
  .home-menu-back,.button,.home-feature-cta{min-height:44px}
 }
+
+
+/* A clearly labeled retrieval question can appear inside a regular dungeon. */
+.dungeon-recall-tag{display:inline-flex;align-items:center;max-width:100%;flex-wrap:wrap;margin:5px 0;padding:5px 9px;border:1px solid #e0c277;border-radius:8px;background:#fff3cf;color:#80642d;font-size:11px;font-weight:850;line-height:1.35;white-space:normal}
+.forest-active .question-top{flex-wrap:wrap;row-gap:8px}
+@media(max-width:390px){
+ .dungeon-recall-tag{font-size:10px;padding:5px 7px}
+ .forest-active #spoken-answer{width:100%;min-width:0}
+ .home-feature-content h2{overflow-wrap:normal;line-height:1.22}
+}
