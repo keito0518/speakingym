@@ -1,6 +1,7 @@
 // Narrative-only boss mechanics: the English prompt remains the single source
 // of truth for grading, retries and XP. No AI/network calls or hidden answers.
 import { bossConversationTurn } from './forest-boss-story.js';
+import { regularEncountersFor } from './forest-battle.js';
 
 const CHAPTER_BEATS=Object.freeze({
  entry:Object.freeze({
@@ -61,7 +62,7 @@ export const FOREST_BOSS_SIGNATURES=Object.freeze({
 
 export function forestBossPhase({areaId='entry',index=0,wave=1,level='easy',prompt=null}={}){
   const chapter=CHAPTER_BEATS[areaId];
-  const turn=index-4;
+  const turn=index-regularEncountersFor(areaId)+1;
   if(!chapter || turn<1 || turn>3 || !prompt || !['easy','normal','hard'].includes(level))return null;
   const kind=prompt.kind;
   if((turn===1&&kind!=='listen')||
