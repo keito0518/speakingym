@@ -18,6 +18,7 @@ import { forestBossPhase } from './forest-boss-phases.js';
 import { forestEventFor, forestEventChoice } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { setupHomeNavigation } from './home-navigation.js';
+import { summarizeDungeonAttempt, dungeonBossBrief } from './dungeon-learning.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -60,6 +61,7 @@ function speakingSuccessHtml(prompt,learnerAnswer){
   </section>`;
 }
 let save = loadSave() || createSave();
+let lastDungeonReviewIds = [];
 let play = null, timer = null, recognition = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
 
 function cancelAutoAdvance(){
@@ -268,21 +270,23 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
   const gym=mode==='daily'?dailyTrainingPlan(save,{difficulty}):null;
-  const focused=(mode==='listening'||mode==='speaking')?ALL_PROMPTS
+  if(mode==='dungeon-review'&&!lastDungeonReviewIds.length){renderHome();return;}
+  const focused=mode==='dungeon-review'?lastDungeonReviewIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean):
+    (mode==='listening'||mode==='speaking')?ALL_PROMPTS
     .filter(p=>p.kind===(mode==='listening'?'listen':'speak')&&(p.difficulty||'easy')===difficulty&&!p.bossOnly)
     .sort((x,y)=>Number(Boolean(save.reviewPrompts?.[y.id]&&save.reviewPrompts[y.id]<=dayKey()))-Number(Boolean(save.reviewPrompts?.[x.id]&&save.reviewPrompts[x.id]<=dayKey())))
     .slice(0,6):null;
   const prompts=forestMode?firstWave.prompts:focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
   play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='saved'?'保存した問題の復習':'練習モード'} · ${difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
-  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking');
+  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
@@ -472,11 +476,12 @@ function renderQuestion() {
   $('#answer-area').hidden=false;
   $('#answer-area').classList.remove('listening-result-only');
   $('#forest-journey').classList.remove('forest-victory');
-  play.hintUsed=false;play.revealed=false;play.speechState='';play.quizMissRecorded=false;
+  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
       play.encounterKey=key;
+      play.encounterHelp=false;play.hintUsed=false;
       play.remainingTries=DIFFICULTY_TRIES[play.difficulty];
       play.attemptReviewed=false;
     }
@@ -544,7 +549,8 @@ function renderQuestion() {
     const title=document.createElement('strong');title.textContent=bossTurn.title;
     const context=document.createElement('p');context.textContent=bossTurn.context;
     const warning=document.createElement('p');warning.className='forest-boss-special';
-    warning.textContent=`練習のポイント：${bossTurn.kind==='listen'?'聞いた意味を理解':bossTurn.kind==='speak'?'自分の言葉で話す':'正しい言葉と語順'}`;
+    const brief=dungeonBossBrief(play.areaId,bossTurn.turn);
+    warning.textContent=`確認 ${bossTurn.turn}/3 · ${brief?.objective||'学んだことを使う'}`;
     dialogue.append(counter,title,context,warning);
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
@@ -597,7 +603,8 @@ function renderQuestion() {
     const revealTranscript=()=>{
       if(!play||play.listeningState!==state||state.understood)return;
       state.usedTranscript=true;
-      play.hintUsed=true; // A transcript-assisted clear cannot count as independent speaking mastery.
+      play.hintUsed=true; // A transcript-assisted listening clear is supported, not independent.
+      if(play.mode==='forest')play.encounterHelp=true;
       $('#transcript').hidden=false;
       $('#transcript').textContent=comprehension.audio;
       showChoices();
@@ -779,6 +786,7 @@ function startRecognition() {
 }
 function showHint() {
   const prompt=currentPrompt(), phrase=phraseFor(prompt.phraseId);play.hintUsed=true;
+  if(play.mode==='forest')play.encounterHelp=true;
   $('#hint-panel').hidden=false;$('#hint-panel').textContent=`ヒント：${prompt.hint || phrase.hint}　${prompt.tip || phrase.tip}`;
 }
 async function gradeAnswer() {
@@ -810,13 +818,13 @@ async function gradeAnswer() {
       // A confirmed missing detail is instructional feedback. A later
       // corrected answer is earned, but cannot count as a first-try combo.
       play.hintUsed=true;
-      if(play.mode==='forest')play.combo=0;
+      if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;}
     }
     if(grade.status==='incorrect' && raw){
       // Only a confident contradiction or an objective wrong quiz is a miss.
       if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
       play.hintUsed=true;
-      if(play.mode==='forest')play.combo=0;
+      if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;}
     }
     if(play.mode==='forest' && raw){
       const world=$('#forest-world-stage');
@@ -839,6 +847,7 @@ async function gradeAnswer() {
       else play.remainingTries=Math.max(0,play.remainingTries-1);
       $('#forest-tries').textContent=`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`;
       if(!play.remainingTries){
+        play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});
         $('#feedback-panel').innerHTML='<div class="feedback-box grading-review" role="status"><div class="feedback-head">挑戦回数を使い切った！</div><p class="grading-intro">今回の回答では必要な意味が伝わりませんでした。例文を復習して再挑戦しよう！</p><button id="forest-exit" class="grading-next">冒険の結果を見る →</button></div>';
         $('#forest-exit').addEventListener('click',()=>finishSession(false,true));
         micView('done');return;
@@ -868,7 +877,8 @@ async function gradeAnswer() {
       // This is a *navigation choice*, not a correct verdict, speaking
       // mastery or rewarded boss strike. No XP or accuracy is granted.
       play.assistedGates=(play.assistedGates||0)+1;
-      play.hintUsed=true;
+      play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});
+      play.encounterHelp=true;play.hintUsed=true;
       play.combo=0;
       play.revealed=true;
       if(play.index>=regularCount())play.bossHits=Math.min(BOSS_HITS,play.bossHits+1);
@@ -886,6 +896,8 @@ async function gradeAnswer() {
   play.captured.push(...reward.captured);
   if(rating==='smooth')play.smooth++;
   else if(rating==='hint')play.hintedCount++;
+  if(play.mode==='forest')play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,
+    outcome:rating==='smooth'?'independent':'supported'});
   play.revealed=true;
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
@@ -937,6 +949,7 @@ async function gradeAnswer() {
 function skipAnswer(){
   if(!play || play.revealed)return;
   const prompt=currentPrompt();
+  if(play.mode==='forest'){play.encounterHelp=true;play.hintUsed=true;}
   const learnerAnswer=$('#spoken-answer')?.value||'';
   if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
   play.revealed=true;stopAudio();
