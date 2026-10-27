@@ -88,6 +88,11 @@ export function gradeLocalResponse(prompt, raw) {
  if(exact) return {status:'correct',reasons:[],confidence:'high',method:'registered-example'};
  const difficulty=prompt.difficulty||'easy';
  const base=prompt.baseId || prompt.id;
+ // Arrival estimates are checked as meaning-bearing quantities, not merely
+ // by spotting the words "late" and "ten" anywhere in a sentence.
+ // The normal phone call specifically asks for a 10-minute delay.
+ if(base==='late-call'&&difficulty==='normal')
+   return {...gradeDelayMeaning(raw,10),confidence:'high',method:'arrival-meaning'};
  // Only the easiest traffic prompt asks for exactly one piece of information.
  // More advanced variants require additional reasons, apologies and proposals:
  // their numerical checks can reject contradictions but cannot grant XP alone.

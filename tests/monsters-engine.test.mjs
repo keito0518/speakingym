@@ -43,6 +43,15 @@ test('arrival meaning distinguishes natural replies, missing time, contradiction
    ["I won't be five minutes late.",'incorrect'],
    ["I'll be ten minutes late.",'incorrect']
  ])assert.equal(gradeLocalResponse(byId('late-traffic-easy'),answer).status,status,answer);
+ for(const [answer,status] of [
+   ["I'll be ten minutes late.",'correct'],
+   ["I'm running ten minutes late.",'correct'],
+   ["I'm delayed by ten minutes.",'correct'],
+   ["I'll be late.",'incomplete'],
+   ["I'll be there in ten minutes.",'review'],
+   ["I won't be ten minutes late.",'incorrect'],
+   ["I'll be twenty minutes late.",'incorrect']
+ ])assert.equal(gradeLocalResponse(byId('late-call-normal'),answer).status,status,`late-call-normal: ${answer}`);
  assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be thirty minutes late.").status,'review','More conditions are required at hard difficulty');
  assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be twenty minutes late.").status,'incorrect');
 });
