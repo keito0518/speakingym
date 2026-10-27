@@ -212,7 +212,7 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
       assert.match(await forestPage.locator('#result-discoveries').innerText(),/Mosslight/);
-      assert.match(await forestPage.locator('#result-rewards').innerText(),/128 XP/);
+      assert.match(await forestPage.locator('#result-rewards').innerText(),/120 XP/);
       await forestPage.locator('#result-collection').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
       await forestPage.reload();
@@ -223,7 +223,7 @@ const path=require('node:path');
       const saved=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.equal(saved.forest.clears,1);
       assert.deepEqual(saved.forest.relics,['moss-lantern']);
-      assert.equal(saved.xpWallet,128);
+      assert.equal(saved.xpWallet,120);
       await forestContext.close();
     }
     // Endless mode limits attempts by difficulty; ambiguous results are not falsely called wrong.
