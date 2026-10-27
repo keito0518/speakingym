@@ -308,6 +308,50 @@ const path=require('node:path');
     assert.equal(queued.xpWallet,0);
     assert.equal(queued.reviewPrompts['help-bag'],'2020-01-01');
     await reviewContext.close();
+    // A real due 3-day checkpoint must precede a DIFFERENT real-world use
+    // of the same expression. No RPG animation, extra speech requirement or
+    // false progression from merely opening the plan.
+    {
+    const {context:recallContext,page:recallPage}=await boot(320);
+    const dueId='think-cafe';
+    await recallPage.evaluate(async id=>{
+      const {createSave,recordAnswer,STORAGE_KEY,dayKey,addDays}=await import('./monster-engine.js');
+      const today=dayKey();
+      let seeded=recordAnswer(createSave(),id,'smooth',addDays(today,-4)).save;
+      seeded=recordAnswer(seeded,id,'smooth',addDays(today,-3)).save;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    },dueId);
+    await recallPage.reload();
+    await enterHomePanel(recallPage,'review');
+    assert.match(await recallPage.locator('#retention-due-label').innerText(),/1問/);
+    assert.match(await recallPage.locator('#retention-transfer-label').innerText(),/1問/);
+    await recallPage.locator('#start-retention-review').click();
+    assert.equal(await recallPage.locator('#play-card').getAttribute('data-prompt-id'),dueId);
+    assert.match(await recallPage.locator('.daily-question-kind').innerText(),/予定日の記憶チェック/);
+    assert.equal(await recallPage.locator('#forest-journey').isVisible(),false);
+    let answer=await recallPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await recallPage.locator('#spoken-answer').fill(answer);
+    await recallPage.locator('#show-answer').click();
+    await recallPage.locator('#next-question').click();
+    const transferId=await recallPage.locator('#play-card').getAttribute('data-prompt-id');
+    assert.notEqual(transferId,dueId);
+    assert.match(await recallPage.locator('.daily-question-kind').innerText(),/別の場面で応用/);
+    const recallMetrics=await recallPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert.ok(recallMetrics.scroll<=recallMetrics.inner+1,`320px retention overflow: ${JSON.stringify(recallMetrics)}`);
+    answer=await recallPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await recallPage.locator('#spoken-answer').fill(answer);
+    await recallPage.locator('#show-answer').click();
+    const recallSaved=await recallPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+    assert.equal(recallSaved.retention[dueId].stage,3);
+    assert.equal(recallSaved.retention[transferId].stage,1,'New scene has its own spaced schedule');
+    await recallContext.close();
+    }
     // A recognisable speaking word-order mistake gives a reason without
     // declaring all unfamiliar wording wrong or awarding full unhinted XP.
     const {context:coachContext,page:coachPage}=await boot(390);

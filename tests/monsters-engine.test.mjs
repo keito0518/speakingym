@@ -1184,7 +1184,7 @@ test('user-selected review stores exact questions without breaking older saves',
  assert.deepEqual(validateSave({...original,savedPromptIds:undefined}).savedPromptIds,[]);
  assert.throws(()=>toggleSavedPrompt(marked,'nonsense'),/Unknown prompt/);
 });
-test('rare forest recruits need both genuine language learning and cleared chapters',()=>{
+test('rare forest recruits need language, real spaced recall and cleared chapters',()=>{
   const rare=MONSTERS.filter(c=>c.forestAreas);
   assert.deepEqual(rare.map(c=>c.forestAreas),[1,2,3,4]);
   assert.equal(new Set(rare.map(c=>c.id)).size,4);
@@ -1195,21 +1195,49 @@ test('rare forest recruits need both genuine language learning and cleared chapt
   for(const p of independent)save=rate(save,p.id,'smooth','2026-10-26').save;
   assert.equal(learningSummary(save).independent,16);
   assert.equal(rare.filter(c=>save.ownedMonsters.includes(c.id)).length,0,'Language alone cannot unlock forest rares');
-  for(const id of ['entry','glade']){
-    save=finishForest(save,'sunlit','medamago',id,[],true).save;
-    const award=captureEligibleMonsters(save);
-    save=award.save;
-    assert.ok(save.ownedMonsters.includes(id==='entry'?'fuwari':'kompass'));
-    if(id==='entry')assert.equal(save.ownedMonsters.includes('kompass'),false);
-  }
+  save=finishForest(save,'sunlit','medamago','entry',[],true).save;
+  assert.equal(captureEligibleMonsters(save).captured.length,0,'A Forest clear and one-day cramming are not enough');
+  assert.equal(companionUnlockProgress(save,rare[0]).currentRecall,0);
+  save=rate(save,'think-cafe','smooth','2026-10-27').save;
+  assert.ok(save.ownedMonsters.includes('fuwari'));
+  assert.equal(save.ownedMonsters.includes('kompass'),false);
+  save=finishForest(save,'sunlit','medamago','glade',[],true).save;
+  assert.equal(save.ownedMonsters.includes('kompass'),false,'Chapter two still needs a second separately retained expression');
+  save=rate(save,'repeat-station','smooth','2026-10-27').save;
+  assert.ok(save.ownedMonsters.includes('kompass'));
   assert.equal(save.ownedMonsters.includes('pikap'),false,'Mastery and chapter 3 required');
   assert.equal(save.ownedMonsters.includes('mokuryu'),false,'Last boss and multiple mastered phrases required');
+  assert.equal(companionUnlockProgress(save,rare[1]).currentRecall,2);
+  assert.equal(companionUnlockProgress(save,rare[2]).currentRecall,0);
+  save=rate(save,'think-cafe','hint','2026-10-30').save;
+  assert.equal(companionUnlockProgress(save,rare[1]).currentRecall,1,'Hints pause current retention; previously owned allies remain owned');
+  assert.ok(save.ownedMonsters.includes('kompass'));
   assert.deepEqual(captureEligibleMonsters(save).captured,[],'Award is idempotent');
   const legacy=validateSave({...save,forest:{clears:2,completedAreas:['entry','glade']}});
   assert.ok(legacy.ownedMonsters.includes('fuwari'));
   assert.ok(legacy.ownedMonsters.includes('kompass'));
   assert.equal(companionUnlockProgress(createSave(),rare[0]).ready,false);
-  assert.equal(companionUnlockProgress(save,rare[1]).ready,true);
+  assert.equal(companionUnlockProgress(save,rare[1]).ready,false,'New capture would wait for independent recovery');
+});
+test('highest-rarity creatures need multiple 3-day and 7-day checkpoints across distinct expressions',()=>{
+ let save=createSave();
+ const contexts=[['think-cafe','think-trip'],['repeat-station','repeat-class'],
+  ['help-bag','help-phone'],['late-bus','late-call'],['prefer-city','prefer-friend']];
+ for(const [first] of contexts)save=rate(save,first,'smooth','2026-10-26').save;
+ for(const [first,second] of contexts){
+  save=rate(save,first,'smooth','2026-10-27').save;
+  save=rate(save,second,'smooth','2026-10-27').save;
+ }
+ for(const [first] of contexts)save=rate(save,first,'smooth','2026-10-30').save;
+ for(const id of ['entry','glade','thicket','sanctuary'])
+  save=finishForest(save,'moss','medamago',id,[],true).save;
+ save=captureEligibleMonsters(save).save;
+ assert.ok(save.ownedMonsters.includes('pikap'),'3-day checkpoints + three areas unlock epic creature');
+ assert.equal(save.ownedMonsters.includes('mokuryu'),false,'Legendary must wait for seven days');
+ for(const [first] of contexts)save=rate(save,first,'smooth','2026-11-06').save;
+ assert.ok(save.ownedMonsters.includes('mokuryu'),'Three distinct week-old recalls + all four areas unlock legendary');
+ assert.equal(companionUnlockProgress(save,MONSTERS.find(c=>c.id==='mokuryu')).currentRecall,5);
+ assert.deepEqual(captureEligibleMonsters(save).captured,[]);
 });
 test('exploration journal preserves story choices across clears and old saves, without XP',()=>{
  let save=createSave();

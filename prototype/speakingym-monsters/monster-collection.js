@@ -13,7 +13,9 @@ const displayName = (c, g) => g.evolved ? c.evolvedName : c.name;
 function unlockText(c,save){
  const p=companionUnlockProgress(save,c);
  const language=`${p.skillLabel} ${p.currentSkill}/${p.requiredSkill}`;
- return c.forestAreas?`${language} · 森の攻略 ${p.areaCount}/${p.requiredAreas}エリア。両方達成で仲間になるよ。`:`${language} で出会えるよ。`;
+ const recallLabel={2:'翌日',3:'3日後',4:'7日後'}[p.recallStage]||'復習';
+ const recall=p.requiredRecall?` · ${recallLabel}の定着チェック ${p.currentRecall}/${p.requiredRecall}表現`:'';
+ return c.forestAreas?`${language} · 森の攻略 ${p.areaCount}/${p.requiredAreas}エリア${recall}。すべて達成で仲間になるよ。`:`${language} で出会えるよ。`;
 }
 const chapterMarks=Object.freeze([
  {name:'森の一歩',goal:'最初のエリアを攻略',condition:f=>f.completedAreas.length>=1},
@@ -53,7 +55,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       const owned = save.ownedMonsters.includes(c.id), g = getMonsterProgress(save,c.id);
       const p=companionUnlockProgress(save,c);
       const bond=getMonsterBondProgress(save,c.id);
-      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned&&g.evolved)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned&&g.evolved?`進化済み · 絆 Lv.${bond.rank}`:owned?`未進化 · 絆 Lv.${bond.rank}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 英語 ${p.currentSkill}/${p.requiredSkill}`:'未解放'}</span></button>`;
+      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned&&g.evolved)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned&&g.evolved?`進化済み · 絆 Lv.${bond.rank}`:owned?`未進化 · 絆 Lv.${bond.rank}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
     }).join('');
     all('[data-open-monster]').forEach(b => b.addEventListener('click',()=>renderDetail(b.dataset.openMonster)));
     $('#phrase-grid').innerHTML = summary.entries.map(({phrase,entry,level}) => `<article class="phrase-card"><strong>${html(phrase.label)}</strong><p>${html(phrase.expression)}</p><div class="phrase-progress" aria-label="習得レベル ${level} / 3">${[1,2,3].map(i=>`<span class="${i<=level?'full':''}"></span>`).join('')}</div><p>${level===3?'MASTER · 別の場面と別の日でも使えた':level===2?'自力で言えた':level===1?'練習中':'これから出会う表現'}${entry?.nextReviewDay?' · 次の目安 '+html(entry.nextReviewDay):''}</p></article>`).join('');

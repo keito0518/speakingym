@@ -491,6 +491,16 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 /* A clearly labeled retrieval question can appear inside a regular dungeon. */
 .dungeon-recall-tag{display:inline-flex;align-items:center;max-width:100%;flex-wrap:wrap;margin:5px 0;padding:5px 9px;border:1px solid #e0c277;border-radius:8px;background:#fff3cf;color:#80642d;font-size:11px;font-weight:850;line-height:1.35;white-space:normal}
 .forest-active .question-top{flex-wrap:wrap;row-gap:8px}
+/* Full Japanese phrases stay together on narrow phones. The longer recall
+   mode name gets its own row, so controls never squeeze or overlap it. */
+@media(max-width:430px){
+ .play-topline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 8px}
+ .play-topline .mode-chip{grid-column:1 / -1;grid-row:2;min-width:0;max-width:100%;width:max-content;line-height:1.5;white-space:normal;word-break:keep-all;overflow-wrap:normal}
+ .play-topline .clock{justify-self:end;text-align:right}
+ .question-top{flex-wrap:wrap;row-gap:7px}
+ .retention-hub-metrics span{word-break:keep-all;line-break:strict}
+ .daily-question-kind{line-height:1.6;word-break:keep-all;line-break:strict}
+}
 @media(max-width:390px){
  .dungeon-recall-tag{font-size:10px;padding:5px 7px}
  .forest-active #spoken-answer{width:100%;min-width:0}

@@ -195,10 +195,9 @@ export function quizWeaknessOverview(save,today=dayKey()) {
   };
 }
 
-// Two independent milestones are required for the newly discovered forest
-// creatures: transferable English skill and story chapter progress. No RNG,
-// arbitrary timer or paid resource can bypass them. Previously owned creatures
-// remain owned even if thresholds increase in this prototype.
+// Forest rares also need genuine spaced recall: distinct expressions after a
+// calendar interval, not repeated attempts in the same sitting. These rules
+// apply only to future captures; owned companions and their XP are immutable.
 export function companionUnlockProgress(save, monster, today=dayKey()){
   const learned=learningSummary(save,today);
   const areaCount=cleanForest(save.forest).completedAreas.length;
@@ -206,9 +205,16 @@ export function companionUnlockProgress(save, monster, today=dayKey()){
   const requiredSkill=useMastery?monster.masteryUnlock:monster.unlock||0;
   const currentSkill=useMastery?learned.mastered:learned.independent;
   const requiredAreas=monster.forestAreas||0;
+  const requiredRecall=monster.retentionUnlock||0;
+  const recallStage=monster.retentionStage||0;
+  const currentRecall=requiredRecall?new Set(
+    Object.entries(sanitizeRetention(save.retention))
+      .filter(([,record])=>record.stage>=recallStage&&!record.recoveryPhase)
+      .map(([id])=>ALL_PROMPTS.find(prompt=>prompt.id===id)?.phraseId).filter(Boolean)
+  ).size:0;
   return {skillLabel:useMastery?'定着した表現':'自力で理解・練習した表現',
-    currentSkill,requiredSkill,areaCount,requiredAreas,
-    ready:currentSkill>=requiredSkill&&areaCount>=requiredAreas};
+    currentSkill,requiredSkill,areaCount,requiredAreas,currentRecall,requiredRecall,recallStage,
+    ready:currentSkill>=requiredSkill&&areaCount>=requiredAreas&&currentRecall>=requiredRecall};
 }
 export function captureEligibleMonsters(save,today=dayKey()){
   const next=clone(save),captured=[];
