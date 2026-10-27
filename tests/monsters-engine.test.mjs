@@ -10,21 +10,23 @@ import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, com
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
-test('curriculum has 16 expressions and 52 authored tasks at each difficulty level', () => {
+test('curriculum retains 156 speaking exercises and includes 36 forest quizzes', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,156);
+  assert.equal(ALL_PROMPTS.length,192);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,52);
-    assert.equal(new Set(level.map(p=>p.id)).size,52);
-    assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read'].includes(p.kind)));
+    assert.equal(level.length,64);
+    assert.equal(new Set(level.map(p=>p.id)).size,64);
+    assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
+    assert.equal(level.filter(p=>p.kind==='vocab').length,6);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,6);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
-    assert.ok(level.every(p=>PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
+    assert.ok(level.every(p=>['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
   }
-  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/52;
+  const averageLength = level => ALL_PROMPTS.filter(p=>p.difficulty===level).reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/64;
   assert.ok(averageLength('hard')>averageLength('normal')*1.1);
   assert.equal(new Set(PROMPTS.map(p => p.id)).size,52);
   assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
@@ -88,7 +90,11 @@ test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endles
  assert.notDeepEqual(a.prompts.map(x=>x.id),b.prompts.map(x=>x.id));
  assert.ok(a.prompts.every(x=>!x.difficulty||x.difficulty==='easy'));
  assert.ok(a.prompts.some(x=>x.kind==='listen'));
- assert.ok(a.prompts.some(x=>x.kind==='read'));
+ assert.ok(a.prompts.some(x=>x.kind==='vocab'));
+ assert.ok(a.prompts.some(x=>x.kind==='grammar'));
+ assert.equal(a.prompts[5].kind,'listen');
+ assert.equal(a.prompts[6].kind,'grammar');
+ assert.equal(a.prompts[7].kind,'speak');
  assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=7);
  assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=6);
  assert.equal(forestLevel('easy',1),'easy');
@@ -104,7 +110,8 @@ test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endles
  assert.ok(reviewWave.prompts.some(p=>p.phraseId==='booking'));
  assert.ok(reviewWave.prompts.some(p=>p.phraseId==='price'));
  assert.ok(reviewWave.prompts.some(p=>p.kind==='listen'));
- assert.ok(reviewWave.prompts.some(p=>p.kind==='read'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='vocab'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='grammar'));
  assert.equal(opponentFor(0,1).id,'mossling');
  assert.equal(opponentFor(4,1).id,'mothum');
  assert.equal(opponentFor(5,1).id,'thornking');
@@ -270,7 +277,8 @@ test('review-focused forest waves retain listening and reading attacks', () => {
   assert.ok(wave.prompts.some(p=>p.id==='booking-table'));
   assert.ok(wave.prompts.some(p=>p.id==='help-bag'));
   assert.ok(wave.prompts.some(p=>p.kind==='listen'));
-  assert.ok(wave.prompts.some(p=>p.kind==='read'));
+  assert.ok(wave.prompts.some(p=>p.kind==='vocab'));
+ assert.ok(wave.prompts.some(p=>p.kind==='grammar'));
   assert.equal(new Set(wave.prompts.map(p=>p.id)).size,8);
 });
 test('narrow natural paraphrases are accepted but contradictory meanings stay unresolved', () => {
@@ -333,7 +341,7 @@ test('objective local checks accept authored examples and some natural paraphras
   for(const prompt of ALL_PROMPTS) {
     const graded=gradeLocalResponse(prompt,prompt.answer);
     assert.equal(graded.status,'correct',prompt.id);
-    assert.equal(graded.method,'registered-example');
+    assert.equal(graded.method,['vocab','grammar'].includes(prompt.kind)?'exact-quiz':'registered-example');
   }
   const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
   assert.equal(gradeLocalResponse(byId('think-cafe'),'Can I have a moment to decide?').status,'correct');
@@ -350,6 +358,32 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(gradeLocalResponse(null,'hello').status,'ungraded');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'No '.repeat(400)).status,'ungraded');
   assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
+});
+test('forest four-skill questions grade deterministically and never reward incorrect taps',()=>{
+  for(const difficulty of DIFFICULTIES){
+    const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
+    assert.equal(quizzes.length,12);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,6);
+    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,6);
+    for(const p of quizzes){
+      assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
+      assert.equal(gradeLocalResponse(p,'').status,'empty');
+      assert.equal(gradeLocalResponse(p,'a very wrong answer').status,'incorrect');
+      if(p.kind==='vocab'){
+        assert.equal(p.options.length,3);
+        assert.ok(p.options.includes(p.answer));
+        assert.equal(new Set(p.options).size,3);
+      }else{
+        assert.ok(p.tokens.length>=4);
+        const original=p.answer.replace(/[.!?]/g,'').split(' ');
+        assert.deepEqual([...p.tokens].sort(),[...original].sort());
+      }
+      const miss=recordAnswer(createSave(),p.id,'again','2026-10-27');
+      assert.equal(miss.reward.xp,0);
+      assert.equal(miss.save.reviewPrompts[p.id],'2026-10-28');
+      assert.equal(validateSave(miss.save).reviewPrompts[p.id],'2026-10-28');
+    }
+  }
 });
 test('a genuine new expression grows the companion and unlocks the odd sock', () => {
   const initial=createSave();
