@@ -410,7 +410,7 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
       assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-stage')),true);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-boss-power'),'echo');
-      assert.match(await forestPage.locator('.forest-boss-special').innerText(),/いばらのこだま/);
+      assert.match(await forestPage.locator('.forest-boss-special').textContent(),/練習のポイント.*聞いた意味/);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-boss.png`),fullPage:true});
       for(let hit=1;hit<=3;hit++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('BOSS ATTACK '+hit+' \/ 3'));
