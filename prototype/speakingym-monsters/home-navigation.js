@@ -27,6 +27,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  move('.forest-invite','forest');
  move('.daily-gym','daily');
  move('.saved-review','review');
+ move('.retention-hub','review');
  move('.hero-grid','training');
  move('.review-journal','review');
  move('.section-head','progress');
