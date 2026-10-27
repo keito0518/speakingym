@@ -454,11 +454,11 @@ const path=require('node:path');
     // Continue past the listening task with an authored answer, then verify
     // that an objectively incorrect vocabulary choice does spend the try.
     await unlockListening(endlessPage);
-    const listeningAnswer=await endlessPage.evaluate(async()=>{
+    const endlessListeningAnswer=await endlessPage.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
       return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
     });
-    await endlessPage.locator('#spoken-answer').fill(listeningAnswer);
+    await endlessPage.locator('#spoken-answer').fill(endlessListeningAnswer);
     await endlessPage.locator('#show-answer').click();
     await endlessPage.locator('#next-question').click();
     const xpBeforeWrong=await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
