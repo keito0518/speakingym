@@ -145,6 +145,26 @@ const path=require('node:path');
     assert.equal(queued.xpWallet,0);
     assert.equal(queued.reviewPrompts['help-bag'],'2020-01-01');
     await reviewContext.close();
+    // A recognisable speaking word-order mistake gives a reason without
+    // declaring all unfamiliar wording wrong or awarding full unhinted XP.
+    const {context:coachContext,page:coachPage}=await boot(390);
+    await coachPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();
+      seeded.reviewPrompts['late-traffic-easy']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await coachPage.reload();
+    await coachPage.getByRole('button',{name:/まず練習する/}).click();
+    assert.equal(await coachPage.locator('#play-card').getAttribute('data-prompt-id'),'late-traffic-easy');
+    await coachPage.locator('#spoken-answer').fill("I'll be late five minutes.");
+    await coachPage.locator('#show-answer').click();
+    assert.match(await coachPage.locator('#feedback-panel').innerText(),/five minutes late/);
+    assert.match(await coachPage.locator('#feedback-panel').innerText(),/ヒントありXP/);
+    await coachPage.locator('#spoken-answer').fill('I will be 5 minutes late.');
+    await coachPage.locator('#show-answer').click();
+    assert.match(await coachPage.locator('#feedback-panel').innerText(),/\+8 XP/);
+    await coachContext.close();
     // Missed objective answers remain visible at home and return as a specific
     // vocabulary battle instead of becoming a generic speaking review.
     const {context:weakContext,page:weakPage}=await boot(320);

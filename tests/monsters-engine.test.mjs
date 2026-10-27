@@ -12,6 +12,7 @@ import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teachin
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -400,6 +401,39 @@ test('example matching is intentionally narrow, not a claim to grade free-form s
   assert.equal(compareWithExamples(prompt,'I might not arrive on time').matchesExample,false);
   assert.equal(compareWithExamples(prompt,'').empty,true);
   assert.equal(normalizeEnglish('  THAT works for me!  '),'that works for me');
+});
+
+test('speech-recognition spelling variants pass vetted examples without reversing their meaning',()=>{
+  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+  assert.equal(compareWithExamples(byId('late-traffic-easy'),'I will be 5 minutes late.').matchesExample,true);
+  assert.equal(gradeLocalResponse(byId('late-traffic-easy'),'I will be 5 minutes late.').status,'correct');
+  assert.equal(compareWithExamples(byId('late-traffic-easy'),"I'll be late five minutes.").matchesExample,false);
+  assert.notEqual(gradeLocalResponse(byId('late-traffic-easy'),"I'll be late five minutes.").status,'correct');
+  assert.equal(gradeLocalResponse(byId('problem-ticket-easy'),'I have not received my e ticket.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),"Sorry, the bus was canceled, so I will be 20 minutes late. You can wait indoors.").status,'correct');
+  assert.notEqual(gradeLocalResponse(byId('late-call'),"I won't be ten minutes late.").status,'correct');
+  assert.notEqual(gradeLocalResponse(byId('late-call'),'I will not be ten minutes late.').status,'correct');
+  assert.notEqual(gradeLocalResponse(byId('prefer-city-normal'),'I prefer the bus, not the train, because it is faster.').status,'correct');
+});
+
+test('speaking review gives specific corrective clues but never decides correctness',()=>{
+  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+  for(const [id,answer,expected] of [
+    ['late-traffic-easy',"I'll be late five minutes",/ten minutes late/],
+    ['prefer-window-easy','I am prefer a window seat',/I am prefer/],
+    ['problem-ticket-easy',"I didn't received my ticket",/didn't receive/],
+    ['direction-station','Could you tell me where is the station?',/where \+ 主語/],
+    ['repeat-class','Could you repeat me the instructions?',/repeat that for me/]
+  ]){
+    const feedback=speakingFeedbackFor(byId(id),answer);
+    assert.equal(feedback.specific,true,id);
+    assert.match(feedback.clue+feedback.detail,expected,id);
+  }
+  const unclear=speakingFeedbackFor(byId('help-bag'),'Can you carry this for me?');
+  assert.equal(unclear.specific,false);
+  assert.match(unclear.clue,/手伝/);
+  assert.equal(speakingFeedbackFor(byId('forest-vocab-ticket-easy'),'buy'),null);
+  assert.equal(speakingFeedbackFor(byId('late-traffic-easy'),' '),null);
 });
 
 test('all 52 easy speaking situations recognize reviewed natural paraphrases without guessing contradictory answers',()=>{

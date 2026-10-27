@@ -12,6 +12,7 @@ import { createCollectionViews } from './monster-collection.js';
 import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
 import { listeningChallengeFor } from './listening-challenges.js';
 import { quizTeachingFor } from './forest-teaching.js';
+import { speakingFeedbackFor } from './speaking-feedback.js';
 import { bossConversationTurn } from './forest-boss-story.js';
 
 const $ = selector => document.querySelector(selector);
@@ -30,6 +31,13 @@ function quizTeachingHtml(prompt,learnerAnswer=''){
   const contrast=learnerAnswer.trim()&&learnerAnswer.trim().toLowerCase()!==prompt.answer.toLowerCase()
     ? `<p class="forest-teaching-learner"><strong>今回の回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>`:'';
   return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${contrast}<p>${escapeHtml(note.clue)}</p><p>${escapeHtml(note.detail)}</p><p class="forest-teaching-transfer"><strong>別の場面でも使おう</strong> ${escapeHtml(note.transfer)}</p></section>`;
+}
+function speakingTeachingHtml(prompt,learnerAnswer='',reveal=false){
+  const note=speakingFeedbackFor(prompt,learnerAnswer);
+  if(!note)return '';
+  const response=reveal?`<p class="forest-teaching-learner"><strong>今回の回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>`:'';
+  const details=reveal?`<p>${escapeHtml(note.detail)}</p>`:'';
+  return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${response}<p>${escapeHtml(note.clue)}</p>${details}</section>`;
 }
 let save = loadSave() || createSave();
 let play = null, timer = null, recognition = null, recognitionWatchdog = null, autoAdvanceTimer = null;
@@ -570,8 +578,14 @@ async function gradeAnswer() {
     const incorrect=grade.status==='incorrect';
     const uncertain=grade.status==='review'||grade.status==='ungraded';
     const teaching=incorrect?quizTeachingFor(prompt):null;
+    const speakingLesson=grade.status==='review'&&raw?speakingFeedbackFor(prompt,raw):null;
+    // A concrete correction is instructional help, so subsequent success
+    // cannot quietly earn the same XP as an independent first attempt.
+    if(speakingLesson?.specific)play.hintUsed=true;
     const nudge=teaching?`<p class="forest-teaching-nudge"><strong>考え方のヒント</strong> ${escapeHtml(teaching.clue)}</p>`:'';
-    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incorrect?'もう一度挑戦！':'自動判定では確認できませんでした'}</div><p class="grading-intro">${incorrect?'答えが違ったよ。考え方を確認して、もう一度挑戦しよう。復習にも登録したよ。':uncertain?'簡易判定で確認できない部分があります。正しい別表現の可能性もあるので、言い換えてみてね。今回の表現は復習にも登録しました。':'回答を入力または音声認識で取り込んでね。'}</p>${nudge}${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}</div>`;
+    const speakingNudge=speakingLesson?speakingTeachingHtml(prompt,raw):'';
+    const aidedNote=speakingLesson?.specific?'<p class="forest-checking-note">語順などのヒントを表示したため、次の正答はヒントありXPになります。</p>':'';
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incorrect?'もう一度挑戦！':'自動判定では確認できませんでした'}</div><p class="grading-intro">${incorrect?'答えが違ったよ。考え方を確認して、もう一度挑戦しよう。復習にも登録したよ。':uncertain?'簡易判定で確認できない部分があります。正しい別表現の可能性もあるので、言い換えてみてね。今回の表現は復習にも登録しました。':'回答を入力または音声認識で取り込んでね。'}</p>${nudge}${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}</div>`;
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     if(!['vocab','grammar'].includes(prompt.kind))micView('ready');
     return;
@@ -644,7 +658,9 @@ function skipAnswer(){
   play.revealed=true;stopAudio();
   if(play.mode==='forest')play.combo=0;
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
-  const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):`<p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p>`;
+  const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):speakingFeedbackFor(prompt,learnerAnswer)
+    ? speakingTeachingHtml(prompt,learnerAnswer,true)
+    :`<p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p>`;
   $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}<button id="next-question" class="grading-next">${play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',()=>{
     if(play?.mode==='forest'&&play.endless&&!play.attemptReviewed){

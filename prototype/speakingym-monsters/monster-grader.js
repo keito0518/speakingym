@@ -87,12 +87,20 @@ export function gradeLocalResponse(prompt, raw) {
  if(exact) return {status:'correct',reasons:[],confidence:'high',method:'registered-example'};
  const difficulty=prompt.difficulty||'easy';
  const base=prompt.baseId || prompt.id;
+ // A vocabulary signal within a negated sentence is not evidence that the
+ // requested meaning was conveyed. Only narrow, positive-intent negatives
+ // ("not on time" and "not sure yet") may use the heuristic rubric.
+ const hasNegation=/\b(?:not|never|no|won't|can't|cannot|don't|doesn't|didn't|isn't|aren't|wasn't|weren't)\b/.test(text);
+ const intendedNegative=(
+   (prompt.phraseId==='late'&&/\b(?:won't|will not|can't|cannot) (?:be |get |make it )?(?:there )?on time\b/.test(text)) ||
+   (prompt.phraseId==='think'&&/\bnot (?:sure|ready|decided)\b/.test(text))
+ );
+ if(hasNegation&&!intendedNegative)
+   return {status:'review',reasons:['否定表現が含まれているため、伝えたい意味が逆になっていないか確認しよう。'],confidence:'low',method:'polarity-review'};
  const list=difficulty==='hard'?hard[base]:difficulty==='easy'?(easy[base]||rubric[base]):rubric[base];
  if(!list?.length) return {status:'review',reasons:['この場面では、登録済みの例文や言い換えとは異なる表現でした。自然な英語の可能性があるので誤答とは判定しません。'],confidence:'low',method:'example-review'};
  const missing=list.filter(item=>!passes(text,item)).map(item=>item.label);
  if(!missing.length) {
-   if (/\b(don't|do not|never|not)\b/.test(text) && !/\b(not sure|not ready|not decided|not on time|not be|not make it|not run)\b/.test(text))
-     return {status:'review',reasons:['否定表現を含むため、意味の確認が必要です。'],confidence:'low'};
    return {status:'correct',reasons:[],confidence:'medium',method:'curated-criteria'};
  }
  return {status:'review',reasons:missing,confidence:'low',method:'curated-criteria'};

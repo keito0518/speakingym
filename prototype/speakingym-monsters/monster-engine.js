@@ -228,6 +228,18 @@ export function normalizeEnglish(value) {
 // Do not remove negation or compare keyword overlap; an uncertain meaning stays review.
 function canonicalVettedReply(value) {
   return normalizeEnglish(value)
+    // Match speech-recognition spelling variants only when their meaning is
+    // unchanged. These are surface forms, never approximate word overlap.
+    .replace(/\bi have not\b/g, "i haven't")
+    .replace(/\bi will\b/g, "i'll")
+    .replace(/\bi have\b/g, "i've")
+    .replace(/\bi cannot\b/g, "i can't")
+    .replace(/\bwe will\b/g, "we'll")
+    .replace(/\b(5|8|10|11|15|20|30|38)\b/g, number => ({
+      '5':'five','8':'eight','10':'ten','11':'eleven','15':'fifteen',
+      '20':'twenty','30':'thirty','38':'thirty eight'
+    })[number])
+    .replace(/\be ticket\b/g, 'eticket')
     .replace(/^(?:(?:excuse me|hello|hi) )+/, '')
     .replace(/(?: please| thank you| thanks)$/, '')
     .replace(/^can (you|i) /, 'could $1 ');
