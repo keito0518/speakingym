@@ -242,7 +242,7 @@ export const FOREST_QUIZZES=Object.freeze([
     "kind": "vocab",
     "difficulty": "normal",
     "scene": "Ordering lunch",
-    "cue": "Choose the verb for a polite café order: Could I _____ an iced coffee?",
+    "cue": "Choose the verb for a polite cafe order: Could I _____ an iced coffee?",
     "task": "Select the word that completes the sentence.",
     "answer": "have",
     "options": [
