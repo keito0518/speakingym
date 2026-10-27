@@ -17,6 +17,7 @@ import { speakingFeedbackFor } from './speaking-feedback.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { forestEventFor, forestEventChoice } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
+import { retentionOverview, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief } from './dungeon-learning.js';
 
@@ -192,6 +193,15 @@ function renderHome() {
     ?`同じ難易度の7日以上前と比較：${dailyGrowth.changeSevenDays>=0?'+':''}${dailyGrowth.changeSevenDays}ポイント（${dailyGrowth.weekBeforeRate}% → ${dailyGrowth.lastRate}%）`
     :dailyGrowth.sessions?`完了 ${dailyGrowth.sessions}回 · 前回 ${dailyGrowth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
     :'5分ジムを完了すると、ヒントなしで正解した割合を記録するよ。';
+  const recall=retentionOverview(save,dayKey());
+  $('#retention-due-label').textContent=`今日のチェック ${recall.due.length}問`;
+  $('#retention-stable-label').textContent=`7日後チェック達成 ${recall.stable.length}問`;
+  $('#start-retention-review').disabled=!recall.due.length;
+  $('#start-retention-review').textContent=`今日の定着チェック（${recall.due.length}問）`;
+  $('#retention-next').textContent=recall.due.length
+    ?'リスニングは理解を、スピーキングは英文を確認するよ。解説も自分のペースで読める。'
+    :recall.upcoming.length?`次の復習は ${recall.upcoming[0].nextDay}。日を空けてもう一度挑戦しよう。`
+    :'最初の問題を解くと、翌日の定着チェックがここに届くよ。';
   const bookmarked=savedReviewQueue(save);
   const needsReview=bookmarked.filter(item=>item.due);
   $('#start-saved-review').disabled=!bookmarked.length;
@@ -249,16 +259,17 @@ function renderHome() {
 }
 function dueForestPhrases(){
   const today=dayKey();
+  const recallIds=new Set(retentionOverview(save,today).due.map(entry=>entry.prompt.phraseId));
   return PHRASES.filter(phrase=>{
     const item=save.progress?.[phrase.id];
-    return (item?.nextReviewDay && item.nextReviewDay<=today) ||
+    return recallIds.has(phrase.id)||(item?.nextReviewDay && item.nextReviewDay<=today) ||
       Object.entries(save.reviewPrompts||{}).some(([id,due])=>due<=today &&
         ALL_PROMPTS.find(prompt=>prompt.id===id)?.phraseId===phrase.id);
   }).map(phrase=>phrase.id);
 }
 function dueForestPromptIds(){
   const today=dayKey();
-  return Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id);
+  return [...new Set([...Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id),...retentionOverview(save,today).due.map(entry=>entry.id)])];
 }
 function dueQuizWeaknessIds(){return quizWeaknessOverview(save).due.map(item=>item.id);}
 function startSession(mode,requestedAreaId=null,onlyDue=false) {
@@ -266,12 +277,14 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
   if(mode==='saved'&&!savedReviewQueue(save).some(item=>!onlyDue||item.due)){renderHome();return;}
+  if(mode==='retention'&&!retentionOverview(save,dayKey()).due.length){renderHome();return;}
   const area=forestMode?(endless?FOREST_AREAS[0]:unlockedForestAreas(save).find(a=>a.id===requestedAreaId)||nextForestArea(save)):null;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
   const gym=mode==='daily'?dailyTrainingPlan(save,{difficulty}):null;
   if(mode==='dungeon-review'&&!lastDungeonReviewIds.length){renderHome();return;}
-  const focused=mode==='dungeon-review'?lastDungeonReviewIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean):
+  const focused=mode==='retention'?retentionOverview(save,dayKey()).due.slice(0,12).map(item=>item.prompt):
+    mode==='dungeon-review'?lastDungeonReviewIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean):
     (mode==='listening'||mode==='speaking')?ALL_PROMPTS
     .filter(p=>p.kind===(mode==='listening'?'listen':'speak')&&(p.difficulty||'easy')===difficulty&&!p.bossOnly)
     .sort((x,y)=>Number(Boolean(save.reviewPrompts?.[y.id]&&save.reviewPrompts[y.id]<=dayKey()))-Number(Boolean(save.reviewPrompts?.[x.id]&&save.reviewPrompts[x.id]<=dayKey())))
@@ -282,11 +295,11 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':'練習モード'} · ${difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
-  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review');
+  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
@@ -936,13 +949,15 @@ async function gradeAnswer() {
   const objectiveQuiz=prompt.kind==='vocab'||prompt.kind==='grammar';
   const explanationTitle=objectiveQuiz?(prompt.kind==='vocab'?'単語の使い分け':'文法・語順のポイント'):'使える表現の一例';
   const quizState=next.quizProgress?.[prompt.id];
+  const retentionNote=reward.retentionAdvanced?`<p class="retention-result"><strong>${retentionTitle(reward.retentionStage)}</strong> · 次のチェック ${reward.nextRetentionDay}${reward.bondGained?` · 仲間との絆 +${reward.bondGained}`:''}</p>`:
+    reward.nextRetentionDay?`<p class="retention-result">次の定着チェック：${reward.nextRetentionDay}（同じ日の再挑戦では段階は進みません）</p>`:'';
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
   const explanationHtml=prompt.kind==='listen'
     ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">聞き取れたポイント</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
     :objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
   const checkingNote=prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
@@ -1091,6 +1106,7 @@ $('#start-review-practice').addEventListener('click',()=>startSession('practice'
 $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
+$('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:startSession,showCollection:()=>renderCollection()});
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
