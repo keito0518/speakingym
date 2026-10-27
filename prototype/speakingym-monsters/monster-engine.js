@@ -198,7 +198,7 @@ export function companionUnlockProgress(save, monster, today=dayKey()){
   const requiredSkill=useMastery?monster.masteryUnlock:monster.unlock||0;
   const currentSkill=useMastery?learned.mastered:learned.independent;
   const requiredAreas=monster.forestAreas||0;
-  return {skillLabel:useMastery?'MASTERした表現':'自力で使える表現',
+  return {skillLabel:useMastery?'定着した表現':'自力で理解・練習した表現',
     currentSkill,requiredSkill,areaCount,requiredAreas,
     ready:currentSkill>=requiredSkill&&areaCount>=requiredAreas};
 }
@@ -417,8 +417,8 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   entry.attempts++;
   entry.lastDay = today;
   entry.lastRating = rating;
-  if (rating === 'smooth' && !['vocab','grammar','listen'].includes(prompt.kind)) {
-    // Listening and objective quizzes grow XP and comprehension practice, not independent spoken fluency.
+  if (rating === 'smooth' && !['vocab','grammar'].includes(prompt.kind)) {
+    // Successful listening builds comprehension progress, not evidence of microphone accuracy.\n    // Independent SPEAKING proficiency must be reported separately from this general language progress.
     // Difficulty variants of one scene do not count as distinct mastery contexts.
     entry.smoothContexts = unique([...entry.smoothContexts, prompt.baseId || prompt.id]);
     entry.smoothDays = unique([...entry.smoothDays, today]);
