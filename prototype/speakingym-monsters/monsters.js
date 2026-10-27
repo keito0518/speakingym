@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -159,6 +159,11 @@ function renderHome() {
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
   $('#home-wallet').textContent = save.xpWallet;
+  const bookmarked=savedReviewPrompts(save);
+  $('#start-saved-review').disabled=!bookmarked.length;
+  $('#start-saved-review').textContent=`保存した問題を解く（${bookmarked.length}問）`;
+  $('#saved-question-list').innerHTML=bookmarked.length?bookmarked.map(prompt=>`<div class="saved-question"><span>${escapeHtml(prompt.scene)} · ${escapeHtml(prompt.difficulty||'easy')}</span><strong>${escapeHtml(prompt.cue)}</strong><button type="button" data-remove-saved="${escapeHtml(prompt.id)}" aria-label="${escapeHtml(prompt.scene)}の保存を解除">保存解除</button></div>`).join(''):'<p class="review-journal-empty">まだ保存した問題はありません。問題画面の「☆ 問題を保存」から追加できるよ。</p>';
+  $('[data-remove-saved]').forEach(button=>button.addEventListener('click',()=>{persist(toggleSavedPrompt(save,button.dataset.removeSaved));renderHome();}));
   const forest=cleanForest(save.forest);
   $('#forest-home-progress').textContent = `攻略 ${forest.completedAreas.length}/${FOREST_AREAS.length}エリア · 討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個`;
   const unlocked=new Set(unlockedForestAreas(save).map(area=>area.id));
@@ -210,19 +215,21 @@ function startSession(mode,requestedAreaId=null) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
+  if(mode==='saved'&&!savedReviewPrompts(save).length){renderHome();return;}
   const area=forestMode?(endless?FOREST_AREAS[0]:unlockedForestAreas(save).find(a=>a.id===requestedAreaId)||nextForestArea(save)):null;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
-  const prompts=forestMode?firstWave.prompts:selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
+  const prompts=forestMode?firstWave.prompts:mode==='saved'?savedReviewPrompts(save):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='saved'?'保存した問題の復習':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
+  $('#play-view').classList.toggle('review-only',mode==='saved');
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
     $('#forest-world-stage').dataset.route='wild';
@@ -435,6 +442,18 @@ function renderQuestion() {
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'LISTENING DEFENSE':play.mode==='forest'&&prompt.kind==='read'?'READING STRIKE':prompt.kind==='vocab'?'VOCAB WEAKNESS':prompt.kind==='grammar'?'GRAMMAR MAGIC':englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'敵の声を聞いて、意味を見抜こう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div><p id="listening-status" class="listening-status" role="status" aria-live="polite">${englishMode?'Choose what you heard, then respond in English.':'聞き取れた内容を選ぼう。'}</p></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p><div class="listening-response" id="listening-response" hidden><p class="scenario-label">${englishMode?'YOUR REPLY':'次は英語で返そう'}</p>${questionBody}</div></div>`:`${readingPassage}${questionBody}`}`;
+  const saved=save.savedPromptIds?.includes(prompt.id)||false;
+  const bookmark=document.createElement('button');
+  bookmark.type='button';bookmark.id='bookmark-question';bookmark.className='bookmark-question';
+  bookmark.setAttribute('aria-pressed',String(saved));
+  bookmark.textContent=saved?'★ 保存済み':'☆ 問題を保存';
+  bookmark.addEventListener('click',()=>{
+    persist(toggleSavedPrompt(save,prompt.id));
+    const active=save.savedPromptIds.includes(prompt.id);
+    bookmark.setAttribute('aria-pressed',String(active));
+    bookmark.textContent=active?'★ 保存済み':'☆ 問題を保存';
+  });
+  $('#play-card').querySelector('.question-top').after(bookmark);
   if(play.mode==='forest'&&quizMode&&quizWeaknessOverview(save).due.some(item=>item.id===prompt.id||item.baseId===(prompt.baseId||prompt.id))){
     const banner=document.createElement('p');
     banner.className='forest-review-banner';
@@ -457,7 +476,7 @@ function renderQuestion() {
     dialogue.append(counter,title,context,warning);
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
-  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -472,7 +491,7 @@ function renderQuestion() {
   });
   $('#show-hint').addEventListener('click',showHint);
   $('#show-answer').addEventListener('click',gradeAnswer);
-  $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter')gradeAnswer();});
+  $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
   $('#spoken-answer').addEventListener('input',()=>{
     $('#spoken-answer').classList.remove('transcript-interim');
     if(!recognition&&!quizMode)micView('ready');
@@ -794,21 +813,12 @@ async function gradeAnswer() {
   const explanationTitle=objectiveQuiz?(prompt.kind==='vocab'?'単語の使い分け':'文法・語順のポイント'):'使える表現の一例';
   const quizState=next.quizProgress?.[prompt.id];
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
-  const explanationHtml=objectiveQuiz?quizTeachingHtml(prompt):`<div class="feedback-note"><strong>${explanationTitle}</strong> ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</div>`;
+  const explanationHtml=objectiveQuiz?quizTeachingHtml(prompt):`<div class="feedback-note"><strong>${explanationTitle}</strong> ${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</div>${speakingTeachingHtml(prompt,raw,true)}`;
   const checkingNote=objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
-  const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">攻撃演出のあと、自動で次へ進むよ。</p><button type="button" id="pause-auto" class="forest-auto-pause">${objectiveQuiz?'解説をもう少し読む':'例文をもう少し読む'}</button>`:'';
+  const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
-  if(autoForest){
-    $('#pause-auto').addEventListener('click',()=>{
-      cancelAutoAdvance();
-      $('#forest-auto-status').textContent='自動送りを停止したよ。読み終えたら「今すぐ次へ」を押してね。';
-      $('#pause-auto').hidden=true;
-    });
-    // A correct quiz answer should teach *why*, while still proceeding
-    // automatically without requiring a tap after every cleared gate.
-    queueAutoAdvance(advanceQuestion,objectiveQuiz?(play.index>=REGULAR_ENCOUNTERS?4500:3900):(play.index>=REGULAR_ENCOUNTERS?3100:2450));
-  }
+  // Deliberately no auto-advance: explanations must remain until tapped.
 }
 function skipAnswer(){
   if(!play || play.revealed)return;
@@ -886,7 +896,7 @@ function finishSession(timedOut=false,defeated=false) {
   cancelAutoAdvance();
   const ended=play;play=null;clearTimer();stopAudio();
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
-  $('#play-view').classList.remove('forest-active');
+  $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
   if(ended.mode==='forest'&&ended.endless){
@@ -923,6 +933,7 @@ $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSess
 $('#start-forest').addEventListener('click',()=>startSession('forest'));
 $('#start-forest-endless').addEventListener('click',()=>startSession('forest-endless'));
 $('#start-review-practice').addEventListener('click',()=>startSession('practice'));
+$('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   cancelAutoAdvance();
@@ -930,7 +941,7 @@ $('#forest-explore-continue').addEventListener('click',()=>{
 });
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
-$('#leave-play').addEventListener('click',()=>{cancelAutoAdvance();clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active');renderHome();});
+$('#leave-play').addEventListener('click',()=>{cancelAutoAdvance();clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active','review-only');renderHome();});
 $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
 $('#collection-home').addEventListener('click',renderHome);
