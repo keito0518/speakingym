@@ -1,6 +1,6 @@
 // Authored vocabulary and grammar combat for the Beginning Forest.
-// Four skills share one battle; quiz scoring is exact and cannot call AI APIs.
-// Option buttons and grammar tiles are purely local. Correctness is checked server-free.
+// Choices rotate by scene and level: correct answers are not consistently first.
+// Four skills share a battle; quiz grading is deterministic without AI calls.
 export const FOREST_QUIZZES=Object.freeze([
   {
     "id": "forest-vocab-ticket-easy",
@@ -12,9 +12,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "駅で切符を買いたい。空欄に入る単語を選ぼう。 I need to _____ a ticket.",
     "answer": "buy",
     "options": [
+      "invite",
       "buy",
-      "borrow",
-      "invite"
+      "borrow"
     ],
     "hint": "お金を払って入手する動詞を選ぼう。",
     "tip": "buy a ticket は『切符を買う』。borrow は借りる、invite は招待する。"
@@ -29,9 +29,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "カフェで飲み物を注文する。 Could I _____ a coffee?",
     "answer": "have",
     "options": [
-      "have",
       "drive",
-      "wear"
+      "wear",
+      "have"
     ],
     "hint": "Could I ...? で注文するときによく使う動詞。",
     "tip": "Could I have ...? は自然で丁寧な注文表現。"
@@ -63,9 +63,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "予約を取りたい。 I'd like to _____ an appointment.",
     "answer": "make",
     "options": [
+      "paint",
       "make",
-      "lose",
-      "paint"
+      "lose"
     ],
     "hint": "appointment と一緒によく使う動詞。",
     "tip": "make an appointment は『予約を取る』という定番表現。"
@@ -80,9 +80,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "cue": "間違った商品が届いた。返金を頼みたい。 I'd like a _____.",
     "answer": "refund",
     "options": [
-      "refund",
       "receipt",
-      "menu"
+      "menu",
+      "refund"
     ],
     "hint": "商品を返したときにお金を戻してもらうこと。",
     "tip": "refund は『返金』。receipt は領収書・レシート。"
@@ -228,9 +228,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "buy",
     "options": [
-      "buy",
       "borrow",
-      "invite"
+      "invite",
+      "buy"
     ],
     "hint": "お金を払って入手する動詞を選ぼう。",
     "tip": "buy a ticket は『切符を買う』。borrow は借りる、invite は招待する。"
@@ -264,9 +264,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "change",
     "options": [
+      "cook",
       "change",
-      "wash",
-      "cook"
+      "wash"
     ],
     "hint": "ここでは『変更する／乗り換える』という意味。",
     "tip": "change trains は『電車を乗り換える』。"
@@ -282,9 +282,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "make",
     "options": [
-      "make",
       "lose",
-      "paint"
+      "paint",
+      "make"
     ],
     "hint": "appointment と一緒によく使う動詞。",
     "tip": "make an appointment は『予約を取る』という定番表現。"
@@ -318,9 +318,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "recommend",
     "options": [
+      "repeat",
       "recommend",
-      "repair",
-      "repeat"
+      "repair"
     ],
     "hint": "『おすすめする』という動詞。",
     "tip": "recommend は『すすめる』。What do you recommend? とセットで覚えよう。"
@@ -485,9 +485,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "have",
     "options": [
+      "wear",
       "have",
-      "drive",
-      "wear"
+      "drive"
     ],
     "hint": "Could I ...? で注文するときによく使う動詞。",
     "tip": "Could I have ...? は自然で丁寧な注文表現。"
@@ -503,9 +503,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "change",
     "options": [
-      "change",
       "wash",
-      "cook"
+      "cook",
+      "change"
     ],
     "hint": "ここでは『変更する／乗り換える』という意味。",
     "tip": "change trains は『電車を乗り換える』。"
@@ -539,9 +539,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "refund",
     "options": [
+      "menu",
       "refund",
-      "receipt",
-      "menu"
+      "receipt"
     ],
     "hint": "商品を返したときにお金を戻してもらうこと。",
     "tip": "refund は『返金』。receipt は領収書・レシート。"
@@ -557,9 +557,9 @@ export const FOREST_QUIZZES=Object.freeze([
     "task": "Select the word that completes the sentence.",
     "answer": "recommend",
     "options": [
-      "recommend",
       "repair",
-      "repeat"
+      "repeat",
+      "recommend"
     ],
     "hint": "『おすすめする』という動詞。",
     "tip": "recommend は『すすめる』。What do you recommend? とセットで覚えよう。"
