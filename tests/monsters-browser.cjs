@@ -52,6 +52,48 @@ const path=require('node:path');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-question.png`),fullPage:true});
       await context.close();
     }
+    // Daily five-minute workout stays calm, explains answers and records
+    // completed offline work without a hard timer or a battle animation.
+    const {context:gymContext,page:gymPage}=await boot(390);
+    assert.equal(await gymPage.locator('#start-daily-gym').isVisible(),true);
+    assert.match(await gymPage.locator('#daily-plan-status').innerText(),/8問/);
+    await gymPage.locator('#start-daily-gym').click();
+    assert.match(await gymPage.locator('#play-mode-label').innerText(),/今日の5分ジム/);
+    assert.equal(await gymPage.locator('#play-view').evaluate(e=>e.classList.contains('review-only')),true);
+    assert.equal(await gymPage.locator('#forest-journey').isVisible(),false);
+    assert.equal(await gymPage.locator('#play-clock').innerText(),'5分目安 · 時間制限なし');
+    const allDaily=[];
+    for(let i=0;i<8;i++){
+      await unlockListening(gymPage);
+      const id=await gymPage.locator('#play-card').getAttribute('data-prompt-id');
+      allDaily.push(id);
+      const answer=await gymPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+      });
+      if(i===0){
+        await gymPage.locator('#bookmark-question').click();
+        assert.equal(await gymPage.locator('#bookmark-question').getAttribute('aria-pressed'),'true');
+      }
+      await gymPage.locator('#spoken-answer').fill(answer);
+      await gymPage.locator('#show-answer').click();
+      assert.equal(await gymPage.locator('#next-question').isVisible(),true);
+      const held=await gymPage.locator('#play-card').getAttribute('data-prompt-id');
+      await gymPage.waitForTimeout(150);
+      assert.equal(await gymPage.locator('#play-card').getAttribute('data-prompt-id'),held,'Explanation stays until next tap');
+      await gymPage.locator('#next-question').click();
+    }
+    assert.equal(new Set(allDaily).size,8);
+    assert.match(await gymPage.locator('#result-title').innerText(),/今日の5分ジム完了/);
+    assert.match(await gymPage.locator('#result-rewards').innerText(),/ヒントなし正解率/);
+    const gymSaved=await gymPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+    assert.equal(gymSaved.dailyHistory.length,1);
+    assert.equal(gymSaved.dailyHistory[0].total,8);
+    assert.equal(gymSaved.dailyHistory[0].independent,8);
+    assert.equal(gymSaved.savedPromptIds.length,1);
+    await gymPage.locator('#result-home').click();
+    assert.match(await gymPage.locator('#daily-last-rate').innerText(),/100%/);
+    await gymContext.close();
     // Verify English-only task cards at both higher difficulties and narrow widths.
     for (const width of [320,375,390,430]) {
       const {context:levelContext,page:levelPage}=await boot(width);
