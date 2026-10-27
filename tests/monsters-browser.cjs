@@ -227,6 +227,9 @@ const path=require('node:path');
     const {context:practiceContext,page:practicePage}=await boot(390);
     await practicePage.locator('#start-forest').click();
     await practicePage.locator('#forest-explore-continue').click();
+    const recordedPrompt=await practicePage.locator('#play-card').getAttribute('data-prompt-id');
+    await practicePage.locator('#bookmark-question').click();
+    assert.equal(await practicePage.locator('#bookmark-question').getAttribute('aria-pressed'),'true');
     await practicePage.locator('#spoken-answer').fill('I would like some extra seconds to make my decision.');
     await practicePage.locator('#show-answer').click();
     assert.match(await practicePage.locator('#feedback-panel').innerText(),/判定保留/);
@@ -235,6 +238,14 @@ const path=require('node:path');
     await practicePage.locator('#continue-as-practice').click();
     assert.equal(await practicePage.locator('#forest-explore-options').isVisible(),true,'Opt-in practice should advance without demanding the model sentence');
     assert.equal(await practicePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),practiceXp,'No XP for unverified expression');
+    await practicePage.locator('#leave-play').click();
+    assert.match(await practicePage.locator('#start-saved-review').innerText(),/1問/);
+    assert.match(await practicePage.locator('#saved-question-list').innerText(),/森|カフェ|待ち合わせ|旅行|英語|聞/);
+    await practicePage.locator('#start-saved-review').click();
+    assert.equal(await practicePage.locator('#play-card').getAttribute('data-prompt-id'),recordedPrompt);
+    assert.equal(await practicePage.locator('#forest-journey').isVisible(),false,'Saved review must have no RPG battles');
+    assert.equal(await practicePage.locator('#play-view').evaluate(el=>el.classList.contains('review-only')),true);
+    await practicePage.locator('#leave-play').click();
     await practiceContext.close();
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,375,390,430]){
@@ -365,7 +376,8 @@ const path=require('node:path');
         await answer();
         if(mob===3 || mob===4){
           assert.match(await forestPage.locator('.forest-teaching-title').innerText(),mob===3?/なぜこの単語を使う/:/なぜこの語順になる/);
-          assert.match(await forestPage.locator('#pause-auto').innerText(),/解説をもう少し読む/);
+          assert.match(await forestPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
+          assert.equal(await forestPage.locator('#pause-auto').count(),0);
           assert.ok((await forestPage.locator('.feedback-note').innerText()).length>35,'Objective quizzes should explain the answer, not only mark it right');
         }
         await moveOn();
@@ -375,7 +387,7 @@ const path=require('node:path');
             // Choosing a scene must not affect XP, attempts or language gates.
             assert.equal(await forestPage.locator('#forest-explore-event').isVisible(),true);
             assert.equal(await forestPage.locator('[data-forest-event-option]').count(),2);
-            assert.equal(await forestPage.locator('#forest-explore-continue').isVisible(),false);
+            assert.equal(await forestPage.locator('#forest-explore-continue').isVisible(),true,'Optional story may be skipped');
             const beforeChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
             await forestPage.locator('[data-forest-event-option]').first().click();
             assert.match(await forestPage.locator('#forest-explore-event').innerText(),/探索の記録|EXPEDITION MEMORY/);
@@ -433,8 +445,8 @@ const path=require('node:path');
       assert.equal(saved.xpWallet,120);
       await forestContext.close();
     }
-    // A forest clear automatically plays the hit, pauses for the learner to
-    // see it, then enters the next encounter. A route choice remains manual.
+    // Explanations remain visible until the learner chooses to continue.
+    // A route remains a manual choice, without an automatic explanation timer.
     const {context:autoContext,page:autoPage}=await boot(390);
     const autoAnswer=async()=>{
       await unlockListening(autoPage);
@@ -448,25 +460,29 @@ const path=require('node:path');
     await autoPage.locator('#start-forest').click();
     await autoPage.locator('#forest-explore-continue').click();
     await autoAnswer();
-    assert.match(await autoPage.locator('#forest-auto-status').innerText(),/自動で次へ/);
-    await autoPage.locator('#forest-explore-options').waitFor({state:'visible',timeoutMs:6500});
+    assert.match(await autoPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
+    const firstPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
+    await autoPage.waitForTimeout(3000);
+    assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),firstPrompt,'Reading time is unlimited');
+    assert.equal(await autoPage.locator('#next-question').isVisible(),true);
+    await autoPage.locator('#next-question').click();
     assert.match(await autoPage.locator('#forest-explore-title').innerText(),/分かれ道/);
-    await autoPage.waitForTimeout(1350);
-    assert.equal(await autoPage.locator('#forest-explore-options').isVisible(),true,'A route must never be chosen automatically');
     await autoPage.locator('[data-forest-route="sunlit"]').click();
     await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
     assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 2/);
     await autoAnswer();
     assert.match(await autoPage.locator('#forest-combo').innerText(),/2 HIT COMBO/);
-    await autoPage.locator('#forest-world-stage[data-foe="spookap"]').waitFor({state:'visible',timeoutMs:6500});
+    await autoPage.locator('#next-question').click();
+    if(await autoPage.locator('#forest-explore-screen').isVisible())await autoPage.locator('#forest-explore-continue').click();
+    await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
     assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 3/);
     await autoAnswer();
-    await autoPage.locator('#pause-auto').click();
-    const pausedPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
-    await autoPage.waitForTimeout(2850);
-    assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),pausedPrompt,'Pause must cancel automatic advancement');
+    const thirdPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
+    await autoPage.waitForTimeout(800);
+    assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),thirdPrompt);
     await autoPage.locator('#next-question').click();
-    await autoPage.locator('#forest-world-stage[data-foe="bramblet"]').waitFor({state:'visible',timeoutMs:4500});
+    if(await autoPage.locator('#forest-explore-screen').isVisible())await autoPage.locator('#forest-explore-continue').click();
+    await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
     assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 4/);
     await autoPage.locator('#leave-play').click();
     assert.equal(await autoPage.locator('#home-view').isVisible(),true);
