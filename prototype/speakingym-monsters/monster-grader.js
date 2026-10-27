@@ -17,6 +17,19 @@ const intent = {
 };
 const row=(label, ...patterns) => ({label, patterns});
 const rubric = {
+ // Simple everyday apologies accept meaning-preserving, polite alternatives.
+ // Do not insist on the single model sentence; opposite meaning/negation is
+ // handled by the polarity guard below.
+ 'apology-late': [
+   row('待たせたこと、または遅れたことを謝る',
+     '(?:i am |i.m )?sorry (?:that )?(?:i.m |i am |i was |i.ve been )?late',
+     '(?:i am |i.m )?sorry (?:for |about )?(?:being late|the wait|the delay|waiting|keeping you waiting|making you wait|taking so long)',
+     '(?:i am |i.m )?sorry (?:i |to have )(?:kept you waiting|made you wait|took so long)',
+     'i (?:really )?apologi[sz]e (?:for (?:the wait|being late|keeping you waiting)|that i kept you waiting)',
+     'my apologies (?:for |about )?(?:the wait|the delay|being late)',
+     'sorry to (?:keep you waiting|make you wait)',
+     'sorry for (?:keeping you waiting|making you wait)')
+ ],
  'think-cafe': [row('少し考える時間を頼む', intent.think)],
  'think-trip': [row('決める時間が必要だと伝える', intent.think)],
  'repeat-station': [row('もう一度言ってもらう', intent.repeat), row('ホーム番号を指定する','platform','track (number|information)')],
