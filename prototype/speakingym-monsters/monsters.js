@@ -63,7 +63,7 @@ function speakingSuccessHtml(prompt,learnerAnswer){
 }
 let save = loadSave() || createSave();
 let lastDungeonReviewIds = [];
-let play = null, timer = null, recognition = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
+let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
 
 function cancelAutoAdvance(){
   if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
@@ -108,8 +108,10 @@ function micView(mode='ready') {
   if(retry) retry.hidden=mode!=='captured';
 }
 function stopRecognition(mode='ready') {
+  if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
   if(recognitionNoResultTimer)clearTimeout(recognitionNoResultTimer);
+  recognitionStartTimer=null;
   recognitionWatchdog=null;
   recognitionNoResultTimer=null;
   const active=recognition;
@@ -125,6 +127,8 @@ function finishRecognition(){
   const active=recognition,helper=$('#speech-helper');
   if(!active||recognitionStopping)return;
   recognitionStopping=true;
+  if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
+  recognitionStartTimer=null;
   micView('ready');
   if(helper)helper.textContent='文字起こしを確定中です。英語が表示されてから判定してね。';
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
@@ -605,6 +609,14 @@ function renderQuestion() {
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
   const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent);
   $('#speech-alternatives').hidden=quizMode||!isIOS;
+  if(isIOS && play.mode==='forest' && play.index===regularCount()+BOSS_HITS-1 && !quizMode){
+    // Safari/WebKit may stop reporting recognition after HTMLAudioElement
+    // playback. Keep the native keyboard dictation route unmistakable at the
+    // last speaking gate; don't mislabel a browser failure as an English miss.
+    $('#speech-alternatives').classList.add('speech-alternatives-priority');
+    $('#native-dictation').textContent='おすすめ：iPhone標準の音声入力で答える';
+    $('#speech-alternative-help').textContent='直前のリスニング音声の影響で、ブラウザの「話す」が反応しないことがあるよ。こちらを押してキーボードのマイクで話そう。';
+  }
   $('#native-dictation').addEventListener('click',()=>{
     if(recognition)finishRecognition();
     const field=$('#spoken-answer');
@@ -626,7 +638,9 @@ function renderQuestion() {
   });
   if(!quizMode){
     micView('ready');
-    if(isIOS)$('#speech-helper').textContent='内蔵ブラウザの音声認識が使えない場合は、下のiPhone標準の音声入力に切り替えてね。';
+    if(isIOS)$('#speech-helper').textContent=play.mode==='forest'&&play.index===regularCount()+BOSS_HITS-1
+      ?'ボス最終問：話すボタンが反応しないときは、下のiPhone標準音声入力でも声で答えられるよ。'
+      :'内蔵ブラウザの音声認識が使えない場合は、下のiPhone標準の音声入力に切り替えてね。';
   }
   if(reviewing)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(listenMode){
@@ -753,6 +767,8 @@ function startRecognition() {
     instance.lang='en-US';instance.interimResults=true;instance.continuous=false;instance.maxAlternatives=1;
     instance.onstart=()=>{
       if(recognition!==instance||play!==session)return;
+      if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
+      recognitionStartTimer=null;
       if(helper&&!recognitionStopping)helper.textContent='音声認識中です。英語が文字にならなければ標準の音声入力に切り替えられます。';
       recognitionNoResultTimer=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
@@ -761,7 +777,7 @@ function startRecognition() {
       recognitionWatchdog=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping)return;
         finishRecognition(); // stop() allows WebKit to deliver pending speech.
-      },14000);
+      },/iPad|iPhone|iPod/i.test(navigator.userAgent)?10000:14000);
     };
     instance.onresult=event=>{
       if(recognition!==instance || play!==session || !$('#spoken-answer'))return;
@@ -809,6 +825,15 @@ function startRecognition() {
         ?'音声認識が終了しました。表示された英文を確認してから判定してね。'
         :recognitionFailures>=2?'このブラウザは声を文字にできていません。iPhone標準音声入力かSafariを使ってね。':'声を文字にできませんでした。下に別の入力方法があるよ。';
     };
+    // Some iPhone Safari builds silently hang AFTER a listening <audio> clip:
+    // no onstart, onerror or onend ever arrives. The old code left the mic
+    // orange forever. Recover locally even if the browser sends no callbacks.
+    recognitionStartTimer=setTimeout(()=>{
+      if(recognition!==instance||play!==session)return;
+      recognitionFailures++;
+      stopRecognition();
+      if(helper)helper.textContent='マイクから応答がありません。iPhoneでは下の標準音声入力（キーボードのマイク）か手入力で続けられるよ。';
+    },4500);
     instance.start();
     micView('listening');
     if(helper)helper.textContent='音声認識を開始しています。7秒たっても文字にならなければ、標準の音声入力を試してね。';

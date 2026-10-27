@@ -613,9 +613,32 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#play-card').getAttribute('data-prompt-id'),['late-call','forest-grammar-arrive-easy','boss-delay-apology-easy'][hit-1]);
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/こだま|暗号|トゲ王の問い/);
+        if(width===390&&hit===3){
+          // Regression: after the boss's recorded listening task, iOS WebKit
+          // may never send onstart/onerror/onend at the final speaking task.
+          // The mic must recover and expose actual keyboard dictation, rather
+          // than trap the learner with a permanently orange dead button.
+          assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),true);
+          assert.match(await forestPage.locator('#native-dictation').innerText(),/おすすめ/);
+          await forestPage.locator('#mic-button').click();
+          assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+          await forestPage.locator('#speech-helper').filter({hasText:/マイクから応答がありません/}).waitFor({timeout:6500});
+          assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
+          await forestPage.locator('#native-dictation').click();
+          assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true);
+        }
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
         if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').innerText(),/Thorn Kingをたおした！/);
+        if(width===390&&hit===2){
+          // Emulate iPhone Safari immediately before its final boss card is
+          // rendered; Chrome and WebKit each exercise this no-callback path.
+          await forestPage.evaluate(()=>{
+            Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15'});
+            class HungRecognition{start(){}stop(){this.stopped=true;}abort(){this.aborted=true;}}
+            Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:HungRecognition});
+          });
+        }
         await moveOn();
       }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);

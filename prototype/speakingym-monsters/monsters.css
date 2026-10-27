@@ -277,6 +277,9 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .speech-alternatives button{flex:1 1 200px;border:1px solid #9ebfa6;background:#fffdf6;color:#276549;border-radius:9px;padding:11px 9px;font-size:12px;min-height:44px;font-weight:800;line-height:1.45}
 .speech-alternatives .speech-native-button{background:#dbefdf}
 .speech-alternatives p{width:100%;font-size:12px;line-height:1.7;color:#406650}
+.speech-alternatives-priority{border:2px solid #4a9870;background:#f0f9f1;box-shadow:0 5px 18px #215a3820}
+.speech-alternatives-priority .speech-native-button{background:#267c54;color:white;border-color:#267c54;font-size:13px}
+.speech-alternatives-priority #speech-alternative-help{font-size:12px;color:#295e42;font-weight:700;line-break:strict;overflow-wrap:break-word}
 @media(max-width:600px){.home-navigation{margin:9px 0 33px}.home-navigation-grid{grid-template-columns:1fr;gap:10px}.home-navigation-tile{min-height:83px;padding:13px 14px;border-radius:15px}.home-navigation-icon{width:45px;height:45px;flex-basis:45px;font-size:24px}.home-navigation-copy strong{font-size:16px}.home-navigation-copy small{font-size:11px}.tutorial-dialog{padding:28px 18px}.tutorial-dialog>p:not(.tiny-caps){min-height:130px}}
 @media(prefers-reduced-motion:reduce){.home-navigation-tile{transition:none}}
 
