@@ -453,3 +453,36 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .dungeon-report-retry:disabled{opacity:.6;cursor:default;background:#d8e5da;border-color:#b9cebe;color:#45644d}
 .dungeon-report-retry:focus-visible{outline:3px solid #edc266;outline-offset:3px}
 @media(max-width:430px){.dungeon-learning-report{padding:15px 10px}.dungeon-report-skills{grid-template-columns:1fr}.dungeon-report-stats{gap:5px}.dungeon-report-stats strong{font-size:24px}.dungeon-report-stats small{font-size:9px}}
+
+
+/* Daily recall and lightweight mobile controls */
+.retention-hub{margin:20px 0;border:1px solid #b2d1c4;border-radius:19px;background:linear-gradient(130deg,#edf8eb,#f9f1df);padding:22px;color:#284d3b}
+.retention-hub .tiny-caps{color:#487b61}
+.retention-hub h2{font-size:clamp(19px,4vw,25px);margin:8px 0 10px;line-height:1.35}
+.retention-hub>p{font-size:13px;line-height:1.7;color:#526b59}
+.retention-hub-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0}
+.retention-hub-metrics span{background:#fffefa;border:1px solid #d3dfd0;border-radius:10px;font-size:12px;font-weight:800;padding:8px 11px}
+.retention-hub button{display:block;width:min(100%,400px);min-height:49px;padding:12px 16px;color:white;border:1px solid #2a6b4d;background:#2a704c;border-radius:12px;font-weight:850;font-size:14px}
+.retention-hub button:disabled{opacity:.62;background:#dfe9df;color:#53675a;border-color:#c1d0c2}
+.retention-hub .retention-next{margin-top:10px;font-size:12px}
+.retention-result{border-left:3px solid #699b79;background:#ecf6e9;border-radius:8px;font-size:12px;color:#386348;padding:9px 11px;line-height:1.65;margin:9px 0}
+.motion-toggle{min-height:44px;display:inline-flex;align-items:center;font-size:11px;border-radius:9px;padding:10px 14px;background:#eaf4e8;border:1px solid #b7d0b8;color:#326748;font-weight:750;cursor:pointer;margin:12px 0 0}
+.motion-toggle:focus-visible{outline:3px solid #e2ad51;outline-offset:3px}
+/* This opt-in setting and the OS reduced-motion preference are equivalent.
+   Suppress purely decorative movement; preserve all tap/click functionality. */
+.monsters-quiet-motion .home-walker,.monsters-quiet-motion .home-walker svg,
+.monsters-quiet-motion .forest-world-stage *,
+.monsters-quiet-motion .forest-player-art *,
+.monsters-quiet-motion .forest-enemy-art *,
+.monsters-quiet-motion .home-navigation-tile{animation:none!important;transition:none!important}
+@media(max-width:430px){
+ .retention-hub{padding:16px 13px}
+ .retention-hub-metrics span{font-size:11px}
+ .retention-hub button{width:100%}
+ .home-navigation-head h1{line-break:strict}
+ .home-navigation-grid .home-navigation-tile{min-width:0}
+ .home-navigation-grid .home-navigation-copy strong{text-wrap:pretty;overflow-wrap:anywhere;line-height:1.35}
+ .home-navigation-grid .home-navigation-copy small{line-height:1.45}
+ .answer-area textarea.answer-input{font-size:16px;max-height:45vh}
+ .home-menu-back,.button,.home-feature-cta{min-height:44px}
+}
