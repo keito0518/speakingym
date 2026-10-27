@@ -113,6 +113,13 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
      const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
      if(newPhrase.length)candidates=newPhrase;
    }
+   // Longer chapters should not recycle an earlier encounter merely because
+   // a phrase-focus heuristic happens to prefer it. Explicit due reviews still
+   // take precedence when the learner needs that exact exercise.
+   if(!candidates.some(p=>dueIds.has(p.id)||weakQuizIds.has(p.id))){
+     const unseen=candidates.filter(p=>!previous.has(p.id));
+     if(unseen.length)candidates=unseen;
+   }
    const focus=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
