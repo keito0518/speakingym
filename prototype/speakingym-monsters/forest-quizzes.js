@@ -214,8 +214,8 @@ export const FOREST_QUIZZES=Object.freeze([
       "I",
       "come"
     ],
-    "hint": "丁寧な断り方は I'm afraid ... を使える。",
-    "tip": "I'm afraid I can't ... は丁寧に断るときの表現。"
+    "hint": "I cannot ... の形で、今夜行けないことを伝えよう。",
+    "tip": "cannot come は『行けない』。I cannot come tonight. で今夜の参加を断れる。"
   },
   {
     "id": "forest-vocab-ticket-normal",

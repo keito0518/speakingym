@@ -6,6 +6,7 @@ import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
+import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
@@ -389,6 +390,37 @@ test('forest four-skill questions grade deterministically and never reward incor
       assert.equal(validateSave(miss.save).reviewPrompts[p.id],'2026-10-28');
     }
   }
+});
+test('forest quiz controls respect English-only difficulty and keep typed vocabulary choices in sync',()=>{
+  for(const difficulty of DIFFICULTIES){
+    const vocab=ALL_PROMPTS.find(p=>p.kind==='vocab'&&p.difficulty===difficulty);
+    const grammar=ALL_PROMPTS.find(p=>p.kind==='grammar'&&p.difficulty===difficulty);
+    const vocabHtml=quizControlsHtml(vocab),grammarHtml=quizControlsHtml(grammar);
+    assert.match(vocabHtml,/data-vocab-option="2"/);
+    assert.match(grammarHtml,/data-grammar-piece="0"/);
+    if(difficulty==='easy'){
+      assert.match(vocabHtml,/単語を選ぼう/);
+      assert.match(grammarHtml,/単語を順番にタップ/);
+    }else{
+      assert.match(vocabHtml,/Find the word that completes/);
+      assert.match(grammarHtml,/Tap the words to build/);
+      assert.doesNotMatch(vocabHtml+grammarHtml,/[ぁ-んァ-ン一-龯]/);
+    }
+  }
+  const prompt=ALL_PROMPTS.find(p=>p.kind==='vocab'&&p.difficulty==='normal');
+  const makeButton=i=>({dataset:{vocabOption:String(i)},attrs:{},handlers:{},
+    addEventListener(type,handler){this.handlers[type]=handler;},
+    setAttribute(name,value){this.attrs[name]=value;}});
+  const buttons=prompt.options.map((_,i)=>makeButton(i));
+  const input={value:'',handlers:{},addEventListener(type,handler){this.handlers[type]=handler;}};
+  wireQuizControls(prompt,{querySelector:()=>input,querySelectorAll:()=>buttons});
+  buttons[1].handlers.click();
+  assert.equal(input.value,prompt.options[1]);
+  assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','true','false']);
+  input.value='another answer';input.handlers.input();
+  assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','false']);
+  input.value=prompt.options[2].toUpperCase();input.handlers.input();
+  assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','true']);
 });
 test('a genuine new expression grows the companion and unlocks the odd sock', () => {
   const initial=createSave();

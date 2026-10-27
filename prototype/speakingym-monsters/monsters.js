@@ -300,7 +300,7 @@ function renderQuestion() {
   const englishMode = (prompt.difficulty||'easy')!=='easy';
   const quizMode=prompt.kind==='vocab'||prompt.kind==='grammar';
   const questionBody = quizMode
-    ? `<p class="scenario-label">${prompt.kind==='vocab'?'WORD WEAKNESS':'GRAMMAR MAGIC'}</p><h1 class="forest-quiz-question" lang="${englishMode?'en':'ja'}">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · ${prompt.kind==='vocab'?'正しい単語で弱点を見つけよう':'正しい語順で魔法を完成させよう'}</p>`
+    ? `<p class="scenario-label">${prompt.kind==='vocab'?'WORD WEAKNESS':'GRAMMAR MAGIC'}</p><h1 class="forest-quiz-question" lang="${englishMode?'en':'ja'}">${escapeHtml(prompt.cue)}</h1>${englishMode?`<div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div>`:''}<p class="question-caption" ${englishMode?'lang="en"':''}>${escapeHtml(prompt.scene)} · ${englishMode?(prompt.kind==='vocab'?'Choose the word that fits.':'Put the words in order.'):(prompt.kind==='vocab'?'正しい単語で弱点を見つけよう':'正しい語順で魔法を完成させよう')}</p>`
     : englishMode
     ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
