@@ -437,11 +437,45 @@ const path=require('node:path');
     assert.match(await endlessPage.locator('#forest-tries').innerText(),/あと1回/);
     await endlessPage.locator('#spoken-answer').fill('I have no idea what to say here.');
     await endlessPage.locator('#show-answer').click();
+    assert.match(await endlessPage.locator('#feedback-panel').innerText(),/判定保留/);
+    assert.match(await endlessPage.locator('#forest-tries').innerText(),/あと1回/,'An uncertain speaking reply must not consume the final try');
+    assert.equal(await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
+    const openingAnswer=await endlessPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await endlessPage.locator('#spoken-answer').fill(openingAnswer);
+    await endlessPage.locator('#show-answer').click();
+    await endlessPage.locator('#next-question').click();
+    if(await endlessPage.locator('#forest-explore-screen').isVisible()){
+      await endlessPage.locator('[data-forest-route="moss"]').click();
+      if(await endlessPage.locator('#forest-explore-screen').isVisible())await endlessPage.locator('#forest-explore-continue').click();
+    }
+    // Continue past the listening task with an authored answer, then verify
+    // that an objectively incorrect vocabulary choice does spend the try.
+    await unlockListening(endlessPage);
+    const listeningAnswer=await endlessPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await endlessPage.locator('#spoken-answer').fill(listeningAnswer);
+    await endlessPage.locator('#show-answer').click();
+    await endlessPage.locator('#next-question').click();
+    const xpBeforeWrong=await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
+    const wrongVocab=await endlessPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+      return {kind:prompt.kind,wrong:prompt.options?.find(option=>option!==prompt.answer)};
+    });
+    assert.equal(wrongVocab.kind,'vocab');
+    assert.ok(wrongVocab.wrong);
+    await endlessPage.locator('#spoken-answer').fill(wrongVocab.wrong);
+    await endlessPage.locator('#show-answer').click();
     assert.match(await endlessPage.locator('#feedback-panel').innerText(),/挑戦回数を使い切った/);
     await endlessPage.locator('#forest-exit').click();
     assert.match(await endlessPage.locator('#result-title').innerText(),/挑戦終了/);
     const endedSave=await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-    assert.equal(endedSave.xpWallet,0);
+    assert.equal(endedSave.xpWallet,xpBeforeWrong,'An incorrect quiz answer cannot grant XP');
     assert.equal(endedSave.forest.clears,0);
     await endlessContext.close();
     // Fake the browser speech API: check start/stop, stale onend, capture,
