@@ -278,7 +278,7 @@ test('Speaking Forest is three authored speaking gates across all difficulty lev
 });
 test('Forest stamp unlocks only on full route completion; evolved companions find extra cosmetic relics', () => {
   const initial=createSave();
-  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[],completedAreas:[],recentPromptIds:[]});
+  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[],completedAreas:[],recentPromptIds:[],journal:[]});
   assert.throws(()=>finishForest(initial,'unknown','medamago'),/Invalid forest route/);
   assert.throws(()=>finishForest(initial,'moss','katappo'),/not owned/);
   const one=finishForest(initial,'sunlit','medamago');
@@ -307,7 +307,7 @@ test('Forest souvenirs persist when old saves are loaded without a forest field'
  const completed=finishForest(initial,'sunlit','medamago').save;
  assert.deepEqual(validateSave(completed).forest,completed.forest);
  const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
- assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],recentPromptIds:[]});
+ assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],recentPromptIds:[],journal:[]});
 });
 
 test('four Forest areas unlock one at a time, preserve earlier progress and avoid recent repeats',()=>{
@@ -896,7 +896,9 @@ test('rare forest recruits need both genuine language learning and cleared chapt
   assert.deepEqual(rare.map(c=>c.forestAreas),[1,2,3,4]);
   assert.equal(new Set(rare.map(c=>c.id)).size,4);
   let save=createSave();
-  const independent=PHRASES.map(phrase=>ALL_PROMPTS.find(p=>p.phraseId===phrase.id && p.difficulty==='easy' && !p.bossOnly && !['vocab','grammar'].includes(p.kind))).filter(Boolean);
+  // The base authored prompts cover all 16 expression groups (unlike a
+  // compact listening-only sample of the extended curriculum).
+  const independent=PROMPTS.filter((p,index)=>index%2===0);
   for(const p of independent)save=rate(save,p.id,'smooth','2026-10-26').save;
   assert.equal(learningSummary(save).independent,16);
   assert.equal(rare.filter(c=>save.ownedMonsters.includes(c.id)).length,0,'Language alone cannot unlock forest rares');
