@@ -214,9 +214,11 @@ function renderHome() {
   const forest=cleanForest(save.forest);
   $('#forest-home-progress').textContent = `攻略 ${forest.completedAreas.length}/${FOREST_AREAS.length}エリア · 討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個`;
   const unlocked=new Set(unlockedForestAreas(save).map(area=>area.id));
+  const dueRetention=retentionOverview(save,dayKey()).due;
   $('#forest-area-list').innerHTML=FOREST_AREAS.map((area,index)=>{
     const cleared=forest.completedAreas.includes(area.id),open=unlocked.has(area.id);
-    return `<button type="button" class="forest-area-card" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small>${escapeHtml(area.goal)} · ${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋確認3）</small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':'LOCKED'}</span></button>`;
+    const chapterDue=dueRetention.filter(entry=>area.focus.some(key=>entry.prompt.phraseId.startsWith(key))).length;
+    return `<button type="button" class="forest-area-card" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small>${escapeHtml(area.goal)} · ${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋確認3）${chapterDue?' · 復習候補'+chapterDue+'問':''}</small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':'LOCKED'}</span></button>`;
   }).join('');
   $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startSession('forest',button.dataset.enterForest)));
   $('#start-forest').textContent=forest.completedAreas.length===FOREST_AREAS.length?'森をもう一度冒険':`次へ：${nextForestArea(save).name}`;
@@ -245,7 +247,7 @@ function renderHome() {
   homeNavigation?.updateHero({
     art:monsterArt(creature.id,growth.evolved),name:growth.evolved?creature.evolvedName:creature.name,
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,
-    areasCleared:forest.completedAreas.length
+    areasCleared:forest.completedAreas.length,bondRank:save.monsterBonds?.[save.selectedMonster]||0
   });
   // Reuse art for already recruited creatures only; never preview locked ones.
   // Pick the selected companion first so that the home genuinely reflects
@@ -521,6 +523,11 @@ function renderQuestion() {
     ? `<p class="scenario-label">SITUATION</p><h1 class="english-situation" lang="en">${escapeHtml(prompt.cue)}</h1><div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div><p class="question-caption" lang="en">${escapeHtml(prompt.scene)} · Respond aloud in your own words.</p>`
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
+  if(play.mode==='forest'&&retentionOverview(save,dayKey()).due.some(row=>row.id===prompt.id)){
+    const tag=document.createElement('span');tag.className='dungeon-recall-tag';
+    tag.textContent='記憶の試練 · 復習問題';
+    $('#play-card').querySelector('.question-top')?.append(tag);
+  }
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=regularCount()?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=regularCount()?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=regularCount()?BOSS_HITS:regularCount()):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'LISTEN & CHOOSE':play.mode==='forest'&&prompt.kind==='read'?'READING STRIKE':prompt.kind==='vocab'?'VOCAB WEAKNESS':prompt.kind==='grammar'?'GRAMMAR MAGIC':englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTENING ONLY':'JAPANESE → ENGLISH'}</span></div>${listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'英語を聞いて、意味を選ぼう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div><p id="listening-status" class="listening-status" role="status" aria-live="polite">${englishMode?'Choose what you heard. No microphone needed.':'聞き取れた内容を選ぼう。'}</p></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:`${readingPassage}${questionBody}`}`;
   const saved=save.savedPromptIds?.includes(prompt.id)||false;
