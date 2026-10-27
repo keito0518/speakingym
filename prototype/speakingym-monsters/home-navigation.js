@@ -46,7 +46,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  const menu=document.createElement('section');
  menu.className='home-navigation';menu.id='home-navigation';
  const head=document.createElement('div');head.className='home-navigation-head';
- head.innerHTML='<span class="tiny-caps">WELCOME TO SPEAKINGYM MONSTERS</span><h1>英語で戦って、<em>仲間と冒険へ。</em></h1><p>知っている英語を、実際に使える英語へ。今日はどこまで進める？</p>';
+ head.innerHTML='<span class="tiny-caps">WELCOME TO SPEAKINGYM MONSTERS</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>知っている英語を、実際に使える英語へ。今日はどこまで進める？</p>';
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 4 CHAPTERS</span><h2>English<br>ダンジョン</h2><p>英語で敵の試練に挑み、新しい仲間やエリアを解放しよう。</p>
