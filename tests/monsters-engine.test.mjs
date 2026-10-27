@@ -16,11 +16,35 @@ import { bossConversationFor, bossConversationTurn } from '../prototype/speaking
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
 import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
+test('curated speech checks cannot reward conflicting key details',()=>{
+ const prompt=id=>ALL_PROMPTS.find(item=>item.id===id);
+ for(const [id,answers] of [
+  ['booking-table', ['Could I book a table for two or five?', 'Can I reserve a table for two but actually four people?']],
+  ['order-coffee', ['Can I have an iced coffee instead of hot tea?', 'I would like an iced coffee but actually I want tea.']],
+  ['direction-station', ['Where is the train station rather than the airport?', 'Could you show me the way to the station and bus stop?']],
+  ['agree-friend', ['Saturday at five sounds good.', 'Saturday at three or Sunday at three works for me.']],
+  ['agree-work', ['Friday or Saturday sounds good to me.']],
+  ['prefer-city', ['I prefer the train but actually I want the bus.']]
+ ]){
+  for(const answer of answers){
+   const result=gradeLocalResponse(prompt(id),answer);
+   assert.notEqual(result.status,'correct',id+': '+answer);
+   assert.ok(result.reasons.length>0);
+  }
+ }
+ for(const [id,text] of [
+  ['booking-table','Could I reserve a table for two?'],
+  ['order-coffee','Could I have an iced coffee?'],
+  ['direction-station','Could you show me the way to the station?'],
+  ['agree-friend','That works for me.'],
+  ['prefer-city','I prefer the train because it is faster than the bus.']
+ ])assert.equal(gradeLocalResponse(prompt(id),text).status,'correct',id+': '+text);
+});
 test('arrival meaning distinguishes natural replies, missing time, contradiction and uncertainty',()=>{
  for(const [answer,status] of [
    ["I'll be ten minutes late.",'correct'],
@@ -917,6 +941,19 @@ test('forest quiz controls respect English-only difficulty and keep typed vocabu
   assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','false']);
   input.value=prompt.options[2].toUpperCase();input.handlers.input();
   assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','true']);
+});
+test('saved review orders due or missed tasks first without duplicating records',()=>{
+ const base=createSave();
+ const save={...base,savedPromptIds:['think-cafe','repeat-station','forest-vocab-ticket-easy'],
+   reviewPrompts:{'repeat-station':'2026-10-20'},
+   quizProgress:{'forest-vocab-ticket-easy':{misses:2,cleanStreak:0,nextReviewDay:'2026-10-25',resolved:false}}};
+ const work=savedReviewQueue(save,'2026-10-27');
+ assert.deepEqual(new Set(work.map(x=>x.prompt.id)),new Set(save.savedPromptIds));
+ assert.equal(work.filter(x=>x.due).length,2);
+ assert.deepEqual(new Set(work.slice(0,2).map(x=>x.prompt.id)),new Set(['repeat-station','forest-vocab-ticket-easy']));
+ assert.equal(work.at(-1).due,false);
+ assert.equal(savedReviewPrompts(save,'2026-10-27').length,3);
+ assert.equal(savedReviewQueue(validateSave(createSave()),'2026-10-27').length,0);
 });
 test('user-selected review stores exact questions without breaking older saves',()=>{
  const original=createSave();
