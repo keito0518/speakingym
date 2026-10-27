@@ -276,7 +276,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
 function updateClock() {
   if (!play) return;
   const clock=$('#play-clock');
-  if (!play.deadline) { clock.textContent='自分のペースで';clock.classList.remove('urgent');return; }
+  if (!play.deadline) { clock.textContent=play.mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';clock.classList.remove('urgent');return; }
   const left=Math.max(0,Math.ceil((play.deadline-Date.now())/1000));
   clock.textContent=`残り ${left} 秒`;
   clock.classList.toggle('urgent',left<=10);
