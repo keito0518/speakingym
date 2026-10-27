@@ -250,12 +250,13 @@ function renderForestHud() {
   const tactic=enemyTacticFor(play.index,play.wave,play.areaId);
   const bossPhase=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt:currentPrompt()});
   world.dataset.bossPhase=bossPhase?String(bossPhase.turn):'0';
+  world.dataset.bossPower=bossPhase?bossPhase.signature.id:'none';
   world.dataset.foe=foe.id;
   world.dataset.area=play.areaId;
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
   // Separate the English name and Japanese epithet at a meaningful line break.
   $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
-  $('#forest-foe-pattern').textContent=bossPhase?`${tactic.name} · ${bossPhase.title}`:tactic.name;
+  $('#forest-foe-pattern').textContent=bossPhase?`${tactic.name} · ${bossPhase.signature.name}`:tactic.name;
   updateEnemyHealth();
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
     '英語で攻撃！';
@@ -278,8 +279,8 @@ function renderForestHud() {
     (bossPhase?`${bossPhase.chapter} · ${bossPhase.context}`:`${foe.japanese}が立ちはだかる！ 3つの異なる英語の試練で倒そう。`):
     `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ ${tactic.tell}。`;
   const log=$('#forest-battle-log');
-  log.textContent=play.index>=REGULAR_ENCOUNTERS && play.bossHits===0?
-    `${foe.name} が現れた！ ${tactic.tell}。英語の攻撃を3回当てよう。`:
+  log.textContent=bossPhase?
+    `${foe.name}の特殊行動「${bossPhase.signature.name}」！ ${bossPhase.signature.tell}`:
     `${foe.name} が現れた。${tactic.tell}。英語で応えて仲間に攻撃の合図を出そう。`;
 }
 function updateEnemyHealth(hit=false) {
@@ -392,7 +393,8 @@ function renderQuestion() {
   if(play.mode==='forest'){
     const style=prompt.kind==='listen'?'defense':prompt.kind==='read'?'reading':prompt.kind==='vocab'?'weakness':prompt.kind==='grammar'?'spell':'attack';
     $('#forest-world-stage').dataset.action=style;
-    $('#forest-battle-log').textContent=style==='defense'?'敵のリスニング攻撃！音声を聞いて、英語で返して防御しよう。':style==='reading'?'敵の作戦を読んで、英語で応答して突破しよう。':style==='weakness'?'正しい単語で敵の弱点を見破ろう！':style==='spell'?'単語を正しく並べて魔法を発動しよう！':'英語で応えて、仲間の攻撃を決めよう。';
+    const move=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt});
+    $('#forest-battle-log').textContent=move?`ボスの特殊行動「${move.signature.name}」！ ${move.signature.tell}`:style==='defense'?'敵のリスニング攻撃！音声を聞いて、英語で返して防御しよう。':style==='reading'?'敵の作戦を読んで、英語で応答して突破しよう。':style==='weakness'?'正しい単語で敵の弱点を見破ろう！':style==='spell'?'単語を正しく並べて魔法を発動しよう！':'英語で応えて、仲間の攻撃を決めよう。';
   }
   $('#play-progress-fill').style.width=`${100*play.index/play.prompts.length}%`;
   const englishMode = (prompt.difficulty||'easy')!=='easy';
@@ -425,7 +427,9 @@ function renderQuestion() {
     counter.textContent=`BOSS DIALOGUE · ${bossTurn.turn}/3 · ${bossTurn.chapter}`;
     const title=document.createElement('strong');title.textContent=bossTurn.title;
     const context=document.createElement('p');context.textContent=bossTurn.context;
-    dialogue.append(counter,title,context);
+    const warning=document.createElement('p');warning.className='forest-boss-special';
+    warning.textContent=`SPECIAL MOVE · ${bossTurn.signature.name} — ${bossTurn.signature.tell}`;
+    dialogue.append(counter,title,context,warning);
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
@@ -644,9 +648,11 @@ async function gradeAnswer() {
       world.classList.add('forest-guarding');
       $('#forest-world-fx').textContent='';
       const tactic=enemyTacticFor(play.index,play.wave,play.areaId);
+      const move=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt});
+      const guard=move?move.signature.guard:tactic.guard;
       $('#forest-battle-log').textContent=grade.status==='incorrect'
-        ? `${tactic.guard}。今回は攻撃できなかった。別の答えを試そう。`
-        : `${tactic.guard}。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。`;
+        ? `${guard}。今回は攻撃できなかった。別の答えを試そう。`
+        : `${guard}。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。`;
     }
     if(play.mode==='forest'&&play.endless&&['incorrect','incomplete'].includes(grade.status)&&raw){
       play.attemptReviewed=true;
@@ -715,7 +721,9 @@ async function gradeAnswer() {
     $('#forest-combo').textContent=play.combo>=2?`${play.combo} HIT COMBO`:'';
     stage.classList.toggle('forest-combo-boost',play.combo>=3);
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
-    $('#forest-battle-log').textContent=prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`;
+    const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
+    const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
+    $('#forest-battle-log').textContent=sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
   }
   const autoForest=play.mode==='forest';
   const objectiveQuiz=prompt.kind==='vocab'||prompt.kind==='grammar';
