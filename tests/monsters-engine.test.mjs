@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
-import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
+import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
@@ -16,7 +16,7 @@ import { bossConversationFor, bossConversationTurn } from '../prototype/speaking
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
 import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
@@ -89,7 +89,7 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
 });
 
 test('curriculum contains 156 original situations, 24 new adventures, 72 quizzes and three boss replies', () => {
-  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,13);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
   assert.equal(ALL_PROMPTS.length,255);
   for(const difficulty of ['normal','hard']) {
@@ -891,6 +891,50 @@ test('forest quiz controls respect English-only difficulty and keep typed vocabu
   input.value=prompt.options[2].toUpperCase();input.handlers.input();
   assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','true']);
 });
+test('rare forest recruits need both genuine language learning and cleared chapters',()=>{
+  const rare=MONSTERS.filter(c=>c.forestAreas);
+  assert.deepEqual(rare.map(c=>c.forestAreas),[1,2,3,4]);
+  assert.equal(new Set(rare.map(c=>c.id)).size,4);
+  let save=createSave();
+  const independent=PHRASES.map(phrase=>ALL_PROMPTS.find(p=>p.phraseId===phrase.id && p.difficulty==='easy' && !p.bossOnly && !['vocab','grammar'].includes(p.kind))).filter(Boolean);
+  for(const p of independent)save=rate(save,p.id,'smooth','2026-10-26').save;
+  assert.equal(learningSummary(save).independent,16);
+  assert.equal(rare.filter(c=>save.ownedMonsters.includes(c.id)).length,0,'Language alone cannot unlock forest rares');
+  for(const id of ['entry','glade']){
+    save=finishForest(save,'sunlit','medamago',id,[],true).save;
+    const award=captureEligibleMonsters(save);
+    save=award.save;
+    assert.ok(save.ownedMonsters.includes(id==='entry'?'fuwari':'kompass'));
+    if(id==='entry')assert.equal(save.ownedMonsters.includes('kompass'),false);
+  }
+  assert.equal(save.ownedMonsters.includes('pikap'),false,'Mastery and chapter 3 required');
+  assert.equal(save.ownedMonsters.includes('mokuryu'),false,'Last boss and multiple mastered phrases required');
+  assert.deepEqual(captureEligibleMonsters(save).captured,[],'Award is idempotent');
+  const legacy=validateSave({...save,forest:{clears:2,completedAreas:['entry','glade']}});
+  assert.ok(legacy.ownedMonsters.includes('fuwari'));
+  assert.ok(legacy.ownedMonsters.includes('kompass'));
+  assert.equal(companionUnlockProgress(createSave(),rare[0]).ready,false);
+  assert.equal(companionUnlockProgress(save,rare[1]).ready,true);
+});
+test('exploration journal preserves story choices across clears and old saves, without XP',()=>{
+ let save=createSave();
+ assert.deepEqual(cleanForest(save.forest).journal,[]);
+ const x=recordForestEvent(save,'entry-sunlit','inspect');
+ assert.equal(x.discovered,true);
+ assert.equal(x.save.xpWallet,0);
+ assert.equal(x.save.ownedMonsters.length,1);
+ assert.equal(x.save.forest.journal.length,1);
+ assert.deepEqual(save.forest.journal,[],'Source save stays unmodified');
+ assert.equal(recordForestEvent(x.save,'entry-sunlit','inspect').discovered,false);
+ save=recordForestEvent(x.save,'entry-sunlit','follow').save;
+ save=finishForest(save,'sunlit','medamago').save;
+ assert.equal(save.forest.journal.length,2);
+ const reload=validateSave(save);
+ assert.equal(reload.forest.journal.length,2);
+ assert.equal(cleanForest({...save.forest,journal:[...save.forest.journal,{eventId:'untrusted',choiceId:'bad'},null]}).journal.length,2);
+ assert.throws(()=>recordForestEvent(save,'entry-sunlit','unknown'),/Unknown/);
+ assert.deepEqual(validateSave({...createSave(),forest:{clears:0}}).forest.journal,[]);
+});
 test('a genuine new expression grows the companion and unlocks the odd sock', () => {
   const initial=createSave();
   const first=rate(initial,'think-cafe');
@@ -899,11 +943,14 @@ test('a genuine new expression grows the companion and unlocks the odd sock', ()
   assert.equal(first.save.monsterXp.medamago,0);
   assert.equal(initial.progress.think,undefined); // input is not mutated
   const second=rate(first.save,'repeat-class');
-  assert.deepEqual(second.reward.captured,['katappo']);
-  assert.equal(learningSummary(second.save).independent,2);
-  assert.ok(second.save.ownedMonsters.includes('katappo'));
-  const selected=selectMonster(second.save,'katappo');assert.equal(selected.selectedMonster,'katappo');
-  assert.throws(()=>selectMonster(second.save,'cone'),/まだ仲間/);
+  assert.deepEqual(second.reward.captured,[],'Two independent expressions should not instantly unlock a companion');
+  const third=rate(second.save,'agree-friend');
+  const fourth=rate(third.save,'help-bag');
+  assert.deepEqual(fourth.reward.captured,['katappo']);
+  assert.equal(learningSummary(fourth.save).independent,4);
+  assert.ok(fourth.save.ownedMonsters.includes('katappo'));
+  const selected=selectMonster(fourth.save,'katappo');assert.equal(selected.selectedMonster,'katappo');
+  assert.throws(()=>selectMonster(fourth.save,'cone'),/まだ仲間/);
 });
 
 test('correct completions stock XP, skips do not, and familiar phrases can be practised', () => {
@@ -922,6 +969,8 @@ test('saved XP may be freely allocated to any owned companion', () => {
   save=rate(save,'think-cafe','smooth').save;
   save=rate(save,'repeat-class','smooth').save;
   assert.equal(save.xpWallet,32);
+  // Feeding is a separate feature: start from an existing owned companion.
+  save={...save,ownedMonsters:['medamago','katappo'],monsterXp:{...save.monsterXp,katappo:0}};
   const first=feedMonster(save,'katappo',10);
   assert.equal(first.save.xpWallet,22);
   assert.equal(first.save.monsterXp.katappo,10);
