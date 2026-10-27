@@ -12,6 +12,7 @@ const assert=require('node:assert/strict');
     page.on('pageerror',error=>errors.push(error.message));
     page.on('crash',()=>errors.push('Page crashed'));
     await page.goto(process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/');
+    await page.locator('[data-home-page="forest"]').click();
     await page.locator('#start-forest').click();
     // The intro may already advance straight into combat on WebKit. Only
     // click the explore Continue button when that panel is actually visible.
