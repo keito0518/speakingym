@@ -11,6 +11,7 @@ import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
 import { createCollectionViews } from './monster-collection.js';
 import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
 import { listeningChallengeFor } from './listening-challenges.js';
+import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
 import { bossConversationTurn } from './forest-boss-story.js';
@@ -40,7 +41,7 @@ function speakingTeachingHtml(prompt,learnerAnswer='',reveal=false){
   return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${response}<p>${escapeHtml(note.clue)}</p>${details}</section>`;
 }
 let save = loadSave() || createSave();
-let play = null, timer = null, recognition = null, recognitionWatchdog = null, autoAdvanceTimer = null;
+let play = null, timer = null, recognition = null, recognitionWatchdog = null, autoAdvanceTimer = null, spokenAudio = null;
 
 function cancelAutoAdvance(){
   if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
@@ -95,6 +96,16 @@ function stopRecognition(mode='ready') {
 }
 function stopAudio() {
   stopRecognition('done');
+  stopListeningPlayback();
+}
+function stopListeningPlayback(){
+  const previous=spokenAudio;
+  spokenAudio=null;
+  if(previous){
+    previous.onerror=null;
+    previous.onended=null;
+    try{previous.pause();previous.removeAttribute('src');previous.load();}catch{}
+  }
   try { window.speechSynthesis?.cancel(); } catch {}
 }
 function clearTimer() { if (timer) clearInterval(timer); timer = null; }
@@ -418,7 +429,7 @@ function renderQuestion() {
       if(state.understood)return;
       state.played=true;
       showChoices();
-      speakLine(comprehension.audio,revealTranscript,comprehension.level);
+      speakLine(comprehension.audio,revealTranscript,comprehension.level,prompt.id);
     });
     $('#reveal-transcript').addEventListener('click',revealTranscript);
     $$('[data-listening-choice]').forEach(button=>button.addEventListener('click',()=>{
@@ -434,7 +445,7 @@ function renderQuestion() {
         return;
       }
       state.understood=true;
-      try{window.speechSynthesis?.cancel();}catch{}
+      stopListeningPlayback();
       button.classList.add('is-correct');
       $('#listening-status').textContent=englishMode?'You understood it. Now respond.':'聞き取れた！次は英語で返して防御しよう。';
       $('#listening-response').hidden=false;
@@ -446,14 +457,46 @@ function renderQuestion() {
     }));
   }
 }
-function speakLine(line,onUnavailable,level='easy') {
+function browserSpeakLine(line,onUnavailable,level='easy') {
   try {
     if(!window.speechSynthesis || !window.SpeechSynthesisUtterance) throw new Error('no speech');
     window.speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(line);utterance.lang='en-US';utterance.rate=level==='easy'?.88:level==='normal'?.95:1;
+    const voices=window.speechSynthesis.getVoices?.()||[];
+    const english=voices.filter(voice=>/^en[-_]/i.test(voice.lang));
+    const voice=english.find(item=>/natural|premium|enhanced/i.test(item.name))||
+      english.find(item=>/^en[-_]us/i.test(item.lang))||english[0];
+    if(voice)utterance.voice=voice;
     utterance.onerror=()=>onUnavailable?.();
     window.speechSynthesis.speak(utterance);
   } catch { onUnavailable?.(); }
+}
+function speakLine(line,onUnavailable,level='easy',promptId=''){
+  stopListeningPlayback();
+  const clip=LISTENING_AUDIO[promptId];
+  // Use generated speech only if its transcript is still an exact curriculum
+  // match. On network/codec failure, keep the original browser voice fallback.
+  if(clip?.text===line){
+    try{
+      const audio=new Audio(clip.src);
+      spokenAudio=audio;
+      let fallen=false;
+      const fallback=()=>{
+        if(fallen||spokenAudio!==audio)return;
+        fallen=true;
+        spokenAudio=null;
+        audio.onerror=null;
+        try{audio.pause();}catch{}
+        browserSpeakLine(line,onUnavailable,level);
+      };
+      audio.onerror=fallback;
+      audio.onended=()=>{if(spokenAudio===audio)spokenAudio=null;};
+      const pending=audio.play();
+      if(pending?.catch)pending.catch(fallback);
+      return;
+    }catch{/* Fall through to the browser's own voice. */}
+  }
+  browserSpeakLine(line,onUnavailable,level);
 }
 function startRecognition() {
   if(!play || play.revealed)return;

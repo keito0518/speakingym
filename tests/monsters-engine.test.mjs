@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
@@ -8,6 +9,7 @@ import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
+import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
@@ -15,6 +17,26 @@ import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEV
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
+
+test('all listening prompts have a real, matching and locally hosted humanlike AI voice clip',()=>{
+  const prompts=ALL_PROMPTS.filter(prompt=>prompt.kind==='listen');
+  assert.equal(prompts.length,81);
+  assert.equal(Object.keys(LISTENING_AUDIO).length,prompts.length);
+  const voices=new Set();
+  for(const prompt of prompts){
+    const clip=LISTENING_AUDIO[prompt.id];
+    assert.ok(clip,'Missing voice clip for '+prompt.id);
+    assert.equal(clip.text,listeningChallengeFor(prompt).audio,'Audio and transcript must match: '+prompt.id);
+    assert.match(clip.src,/^\.\/audio\/listening\/[a-z0-9-]+-[a-f0-9]{12}\.mp3$/);
+    const path=new URL('../prototype/speakingym-monsters/'+clip.src.slice(2),import.meta.url);
+    assert.equal(existsSync(path),true,'Missing hosted audio: '+clip.src);
+    assert.ok(statSync(path).size>5000,'Audio clip is unexpectedly empty: '+prompt.id);
+    const header=readFileSync(path).subarray(0,3).toString('ascii');
+    assert.equal(header,'ID3','MP3 metadata header is missing: '+prompt.id);
+    voices.add(clip.voice);
+  }
+  assert.ok(voices.size>=3,'Listening should include several distinct English voices');
+});
 
 test('curriculum contains 156 original situations, 24 new adventures, 72 quizzes and three boss replies', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,9);

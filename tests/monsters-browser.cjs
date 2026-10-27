@@ -105,7 +105,11 @@ const path=require('node:path');
     assert.equal(await listenPage.locator('#play-card').getAttribute('data-prompt-id'),'late-call');
     assert.equal(await listenPage.locator('#answer-area').isVisible(),false);
     assert.equal(await listenPage.locator('#listening-response').isVisible(),false);
+    const realAudio=listenPage.waitForResponse(response=>
+      /\/audio\/listening\/late-call-[a-f0-9]{12}\.mp3$/.test(response.url())&&response.status()===200,
+    {timeout:15000});
     await listenPage.locator('#play-audio').click();
+    await realAudio;
     assert.equal(await listenPage.locator('[data-listening-choice]').count(),3);
     const listened=await listenPage.evaluate(async()=>{
       const {listeningChallengeFor}=await import('./listening-challenges.js');
