@@ -42,7 +42,7 @@ function speakingTeachingHtml(prompt,learnerAnswer='',reveal=false){
   return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${response}<p>${escapeHtml(note.clue)}</p>${details}</section>`;
 }
 let save = loadSave() || createSave();
-let play = null, timer = null, recognition = null, recognitionWatchdog = null, autoAdvanceTimer = null, spokenAudio = null;
+let play = null, timer = null, recognition = null, recognitionWatchdog = null, recognitionStopping = false, autoAdvanceTimer = null, spokenAudio = null;
 
 function cancelAutoAdvance(){
   if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
@@ -91,9 +91,33 @@ function stopRecognition(mode='ready') {
   recognitionWatchdog=null;
   const active=recognition;
   recognition=null; // Disarm callbacks before abort: Safari fires onend asynchronously.
+  recognitionStopping=false;
   if(active)try{active.abort();}catch{}
   if(mode==='done')$('#spoken-answer')?.classList.remove('transcript-interim');
   micView(mode);
+}
+function finishRecognition(){
+  // A deliberate STOP must call stop(), not abort(): on iOS/WebKit abort()
+  // discards speech still waiting to be delivered by onresult/onend.
+  const active=recognition,helper=$('#speech-helper');
+  if(!active||recognitionStopping)return;
+  recognitionStopping=true;
+  micView('ready');
+  if(helper)helper.textContent='文字起こしを確定中です。英語が表示されてから判定してね。';
+  if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
+  recognitionWatchdog=setTimeout(()=>{
+    if(recognition!==active)return;
+    const text=$('#spoken-answer')?.value.trim();
+    stopRecognition(text?'captured':'ready');
+    if(helper)helper.textContent=text
+      ?'聞き取れた部分を残しました。英文を確認して判定してね。'
+      :'音声を文字にできませんでした。Safariで開くか、iPhoneのキーボードの音声入力も試してね。';
+  },4500);
+  try{active.stop();}catch{
+    const text=$('#spoken-answer')?.value.trim();
+    stopRecognition(text?'captured':'ready');
+    if(helper)helper.textContent=text?'聞き取れた英文を確認して判定してね。':'音声を文字にできませんでした。英文入力も利用できます。';
+  }
 }
 function stopAudio() {
   stopRecognition('done');
@@ -453,7 +477,11 @@ function renderQuestion() {
     $('#spoken-answer').classList.remove('transcript-interim');
     if(!recognition&&!quizMode)micView('ready');
   });
-  if(!quizMode)micView('ready');
+  if(!quizMode){
+    micView('ready');
+    if(/iPhone|iPad|iPod/i.test(navigator.userAgent))
+      $('#speech-helper').textContent='iPhoneで声が文字にならないときはSafariで開くか、入力欄をタップしてキーボードのマイクも使えるよ。';
+  }
   if(reviewing)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(listenMode){
     $('#answer-area').hidden=true;
@@ -496,7 +524,9 @@ function renderQuestion() {
       $('#play-audio').disabled=true;
       $$('[data-listening-choice]').forEach(choice=>choice.disabled=true);
       $('#reveal-transcript').hidden=true;
-      $('#spoken-answer').focus({preventScroll:true});
+      // Do not focus the input here. On iPhone this opens the software
+      // keyboard over the battle immediately after selecting an audio answer.
+      // Learners can tap the input themselves if they want to type.
     }));
   }
 }
@@ -545,8 +575,7 @@ function startRecognition() {
   if(!play || play.revealed)return;
   const helper=$('#speech-helper');
   if(recognition){
-    stopRecognition();
-    if(helper)helper.textContent='録音を停止しました。「話す」を押すと再開できます。';
+    finishRecognition();
     return;
   }
   const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -557,8 +586,16 @@ function startRecognition() {
   }
   try{
     const instance=new Constructor(),session=play;
+    recognitionStopping=false;
+    // A keyboard can obscure the answer in iOS embedded browsers. Starting
+    // speech doesn't require the text field to be focused.
+    if(document.activeElement===$('#spoken-answer'))$('#spoken-answer').blur();
     recognition=instance;
     instance.lang='en-US';instance.interimResults=true;instance.continuous=false;instance.maxAlternatives=1;
+    instance.onstart=()=>{
+      if(recognition!==instance||play!==session)return;
+      if(helper&&!recognitionStopping)helper.textContent='聞き取り中です。話すと英文が表示されます。終わったら「停止」を押してね。';
+    };
     instance.onresult=event=>{
       if(recognition!==instance || play!==session || !$('#spoken-answer'))return;
       const segments=[...event.results];
@@ -579,9 +616,16 @@ function startRecognition() {
     instance.onerror=event=>{
       if(recognition!==instance || play!==session)return;
       stopRecognition();
-      if(helper)helper.textContent=event.error==='not-allowed'||event.error==='service-not-allowed'
-        ?'マイクの利用が許可されていません。英文を入力して判定できます。'
-        :'うまく聞き取れませんでした。もう一度録音するか、英文を入力してね。';
+      if(helper){
+        const error=event?.error;
+        helper.textContent=error==='not-allowed'||error==='service-not-allowed'
+          ?'マイクの利用が許可されていません。Safariのマイク設定を確認するか英文を入力してね。'
+          :error==='network'||error==='language-not-supported'
+          ?'このブラウザの音声認識サービスに接続できません。Safariで開くか、iPhoneキーボードのマイクを使ってね。'
+          :error==='audio-capture'
+          ?'マイクを利用できませんでした。Safariのマイク許可を確認してね。'
+          :'英語を認識できませんでした。静かな場所で再度話すか、文字で入力してね。';
+      }
     };
     instance.onend=()=>{
       if(recognition!==instance || play!==session)return;
@@ -596,10 +640,10 @@ function startRecognition() {
       if(recognition!==instance)return;
       stopRecognition();
       if(helper)helper.textContent='録音が長く続いたため自動停止しました。もう一度試すか英文を入力してね。';
-    },15000);
+    },30000);
     instance.start();
     micView('listening');
-    if(helper)helper.textContent='録音中です。話し終えるか「停止」を押してください。';
+    if(helper)helper.textContent='録音中です。英文が表示されなければ、話し終わって「停止」を押してね。';
   }catch{
     stopRecognition();
     if(helper)helper.textContent='マイクを開始できません。英文入力で続けられます。';
@@ -612,7 +656,9 @@ function showHint() {
 async function gradeAnswer() {
   if(!play || play.revealed || play.grading)return;
   if(currentPrompt()?.kind==='listen'&&!play.listeningState?.understood)return;
-  stopRecognition('done');
+  // Grading during active listening would abort Safari's pending final
+  // transcript. Finish recognition first, then let the learner review it.
+  if(recognition){finishRecognition();return;}
   const session=play,prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
   let grade=gradeLocalResponse(prompt,raw);
   if(grade.status==='review' && !['vocab','grammar'].includes(prompt.kind) && STAGING_SEMANTIC_GRADER_ENDPOINT){
