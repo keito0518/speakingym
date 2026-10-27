@@ -15,7 +15,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
  const weak=new Set(quizWeaknessOverview(save,today).due.map(q=>q.id));
  const review=new Set(Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id));
  const hasPracticed=p=>Boolean(save.progress?.[p.phraseId]?.attempts);
- const due=p=>weak.has(p.id)||review.has(p.id)||Boolean(save.progress?.[p.phraseId]?.nextReviewDay&&save.progress[p.phraseId].nextReviewDay<=today);
+ const due=p=>weak.has(p.id)||review.has(p.id)||Boolean(save.retention?.[p.id]?.nextDay&&save.retention[p.id].nextDay<=today)||Boolean(save.progress?.[p.phraseId]?.nextReviewDay&&save.progress[p.phraseId].nextReviewDay<=today);
  const transfer=p=>hasPracticed(p)&&!QUIZ_KINDS.has(p.kind)&&
    !(save.progress?.[p.phraseId]?.smoothContexts||[]).includes(baseId(p));
  const selections=[],keys=new Set(),bases=new Set(),kinds=new Set(),phases=[];
