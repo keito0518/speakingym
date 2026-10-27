@@ -220,3 +220,19 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .review-only .forest-command-window{padding:4px 0}
 .review-only .play-card{max-height:none}
 @media(max-width:500px){.saved-review{padding:13px}.saved-review-heading h2{font-size:19px}.saved-review-heading button{width:100%}.forest-active .answer-area textarea.answer-input{min-height:125px}.forest-active .answer-helper{line-height:1.5}}
+
+
+/* Five-minute learning gym: one primary action, no extra RPG animations. */
+.daily-gym{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:18px;align-items:center;margin:18px 0 24px;padding:21px;border-radius:20px;background:linear-gradient(125deg,#e8f0db,#f7f2df);border:1px solid #c7d4b2;box-shadow:0 5px 22px #264c3012}
+.daily-gym-copy{min-width:0;display:flex;align-items:flex-start;flex-direction:column;gap:9px}
+.daily-gym-copy h2{font-size:clamp(22px,3vw,28px);line-height:1.35;color:#284635;margin:0}
+.daily-gym-copy p{font-size:13px;line-height:1.6;color:#455947;margin:0}
+.daily-gym-copy .daily-plan-status{font-size:12px;font-weight:750;color:#42694b}
+.daily-gym-copy button{min-height:47px}
+.daily-gym-progress{min-width:0;display:flex;flex-direction:column;gap:6px;padding:17px;background:#fffdf5;border:1px solid #d8dec8;border-radius:15px}
+.daily-gym-progress strong{font-size:36px;color:#316047;line-height:1.1;font-variant-numeric:tabular-nums}
+.daily-gym-progress small{font-size:11px;color:#506c5c}
+.daily-gym-progress p{font-size:11px;line-height:1.6;color:#53715c;margin:2px 0 0}
+.daily-question-kind{display:inline-block;padding:6px 10px;margin:0 0 10px;border-radius:8px;background:#e8f3e4;color:#335c41;font-size:12px;font-weight:800}
+.speaking-success-guide .forest-teaching-transfer{margin-top:9px}
+@media(max-width:560px){.daily-gym{grid-template-columns:1fr;gap:12px;padding:16px}.daily-gym-progress{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px}.daily-gym-progress .tiny-caps{grid-column:1/-1}.daily-gym-progress strong{grid-row:2/4}.daily-gym-progress p{grid-column:1/-1}.daily-gym-copy button{width:100%}}
