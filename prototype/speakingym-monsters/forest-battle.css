@@ -469,3 +469,16 @@
  .forest-active .forest-world-stage.forest-weakness-hit .forest-enemy,
  .forest-active .forest-world-stage.forest-spell-cast .forest-party{animation:none!important}
 }
+
+
+/* Boss seals change their stance after each verified language challenge.
+   Feedback remains textual as well as visual; no combat FX affect grading. */
+.forest-active .forest-boss-dialogue[data-area="glade"]{border-left-color:#d29e3d;background:linear-gradient(110deg,#fff1c7,#faf5e6)}
+.forest-active .forest-boss-dialogue[data-area="thicket"]{border-left-color:#748bb7;background:linear-gradient(110deg,#e6ecf6,#f7f2e9)}
+.forest-active .forest-boss-dialogue[data-area="sanctuary"]{border-left-color:#6d8952;background:linear-gradient(110deg,#e7eed6,#faf3de)}
+.forest-active .forest-world-stage.forest-boss-stage[data-boss-phase="1"] .forest-guard{filter:drop-shadow(0 0 10px #9fcce8)}
+.forest-active .forest-world-stage.forest-boss-stage[data-boss-phase="2"] .forest-guard{filter:drop-shadow(0 0 11px #f7c77d)}
+.forest-active .forest-world-stage.forest-boss-stage[data-boss-phase="3"] .forest-guard{filter:drop-shadow(0 0 13px #b3dcad)}
+.forest-active .forest-world-stage.forest-boss-stage[data-area="glade"] .forest-enemy{filter:drop-shadow(0 0 18px #fff0aa) drop-shadow(0 7px 7px #63442c)}
+.forest-active .forest-world-stage.forest-boss-stage[data-area="thicket"] .forest-enemy{filter:drop-shadow(0 0 18px #a6c4e6) drop-shadow(0 7px 7px #293e5b)}
+.forest-active .forest-world-stage.forest-boss-stage[data-area="sanctuary"] .forest-enemy{filter:drop-shadow(0 0 18px #bfe5ac) drop-shadow(0 7px 7px #364e3e)}
