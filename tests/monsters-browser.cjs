@@ -11,6 +11,7 @@ const path=require('node:path');
   const boot=async width=>{
     const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,isMobile:engine==='webkit',hasTouch:true,reducedMotion:'reduce'});
     const page=await context.newPage();
+    page.on('pageerror',error=>console.error('[monsters-pageerror]',error.message));
     await page.addInitScript(()=>{
       Math.random=()=>.99;
       // Headless voices differ by OS. Verify the intended audio-first path
