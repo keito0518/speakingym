@@ -417,8 +417,8 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   entry.attempts++;
   entry.lastDay = today;
   entry.lastRating = rating;
-  if (rating === 'smooth' && !['vocab','grammar'].includes(prompt.kind)) {
-    // Objective quizzes grow XP and review proficiency, not independent spoken fluency.
+  if (rating === 'smooth' && !['vocab','grammar','listen'].includes(prompt.kind)) {
+    // Listening and objective quizzes grow XP and comprehension practice, not independent spoken fluency.
     // Difficulty variants of one scene do not count as distinct mastery contexts.
     entry.smoothContexts = unique([...entry.smoothContexts, prompt.baseId || prompt.id]);
     entry.smoothDays = unique([...entry.smoothDays, today]);
