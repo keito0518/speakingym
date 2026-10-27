@@ -91,7 +91,18 @@ const path=require('node:path');
     // Audio-first gate: guessing the meaning incorrectly cannot expose the
     // response or grant XP; a later successful reply is marked as hinted.
     const {context:listenContext,page:listenPage}=await boot(320);
+    // With the expanded speaking pool, the first random practice prompt is
+    // no longer guaranteed to be listening. Seed one due listening review so
+    // this test reliably exercises the audio-first gate, not shuffle order.
+    await listenPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();
+      seeded.reviewPrompts['late-call']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await listenPage.reload();
     await listenPage.getByRole('button',{name:/まず練習する/}).click();
+    assert.equal(await listenPage.locator('#play-card').getAttribute('data-prompt-id'),'late-call');
     assert.equal(await listenPage.locator('#answer-area').isVisible(),false);
     assert.equal(await listenPage.locator('#listening-response').isVisible(),false);
     await listenPage.locator('#play-audio').click();
