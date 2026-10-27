@@ -20,6 +20,7 @@ import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-a
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
+import { recordRetention, retentionOverview, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -518,6 +519,59 @@ test('fresh save has a fried-egg companion and does not call account or AI APIs'
   assert.deepEqual(validateSave(save),save);
 });
 
+test('spaced retention stages need real 1/3/7-day revisits, not repeated tapping',()=>{
+ let state=createSave();
+ assert.deepEqual(retentionOverview(state,'2026-10-27').due,[]);
+ let result=recordAnswer(state,'think-cafe','smooth','2026-10-26');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,1);
+ assert.equal(result.reward.nextRetentionDay,'2026-10-27');
+ assert.equal(result.reward.bondGained,0);
+ assert.equal(retentionOverview(state,'2026-10-26').due.length,0);
+ assert.equal(retentionOverview(state,'2026-10-27').due.length,1);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-26');
+ assert.equal(result.reward.retentionAdvanced,false);
+ assert.equal(result.save.monsterBonds.medamago,0);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-27');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,2);
+ assert.equal(result.reward.nextRetentionDay,'2026-10-30');
+ assert.equal(result.reward.bondGained,1);
+ assert.equal(state.monsterBonds.medamago,1);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-28');
+ assert.equal(result.reward.retentionAdvanced,false);
+ assert.equal(result.reward.bondGained,0);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-30');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,3);
+ assert.equal(result.reward.nextRetentionDay,'2026-11-06');
+ assert.equal(state.monsterBonds.medamago,3);
+ assert.equal(retentionOverview(state,'2026-10-31').stable.length,1);
+ assert.equal(retentionTitle(3),'7日後チェック達成');
+ assert.deepEqual(validateSave(state).retention,state.retention);
+ assert.deepEqual(validateSave(createSave()).retention,{});
+ const hint=recordAnswer(state,'think-cafe','hint','2026-11-06');
+ assert.equal(hint.reward.bondGained,0);
+ assert.equal(hint.save.retention['think-cafe'].nextDay,'2026-11-07');
+ const fail=recordAnswer(state,'think-cafe','again','2026-11-06');
+ assert.equal(fail.save.retention['think-cafe'].stage,0);
+ assert.equal(fail.reward.xp,0);
+ const tampered=validateSave({...state,retention:{'fake-task':{stage:3,lastDay:'bad',nextDay:'bad'},'think-cafe':{stage:99,lastDay:'2026-10-26',nextDay:'2026-10-27'}}});
+ assert.deepEqual(tampered.retention,{});
+ assert.throws(()=>recordRetention({},'fake-task','smooth','2026-10-27'),/Invalid/);
+ assert.deepEqual(sanitizeRetention(null),{});
+});
+test('companion bond is cosmetic and cannot recruit locked creatures or spend XP',()=>{
+ const original=createSave();
+ const p=recordAnswer(original,'think-cafe','smooth','2026-10-26').save;
+ const next=recordAnswer(p,'think-cafe','smooth','2026-10-27').save;
+ assert.equal(next.monsterBonds.medamago,1);
+ assert.equal(original.monsterBonds.medamago,0);
+ assert.deepEqual(original.ownedMonsters,['medamago']);
+ assert.deepEqual(next.ownedMonsters,['medamago']);
+ assert.ok(next.xpWallet>original.xpWallet);
+ assert.equal(validateSave({...next,monsterBonds:{medamago:-10}}).monsterBonds.medamago,0);
+});
 test('study journal accurately summarizes due, upcoming and learned expressions',()=>{
   const initial=createSave();
   const empty=reviewOverview(initial,'2026-10-27');
@@ -531,14 +585,14 @@ test('study journal accurately summarizes due, upcoming and learned expressions'
   save=flagUncertainReview(save,'help-form','2026-10-26');
   save=flagUncertainReview(save,'booking-table','2026-10-27');
   const now=reviewOverview(save,'2026-10-27');
-  assert.equal(now.due.length,1);
-  assert.equal(now.due[0].phraseId,'help');
-  assert.equal(now.upcoming.length,2);
+  assert.equal(now.due.length,2); // overnight recall (think) + uncertain help
+  assert.deepEqual(new Set(now.due.map(item=>item.phraseId)),new Set(['think','help']));
+  assert.equal(now.upcoming.length,1);
   assert.equal(now.learned,1);
   assert.equal(now.mastered,0);
   assert.ok(now.scheduled.every((item,i,array)=>i===0||item.due>=array[i-1].due));
   assert.deepEqual(save.reviewPrompts['booking-table'],'2026-10-28');
-  assert.equal(learningSummary(save,'2026-10-27').reviewCount,1);
+  assert.equal(learningSummary(save,'2026-10-27').reviewCount,2);
   const later=reviewOverview(save,'2026-10-30');
   assert.equal(later.due.length,3);
 });
