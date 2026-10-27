@@ -92,8 +92,8 @@ const path=require('node:path');
     assert.equal(await gymPage.locator('#play-clock').innerText(),'5分目安 · 時間制限なし');
     const allDaily=[];
     for(let i=0;i<8;i++){
-      await unlockListening(gymPage);
       const id=await gymPage.locator('#play-card').getAttribute('data-prompt-id');
+      const listening=await gymPage.locator('#play-audio').count()>0;
       allDaily.push(id);
       const answer=await gymPage.evaluate(async()=>{
         const {ALL_PROMPTS}=await import('./monster-data.js');
@@ -103,8 +103,8 @@ const path=require('node:path');
         await gymPage.locator('#bookmark-question').click();
         assert.equal(await gymPage.locator('#bookmark-question').getAttribute('aria-pressed'),'true');
       }
-      await gymPage.locator('#spoken-answer').fill(answer);
-      await gymPage.locator('#show-answer').click();
+      if(listening)await unlockListening(gymPage);
+      else{await gymPage.locator('#spoken-answer').fill(answer);await gymPage.locator('#show-answer').click();}
       assert.equal(await gymPage.locator('#next-question').isVisible(),true);
       const held=await gymPage.locator('#play-card').getAttribute('data-prompt-id');
       await gymPage.waitForTimeout(150);
@@ -130,13 +130,15 @@ const path=require('node:path');
         await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
         await levelPage.getByRole('button',{name:/まず練習する/}).click();
-        assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH/);
+        assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH|LISTENING ONLY/);
         if(await levelPage.locator('#play-audio').count()){
           assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening task text must start hidden');
           assert.equal(await levelPage.locator('#answer-area').isVisible(),false);
           await unlockListening(levelPage);
           assert.equal(await levelPage.locator('[data-listening-choice]').count(),difficulty==='hard'?4:3);
-          assert.equal(await levelPage.locator('.task-panel').isVisible(),true,'Response context appears after audio comprehension');
+          assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening ends with understanding, without speaking');
+          assert.equal(await levelPage.locator('#spoken-answer').isVisible(),false);
+          assert.equal(await levelPage.locator('#next-question').isVisible(),true);
         }else assert.equal(await levelPage.locator('.task-panel').isVisible(),true);
         assert.equal(await levelPage.locator('#play-card').evaluate(el=>/[ぁ-んァ-ン一-龯]/.test(el.innerText)),false);
         const metrics=await levelPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -153,10 +155,12 @@ const path=require('node:path');
     await hardPage.locator('[data-home-page="challenge"]').click();
     assert.match(await hardPage.locator('.question-top').innerText(),/1 \/ 3/);
     for(let i=0;i<3;i++){
-      await unlockListening(hardPage);
-      await hardPage.locator('#spoken-answer').fill('I do not know yet.');
-      await hardPage.locator('#show-answer').click();
-      await hardPage.locator('#show-example').click();
+      if(await hardPage.locator('#play-audio').count())await unlockListening(hardPage);
+      else{
+        await hardPage.locator('#spoken-answer').fill('I do not know yet.');
+        await hardPage.locator('#show-answer').click();
+        await hardPage.locator('#show-example').click();
+      }
       await hardPage.locator('#next-question').click();
     }
     assert.equal(await hardPage.locator('#result-view').isVisible(),true);
@@ -207,10 +211,8 @@ const path=require('node:path');
     assert.equal(await listenPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
     await listenPage.locator(`[data-listening-choice="${listened.correct}"]`).click();
     assert.equal(await listenPage.locator('#answer-area').isVisible(),true);
-    assert.equal(await listenPage.locator('#spoken-answer').evaluate(input=>document.activeElement===input),false,'Selecting a listening answer must not open the iOS keyboard');
-    assert.equal(await listenPage.locator('#transcript').isVisible(),false,'Transcript stays hidden after listening success');
-    await listenPage.locator('#spoken-answer').fill(listened.answer);
-    await listenPage.locator('#show-answer').click();
+    assert.equal(await listenPage.locator('#spoken-answer').isVisible(),false,'Listening never asks for microphone/typing');
+    assert.equal(await listenPage.locator('#transcript').isVisible(),true,'Reveal actual clip transcript as feedback');
     assert.match(await listenPage.locator('#feedback-panel').innerText(),/\+8 XP/);
     assert.equal(await listenPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),8);
     await listenContext.close();
@@ -278,12 +280,7 @@ const path=require('node:path');
     await weakPage.locator('[data-forest-route="moss"]').click();
     if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
     await unlockListening(weakPage);
-    const listeningAnswer=await weakPage.evaluate(async()=>{
-      const {ALL_PROMPTS}=await import('./monster-data.js');
-      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
-    });
-    await weakPage.locator('#spoken-answer').fill(listeningAnswer);
-    await weakPage.locator('#show-answer').click();
+    assert.equal(await weakPage.locator('#spoken-answer').isVisible(),false);
     await weakPage.locator('#next-question').click();
     if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
     assert.equal(await weakPage.locator('#play-card').getAttribute('data-prompt-id'),'forest-vocab-ticket-easy');
@@ -361,12 +358,14 @@ const path=require('node:path');
           await unlockListening(forestPage);
           assert.equal(await forestPage.locator('#answer-area').isVisible(),true);
         }
-        const example=await forestPage.evaluate(async()=>{
-          const {ALL_PROMPTS}=await import('./monster-data.js');
-          return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
-        });
-        await forestPage.locator('#spoken-answer').fill(example);
-        await forestPage.locator('#show-answer').click();
+        if(!await forestPage.locator('#play-audio').count()){
+          const example=await forestPage.evaluate(async()=>{
+            const {ALL_PROMPTS}=await import('./monster-data.js');
+            return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+          });
+          await forestPage.locator('#spoken-answer').fill(example);
+          await forestPage.locator('#show-answer').click();
+        }
         assert.match(await forestPage.locator('#feedback-panel').innerText(),/関門突破/);
         assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-attack')),true);
         assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-guarding')),false);
@@ -530,13 +529,15 @@ const path=require('node:path');
     // A route remains a manual choice, without an automatic explanation timer.
     const {context:autoContext,page:autoPage}=await boot(390);
     const autoAnswer=async()=>{
-      await unlockListening(autoPage);
-      const answer=await autoPage.evaluate(async()=>{
-        const {ALL_PROMPTS}=await import('./monster-data.js');
-        return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
-      });
-      await autoPage.locator('#spoken-answer').fill(answer);
-      await autoPage.locator('#show-answer').click();
+      if(await autoPage.locator('#play-audio').count())await unlockListening(autoPage);
+      else{
+        const answer=await autoPage.evaluate(async()=>{
+          const {ALL_PROMPTS}=await import('./monster-data.js');
+          return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+        });
+        await autoPage.locator('#spoken-answer').fill(answer);
+        await autoPage.locator('#show-answer').click();
+      }
     };
     await enterHomePanel(autoPage,'forest');
     await autoPage.locator('#start-forest').click();
@@ -599,12 +600,7 @@ const path=require('node:path');
     // Continue past the listening task with an authored answer, then verify
     // that an objectively incorrect vocabulary choice does spend the try.
     await unlockListening(endlessPage);
-    const endlessListeningAnswer=await endlessPage.evaluate(async()=>{
-      const {ALL_PROMPTS}=await import('./monster-data.js');
-      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
-    });
-    await endlessPage.locator('#spoken-answer').fill(endlessListeningAnswer);
-    await endlessPage.locator('#show-answer').click();
+    assert.equal(await endlessPage.locator('#spoken-answer').isVisible(),false);
     await endlessPage.locator('#next-question').click();
     await endlessPage.locator('#forest-journey').waitFor({state:'visible',timeout:6500});
     assert.match(await endlessPage.locator('.question-top').innerText(),/ENCOUNTER 3/);
@@ -772,9 +768,8 @@ const path=require('node:path');
     await page.locator('#next-question').click();
     for(let i=0;i<2;i++){
       assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),['repeat-station','agree-friend'][i]);
-      await unlockListening(page);
-      await page.locator('#spoken-answer').fill(i===0?'Could you say that again?':'That works for me.');
-      await page.locator('#show-answer').click();
+      if(await page.locator('#play-audio').count())await unlockListening(page);
+      else{await page.locator('#spoken-answer').fill(i===0?'Could you say that again?':'That works for me.');await page.locator('#show-answer').click();}
       assert.match(await page.locator('#feedback-panel').innerText(),/\+16 XP/);
       await page.locator('#next-question').click();
     }
@@ -808,10 +803,8 @@ const path=require('node:path');
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
     for(let i=0;i<6;i++){
-      await unlockListening(page);
-      await page.locator('#spoken-answer').fill('I do not know yet.');
-      await page.locator('#show-answer').click();
-      await page.locator('#show-example').click();
+      if(await page.locator('#play-audio').count())await unlockListening(page);
+      else{await page.locator('#spoken-answer').fill('I do not know yet.');await page.locator('#show-answer').click();await page.locator('#show-example').click();}
       await page.locator('#next-question').click();
     }
     assert.equal(await page.locator('#result-view').isVisible(),true);
