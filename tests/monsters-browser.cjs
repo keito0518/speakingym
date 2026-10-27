@@ -133,6 +133,7 @@ const path=require('node:path');
     assert.equal(await listenPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
     await listenPage.locator(`[data-listening-choice="${listened.correct}"]`).click();
     assert.equal(await listenPage.locator('#answer-area').isVisible(),true);
+    assert.equal(await listenPage.locator('#spoken-answer').evaluate(input=>document.activeElement===input),false,'Selecting a listening answer must not open the iOS keyboard');
     assert.equal(await listenPage.locator('#transcript').isVisible(),false,'Transcript stays hidden after listening success');
     await listenPage.locator('#spoken-answer').fill(listened.answer);
     await listenPage.locator('#show-answer').click();
@@ -524,6 +525,7 @@ const path=require('node:path');
       class FakeRecognition {
         start(){window.__activeMic=this;}
         abort(){this.aborted=true;queueMicrotask(()=>this.onend?.());}
+        stop(){this.stopped=true;}
       }
       window.SpeechRecognition=FakeRecognition;
     });
@@ -550,8 +552,14 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#spoken-answer').evaluate(el=>el.classList.contains('transcript-interim')),false);
     await micPage.locator('#retry-mic').click();
     assert.equal(await micButton.getAttribute('aria-pressed'),'true');
-    await micButton.click(); // Explicit stop must remove the orange recording state.
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Could you'}],{isFinal:false})]}));
+    await micButton.click(); // stop(), NOT abort(): still waiting for WebKit's final transcript.
     assert.equal(await micButton.getAttribute('aria-pressed'),'false');
+    assert.equal(await micPage.evaluate(()=>window.__activeMic.stopped),true);
+    assert.equal(await micPage.evaluate(()=>Boolean(window.__activeMic.aborted)),false,'Stopping must not discard pending speech');
+    await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Could you help me?'}],{isFinal:true})]}));
+    assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Could you help me?');
+    assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
     await micButton.click();
     await micPage.evaluate(()=>window.__activeMic.onerror?.({error:'not-allowed'}));
     assert.equal(await micButton.getAttribute('aria-pressed'),'false');
