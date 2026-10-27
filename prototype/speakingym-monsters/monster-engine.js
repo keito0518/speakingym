@@ -488,7 +488,7 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   // Bond XP is never spendable and does not bypass recruitment prerequisites.
   let bondGained=0;
   if(rating==='smooth'&&retentionRecord.stageChanged&&retentionRecord.stage>=2){
-    bondGained=retentionRecord.stage===3?2:1;
+    bondGained=retentionRecord.stage===4?3:retentionRecord.stage===3?2:1;
     next.monsterBonds ||= {};
     const id=next.selectedMonster;
     if(next.ownedMonsters.includes(id))
