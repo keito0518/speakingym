@@ -510,3 +510,22 @@
 @keyframes boss-charge-glow{from{opacity:.45}to{opacity:1}}
 @media(max-width:360px){.forest-event-choices{gap:6px}.forest-event-choices button{padding:8px}.forest-event-choices strong{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.forest-world-stage.forest-boss-stage .forest-world-vignette::after{animation:none!important}}
+
+
+/* Four new companions earn their own attacks, rather than reusing a generic FX. */
+.forest-active .forest-world-stage[data-attack="fuwari"] .forest-player-art{animation-name:cloud-hover}
+.forest-active .forest-world-stage[data-attack="kompass"] .forest-player-art{animation-name:compass-idle}
+.forest-active .forest-world-stage[data-attack="pikap"] .forest-player-art{animation-name:firefly-glow}
+.forest-active .forest-world-stage[data-attack="mokuryu"] .forest-player-art{animation-name:dragon-breathe}
+.forest-active .forest-world-stage.forest-attack[data-attack="fuwari"] .forest-party{animation-name:cloud-gust}
+.forest-active .forest-world-stage.forest-attack[data-attack="kompass"] .forest-party{animation-name:compass-dash}
+.forest-active .forest-world-stage.forest-attack[data-attack="pikap"] .forest-party{animation-name:firefly-flash}
+.forest-active .forest-world-stage.forest-attack[data-attack="mokuryu"] .forest-party{animation-name:dragon-leap}
+@keyframes cloud-hover{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-9px) scale(1.04,.96)}}
+@keyframes compass-idle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(8deg)}}
+@keyframes firefly-glow{0%,100%{filter:brightness(1);transform:translateY(0)}50%{filter:brightness(1.33) drop-shadow(0 0 10px #ffe5a1);transform:translateY(-9px)}}
+@keyframes dragon-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06,.96)}}
+@keyframes cloud-gust{0%,100%{transform:translate(-50%,9%)}25%{transform:translate(-75%,-34%) scale(1.22)}52%{transform:translate(140%,-52%) scale(.9,1.2)}73%{transform:translate(30%,-12%) scale(1.2,.8)}}
+@keyframes compass-dash{0%,100%{transform:translate(-50%,9%) rotate(0)}29%{transform:translate(-40%,-18%) rotate(-32deg)}55%{transform:translate(135%,3%) rotate(330deg)}78%{transform:translate(10%,-15%) rotate(375deg)}}
+@keyframes firefly-flash{0%,100%{transform:translate(-50%,9%) scale(1)}24%{transform:translate(-10%,-80%) scale(.6)}48%{transform:translate(110%,-40%) scale(1.55)}68%{transform:translate(145%,8%) scale(.75)}}
+@keyframes dragon-leap{0%,100%{transform:translate(-50%,9%)}23%{transform:translate(-65%,19%) scale(1.12,.8)}49%{transform:translate(135%,-35%) rotate(-22deg) scale(1.2)}70%{transform:translate(45%,-12%) rotate(15deg)}}
