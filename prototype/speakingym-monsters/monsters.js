@@ -884,14 +884,15 @@ function advanceQuestion(){
       $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${FOREST_AREAS.find(a=>a.id===play.areaId).name} · ${difficultyCopy[wave.level].label}`;
       showForestExplore(false);queueForestEncounter();return;
     }
-    // The boss keeps its dedicated arena until defeated; normal encounters
-    // return to exploration before the next battle.
-    if(play.index>regularCount() && play.index<waveLength()){
-      renderQuestion();
-    } else {
+    // Learning first: ordinary questions flow directly into the next task.
+    // Only route decisions, optional story discoveries and boss approaches
+    // briefly return to exploration. Keep explanations manual above.
+    const storyDetour=Boolean(forestEventFor({areaId:play.areaId,route:play.route,index:play.index}));
+    const bossApproach=play.index===regularCount();
+    if(storyDetour||bossApproach){
       showForestExplore(false);
-      queueForestEncounter();
-    }
+      if(bossApproach)queueForestEncounter();
+    }else renderQuestion();
     updateClock();return;
   }
   play.index++;
