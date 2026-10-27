@@ -163,3 +163,27 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
  .review-journal-head h2{font-size:17px}
 }
 @media(prefers-reduced-motion:reduce){.review-journal-progress span{transition:none}}
+
+/* Listening is audio-first: no transcript, scenario, task or answer input
+   appears until the learner identifies the spoken meaning. */
+.listening-first [hidden]{display:none!important}
+.listening-first .listening-heading{margin:13px 0 8px;font-size:clamp(19px,2.7vw,27px);line-height:1.55;overflow-wrap:break-word;line-break:strict}
+.listening-first .listening-play{display:flex;width:100%;min-height:55px;justify-content:center;gap:12px;font-size:clamp(13px,2vw,16px);border:1px solid #a8cbb8;box-shadow:0 3px 0 #c7ded0;cursor:pointer}
+.listening-first .listening-play:focus-visible,.listening-choice:focus-visible,.listening-fallback:focus-visible{outline:3px solid #f0b958;outline-offset:3px}
+.listening-meaning{margin-top:18px}
+.listening-check-title{font-size:clamp(15px,2vw,18px);font-weight:800;color:#264b36;line-height:1.65;margin:0 0 11px;overflow-wrap:break-word}
+.listening-choices{display:grid;grid-template-columns:1fr;gap:9px}
+.listening-choice{width:100%;display:block;text-align:left;padding:13px 16px;border:1px solid #d7e3d8;border-radius:12px;background:#fff;font-size:clamp(13px,1.65vw,15px);line-height:1.55;color:#284234;cursor:pointer;overflow-wrap:break-word;line-break:strict}
+.listening-choice:hover:not(:disabled){border-color:#70a88a;background:#f0f8f1}
+.listening-choice.is-miss{border-color:#cf947c;background:#fdf2eb;color:#8c4d34}
+.listening-choice.is-correct{border-color:#76ab81;background:#e4f4e6;color:#216646;font-weight:800}
+.listening-choice:disabled{cursor:default;opacity:1}
+.listening-status{font-size:12px;color:#526b58;line-height:1.65;margin:11px 0 0}
+.listening-fallback{display:block;margin-top:14px;font-size:12px;line-height:1.6}
+.listening-first .transcript-fallback{background:#fff8df;border:1px solid #e7d5a4;padding:10px 12px;border-radius:9px;line-height:1.6;overflow-wrap:break-word}
+.listening-response{margin-top:18px;padding-top:17px;border-top:1px solid #e3e8dc}
+.listening-response .scenario-label{margin-top:0}
+.listening-response h1{font-size:clamp(18px,2.4vw,23px);margin:9px 0}
+.forest-active .listening-choice{padding:11px 13px;font-size:14px}
+.forest-active .listening-first .listening-heading{font-size:clamp(18px,4.5vw,22px);margin:8px 0}
+@media(max-width:380px){.listening-choice{padding:11px 12px}.listening-status{font-size:11px}}

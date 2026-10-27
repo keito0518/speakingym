@@ -10,6 +10,7 @@ import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
 import { createCollectionViews } from './monster-collection.js';
 import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
+import { listeningChallengeFor } from './listening-challenges.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -326,6 +327,9 @@ function renderQuestion() {
   $('#play-progress-fill').style.width=`${100*play.index/play.prompts.length}%`;
   const englishMode = (prompt.difficulty||'easy')!=='easy';
   const quizMode=prompt.kind==='vocab'||prompt.kind==='grammar';
+  const listenMode=prompt.kind==='listen';
+  const comprehension=listenMode?listeningChallengeFor(prompt):null;
+  play.listeningState=listenMode?{played:false,understood:false,misses:0,usedTranscript:false}:null;
   const questionBody = quizMode
     ? `<p class="scenario-label">${prompt.kind==='vocab'?'WORD WEAKNESS':'GRAMMAR MAGIC'}</p><h1 class="forest-quiz-question" lang="${englishMode?'en':'ja'}">${escapeHtml(prompt.cue)}</h1>${englishMode?`<div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div>`:''}<p class="question-caption" ${englishMode?'lang="en"':''}>${escapeHtml(prompt.scene)} · ${englishMode?(prompt.kind==='vocab'?'Choose the word that fits.':'Put the words in order.'):(prompt.kind==='vocab'?'正しい単語で弱点を見つけよう':'正しい語順で魔法を完成させよう')}</p>`
     : englishMode
@@ -333,7 +337,7 @@ function renderQuestion() {
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
-  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'LISTENING DEFENSE':play.mode==='forest'&&prompt.kind==='read'?'READING STRIKE':prompt.kind==='vocab'?'VOCAB WEAKNESS':prompt.kind==='grammar'?'GRAMMAR MAGIC':englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${readingPassage}${questionBody}${prompt.kind==='listen'?'<button class="listen-control" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> 相手の英語を聞く</button><button class="hint-button" id="reveal-transcript" style="display:block">音声が聞こえない場合</button><p class="transcript-fallback" id="transcript" hidden></p>':''}`;
+  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=REGULAR_ENCOUNTERS?BOSS_HITS:REGULAR_ENCOUNTERS):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'LISTENING DEFENSE':play.mode==='forest'&&prompt.kind==='read'?'READING STRIKE':prompt.kind==='vocab'?'VOCAB WEAKNESS':prompt.kind==='grammar'?'GRAMMAR MAGIC':englishMode?'ENGLISH → ENGLISH':prompt.kind==='listen'?'LISTEN & RESPOND':'JAPANESE → ENGLISH'}</span></div>${listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'敵の声を聞いて、意味を見抜こう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div><p id="listening-status" class="listening-status" role="status" aria-live="polite">${englishMode?'Choose what you heard, then respond in English.':'聞き取れた内容を選ぼう。'}</p></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p><div class="listening-response" id="listening-response" hidden><p class="scenario-label">${englishMode?'YOUR REPLY':'次は英語で返そう'}</p>${questionBody}</div></div>`:`${readingPassage}${questionBody}`}`;
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><input id="spoken-answer" class="answer-input" autocomplete="off" autocapitalize="sentences" placeholder="ここに英語を入力してもOK"><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
@@ -356,19 +360,59 @@ function renderQuestion() {
   });
   if(!quizMode)micView('ready');
   if(reviewing)$('#speech-helper').textContent='復習問題です。前回とは違う言い方でも挑戦してみよう。';
-  if(prompt.kind==='listen'){
-    $('#play-audio').addEventListener('click',()=>speakLine(prompt.audio));
-    $('#reveal-transcript').addEventListener('click',()=>{$('#transcript').hidden=false;$('#transcript').textContent=prompt.audio;});
+  if(listenMode){
+    $('#answer-area').hidden=true;
+    const state=play.listeningState;
+    const showChoices=()=>{$('#listening-meaning').hidden=false;};
+    const revealTranscript=()=>{
+      if(!play||play.listeningState!==state||state.understood)return;
+      state.usedTranscript=true;
+      play.hintUsed=true; // A transcript-assisted clear cannot count as independent speaking mastery.
+      $('#transcript').hidden=false;
+      $('#transcript').textContent=comprehension.audio;
+      showChoices();
+      $('#listening-status').textContent='字幕を使った練習モードです。聞き直してから意味を選んでね。';
+    };
+    $('#play-audio').addEventListener('click',()=>{
+      if(state.understood)return;
+      state.played=true;
+      showChoices();
+      speakLine(comprehension.audio,revealTranscript,comprehension.level);
+    });
+    $('#reveal-transcript').addEventListener('click',revealTranscript);
+    $$('[data-listening-choice]').forEach(button=>button.addEventListener('click',()=>{
+      if(!play||play.listeningState!==state||state.understood||(!state.played&&!state.usedTranscript))return;
+      const selected=Number(button.dataset.listeningChoice);
+      if(selected!==comprehension.correctIndex){
+        state.misses++;
+        play.hintUsed=true;
+        persist(flagUncertainReview(save,prompt.id));
+        button.classList.add('is-miss');
+        button.setAttribute('aria-invalid','true');
+        $('#listening-status').textContent=englishMode?'Not quite. Listen again and compare the details.':'少し違うかも。もう一度聞いて、細かい違いに注目しよう。';
+        return;
+      }
+      state.understood=true;
+      try{window.speechSynthesis?.cancel();}catch{}
+      button.classList.add('is-correct');
+      $('#listening-status').textContent=englishMode?'You understood it. Now respond.':'聞き取れた！次は英語で返して防御しよう。';
+      $('#listening-response').hidden=false;
+      $('#answer-area').hidden=false;
+      $('#play-audio').disabled=true;
+      $$('[data-listening-choice]').forEach(choice=>choice.disabled=true);
+      $('#reveal-transcript').hidden=true;
+      $('#spoken-answer').focus({preventScroll:true});
+    }));
   }
 }
-function speakLine(line) {
+function speakLine(line,onUnavailable,level='easy') {
   try {
     if(!window.speechSynthesis || !window.SpeechSynthesisUtterance) throw new Error('no speech');
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(line);utterance.lang='en-US';utterance.rate=.89;
-    utterance.onerror=()=>{$('#transcript').hidden=false;$('#transcript').textContent=line;};
+    const utterance=new SpeechSynthesisUtterance(line);utterance.lang='en-US';utterance.rate=level==='easy'?.88:level==='normal'?.95:1;
+    utterance.onerror=()=>onUnavailable?.();
     window.speechSynthesis.speak(utterance);
-  } catch { $('#transcript').hidden=false;$('#transcript').textContent=line; }
+  } catch { onUnavailable?.(); }
 }
 function startRecognition() {
   if(!play || play.revealed)return;
@@ -440,6 +484,7 @@ function showHint() {
 }
 async function gradeAnswer() {
   if(!play || play.revealed || play.grading)return;
+  if(currentPrompt()?.kind==='listen'&&!play.listeningState?.understood)return;
   stopRecognition('done');
   const session=play,prompt=currentPrompt(),raw=$('#spoken-answer').value.trim();
   let grade=gradeLocalResponse(prompt,raw);

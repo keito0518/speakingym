@@ -12,6 +12,10 @@ const path=require('node:path');
     const context=await browser.newContext({viewport:{width,height:844},hasTouch:true,isMobile:engine==='webkit',reducedMotion});
     const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
     page.on('crash',()=>errors.push('Browser page crashed'));
+    await page.addInitScript(()=>{
+      window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
+      Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{speak(){},cancel(){}}});
+    });
     await page.goto(base,{waitUntil:'networkidle'});
     return {context,page};
   }
@@ -29,6 +33,15 @@ const path=require('node:path');
     assert.ok(m.scroll<=m.width+1,`${engine} ${label}: ${JSON.stringify(m)}`);
   }
   async function answer(page){
+    if(await page.locator('#play-audio').count()){
+      await page.locator('#play-audio').click();
+      const correct=await page.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const {listeningChallengeFor}=await import('./listening-challenges.js');
+        return listeningChallengeFor(ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)).correctIndex;
+      });
+      await page.locator(`[data-listening-choice="${correct}"]`).click();
+    }
     const example=await page.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
       return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;

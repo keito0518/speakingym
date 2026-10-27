@@ -11,7 +11,7 @@ const assert=require('node:assert/strict');
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     page.on('crash',()=>errors.push('Page crashed'));
-    await page.goto('http://127.0.0.1:8766/prototype/speakingym-monsters/');
+    await page.goto(process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/');
     await page.locator('#start-forest').click();
     await page.locator('#forest-explore-continue').click();
     await page.locator('#spoken-answer').fill('I have an unexpected answer.');

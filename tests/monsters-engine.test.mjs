@@ -7,6 +7,7 @@ import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAV
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
+import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
@@ -61,6 +62,28 @@ test('every reading encounter has an authored passage, including higher difficul
       assert.notEqual(prompt.readText,simpler.readText,`Difficulty passage was duplicated for ${prompt.id}`);
     }
   }
+});
+
+test('every listening task requires an authored audio-first meaning check at its own difficulty',()=>{
+  const listening=ALL_PROMPTS.filter(p=>p.kind==='listen');
+  assert.ok(listening.length>=50);
+  for(const prompt of listening){
+    const challenge=listeningChallengeFor(prompt);
+    assert.ok(challenge.audio.length>=prompt.audio.length,`Audio must not be shorter at higher levels: ${prompt.id}`);
+    if(prompt.difficulty)assert.notEqual(challenge.audio,prompt.audio,`Unique audio is required for ${prompt.id}`);
+    assert.equal(challenge.level,prompt.difficulty||'easy');
+    assert.equal(challenge.options.length,challenge.level==='hard'?4:3);
+    assert.equal(new Set(challenge.options).size,challenge.options.length,`Duplicate choices for ${prompt.id}`);
+    assert.ok(challenge.options.every(choice=>choice.length>5));
+    assert.ok(challenge.correctIndex>=0&&challenge.correctIndex<challenge.options.length);
+    assert.equal(challenge.options.filter(choice=>choice===challenge.options[challenge.correctIndex]).length,1);
+    if(challenge.level==='easy')assert.ok(challenge.options.every(choice=>/[ぁ-んァ-ン一-龯]/.test(choice)));
+    else assert.ok(challenge.options.every(choice=>!/[^\x00-\x7F]/.test(choice)));
+    assert.ok(challenge.options.every(choice=>!choice.includes(prompt.answer)));
+  }
+  assert.equal(listeningChallengeFor(ALL_PROMPTS.find(p=>p.kind==='speak')),null);
+  assert.notEqual(listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='problem-wifi-normal')).correctIndex,
+    listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='problem-wifi-hard')).correctIndex);
 });
 
 test('the illustrated adventure scene has distinct accessible route art and stable landmarks', () => {
