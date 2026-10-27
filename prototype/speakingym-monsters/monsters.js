@@ -617,7 +617,7 @@ function renderQuestion() {
       button.classList.add('is-correct');
       $('#listening-status').textContent=englishMode?'Correct! Listening complete.':'正解！聞き取れたね。スピーキングは別の問題で練習できるよ。';
       $('#play-audio').disabled=true;
-      $('[data-listening-choice]').forEach(choice=>choice.disabled=true);
+      $$('[data-listening-choice]').forEach(choice=>choice.disabled=true);
       $('#reveal-transcript').hidden=true;
       $('#transcript').hidden=false;
       $('#transcript').textContent=comprehension.audio;
