@@ -16,6 +16,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Parse-check browser entry and learning modules
+        run: |
+          node --check prototype/speakingym-monsters/monsters.js
+          node --check prototype/speakingym-monsters/forest-quizzes.js
+          node --check prototype/speakingym-monsters/forest-quizzes-extra.js
+          node --check prototype/speakingym-monsters/listening-challenges.js
       - name: Curriculum, mastery and reward tests
         run: node --test tests/monsters-engine.test.mjs
       - name: Install Playwright
