@@ -39,7 +39,7 @@ export function validateSave(value) {
     if (!entry || typeof entry !== 'object') continue;
     cleanProgress[phrase.id] = {
       attempts: Math.max(0, Number(entry.attempts) || 0),
-      smoothContexts: unique((Array.isArray(entry.smoothContexts) ? entry.smoothContexts : []).map(id => ALL_PROMPTS.find(prompt => prompt.id === id)?.baseId || id).filter(id => PROMPTS.some(prompt => prompt.id === id && prompt.phraseId === phrase.id))),
+      smoothContexts: unique((Array.isArray(entry.smoothContexts) ? entry.smoothContexts : []).map(id => ALL_PROMPTS.find(prompt => prompt.id === id)?.baseId || id).filter(id => ALL_PROMPTS.some(prompt => (prompt.baseId||prompt.id) === id && prompt.phraseId === phrase.id))),
       smoothDays: unique((Array.isArray(entry.smoothDays) ? entry.smoothDays : []).filter(key => /^\d{4}-\d{2}-\d{2}$/.test(key))),
       lastDay: typeof entry.lastDay === 'string' ? entry.lastDay : null,
       nextReviewDay: typeof entry.nextReviewDay === 'string' ? entry.nextReviewDay : null,
@@ -163,7 +163,7 @@ export function selectRoundPrompts(save, count = 6, random = Math.random, today 
   if (!DIFFICULTIES.includes(difficulty)) throw new Error('Invalid difficulty.');
   const groups = PHRASES.map(phrase => {
     const entry = save.progress[phrase.id];
-    const candidates = ALL_PROMPTS.filter(prompt => prompt.phraseId === phrase.id && (prompt.difficulty || 'easy') === difficulty);
+    const candidates = ALL_PROMPTS.filter(prompt => prompt.phraseId === phrase.id && !['vocab','grammar'].includes(prompt.kind) && (prompt.difficulty || 'easy') === difficulty);
     const unseen = candidates.filter(prompt => !entry?.smoothContexts?.includes(prompt.baseId || prompt.id));
     const dueCandidates=candidates.filter(prompt=>save.reviewPrompts?.[prompt.id] && save.reviewPrompts[prompt.id]<=today);
     const pool = dueCandidates.length?dueCandidates:unseen.length?unseen:candidates;
