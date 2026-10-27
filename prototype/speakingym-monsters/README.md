@@ -103,3 +103,14 @@ Mobile QA must verify 320/390/430 px, skip retry with no XP, route selection, 3 
 - Due expressions from the learner's on-device review queue are prioritized among fresh encounters without removing action variety. Review suggestions are not synced to a server.
 - New tasks accept the vetted canonical example (and authored easy alternatives). Other wording is labelled **review / not confirmed**, never automatically called incorrect. This is not reliable free-form semantic, pronunciation, or listening comprehension grading. There is no AI endpoint or paid feature enabled.
 - Prototype-only; automatic responsive/browser regressions remain essential and iPhone Safari requires real-device verification before release.
+
+## Beginning Forest: four skills and three boss gates (2026-10-27)
+
+The current prototype chapter is **はじまりの森 (Beginning Forest)**, not a speaking-only map. Existing content and prior sections above describe earlier development stages.
+
+- The original **156** spoken/listening/reading-response practice tasks are retained. There are now **36 additional forest-only quizzes** (18 multiple-choice vocabulary and 18 grammar word-order tasks, six of each type at easy/normal/hard), for **192 authored prompts** in the shared question registry.
+- Each forest wave has **five enemy encounters**, determined by foe identity, covering **speaking twice, listening once, contextual vocabulary once, and grammar once**. Reading a notice and responding aloud remains in ordinary learning and can surface as an overdue speaking review. Normal practice/60-second challenge keeps its existing 156-task selection pool.
+- Vocabulary uses three labeled options with varied correct-button positions. Grammar provides accessible, tappable word tiles, undo/reset, and a manual-answer fallback. Both are graded against a finite authored answer, without AI calls. An objectively incorrect choice does **zero damage and earns zero XP**, visibly triggers the enemy guard, and schedules a no-credit review; retrying does not award full no-hint XP.
+- Boss gates are listening defense, grammar (odd waves) or vocabulary (even waves), then spoken final attack. The normal story requires three verified gate completions, even for evolved Yolkie. The cosmetic two-hit Yolkie ability remains available in Endless but does not certify an unattempted English skill in the story.
+- The combat arena, companion evolution, route choice, relics, XP wallet, and localStorage version stay compatible. No Worker/D1/Stripe/production/main modifications are needed for these modes.
+- Important limits: browser speech synthesis quality differs by platform; an entirely free-form speaking verdict still uses the conservative local grader and can abstain. Grammar answers are authored exact word-order exercises, not universal syntactic or semantic grading. No native mobile Safari physical-device QA has been performed.
