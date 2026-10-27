@@ -1019,6 +1019,27 @@ function advanceQuestion(){
   if(play.deadline && Date.now()>=play.deadline){finishSession(true);return;}
   renderQuestion();updateClock();
 }
+function renderDungeonLearningReport(ended){
+ const region=$('#dungeon-learning-report');
+ region.hidden=ended.mode!=='forest';
+ if(region.hidden){region.replaceChildren();return;}
+ const report=summarizeDungeonAttempt(ended.areaId,ended.dungeonOutcomes||[]);
+ const replayable=new Set(ended.prompts.map(p=>p.id));
+ lastDungeonReviewIds=report.retryIds.filter(id=>replayable.has(id));
+ const groups=report.groups.map(row=>{
+   const ratio=Math.round(100*row.independent/row.total);
+   return `<article class="dungeon-report-skill"><div class="dungeon-report-skill-head"><strong>${escapeHtml(row.label)}</strong><span>${row.independent}/${row.total} 自力で確認</span></div><div class="dungeon-report-meter" role="meter" aria-label="${escapeHtml(row.label)}の自力確認率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ratio}"><span style="width:${ratio}%"></span></div><small>ヒントあり ${row.supported} · 練習ルート ${row.review}</small></article>`;
+ }).join('');
+ const advice=report.weakest
+  ?`<p class="dungeon-report-coach"><strong>次のおすすめ：</strong>${escapeHtml(report.weakest.label)} — ${escapeHtml(report.weakest.tip)}</p>`
+  :'<p>まだ結果がありません。最初の問題から挑戦しよう。</p>';
+ const badge=report.complete?'この章の全問題を確認':'途中までの練習記録';
+ const label=report.strongest&&report.strongest.independent
+  ?`今回自力でできたのは「${escapeHtml(report.strongest.label)}」の問題！`
+  :'解説を読みながら、少しずつ自分の力にしていこう。';
+ region.innerHTML=`<div class="dungeon-report-top"><span class="tiny-caps">YOUR ENGLISH GROWTH</span><h2 id="dungeon-report-title">${escapeHtml(report.areaName)} · 学習レポート</h2><p>${escapeHtml(report.focus)}</p><span class="dungeon-report-status">${badge}</span></div><div class="dungeon-report-stats"><div><strong>${report.independent}</strong><small>自力で確認できた問題</small></div><div><strong>${report.supported}</strong><small>ヒントありで確認</small></div><div><strong>${report.review}</strong><small>判定保留・練習ルート</small></div></div><div class="dungeon-report-skills">${groups}</div>${advice}<p class="dungeon-report-practice">${label} 数値は今回の教材内での結果で、発音力や総合英語力の認定ではないよ。</p><button id="dungeon-retry-weak" type="button" class="dungeon-report-retry" ${lastDungeonReviewIds.length?'':'disabled'}>${lastDungeonReviewIds.length?`つまずいた${lastDungeonReviewIds.length}問を復習する →`:'今すぐ復習が必要な問題はありません'}</button>`;
+ region.querySelector('#dungeon-retry-weak').addEventListener('click',()=>startSession('dungeon-review'));
+}
 function finishSession(timedOut=false,defeated=false) {
   if(!play)return;
   cancelAutoAdvance();
@@ -1051,6 +1072,7 @@ function finishSession(timedOut=false,defeated=false) {
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
   $('#result-discoveries').innerHTML=newMonsters+newRelics+memories;
+  renderDungeonLearningReport(ended);
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?'森をもう一度探検する':ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode,ended.areaId);
