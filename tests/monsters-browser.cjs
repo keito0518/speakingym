@@ -126,10 +126,10 @@ const path=require('node:path');
     for (const width of [320,375,390,430]) {
       const {context:levelContext,page:levelPage}=await boot(width);
       for (const difficulty of ['normal','hard']) {
+        await enterHomePanel(levelPage,'training');
         await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
-        await enterHomePanel(levelPage,'training');
-    await levelPage.getByRole('button',{name:/まず練習する/}).click();
+        await levelPage.getByRole('button',{name:/まず練習する/}).click();
         assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH/);
         if(await levelPage.locator('#play-audio').count()){
           assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening task text must start hidden');
@@ -147,8 +147,10 @@ const path=require('node:path');
       await levelContext.close();
     }
     const {context:hardContext,page:hardPage}=await boot(390);
+    await enterHomePanel(hardPage,'training');
     await hardPage.locator('[data-difficulty="hard"]').click();
-    await hardPage.getByRole('button',{name:/60秒チャレンジ/}).click();
+    await hardPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
+    await hardPage.locator('[data-home-page="challenge"]').click();
     assert.match(await hardPage.locator('.question-top').innerText(),/1 \/ 3/);
     for(let i=0;i<3;i++){
       await unlockListening(hardPage);
@@ -569,7 +571,9 @@ const path=require('node:path');
     await autoContext.close();
     // Endless mode limits attempts by difficulty; ambiguous results are not falsely called wrong.
     const {context:endlessContext,page:endlessPage}=await boot(390);
+    await enterHomePanel(endlessPage,'training');
     await endlessPage.locator('[data-difficulty="hard"]').click();
+    await endlessPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
     await enterHomePanel(endlessPage,'forest');
     await endlessPage.locator('#start-forest-endless').click();
     assert.equal(await endlessPage.locator('#forest-explore-screen').isVisible(),true);
