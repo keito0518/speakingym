@@ -13,6 +13,7 @@ import { listeningChallengeFor } from '../prototype/speakingym-monsters/listenin
 import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
+import { forestBossPhase, FOREST_BOSS_CHAPTERS } from '../prototype/speakingym-monsters/forest-boss-phases.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
@@ -735,6 +736,29 @@ test('all 72 objective quiz questions have an authored why, comparison and trans
   const advancedPrice=quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-price-hard'));
   assert.match(advancedPrice.clue,/複数形/);
   assert.equal(quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak')),null);
+});
+test('all four chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
+  assert.deepEqual(Object.keys(FOREST_BOSS_CHAPTERS),FOREST_AREAS.map(a=>a.id));
+  for(const area of FOREST_AREAS){
+    for(const level of DIFFICULTIES){
+      const wave=buildForestWave({difficulty:level,wave:1,areaId:area.id,progression:'story',bossConversation:true,random:()=>.44});
+      const phases=wave.prompts.slice(5).map((prompt,i)=>forestBossPhase({areaId:area.id,index:i+5,wave:1,level,prompt}));
+      assert.equal(phases.length,3);
+      assert.deepEqual(phases.map(p=>p.turn),[1,2,3]);
+      assert.deepEqual(phases.map(p=>p.kind),['listen',area.id==='entry'?'grammar':area.id==='thicket'?'grammar':'vocab','speak']);
+      assert.ok(phases.every(p=>p.areaId===area.id&&p.title&&p.context&&p.chapter));
+      assert.equal(new Set(phases.map(p=>p.phaseKey)).size,3);
+      assert.ok(phases.every((p,i)=>!p.context.includes(wave.prompts[i+5].answer)),'Dialogue cannot reveal answers');
+      if(area.id==='entry')assert.ok(phases.every(p=>p.authored),'Entrance retains hand-authored dialogue');
+      else assert.ok(phases.every(p=>!p.authored),'Other chapters use their own non-answer reveals');
+      if(level!=='easy'&&area.id!=='entry')assert.match(phases[0].context,/Listen/);
+    }
+  }
+  const prompt=buildForestWave({difficulty:'easy',random:()=>.5}).prompts[5];
+  assert.equal(forestBossPhase({areaId:'bad',index:5,prompt}),null);
+  assert.equal(forestBossPhase({areaId:'entry',index:4,prompt}),null);
+  assert.equal(forestBossPhase({areaId:'entry',index:8,prompt}),null);
+  assert.equal(forestBossPhase({areaId:'entry',index:5,prompt:{kind:'speak'}}),null);
 });
 test('first-wave boss conversation joins listening, word order and speaking without duplicating encounters',()=>{
   for(const level of DIFFICULTIES){
