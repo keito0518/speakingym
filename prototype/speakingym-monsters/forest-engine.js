@@ -1,6 +1,7 @@
 // First truly playable vertical slice: three communication gates in Speaking Forest.
 // Forest souvenirs are cosmetic only. They never modify language grade or XP.
 import { ALL_PROMPTS } from './monster-data.js';
+import { FOREST_EVENTS, forestEventChoice } from './forest-events.js';
 
 export const FOREST_ROUTES = Object.freeze([
   { id:'sunlit', name:'ひだまりの小道', tag:'SUNLIT TRAIL', detail:'木漏れ日をたどって、金色の葉っぱを探そう。' },
@@ -55,7 +56,25 @@ export function cleanForest(input){
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
   completedAreas:[...new Set(completed.filter(x=>allowed.includes(x)))],
   recentPromptIds:[...new Set((Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]).filter(id=>ALL_PROMPTS.some(p=>p.id===id)))].slice(-80),
+  // A bounded, validated collection of distinct story decisions. Old saves
+  // simply start with an empty journal; replaying the same choice adds nothing.
+  journal:[...new Map((Array.isArray(source.journal)?source.journal:[])
+    .filter(entry=>entry&&typeof entry==='object'&&typeof entry.eventId==='string'&&typeof entry.choiceId==='string')
+    .filter(entry=>{
+      const event=Object.values(FOREST_EVENTS).flatMap(routes=>Object.values(routes)).find(e=>e.id===entry.eventId);
+      return Boolean(event&&forestEventChoice(event,entry.choiceId));
+    }).map(entry=>[`${entry.eventId}:${entry.choiceId}`,{eventId:entry.eventId,choiceId:entry.choiceId}])).values()].slice(-16),
  };
+}
+// Story memories do not affect English grading, XP, monster unlocks or
+// chapter clears. Persist only explicit player choices, not page revisits.
+export function recordForestEvent(save,eventId,choiceId){
+ const event=Object.values(FOREST_EVENTS).flatMap(routes=>Object.values(routes)).find(e=>e.id===eventId);
+ if(!event || !forestEventChoice(event,choiceId))throw new Error('Unknown forest event choice');
+ const current=cleanForest(save.forest);
+ if(current.journal.some(item=>item.eventId===eventId&&item.choiceId===choiceId))
+   return {save,discovered:false};
+ return {save:{...save,forest:{...current,journal:[...current.journal,{eventId,choiceId}].slice(-16)}},discovered:true};
 }
 export function getForestPrompts(save,difficulty=save.difficulty||'easy'){
  if(!['easy','normal','hard'].includes(difficulty))throw new Error('Invalid forest difficulty');
@@ -88,7 +107,8 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
    routes:[...new Set([...before.routes,routeId])],
    relics:[...new Set([...before.relics,...earned])],
    completedAreas:recordAreaClear?[...new Set([...before.completedAreas,areaId])]:before.completedAreas,
-   recentPromptIds:[...new Set([...before.recentPromptIds,...promptIds.filter(id=>ALL_PROMPTS.some(p=>p.id===id))])].slice(-80)
+   recentPromptIds:[...new Set([...before.recentPromptIds,...promptIds.filter(id=>ALL_PROMPTS.some(p=>p.id===id))])].slice(-80),
+   journal:before.journal
   }
  };
  return {save:next,discovered,route:FOREST_ROUTES.find(r=>r.id===routeId)};
