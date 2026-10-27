@@ -365,6 +365,7 @@ test('forest four-skill questions grade deterministically and never reward incor
     assert.equal(quizzes.length,12);
     assert.equal(quizzes.filter(p=>p.kind==='vocab').length,6);
     assert.equal(quizzes.filter(p=>p.kind==='grammar').length,6);
+    assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
     for(const p of quizzes){
       assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
       assert.equal(gradeLocalResponse(p,'').status,'empty');
