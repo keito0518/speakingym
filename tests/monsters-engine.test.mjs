@@ -20,7 +20,7 @@ import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-a
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
-import { recordRetention, retentionOverview, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
+import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
@@ -568,6 +568,57 @@ test('spaced retention stages need real 1/3/7-day revisits, not repeated tapping
  assert.deepEqual(tampered.retention,{});
  assert.throws(()=>recordRetention({},'fake-task','smooth','2026-10-27'),/Invalid/);
  assert.deepEqual(sanitizeRetention(null),{});
+});
+test('hints pause stable retention until a new spaced recovery, without erasing legacy achievements',()=>{
+ let save=createSave();
+ for(const date of ['2026-10-01','2026-10-02','2026-10-05','2026-10-12'])
+  save=rate(save,'think-cafe','smooth',date).save;
+ assert.equal(retentionOverview(save,'2026-10-13').stable.length,1);
+ const earnedBond=save.monsterBonds.medamago;
+ save=rate(save,'think-cafe','hint','2026-10-26').save;
+ assert.equal(save.retention['think-cafe'].stage,4,'Do not delete earned milestones');
+ assert.equal(save.retention['think-cafe'].recoveryPhase,'retry');
+ assert.equal(retentionOverview(save,'2026-10-27').stable.length,0,'Hint cannot count as independent stable recall');
+ assert.equal(validateSave(save).retention['think-cafe'].recoveryPhase,'retry');
+ let attempt=rate(save,'think-cafe','smooth','2026-10-26');
+ assert.equal(attempt.reward.retentionAdvanced,false,'Same-day repeat is not a checkpoint');
+ assert.equal(attempt.save.retention['think-cafe'].recoveryPhase,'retry');
+ attempt=rate(save,'think-cafe','smooth','2026-10-27');
+ save=attempt.save;
+ assert.equal(attempt.reward.retentionAdvanced,false,'Next-day retrieval only starts recovery');
+ assert.equal(save.retention['think-cafe'].recoveryPhase,'wait');
+ assert.equal(save.retention['think-cafe'].nextDay,'2026-11-03','Require a fresh seven-day interval');
+ attempt=rate(save,'think-cafe','smooth','2026-10-28');
+ assert.equal(attempt.save.retention['think-cafe'].recoveryPhase,'wait','Early practice cannot skip a week');
+ attempt=rate(save,'think-cafe','smooth','2026-11-03');
+ save=attempt.save;
+ assert.equal(attempt.reward.retentionAdvanced,false,'Recovery does not mint a duplicate milestone');
+ assert.equal(attempt.reward.bondGained,0);
+ assert.equal(save.monsterBonds.medamago,earnedBond);
+ assert.equal(retentionOverview(save,'2026-11-04').stable.length,1);
+ assert.equal(save.retention['think-cafe'].recoveryPhase,undefined);
+ const legacy={...createSave(),retention:{'think-cafe':{stage:3,lastDay:'2026-10-12',nextDay:'2026-10-19'}}};
+ assert.deepEqual(validateSave(legacy).retention,legacy.retention,'Old saved records remain valid');
+ const fake={...legacy,retention:{'think-cafe':{...legacy.retention['think-cafe'],recoveryPhase:'forged'}}};
+ assert.equal(validateSave(fake).retention['think-cafe'].recoveryPhase,undefined);
+});
+test('due retention adds limited real-world expression transfer, never faking an original checkpoint',()=>{
+ let save=rate(createSave(),'think-cafe','smooth','2026-10-26').save;
+ let plan=retentionPracticePlan(save,'2026-10-27');
+ assert.deepEqual(plan.dueIds,['think-cafe']);
+ assert.deepEqual(plan.transferIds,[],'A first-day memory needs exact recall before transfer');
+ save=rate(save,'think-cafe','smooth','2026-10-27').save;
+ plan=retentionPracticePlan(save,'2026-10-30');
+ assert.deepEqual(plan.dueIds,['think-cafe']);
+ assert.equal(plan.transferIds.length,1,'Same expression, a different speaking context');
+ assert.equal(plan.prompts[1].phraseId,plan.prompts[0].phraseId);
+ assert.notEqual(plan.prompts[1].baseId||plan.prompts[1].id,plan.prompts[0].baseId||plan.prompts[0].id);
+ assert.equal(save.retention[plan.transferIds[0]],undefined,'Building a plan cannot award mastery or XP');
+ assert.equal(new Set(plan.prompts.map(p=>p.id)).size,2);
+ assert.deepEqual(retentionPracticePlan(save,'2026-10-30',{limit:1}).transferIds,[],'Due work takes priority over bonuses');
+ const hinted=rate(save,'think-cafe','hint','2026-10-30').save;
+ assert.deepEqual(retentionPracticePlan(hinted,'2026-10-31').transferIds,[],'Recovery must be independent first');
+ assert.throws(()=>retentionPracticePlan(save,'2026-10-30',{limit:99}),/Invalid/);
 });
 test('companion bond is cosmetic and cannot recruit locked creatures or spend XP',()=>{
  const original=createSave();
