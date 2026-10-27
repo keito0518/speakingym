@@ -412,6 +412,14 @@ const path=require('node:path');
     // Fake the browser speech API: check start/stop, stale onend, capture,
     // retry, denied permission, and changing views without a stuck mic.
     const {context:micContext,page:micPage}=await boot(390);
+    await micPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();
+      seeded.reviewPrompts['think-cafe']='2020-01-01';
+      seeded.reviewPrompts['repeat-station']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await micPage.reload();
     await micPage.evaluate(()=>{
       class FakeRecognition {
         start(){window.__activeMic=this;}
@@ -420,6 +428,7 @@ const path=require('node:path');
       window.SpeechRecognition=FakeRecognition;
     });
     await micPage.getByRole('button',{name:/まず練習する/}).click();
+    assert.equal(await micPage.locator('#play-card').getAttribute('data-prompt-id'),'think-cafe');
     await unlockListening(micPage);
     const micButton=micPage.locator('#mic-button');
     await micButton.click();
@@ -451,6 +460,7 @@ const path=require('node:path');
     await micPage.locator('#show-answer').click();
     assert.equal(await micButton.isVisible(),false);
     await micPage.locator('#next-question').click();
+    assert.equal(await micPage.locator('#play-card').getAttribute('data-prompt-id'),'repeat-station');
     assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
     await micPage.locator('#mic-button').click();
     assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
@@ -467,8 +477,16 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#play-view').isVisible(),false);
     await micContext.close();
     const {context,page}=await boot(390);
+    await page.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();
+      for(const id of ['think-trip','repeat-station','agree-friend'])seeded.reviewPrompts[id]='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await page.reload();
     await page.getByRole('button',{name:/まず練習する/}).click();
     assert.match(await page.locator('#play-mode-label').innerText(),/練習モード/);
+    assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'think-trip');
     assert.equal(await page.locator('#answer-area').isVisible(),false,'Cannot answer listening without comprehension');
     assert.equal(await page.locator('#listening-meaning').isVisible(),false);
     assert.equal(await page.locator('#listening-response').isVisible(),false);
@@ -492,6 +510,7 @@ const path=require('node:path');
     assert.match(await page.locator('#feedback-panel').innerText(),/\+8 XP/); // Hint lowers awarded XP.
     await page.locator('#next-question').click();
     for(let i=0;i<2;i++){
+      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),['repeat-station','agree-friend'][i]);
       await unlockListening(page);
       await page.locator('#spoken-answer').fill(i===0?'Could you say that again?':'That works for me.');
       await page.locator('#show-answer').click();
