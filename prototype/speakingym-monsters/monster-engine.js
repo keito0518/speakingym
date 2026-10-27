@@ -365,9 +365,20 @@ export function toggleSavedPrompt(save,promptId){
  next.savedPromptIds=[...ids].slice(0,255);
  return next;
 }
-export function savedReviewPrompts(save){
+// Same exact authored task at the original difficulty. Prioritize overdue
+// reviews and previously missed quizzes rather than merely curriculum order.
+export function savedReviewQueue(save,today=dayKey()){
  const ids=new Set(save.savedPromptIds||[]);
- return ALL_PROMPTS.filter(prompt=>ids.has(prompt.id));
+ return ALL_PROMPTS.filter(prompt=>ids.has(prompt.id)).map(prompt=>{
+   const dueDate=save.reviewPrompts?.[prompt.id];
+   const phraseDue=save.progress?.[prompt.phraseId]?.nextReviewDay;
+   const weak=Boolean(save.quizProgress?.[prompt.id]?.misses&&!save.quizProgress[prompt.id].resolved);
+   const due=Boolean((dueDate&&dueDate<=today)||(phraseDue&&phraseDue<=today)||(weak&&(!save.quizProgress[prompt.id].nextReviewDay||save.quizProgress[prompt.id].nextReviewDay<=today)));
+   return {prompt,due,weak,reviewDate:dueDate||phraseDue||null};
+ }).sort((a,b)=>Number(b.due)-Number(a.due)||Number(b.weak)-Number(a.weak)||a.prompt.id.localeCompare(b.prompt.id));
+}
+export function savedReviewPrompts(save,today=dayKey()){
+ return savedReviewQueue(save,today).map(entry=>entry.prompt);
 }
 export function flagUncertainReview(save,promptId,today=dayKey()) {
   if(!ALL_PROMPTS.some(item=>item.id===promptId)||!/^\d{4}-\d{2}-\d{2}$/.test(today))
