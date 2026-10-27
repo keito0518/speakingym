@@ -37,7 +37,7 @@ const assert=require('node:assert/strict');
     assert.equal(await page.locator('#forest-journey').isVisible(),false);
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
     await page.locator('#leave-play').click();
-    assert.equal(await page.locator('#home-view').isVisible(),true);
+    assert.equal(await page.locator('#home-view').isVisible(),true,`WebKit navigation errors: ${errors.join(' | ')}; current view: ${await page.locator('.view:not([hidden])').evaluateAll(nodes=>nodes.map(n=>n.id).join(','))}`);
     assert.deepEqual(errors,[]);
     await context.close();
     console.log('webkit: live DOM, next encounter and home navigation remain responsive after guard + full attack animation');
