@@ -1,5 +1,6 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 import { cleanForest } from './forest-engine.js';
+import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
@@ -20,6 +21,7 @@ export function createSave() {
     xpWallet: 0,
     progress: {},
     reviewPrompts: {},
+    retention: {},
     savedPromptIds: [],
     dailyHistory: [],
     quizProgress: {},
@@ -78,6 +80,7 @@ export function validateSave(value) {
     // and initialize the new spendable wallet without duplicating historical XP.
     xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
     progress: cleanProgress,
+    retention:sanitizeRetention(value.retention),
     reviewPrompts, savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255),
     dailyHistory:(Array.isArray(value.dailyHistory)?value.dailyHistory:[]).filter(row=>
       row&&typeof row==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&DIFFICULTIES.includes(row.difficulty)&&
@@ -122,7 +125,8 @@ export function learningSummary(save, today = dayKey()) {
   const practiced = entries.filter(item => item.level >= 1).length;
   const duePromptPhrases=new Set(Object.entries(save.reviewPrompts||{}).filter(([,date])=>date<=today)
     .map(([id])=>ALL_PROMPTS.find(prompt=>prompt.id===id)?.phraseId).filter(Boolean));
-  const review = entries.filter(item => (item.entry?.nextReviewDay && item.entry.nextReviewDay <= today)||duePromptPhrases.has(item.phrase.id));
+  const dueRetention=new Set(retentionOverview(save,today).due.map(x=>x.prompt.phraseId));
+  const review = entries.filter(item => (item.entry?.nextReviewDay && item.entry.nextReviewDay <= today)||duePromptPhrases.has(item.phrase.id)||dueRetention.has(item.phrase.id));
   return { total: PHRASES.length, practiced, independent, mastered, reviewCount: review.length, entries };
 }
 
@@ -146,6 +150,8 @@ export function reviewOverview(save,today=dayKey()) {
     const prompt=ALL_PROMPTS.find(item=>item.id===id);
     if(prompt)add(prompt.phraseId,due,id);
   }
+  for(const entry of retentionOverview(save,today).due.concat(retentionOverview(save,today).upcoming))
+    add(entry.prompt.phraseId,entry.nextDay,entry.id);
   const scheduled=[...groups.values()].map(row=>({
     ...row,label:PHRASES.find(phrase=>phrase.id===row.phraseId).label,
     dueNow:row.due<=today, upcoming:row.due>today&&row.due<=addDays(today,3)
@@ -383,8 +389,9 @@ export function savedReviewQueue(save,today=dayKey()){
    const dueDate=save.reviewPrompts?.[prompt.id];
    const phraseDue=save.progress?.[prompt.phraseId]?.nextReviewDay;
    const weak=Boolean(save.quizProgress?.[prompt.id]?.misses&&!save.quizProgress[prompt.id].resolved);
-   const due=Boolean((dueDate&&dueDate<=today)||(phraseDue&&phraseDue<=today)||(weak&&(!save.quizProgress[prompt.id].nextReviewDay||save.quizProgress[prompt.id].nextReviewDay<=today)));
-   return {prompt,due,weak,reviewDate:dueDate||phraseDue||null};
+   const retentionDue=save.retention?.[prompt.id]?.nextDay;
+   const due=Boolean((retentionDue&&retentionDue<=today)||(dueDate&&dueDate<=today)||(phraseDue&&phraseDue<=today)||(weak&&(!save.quizProgress[prompt.id].nextReviewDay||save.quizProgress[prompt.id].nextReviewDay<=today)));
+   return {prompt,due,weak,reviewDate:retentionDue||dueDate||phraseDue||null};
  }).sort((a,b)=>Number(b.due)-Number(a.due)||Number(b.weak)-Number(a.weak)||a.prompt.id.localeCompare(b.prompt.id));
 }
 export function savedReviewPrompts(save,today=dayKey()){
@@ -461,6 +468,8 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
     else if(quiz)next.reviewPrompts[promptId]=quiz.nextReviewDay;
   }
   next.totalAnswers++;
+  const retentionRecord=recordRetention(next,prompt.id,rating,today);
+  next.retention=retentionRecord.save.retention;
 
   // Each completed prompt earns spendable XP. Training does not silently level
   // the selected monster; learners choose whom to grow in their collection.
@@ -471,7 +480,7 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   next.xpWallet = (next.xpWallet || 0) + xp;
 
   const {save:awarded,captured}=captureEligibleMonsters(next,today);
-  return { save: awarded, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: awarded.xpWallet } };
+  return { save: awarded, reward: { xp, captured, masteryChanged: masteryLevel(entry) > oldMastery, mastery: masteryLevel(entry), wallet: awarded.xpWallet,retentionStage:retentionRecord.stage,retentionAdvanced:retentionRecord.stageChanged,nextRetentionDay:retentionRecord.nextDay } };
 }
 
 export function finishRound(save, smoothCount) {
