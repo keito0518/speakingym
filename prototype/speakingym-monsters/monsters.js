@@ -14,7 +14,7 @@ import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
-import { bossConversationTurn } from './forest-boss-story.js';
+import { forestBossPhase } from './forest-boss-phases.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -247,12 +247,14 @@ function renderForestHud() {
   world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding','forest-defended','forest-reading-hit','forest-weakness-hit','forest-spell-cast');
   const foe=opponentFor(play.index,play.wave,play.areaId);
   const tactic=enemyTacticFor(play.index,play.wave,play.areaId);
+  const bossPhase=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt:currentPrompt()});
+  world.dataset.bossPhase=bossPhase?String(bossPhase.turn):'0';
   world.dataset.foe=foe.id;
   world.dataset.area=play.areaId;
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
   // Separate the English name and Japanese epithet at a meaningful line break.
   $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
-  $('#forest-foe-pattern').textContent=tactic.name;
+  $('#forest-foe-pattern').textContent=bossPhase?`${tactic.name} · ${bossPhase.title}`:tactic.name;
   updateEnemyHealth();
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
     '英語で攻撃！';
@@ -272,7 +274,7 @@ function renderForestHud() {
   bossMarker.classList.toggle('is-current',play.index>=REGULAR_ENCOUNTERS);
   bossMarker.classList.toggle('is-cleared',play.index>=REGULAR_ENCOUNTERS+BOSS_HITS);
   $('#forest-scene-story').textContent=play.index>=REGULAR_ENCOUNTERS?
-    `${foe.japanese}が立ちはだかる！ 3つの異なる英語の試練で倒そう。`:
+    (bossPhase?`${bossPhase.chapter} · ${bossPhase.context}`:`${foe.japanese}が立ちはだかる！ 3つの異なる英語の試練で倒そう。`):
     `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ ${tactic.tell}。`;
   const log=$('#forest-battle-log');
   log.textContent=play.index>=REGULAR_ENCOUNTERS && play.bossHits===0?
@@ -389,14 +391,15 @@ function renderQuestion() {
     banner.textContent='苦手の再挑戦 · 前回つまずいたポイントを考えよう';
     $('#play-card').querySelector('.question-top').after(banner);
   }
-  const bossTurn=play.mode==='forest'&&play.areaId==='entry'?bossConversationTurn(play.wave,play.difficulty,play.index):null;
-  if(bossTurn&&bossTurn.id===prompt.id){
+  const bossTurn=play.mode==='forest'?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
+  if(bossTurn){
     const dialogue=document.createElement('section');
     dialogue.className='forest-boss-dialogue';
+    dialogue.dataset.area=play.areaId;
     dialogue.setAttribute('aria-label',`ボスとの会話 ${bossTurn.turn}/3`);
     const counter=document.createElement('span');
     counter.className='forest-boss-dialogue-turn';
-    counter.textContent=`BOSS DIALOGUE · ${bossTurn.turn}/3`;
+    counter.textContent=`BOSS DIALOGUE · ${bossTurn.turn}/3 · ${bossTurn.chapter}`;
     const title=document.createElement('strong');title.textContent=bossTurn.title;
     const context=document.createElement('p');context.textContent=bossTurn.context;
     dialogue.append(counter,title,context);
