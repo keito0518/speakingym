@@ -14,6 +14,7 @@ import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audi
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
+import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
@@ -22,6 +23,56 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '..
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
+test('dungeon reports verified learning honestly and never count assisted route as success',()=>{
+ const outcomes=[
+   {promptId:'repeat-station',kind:'listen',outcome:'independent'},
+   {promptId:'repeat-class',kind:'speak',outcome:'supported'},
+   {promptId:'think-cafe',kind:'speak',outcome:'review'},
+   {promptId:'think-trip',kind:'listen',outcome:'independent'},
+   {promptId:'think-cafe',kind:'speak',outcome:'review'}
+ ];
+ const report=summarizeDungeonAttempt('entry',outcomes);
+ assert.equal(report.total,5);
+ assert.equal(report.independent,2);
+ assert.equal(report.supported,1);
+ assert.equal(report.review,2);
+ assert.deepEqual(report.retryIds,['repeat-class','think-cafe']);
+ assert.equal(report.weakest.kind,'speak');
+ assert.equal(report.strongest.kind,'listen');
+ assert.equal(report.complete,true);
+ assert.equal(report.groups.find(s=>s.kind==='speak').independent,0);
+ assert.equal(DUNGEON_SKILLS.listen.goal,'英語の要点を聞き取る');
+ assert.deepEqual(summarizeDungeonAttempt('glade',[]).retryIds,[]);
+ assert.equal(summarizeDungeonAttempt('glade',[]).complete,false);
+ assert.throws(()=>summarizeDungeonAttempt('unverified',[]),/Unknown/);
+ assert.throws(()=>summarizeDungeonAttempt('entry',null),/Invalid/);
+});
+test('four dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
+ assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,4);
+ for(const area of FOREST_AREAS){
+   const expected=['listen','vocab','speak'];
+   assert.ok(DUNGEON_CHAPTER_SKILLS[area.id].headline.length>=8);
+   assert.equal(DUNGEON_CHAPTER_SKILLS[area.id].boss.length,3);
+   for(let turn=1;turn<=3;turn++){
+     const brief=dungeonBossBrief(area.id,turn);
+     assert.equal(brief.phase,turn);
+     assert.ok(brief.objective.length>3);
+     assert.ok(brief.message.length>2);
+   }
+   assert.equal(dungeonBossBrief(area.id,4),null);
+   const wave=buildForestWave({areaId:area.id,difficulty:'easy',progression:'story',random:()=>.53,bossConversation:true});
+   const regular=regularEncountersFor(area.id);
+   assert.deepEqual(wave.prompts.slice(regular).map(p=>p.kind),[
+     'listen',area.id==='thicket'||area.id==='entry'?'grammar':'vocab','speak'
+   ]);
+   if(area.id!=='entry'){
+     const last=wave.prompts.at(-1);
+     const focused=new Set(area.focus);
+     const alternatives=ALL_PROMPTS.filter(p=>p.kind==='speak'&&p.difficulty==='easy'&&focused.has(p.phraseId)&&!p.bossOnly);
+     if(alternatives.length)assert.ok(focused.has(last.phraseId),'Final boss should apply the chapter topic: '+area.id);
+   }
+ }
+});
 test('five-minute gym mixes new, due and transfer tasks without duplicates or paid AI calls',()=>{
  const today='2026-10-27';
  let save=createSave();
