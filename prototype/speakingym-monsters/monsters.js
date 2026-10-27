@@ -177,13 +177,13 @@ function renderHome() {
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
-  const growth=dailyGrowthSummary(save);
+  const dailyGrowth=dailyGrowthSummary(save);
   $('#daily-plan-status').textContent=`今日の8問：復習 ${gym.counts.review} · 応用 ${gym.counts.transfer} · 新しい問題 ${gym.counts.new}${gym.counts.mixed?' · その他 '+gym.counts.mixed:''}`;
   $('#start-daily-gym').disabled=!gym.prompts.length;
-  $('#daily-last-rate').textContent=growth.lastRate===null?'―':`${growth.lastRate}%`;
-  $('#daily-growth-note').textContent=growth.changeSevenDays!==null
-    ?`同じ難易度の7日以上前と比較：${growth.changeSevenDays>=0?'+':''}${growth.changeSevenDays}ポイント（${growth.weekBeforeRate}% → ${growth.lastRate}%）`
-    :growth.sessions?`完了 ${growth.sessions}回 · 前回 ${growth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
+  $('#daily-last-rate').textContent=dailyGrowth.lastRate===null?'―':`${dailyGrowth.lastRate}%`;
+  $('#daily-growth-note').textContent=dailyGrowth.changeSevenDays!==null
+    ?`同じ難易度の7日以上前と比較：${dailyGrowth.changeSevenDays>=0?'+':''}${dailyGrowth.changeSevenDays}ポイント（${dailyGrowth.weekBeforeRate}% → ${dailyGrowth.lastRate}%）`
+    :dailyGrowth.sessions?`完了 ${dailyGrowth.sessions}回 · 前回 ${dailyGrowth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
     :'5分ジムを完了すると、ヒントなしで正解した割合を記録するよ。';
   const bookmarked=savedReviewQueue(save);
   const needsReview=bookmarked.filter(item=>item.due);
