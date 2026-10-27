@@ -187,3 +187,36 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .forest-active .listening-choice{padding:11px 13px;font-size:14px}
 .forest-active .listening-first .listening-heading{font-size:clamp(18px,4.5vw,22px);margin:8px 0}
 @media(max-width:380px){.listening-choice{padding:11px 12px}.listening-status{font-size:11px}}
+
+
+/* Learning-first answer field: readable live transcription on phones. */
+.answer-area .answer-row{align-items:stretch}
+.answer-area textarea.answer-input{box-sizing:border-box;display:block;flex:1;min-width:0;min-height:106px;max-height:240px;resize:vertical;padding:13px 14px;line-height:1.6;font-family:inherit;font-size:16px;overflow-y:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.forest-active .answer-area textarea.answer-input{min-height:116px;font-size:17px;line-height:1.6}
+.forest-active .answer-row .mic-button{height:auto;min-height:64px;align-self:stretch}
+.bookmark-question{display:inline-flex;align-items:center;gap:6px;margin:9px 0 6px;border:1px solid #9daea0;border-radius:9px;background:#fffaf0;color:#345943;font-size:12px;font-weight:850;min-height:38px;padding:7px 11px;cursor:pointer}
+.bookmark-question[aria-pressed="true"]{background:#f6e3af;border-color:#b99548;color:#65451e}
+.bookmark-question:focus-visible,.saved-question button:focus-visible{outline:3px solid #d4a74c;outline-offset:2px}
+.saved-review{margin:24px 0;border-radius:18px;padding:19px 20px;background:#f7f4e6;border:1px solid #d8d6b9}
+.saved-review-heading{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.saved-review-heading .tiny-caps{width:100%}
+.saved-review-heading h2{font-size:22px;line-height:1.4;margin:0}
+.saved-review-heading p{flex:1 1 240px;font-size:12px;line-height:1.6;color:#5f7466}
+.saved-review-heading button{flex-shrink:0}
+.saved-question-list{display:grid;gap:9px;margin-top:15px}
+.saved-question{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:center;padding:12px 13px;border-radius:11px;background:white;border:1px solid #e1dfcc}
+.saved-question span{grid-column:1;color:#698074;font-size:11px}
+.saved-question strong{grid-column:1;font-size:13px;color:#2b533b;line-height:1.55;overflow-wrap:anywhere}
+.saved-question button{grid-column:2;grid-row:1/3;border-radius:8px;padding:8px 10px;min-height:38px;background:#f7f2e7;border:1px solid #d9d2bd;color:#5c694f;font-weight:700;cursor:pointer}
+.forest-active .forest-gates{grid-template-columns:repeat(6,minmax(0,1fr))}
+.forest-active .forest-boss-special{display:none}
+.forest-active .forest-boss-dialogue{padding:6px 10px;margin:6px 0}
+.forest-active .forest-boss-dialogue p{line-height:1.4}
+.forest-active .forest-command-window .answer-area{margin-top:0}
+.forest-active .forest-world-stage{height:clamp(120px,33vw,172px)}
+.forest-active .forest-journey{margin-bottom:9px}
+.review-only .forest-battle-shell{display:block}
+.review-only #forest-journey,.review-only #forest-explore-screen,.review-only #forest-battle-log{display:none!important}
+.review-only .forest-command-window{padding:4px 0}
+.review-only .play-card{max-height:none}
+@media(max-width:500px){.saved-review{padding:13px}.saved-review-heading h2{font-size:19px}.saved-review-heading button{width:100%}.forest-active .answer-area textarea.answer-input{min-height:125px}.forest-active .answer-helper{line-height:1.5}}
