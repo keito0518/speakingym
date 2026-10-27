@@ -482,3 +482,31 @@
 .forest-active .forest-world-stage.forest-boss-stage[data-area="glade"] .forest-enemy{filter:drop-shadow(0 0 18px #fff0aa) drop-shadow(0 7px 7px #63442c)}
 .forest-active .forest-world-stage.forest-boss-stage[data-area="thicket"] .forest-enemy{filter:drop-shadow(0 0 18px #a6c4e6) drop-shadow(0 7px 7px #293e5b)}
 .forest-active .forest-world-stage.forest-boss-stage[data-area="sanctuary"] .forest-enemy{filter:drop-shadow(0 0 18px #bfe5ac) drop-shadow(0 7px 7px #364e3e)}
+
+
+/* Exploration story cards are separate from the battlefield and are playable
+   without a mouse; no event grants XP or modifies difficulty. */
+.forest-explore-event{display:grid;gap:9px;padding:13px;border:1px solid #d8c58d;border-radius:13px;background:#17392fcf;color:#fff4d5;box-shadow:0 4px 17px #0e211ba6}
+.forest-explore-event[hidden]{display:none!important}
+.forest-event-label{font-size:10px;font-weight:900;letter-spacing:.14em;color:#f0d593;margin:0}
+.forest-event-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.forest-event-choices button{min-width:0;min-height:78px;padding:11px;text-align:left;display:flex;flex-direction:column;justify-content:center;gap:6px;border-radius:10px;border:1px solid #d5c490;background:#f2e6c6;color:#254434;cursor:pointer;font:inherit}
+.forest-event-choices button:hover{background:#fff3d3}
+.forest-event-choices button:focus-visible{outline:3px solid #f4d179;outline-offset:3px}
+.forest-event-choices strong{font-size:13px;line-height:1.4}
+.forest-event-choices small,.forest-explore-event>small{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.forest-explore-event>strong{color:#ffe6a3;font-size:15px}
+.forest-event-outcome{font-size:13px;line-height:1.7;overflow-wrap:anywhere;margin:0}
+.forest-event-memory{padding:12px 14px;border:1px solid #bdccae;border-radius:11px;background:#f1f5e9}
+.forest-event-memory strong{display:block;color:#34553e;font-size:14px;line-height:1.55}
+.forest-event-memory p{font-size:12px;line-height:1.7;color:#496653;margin:5px 0}
+.forest-event-memory small{font-size:11px;color:#6f866d}
+.forest-boss-special{margin:6px 0 0!important;padding:7px 9px;border-radius:7px;background:#fff9e6;font-weight:750;line-height:1.5}
+.forest-world-stage.forest-boss-stage:not(.forest-attack) .forest-world-vignette::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.78;border:4px solid #bd9c67;border-radius:8px;box-shadow:inset 0 0 35px #e7c09046;animation:boss-charge-glow 2s ease-in-out infinite alternate}
+.forest-world-stage.forest-boss-stage[data-area="glade"] .forest-world-vignette::after{border-color:#f0d682;box-shadow:inset 0 0 40px #f9e2a47a}
+.forest-world-stage.forest-boss-stage[data-area="thicket"] .forest-world-vignette::after{border-color:#8da7d5;box-shadow:inset 0 0 40px #94b6e377}
+.forest-world-stage.forest-boss-stage[data-area="sanctuary"] .forest-world-vignette::after{border-color:#95ae75;box-shadow:inset 0 0 40px #b1d78b72}
+.forest-world-stage.forest-boss-stage[data-boss-phase="3"] .forest-world-vignette::after{border-width:6px}
+@keyframes boss-charge-glow{from{opacity:.45}to{opacity:1}}
+@media(max-width:360px){.forest-event-choices{gap:6px}.forest-event-choices button{padding:8px}.forest-event-choices strong{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.forest-world-stage.forest-boss-stage .forest-world-vignette::after{animation:none!important}}
