@@ -53,8 +53,12 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
  const kinds=Array.from({length:REGULAR_ENCOUNTERS},(_,index)=>enemyTacticFor(index,wave).preferredKind);
  const bossMiddle=wave%2===1?'grammar':'vocab';
  kinds.push('listen',bossMiddle,'speak');
- for(const kind of kinds){
-   let candidates=shuffled.filter(p=>p.kind===kind&&!usedIds.has(p.id));
+ for(let slot=0;slot<kinds.length;slot++){
+   const kind=kinds[slot];
+   // An overdue reading response still belongs in a speaking encounter:
+   // learners read a short clue then answer in English, preserving old reviews.
+   const matches=p=>p.kind===kind||(kind==='speak'&&slot<REGULAR_ENCOUNTERS&&p.kind==='read');
+   let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
    // Prioritize exact missed tasks, then scheduled expressions and fresh scenes.
    // Do not repeat the same expression unless all available have already appeared.
