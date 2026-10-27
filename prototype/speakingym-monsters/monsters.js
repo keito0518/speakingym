@@ -1,9 +1,9 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
-import { cleanForest, FOREST_ROUTES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest } from './forest-engine.js';
+import { cleanForest, FOREST_ROUTES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest, recordForestEvent } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from './forest-battle.js';
 import { enemyArt } from './forest-enemies.js';
@@ -335,6 +335,7 @@ function showForestExplore(routeChoice=false) {
         const choice=forestEventChoice(storyEvent,button.dataset.forestEventOption);
         if(!choice)return;
         play.eventChoices[storyKey]=choice.id;
+        persist(recordForestEvent(save,storyEvent.id,choice.id).save);
         play.eventMemories.push({title:storyEvent.title,memento:choice.memento,outcome:choice.outcome});
         showForestExplore(false);
       }));
@@ -783,7 +784,11 @@ function advanceQuestion(){
     if(play.index>=FOREST_WAVE_LENGTH){
       // Reward a wave only after five mobs and three verified boss hits.
       const reward=finishForest(save,play.route,play.companionId,play.areaId,play.prompts.map(p=>p.id),!play.endless);
-      persist(reward.save);
+      // Unlock chapter-gated allies only after the boss was actually beaten.
+      // Endless replay does not unlock new story chapters.
+      const awarded=captureEligibleMonsters(reward.save);
+      persist(awarded.save);
+      play.captured.push(...awarded.captured);
       play.forestRelics.push(...reward.discovered);
       if(!play.endless){play.completedForest=true;finishSession();return;}
       play.seenIds=cleanForest(save.forest).recentPromptIds;
