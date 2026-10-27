@@ -334,3 +334,78 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 @media(max-width:730px){.home-navigation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-feature{grid-template-columns:minmax(0,1fr) 34%;padding:21px 20px;min-height:315px}.home-feature-content h2{font-size:clamp(27px,5vw,36px)}#home-menu-art{height:180px}}
 @media(max-width:600px){.home-navigation-head h1{font-size:30px}.home-feature{min-height:310px;border-radius:22px;grid-template-columns:minmax(0,1.18fr) minmax(105px,.82fr);padding:18px 15px}.home-feature-eyebrow{font-size:8px;letter-spacing:.08em}.home-feature-content h2{font-size:clamp(23px,5.7vw,32px);margin:12px 0}.home-feature-content>p{font-size:11px;line-height:1.6}.home-feature-info{gap:5px;margin:12px 0 14px}.home-feature-info span{font-size:9px;padding:5px 6px}.home-feature-cta{min-height:45px;font-size:11px;padding:9px 12px;gap:5px}.home-feature-companion{align-self:center}#home-menu-art{height:150px}.home-feature-companion strong{font-size:14px}.home-feature-companion small{font-size:9px}.home-navigation-label h2{font-size:18px}.home-navigation-label p{font-size:10px}.home-navigation-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.home-navigation-tile{min-height:104px;padding:12px 9px;gap:7px;align-items:flex-start}.home-navigation-tile[data-home-page="daily"]{grid-column:span 2;min-height:93px;align-items:center}.home-navigation-icon{width:34px;height:34px;flex-basis:34px;font-size:12px}.home-navigation-copy strong{font-size:12px}.home-navigation-copy small{font-size:10px;line-height:1.4}.home-navigation-arrow{font-size:20px}.home-navigation-head p{font-size:12px}}
 @media(max-width:360px){.home-feature{grid-template-columns:1fr 100px}.home-feature-content h2{font-size:22px}#home-menu-art{height:112px}.home-navigation-tile{min-height:100px}.home-navigation-copy strong{font-size:11px}}
+
+
+/* Home v3: dungeon leads, while each secondary training mode is color-coded.
+   CSS-drawn accents and the existing monster SVGs keep this zero-download. */
+.home-navigation-head h1 em{color:#2a8663}
+.home-feature{border:2px solid #81b28f;background:linear-gradient(118deg,#0c332c 0%,#175a48 58%,#2e7962 100%);box-shadow:0 16px 38px #153d2e40,inset 0 0 0 2px #c3e7af1c}
+.home-feature-content h2{color:#fff5c9;text-shadow:0 3px 12px #0c272c5e;font-size:clamp(36px,5.6vw,58px);letter-spacing:-.04em;line-height:1.19}
+.home-feature-eyebrow{color:#ffe39b}
+.home-feature-cta{background:linear-gradient(180deg,#fff1b8,#f7cd6c);color:#27462c;border-color:#ffe9af;box-shadow:0 5px 0 #0e332c9e,0 9px 15px #12291c5b}
+.home-feature-cta:hover{background:#fff4ce}
+.home-feature-progress{margin:10px 0 0!important;color:#d7e9c7!important;font-size:11px!important;font-weight:750}
+.home-navigation-grid{isolation:isolate}
+.home-navigation-grid .home-navigation-tile{--tile-color:#45765b;--tile-bg:#f1f5e8;--tile-border:#bad1c1;--tile-glow:#e0ecd7;
+ position:relative;isolation:isolate;overflow:visible;min-height:116px;
+ background:linear-gradient(136deg,#ffffff 0%,var(--tile-bg) 100%);
+ border:1.5px solid var(--tile-border);box-shadow:0 5px 0 #173d2b10,0 10px 22px #153c2e10;
+ transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.home-navigation-grid .home-navigation-tile:after{display:none}
+.home-navigation-grid .home-navigation-tile:before{content:"";position:absolute;inset:8px;border:1px solid var(--tile-glow);border-radius:10px;z-index:0;pointer-events:none}
+.home-navigation-grid .home-navigation-tile:hover{transform:translateY(-2px);border-color:var(--tile-color);box-shadow:0 7px 0 #173d2b16,0 14px 23px #153c2e23}
+.home-navigation-grid .home-navigation-tile:focus-visible{outline:3px solid var(--tile-color);outline-offset:4px}
+.home-navigation-grid .home-navigation-tile[data-home-page="forest"]{grid-column:span 2;--tile-color:#286650;--tile-bg:#e1f2df;--tile-border:#86c29e;--tile-glow:#aed8a6;background:linear-gradient(115deg,#dcf3db,#f4efd0);min-height:132px}
+.home-navigation-grid .home-navigation-tile[data-home-page="daily"]{grid-column:span 1;--tile-color:#ab732b;--tile-bg:#fff1c9;--tile-border:#e9c77b;--tile-glow:#f4e0ae}
+.home-navigation-grid .home-navigation-tile[data-home-page="training"]{--tile-color:#b35b39;--tile-bg:#ffe8d8;--tile-border:#e7ac88;--tile-glow:#ffd4bf}
+.home-navigation-grid .home-navigation-tile[data-home-page="listening"]{--tile-color:#307c9b;--tile-bg:#e0f3ff;--tile-border:#a4cde2;--tile-glow:#c7e6fa}
+.home-navigation-grid .home-navigation-tile[data-home-page="review"]{--tile-color:#7960a6;--tile-bg:#f0e9ff;--tile-border:#cbbbeb;--tile-glow:#e2d4fa}
+.home-navigation-grid .home-navigation-tile[data-home-page="challenge"]{--tile-color:#c0802b;--tile-bg:#fff0d8;--tile-border:#f1c083;--tile-glow:#ffdfb2}
+.home-navigation-grid .home-navigation-tile[data-home-page="collection"]{--tile-color:#388477;--tile-bg:#def6ee;--tile-border:#a1d6ca;--tile-glow:#c4ede5}
+.home-navigation-grid .home-navigation-tile[data-home-page="progress"]{--tile-color:#556caa;--tile-bg:#eaf0fe;--tile-border:#b8c9ed;--tile-glow:#d5dffc}
+.home-navigation-grid .home-navigation-tile[data-home-page="tutorial"]{--tile-color:#8f6b83;--tile-bg:#fbeaf4;--tile-border:#e9bdd7;--tile-glow:#f7d7e8}
+.home-navigation-grid .home-navigation-icon{position:relative;z-index:1;border-color:var(--tile-border);color:var(--tile-color);background:var(--tile-bg);border-radius:13px;width:47px;height:47px;flex-basis:47px;box-shadow:inset 0 1px 0 #fff;transform:rotate(-6deg)}
+.home-navigation-grid .home-navigation-icon svg{width:26px;height:26px;transform:rotate(6deg)}
+.home-navigation-grid .home-navigation-copy{position:relative;z-index:1}
+.home-navigation-grid .home-navigation-copy strong{color:var(--tile-color);font-size:16px;letter-spacing:-.02em}
+.home-navigation-grid .home-navigation-copy small{color:#647667}
+.home-navigation-grid .home-navigation-arrow{color:var(--tile-color);position:relative;z-index:1}
+.home-navigation-grid [data-home-page="forest"] .home-navigation-icon{width:58px;height:58px;flex-basis:58px;background:#e9f8df}
+.home-navigation-grid [data-home-page="forest"] .home-navigation-icon svg{width:32px;height:32px}
+.home-navigation-grid [data-home-page="forest"] .home-navigation-copy strong{font-size:20px}
+.home-navigation-grid [data-home-page="forest"] .home-navigation-copy small{font-size:12px}
+
+/* Small unlocked characters traverse the border: walk, pause, then run.
+   Decorative, maximum three; no click interception or background timers. */
+.home-walker{pointer-events:none!important;position:absolute;display:block;z-index:4;left:7px;top:-17px;width:34px;height:32px;will-change:transform;animation:home-roam var(--wander-duration,20s) linear var(--wander-delay,0s) infinite}
+.home-walker .monster-svg,.home-walker svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 2px 2px #18382959)}
+.home-walker svg{animation:home-walker-hop 2.5s ease-in-out infinite}
+.home-navigation-grid .home-navigation-tile:hover .home-walker,.home-navigation-grid .home-navigation-tile:focus-visible .home-walker{animation-play-state:paused}
+@keyframes home-roam{
+  0%,7%{left:7px;top:-17px;transform:scaleX(1) translateY(0)}
+  29%{left:calc(100% - 38px);top:-17px;transform:scaleX(1) translateY(0)}
+  33%,39%{left:calc(100% - 38px);top:-17px;transform:scaleX(1) translateY(0)}
+  48%{left:calc(100% - 18px);top:calc(50% - 16px);transform:scaleX(1) rotate(90deg)}
+  60%{left:calc(100% - 38px);top:calc(100% - 15px);transform:scaleX(-1)}
+  72%,79%{left:7px;top:calc(100% - 15px);transform:scaleX(-1)}
+  89%{left:-17px;top:calc(50% - 16px);transform:scaleX(-1) rotate(-90deg)}
+  100%{left:7px;top:-17px;transform:scaleX(1)}
+}
+@keyframes home-walker-hop{0%,100%{transform:translateY(0)}35%{transform:translateY(-2px)}50%{transform:translateY(0)}}
+@media(max-width:600px){
+ .home-feature-content h2{font-size:clamp(27px,6vw,35px)}
+ .home-navigation-grid .home-navigation-tile{min-height:103px;gap:8px}
+ .home-navigation-grid .home-navigation-tile[data-home-page="forest"]{min-height:124px;grid-column:span 2}
+ .home-navigation-grid .home-navigation-tile[data-home-page="daily"]{grid-column:span 1;min-height:108px}
+ .home-navigation-grid .home-navigation-icon{width:37px;height:37px;flex-basis:37px}
+ .home-navigation-grid .home-navigation-icon svg{width:23px;height:23px}
+ .home-navigation-grid .home-navigation-copy strong{font-size:12px}
+ .home-navigation-grid [data-home-page="forest"] .home-navigation-copy strong{font-size:18px}
+ .home-navigation-grid [data-home-page="forest"] .home-navigation-copy small{font-size:11px}
+ .home-navigation-grid [data-home-page="forest"] .home-navigation-icon{width:53px;height:53px;flex-basis:53px}
+ .home-walker{width:29px;height:28px}
+}
+@media(prefers-reduced-motion:reduce){
+ .home-walker,.home-walker svg{animation:none!important;will-change:auto}
+ .home-navigation-grid .home-navigation-tile{transition:none}
+}
