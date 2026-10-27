@@ -16,6 +16,7 @@ import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { forestEventFor, forestEventChoice } from './forest-events.js';
+import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -175,6 +176,15 @@ function renderHome() {
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
   $('#home-wallet').textContent = save.xpWallet;
+  const gym=dailyTrainingPlan(save);
+  const growth=dailyGrowthSummary(save);
+  $('#daily-plan-status').textContent=`今日の8問：復習 ${gym.counts.review} · 応用 ${gym.counts.transfer} · 新しい問題 ${gym.counts.new}${gym.counts.mixed?' · その他 '+gym.counts.mixed:''}`;
+  $('#start-daily-gym').disabled=!gym.prompts.length;
+  $('#daily-last-rate').textContent=growth.lastRate===null?'―':`${growth.lastRate}%`;
+  $('#daily-growth-note').textContent=growth.changeSevenDays!==null
+    ?`同じ難易度の7日以上前と比較：${growth.changeSevenDays>=0?'+':''}${growth.changeSevenDays}ポイント（${growth.weekBeforeRate}% → ${growth.lastRate}%）`
+    :growth.sessions?`完了 ${growth.sessions}回 · 前回 ${growth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
+    :'5分ジムを完了すると、ヒントなしで正解した割合を記録するよ。';
   const bookmarked=savedReviewQueue(save);
   const needsReview=bookmarked.filter(item=>item.due);
   $('#start-saved-review').disabled=!bookmarked.length;
@@ -239,17 +249,18 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   const area=forestMode?(endless?FOREST_AREAS[0]:unlockedForestAreas(save).find(a=>a.id===requestedAreaId)||nextForestArea(save)):null;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
-  const prompts=forestMode?firstWave.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
+  const gym=mode==='daily'?dailyTrainingPlan(save,{difficulty}):null;
+  const prompts=forestMode?firstWave.prompts:mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='saved'?'保存した問題の復習':'練習モード'} · ${difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='saved'?'保存した問題の復習':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
-  $('#play-view').classList.toggle('review-only',mode==='saved');
+  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily');
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
     $('#forest-world-stage').dataset.route='wild';
@@ -803,6 +814,7 @@ async function gradeAnswer() {
   play.earnedXp+=reward.xp;
   play.captured.push(...reward.captured);
   if(rating==='smooth')play.smooth++;
+  else if(rating==='hint')play.hintedCount++;
   play.revealed=true;
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
@@ -926,6 +938,11 @@ function finishSession(timedOut=false,defeated=false) {
   cancelAutoAdvance();
   const ended=play;play=null;clearTimer();stopAudio();
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
+  if(ended.mode==='daily'&&ended.index>=ended.prompts.length){
+    persist(recordDailyCompletion(save,{difficulty:ended.difficulty,date:dayKey(),
+      total:ended.prompts.length,independent:ended.smooth,hinted:ended.hintedCount,
+      elapsedSeconds:(Date.now()-ended.startedAt)/1000}));
+  }
   $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
@@ -933,23 +950,23 @@ function finishSession(timedOut=false,defeated=false) {
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
-  $('#result-title').textContent=ended.mode==='forest'?
+  $('#result-title').textContent=ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='forest'?
     (defeated?'森の挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
-  $('#result-description').textContent=ended.mode==='forest'?
+  $('#result-description').textContent=ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='forest'?
     (defeated?'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
      `${FOREST_AREAS.find(area=>area.id===ended.areaId).name}を攻略！ 次のエリアの扉が開いたよ。`):
     timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
-  $('#result-rewards').innerHTML=`<span class="reward-pill">${ended.mode==='forest'?'自力で正解':'自力で言えた'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
+  $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':'自力で言えた'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
   const newMonsters=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
   $('#result-discoveries').innerHTML=newMonsters+newRelics+memories;
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
-  $('#replay-run').textContent=ended.mode==='forest'?'森をもう一度探検する':ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
+  $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?'森をもう一度探検する':ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode,ended.areaId);
   showView('result');
 }
@@ -965,6 +982,7 @@ $('#start-forest-endless').addEventListener('click',()=>startSession('forest-end
 $('#start-review-practice').addEventListener('click',()=>startSession('practice'));
 $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
+$('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   cancelAutoAdvance();
