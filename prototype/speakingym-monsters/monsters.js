@@ -17,6 +17,7 @@ import { speakingFeedbackFor } from './speaking-feedback.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { forestEventFor, forestEventChoice } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
+import { setupHomeNavigation } from './home-navigation.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -59,7 +60,7 @@ function speakingSuccessHtml(prompt,learnerAnswer){
   </section>`;
 }
 let save = loadSave() || createSave();
-let play = null, timer = null, recognition = null, recognitionWatchdog = null, recognitionStopping = false, autoAdvanceTimer = null, spokenAudio = null;
+let play = null, timer = null, recognition = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
 
 function cancelAutoAdvance(){
   if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
@@ -105,7 +106,9 @@ function micView(mode='ready') {
 }
 function stopRecognition(mode='ready') {
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
+  if(recognitionNoResultTimer)clearTimeout(recognitionNoResultTimer);
   recognitionWatchdog=null;
+  recognitionNoResultTimer=null;
   const active=recognition;
   recognition=null; // Disarm callbacks before abort: Safari fires onend asynchronously.
   recognitionStopping=false;
@@ -155,6 +158,7 @@ function showView(name) {
   cancelAutoAdvance();
   for (const id of ['home','play','result','collection','detail','training']) $(`#${id}-view`).hidden = id !== name;
   stopAudio();
+  if(name==='home')homeNavigation?.showMenu();
   const heading = $(`#${name}-view h1`);
   if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   window.scrollTo({top:0,behavior:'instant'});
@@ -525,7 +529,7 @@ function renderQuestion() {
     dialogue.append(counter,title,context,warning);
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
-  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div id="speech-alternatives" class="speech-alternatives" hidden><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -541,14 +545,30 @@ function renderQuestion() {
   $('#show-hint').addEventListener('click',showHint);
   $('#show-answer').addEventListener('click',gradeAnswer);
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
+  const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent);
+  $('#speech-alternatives').hidden=quizMode||!isIOS;
+  $('#native-dictation').addEventListener('click',()=>{
+    if(recognition)finishRecognition();
+    const field=$('#spoken-answer');
+    if(field.disabled)return;
+    field.focus();
+    $('#speech-alternative-help').textContent='iPhoneキーボードのマイクを押して話してね。英文を確認・修正してから判定できるよ。';
+  });
+  $('#copy-safari-url').addEventListener('click',async()=>{
+    try{
+      await navigator.clipboard.writeText(location.href);
+      $('#speech-alternative-help').textContent='URLをコピーしました。Safariを開いてアドレス欄に貼り付けてね。';
+    }catch{
+      $('#speech-alternative-help').textContent='コピーできませんでした。共有メニューからSafariで開くか、URLをSafariに貼り付けてね。';
+    }
+  });
   $('#spoken-answer').addEventListener('input',()=>{
     $('#spoken-answer').classList.remove('transcript-interim');
     if(!recognition&&!quizMode)micView('ready');
   });
   if(!quizMode){
     micView('ready');
-    if(/iPhone|iPad|iPod/i.test(navigator.userAgent))
-      $('#speech-helper').textContent='iPhoneで声が文字にならないときはSafariで開くか、入力欄をタップしてキーボードのマイクも使えるよ。';
+    if(isIOS)$('#speech-helper').textContent='内蔵ブラウザの音声認識が使えない場合は、下のiPhone標準の音声入力に切り替えてね。';
   }
   if(reviewing)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(listenMode){
@@ -992,6 +1012,7 @@ $('#start-review-practice').addEventListener('click',()=>startSession('practice'
 $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:startSession,showCollection:()=>renderCollection()});
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   cancelAutoAdvance();
