@@ -998,7 +998,7 @@ function advanceQuestion(){
       play.prompts=wave.prompts;
       play.difficulty=wave.level;
       play.index=0;play.bossHits=0;play.usedPower=false;
-      play.combo=0;
+      play.combo=0;play.dungeonOutcomes=[];play.encounterHelp=false;
       play.encounterKey=null;
       $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${FOREST_AREAS.find(a=>a.id===play.areaId).name} · ${difficultyCopy[wave.level].label}`;
       showForestExplore(false);queueForestEncounter();return;
