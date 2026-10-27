@@ -1,5 +1,6 @@
 import { ALL_PROMPTS } from './monster-data.js';
 import { bossConversationFor } from './forest-boss-story.js';
+import { FOREST_AREAS } from './forest-engine.js';
 
 // Speaking Forest: 5 encounters, then a three-hit boss. Unique tasks per wave.
 export const FOREST_MOBS=Object.freeze([
@@ -10,6 +11,24 @@ export const FOREST_MOBS=Object.freeze([
   {id:'mothum',name:'Mothum',japanese:'月あかりの蛾'}
 ]);
 export const FOREST_BOSS=Object.freeze({id:'thornking',name:'Thorn King',japanese:'森のトゲ王',hp:3});
+export const AREA_BOSSES=Object.freeze({
+ entry:FOREST_BOSS,
+ glade:Object.freeze({id:'sunwarden',name:'Sun Warden',japanese:'光の番人',hp:3}),
+ thicket:Object.freeze({id:'mistknight',name:'Mist Knight',japanese:'霧の騎士',hp:3}),
+ sanctuary:Object.freeze({id:'elderroot',name:'Elder Root',japanese:'古木の守護者',hp:3})
+});
+const AREA_MOBS=Object.freeze({
+ entry:FOREST_MOBS,
+ glade:['Sunmoss','Beethorn','Glowcap','Ambernut','Daymoth'].map((name,i)=>({id:['sunmoss','beethorn','glowcap','ambernut','daymoth'][i],name,japanese:['ひなたのこけ','蜜の番人','光るキノコ','琥珀の実','昼の蛾'][i]})),
+ thicket:['Fogling','Nightthorn','Whispercap','Bitterbud','Duskmoth'].map((name,i)=>({id:['fogling','nightthorn','whispercap','bitterbud','duskmoth'][i],name,japanese:['霧の子','夜のとげ','ささやくキノコ','苦い木の実','夕闇の蛾'][i]})),
+ sanctuary:['Rootlet','Ancienthorn','Oraclecap','Stonebud','Starmoth'].map((name,i)=>({id:['rootlet','ancienthorn','oraclecap','stonebud','starmoth'][i],name,japanese:['小さな古木','古代のとげ','予言のキノコ','石の木の実','星の蛾'][i]}))
+});
+const AREA_SKILLS=Object.freeze({
+ entry:['speak','listen','vocab','grammar','speak'],
+ glade:['listen','vocab','speak','grammar','read'],
+ thicket:['read','grammar','speak','listen','vocab'],
+ sanctuary:['speak','listen','vocab','read','grammar']
+});
 // Foes telegraph their own defensive stance. These patterns are cosmetic:
 // neither verdicts nor the XP ledger depend on enemy type.
 export const FOREST_TACTICS=Object.freeze({
@@ -20,9 +39,14 @@ export const FOREST_TACTICS=Object.freeze({
  mothum:Object.freeze({preferredKind:'speak',name:'月光の羽',tell:'月の光をまとい、ゆっくり羽ばたく',guard:'羽を閉じて、月明かりにまぎれた'}),
  thornking:Object.freeze({preferredKind:'mixed',name:'トゲ王の結界',tell:'いばらの結界が、周囲に広がっている',guard:'いばらの結界が、攻撃を防いだ'})
 });
-export function enemyTacticFor(index,wave=1){
- const foe=opponentFor(index,wave);
- return FOREST_TACTICS[foe.id];
+export function enemyTacticFor(index,wave=1,areaId='entry'){
+ const foe=opponentFor(index,wave,areaId);
+ if(FOREST_TACTICS[foe.id])return FOREST_TACTICS[foe.id];
+ const original=index>=REGULAR_ENCOUNTERS?FOREST_TACTICS.thornking:
+   FOREST_TACTICS[FOREST_MOBS[(index+wave-1)%FOREST_MOBS.length].id];
+ const theme={glade:'光',thicket:'霧',sanctuary:'古木'}[areaId];
+ return {preferredKind:AREA_SKILLS[areaId][index]||'mixed',name:`${theme}の${original.name}`,
+   tell:`${theme}の力をまとっている。${original.tell}`,guard:`${theme}の力で防御した`};
 }
 export const REGULAR_ENCOUNTERS=5;
 export const BOSS_HITS=3;
@@ -41,10 +65,12 @@ function shuffle(items,random) {
  }
  return pool;
 }
-export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewPhraseIds=[],reviewPromptIds=[],quizWeaknessIds=[],bossConversation=false,random=Math.random}={}){
- const level=forestLevel(difficulty,wave);
+export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progression='endless',previousIds=[],reviewPhraseIds=[],reviewPromptIds=[],quizWeaknessIds=[],bossConversation=false,random=Math.random}={}){
+ if(!AREA_SKILLS[areaId])throw Error('Unknown forest area');
+ const level=progression==='story'?difficulty:forestLevel(difficulty,wave);
+ if(!DIFFICULTY_TRIES[level])throw Error('Invalid forest difficulty');
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level);
- const bossStages=bossConversation?bossConversationFor(wave,level):null;
+ const bossStages=bossConversation&&areaId==='entry'?bossConversationFor(wave,level):null;
  const reservedBossIds=new Set((bossStages||[]).map(turn=>turn.id));
  const previous=new Set(previousIds);
  const dueIds=new Set(reviewPromptIds);
@@ -55,8 +81,9 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
  const usedIds=new Set(),usedPhrases=new Set(),prompts=[];
  // Each enemy presents its own skill. The last three encounters form a
  // listening -> grammar/vocabulary -> speaking boss gauntlet.
- const kinds=Array.from({length:REGULAR_ENCOUNTERS},(_,index)=>enemyTacticFor(index,wave).preferredKind);
- const bossMiddle=wave%2===1?'grammar':'vocab';
+ const kinds=areaId==='entry'?Array.from({length:REGULAR_ENCOUNTERS},(_,index)=>enemyTacticFor(index,wave).preferredKind):[...AREA_SKILLS[areaId]];
+ const bossMiddle=areaId==='entry'?(wave%2===1?'grammar':'vocab'):
+   areaId==='glade'||areaId==='sanctuary'?'vocab':'grammar';
  kinds.push('listen',bossMiddle,'speak');
  for(let slot=0;slot<kinds.length;slot++){
    const kind=kinds[slot];
@@ -82,25 +109,28 @@ export function buildForestWave({difficulty='easy',wave=1,previousIds=[],reviewP
      const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
      if(newPhrase.length)candidates=newPhrase;
    }
+   const focus=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
-     previous.has(p.id)?1:0
+     previous.has(p.id)?1:0,
+     areaId==='entry'||focus.has(p.phraseId)?0:1
    ];
    candidates.sort((a,b)=>{
      const aa=scores(a),bb=scores(b);
-     return aa[0]-bb[0]||aa[1]-bb[1];
+     return aa[0]-bb[0]||aa[1]-bb[1]||aa[2]-bb[2];
    });
    const chosen=candidates[0];
    prompts.push(chosen);usedIds.add(chosen.id);usedPhrases.add(chosen.phraseId);
  }
  if(prompts.length!==FOREST_WAVE_LENGTH||new Set(prompts.map(p=>p.id)).size!==FOREST_WAVE_LENGTH)
    throw Error('Invalid forest wave content');
- return {prompts,level,wave};
+ return {prompts,level,wave,areaId};
 }
-export function opponentFor(index,wave=1){
- if(index>=REGULAR_ENCOUNTERS)return FOREST_BOSS;
+export function opponentFor(index,wave=1,areaId='entry'){
+ if(!AREA_MOBS[areaId])throw Error('Unknown forest area');
+ if(index>=REGULAR_ENCOUNTERS)return AREA_BOSSES[areaId];
  if(index<0)throw Error('Invalid encounter index');
- return FOREST_MOBS[(index+wave-1)%FOREST_MOBS.length];
+ return AREA_MOBS[areaId][(index+wave-1)%REGULAR_ENCOUNTERS];
 }
 export function battleStatus({index=0,level='easy',endless=false,remaining=null}={}){
  const boss=index>=REGULAR_ENCOUNTERS;

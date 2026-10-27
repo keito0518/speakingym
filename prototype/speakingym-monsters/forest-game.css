@@ -149,3 +149,20 @@
  .forest-party,.forest-active .forest-route-option{transition:none!important}
  .forest-victory .forest-world-fx{opacity:1}
 }
+/* Four authored Forest chapters. Locked doors are informational, not links. */
+.forest-area-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 15px;position:relative;z-index:1}
+.forest-area-card{min-width:0;display:flex;align-items:center;gap:9px;text-align:left;border:1px solid #8aa884a3;border-radius:12px;padding:10px 9px;background:#1d4838e8;color:#fff4cc;cursor:pointer;box-shadow:inset 0 1px #d2eac225;transition:background .15s,transform .15s}
+.forest-area-card:enabled:hover,.forest-area-card:enabled:focus-visible{background:#326a4e;transform:translateY(-1px);outline-color:#f5dfa7}
+.forest-area-card:disabled{cursor:not-allowed;opacity:.49;filter:grayscale(.65)}
+.forest-area-number{flex:none;font-family:Georgia,serif;color:#f4d58a;font-size:19px;font-weight:900}
+.forest-area-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.forest-area-copy strong{font-size:12px;line-height:1.35}
+.forest-area-copy small{font-size:10px;line-height:1.4;color:#c8dfca;overflow-wrap:anywhere}
+.forest-area-status{font-size:9px;font-weight:900;letter-spacing:.05em;white-space:nowrap;color:#f8dfa3}
+.forest-explore-art[data-area="glade"] .forest-world-svg{filter:hue-rotate(-26deg) saturate(1.18) brightness(1.12)}
+.forest-explore-art[data-area="thicket"] .forest-world-svg{filter:hue-rotate(95deg) saturate(.72) brightness(.81)}
+.forest-explore-art[data-area="sanctuary"] .forest-world-svg{filter:sepia(.35) hue-rotate(-8deg) saturate(1.1)}
+.forest-world-stage[data-area="glade"] .forest-world-backdrop{filter:sepia(.16) saturate(1.12) brightness(1.11)}
+.forest-world-stage[data-area="thicket"] .forest-world-backdrop{filter:hue-rotate(40deg) brightness(.78)}
+.forest-world-stage[data-area="sanctuary"] .forest-world-backdrop{filter:sepia(.32) hue-rotate(-15deg)}
+@media(max-width:540px){.forest-area-list{grid-template-columns:1fr}.forest-area-card{padding:9px 10px}}

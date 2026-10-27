@@ -3,7 +3,7 @@ import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finish
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
-import { cleanForest, FOREST_ROUTES, FOREST_RELICS, finishForest } from './forest-engine.js';
+import { cleanForest, FOREST_ROUTES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike } from './forest-battle.js';
 import { enemyArt } from './forest-enemies.js';
@@ -135,7 +135,14 @@ function renderHome() {
   $('#hero-next-level').textContent = growth.evolved ? `進化済み · あと${growth.toNextLevel} XPで次のレベル` : `あと${growth.toNextLevel} XPでレベルアップ · 160 XPで進化`;
   $('#home-wallet').textContent = save.xpWallet;
   const forest=cleanForest(save.forest);
-  $('#forest-home-progress').textContent = forest.clears ? `討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個 · 最長 ${forest.bestWave||0}W` : 'まだ未踏の森';
+  $('#forest-home-progress').textContent = `攻略 ${forest.completedAreas.length}/${FOREST_AREAS.length}エリア · 討伐 ${forest.clears}回 · 宝物 ${forest.relics.length}個`;
+  const unlocked=new Set(unlockedForestAreas(save).map(area=>area.id));
+  $('#forest-area-list').innerHTML=FOREST_AREAS.map((area,index)=>{
+    const cleared=forest.completedAreas.includes(area.id),open=unlocked.has(area.id);
+    return `<button type="button" class="forest-area-card" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small>${escapeHtml(area.goal)} · 8問</small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':'LOCKED'}</span></button>`;
+  }).join('');
+  $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startSession('forest',button.dataset.enterForest)));
+  $('#start-forest').textContent=forest.completedAreas.length===FOREST_AREAS.length?'森をもう一度冒険':`次へ：${nextForestArea(save).name}`;
   const weak=quizWeaknessOverview(save);
   const weakSummary=$('#forest-weakness-summary');
   weakSummary.hidden=weak.due.length===0&&weak.upcoming.length===0;
@@ -174,19 +181,20 @@ function dueForestPromptIds(){
   return Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id);
 }
 function dueQuizWeaknessIds(){return quizWeaknessOverview(save).due.map(item=>item.id);}
-function startSession(mode) {
+function startSession(mode,requestedAreaId=null) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',forestMode=mode==='forest'||endless;
+  const area=forestMode?(endless?FOREST_AREAS[0]:unlockedForestAreas(save).find(a=>a.id===requestedAreaId)||nextForestArea(save)):null;
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
-  const firstWave=forestMode?buildForestWave({difficulty,wave:1,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
+  const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
   const prompts=forestMode?firstWave.prompts:selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
-  play={mode:forestMode?'forest':mode,endless,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
+  play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':'はじまりの森'):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':area.name):mode==='challenge'?'60秒チャレンジ':'練習モード'} · ${difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
@@ -224,7 +232,7 @@ function renderForestHud() {
   $('#forest-companion-name').textContent=(evolved?companion.evolvedName:companion.name)+' と戦闘中';
   const world=$('#forest-world-stage');
   const currentRoute=play.route||'wild';
-  const arenaKey=currentRoute+':'+(play.index>=REGULAR_ENCOUNTERS?'boss':'mob');
+  const arenaKey=play.areaId+':'+currentRoute+':'+(play.index>=REGULAR_ENCOUNTERS?'boss':'mob');
   if(world.dataset.renderedRoute!==arenaKey){
     $('#forest-world-backdrop').innerHTML=battleArenaArt(play.index>=REGULAR_ENCOUNTERS);
     world.dataset.renderedRoute=arenaKey;
@@ -234,11 +242,13 @@ function renderForestHud() {
   world.dataset.evolved=String(evolved);
   $('#forest-guard').innerHTML=guardArt();
   world.classList.toggle('forest-boss-stage',play.index>=REGULAR_ENCOUNTERS);
-  $('.forest-chapter-pin').textContent=play.index>=REGULAR_ENCOUNTERS?'THORN VAULT':'MOONSTONE ARENA';
+  const area=FOREST_AREAS.find(a=>a.id===play.areaId);
+  $('.forest-chapter-pin').textContent=play.index>=REGULAR_ENCOUNTERS?`${area.english} · BOSS`:area.english;
   world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding','forest-defended','forest-reading-hit','forest-weakness-hit','forest-spell-cast');
-  const foe=opponentFor(play.index,play.wave);
-  const tactic=enemyTacticFor(play.index,play.wave);
+  const foe=opponentFor(play.index,play.wave,play.areaId);
+  const tactic=enemyTacticFor(play.index,play.wave,play.areaId);
   world.dataset.foe=foe.id;
+  world.dataset.area=play.areaId;
   $('#forest-enemy').innerHTML=enemyArt(foe.id);
   // Separate the English name and Japanese epithet at a meaningful line break.
   $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
@@ -262,8 +272,8 @@ function renderForestHud() {
   bossMarker.classList.toggle('is-current',play.index>=REGULAR_ENCOUNTERS);
   bossMarker.classList.toggle('is-cleared',play.index>=REGULAR_ENCOUNTERS+BOSS_HITS);
   $('#forest-scene-story').textContent=play.index>=REGULAR_ENCOUNTERS?
-    '森のトゲ王が立ちはだかる！ 英語を伝えて3回の攻撃で倒そう。':
-    `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ ${enemyTacticFor(play.index,play.wave).tell}。`;
+    `${foe.japanese}が立ちはだかる！ 3つの異なる英語の試練で倒そう。`:
+    `BATTLE ${play.index+1}/5 · ${foe.japanese} が現れた！ ${tactic.tell}。`;
   const log=$('#forest-battle-log');
   log.textContent=play.index>=REGULAR_ENCOUNTERS && play.bossHits===0?
     `${foe.name} が現れた！ ${tactic.tell}。英語の攻撃を3回当てよう。`:
@@ -288,19 +298,21 @@ function showForestExplore(routeChoice=false) {
   const view=$('#play-view'), map=$('#forest-explore-art');
   const companion=monsterFor(play.companionId);
   const evolved=getMonsterProgress(save,play.companionId).evolved;
-  const foe=opponentFor(play.index,play.wave);
+  const foe=opponentFor(play.index,play.wave,play.areaId);
+  const area=FOREST_AREAS.find(a=>a.id===play.areaId);
   const isBoss=play.index>=REGULAR_ENCOUNTERS;
   const stage=Math.min(4,Math.max(0,play.index));
-  map.innerHTML=forestWorldArt(play.route)+
+  map.innerHTML=forestWorldArt(play.route,play.areaId)+
     '<div class="forest-explore-companion">'+monsterArt(companion.id,evolved)+'</div>'+
     '<div class="forest-explore-destination" aria-hidden="true"></div>';
   map.dataset.step=String(stage);
   map.dataset.route=play.route||'wild';
+  map.dataset.area=play.areaId;
   $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
-  $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':isBoss?'森の奥に、強い気配がする':play.index===0?'冒険の始まり':`次の目的地へ · ${play.index+1}戦目`;
+  $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
   $('#forest-explore-description').textContent=routeChoice?'進む道を選ぼう。道によって見つかる宝物が変わるよ。':
     isBoss?'この先に森のボスが待っている。準備ができたら進もう。':
-    play.index===0?'仲間と森を探検しよう。先に進むとモンスターが現れる。':
+    play.index===0?`${area.story} 学習目標：${area.goal}。`:
     `${foe.japanese} の気配がする。次の戦闘へ進もう。`;
   const options=$('#forest-explore-options');
   options.hidden=!routeChoice;
@@ -377,7 +389,7 @@ function renderQuestion() {
     banner.textContent='苦手の再挑戦 · 前回つまずいたポイントを考えよう';
     $('#play-card').querySelector('.question-top').after(banner);
   }
-  const bossTurn=play.mode==='forest'?bossConversationTurn(play.wave,play.difficulty,play.index):null;
+  const bossTurn=play.mode==='forest'&&play.areaId==='entry'?bossConversationTurn(play.wave,play.difficulty,play.index):null;
   if(bossTurn&&bossTurn.id===prompt.id){
     const dialogue=document.createElement('section');
     dialogue.className='forest-boss-dialogue';
@@ -599,7 +611,7 @@ async function gradeAnswer() {
       void world.offsetWidth;
       world.classList.add('forest-guarding');
       $('#forest-world-fx').textContent='';
-      const tactic=enemyTacticFor(play.index,play.wave);
+      const tactic=enemyTacticFor(play.index,play.wave,play.areaId);
       $('#forest-battle-log').textContent=grade.status==='incorrect'
         ? `${tactic.guard}。今回は攻撃できなかった。別の答えを試そう。`
         : `${tactic.guard}。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。`;
@@ -646,7 +658,7 @@ async function gradeAnswer() {
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
   if(play.mode==='forest'){
     const boss=play.index>=REGULAR_ENCOUNTERS;
-    const foe=opponentFor(play.index,play.wave);
+    const foe=opponentFor(play.index,play.wave,play.areaId);
     const companion=monsterFor(play.companionId);
     const companionName=getMonsterProgress(save,play.companionId).evolved?companion.evolvedName:companion.name;
     const special=specialStrike({companionId:play.companionId,
@@ -730,19 +742,20 @@ function advanceQuestion(){
     play.index=play.index>=REGULAR_ENCOUNTERS?REGULAR_ENCOUNTERS+play.bossHits:play.index+1;
     if(play.index>=FOREST_WAVE_LENGTH){
       // Reward a wave only after five mobs and three verified boss hits.
-      const reward=finishForest(save,play.route,play.companionId);
+      const reward=finishForest(save,play.route,play.companionId,play.areaId,play.prompts.map(p=>p.id),!play.endless);
       persist(reward.save);
       play.forestRelics.push(...reward.discovered);
       if(!play.endless){play.completedForest=true;finishSession();return;}
-      play.seenIds=play.prompts.map(p=>p.id);
+      play.seenIds=cleanForest(save.forest).recentPromptIds;
       play.wave++;
-      const wave=buildForestWave({difficulty:play.baseDifficulty,wave:play.wave,previousIds:play.seenIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true});
+      play.areaId=FOREST_AREAS[(play.wave-1)%FOREST_AREAS.length].id;
+      const wave=buildForestWave({difficulty:play.baseDifficulty,wave:play.wave,areaId:play.areaId,previousIds:play.seenIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true});
       play.prompts=wave.prompts;
       play.difficulty=wave.level;
       play.index=0;play.bossHits=0;play.usedPower=false;
       play.combo=0;
       play.encounterKey=null;
-      $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${difficultyCopy[wave.level].label}`;
+      $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${FOREST_AREAS.find(a=>a.id===play.areaId).name} · ${difficultyCopy[wave.level].label}`;
       showForestExplore(false);queueForestEncounter();return;
     }
     // The boss keeps its dedicated arena until defeated; normal encounters
@@ -778,7 +791,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-description').textContent=ended.mode==='forest'?
     (defeated?'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
-     '5体のモブを突破してトゲ王を撃破！ 仲間と宝物を確認しよう。'):
+     `${FOREST_AREAS.find(area=>area.id===ended.areaId).name}を攻略！ 次のエリアの扉が開いたよ。`):
     timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
   $('#result-rewards').innerHTML=`<span class="reward-pill">${ended.mode==='forest'?'ヒントなしで突破':'自力で言えた'} ${ended.smooth} / ${ended.index}</span><span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
@@ -787,7 +800,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-discoveries').innerHTML=newMonsters+newRelics;
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   $('#replay-run').textContent=ended.mode==='forest'?'森をもう一度探検する':ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
-  $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode);
+  $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode,ended.areaId);
   showView('result');
 }
 const {renderCollection} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
-import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
+import { cleanForest, FOREST_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, unlockedForestAreas, nextForestArea, finishForest, getForestPrompts } from '../prototype/speakingym-monsters/forest-engine.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
@@ -267,7 +267,7 @@ test('Speaking Forest is three authored speaking gates across all difficulty lev
 });
 test('Forest stamp unlocks only on full route completion; evolved companions find extra cosmetic relics', () => {
   const initial=createSave();
-  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[]});
+  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[],completedAreas:[],recentPromptIds:[]});
   assert.throws(()=>finishForest(initial,'unknown','medamago'),/Invalid forest route/);
   assert.throws(()=>finishForest(initial,'moss','katappo'),/not owned/);
   const one=finishForest(initial,'sunlit','medamago');
@@ -296,7 +296,54 @@ test('Forest souvenirs persist when old saves are loaded without a forest field'
  const completed=finishForest(initial,'sunlit','medamago').save;
  assert.deepEqual(validateSave(completed).forest,completed.forest);
  const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
- assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit']});
+ assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],recentPromptIds:[]});
+});
+
+test('four Forest areas unlock one at a time, preserve earlier progress and avoid recent repeats',()=>{
+ assert.equal(FOREST_AREAS.length,4);
+ let save=createSave();
+ const visitedIds=new Set(),bosses=new Set(),enemies=new Set();
+ assert.deepEqual(unlockedForestAreas(save).map(a=>a.id),['entry']);
+ assert.throws(()=>finishForest(save,'sunlit','medamago','sanctuary'),/locked/);
+ for(let i=0;i<FOREST_AREAS.length;i++){
+   const area=FOREST_AREAS[i];
+   assert.equal(nextForestArea(save).id,area.id);
+   const run=buildForestWave({difficulty:'easy',wave:i+1,areaId:area.id,progression:'story',
+     previousIds:save.forest.recentPromptIds,random:()=>.47,bossConversation:true});
+   assert.equal(run.level,'easy','Story chapters preserve the chosen learner difficulty');
+   assert.equal(run.prompts.length,8);
+   assert.equal(new Set(run.prompts.map(p=>p.id)).size,8);
+   assert.ok(['speak','listen','vocab','grammar','read'].every(kind=>run.prompts.some(p=>p.kind===kind)||area.id==='entry'&&kind==='read'));
+   for(const prompt of run.prompts){
+     assert.ok(!visitedIds.has(prompt.id),`Reused ${prompt.id} with unused questions still available`);
+     visitedIds.add(prompt.id);
+   }
+   const boss=opponentFor(7,i+1,area.id);
+   bosses.add(boss.id);
+   assert.match(enemyArt(boss.id),/forest-enemy-svg/);
+   for(let j=0;j<5;j++){
+     const foe=opponentFor(j,i+1,area.id);
+     enemies.add(foe.id);
+     assert.equal(run.prompts[j].kind,enemyTacticFor(j,i+1,area.id).preferredKind);
+     assert.match(enemyArt(foe.id),/forest-enemy-svg/);
+   }
+   assert.match(forestWorldArt('sunlit',area.id),new RegExp(`forest-world-area-${area.id}`));
+   save=finishForest(save,i%2?'moss':'sunlit','medamago',area.id,run.prompts.map(p=>p.id)).save;
+   assert.equal(save.forest.completedAreas.length,i+1);
+   assert.equal(unlockedForestAreas(save).length,Math.min(i+2,4));
+   assert.ok(save.forest.recentPromptIds.length>=8);
+   assert.deepEqual(validateSave(save).forest,save.forest);
+ }
+ assert.equal(visitedIds.size,32,'Four chapters should deliver 32 distinct prompts on a fresh campaign');
+ assert.equal(bosses.size,4);
+ assert.equal(enemies.size,20);
+ assert.equal(save.forest.relics.length,5,'Three chapter relics plus two route relics');
+ assert.equal(nextForestArea(save).id,'sanctuary','After victory, replay the finale');
+ const endless=finishForest(createSave(),'sunlit','medamago','thicket',[],false);
+ assert.deepEqual(endless.save.forest.completedAreas,[],'Endless should not bypass story chapter unlocks');
+ const legacy=validateSave({...createSave(),forest:{clears:3,routes:['moss'],relics:['moss-lantern']}});
+ assert.deepEqual(legacy.forest.completedAreas,['entry']);
+ assert.deepEqual(unlockedForestAreas(legacy).map(area=>area.id),['entry','glade']);
 });
 
 test('fresh save has a fried-egg companion and does not call account or AI APIs', () => {
