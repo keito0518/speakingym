@@ -13,7 +13,8 @@ import { listeningChallengeFor } from '../prototype/speakingym-monsters/listenin
 import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
-import { forestBossPhase, FOREST_BOSS_CHAPTERS } from '../prototype/speakingym-monsters/forest-boss-phases.js';
+import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
+import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
@@ -737,8 +738,40 @@ test('all 72 objective quiz questions have an authored why, comparison and trans
   assert.match(advancedPrice.clue,/複数形/);
   assert.equal(quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak')),null);
 });
+test('every chapter and route has a meaningful but grade-neutral choice event',()=>{
+ assert.deepEqual(Object.keys(FOREST_EVENTS),FOREST_AREAS.map(area=>area.id));
+ const ids=new Set(),outcomes=new Set();
+ for(const area of FOREST_AREAS){
+  for(const route of FOREST_ROUTES){
+   const event=forestEventFor({areaId:area.id,route:route.id,index:4});
+   assert.ok(event,area.id+'/'+route.id);
+   assert.ok(!ids.has(event.id),'Each story chapter and route must be distinct');
+   ids.add(event.id);
+   assert.ok(event.title.length>=5&&event.story.length>=15);
+   assert.equal(event.options.length,2);
+   assert.equal(new Set(event.options.map(o=>o.id)).size,2);
+   for(const option of event.options){
+    assert.equal(forestEventChoice(event,option.id),option);
+    assert.ok(option.outcome.length>=25&&option.memento.length>=5);
+    assert.ok(!outcomes.has(option.outcome),'Player options should have distinct story consequences');
+    outcomes.add(option.outcome);
+    assert.equal(Object.hasOwn(option,'xp'),false);
+    assert.equal(Object.hasOwn(option,'grade'),false);
+   }
+   assert.equal(forestEventFor({areaId:area.id,route:route.id,index:3}),null);
+   assert.equal(forestEventChoice(event,'not-a-choice'),null);
+  }
+ }
+ assert.equal(ids.size,8);
+ assert.equal(outcomes.size,16);
+ assert.equal(forestEventFor({areaId:'unknown',route:'sunlit',index:4}),null);
+ assert.equal(forestEventFor({areaId:'entry',route:'unknown',index:4}),null);
+ assert.equal(forestEventFor({areaId:'entry',route:'sunlit',index:5}),null);
+ assert.equal(forestEventChoice(null,'inspect'),null);
+});
 test('all four chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
   assert.deepEqual(Object.keys(FOREST_BOSS_CHAPTERS),FOREST_AREAS.map(a=>a.id));
+  assert.deepEqual(Object.keys(FOREST_BOSS_SIGNATURES),FOREST_AREAS.map(a=>a.id));
   for(const area of FOREST_AREAS){
     for(const level of DIFFICULTIES){
       const wave=buildForestWave({difficulty:level,wave:1,areaId:area.id,progression:'story',bossConversation:true,random:()=>.44});
@@ -747,6 +780,8 @@ test('all four chapter bosses stage listening, language puzzle and speaking with
       assert.deepEqual(phases.map(p=>p.turn),[1,2,3]);
       assert.deepEqual(phases.map(p=>p.kind),['listen',area.id==='entry'?'grammar':area.id==='thicket'?'grammar':'vocab','speak']);
       assert.ok(phases.every(p=>p.areaId===area.id&&p.title&&p.context&&p.chapter));
+      assert.equal(new Set(phases.map(p=>p.signature.id)).size,3,'Boss moves change with each phase');
+      assert.ok(phases.every(p=>p.signature.name&&p.signature.tell&&p.signature.guard));
       assert.equal(new Set(phases.map(p=>p.phaseKey)).size,3);
       assert.ok(phases.every((p,i)=>!p.context.includes(wave.prompts[i+5].answer)),'Dialogue cannot reveal answers');
       if(area.id==='entry')assert.ok(phases.every(p=>p.authored),'Entrance retains hand-authored dialogue');
