@@ -102,6 +102,13 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    const matches=p=>p.kind===kind||(kind==='speak'&&slot<regular&&p.kind==='read'&&dueIds.has(p.id));
    let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id)&&!reservedBossIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
+   // Apply cross-chapter novelty BEFORE filtering for a new phrase within the
+   // current chapter. Otherwise a repeated grammar question can win simply
+   // because its phrase has not yet appeared in this chapter.
+   if(!candidates.some(p=>dueIds.has(p.id)||weakQuizIds.has(p.id))){
+     const fresh=candidates.filter(p=>!previous.has(p.id));
+     if(fresh.length)candidates=fresh;
+   }
    // A missed vocabulary/grammar target beats generic phrase diversity.
    // When players switch difficulty, bring back the related topic instead.
    const exactWeakness=candidates.filter(p=>weakQuizIds.has(p.id));
