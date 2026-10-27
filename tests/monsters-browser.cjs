@@ -222,6 +222,20 @@ const path=require('node:path');
     const afterReveal=await weakPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).quizProgress['forest-vocab-ticket-easy'].misses);
     assert.equal(afterReveal,afterMiss,'Revealing an answer must not double-count the same wrong tap');
     await weakContext.close();
+    // A natural-sounding but locally unverified reply must not trap learners
+    // in the forest. They may choose a non-rewarded practice route instead.
+    const {context:practiceContext,page:practicePage}=await boot(390);
+    await practicePage.locator('#start-forest').click();
+    await practicePage.locator('#forest-explore-continue').click();
+    await practicePage.locator('#spoken-answer').fill('I would like some extra seconds to make my decision.');
+    await practicePage.locator('#show-answer').click();
+    assert.match(await practicePage.locator('#feedback-panel').innerText(),/判定保留/);
+    assert.equal(await practicePage.locator('#continue-as-practice').isVisible(),true);
+    const practiceXp=await practicePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
+    await practicePage.locator('#continue-as-practice').click();
+    assert.equal(await practicePage.locator('#forest-explore-options').isVisible(),true,'Opt-in practice should advance without demanding the model sentence');
+    assert.equal(await practicePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),practiceXp,'No XP for unverified expression');
+    await practiceContext.close();
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);
