@@ -51,7 +51,7 @@ const path=require('node:path');
   try{
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width,'no-preference');await seed(page);
-      await page.locator('#open-collection').click();
+      await page.locator('[data-home-page="collection"]').click();
       assert.equal(await page.locator('[data-open-monster]').count(),13);
       assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
       assert.equal(await page.locator('#forest-journal-areas .forest-journal-area').count(),4);
@@ -116,7 +116,7 @@ const path=require('node:path');
       const {context,page}=await boot(390,'no-preference');
       await seed(page,{selectedMonster:id});
       console.log(`${engine}: testing ${id} attack`);
-      await page.locator('#start-forest').click();
+      await page.locator('[data-home-page="forest"]').click();await page.locator('#start-forest').click();
       assert.equal(await page.locator('#forest-journey').isVisible(),false);
       assert.equal(await page.locator('#spoken-answer').isVisible(),false);
       assert.equal(await page.locator('#forest-explore-art > .forest-world-svg').count(),1);
@@ -152,7 +152,7 @@ const path=require('node:path');
       const {context,page}=await boot(390,'no-preference');
       await seed(page,{selectedMonster:id,monsterXp:{medamago:160,katappo:160}});
       console.log(`${engine}: testing evolved ${id} attack`);
-      await page.locator('#start-forest').click();await page.locator('#forest-explore-continue').click();
+      await page.locator('[data-home-page="forest"]').click();await page.locator('#start-forest').click();await page.locator('#forest-explore-continue').click();
       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-evolved'),'true');
       await answer(page);
       const action=await page.locator('#forest-world-stage').getAttribute('data-action');
@@ -164,7 +164,7 @@ const path=require('node:path');
       // Closing the isolated context avoids waiting on an offscreen navigation control in mobile WebKit.
       await context.close();
     }
-    const locked=await boot(320);await locked.page.locator('#open-collection').click();
+    const locked=await boot(320);await locked.page.locator('[data-home-page="collection"]').click();
     await locked.page.locator('[data-open-monster="katappo"]').click();
     assert.equal(await locked.page.locator('#open-training').count(),0);
     assert.match(await locked.page.locator('#detail-content').innerText(),/まだ仲間になっていない/);
