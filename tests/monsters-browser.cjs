@@ -172,6 +172,14 @@ const path=require('node:path');
           assert.equal(await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),originalXp);
           await forestPage.locator(`[data-vocab-option="${good}"]`).click();
           assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.answer);
+          // Editing a selected word changes the highlighted option but never
+          // turns this multiple-choice battle into a microphone question.
+          await forestPage.locator('#spoken-answer').fill('different answer');
+          assert.equal(await forestPage.locator('[data-vocab-option][aria-pressed="true"]').count(),0);
+          assert.equal(await forestPage.locator('#mic-button').isVisible(),false);
+          await forestPage.locator('#spoken-answer').fill(info.answer);
+          assert.equal(await forestPage.locator(`[data-vocab-option="${good}"]`).getAttribute('aria-pressed'),'true');
+          assert.equal(await forestPage.locator('#mic-button').isVisible(),false);
         }
         if(mob===4){
           assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),'spell');

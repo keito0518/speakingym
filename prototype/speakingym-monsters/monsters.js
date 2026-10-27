@@ -325,7 +325,7 @@ function renderQuestion() {
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter')gradeAnswer();});
   $('#spoken-answer').addEventListener('input',()=>{
     $('#spoken-answer').classList.remove('transcript-interim');
-    if(!recognition)micView('ready');
+    if(!recognition&&!quizMode)micView('ready');
   });
   if(!quizMode)micView('ready');
   if(reviewing)$('#speech-helper').textContent='復習問題です。前回とは違う言い方でも挑戦してみよう。';
