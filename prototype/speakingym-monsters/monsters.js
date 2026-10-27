@@ -15,6 +15,7 @@ import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
 import { forestBossPhase } from './forest-boss-phases.js';
+import { forestEventFor, forestEventChoice } from './forest-events.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -57,7 +58,7 @@ function queueAutoAdvance(callback,delay){
   },delay);
 }
 function queueForestEncounter(){
-  if(play?.mode!=='forest'||!$('#forest-explore-options').hidden)return;
+  if(play?.mode!=='forest'||!$('#forest-explore-options').hidden||!$('#forest-explore-event').hidden)return;
   queueAutoAdvance(()=>{
     if($('#play-view').classList.contains('forest-exploring')&&$('#forest-explore-options').hidden)renderQuestion();
   },1050);
@@ -190,7 +191,7 @@ function startSession(mode,requestedAreaId=null) {
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
   const prompts=forestMode?firstWave.prompts:selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty);
   play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
-    prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,
+    prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],smooth:0,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0};
@@ -311,18 +312,40 @@ function showForestExplore(routeChoice=false) {
   map.dataset.route=play.route||'wild';
   map.dataset.area=play.areaId;
   $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
-  $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
+  const storyEvent=routeChoice?null:forestEventFor({areaId:play.areaId,route:play.route,index:play.index});
+  const storyKey=storyEvent?`${play.wave}:${storyEvent.id}`:null;
+  const selected=storyEvent?forestEventChoice(storyEvent,play.eventChoices[storyKey]):null;
+  $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':storyEvent?storyEvent.title:isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
   $('#forest-explore-description').textContent=routeChoice?'進む道を選ぼう。道によって見つかる宝物が変わるよ。':
+    storyEvent?storyEvent.story:
     isBoss?'この先に森のボスが待っている。準備ができたら進もう。':
     play.index===0?`${area.story} 学習目標：${area.goal}。`:
     `${foe.japanese} の気配がする。次の戦闘へ進もう。`;
+  const eventPanel=$('#forest-explore-event');
+  eventPanel.hidden=!storyEvent;
+  if(storyEvent){
+    eventPanel.innerHTML=selected
+      ? `<p class="forest-event-label">EXPEDITION MEMORY</p><strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p><small>この選択によるXPや正誤判定の変化はありません。</small>`
+      : `<p class="forest-event-label">STORY EVENT · 行動を選ぼう</p><div class="forest-event-choices">${storyEvent.options.map(choice=>
+        `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong>${escapeHtml(choice.label)}</strong><small>${escapeHtml(choice.detail)}</small></button>`).join('')}</div><small>どちらを選んでも英語の問題・XPは同じです。</small>`;
+    if(!selected){
+      $('[data-forest-event-option]',eventPanel).forEach(button=>button.addEventListener('click',()=>{
+        if(!play || play.mode!=='forest'||play.eventChoices[storyKey])return;
+        const choice=forestEventChoice(storyEvent,button.dataset.forestEventOption);
+        if(!choice)return;
+        play.eventChoices[storyKey]=choice.id;
+        play.eventMemories.push({title:storyEvent.title,memento:choice.memento,outcome:choice.outcome});
+        showForestExplore(false);
+      }));
+    }
+  }else eventPanel.innerHTML='';
   const options=$('#forest-explore-options');
   options.hidden=!routeChoice;
   options.innerHTML=routeChoice?FOREST_ROUTES.map(route=>
     `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
   const forward=$('#forest-explore-continue');
-  forward.hidden=routeChoice;
-  forward.textContent=isBoss?'ボス戦へ進む':play.index===0?'森へ出発する':'次の地点へ進む';
+  forward.hidden=routeChoice||Boolean(storyEvent&&!selected);
+  forward.textContent=isBoss?'ボス戦へ進む':storyEvent?'次の戦闘へ進む':play.index===0?'森へ出発する':'次の地点へ進む';
   if(routeChoice){
     $$('[data-forest-route]',options).forEach(button=>button.addEventListener('click',()=>{
       if(!play || play.mode!=='forest'||play.route)return;
@@ -806,7 +829,9 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-rewards').innerHTML=`<span class="reward-pill">${ended.mode==='forest'?'ヒントなしで突破':'自力で言えた'} ${ended.smooth} / ${ended.index}</span><span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
   const newMonsters=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
-  $('#result-discoveries').innerHTML=newMonsters+newRelics;
+  const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
+    `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
+  $('#result-discoveries').innerHTML=newMonsters+newRelics+memories;
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   $('#replay-run').textContent=ended.mode==='forest'?'森をもう一度探検する':ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode,ended.areaId);
