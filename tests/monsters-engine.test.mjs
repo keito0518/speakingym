@@ -16,7 +16,7 @@ import { bossConversationFor, bossConversationTurn } from '../prototype/speaking
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
 import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
@@ -349,13 +349,13 @@ test('four Forest areas unlock one at a time, preserve earlier progress and avoi
      previousIds:save.forest.recentPromptIds,random:()=>.47,bossConversation:true});
    assert.equal(run.level,'easy','Story chapters preserve the chosen learner difficulty');
    assert.equal(run.prompts.length,forestWaveLengthFor(area.id));
-   assert.equal(new Set(run.prompts.map(p=>p.id)).size,8);
+   assert.equal(new Set(run.prompts.map(p=>p.id)).size,run.prompts.length);
    assert.ok(['speak','listen','vocab','grammar','read'].every(kind=>run.prompts.some(p=>p.kind===kind)||area.id==='entry'&&kind==='read'));
    for(const prompt of run.prompts){
      assert.ok(!visitedIds.has(prompt.id),`Reused ${prompt.id} with unused questions still available`);
      visitedIds.add(prompt.id);
    }
-   const boss=opponentFor(7,i+1,area.id);
+   const boss=opponentFor(regularEncountersFor(area.id),i+1,area.id);
    bosses.add(boss.id);
    assert.match(enemyArt(boss.id),/forest-enemy-svg/);
    for(let j=0;j<regularEncountersFor(area.id);j++){
@@ -917,6 +917,21 @@ test('forest quiz controls respect English-only difficulty and keep typed vocabu
   assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','false']);
   input.value=prompt.options[2].toUpperCase();input.handlers.input();
   assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','true']);
+});
+test('user-selected review stores exact questions without breaking older saves',()=>{
+ const original=createSave();
+ assert.deepEqual(original.savedPromptIds,[]);
+ assert.deepEqual(savedReviewPrompts(original),[]);
+ const marked=toggleSavedPrompt(original,'repeat-station');
+ assert.deepEqual(marked.savedPromptIds,['repeat-station']);
+ assert.deepEqual(original.savedPromptIds,[]);
+ assert.deepEqual(savedReviewPrompts(marked).map(p=>p.id),['repeat-station']);
+ const twice=toggleSavedPrompt(marked,'repeat-station');
+ assert.deepEqual(twice.savedPromptIds,[]);
+ const restored=validateSave({...marked,savedPromptIds:['repeat-station','repeat-station','unknown','think-cafe']});
+ assert.deepEqual(new Set(restored.savedPromptIds),new Set(['repeat-station','think-cafe']));
+ assert.deepEqual(validateSave({...original,savedPromptIds:undefined}).savedPromptIds,[]);
+ assert.throws(()=>toggleSavedPrompt(marked,'nonsense'),/Unknown prompt/);
 });
 test('rare forest recruits need both genuine language learning and cleared chapters',()=>{
   const rare=MONSTERS.filter(c=>c.forestAreas);
