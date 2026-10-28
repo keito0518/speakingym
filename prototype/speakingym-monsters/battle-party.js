@@ -9,6 +9,18 @@ export function createBattleParty(ids,{evolvedIds=[]}={}){
    return [id,{hp:maxHp,maxHp}];
  })),swapsUsed:0};
 }
+export function editBattleFormation(current,owned,target,{leader=false}={}){
+ const available=new Set(owned);
+ const roster=[...new Set(current)].filter(id=>available.has(id)).slice(0,3);
+ if(!available.has(target))return roster;
+ if(roster.includes(target)){
+   if(leader)return [target,...roster.filter(id=>id!==target)];
+   if(target===roster[0])return roster; // Cannot leave the party with no leader.
+   return roster.filter(id=>id!==target);
+ }
+ if(roster.length<3)return [...roster,target];
+ return [...roster.slice(0,2),target]; // New candidate takes the last reserve slot.
+}
 export function fighterHealth(party,id){return party?.health?.[id]||{hp:0,maxHp:0};}
 export function applyFighterDamage(party,id,amount){
  const fighter=fighterHealth(party,id);

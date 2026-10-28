@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
- createBattleParty,fighterHealth,applyFighterDamage,healFighter,
+ createBattleParty,editBattleFormation,fighterHealth,applyFighterDamage,healFighter,
  firstStandingAlly,canTacticalSwap,consumeTacticalSwap,restorePartyForNextWave,encounterVitality
 } from '../prototype/speakingym-monsters/battle-party.js';
 
@@ -17,6 +17,18 @@ test('solo players keep original HP, while recruited allies have independent HP'
  assert.equal(fighterHealth(damaged,'katappo').hp,9);
  assert.equal(fighterHealth(team,'medamago').hp,8,'previous session state is not mutated');
  assert.equal(fighterHealth(healFighter(damaged,'medamago',100),'medamago').hp,8);
+});
+test('formation swaps its last reserve, and changes leader without editing the collection',()=>{
+ const owned=['medamago','katappo','purupun','koge'];
+ const original=['medamago','katappo','purupun'];
+ const changed=editBattleFormation(original,owned,'koge');
+ assert.deepEqual(changed,['medamago','katappo','koge']);
+ assert.deepEqual(original,['medamago','katappo','purupun']);
+ const leader=editBattleFormation(changed,owned,'katappo',{leader:true});
+ assert.deepEqual(leader,['katappo','medamago','koge']);
+ assert.deepEqual(editBattleFormation(leader,owned,'katappo'),leader,'leader cannot be removed');
+ assert.deepEqual(editBattleFormation(leader,owned,'koge'),['katappo','medamago']);
+ assert.deepEqual(editBattleFormation(leader,owned,'unknown'),leader);
 });
 test('one free tactical exchange per encounter, but fainted allies cannot be chosen',()=>{
  const team=createBattleParty(['medamago','katappo','purupun']);
