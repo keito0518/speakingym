@@ -8,8 +8,8 @@ export const FOREST_ROUTES = Object.freeze([
   { id:'moss', name:'こけむした抜け道', tag:'MOSS TRAIL', detail:'キノコの灯りに誘われて、静かな道を進もう。' }
 ]);
 export const CITY_ROUTES = Object.freeze([
- {id:'market',name:'マーケット通り',tag:'MARKET STREET',detail:'お店でのやり取りを確かめながら進もう。'},
- {id:'station',name:'ステーション通り',tag:'STATION STREET',detail:'交通案内を確かめ、待ち合わせ場所へ向かおう。'}
+ {id:'market',name:'雪のマーケット通り',tag:'WINTER MARKET',detail:'雪灯りの屋台で、お店の英語を確かめながら進もう。'},
+ {id:'station',name:'雪の駅前通り',tag:'SNOW STATION',detail:'雪の駅前で交通案内を確かめ、待ち合わせ場所へ向かおう。'}
 ]);
 // A chapter is a full eight-answer expedition, with a distinct mixture of
 // encounters. Clearing one chapter unlocks the next; old saves remain usable.
@@ -22,9 +22,9 @@ export const FOREST_AREAS=Object.freeze([
 // A distinct second dungeon. Unlock only after all original Forest chapters:
 // no placeholder button and no changes to legacy Forest completion order.
 export const CITY_AREAS=Object.freeze([
- {id:'city',name:'会話の街・中央街区',english:'CITY CROSSROADS',world:'city',
+ {id:'city',name:'雪灯りの街・中央広場',english:'SNOWLIT CITY',world:'city',
   goal:'街の予定変更・問い合わせ・トラブルを解決する',
-  story:'街の案内を読み、相手の説明を聞き、予定変更や困りごとを英語で伝えよう。',
+  story:'雪灯りの街で案内を読み、相手の説明を聞き、予定変更や困りごとを英語で伝えよう。',
   focus:['booking','direction','change','clarify','problem','agree']}
 ]);
 export const DUNGEON_AREAS=Object.freeze([...FOREST_AREAS,...CITY_AREAS]);

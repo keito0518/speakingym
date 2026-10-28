@@ -245,11 +245,11 @@ function renderHome() {
       <div class="dungeon-world-areas">${forestCards}</div>
     </section>
     <section class="dungeon-world-card dungeon-world-city" aria-labelledby="dungeon-world-city-title">
-      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · CITY</span><h3 id="dungeon-world-city-title">会話の街</h3><p>予約変更・道案内・困りごとへの対応</p></div><strong class="dungeon-world-badge">${cityClear?'攻略済み':forestCount===FOREST_AREAS.length?'挑戦可能':'森を攻略すると解放'}</strong></header>
+      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · SNOW CITY</span><h3 id="dungeon-world-city-title">雪灯りの街</h3><p>雪の駅前で、予約変更・道案内・困りごとに挑戦</p></div><strong class="dungeon-world-badge">${cityClear?'攻略済み':forestCount===FOREST_AREAS.length?'挑戦可能':'森を攻略すると解放'}</strong></header>
       <div class="dungeon-world-areas">${cityCards}</div>
     </section>`;
   $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startSession('forest',button.dataset.enterForest)));
-  $('#start-forest').textContent=cityClear?'街をもう一度冒険':`次へ：${nextDungeonArea(save).name}`;
+  $('#start-forest').textContent=cityClear?'雪灯りの街をもう一度冒険':`次へ：${nextDungeonArea(save).name}`;
   const weak=quizWeaknessOverview(save);
   const weakSummary=$('#forest-weakness-summary');
   weakSummary.hidden=weak.due.length===0&&weak.upcoming.length===0;
@@ -1140,7 +1140,7 @@ function finishSession(timedOut=false,defeated=false) {
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
   $('#result-title').textContent=ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
-    (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:ended.areaId==='city'?'街のボスを討伐！':'森のボスを討伐！'):
+    (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:ended.areaId==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
   $('#result-description').textContent=ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
     (defeated?'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
@@ -1156,7 +1156,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-discoveries').innerHTML=newMonsters+newRelics+memories;
   renderDungeonLearningReport(ended);
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
-  $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(ended.areaId==='city'?'街へもう一度挑戦する':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
+  $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(ended.areaId==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode,ended.areaId);
   showView('result');
 }

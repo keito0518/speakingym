@@ -1,3 +1,9 @@
+## 2026-10-28 — Snowlit City visual identity and separate world selection
+
+- The player-facing second world is now **雪灯りの街 (SNOWLIT CITY)**, with the playable chapter **雪灯りの街・中央広場**. Winter blue/cyan world-card styling, snow-capped city rooftops, quiet snowflakes, illuminated station and market buildings, and a distinct snow-city battle arena make this an unmistakable second destination after the green **はじまりの森**.
+- World selection now shows two full-width themed sections, each with its own name, teaching purpose, progress/unlock state and relevant stage buttons. At 320/375/390/430px the sections and stage buttons use a single-column layout with manual line breaks between learning goals and counts. Existing `city` / Forest area IDs, route IDs, save records, companions, XP, and all language assessment rules remain unchanged.
+- This is **static local SVG/CSS art** with no new images, fonts, paid API, animation load or audio requirements. Browser tests assert the separate panels and snow-specific exploration/battle art. Production/main/Workers/D1/Stripe remain untouched.
+
 ## 2026-10-28 — second dungeon: City Crossroads, plus visible retention bonds
 
 - **会話の街・中央街区** is a playable second world after the **four original Forest chapters**. Its own sunset city exploration map, market/station route choice, five distinct city mobs, Metro Guardian boss, battle arena and three local-only cosmetic relics are independent from the Forest art. A City run uses **10 ordinary encounters + three boss assessments** (listening, grammar, speaking) across all five skills; the Forest stays 5/7/10/10 normal encounters with three boss assessments each. The City cannot be completed or visited in story mode until the entire Forest is completed, and Endless stays on its existing Forest cycle.

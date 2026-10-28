@@ -153,8 +153,9 @@
 .forest-area-list{display:grid;grid-template-columns:minmax(0,1fr);gap:15px;margin:17px 0 18px;position:relative;z-index:1}
 .dungeon-world-card{position:relative;isolation:isolate;min-width:0;overflow:hidden;border-radius:17px;padding:15px;border:2px solid;box-shadow:0 8px 22px #071b2033,inset 0 1px #ffffff24}
 .dungeon-world-forest{border-color:#91bc79;background:linear-gradient(136deg,#183d2b 0%,#21543b 58%,#32664b 100%)}
-.dungeon-world-city{border-color:#93bad1;background:linear-gradient(128deg,#1d3358 0%,#234767 50%,#2e697c 100%)}
+.dungeon-world-city{border-color:#b4e1f4;background:linear-gradient(128deg,#1c315c 0%,#25567c 52%,#548da6 100%)}
 .dungeon-world-city::before{content:"";position:absolute;z-index:-1;right:12px;bottom:0;width:145px;height:74px;opacity:.16;background:repeating-linear-gradient(90deg,#d4f2ff 0 16px,transparent 16px 23px);clip-path:polygon(0 35%,19% 35%,19% 0,37% 0,37% 60%,54% 60%,54% 18%,77% 18%,77% 42%,100% 42%,100% 100%,0 100%);pointer-events:none}
+.dungeon-world-city::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;opacity:.58;background-image:radial-gradient(circle at 13% 19%,#f4fbff 0 2px,transparent 2.5px),radial-gradient(circle at 68% 13%,#f4fbff 0 1.5px,transparent 2px),radial-gradient(circle at 92% 41%,#f4fbff 0 2px,transparent 2.5px),radial-gradient(circle at 39% 67%,#f4fbff 0 1.7px,transparent 2.2px),radial-gradient(circle at 77% 81%,#f4fbff 0 1.5px,transparent 2px)}
 .dungeon-world-header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:13px}
 .dungeon-world-heading{min-width:0;flex:1 1 160px}
 .dungeon-world-heading>span{display:block;font:900 10px/1.4 system-ui,sans-serif;letter-spacing:.16em;color:#f9da91}

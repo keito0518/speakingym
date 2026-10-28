@@ -67,7 +67,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  applyMotion();head.append(motionToggle);
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
- <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 2 WORLDS</span><h2>English<br>ダンジョン</h2><p>森の4エリアを攻略したら、新しい「会話の街」へ。英語を使って仲間と進もう。</p>
+ <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 2 WORLDS</span><h2>English<br>ダンジョン</h2><p>森の4エリアを攻略したら、雪景色が広がる「雪灯りの街」へ。英語を使って仲間と進もう。</p>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
  <button type="button" class="home-feature-cta" data-feature-dungeon>ダンジョンへ進む <span aria-hidden="true">›</span></button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
@@ -157,7 +157,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
-     menu.querySelector('#home-feature-progress').textContent=cityCleared?'森と会話の街を攻略！復習で英語を定着させよう':cityUnlocked?'森の4エリア攻略！次は「会話の街」へ':'森の冒険 '+areasCleared+' / 4エリア · 街は森の攻略後に解放';
+     menu.querySelector('#home-feature-progress').textContent=cityCleared?'森と雪灯りの街を攻略！復習で英語を定着させよう':cityUnlocked?'森の4エリア攻略！次は「雪灯りの街」へ':'森の冒険 '+areasCleared+' / 4エリア · 街は森の攻略後に解放';
    }
  };
 }

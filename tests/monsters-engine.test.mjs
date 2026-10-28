@@ -591,11 +591,16 @@ test('City is a fully gated second world, with its own routes, art and save-comp
  for(const route of CITY_ROUTES){
   const art=forestWorldArt(route.id,'city');
   assert.match(art,/city-world-svg/);
+  assert.match(art,/雪の積もった街/,'City exploration must visibly represent winter and urban scenery');
+  assert.match(art,/fill="#ebf8ff"/,'City rooftops must have snow accents');
   assert.doesNotMatch(art,/forest-world-area-entry/);
   assert.match(relicArt(route.id==='market'?'market-stamp':'station-stamp'),/<svg/);
  }
+ assert.equal(CITY_AREAS[0].name,'雪灯りの街・中央広場');
+ assert.equal(CITY_AREAS[0].english,'SNOWLIT CITY');
  assert.match(battleArenaArt(true,'city'),/data-arena="metro-nexus"/);
  assert.match(battleArenaArt(false,'city'),/data-arena="city-platform"/);
+ assert.match(battleArenaArt(false,'city'),/SNOW CITY/);
  assert.match(enemyArt('metroguardian'),/街の敵モンスター/);
  assert.notEqual(enemyArt('metroguardian'),enemyArt('thornking'));
 });

@@ -33,7 +33,7 @@ const CHAPTER_BEATS=Object.freeze({
   contextsEn:['The Elder Root whispers a question. Listen and understand the message.','The roots test your word choice. Pick the word that fits the context.','The guardian asks you to speak freely using the situation below.']
  }),
  city:Object.freeze({
-  name:'街の交差点の試練',english:'CITY CROSSROADS TRIAL',
+  name:'雪灯りの街の試練',english:'SNOWLIT CITY TRIAL',
   titles:['案内放送','予定の組み立て','街の守護機への返事'],
   titlesEn:['CITY ANNOUNCEMENT','SCHEDULE PUZZLE','YOUR CITY REPLY'],
   contexts:['街の案内音声を聞いて、要点を理解しよう。','予定や案内を自然な語順で組み立てよう。','最後は困りごとを自分の英語で伝えよう。'],

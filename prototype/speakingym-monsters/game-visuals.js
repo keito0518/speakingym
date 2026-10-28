@@ -19,12 +19,14 @@ export function guardArt() {
 }
 export function battleArenaArt(boss = false,areaId='entry') {
   if(areaId==='city')return `<svg class="battle-arena-svg battle-arena-city" data-arena="${boss?'metro-nexus':'city-platform'}" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-   <defs><linearGradient id="city-arena" x2="0" y2="1"><stop stop-color="${boss?'#2d2754':'#293a60'}"/><stop offset="1" stop-color="#628696"/></linearGradient><linearGradient id="city-floor" x2="0" y2="1"><stop stop-color="#7a8993"/><stop offset="1" stop-color="#2b4252"/></linearGradient></defs>
-   <rect width="800" height="300" fill="url(#city-arena)"/><g fill="#344961"><path d="M0 160V50H90V160M114 160V20H205V160M235 160V75H320V160M485 160V45H557V160M585 160V13H700V160M720 160V61H800V160"/></g>
-   <g stroke="#83b1b9" stroke-width="2" fill="#b7d7cf">${Array.from({length:8},(_,i)=>`<rect x="${16+i*100}" y="${58+(i%3)*23}" width="14" height="30" rx="2"/>`).join('')}</g>
-   <path d="M0 192H800V300H0Z" fill="url(#city-floor)"/><path d="M0 222H800M0 264H800" stroke="#d8d7be" stroke-width="5" opacity=".46"/><path d="M186 192V300M635 192V300" stroke="#617883" stroke-width="8"/>
+   <defs><linearGradient id="city-arena" x2="0" y2="1"><stop stop-color="${boss?'#1d2e59':'#24436e'}"/><stop offset="1" stop-color="#8eb6ce"/></linearGradient><linearGradient id="city-floor" x2="0" y2="1"><stop stop-color="#91b7c8"/><stop offset="1" stop-color="#29485d"/></linearGradient></defs>
+   <rect width="800" height="300" fill="url(#city-arena)"/><circle cx="634" cy="47" r="35" fill="#e9faff" opacity=".55"/><g fill="#344d6c"><path d="M0 160V50H90V160M114 160V20H205V160M235 160V75H320V160M485 160V45H557V160M585 160V13H700V160M720 160V61H800V160"/></g>
+   <g fill="#e4f6ff" stroke="#aecfe0" stroke-width="3"><path d="M0 55Q46 38 90 55H0ZM114 24Q160 7 205 24H114ZM235 80Q280 63 320 80H235ZM485 49Q524 32 557 49H485ZM585 17Q644 1 700 17H585ZM720 66Q761 50 800 66H720Z"/></g>
+   <g stroke="#9fcbdb" stroke-width="2" fill="#ffdea3">${Array.from({length:8},(_,i)=>`<rect x="${16+i*100}" y="${58+(i%3)*23}" width="14" height="30" rx="2"/>`).join('')}</g>
+   <g fill="#f6fbff" opacity=".82">${Array.from({length:19},(_,i)=>`<circle cx="${21+i*41}" cy="${18+(i*29)%130}" r="${i%3===0?3:1.8}"/>`).join('')}</g>
+   <path d="M0 192H800V300H0Z" fill="url(#city-floor)"/><path d="M0 203Q70 183 143 201T328 201T528 197T800 198V222Q699 211 614 219T378 219T144 221T0 220Z" fill="#e8f7ff" opacity=".73"/><path d="M0 235H800M0 276H800" stroke="#d7eefa" stroke-width="5" opacity=".4"/><path d="M186 192V300M635 192V300" stroke="#617883" stroke-width="8"/>
    <g fill="#243c50" stroke="#cee3d7" stroke-width="3"><rect x="61" y="54" width="135" height="50" rx="8"/><rect x="603" y="54" width="135" height="50" rx="8"/></g>
-   <text x="128" y="86" fill="#f8d799" font-size="19" font-weight="700" text-anchor="middle">CITY QUEST</text><text x="670" y="86" fill="#a8f0dd" font-size="19" font-weight="700" text-anchor="middle">${boss?'BOSS GATE':'PLATFORM'}</text>
+   <text x="128" y="86" fill="#f8d799" font-size="19" font-weight="700" text-anchor="middle">SNOW CITY</text><text x="670" y="86" fill="#b8f1ff" font-size="19" font-weight="700" text-anchor="middle">${boss?'BOSS GATE':'PLATFORM'}</text>
    <ellipse cx="185" cy="259" rx="102" ry="24" fill="#203949" stroke="#91acb7" stroke-width="3"/><ellipse cx="626" cy="241" rx="106" ry="23" fill="#203949" stroke="#91acb7" stroke-width="3"/>
    ${boss?'<path d="M400 0V184M375 126L400 146L425 126" stroke="#f3c27f" stroke-width="8" fill="none"/>':'<path d="M400 65V194" stroke="#b6d5d6" stroke-width="6"/>'}
    </svg>`;
