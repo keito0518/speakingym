@@ -465,6 +465,11 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .retention-hub>p{font-size:13px;line-height:1.7;color:#526b59}
 .retention-hub-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0}
 .retention-hub-metrics span{background:#fffefa;border:1px solid #d3dfd0;border-radius:10px;font-size:12px;font-weight:800;padding:8px 11px}
+.retention-bond-status{max-width:440px;padding:13px 14px;margin:13px 0 17px;border:1px solid #c4d9c1;border-radius:13px;background:#fffefa}
+.retention-bond-status strong{display:block;color:#326d4e;font-size:13px;line-height:1.5;word-break:keep-all;line-break:strict}
+.retention-bond-status small{display:block;margin-top:8px;color:#58735e;font-size:11px;line-height:1.65}
+.retention-bond-meter{height:9px;border-radius:20px;background:#dde9d8;overflow:hidden;margin-top:8px}
+.retention-bond-meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,#4f9d72,#e6bb64);border-radius:inherit;transition:width .28s}
 .retention-hub button{display:block;width:min(100%,400px);min-height:49px;padding:12px 16px;color:white;border:1px solid #2a6b4d;background:#2a704c;border-radius:12px;font-weight:850;font-size:14px}
 .retention-hub button:disabled{opacity:.62;background:#dfe9df;color:#53675a;border-color:#c1d0c2}
 .retention-hub .retention-next{margin-top:10px;font-size:12px}

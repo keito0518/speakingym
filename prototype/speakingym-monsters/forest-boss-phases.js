@@ -31,6 +31,13 @@ const CHAPTER_BEATS=Object.freeze({
   titlesEn:['ANCIENT WHISPER','WORD OF THE ROOTS','SPEAK TO THE GUARDIAN'],
   contexts:['古木の守護者が静かに問いかける。聞こえた内容を理解しよう。','言葉を選ぶ力が試される。文脈に合った単語を探そう。','最後は自分の英語で伝えよう。これまでの練習を使う番だ。'],
   contextsEn:['The Elder Root whispers a question. Listen and understand the message.','The roots test your word choice. Pick the word that fits the context.','The guardian asks you to speak freely using the situation below.']
+ }),
+ city:Object.freeze({
+  name:'街の交差点の試練',english:'CITY CROSSROADS TRIAL',
+  titles:['案内放送','予定の組み立て','街の守護機への返事'],
+  titlesEn:['CITY ANNOUNCEMENT','SCHEDULE PUZZLE','YOUR CITY REPLY'],
+  contexts:['街の案内音声を聞いて、要点を理解しよう。','予定や案内を自然な語順で組み立てよう。','最後は困りごとを自分の英語で伝えよう。'],
+  contextsEn:['Listen to a city announcement and identify its meaning.','Put the schedule or service question in natural English order.','Explain your choice or problem in your own English.']
  })
 });
 export const FOREST_BOSS_CHAPTERS=CHAPTER_BEATS;
@@ -56,6 +63,11 @@ export const FOREST_BOSS_SIGNATURES=Object.freeze({
   Object.freeze({id:'rootsong',name:'古木の歌',tell:'古木がささやく。音声の情報を聞き取ろう。',guard:'木々のざわめきが攻撃を包み込んだ。'}),
   Object.freeze({id:'seed',name:'ことばの種',tell:'一つの言葉が芽を出す。文脈に合う単語を見つけよう。',guard:'根が伸びて、攻撃を受け止めた。'}),
   Object.freeze({id:'oath',name:'森の最後の問い',tell:'守護者が答えを待つ。伝わる英語で話そう。',guard:'古木の結界がまだ残っている。'})
+ ]),
+ city:Object.freeze([
+  Object.freeze({id:'announcement',name:'街の案内放送',tell:'音声の大事な情報を聞き取ろう。',guard:'信号の光がまだ赤く点滅している。'}),
+  Object.freeze({id:'schedule',name:'予定表の暗号',tell:'予定を伝える英文を自然な順序に並べよう。',guard:'案内板の文字がまだ揃っていない。'}),
+  Object.freeze({id:'cityreply',name:'守護機への返事',tell:'街で必要なことを英語で伝えよう。',guard:'街のゲートがまだ開いていない。'})
  ])
 });
 

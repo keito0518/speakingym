@@ -1,7 +1,7 @@
 // Learning-first English Dungeon outcomes. This is a reflection of VERIFIED
 // actions in this session, not a CEFR score, pronunciation grade or AI claim.
 // Nothing here touches payments, online services or persistent user data.
-import { FOREST_AREAS } from './forest-engine.js';
+import { DUNGEON_AREAS } from './forest-engine.js';
 
 export const DUNGEON_SKILLS=Object.freeze({
  listen:Object.freeze({label:'リスニング',goal:'英語の要点を聞き取る',tip:'英文を見ずに音声を聞き、いつ・どこ・何を言っているかを確認しよう。'}),
@@ -14,11 +14,12 @@ export const DUNGEON_CHAPTER_SKILLS=Object.freeze({
  entry:Object.freeze({headline:'聞き返す・お願いする・丁寧に伝える',boss:['相手の言葉を理解','意味に合う語順を選択','自分の英語で返事']}),
  glade:Object.freeze({headline:'旅の予定・希望・道案内を相談する',boss:['旅の情報を聞き取る','場面に合う単語を選ぶ','希望を英語で伝える']}),
  thicket:Object.freeze({headline:'読み違えず、条件を整理して確認する',boss:['必要な情報を聞き取る','条件に合う英文を組み立てる','誤解を防ぐ言い方で伝える']}),
- sanctuary:Object.freeze({headline:'複数の情報をまとめて意思を伝える',boss:['大切な情報を聞き取る','意味に合う表現を選ぶ','状況に合わせて自分の言葉で答える']})
+ sanctuary:Object.freeze({headline:'複数の情報をまとめて意思を伝える',boss:['大切な情報を聞き取る','意味に合う表現を選ぶ','状況に合わせて自分の言葉で答える']}),
+ city:Object.freeze({headline:'街の問い合わせ・予定変更・困りごとへの対応',boss:['案内の要点を聞き取る','状況に合う英文を組み立てる','問い合わせや希望を英語で伝える']})
 });
 export const DUNGEON_OUTCOME_VALUES=Object.freeze(['independent','supported','review']);
 export function summarizeDungeonAttempt(areaId,encounters=[]){
- const area=FOREST_AREAS.find(a=>a.id===areaId);
+ const area=DUNGEON_AREAS.find(a=>a.id===areaId);
  if(!area)throw Error('Unknown dungeon chapter');
  if(!Array.isArray(encounters))throw Error('Invalid dungeon attempts');
  const groups=Object.entries(DUNGEON_SKILLS).map(([kind,info])=>{

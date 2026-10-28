@@ -3,7 +3,32 @@
 const evergreen=(x,y,s,tint='#204f43')=>`<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 0L-10 32L-22 37L-12 55L-27 65L-8 76L-5 108L7 108L10 76L27 65L12 55L22 37L10 32Z" fill="${tint}"/><path d="M0 14L-8 56M0 45L10 73" stroke="#83c59c" stroke-opacity=".24" stroke-width="3" fill="none"/><path d="M-4 79L-3 115L4 115L4 79" fill="#5d443a"/></g>`;
 const shrub=(x,y,s=1)=>`<g transform="translate(${x} ${y}) scale(${s})"><ellipse rx="26" ry="13" fill="#193e35"/><ellipse cx="-15" cy="-5" rx="16" ry="11" fill="#28664c"/><ellipse cx="12" cy="-7" rx="17" ry="12" fill="#306f55"/><circle cx="-10" cy="-10" r="2" fill="#a8e5aa" opacity=".5"/></g>`;
 const glimmer=(x,y,i)=>`<circle class="forest-glimmer forest-glimmer-${i%4}" cx="${x}" cy="${y}" r="${2+(i%2)}" fill="#ffefa7"/>`;
+function cityWorldArt(route){
+ const market=route==='market',station=route==='station';
+ const buildings=[[12,62,106,142],[127,94,87,118],[230,30,104,179],[358,74,110,136],[494,48,100,164],[608,91,101,122]];
+ const skyline=buildings.map(([x,y,w,h],i)=>{
+  const windows=Array.from({length:3},(_,column)=>Array.from({length:3},(_,row)=>
+   `<rect x="${x+13+column*28}" y="${y+21+row*35}" width="11" height="17" rx="2" fill="${(row+column+i)%3===0?'#ffe5a8':'#82c6d6'}" opacity=".68"/>`).join('')).join('');
+  return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="${i%2?'#34465f':'#334b5b'}" stroke="#688b95" stroke-width="2"/>${windows}</g>`;
+ }).join('');
+ const road=market?'M62 247C196 227 255 237 344 202S526 187 644 135':'M62 247C172 228 263 192 350 207S531 158 644 135';
+ return `<svg class="forest-world-svg forest-world-area-city city-world-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 270" role="img" aria-label="夕暮れの街の建物、駅と商店街をつなぐ道、3つの関門">
+ <defs><linearGradient id="citySky" x2="0" y2="1"><stop stop-color="${station?'#1d355c':'#392e59'}"/><stop offset=".63" stop-color="#668aa0"/><stop offset="1" stop-color="#e1b88c"/></linearGradient><linearGradient id="cityRoad" x2="0" y2="1"><stop stop-color="#e3bd93"/><stop offset="1" stop-color="#9e7e72"/></linearGradient></defs>
+ <rect width="720" height="270" fill="url(#citySky)"/><circle cx="591" cy="36" r="33" fill="#ffdeaa" opacity=".7"/>
+ <path d="M0 139Q115 104 211 131T458 122T720 109V270H0Z" fill="#435671" opacity=".5"/>
+ <g opacity=".93">${skyline}</g><path d="M0 210H720V270H0Z" fill="#334654"/>
+ <path d="${road}" fill="none" stroke="#202e3f" stroke-width="43" stroke-linecap="round" opacity=".8"/>
+ <path d="${road}" fill="none" stroke="url(#cityRoad)" stroke-width="27" stroke-linecap="round"/>
+ <path d="${road}" fill="none" stroke="#fff2c5" stroke-width="2.5" stroke-dasharray="5 15" stroke-linecap="round"/>
+ <g transform="translate(446 105)"><rect width="94" height="44" rx="8" fill="#184558" stroke="#c4dfd4" stroke-width="3"/><text x="47" y="27" fill="#fff2cc" text-anchor="middle" font-size="15" font-weight="700">${market?'MARKET':'STATION'}</text></g>
+ <g transform="translate(625 160)"><path d="M0 0V-57M-10-58H10" stroke="#d3dcce" stroke-width="5"/><rect x="-15" y="-85" width="30" height="29" rx="7" fill="#283f4e" stroke="#b7d5cf" stroke-width="3"/><circle cy="-72" r="6" fill="#a8f1bf"/></g>
+ <g class="forest-landmark" transform="translate(138 236)"><circle r="21" fill="#173d50" stroke="#d6e6d4" stroke-width="3"/><path d="M-10 8L0-8L10 8ZM0-8V-15" stroke="#fff1b2" stroke-width="4" fill="none"/></g>
+ <g class="forest-landmark" transform="translate(363 194)"><circle r="21" fill="#173d50" stroke="#d6e6d4" stroke-width="3"/><rect x="-11" y="-12" width="22" height="24" rx="3" fill="#f8dc94"/><path d="M-5-5H5M-5 2H5" stroke="#365968" stroke-width="2"/></g>
+ <g class="forest-landmark" transform="translate(644 134)"><circle r="21" fill="#173d50" stroke="#d6e6d4" stroke-width="3"/><path d="M-10 7L0-12L10 7Z" fill="#ffd798" stroke="#fff7df" stroke-width="2"/></g>
+ </svg>`;
+}
 export function forestWorldArt(route=null,areaId='entry'){
+ if(areaId==='city')return cityWorldArt(route);
  const moss=route==='moss',sunlit=route==='sunlit';
  const mode=moss?'moss':sunlit?'sunlit':'wild';
  const near=[[-17,70,1.18],[63,29,.85],[135,57,1.15],[217,14,.96],[309,28,1],[404,26,.86],[502,18,1.12],[582,43,1.1],[680,6,.99],[741,57,1.23]];

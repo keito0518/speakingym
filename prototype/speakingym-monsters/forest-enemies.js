@@ -12,6 +12,16 @@ const sprites={
  mistknight:`<path d="M28 49L72 8L118 49V115L72 137L25 112Z" fill="#7682b2" stroke="#343e69" stroke-width="7"/><path d="M42 57L30 20L69 34L112 19L101 58" fill="#4f5b8a" stroke="#2e365c" stroke-width="5"/><path d="M40 69Q73 57 108 69L104 97Q73 119 40 97Z" fill="#c4d5e9"/><path d="M47 81L62 86M85 86L101 81" stroke="#3a4d70" stroke-width="6"/><path d="M48 112L70 127L97 111" fill="none" stroke="#384668" stroke-width="7"/>`,
  elderroot:`<path d="M24 135Q18 100 34 73L19 45L38 55L47 17L63 48L80 4L96 49L120 25L111 64L132 55L113 90Q131 117 110 138Z" fill="#6c8053" stroke="#304b3b" stroke-width="7"/><path d="M43 68Q72 48 102 68V127Q74 146 44 126Z" fill="#b89a6b" stroke="#745b49" stroke-width="6"/><path d="M51 87L64 84M81 84L94 87" stroke="#3a5039" stroke-width="7" stroke-linecap="round"/><path d="M61 108Q75 100 89 108" fill="none" stroke="#61794c" stroke-width="6"/><path d="M10 130L42 112M134 127L106 113" stroke="#54734c" stroke-width="8"/>`
 };
+// Original city opponents: signs, tickets, signals and street objects instead
+// of recolored forest creatures. All combat effects remain cosmetic.
+Object.assign(sprites,{
+ signbit:`<rect x="18" y="38" width="112" height="84" rx="16" fill="#69a6b9" stroke="#2e687f" stroke-width="7"/><path d="M22 57H126" stroke="#bce8e2" stroke-width="11"/><path d="M70 17V39M57 17H83" stroke="#d0e5d1" stroke-width="7"/>${eye}${smile}`,
+ tickety:`<path d="M20 39H127V59Q116 66 127 78V110H20V78Q33 66 20 59Z" fill="#e8c37d" stroke="#886a52" stroke-width="7"/><path d="M74 39V114" stroke="#fff6cf" stroke-dasharray="6 8" stroke-width="5"/>${eye}${smile}`,
+ signalyn:`<rect x="34" y="14" width="80" height="120" rx="24" fill="#65798a" stroke="#2c4056" stroke-width="7"/><circle cx="74" cy="43" r="14" fill="#e6a77a"/><circle cx="74" cy="78" r="14" fill="#f6d48a"/><circle cx="74" cy="112" r="14" fill="#8ed3ab"/><circle cx="69" cy="75" r="3" fill="#344b4e"/><circle cx="79" cy="75" r="3" fill="#344b4e"/>`,
+ parceloo:`<path d="M23 45L73 17L125 45V114L72 139L21 114Z" fill="#cb9874" stroke="#7b5f53" stroke-width="7"/><path d="M24 46L73 70L125 45M73 70V134" stroke="#f2d9ae" stroke-width="6" fill="none"/>${eye}${smile}`,
+ lanternet:`<path d="M41 40Q42 18 71 18Q101 18 102 40V119H41Z" fill="#9fc5d1" stroke="#4d7e8e" stroke-width="7"/><circle cx="72" cy="72" r="30" fill="#f6d995"/><path d="M56 11H88M72 11V19M41 130H102" stroke="#467887" stroke-width="7"/>${eye}${smile}`,
+ metroguardian:`<path d="M22 33Q72 2 124 33V120Q75 155 22 120Z" fill="#526c86" stroke="#273e5b" stroke-width="8"/><path d="M30 40H116V77H30Z" fill="#a5c7d5" stroke="#34647c" stroke-width="6"/><path d="M44 9L73 29L104 9" stroke="#f4cf89" stroke-width="10" fill="none"/><circle cx="51" cy="57" r="8" fill="#e7c37a"/><circle cx="95" cy="57" r="8" fill="#e7c37a"/><path d="M48 111Q72 93 100 111" stroke="#f9dfac" stroke-width="6" fill="none"/><path d="M16 86L1 71M128 86L144 71" stroke="#688ca7" stroke-width="9"/>`
+});
 const variants=Object.freeze({
  sunmoss:'mossling',beethorn:'thistlet',glowcap:'spookap',ambernut:'bramblet',daymoth:'mothum',
  fogling:'mossling',nightthorn:'thistlet',whispercap:'spookap',bitterbud:'bramblet',duskmoth:'mothum',
@@ -23,5 +33,5 @@ export function enemyArt(id){
    ['fogling','nightthorn','whispercap','bitterbud','duskmoth'].includes(id)?'hue-rotate(105deg) saturate(.78)':
    ['rootlet','ancienthorn','oraclecap','stonebud','starmoth'].includes(id)?'sepia(.42) saturate(.9)':'';
  const motif=tint?`<circle cx="117" cy="22" r="12" fill="${tint.includes('105')?'#9bb8dd':tint.includes('sepia')?'#bbcc83':'#ffe49b'}" stroke="#fff4d7" stroke-width="2"/><path d="M111 22h12m-6-6v12" stroke="#4d5c48" stroke-width="2"/>`:'';
- return `<svg class="forest-enemy-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 150" role="img" aria-label="森の敵モンスター"><ellipse cx="74" cy="142" rx="58" ry="7" fill="#09271b" opacity=".23"/><g ${tint?`style="filter:${tint}"`:''}>${sprites[base]||sprites.mossling}</g>${motif}</svg>`;
+ return `<svg class="forest-enemy-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 150" role="img" aria-label="${['signbit','tickety','signalyn','parceloo','lanternet','metroguardian'].includes(id)?'街の敵モンスター':'森の敵モンスター'}"><ellipse cx="74" cy="142" rx="58" ry="7" fill="#09271b" opacity=".23"/><g ${tint?`style="filter:${tint}"`:''}>${sprites[base]||sprites.mossling}</g>${motif}</svg>`;
 }

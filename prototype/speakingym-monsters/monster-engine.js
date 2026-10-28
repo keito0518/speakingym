@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { cleanForest } from './forest-engine.js';
+import { cleanForest, FOREST_AREAS } from './forest-engine.js';
 import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
@@ -61,7 +61,7 @@ export function validateSave(value) {
   const rawQuizzes=value.quizProgress&&typeof value.quizProgress==='object'&&!Array.isArray(value.quizProgress)?value.quizProgress:{};
   const quizProgress=Object.fromEntries(Object.entries(rawQuizzes)
     .filter(([id,entry])=>validQuizIds.has(id)&&entry&&typeof entry==='object'&&!Array.isArray(entry))
-    .slice(-72).map(([id,entry])=>{
+    .slice(-120).map(([id,entry])=>{
       const misses=Number.isSafeInteger(entry.misses)?Math.max(0,Math.min(10000,entry.misses)):0;
       return [id,{
         misses,
@@ -200,7 +200,8 @@ export function quizWeaknessOverview(save,today=dayKey()) {
 // apply only to future captures; owned companions and their XP are immutable.
 export function companionUnlockProgress(save, monster, today=dayKey()){
   const learned=learningSummary(save,today);
-  const areaCount=cleanForest(save.forest).completedAreas.length;
+  const completed=new Set(cleanForest(save.forest).completedAreas);
+  const areaCount=FOREST_AREAS.filter(area=>completed.has(area.id)).length;
   const useMastery=monster.masteryUnlock!==undefined;
   const requiredSkill=useMastery?monster.masteryUnlock:monster.unlock||0;
   const currentSkill=useMastery?learned.mastered:learned.independent;

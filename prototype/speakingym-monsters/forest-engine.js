@@ -7,6 +7,10 @@ export const FOREST_ROUTES = Object.freeze([
   { id:'sunlit', name:'ひだまりの小道', tag:'SUNLIT TRAIL', detail:'木漏れ日をたどって、金色の葉っぱを探そう。' },
   { id:'moss', name:'こけむした抜け道', tag:'MOSS TRAIL', detail:'キノコの灯りに誘われて、静かな道を進もう。' }
 ]);
+export const CITY_ROUTES = Object.freeze([
+ {id:'market',name:'マーケット通り',tag:'MARKET STREET',detail:'お店でのやり取りを確かめながら進もう。'},
+ {id:'station',name:'ステーション通り',tag:'STATION STREET',detail:'交通案内を確かめ、待ち合わせ場所へ向かおう。'}
+]);
 // A chapter is a full eight-answer expedition, with a distinct mixture of
 // encounters. Clearing one chapter unlocks the next; old saves remain usable.
 export const FOREST_AREAS=Object.freeze([
@@ -15,14 +19,34 @@ export const FOREST_AREAS=Object.freeze([
  {id:'thicket',name:'迷いの深林',english:'WHISPERING THICKET',goal:'文章を読み、語彙と条件を見落とさない',story:'迷いの霧に隠された文章を読み解き、幻影の騎士に挑もう。',focus:['problem','clarify','change','apology']},
  {id:'sanctuary',name:'古木の聖域',english:'ANCIENT SANCTUARY',goal:'複数の情報を組み合わせて意思を伝える',story:'古木の守護者との最終対話。聞いて、考えて、自分の英語で伝えよう。',focus:['late','agree','prefer','recommend']}
 ]);
+// A distinct second dungeon. Unlock only after all original Forest chapters:
+// no placeholder button and no changes to legacy Forest completion order.
+export const CITY_AREAS=Object.freeze([
+ {id:'city',name:'会話の街・中央街区',english:'CITY CROSSROADS',world:'city',
+  goal:'街の予定変更・問い合わせ・トラブルを解決する',
+  story:'街の案内を読み、相手の説明を聞き、予定変更や困りごとを英語で伝えよう。',
+  focus:['booking','direction','change','clarify','problem','agree']}
+]);
+export const DUNGEON_AREAS=Object.freeze([...FOREST_AREAS,...CITY_AREAS]);
+export const dungeonAreaFor=id=>DUNGEON_AREAS.find(area=>area.id===id)||null;
+export function unlockedCityAreas(save){
+ const cleared=new Set(cleanForest(save?.forest).completedAreas);
+ return FOREST_AREAS.every(area=>cleared.has(area.id))?CITY_AREAS:[];
+}
+export function unlockedDungeonAreas(save){return [...unlockedForestAreas(save),...unlockedCityAreas(save)];}
 export function unlockedForestAreas(save){
- const cleared=cleanForest(save?.forest).completedAreas;
- const unlocked=Math.min(FOREST_AREAS.length,cleared.length+1);
+ const cleared=new Set(cleanForest(save?.forest).completedAreas);
+ const unlocked=Math.min(FOREST_AREAS.length,FOREST_AREAS.filter(area=>cleared.has(area.id)).length+1);
  return FOREST_AREAS.slice(0,unlocked);
 }
 export function nextForestArea(save){
  const cleared=cleanForest(save?.forest).completedAreas;
  return FOREST_AREAS.find(area=>!cleared.includes(area.id))||FOREST_AREAS.at(-1);
+}
+export function nextDungeonArea(save){
+ const forest=cleanForest(save?.forest);
+ const missingForest=FOREST_AREAS.find(area=>!forest.completedAreas.includes(area.id));
+ return missingForest||CITY_AREAS.find(area=>!forest.completedAreas.includes(area.id))||CITY_AREAS.at(-1);
 }
 export const FOREST_STAGES = Object.freeze([
   { id:'wooden-gate', name:'森の入り口', chapter:'GATE 1', detail:'森の番人に、考える時間が欲しいことを英語で伝えよう。' },
@@ -41,18 +65,21 @@ export const FOREST_RELICS=Object.freeze({
  ,'sunbeam':{name:'Sunbeam',meaning:'木漏れ日の結晶',description:'光の番人の試練を抜けた証。'}
  ,'mist-seal':{name:'Mist Seal',meaning:'霧の封印',description:'迷いの深林を見破った証。'}
  ,'ancient-acorn':{name:'Ancient Acorn',meaning:'古木のどんぐり',description:'聖域の守護者から託された宝物。'}
+ ,'city-pass':{name:'City Pass',meaning:'街の通行証',description:'街での英語のやり取りを乗り越えた証。'}
+ ,'market-stamp':{name:'Market Stamp',meaning:'市場の記念スタンプ',description:'マーケット通りで見つけた記念品。'}
+ ,'station-stamp':{name:'Station Stamp',meaning:'駅の記念スタンプ',description:'ステーション通りで見つけた記念品。'}
 });
 export function cleanForest(input){
  const source=input&&typeof input==='object'?input:{};
  const ids=Object.keys(FOREST_RELICS);
- const allowed=FOREST_AREAS.map(area=>area.id);
+ const allowed=DUNGEON_AREAS.map(area=>area.id);
  const completed=Array.isArray(source.completedAreas)?source.completedAreas:
    // Before chapters existed, a completed Forest was the entrance expedition.
    (Number.isSafeInteger(source.clears)&&source.clears>0?['entry']:[]);
  return {
   clears:Number.isSafeInteger(source.clears)&&source.clears>=0?Math.min(source.clears,100000):0,
   bestWave:Number.isSafeInteger(source.bestWave)&&source.bestWave>=0?Math.min(source.bestWave,100000):0,
-  routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>FOREST_ROUTES.some(r=>r.id===x)))],
+  routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>[...FOREST_ROUTES,...CITY_ROUTES].some(r=>r.id===x)))],
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
   completedAreas:[...new Set(completed.filter(x=>allowed.includes(x)))],
   recentPromptIds:[...new Set((Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]).filter(id=>ALL_PROMPTS.some(p=>p.id===id)))].slice(-80),
@@ -85,19 +112,20 @@ export function getForestPrompts(save,difficulty=save.difficulty||'easy'){
  return prompts;
 }
 export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[],recordAreaClear=true){
- if(!FOREST_ROUTES.some(r=>r.id===routeId))throw new Error('Invalid forest route');
+ const routePool=areaId==='city'?CITY_ROUTES:FOREST_ROUTES;
+ if(!routePool.some(r=>r.id===routeId))throw new Error('Invalid forest route');
  if(!save.ownedMonsters?.includes(companionId))throw new Error('Companion is not owned');
- if(!FOREST_AREAS.some(area=>area.id===areaId))throw new Error('Invalid forest area');
- if(recordAreaClear&&!unlockedForestAreas(save).some(area=>area.id===areaId))throw new Error('Forest area is locked');
+ if(!DUNGEON_AREAS.some(area=>area.id===areaId))throw new Error('Invalid forest area');
+ if(recordAreaClear&&!unlockedDungeonAreas(save).some(area=>area.id===areaId))throw new Error('Forest area is locked');
  const before=cleanForest(save.forest);
  const fresh=new Set(before.relics);
- const earned=[routeId==='sunlit'?'sunlit-leaf':'moss-lantern'];
- const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn'}[areaId];
+ const earned=[areaId==='city'?(routeId==='market'?'market-stamp':'station-stamp'):(routeId==='sunlit'?'sunlit-leaf':'moss-lantern')];
+ const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn',city:'city-pass'}[areaId];
  if(areaTreasure&&recordAreaClear)earned.push(areaTreasure);
  // A narrow, purely cosmetic exploration perk tied to evolved companions.
  const evolved=(save.monsterXp?.[companionId]||0)>=160;
- if(evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
- if(evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
+ if(areaId!=='city'&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
+ if(areaId!=='city'&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
  const discovered=earned.filter(id=>!fresh.has(id));
  const next={
   ...save,
@@ -111,5 +139,5 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
    journal:before.journal
   }
  };
- return {save:next,discovered,route:FOREST_ROUTES.find(r=>r.id===routeId)};
+ return {save:next,discovered,route:routePool.find(r=>r.id===routeId)};
 }

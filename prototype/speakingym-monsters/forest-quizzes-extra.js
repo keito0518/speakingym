@@ -1,4 +1,4 @@
-// Sixteen additional authored topics for Beginning Forest, each with three
+// Twenty additional authored topics across the Forest and City, each with three
 // level-specific tasks. The same topic changes its language target as the
 // difficulty rises; it is not the same blank repeated with longer filler.
 const LEVELS = ['easy', 'normal', 'hard'];
@@ -142,16 +142,49 @@ const TOPICS = [
       {scene:'Reporting a persistent problem', cue:'Tell the front desk the Wi-Fi has not worked since yesterday.', answer:'The Wi-Fi has not worked since yesterday.', hint:'昨日から今まで続くので現在完了形。', tip:'has not worked since yesterday で「昨日からずっと使えない」。since は起点を示す。'},
       {scene:'Describing a technical issue', cue:'Explain that even after restarting the router, the internet connection is still unstable.', answer:'Although I restarted the router, the connection is still unstable.', hint:'Although + 過去の行動、現在も続く状態。', tip:'Although は「〜したにもかかわらず」。restart は過去形、is still unstable は現在の状態。'}
     ]
+  },
+  {
+    id:'city-schedule', world:'city', kind:'vocab', phraseId:'change',
+    levels:[
+      {scene:'街の予約窓口',cue:'金曜日に予約を変更したい。 I would like to _____ my booking to Friday.',answer:'change',options:['change','borrow','close'],hint:'予約の日程を「変更する」動詞。',tip:'change a booking to Friday は予約の日を金曜日に変える。borrow は借りる、close は閉じる。'},
+      {scene:'Rescheduling at the counter',cue:'You cannot attend the original appointment, but you still want to come on another date. Could I _____ my appointment?',answer:'reschedule',options:['reschedule','refund','deliver'],hint:'予約を取り消さず、日程を改めて決める。',tip:'reschedule an appointment は日時を組み直す。refund は返金する、deliver は届ける。'},
+      {scene:'An updated appointment',cue:'The meeting was originally set for Tuesday, but both people agreed to meet on Thursday instead. It has been _____ for Thursday.',answer:'rescheduled',options:['rescheduled','cancelled','delivered'],hint:'日時の合意済み変更なので、現在完了の受け身。',tip:'has been rescheduled for Thursday は木曜日に日程が変更された。cancelled は会議自体の中止。'}
+    ]
+  },
+  {
+    id:'city-platform', world:'city', kind:'vocab', phraseId:'direction',
+    levels:[
+      {scene:'地下鉄の駅',cue:'駅員に電車の乗り場を聞く。 Which _____ does the train leave from?',answer:'platform',options:['platform','kitchen','receipt'],hint:'列車を待つホームのこと。',tip:'platform は駅のホーム。Which platform does ... leave from? で乗り場を確認できる。'},
+      {scene:'A change of trains',cue:'You need to change from the blue line to the green line. Where do I _____?',answer:'transfer',options:['transfer','refund','collect'],hint:'別の路線に「乗り換える」。',tip:'transfer は乗り換える。Where do I transfer? と聞けば乗換駅を確認できる。'},
+      {scene:'A closed train line',cue:'The direct line is closed, so you ask staff for another way to the museum. Is there an _____ route?',answer:'alternative',options:['alternative','identical','expensive'],hint:'元の道が使えないときの「別の」経路。',tip:'an alternative route は代わりの経路。an が付くのは alternative が母音で始まるため。'}
+    ]
+  },
+  {
+    id:'city-clarification', world:'city', kind:'grammar', phraseId:'clarify',
+    levels:[
+      {scene:'お店の料金を確認',cue:'「この料金を説明していただけますか？」を英文にしよう。',answer:'Could you explain this fee?',hint:'Could you + 動詞の原形 で丁寧な依頼。',tip:'Could you explain this fee? は不明な料金について理由を説明してもらう自然な聞き方。'},
+      {scene:'Unexpected extra costs',cue:'Politely ask why the price has changed using an indirect question.',answer:'Could you tell me why the price changed?',hint:'Could you tell me の後は why + 主語 + 動詞の順。',tip:'why the price changed は間接疑問文。why did the price change と倒置しない。'},
+      {scene:'A higher invoice',cue:'The final bill is higher than the amount you were quoted. Politely request an explanation using Would you mind.',answer:'Would you mind explaining why the total is higher than the quoted price?',hint:'Would you mind のあとは動名詞 explaining。',tip:'Would you mind + -ing は丁寧な依頼。why the total is higher は間接疑問文で平叙文語順。'}
+    ]
+  },
+  {
+    id:'city-arrangement', world:'city', kind:'grammar', phraseId:'booking',
+    levels:[
+      {scene:'待ち合わせ場所を決める',cue:'「駅で会えますか？」を英文にしよう。',answer:'Can we meet at the station?',hint:'Can we + 動詞の原形 + 場所。',tip:'Can we meet at the station? の at は集合する場所を示す。'},
+      {scene:'A changed dinner booking',cue:'Politely ask whether it would be possible to move your reservation to Friday.',answer:'Would it be possible to move our booking to Friday?',hint:'Would it be possible to + 動詞の原形。',tip:'Would it be possible to ...? は相手の都合に配慮した丁寧な依頼。'},
+      {scene:'Finding another time slot',cue:'Ask to reschedule for the afternoon if the morning slot is unavailable.',answer:'If the morning slot is unavailable, could we reschedule for the afternoon?',hint:'If + 条件、could we + 動詞の原形。',tip:'If the morning slot is unavailable が条件。could we reschedule ... で代替案を丁寧に相談する。'}
+    ]
   }
 ];
 
 export const EXTRA_FOREST_QUIZZES = Object.freeze(TOPICS.flatMap(topic => topic.levels.map((level, index) => {
   const difficulty = LEVELS[index];
-  const baseId = `forest-${topic.kind}-${topic.id}`;
+  const baseId = `${topic.world||'forest'}-${topic.kind}-${topic.id}`;
   return Object.freeze({
     id: `${baseId}-${difficulty}`,
     baseId,
     phraseId: topic.phraseId,
+    ...(topic.world ? {world:topic.world} : {}),
     kind: topic.kind,
     difficulty,
     scene: level.scene,

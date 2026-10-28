@@ -1,6 +1,6 @@
 import { ALL_PROMPTS } from './monster-data.js';
 import { bossConversationFor } from './forest-boss-story.js';
-import { FOREST_AREAS } from './forest-engine.js';
+import { DUNGEON_AREAS } from './forest-engine.js';
 
 // Speaking Forest: 5 encounters, then a three-hit boss. Unique tasks per wave.
 export const FOREST_MOBS=Object.freeze([
@@ -15,19 +15,22 @@ export const AREA_BOSSES=Object.freeze({
  entry:FOREST_BOSS,
  glade:Object.freeze({id:'sunwarden',name:'Sun Warden',japanese:'光の番人',hp:3}),
  thicket:Object.freeze({id:'mistknight',name:'Mist Knight',japanese:'霧の騎士',hp:3}),
- sanctuary:Object.freeze({id:'elderroot',name:'Elder Root',japanese:'古木の守護者',hp:3})
+ sanctuary:Object.freeze({id:'elderroot',name:'Elder Root',japanese:'古木の守護者',hp:3}),
+ city:Object.freeze({id:'metroguardian',name:'Metro Guardian',japanese:'街の守護機',hp:3})
 });
 const AREA_MOBS=Object.freeze({
  entry:FOREST_MOBS,
  glade:['Sunmoss','Beethorn','Glowcap','Ambernut','Daymoth'].map((name,i)=>({id:['sunmoss','beethorn','glowcap','ambernut','daymoth'][i],name,japanese:['ひなたのこけ','蜜の番人','光るキノコ','琥珀の実','昼の蛾'][i]})),
  thicket:['Fogling','Nightthorn','Whispercap','Bitterbud','Duskmoth'].map((name,i)=>({id:['fogling','nightthorn','whispercap','bitterbud','duskmoth'][i],name,japanese:['霧の子','夜のとげ','ささやくキノコ','苦い木の実','夕闇の蛾'][i]})),
- sanctuary:['Rootlet','Ancienthorn','Oraclecap','Stonebud','Starmoth'].map((name,i)=>({id:['rootlet','ancienthorn','oraclecap','stonebud','starmoth'][i],name,japanese:['小さな古木','古代のとげ','予言のキノコ','石の木の実','星の蛾'][i]}))
+ sanctuary:['Rootlet','Ancienthorn','Oraclecap','Stonebud','Starmoth'].map((name,i)=>({id:['rootlet','ancienthorn','oraclecap','stonebud','starmoth'][i],name,japanese:['小さな古木','古代のとげ','予言のキノコ','石の木の実','星の蛾'][i]})),
+ city:['Signbit','Tickety','Signalyn','Parceloo','Lanternet'].map((name,i)=>({id:['signbit','tickety','signalyn','parceloo','lanternet'][i],name,japanese:['路地の標識','チケットの番人','信号の精','荷物のいたずらっ子','街灯の精'][i]}))
 });
 const AREA_SKILLS=Object.freeze({
  entry:['speak','listen','vocab','grammar','speak'],
  glade:['listen','vocab','speak','grammar','read'],
  thicket:['read','grammar','speak','listen','vocab'],
- sanctuary:['speak','listen','vocab','read','grammar']
+ sanctuary:['speak','listen','vocab','read','grammar'],
+ city:['listen','vocab','speak','read','grammar']
 });
 // Foes telegraph their own defensive stance. These patterns are cosmetic:
 // neither verdicts nor the XP ledger depend on enemy type.
@@ -44,14 +47,14 @@ export function enemyTacticFor(index,wave=1,areaId='entry'){
  if(FOREST_TACTICS[foe.id])return FOREST_TACTICS[foe.id];
  const original=index>=REGULAR_ENCOUNTERS?FOREST_TACTICS.thornking:
    FOREST_TACTICS[FOREST_MOBS[(index+wave-1)%FOREST_MOBS.length].id];
- const theme={glade:'光',thicket:'霧',sanctuary:'古木'}[areaId];
+ const theme={glade:'光',thicket:'霧',sanctuary:'古木',city:'街'}[areaId];
  return {preferredKind:AREA_SKILLS[areaId][index%AREA_SKILLS[areaId].length]||'mixed',name:`${theme}の${original.name}`,
    tell:`${theme}の力をまとっている。${original.tell}`,guard:`${theme}の力で防御した`};
 }
 export const REGULAR_ENCOUNTERS=5;
 export const BOSS_HITS=3;
 export const FOREST_WAVE_LENGTH=REGULAR_ENCOUNTERS+BOSS_HITS;
-export const REGULAR_BY_AREA=Object.freeze({entry:5,glade:7,thicket:10,sanctuary:10});
+export const REGULAR_BY_AREA=Object.freeze({entry:5,glade:7,thicket:10,sanctuary:10,city:10});
 export function regularEncountersFor(areaId='entry'){return REGULAR_BY_AREA[areaId]||REGULAR_ENCOUNTERS;}
 export function forestWaveLengthFor(areaId='entry'){return regularEncountersFor(areaId)+BOSS_HITS;}
 export const DIFFICULTY_TRIES=Object.freeze({easy:3,normal:2,hard:1});
@@ -72,7 +75,9 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
  if(!AREA_SKILLS[areaId])throw Error('Unknown forest area');
  const level=progression==='story'?difficulty:forestLevel(difficulty,wave);
  if(!DIFFICULTY_TRIES[level])throw Error('Invalid forest difficulty');
- const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level);
+ // City-authored situations do not leak into the Forest; already-learned
+ // Forest expressions remain available for transfer in the new world.
+ const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level&&(!p.world||p.world===areaId));
  const bossStages=bossConversation&&areaId==='entry'?bossConversationFor(wave,level):null;
  const reservedBossIds=new Set((bossStages||[]).map(turn=>turn.id));
  const previous=new Set(previousIds);
@@ -109,7 +114,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
      // an unrelated random phrase. Reuse a TOPIC, never an identical task:
      // the final speaking challenge asks the learner to transfer language
      // from a previous encounter into a different real-world scene.
-     const focus=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
+     const focus=new Set(DUNGEON_AREAS.find(area=>area.id===areaId).focus);
      const focused=candidates.filter(p=>focus.has(p.phraseId));
      // Listening has a smaller fixed-audio bank than the other skills.
      // If the entire chapter-focused bank was heard in earlier chapters,
@@ -158,15 +163,16 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
      const unseen=candidates.filter(p=>!previous.has(p.id));
      if(unseen.length)candidates=unseen;
    }
-   const focus=new Set(FOREST_AREAS.find(area=>area.id===areaId).focus);
+   const focus=new Set(DUNGEON_AREAS.find(area=>area.id===areaId).focus);
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
      previous.has(p.id)?1:0,
+     areaId==='city'&&p.world==='city'?0:1,
      areaId==='entry'||focus.has(p.phraseId)?0:1
    ];
    candidates.sort((a,b)=>{
      const aa=scores(a),bb=scores(b);
-     return aa[0]-bb[0]||aa[1]-bb[1]||aa[2]-bb[2];
+     return aa[0]-bb[0]||aa[1]-bb[1]||aa[2]-bb[2]||aa[3]-bb[3];
    });
    const chosen=candidates[0];
    prompts.push(chosen);usedIds.add(chosen.id);usedPhrases.add(chosen.phraseId);

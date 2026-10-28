@@ -51,6 +51,11 @@
             <span id="retention-stable-label">7日後チェック達成 0問</span>
             <span id="retention-transfer-label">別の場面で応用 0問</span>
           </div>
+          <div class="retention-bond-status" aria-label="復習で育つ仲間との絆">
+            <strong id="retention-bond-label">Yolkieとの絆 Lv.0</strong>
+            <div id="retention-bond-meter" class="retention-bond-meter" role="meter" aria-label="次の絆レベルまでの進捗" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="retention-bond-fill"></span></div>
+            <small>ヒントなしで翌日・3日後・7日後の復習を達成すると絆が成長。音声認識の失敗では減らないよ。</small>
+          </div>
           <button type="button" id="start-retention-review" disabled>今日の定着チェック（0問）</button>
           <p id="retention-next" class="retention-next" aria-live="polite">初めて解いた問題は翌日の復習候補になるよ。</p>
         </section>
@@ -73,10 +78,10 @@
               <button class="button button-dark" data-start="challenge">60秒チャレンジ</button>
             </div>
             <section class="forest-invite" aria-labelledby="forest-invite-title">
-              <span class="forest-kicker">4 AREAS · 5 SKILLS · 5→7→10→10 GATES + BOSSES</span>
+              <span class="forest-kicker">2 WORLDS · 5 SKILLS · FOREST + CITY</span>
               <h2 id="forest-invite-title">Englishダンジョン</h2>
-              <p>話す・聞く・単語・文法・読解を組み合わせた4エリアの冒険。エリアごとに敵・課題・ボスが変化するよ。</p>
-              <div id="forest-area-list" class="forest-area-list" aria-label="森のエリア選択"></div>
+              <p>まず森の4エリアで基礎を磨こう。攻略すると街の予定変更・問い合わせ・トラブル対応に挑戦できるよ。</p>
+              <div id="forest-area-list" class="forest-area-list" aria-label="ダンジョンのエリア選択"></div>
               <div class="forest-invite-action"><button type="button" id="start-forest" class="forest-primary">次のエリアへ</button><button type="button" id="start-forest-endless" class="forest-endless-button">∞ エンドレスモード</button><span id="forest-home-progress">まだ未踏の森</span></div>
               <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
             </section>

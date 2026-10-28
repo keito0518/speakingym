@@ -668,7 +668,7 @@ const path=require('node:path');
       await forestPage.locator('[data-home-page="collection"]').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
       await forestPage.locator('#collection-home').click();
-      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/討伐 1回/);
+      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/冒険勝利 1回/);
       const saved=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.equal(saved.forest.clears,1);
       assert.deepEqual(saved.forest.relics,['moss-lantern']);
@@ -676,6 +676,52 @@ const path=require('node:path');
       assert.equal(saved.forest.journal[0].eventId,'entry-moss');
       assert.equal(saved.xpWallet,xp);
       await forestContext.close();
+    }
+    // A second world needs a genuine locked-to-unlocked play path, distinct
+    // map/battle artwork and non-overflowing mobile controls on every viewport.
+    for(const width of [320,375,390,430]){
+      const {context:cityContext,page:cityPage}=await boot(width);
+      await enterHomePanel(cityPage,'forest');
+      const cityCard=cityPage.locator('[data-enter-forest="city"]');
+      assert.equal(await cityCard.isEnabled(),false,'City is locked on fresh saves');
+      assert.match(await cityCard.innerText(),/森の4エリアを攻略で解放/);
+      await cityPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const {FOREST_AREAS,finishForest}=await import('./forest-engine.js');
+        let save=createSave();
+        for(const area of FOREST_AREAS)save=finishForest(save,'sunlit','medamago',area.id).save;
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
+      });
+      await cityPage.reload({waitUntil:'networkidle'});
+      await enterHomePanel(cityPage,'forest');
+      assert.equal(await cityCard.isEnabled(),true,'Four forest victories unlock the City');
+      assert.match(await cityPage.locator('#forest-home-progress').innerText(),/森 4\/4 · 街 未攻略/);
+      assert.match(await cityPage.locator('#start-forest').innerText(),/会話の街/);
+      if(width===390)await cityPage.screenshot({path:path.join(shots,`city-${engine}-${width}-selection.png`),fullPage:true});
+      await cityCard.click();
+      assert.match(await cityPage.locator('#forest-explore-title').innerText(),/会話の街/);
+      assert.equal(await cityPage.locator('#forest-explore-art .city-world-svg').count(),1);
+      const mapMetrics=await cityPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(mapMetrics.scroll<=mapMetrics.inner+1,`${engine}/${width} City map overflow ${JSON.stringify(mapMetrics)}`);
+      if(width===390)await cityPage.screenshot({path:path.join(shots,`city-${engine}-${width}-map.png`),fullPage:true});
+      await cityPage.locator('#forest-explore-continue').click();
+      assert.equal(await cityPage.locator('#forest-world-stage').getAttribute('data-area'),'city');
+      assert.equal(await cityPage.locator('.battle-arena-svg').getAttribute('data-arena'),'city-platform');
+      assert.equal(await cityPage.locator('#forest-world-backdrop .forest-world-svg').count(),0);
+      assert.match(await cityPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 10/);
+      assert.equal(await cityPage.locator('#forest-enemy svg').getAttribute('aria-label'),'街の敵モンスター');
+      const battleMetrics=await cityPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(battleMetrics.scroll<=battleMetrics.inner+1,`${engine}/${width} City battle overflow ${JSON.stringify(battleMetrics)}`);
+      if(width===390)await cityPage.screenshot({path:path.join(shots,`city-${engine}-${width}-battle.png`),fullPage:true});
+      await unlockListening(cityPage);
+      await cityPage.locator('#next-question').click();
+      assert.equal(await cityPage.locator('#forest-explore-options').isVisible(),true);
+      assert.equal(await cityPage.locator('[data-forest-route]').count(),2);
+      await cityPage.locator('[data-forest-route="market"]').click();
+      assert.match(await cityPage.locator('#forest-route-status').innerText(),/マーケット通り/);
+      assert.match(await cityPage.locator('.question-top').innerText(),/ENCOUNTER 2 \/ 10/);
+      await cityPage.locator('#leave-play').click();
+      await cityContext.close();
     }
     // Explanations remain visible until the learner chooses to continue.
     // A route remains a manual choice, without an automatic explanation timer.

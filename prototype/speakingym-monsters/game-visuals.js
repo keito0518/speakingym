@@ -8,13 +8,26 @@ export function relicArt(id) {
     'sunbeam': '<path d="M32 5L40 22L58 32L41 40L32 59L23 41L6 32L24 23Z" fill="#f8dd91"/><circle cx="32" cy="32" r="9" fill="#fff9d6" stroke="#c6a75a"/><path d="M32 7V17M32 47V57M7 32H16M48 32H57"/>',
     'mist-seal': '<circle cx="32" cy="32" r="23" fill="#aec3d7"/><path d="M17 40Q28 19 49 28M14 27Q27 13 48 19M17 48Q32 38 48 48" stroke="#617e9d" stroke-width="4" fill="none"/><circle cx="32" cy="32" r="5" fill="#f2f4ef" stroke="#617e9d"/>',
     'ancient-acorn': '<path d="M18 28Q16 15 32 12Q50 15 46 29L45 45Q32 59 19 45Z" fill="#ba9762"/><path d="M14 26Q15 13 33 15Q49 13 50 26L44 35H20Z" fill="#7e935c"/><path d="M29 14Q27 6 36 5M24 23L32 19L40 24M24 32L31 29L39 32" stroke="#566d4b" fill="none"/>'
+    ,'city-pass':'<rect x="10" y="17" width="44" height="30" rx="6" fill="#b8e2dc"/><path d="M15 26H49M17 39H31M37 39H47" stroke="#4d8290" stroke-width="4"/><circle cx="41" cy="31" r="5" fill="#f8d794" stroke="none"/>'
+    ,'market-stamp':'<rect x="14" y="12" width="36" height="39" rx="7" fill="#efd4a0"/><path d="M19 26H45L41 40H23Z" fill="#c99a65"/><path d="M17 24L32 15L47 24" stroke="#617d78" stroke-width="4"/>'
+    ,'station-stamp':'<circle cx="32" cy="32" r="23" fill="#a7d2db"/><rect x="20" y="17" width="24" height="27" rx="5" fill="#4f7e90"/><path d="M23 23H41M24 34H40M25 49L20 55M39 49L44 55" stroke="#e6f6f0" stroke-width="3"/>'
   };
   return `<svg class="relic-svg" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g stroke="#655b40" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">${shapes[id] || shapes['sunlit-leaf']}</g></svg>`;
 }
 export function guardArt() {
   return '<svg viewBox="0 0 100 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M50 5L90 20V55Q86 88 50 104Q14 88 10 55V20Z" fill="#76cddc44" stroke="#d4f8ff" stroke-width="4"/><path d="M50 18L77 28V54Q74 76 50 88Q26 76 23 54V28Z" fill="none" stroke="#8dd8e8" stroke-width="2"/><path d="M50 27V76M30 47H70" stroke="#e0faff" stroke-width="3"/></svg>';
 }
-export function battleArenaArt(boss = false) {
+export function battleArenaArt(boss = false,areaId='entry') {
+  if(areaId==='city')return `<svg class="battle-arena-svg battle-arena-city" data-arena="${boss?'metro-nexus':'city-platform'}" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+   <defs><linearGradient id="city-arena" x2="0" y2="1"><stop stop-color="${boss?'#2d2754':'#293a60'}"/><stop offset="1" stop-color="#628696"/></linearGradient><linearGradient id="city-floor" x2="0" y2="1"><stop stop-color="#7a8993"/><stop offset="1" stop-color="#2b4252"/></linearGradient></defs>
+   <rect width="800" height="300" fill="url(#city-arena)"/><g fill="#344961"><path d="M0 160V50H90V160M114 160V20H205V160M235 160V75H320V160M485 160V45H557V160M585 160V13H700V160M720 160V61H800V160"/></g>
+   <g stroke="#83b1b9" stroke-width="2" fill="#b7d7cf">${Array.from({length:8},(_,i)=>`<rect x="${16+i*100}" y="${58+(i%3)*23}" width="14" height="30" rx="2"/>`).join('')}</g>
+   <path d="M0 192H800V300H0Z" fill="url(#city-floor)"/><path d="M0 222H800M0 264H800" stroke="#d8d7be" stroke-width="5" opacity=".46"/><path d="M186 192V300M635 192V300" stroke="#617883" stroke-width="8"/>
+   <g fill="#243c50" stroke="#cee3d7" stroke-width="3"><rect x="61" y="54" width="135" height="50" rx="8"/><rect x="603" y="54" width="135" height="50" rx="8"/></g>
+   <text x="128" y="86" fill="#f8d799" font-size="19" font-weight="700" text-anchor="middle">CITY QUEST</text><text x="670" y="86" fill="#a8f0dd" font-size="19" font-weight="700" text-anchor="middle">${boss?'BOSS GATE':'PLATFORM'}</text>
+   <ellipse cx="185" cy="259" rx="102" ry="24" fill="#203949" stroke="#91acb7" stroke-width="3"/><ellipse cx="626" cy="241" rx="106" ry="23" fill="#203949" stroke="#91acb7" stroke-width="3"/>
+   ${boss?'<path d="M400 0V184M375 126L400 146L425 126" stroke="#f3c27f" stroke-width="8" fill="none"/>':'<path d="M400 65V194" stroke="#b6d5d6" stroke-width="6"/>'}
+   </svg>`;
   const sky = boss ? '#382d49' : '#253c53', stone = boss ? '#68526d' : '#577581';
   // A side-on ruined arena with stone platforms; deliberately no forest paths,
   // landmarks, trees, map coordinates or forestWorldArt content.
