@@ -50,6 +50,7 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('[data-tactic-action]').count(),3);
      assert.equal(await page.locator('[data-tactic-kind]').count(),4);
      assert.match(await page.locator('#forest-tactics').innerText(),/リスニング.*文法/s);
+     assert.match(await page.locator('#forest-tactics').innerText(),/次の敵攻撃：文法/,'Enemy must telegraph the upcoming skill before the ally commits');
      await answer(page);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-tactics'),'true');

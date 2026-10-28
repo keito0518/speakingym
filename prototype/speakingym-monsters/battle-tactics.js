@@ -27,26 +27,27 @@ export function foeAffinity(id='mossling'){
 export function allyAffinity(id='medamago'){
  return ALLY_TYPES[id]||{strong:'speak',weak:'grammar'};
 }
-export function strikeFor({kind,foeId,allyId,action='attack',boss=false}={}){
+export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false}={}){
  if(!BATTLE_KINDS.includes(kind)||!['attack','guard','skill'].includes(action))throw Error('Invalid battle action');
  const foe=foeAffinity(foeId),ally=allyAffinity(allyId);
  const weak=foe.weak===kind,resist=foe.resist===kind,strong=ally.strong===kind,poor=ally.weak===kind;
- const raw=1+(weak?1:0)-(resist?1:0)+(strong?1:0)-(poor?1:0)+(action==='skill'?1:0)-(action==='guard'?1:0);
+ const evolutionBoost=Boolean(evolved&&strong&&action!=='guard');
+ const raw=1+(weak?1:0)-(resist?1:0)+(strong?1:0)-(poor?1:0)+(action==='skill'?1:0)-(action==='guard'?1:0)+(evolutionBoost?1:0);
  return {damage:boss?1:Math.max(1,Math.min(3,raw)),weak,resist,strong,poor,guard:action==='guard',
-  tag:weak?'WEAK!':resist?'RESIST':strong?'ALLY BOOST':'HIT'};
+  evolutionBoost,tag:weak?'WEAK!':resist?'RESIST':strong?'ALLY BOOST':'HIT'};
 }
 export function nextEnemyKind(last=null,random=Math.random){
  const pool=BATTLE_KINDS.filter(kind=>kind!==last);
  const value=Number(random());
  return pool[Math.max(0,Math.min(pool.length-1,Math.floor((Number.isFinite(value)?value:0)*pool.length)))];
 }
-export function incomingHit({kind,allyId,action='attack',result='incorrect',hinted=false}={}){
+export function incomingHit({kind,allyId,action='attack',result='incorrect',hinted=false,evolved=false}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid enemy attack');
  const ally=allyAffinity(allyId);
  if(result==='review'||result==='empty'||result==='ungraded')return {damage:0,blocked:false,uncertain:true};
  if(result==='correct'&&!hinted)return {damage:0,blocked:true,uncertain:false};
  const base=result==='correct'?1:2;
- return {damage:Math.max(0,base+(kind===ally.weak?1:0)-(kind===ally.strong?1:0)-(action==='guard'?1:0)),
+ return {damage:Math.max(0,base+(kind===ally.weak?1:0)-(kind===ally.strong?1:0)-(action==='guard'?1:0)-(evolved&&kind===ally.strong?1:0)),
    blocked:false,uncertain:false};
 }
 export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],random=Math.random}={}){
