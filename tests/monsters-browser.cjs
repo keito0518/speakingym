@@ -718,6 +718,7 @@ const path=require('node:path');
       assert.equal(await cityPage.locator('#forest-explore-options').isVisible(),true);
       assert.equal(await cityPage.locator('[data-forest-route]').count(),2);
       await cityPage.locator('[data-forest-route="market"]').click();
+      await cityPage.locator('#forest-journey').waitFor({state:'visible'});
       assert.match(await cityPage.locator('#forest-route-status').innerText(),/マーケット通り/);
       assert.match(await cityPage.locator('.question-top').innerText(),/ENCOUNTER 2 \/ 10/);
       await cityPage.locator('#leave-play').click();
