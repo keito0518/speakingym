@@ -439,7 +439,9 @@
  text-shadow:0 3px 0 #744622,0 0 15px #ffe17f;opacity:0;transform:rotate(-7deg)}
 .forest-active .forest-world-stage.forest-attack .forest-combo:not(:empty){animation:forest-combo-pop 1.65s cubic-bezier(.16,.78,.23,1) both}
 .forest-active .forest-world-stage.forest-attack.forest-combo-boost{box-shadow:inset 0 0 34px #fbd97c83,0 0 17px #e7bd6288}
-.forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage) .forest-enemy{animation:forest-mob-knockout 1.18s cubic-bezier(.22,.8,.2,1) both!important}
+/* In turn-based battles a hit is not necessarily a KO.  Keep enemies with HP
+   remaining visible; only run the knockout when the encounter is cleared. */
+.forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage):is(.forest-boss-defeated,:not([data-tactics="true"])) .forest-enemy{animation:forest-mob-knockout 1.18s cubic-bezier(.22,.8,.2,1) both!important}
 .forest-active .forest-world-stage.forest-attack .forest-world-vignette{animation:forest-flash-pulse .75s ease-out both}
 .forest-active .forest-world-stage.forest-attack .forest-damage{font-size:clamp(28px,6vw,45px);text-shadow:0 4px 0 #742d20,0 0 24px #ffe49a,0 0 9px #ffffff}
 .forest-active .forest-world-stage.forest-attack .forest-damage::after{content:" DAMAGE";display:block;font-size:.29em;letter-spacing:.18em;text-align:center;color:#fff8da}
@@ -477,11 +479,11 @@
 }
 @media(prefers-reduced-motion:reduce){
  .forest-active .forest-world-stage.forest-attack .forest-combo,
- .forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage) .forest-enemy,
+ .forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage):is(.forest-boss-defeated,:not([data-tactics="true"])) .forest-enemy,
  .forest-active .forest-world-stage.forest-attack .forest-world-vignette,
  .forest-active .grading-correct{animation:none!important}
  .forest-active .forest-world-stage.forest-attack .forest-combo:not(:empty){opacity:1}
- .forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage) .forest-enemy{opacity:0}
+ .forest-active .forest-world-stage.forest-attack:not(.forest-boss-stage):is(.forest-boss-defeated,:not([data-tactics="true"])) .forest-enemy{opacity:0}
 }
 @media(max-width:370px){
  .forest-quiz{padding:10px}

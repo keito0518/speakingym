@@ -396,6 +396,7 @@ function renderForestHud() {
     world.dataset.renderedRoute=arenaKey;
   }
   world.dataset.stage='arena';
+  world.dataset.tactics=String(Boolean(play.tactics));
   world.dataset.attack=companion.id;
   world.dataset.evolved=String(evolved);
   $('#forest-guard').innerHTML=guardArt();
