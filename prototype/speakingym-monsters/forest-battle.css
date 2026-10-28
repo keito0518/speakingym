@@ -1,9 +1,13 @@
 
 /* Battle layer: foes, boss stamina and visibly animated player attacks. */
 .forest-endless-button{background:#17382ed9;border:1px solid #f4d893a6;border-radius:12px;color:#f8e5ae;font-weight:900;font-size:12px;min-height:46px;padding:11px 14px;transition:transform .15s,border-color .15s}
+.forest-tactics-start{background:linear-gradient(135deg,#4463a2,#344481);border:1px solid #bdccf1;border-radius:12px;color:#fff9e9;font-weight:900;font-size:12px;min-height:46px;padding:11px 14px;flex:1 1 165px;cursor:pointer;line-break:strict;overflow-wrap:break-word}
+.forest-tactics-start:hover{background:#4b60a5}
 .forest-endless-button:hover{background:#345e47;border-color:#ffedb4;transform:translateY(-2px)}
 .forest-battle-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;margin:11px 2px 8px;color:#f7ebc5;font-size:12px;font-weight:800;min-height:30px}
 .forest-foe-name{font-size:13px;font-family:Georgia,'Hiragino Mincho ProN',serif;color:#ffe4a0;overflow-wrap:anywhere}
+.forest-party-hp{position:relative;isolation:isolate;overflow:hidden;margin:4px 3px 7px;padding:5px 10px;width:max-content;max-width:100%;border-radius:8px;border:1px solid #7bc49c;background:#173c2d;color:#f2ffda;font-size:12px;font-weight:900}
+.forest-party-hp::before{content:"";position:absolute;inset:0 auto 0 0;z-index:-1;width:var(--party-health,100%);background:#2d8a64;transition:width .25s ease}
 .forest-tries{font-size:10px;color:#d6ead3;border:1px solid #64846b;padding:6px 10px;background:#102d27;border-radius:9px;flex-shrink:0}
 .forest-boss-hp{color:#ffca73;font-size:17px;letter-spacing:3px;font-weight:900;text-shadow:0 2px 3px #172922}
 .forest-active .forest-gates{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:9px 0 12px}
@@ -72,6 +76,23 @@
 .forest-active .forest-command-window{background:#f8f1d9;border-top:3px solid #dfc57a;padding:0 12px 14px}
 .forest-active .play-progress{margin:0 -12px 0;border-radius:0;max-width:none;height:4px}
 .forest-active .forest-battle-log{margin:10px 2px 8px;padding:8px 11px;min-height:36px;color:#f9e6ad;background:#224637;border:1px solid #698466;border-radius:9px;font-size:12px;font-weight:800;line-height:1.5;line-break:strict;overflow-wrap:break-word}
+.forest-tactics{margin:6px 2px 10px;padding:10px;border:1px solid #b5c99c;border-radius:12px;background:#ecf4df;color:#284e39}
+.forest-tactics[hidden]{display:none!important}
+.forest-tactic-heading{display:flex;align-items:baseline;justify-content:space-between;gap:7px;flex-wrap:wrap;font-size:13px;line-height:1.5}
+.forest-tactic-heading strong{font-size:14px;color:#174834}
+.forest-tactic-heading span,.forest-tactic-matchup,.forest-tactic-note{font-size:11px;line-height:1.6;overflow-wrap:break-word;line-break:strict}
+.forest-tactic-matchup{margin:3px 0 7px;font-weight:800}
+.forest-tactic-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.forest-tactic-actions button,.forest-tactic-kinds button,.forest-tactic-party button{min-width:0;min-height:44px;padding:7px 5px;border:1px solid #aac1a0;border-radius:8px;background:#fffdf2;color:#2c4b38;font-weight:800;cursor:pointer;line-height:1.45;overflow-wrap:break-word;line-break:strict}
+.forest-tactic-actions button strong{display:block;font-size:12px}
+.forest-tactic-actions button small{display:block;margin-top:3px;font-size:10px;font-weight:600}
+.forest-tactic-actions button[aria-pressed="true"],.forest-tactic-kinds button[aria-pressed="true"],.forest-tactic-party button[aria-pressed="true"]{background:#226c50;border-color:#174b3b;color:#fff9d4;box-shadow:inset 0 0 0 1px #f6e2a1}
+.forest-tactic-actions button:disabled,.forest-tactic-kinds button:disabled{opacity:.55;cursor:not-allowed}
+.forest-tactic-kinds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
+.forest-tactic-kinds button{font-size:11px;min-height:42px}
+.forest-tactic-note{display:block;margin-top:4px}
+.forest-tactic-party{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.forest-tactic-party button{flex:1 1 110px;font-size:11px;min-height:40px}
 .forest-active .play-card{max-width:none;min-height:0;margin:0;padding:10px 12px;border:1px solid #d6c592;border-radius:11px;background:#fffaf0;box-shadow:none}
 .forest-active .play-card h1{font-size:clamp(18px,4.7vw,26px);line-height:1.45;margin:8px 0}
 .forest-active .play-card .scenario-label{margin:8px 0 0}
@@ -121,6 +142,10 @@
 }
 @media(max-width:370px){
  .forest-active .forest-command-window{padding:0 9px 12px}
+ .forest-tactics{padding:7px}
+ .forest-tactic-actions button strong{font-size:11px}
+ .forest-tactic-actions button small{font-size:9px}
+ .forest-tactic-kinds button{font-size:10px;padding:5px 2px}
  .forest-active .play-progress{margin:0 -9px}
  .forest-active .forest-battle-log{font-size:11px}
  .forest-active .forest-world-stage{height:154px}

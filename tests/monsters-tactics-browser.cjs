@@ -1,0 +1,77 @@
+const {chromium,webkit}=require('playwright');
+const assert=require('node:assert/strict');
+
+(async()=>{
+ const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
+ const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+ const url=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
+ const answer=async page=>{
+   const expected=await page.evaluate(async()=>{
+     const {ALL_PROMPTS}=await import('./monster-data.js');
+     return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+   });
+   if(await page.locator('#play-audio').count()){
+     await page.locator('#play-audio').click();
+     const correct=await page.evaluate(async()=>{
+       const {ALL_PROMPTS}=await import('./monster-data.js');
+       const {listeningChallengeFor}=await import('./listening-challenges.js');
+       const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+       return listeningChallengeFor(prompt).correctIndex;
+     });
+     await page.locator(`[data-listening-choice="${correct}"]`).click();
+   }else{
+     await page.locator('#spoken-answer').fill(expected);
+     await page.locator('#show-answer').click();
+   }
+   await page.locator('#next-question').waitFor({state:'visible'});
+ };
+ try{
+   for(const width of [320,375,390,430]){
+     const context=await browser.newContext({viewport:{width,height:844},isMobile:engine==='webkit',hasTouch:true,reducedMotion:'reduce'});
+     const page=await context.newPage();
+     const errors=[];page.on('pageerror',error=>errors.push(error.message));
+     await page.addInitScript(()=>{Math.random=()=>.99;});
+     await page.goto(url,{waitUntil:'networkidle'});
+     await page.locator('[data-home-page="forest"]').click();
+     await page.locator('#start-forest-tactics').click();
+     await page.locator('#forest-explore-continue').click();
+     assert.equal(await page.locator('#forest-party-hp').isVisible(),true);
+     assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12');
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
+     assert.equal(await page.locator('[data-tactic-action]').count(),3);
+     assert.equal(await page.locator('[data-tactic-kind]').count(),4);
+     assert.match(await page.locator('#forest-tactics').innerText(),/リスニング.*文法/s);
+     await answer(page);
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
+     await page.locator('#next-question').click();
+     assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
+     assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id')!==null,true);
+     if(width===390){
+       // A definitely wrong grammar answer really costs HP, only once per attack.
+       await page.locator('#spoken-answer').fill('wrong answer');
+       await page.locator('#show-answer').click();
+       const afterMiss=Number(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+       assert.ok(afterMiss<12,`Enemy must deal damage on objective miss (${afterMiss})`);
+       await answer(page);
+       assert.equal(Number(await page.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterMiss,'Correction does not erase first hit or double-charge');
+     }else{
+       await answer(page);
+       assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12','Independent defense blocks enemy damage');
+     }
+     await page.locator('#next-question').click();
+     assert.match(await page.locator('#forest-tactics').innerText(),/味方のターン/);
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1');
+     const browserLayout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+     assert.ok(browserLayout.scroll<=browserLayout.width+1,`${engine}/${width}: horizontal overflow ${JSON.stringify(browserLayout)}`);
+     await page.locator('[data-tactic-kind="listen"]').click();
+     assert.equal(await page.locator('[data-tactic-kind="listen"]').getAttribute('aria-pressed'),'true');
+     await answer(page);
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
+     await page.locator('#next-question').click();
+     assert.equal(await page.locator('#forest-explore-options').isVisible(),true,'First encounter unlocks route after actual victory');
+     assert.deepEqual(errors,[]);
+     await context.close();
+   }
+   console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

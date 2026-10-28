@@ -19,11 +19,12 @@ jobs:
       - name: Parse-check browser entry and learning modules
         run: |
           node --check prototype/speakingym-monsters/monsters.js
+          node --check prototype/speakingym-monsters/battle-tactics.js
           node --check prototype/speakingym-monsters/forest-quizzes.js
           node --check prototype/speakingym-monsters/forest-quizzes-extra.js
           node --check prototype/speakingym-monsters/listening-challenges.js
       - name: Curriculum, mastery and reward tests
-        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs
+        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs
       - name: Install Playwright
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - uses: actions/cache@v4
@@ -37,6 +38,11 @@ jobs:
       - name: WebKit animated battle interaction
         timeout-minutes: 2
         run: timeout 90s node tests/monsters-webkit-interaction.cjs
+      - name: Turn-based tactics browser QA (Chromium + WebKit)
+        timeout-minutes: 4
+        run: |
+          timeout 105s node tests/monsters-tactics-browser.cjs
+          timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
       - name: Chromium mobile and learning QA
         timeout-minutes: 8
         run: |
