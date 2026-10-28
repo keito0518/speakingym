@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,foeAffinity,allyAffinity,strikeFor,nextEnemyKind,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,advanceUltimate,strikeFor,nextEnemyKind,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
 test('all four English skills have names and every companion has a useful strength and weakness',()=>{
@@ -8,9 +8,11 @@ test('all four English skills have names and every companion has a useful streng
  for(const kind of BATTLE_KINDS)assert.ok(BATTLE_LABELS[kind]);
  for(const monster of MONSTERS){
   const ally=allyAffinity(monster.id);
+  const skill=allySkill(monster.id);
   assert.ok(BATTLE_KINDS.includes(ally.strong));
   assert.ok(BATTLE_KINDS.includes(ally.weak));
   assert.notEqual(ally.strong,ally.weak);
+  assert.ok(skill.name&&skill.description&&['burst','charge','pierce','ward'].includes(skill.type),`${monster.id} needs a unique combat ability`);
  }
 });
 test('matchups change actual damage while never changing a grading verdict',()=>{
@@ -22,7 +24,9 @@ test('matchups change actual damage while never changing a grading verdict',()=>
  assert.equal(advantage.weak,true);
  assert.equal(resistance.resist,true);
  assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',boss:true}).damage,1,'boss phases cannot be skipped');
- assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',action:'skill'}).damage,3);
+ assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',action:'skill'}).damage,5);
+ assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',repeated:true}).damage,2,'repeating one skill is weaker but never turns a correct answer into a failure');
+ assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',boss:true,repeated:true}).damage,1,'fixed boss confirmations ignore repeat penalties');
  assert.throws(()=>strikeFor({kind:'read'}),/Invalid/);
 });
 test('foe attack cycles through four randomized skills without immediate repetition',()=>{
@@ -68,4 +72,29 @@ test('evolution improves combat only in a companion strength, never changes lear
  assert.equal(incomingHit({...defense,evolved:true}).damage,0);
  assert.equal(incomingHit({...defense,kind:'listen',evolved:true}).damage,3,'evolution does not erase weakness');
  assert.equal(incomingHit({...defense,evolved:true,result:'review'}).uncertain,true);
+});
+test('ultimate gauge rewards independent correct answers and cannot be farmed by hints or retries',()=>{
+ assert.equal(ULTIMATE_MAX,3);
+ assert.equal(advanceUltimate(0,{independent:true}),1);
+ assert.equal(advanceUltimate(1,{independent:true,bonus:true}),3);
+ assert.equal(advanceUltimate(2,{independent:false,bonus:true}),2);
+ assert.equal(advanceUltimate(3,{independent:true}),3);
+ assert.equal(advanceUltimate(3,{spend:true,independent:true}),1,'a successful ultimate spends its stored charge before earning the next point');
+ assert.equal(advanceUltimate(3,{spend:true,independent:false}),0,'hinted ultimates spend charge but grant no charge');
+});
+test('companion specialties have observable effects without bypassing English grades or bosses',()=>{
+ assert.equal(allySkill('medamago').type,'burst');
+ assert.equal(allySkill('katappo').type,'charge');
+ assert.equal(allySkill('purupun').type,'pierce');
+ assert.equal(allySkill('koge').type,'ward');
+ const burst=strikeFor({kind:'speak',foeId:'mossling',allyId:'medamago',action:'skill'});
+ assert.equal(burst.damage,5);
+ assert.equal(burst.burst,true);
+ assert.equal(strikeFor({kind:'speak',foeId:'mossling',allyId:'medamago',action:'skill',boss:true}).damage,1,'ultimate must not skip a boss confirmation');
+ const pierced=strikeFor({kind:'vocab',foeId:'bramblet',allyId:'purupun'});
+ assert.equal(pierced.pierce,true);
+ assert.equal(pierced.resist,false);
+ assert.equal(pierced.damage,2);
+ assert.equal(incomingHit({kind:'grammar',allyId:'koge',result:'incorrect'}).damage,0,'ward reduces damage, but answer stays incorrect');
+ assert.equal(incomingHit({kind:'grammar',allyId:'koge',result:'review'}).uncertain,true);
 });
