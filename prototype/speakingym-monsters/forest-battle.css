@@ -82,6 +82,11 @@
 .forest-tactic-heading strong{font-size:14px;color:#174834}
 .forest-tactic-heading span,.forest-tactic-matchup,.forest-tactic-note{font-size:11px;line-height:1.6;overflow-wrap:break-word;line-break:strict}
 .forest-tactic-matchup{margin:3px 0 7px;font-weight:800}
+.forest-tactic-forecast{display:flex;flex-wrap:wrap;gap:3px 9px;align-items:baseline;margin:6px 0 9px;padding:7px 9px;border:1px solid #b5c2e2;border-radius:8px;background:#e9eefa;color:#24395c;font-size:11px;line-height:1.6}
+.forest-tactic-forecast strong{font-size:12px;color:#223c70}
+.forest-tactic-forecast span{color:#354b65}
+.forest-tactic-evolution{margin:5px 0 8px;padding:7px 9px;border:1px solid #d7bf79;border-radius:8px;background:#fff5d9;color:#584522;font-size:11px;line-height:1.6;font-weight:800}
+.forest-tactic-party-label{margin-top:9px;color:#305746;font-size:11px;line-height:1.5;font-weight:900}
 .forest-tactic-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .forest-tactic-actions button,.forest-tactic-kinds button,.forest-tactic-party button{min-width:0;min-height:44px;padding:7px 5px;border:1px solid #aac1a0;border-radius:8px;background:#fffdf2;color:#2c4b38;font-weight:800;cursor:pointer;line-height:1.45;overflow-wrap:break-word;line-break:strict}
 .forest-tactic-actions button strong{display:block;font-size:12px}
@@ -93,6 +98,8 @@
 .forest-tactic-note{display:block;margin-top:4px}
 .forest-tactic-party{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .forest-tactic-party button{flex:1 1 110px;font-size:11px;min-height:40px}
+.forest-tactic-party button strong,.forest-tactic-party button small{display:block;line-height:1.45}
+.forest-tactic-party button small{font-size:10px;margin-top:3px}
 .forest-active .play-card{max-width:none;min-height:0;margin:0;padding:10px 12px;border:1px solid #d6c592;border-radius:11px;background:#fffaf0;box-shadow:none}
 .forest-active .play-card h1{font-size:clamp(18px,4.7vw,26px);line-height:1.45;margin:8px 0}
 .forest-active .play-card .scenario-label{margin:8px 0 0}

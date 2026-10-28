@@ -56,3 +56,16 @@ test('verified answers block attacks, hinted answers reduce damage, uncertainty 
  assert.equal(incomingHit({kind:'listen',allyId:'medamago',result:'incorrect'}).damage,3);
  assert.equal(incomingHit({kind:'listen',allyId:'medamago',result:'correct',hinted:true}).damage,2);
 });
+test('evolution improves combat only in a companion strength, never changes learning verdict',()=>{
+ const strike={kind:'speak',foeId:'mossling',allyId:'medamago',action:'attack'};
+ assert.equal(strikeFor(strike).damage,2);
+ assert.equal(strikeFor({...strike,evolved:true}).damage,3);
+ assert.equal(strikeFor({...strike,evolved:true}).evolutionBoost,true);
+ assert.equal(strikeFor({...strike,kind:'listen',evolved:true}).evolutionBoost,false);
+ assert.equal(strikeFor({...strike,evolved:true,boss:true}).damage,1,'evolution does not skip boss questions');
+ const defense={kind:'speak',allyId:'medamago',result:'incorrect'};
+ assert.equal(incomingHit(defense).damage,1);
+ assert.equal(incomingHit({...defense,evolved:true}).damage,0);
+ assert.equal(incomingHit({...defense,kind:'listen',evolved:true}).damage,3,'evolution does not erase weakness');
+ assert.equal(incomingHit({...defense,evolved:true,result:'review'}).uncertain,true);
+});
