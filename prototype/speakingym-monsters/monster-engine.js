@@ -433,8 +433,22 @@ export function compareWithExamples(prompt, answer) {
   const normalized = normalizeEnglish(answer);
   if (!normalized) return { matchesExample: false, empty: true };
   const canonical = canonicalVettedReply(answer);
-  return { matchesExample: [prompt.answer, ...(prompt.alternatives || []), ...(!prompt.difficulty ? VETTED_PARAPHRASES[prompt.id]||[] : []), ...(VETTED_LEVEL_PARAPHRASES[prompt.id]||[])]
-    .some(example => canonicalVettedReply(example) === canonical), empty: false };
+  const examples=[prompt.answer, ...(prompt.alternatives || []), ...(!prompt.difficulty ? VETTED_PARAPHRASES[prompt.id]||[] : []), ...(VETTED_LEVEL_PARAPHRASES[prompt.id]||[])];
+  if(examples.some(example=>canonicalVettedReply(example)===canonical))
+    return {matchesExample:true,matchKind:'vetted',empty:false};
+  // Accept only omitted articles in an otherwise IDENTICAL vetted sentence.
+  // Do not use edit distance, keyword overlap, or deletion of numbers/negation;
+  // those can reverse the intent of a spoken English answer.
+  const withoutArticles=text=>text.split(' ').filter(word=>!['a','an','the'].includes(word)).join(' ');
+  const omission=examples.find(example=>{
+    const model=canonicalVettedReply(example);
+    const diff=model.split(' ').length-canonical.split(' ').length;
+    return diff>0&&diff<=2&&withoutArticles(model)===withoutArticles(canonical)&&
+      model.split(' ').filter(word=>['a','an','the'].includes(word)).length>
+      canonical.split(' ').filter(word=>['a','an','the'].includes(word)).length;
+  });
+  if(omission)return {matchesExample:true,matchKind:'missing-articles',preferredAnswer:omission,empty:false};
+  return {matchesExample:false,empty:false};
 }
 
 export function recordAnswer(save, promptId, rating, today = dayKey()) {

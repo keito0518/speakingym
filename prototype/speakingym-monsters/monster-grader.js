@@ -150,8 +150,10 @@ export function gradeLocalResponse(prompt, raw) {
  if (!text || text.length<5 || text.split(' ').length<2) return {status:'empty',reasons:['英語で回答を入力するか、マイクで話してください。'],confidence:'none'};
  if(text.length>550) return {status:'ungraded',reasons:['回答は550文字以内にしてください。'],confidence:'none'};
  // Author-vetted example answers are the narrowest high-confidence path.
- const exact=compareWithExamples(prompt,raw).matchesExample;
- if(exact) return {status:'correct',reasons:[],confidence:'high',method:'registered-example'};
+ const compared=compareWithExamples(prompt,raw);
+ if(compared.matchesExample) return {status:'correct',reasons:[],confidence:compared.matchKind==='missing-articles'?'medium':'high',
+   method:compared.matchKind==='missing-articles'?'article-tolerant':'registered-example',
+   ...(compared.matchKind==='missing-articles'?{coaching:'意味は伝わっているよ！ 冠詞（a / an / the）を入れると、もっと自然に聞こえるよ。',preferredAnswer:compared.preferredAnswer}:{})};
  const difficulty=prompt.difficulty||'easy';
  const base=prompt.baseId || prompt.id;
  // Arrival estimates are checked as meaning-bearing quantities, not merely

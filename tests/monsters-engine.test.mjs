@@ -19,13 +19,14 @@ import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/s
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
-import { speakingHintSteps } from '../prototype/speakingym-monsters/speaking-guidance.js';
+import { speakingHintSteps, beginnerClozeFor } from '../prototype/speakingym-monsters/speaking-guidance.js';
+import { monsterArt } from '../prototype/speakingym-monsters/monster-art.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
 import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
 
-test('beginner speaking uses short communicative goals, two useful hints, and safe natural variants',()=>{
+test('beginner speaking uses short communicative goals, fill-in hints, and safe natural variants',()=>{
  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
  const easyBoss=byId('boss-delay-apology-easy');
  assert.ok(easyBoss.answer.split(/\s+/).length<=6,'First boss should not demand a three-part speech in easy mode');
@@ -36,8 +37,7 @@ test('beginner speaking uses short communicative goals, two useful hints, and sa
  assert.notEqual(gradeLocalResponse(easyBoss,'Sorry.').status,'correct','An apology alone is not a delay message');
  const normalBoss=byId('boss-delay-apology-normal');
  assert.notEqual(gradeLocalResponse(normalBoss,'Sorry, my bus is late.').status,'correct','Normal still requires a practical next step');
- assert.match(speakingHintSteps(byId('apology-noise'),PHRASES.find(p=>p.id==='apology'))[0].detail,/今は理由や次の行動まで説明しなくて大丈夫/);
- assert.match(speakingHintSteps(easyBoss,PHRASES.find(p=>p.id==='late'))[0].detail,/2つを伝えればOK/);
+ assert.match(speakingHintSteps(byId('apology-noise'),PHRASES.find(p=>p.id==='apology'))[0].detail,/空欄/);
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at eleven?').status,'correct');
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Just to make sure, checkout is at eleven, right?').status,'correct');
  for(const [id,old] of [
@@ -52,9 +52,38 @@ test('beginner speaking uses short communicative goals, two useful hints, and sa
  for(const prompt of ALL_PROMPTS.filter(p=>p.kind==='speak'&&(!p.difficulty||p.difficulty==='easy'))){
   const phrase=PHRASES.find(p=>p.id===prompt.phraseId);
   const steps=speakingHintSteps(prompt,phrase);
-  assert.equal(steps.length,2);
-  assert.ok(steps[0].detail.length>4&&steps[1].detail.length>3,`${prompt.id} has two helpful hints`);
+  assert.equal(steps.length,1);
+  assert.ok(steps[0].detail.length>4&&steps[0].cloze?.template.includes('____'),`${prompt.id} has a one-word blank`);
+  assert.ok(steps[0].cloze?.word,`${prompt.id} cloze has an answer key`);
   assert.notEqual(steps[0].detail, prompt.answer,`${prompt.id}: first hint should never give the exact answer`);
+  assert.notEqual(steps[0].cloze.template,prompt.answer,`${prompt.id}: blank must not expose the full answer`);
+ }
+ assert.equal(beginnerClozeFor(byId('prefer-window-easy')).template,"I'd prefer a ____ seat.");
+ assert.equal(beginnerClozeFor(byId('prefer-window-easy')).word,'window');
+ assert.equal(beginnerClozeFor(byId('prefer-window-normal')),null);
+ assert.equal(speakingHintSteps(byId('prefer-window-normal'),PHRASES.find(p=>p.id==='prefer')).length,2);
+});
+
+test('article omissions that preserve the entire intended answer pass with explicit language coaching',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.id==='prefer-window-easy');
+ const result=gradeLocalResponse(prompt,"I'd prefer window seat");
+ assert.equal(result.status,'correct');
+ assert.equal(result.method,'article-tolerant');
+ assert.match(result.coaching,/冠詞/);
+ assert.equal(result.preferredAnswer,"I'd prefer a window seat.");
+ assert.notEqual(gradeLocalResponse(prompt,"I'd prefer no window seat").status,'correct');
+ assert.notEqual(gradeLocalResponse(prompt,"I'd prefer an aisle seat").status,'correct');
+ assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-easy'),"I'll be ten minutes late").status,'correct');
+});
+
+test('all evolved creatures have distinct physical forms, beyond a glow or name change',()=>{
+ for(const monster of MONSTERS){
+  const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
+  assert.notEqual(young,grown,monster.id);
+  assert.doesNotMatch(young,/monster-evolution-morph/);
+  assert.match(grown,/monster-evolution-morph monster-evolution-back/);
+  assert.match(grown,/monster-evolution-morph monster-evolution-front/);
+  assert.ok(grown.length-young.length>180,`${monster.id} evolution needs visually significant features`);
  }
 });
 

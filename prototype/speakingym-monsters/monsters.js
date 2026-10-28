@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -14,7 +14,7 @@ import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
-import { speakingHintSteps } from './speaking-guidance.js';
+import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { forestEventFor, forestEventChoice } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
@@ -619,7 +619,13 @@ function renderQuestion() {
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
   const beginnerTip=!englishMode&&!quizMode?`<p class="beginner-speak-tip">やさしいモード：長い英文は必要ないよ。${prompt.bossOnly?'短い2つの内容を伝えよう。':'まずは短い1文で伝えよう。'}</p>`:'';
-  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}${beginnerTip}<div class="answer-quick-help"><div><strong>困ったらヒントを使おう</strong><small>考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">ヒントを見る</button></div><div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div><label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div id="speech-alternatives" class="speech-alternatives" hidden><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
+  const guidedCloze=beginnerClozeFor(prompt);
+  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}${beginnerTip}
+    <label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label>
+    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
+    <div class="answer-quick-help"><div><strong>${guidedCloze?'空欄だけの練習から始められるよ':'困ったらヒントを使おう'}</strong><small>${guidedCloze?'1単語だけ言ったら確認。そのあとで全文に挑戦しよう。':'考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。'}</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">${guidedCloze?'穴埋めヒントを見る':'ヒントを見る'}</button></div>
+    <div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div>
+    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div id="speech-alternatives" class="speech-alternatives" hidden><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -874,8 +880,8 @@ function startRecognition() {
 function renderHintPanel(steps,step){
   const panel=$('#hint-panel'),button=$('#show-hint');
   panel.hidden=false;
-  panel.innerHTML=steps.slice(0,step).map(item=>`<p class="speaking-hint-step"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.detail)}</span></p>`).join('')+
-    '<small>ヒントを見て正解した場合は「ヒントあり」の記録になるよ。</small>';
+  panel.innerHTML=steps.slice(0,step).map(item=>`<div class="speaking-hint-step"><strong>${escapeHtml(item.label)}</strong>${item.cloze?`<p class="speaking-cloze" lang="en">${escapeHtml(item.cloze.template)}</p>`:''}<span>${escapeHtml(item.detail)}</span></div>`).join('')+
+    `<small>${steps[0]?.cloze?'空欄だけの練習ではXPは発生しないよ。全文を言えて初めて「ヒントあり正解」になるよ。':'ヒントを見て正解した場合は「ヒントあり」の記録になるよ。'}</small><p id="cloze-practice-status" class="cloze-practice-status" role="status" aria-live="polite"></p>`;
   button.setAttribute('aria-expanded','true');
   button.textContent=step<steps.length?'もう少しヒントを見る':'ヒントを表示中';
   button.disabled=step===steps.length;
@@ -898,6 +904,16 @@ async function gradeAnswer() {
   const session=play,prompt=currentPrompt();
   const listeningComplete=prompt.kind==='listen'&&play.listeningState?.understood===true;
   const raw=listeningComplete?'':$('#spoken-answer').value.trim();
+  // One-word cloze practice is a non-scored stepping stone. It cannot mint
+  // XP or clear a boss, even when the blank is perfectly completed.
+  const cloze=play.hintStep?beginnerClozeFor(prompt):null;
+  if(cloze&&raw&&!/\s/.test(raw)){
+    const matched=normalizeEnglish(raw)===normalizeEnglish(cloze.word);
+    const helper=$('#cloze-practice-status');
+    if(helper)helper.textContent=matched?'空欄は正解！ よくできたね。次は英文全体を声に出してみよう。':'空欄の単語をもう一度考えてみよう。全文の判定にはまだ進んでいないよ。';
+    if(matched){$('#spoken-answer').value='';$('#spoken-answer').focus();}
+    return;
+  }
   let grade=listeningComplete?{status:'correct',reasons:[],method:'listening-check'}:gradeLocalResponse(prompt,raw);
   if(grade.status==='review' && grade.method!=='context-safety' && !['vocab','grammar'].includes(prompt.kind) && STAGING_SEMANTIC_GRADER_ENDPOINT){
     session.grading=true;
@@ -1043,8 +1059,9 @@ async function gradeAnswer() {
     ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">聞き取れたポイント</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
     :objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
   const checkingNote=prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
+  const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${expressionCoaching}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }

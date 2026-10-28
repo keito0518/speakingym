@@ -1,5 +1,5 @@
-// Two small hints for authored tasks. Neither step reveals the model answer;
-// requesting either marks the response as assisted in the existing XP/recall flow.
+// Beginner speech uses a single-word scaffold, followed by optional full-sentence
+// practice. More advanced tasks retain two non-answer explanatory hints.
 // Phrase-level teaching tips often encourage advanced elaboration ("give a
 // reason", "suggest another action"). Easy mode must teach its *own* simple
 // communicative goal instead of accidentally demanding normal/hard details.
@@ -21,8 +21,30 @@ const EASY_THINKING=Object.freeze({
  change:'どんな変更をしたいか、短く伝えよう。',
  problem:'何が困っているかを一つだけ伝えてみよう。'
 });
+const CLOZE_TARGETS=Object.freeze({
+ 'prefer-window-easy':'window',
+ 'boss-delay-apology-easy':'late',
+ 'clarify-hotel':'eleven',
+ 'late-traffic-easy':'five',
+ 'repeat-announcement-easy':'again',
+ 'agree-location-easy':'station',
+ 'clarify-charge-easy':'thirty'
+});
+const SKIP_WORDS=new Set(['a','an','the','i','i\'m','i\'d','my','you','we','our','to','for','of','at','in','on','by','is','are','am','be','was','were','have','has','had','can','could','would','will','do','does','did','please','this','that','it','and','or','but','with','not']);
+export function beginnerClozeFor(prompt){
+ if(!prompt||prompt.kind!=='speak'||(prompt.difficulty&&prompt.difficulty!=='easy')||typeof prompt.answer!=='string')return null;
+ const tokens=[...prompt.answer.matchAll(/[a-z]+(?:'[a-z]+)?|[0-9]+/gi)];
+ const expected=CLOZE_TARGETS[prompt.id];
+ const target=(expected&&tokens.find(token=>token[0].toLowerCase()===expected))||
+   [...tokens].reverse().find(token=>token[0].length>2&&!SKIP_WORDS.has(token[0].toLowerCase()));
+ if(!target)return null;
+ const template=prompt.answer.slice(0,target.index)+'____'+prompt.answer.slice(target.index+target[0].length);
+ return Object.freeze({template,word:target[0].toLowerCase()});
+}
 export function speakingHintSteps(prompt,phrase){
  const easy=(!prompt?.difficulty||prompt.difficulty==='easy')&&prompt.kind==='speak';
+ const cloze=easy?beginnerClozeFor(prompt):null;
+ if(cloze)return Object.freeze([Object.freeze({label:'穴埋めヒント · ここだけ言ってみよう',detail:'空欄に入る英単語を1つ声に出そう。できたら全文も言ってみよう。',cloze})]);
  const thinking=((easy&&!prompt.bossOnly&&EASY_THINKING[prompt.phraseId])||prompt?.tip||phrase?.tip||'場面に必要な情報を一つずつ整理しよう。').trim();
  const opening=(prompt?.hint||phrase?.hint||'短い英語の一文から始めてみよう。').trim();
  return Object.freeze([

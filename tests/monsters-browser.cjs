@@ -1005,14 +1005,22 @@ const path=require('node:path');
       if(i===0){
         assert.equal(await page.locator('#hint-panel').isHidden(),true);
         const positions=await page.evaluate(()=>({hint:document.querySelector('#show-hint').getBoundingClientRect().top,answer:document.querySelector('#spoken-answer').getBoundingClientRect().top}));
-        assert.ok(positions.hint<positions.answer,'A beginner must see the hint button before the answer input');
+        assert.ok(positions.hint>positions.answer,'A beginner sees the cloze hint below their own answer');
         await page.locator('#show-hint').click();
-        assert.match(await page.locator('#hint-panel').innerText(),/ヒント 1 · 考え方/);
-        assert.doesNotMatch(await page.locator('#hint-panel').innerText(),/ヒント 2 · 英語の書き出し/);
+        assert.match(await page.locator('#hint-panel').innerText(),/穴埋めヒント/);
+        assert.match(await page.locator('#hint-panel').innerText(),/____/);
         assert.equal(await page.locator('#show-hint').getAttribute('aria-expanded'),'true');
-        await page.locator('#show-hint').click();
-        assert.match(await page.locator('#hint-panel').innerText(),/ヒント 2 · 英語の書き出し/);
         assert.equal(await page.locator('#show-hint').isDisabled(),true);
+        const clozeWord=await page.evaluate(async()=>{
+          const {ALL_PROMPTS}=await import('./monster-data.js');
+          const {beginnerClozeFor}=await import('./speaking-guidance.js');
+          return beginnerClozeFor(ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)).word;
+        });
+        await page.locator('#spoken-answer').fill(clozeWord);
+        await page.locator('#show-answer').click();
+        assert.match(await page.locator('#cloze-practice-status').innerText(),/空欄は正解/);
+        assert.equal(await page.locator('#spoken-answer').inputValue(),'','Word practice is not graded as a full reply');
+        assert.equal(await page.locator('#feedback-panel .grading-correct').count(),0);
         const mobile=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
         assert.ok(mobile.scroll<=mobile.inner+1,`390px guided speaking must not overflow: ${JSON.stringify(mobile)}`);
       }

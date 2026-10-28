@@ -515,10 +515,10 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
  .home-feature-content h2{overflow-wrap:normal;line-height:1.22}
 }
 
-/* Put the optional two-step speaking aid before input, where beginners can
-   find it without scrolling past the grading button. */
+/* The optional aid sits directly BELOW the learner's response. Easy tasks
+   show a short one-word cloze, while later levels retain explanation hints. */
 .beginner-speak-tip{margin:0 0 13px;padding:10px 13px;border-radius:11px;background:#e7f3ea;color:#305b47;font-size:13px;font-weight:750;line-height:1.6;word-break:keep-all}
-.answer-quick-help{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin-bottom:14px;border:1px solid #e0d2a7;border-radius:14px;background:#fffdf6}
+.answer-quick-help{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin:12px 0 14px;border:1px solid #e0d2a7;border-radius:14px;background:#fffdf6}
 .answer-quick-help>div{min-width:0;flex:1}
 .answer-quick-help strong{display:block;color:#53482a;font-size:13px;line-height:1.5}
 .answer-quick-help small{display:block;color:#736c55;font-size:11px;line-height:1.6;margin-top:3px}
@@ -531,6 +531,12 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .speaking-hint-panel .speaking-hint-step strong{color:#7d622e;font-size:12px}
 .speaking-hint-panel .speaking-hint-step span{color:#634e26}
 .speaking-hint-panel small{color:#8b764c;font-size:11px}
+.speaking-cloze{font-size:clamp(17px,3.6vw,23px);font-weight:850;letter-spacing:.015em;color:#334e45;margin:5px 0;padding:10px 12px;border-radius:10px;background:#fff;overflow-wrap:anywhere}
+.cloze-practice-status:not(:empty){padding:8px 10px;margin:9px 0 0;border-radius:9px;background:#e7f4e9;color:#2b664d;font-weight:750}
+.speaking-natural-coaching{margin:12px 0;border:1px solid #b7debe;border-radius:12px;padding:12px 14px;background:#f2faf3;color:#345b3b;font-size:13px;line-height:1.7}
+.speaking-natural-coaching strong{display:block;color:#26734c}
+.speaking-natural-coaching p{margin:5px 0}
+.speaking-natural-coaching span{font-weight:800;color:#284a34;overflow-wrap:anywhere}
 .answer-area .learning-controls{justify-content:flex-end}
 @media(max-width:430px){
  .answer-quick-help{flex-direction:column;align-items:stretch;padding:12px}
