@@ -325,6 +325,27 @@ const path=require('node:path');
     assert.equal(queued.xpWallet,0);
     assert.equal(queued.reviewPrompts['help-bag'],'2020-01-01');
     await reviewContext.close();
+    // A natural request with a different verb and a missing article must
+    // earn the same XP on mobile, while explicitly reassuring the learner.
+    {
+      const {context:variantContext,page:variantPage}=await boot(375);
+      await variantPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const seeded=createSave();
+        seeded.reviewPrompts['prefer-window-easy']='2020-01-01';
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+      });
+      await variantPage.reload();
+      await enterHomePanel(variantPage,'review');
+      await variantPage.locator('#start-review-practice').click();
+      assert.equal(await variantPage.locator('#play-card').getAttribute('data-prompt-id'),'prefer-window-easy');
+      await variantPage.locator('#spoken-answer').fill('May I have window seat, please?');
+      await variantPage.locator('#show-answer').click();
+      assert.match(await variantPage.locator('#feedback-panel').innerText(),/その言い方でもOK！/);
+      assert.match(await variantPage.locator('#feedback-panel').innerText(),/\+16 XP/);
+      assert.equal(await variantPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),16);
+      await variantContext.close();
+    }
     // A real due 3-day checkpoint must precede a DIFFERENT real-world use
     // of the same expression. No RPG animation, extra speech requirement or
     // false progression from merely opening the plan.

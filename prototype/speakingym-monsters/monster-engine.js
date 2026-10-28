@@ -297,7 +297,8 @@ function canonicalVettedReply(value) {
     // unchanged. These are surface forms, never approximate word overlap.
     .replace(/\bi have not\b/g, "i haven't")
     .replace(/\bi will\b/g, "i'll")
-    .replace(/\bi have\b/g, "i've")
+    // Never turn "May I have ...?" into "May I've ...?". In a request,
+    // "have" is a main verb, not an auxiliary contraction.
     .replace(/\bi cannot\b/g, "i can't")
     .replace(/\bwe will\b/g, "we'll")
     .replace(/\b(5|8|10|11|15|20|30|38)\b/g, number => ({
@@ -306,8 +307,11 @@ function canonicalVettedReply(value) {
     })[number])
     .replace(/\be ticket\b/g, 'eticket')
     .replace(/^(?:(?:excuse me|hello|hi) )+/, '')
+    .replace(/^(?:could|can|may) i please /, 'could i ')
+    .replace(/^(?:could|can|would) you please /, 'could you ')
     .replace(/(?: please| thank you| thanks)$/, '')
-    .replace(/^can (you|i) /, 'could $1 ');
+    .replace(/^(?:can|may) i /, 'could i ')
+    .replace(/^can you /, 'could you ');
 }
 // Human-reviewed, narrow equivalents for every easy-level situation.
 // These are deliberately complete sentences, not keyword-overlap / AI scores.
@@ -332,29 +336,29 @@ export const VETTED_PARAPHRASES=Object.freeze({
   'order-coffee':['May I have an iced coffee, please?','Can I get an iced coffee?'],
   'order-veg':['May I have the vegetable dish, please?','Can I order the vegetable dish?'],
   'order-breakfast':["I'd like a cup of tea."],
-  'order-extra':['Can I get a pizza with extra cheese?'],
+  'order-extra':['Can I get a pizza with extra cheese?',"I'd like a pizza with extra cheese, please.",'Could I have a pizza with extra cheese?','A pizza with more cheese, please.'],
   'direction-station':['Could you show me the way to the station?','Could you tell me how to get to the train station?'],
-  'direction-bus':['Could you tell me where the bus stop for the airport is?'],
+  'direction-bus':['Could you tell me where the bus stop for the airport is?','Where can I catch the bus to the airport?','Where is the bus stop for the airport?'],
   'direction-museum':['Is the museum within walking distance?'],
   'direction-transfer':['At which station should I change trains?'],
   'recommend-food':['Do you have a local dish you would suggest?', "What's your most popular dish?"],
   'recommend-visit':['Is there anywhere interesting to visit nearby?'],
   'recommend-gift':['Can you suggest a gift for my friend?'],
-  'recommend-drink':["Can you recommend a drink that isn't very sweet?"],
+  'recommend-drink':["Can you recommend a drink that isn't very sweet?","Do you have a drink that isn't too sweet?","Could you suggest something that's not too sweet?"],
   'booking-table':['Could I reserve a table for two?','Can I reserve a table for two people?'],
-  'booking-hotel':['Can I book a room for tonight?'],
+  'booking-hotel':['Can I book a room for tonight?','Could I book a room for one night?',"I'd like a room for one night, please."],
   'booking-tour':["Could I book a place on tomorrow's tour?"],
-  'booking-haircut':['Can I book a haircut for Saturday?'],
+  'booking-haircut':['Can I book a haircut for Saturday?',"I'd like to make a haircut appointment for Saturday.",'Do you have a haircut appointment available on Saturday?'],
   'apology-late':['Sorry I kept you waiting.'],
-  'apology-spill':['Sorry about spilling my drink.'],
+  'apology-spill':['Sorry about spilling my drink.',"I'm sorry I spilled my coffee.",'Sorry, I spilled my drink.'],
   'apology-email':['I apologize for taking so long to reply.','Sorry for getting back to you so late.'],
-  'apology-noise':['I apologize for making so much noise.'],
+  'apology-noise':['I apologize for making so much noise.','Sorry about the noise.',"I'm sorry I was so loud."],
   'decline-dinner':['Sorry, I will not be able to make dinner tonight.',"I can't come to dinner tonight, sorry."],
   'decline-overtime':["I can't work overtime today.","I cannot work overtime today.","I can't stay late today.","Sorry, I can't do overtime today."],
   'decline-purchase':["Thanks, but I'm not going to buy it today."],
-  'decline-invite':["I can't come after class. Sorry."],
+  'decline-invite':["I can't come after class. Sorry.",'Sorry, I cannot make it after class.',"I won't be able to join you after class."],
   'price-ticket':['What is the admission fee?','How much is the entrance fee?'],
-  'price-delivery':['How much will it cost to send this package?'],
+  'price-delivery':['How much will it cost to send this package?','How much is it to ship this package?',"What's the shipping fee for this parcel?"],
   'price-rental':['How much does the car rental cost per day?'],
   'price-service':["What's the price for cleaning a coat?"],
   'change-time':['Could we push the meeting back by an hour?'],
@@ -362,13 +366,31 @@ export const VETTED_PARAPHRASES=Object.freeze({
   'change-seat':['Can you move me to a window seat?'],
   'change-date':['Could you move my booking to next Monday?'],
   'problem-wifi':['I cannot get the Wi-Fi to work in my room.',"The internet in my room isn't working."],
-  'problem-food':['Excuse me, I think you brought me the wrong order.'],
+  'problem-food':['Excuse me, I think you brought me the wrong order.',"This isn't what I ordered.",'I think I got the wrong dish.'],
   'problem-bill':["The amount on my bill doesn't match my reservation."],
   'problem-train':['My train was canceled. Is there another option?']
 });
 // Higher-level prompts require their own details. Do not inherit easy
 // paraphrases: they would wrongly award XP for omitting the harder conditions.
 export const VETTED_LEVEL_PARAPHRASES=Object.freeze({
+  // Hand-reviewed alternatives for beginner dungeon tasks. They preserve
+  // the specific place, date, object or amount required by each scene.
+  'think-phone-easy':['Could I have a minute to decide?','Let me think about it for a moment.',"I'd like some time to think, please."],
+  'repeat-announcement-easy':['Could you repeat the announcement?','Can you say that one more time?','Sorry, could you repeat that?'],
+  'agree-location-easy':['The station works for me.',"Sure, let's meet at the train station.",'That sounds good. See you at the station.'],
+  'clarify-charge-easy':['Is it thirty dollars in total?','Does that come to thirty dollars?', 'Is the total 30 dollars?'],
+  'prefer-window-easy':["I'd like a window seat.",'Could I have a window seat?','Can I get a window seat?',"I'd rather sit by the window.",'Could I sit by the window?'],
+  'help-locker-easy':['Can you help me with this locker?','Could you open this locker for me?','Could you help me get this locker open?'],
+  'problem-ticket-easy':["I didn't get my e-ticket.","My e-ticket hasn't arrived.",'I never received my electronic ticket.'],
+  'city-market-speak-order-easy':['Could I have a cup of hot tea?',"I'd like a hot tea, please.",'Can I get a hot tea?'],
+  'city-market-speak-return-easy':['The item I bought is broken.','This item does not work.','The thing I purchased is damaged.'],
+  'city-market-speak-bill-easy':['What is this extra charge for?',"Why am I being charged extra?",'Could you tell me why there is an additional fee?'],
+  'city-terminal-speak-transfer-easy':['Which station do I change trains at?','Where should I change trains?','At what station do I need to transfer?'],
+  'city-terminal-speak-ticket-easy':["I'd like to change my ticket to tomorrow.",'Can I move my ticket to tomorrow?','Could you reschedule my ticket for tomorrow?'],
+  'city-terminal-speak-delay-easy':['My train is running late.','The train is delayed.','My train has been delayed.'],
+  'city-blizzard-speak-shelter-easy':['Is there somewhere safe I can wait?','Where is a safe place to wait?','Can you tell me where I can wait safely?'],
+  'city-blizzard-speak-alternative-easy':['Is there another route I can take?','Can I get there another way?','Are there any other ways to get there?'],
+  'city-blizzard-speak-reschedule-easy':['Can we meet tomorrow instead?',"Could we move our meeting to tomorrow?",'Would tomorrow work instead?'],
   'help-bag-normal':['Could you give me a hand carrying my suitcase upstairs?'],
   'order-coffee-normal':['Can I get an iced coffee, please?'],
   'direction-station-normal':['Could you tell me the way to the closest train station?'],
