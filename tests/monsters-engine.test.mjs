@@ -36,6 +36,8 @@ test('beginner speaking uses short communicative goals, two useful hints, and sa
  assert.notEqual(gradeLocalResponse(easyBoss,'Sorry.').status,'correct','An apology alone is not a delay message');
  const normalBoss=byId('boss-delay-apology-normal');
  assert.notEqual(gradeLocalResponse(normalBoss,'Sorry, my bus is late.').status,'correct','Normal still requires a practical next step');
+ assert.match(speakingHintSteps(byId('apology-noise'),PHRASES.find(p=>p.id==='apology'))[0].detail,/今は理由や次の行動まで説明しなくて大丈夫/);
+ assert.match(speakingHintSteps(easyBoss,PHRASES.find(p=>p.id==='late'))[0].detail,/2つを伝えればOK/);
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at eleven?').status,'correct');
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Just to make sure, checkout is at eleven, right?').status,'correct');
  for(const [id,old] of [
