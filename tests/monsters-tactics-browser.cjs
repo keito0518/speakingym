@@ -100,6 +100,43 @@ const assert=require('node:assert/strict');
      assert.deepEqual(errors,[]);
      await context.close();
    }
+   // A saved multi-ally collection must survive unchanged while a battle uses
+   // temporary, independent HP. One exchange is allowed in each encounter.
+   const partyContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const partyPage=await partyContext.newPage();
+   await partyPage.addInitScript(()=>{Math.random=()=>.99;});
+   await partyPage.goto(url,{waitUntil:'networkidle'});
+   await partyPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const seeded={...createSave(),ownedMonsters:['medamago','katappo','purupun'],selectedMonster:'medamago'};
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+   });
+   await partyPage.reload({waitUntil:'networkidle'});
+   await partyPage.locator('[data-home-page="forest"]').click();
+   await partyPage.locator('#start-forest-tactics').click();
+   await partyPage.locator('#forest-explore-continue').click();
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'8');
+   assert.equal(await partyPage.locator('[data-tactic-ally]').count(),3);
+   assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 8\/8/);
+   await partyPage.locator('[data-tactic-ally="katappo"]').click();
+   assert.equal(await partyPage.locator('[data-tactic-ally="katappo"]').getAttribute('aria-pressed'),'true');
+   assert.equal(await partyPage.locator('[data-tactic-ally="medamago"]').isEnabled(),false,'Cannot swap twice in one encounter');
+   await answer(partyPage);
+   await partyPage.locator('#next-question').click();
+   await partyPage.locator('#spoken-answer').fill('wrong answer');
+   await partyPage.locator('#show-answer').click();
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5','Only the active ally loses HP');
+   await answer(partyPage);
+   await partyPage.locator('#next-question').click();
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5');
+   assert.match(await partyPage.locator('[data-tactic-ally="medamago"]').innerText(),/HP 8\/8/,'Reserve ally HP remains intact');
+   assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 5\/8/);
+   const persisted=await partyPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.deepEqual(persisted.ownedMonsters,['medamago','katappo','purupun']);
+   assert.equal(Object.hasOwn(persisted,'party'),false,'HP is not added to persistent save');
+   const layout=await partyPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(layout.scroll<=layout.width+1,`Multi-ally commands must fit 320px (${JSON.stringify(layout)})`);
+   await partyContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
