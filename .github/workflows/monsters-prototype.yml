@@ -23,7 +23,7 @@ jobs:
           node --check prototype/speakingym-monsters/forest-quizzes-extra.js
           node --check prototype/speakingym-monsters/listening-challenges.js
       - name: Curriculum, mastery and reward tests
-        run: node --test tests/monsters-engine.test.mjs
+        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs
       - name: Install Playwright
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - uses: actions/cache@v4
@@ -42,11 +42,13 @@ jobs:
         run: |
           timeout 160s node tests/monsters-browser.cjs
           timeout 210s node tests/monsters-scenes-browser.cjs
+          timeout 90s node tests/monsters-beta-browser.cjs
       - name: WebKit mobile and learning QA
         timeout-minutes: 8
         run: |
           timeout 160s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
           timeout 210s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-scenes-browser.cjs
+          timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-beta-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -21,6 +21,8 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
+import { createBetaTelemetry } from './beta-telemetry.js';
+import { setupBetaFeedback } from './beta-feedback.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -65,6 +67,8 @@ function speakingSuccessHtml(prompt,learnerAnswer){
 let save = loadSave() || createSave();
 let lastDungeonReviewIds = [];
 let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
+const betaTelemetry=createBetaTelemetry();
+setupBetaFeedback(betaTelemetry);
 
 function cancelAutoAdvance(){
   if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
@@ -341,6 +345,11 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     $('#forest-world-stage').dataset.renderedRoute='';
   }
   showView('play');
+  betaTelemetry.track('monsters_beta_start',{
+    mode:mode==='forest-endless'?'forest-endless':mode,
+    difficulty:mode==='retention'?'mixed':difficulty,
+    chapter:area?.id||'other'
+  });
   if(forestMode)showForestExplore(false);
   else renderQuestion();
   if (mode === 'challenge') timer = setInterval(updateClock,200);
@@ -1172,6 +1181,9 @@ function finishSession(timedOut=false,defeated=false) {
   $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
+  if(forestFinished&&!ended.endless)betaTelemetry.track('monsters_beta_chapter_clear',{
+    chapter:ended.areaId,difficulty:ended.baseDifficulty
+  });
   if(ended.mode==='forest'&&ended.endless){
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
@@ -1222,6 +1234,7 @@ $('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{cancelAutoAdvance();clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active','review-only');renderHome();});
 $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
+$('#result-feedback').addEventListener('click',()=>$('#beta-feedback').scrollIntoView({behavior:'smooth',block:'start'}));
 $('#collection-home').addEventListener('click',renderHome);
 persist(save);
 window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});

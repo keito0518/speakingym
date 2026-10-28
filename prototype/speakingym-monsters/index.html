@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./forest-game.css">
   <link rel="stylesheet" href="./forest-battle.css">
   <link rel="stylesheet" href="./character-screens.css">
+  <script src="../../analytics-config.js"></script>
   <script type="module" src="./monsters.js"></script>
 </head>
 <body>
@@ -89,6 +90,7 @@
                 </div>
               </header>
               <div class="dungeon-selection-label"><strong>ワールドを選ぼう</strong><span>森から雪の街へ、冒険が広がる</span></div>
+              <p class="dungeon-first-tip"><strong>初めての方へ</strong> まずは「やさしい」で<strong>森の入口</strong>に挑戦！ 聞く・選ぶ・話すを少しずつ練習するよ。マイクで困ったら文字入力でも進められるよ。</p>
               <div id="forest-area-list" class="forest-area-list" aria-label="ダンジョンのエリア選択"></div>
               <div class="forest-invite-action dungeon-quick-actions"><button type="button" id="start-forest" class="forest-primary">次のエリアへ</button><button type="button" id="start-forest-endless" class="forest-endless-button">∞ エンドレスモード</button><span id="forest-home-progress">まだ未踏の森</span></div>
               <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
@@ -168,7 +170,7 @@
       </section>
 
       <section id="result-view" class="view" hidden>
-        <div class="result-surface"><span class="tiny-caps">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><section id="dungeon-learning-report" class="dungeon-learning-report" aria-labelledby="dungeon-report-title" hidden></section><div class="result-actions"><button class="button button-primary" id="result-collection">ためたXPで仲間を育てる</button><button class="button button-ghost" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button></div></div>
+        <div class="result-surface"><span class="tiny-caps">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><section id="dungeon-learning-report" class="dungeon-learning-report" aria-labelledby="dungeon-report-title" hidden></section><div class="result-actions"><button class="button button-primary" id="result-collection">ためたXPで仲間を育てる</button><button class="button button-ghost" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button><button class="button button-ghost" id="result-feedback">30秒で感想を伝える</button></div></div>
       </section>
 
       <section id="collection-view" class="view" hidden>
@@ -199,7 +201,30 @@
       </section>
     </main>
 
-    <footer><span>Speakingym Monsters · 試作版</span><span>AI API・課金なし / 記録はこの端末のみ · <a href="./audio-credits.html">音声クレジット</a></span></footer>
+    <section id="beta-feedback" class="beta-feedback" aria-labelledby="beta-feedback-title">
+      <span class="tiny-caps">EARLY ACCESS · 30 SECOND FEEDBACK</span>
+      <h2 id="beta-feedback-title">遊んでみて、どうだった？</h2>
+      <p>一番気になったことを、ひとつ選んで教えてね。英文や音声の入力は不要だよ。</p>
+      <div class="beta-feedback-options" role="group" aria-label="試遊の感想">
+        <button type="button" data-beta-reaction="fun">楽しかった</button>
+        <button type="button" data-beta-reaction="hard">難しかった</button>
+        <button type="button" data-beta-reaction="grading">正誤判定が気になる</button>
+        <button type="button" data-beta-reaction="usability">操作に迷った</button>
+        <button type="button" data-beta-reaction="audio">音声で困った</button>
+      </div>
+      <p id="beta-feedback-status" class="beta-feedback-status" role="status" aria-live="polite">感想を集計するには、下の任意の同意が必要です。</p>
+      <div class="beta-consent" aria-label="試遊データの任意計測設定">
+        <p>同意した場合のみ、閲覧・練習開始・エリアクリア・再訪・選んだ感想をGoogle Analyticsで集計します。Cookie等の識別情報が利用されます。<strong>回答英文・音声・学習記録・名前は送りません。</strong> 同意しなくてもすべて遊べます。</p>
+        <div class="beta-consent-actions">
+          <button type="button" id="beta-consent-yes">計測に同意する</button>
+          <button type="button" id="beta-consent-no">同意しない</button>
+          <span id="beta-consent-status" role="status" aria-live="polite">未選択・計測停止中</span>
+        </div>
+        <a href="./beta-privacy.html">データの取り扱い・設定変更について</a>
+      </div>
+      <p class="beta-feedback-email">具体的な不具合の報告は <a href="mailto:odentabetaina.oden@gmail.com?subject=Speakingym%20Monsters%20%E8%A9%A6%E9%81%8A%E6%84%9F%E6%83%B3">メールでも送れます</a>（個人情報や回答英文は記載しないでね）。</p>
+    </section>
+    <footer><span>Speakingym Monsters · 試作版</span><span>AI判定API・課金なし / 学習記録はこの端末のみ · <a href="./audio-credits.html">音声クレジット</a></span></footer>
   </div>
 </body>
 </html>

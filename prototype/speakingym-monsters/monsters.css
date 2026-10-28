@@ -543,3 +543,27 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
  .answer-quick-help .speaking-hint-action{width:100%}
  .answer-quick-help strong{word-break:keep-all}
 }
+
+/* Small voluntary beta survey stays outside gameplay and never obscures the
+   iPhone answer box, on-screen keyboard, or dungeon actions. */
+.beta-feedback{max-width:1010px;margin:30px auto 18px;padding:clamp(17px,4vw,30px);border:1px solid #cce0d4;border-radius:22px;background:linear-gradient(142deg,#f3faf4,#fffef7 75%);color:#214632;box-shadow:0 9px 25px #24433011}
+.beta-feedback h2{font-size:clamp(23px,5vw,31px);margin:8px 0 10px;line-height:1.35;word-break:keep-all}
+.beta-feedback p{line-height:1.75;margin:8px 0 12px;font-size:14px}
+.beta-feedback-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:9px;margin:16px 0}
+.beta-feedback-options button{font:inherit;min-height:52px;padding:12px;border:1px solid #a8cbb9;border-radius:13px;background:#fff;color:#244b38;font-weight:750;line-height:1.5;cursor:pointer;word-break:keep-all}
+.beta-feedback-options button:enabled:hover,.beta-feedback-options button[aria-pressed="true"]{border-color:#347e52;background:#e1f3e6}
+.beta-feedback-options button:disabled{opacity:.58;cursor:not-allowed}
+.beta-feedback-status{font-weight:700;color:#356846;min-height:24px}
+.beta-consent{border-top:1px solid #d9e8dc;padding-top:12px}
+.beta-consent p{font-size:12px;color:#485f51;line-height:1.8}
+.beta-consent-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px}
+.beta-consent-actions button{font:inherit;min-height:44px;border-radius:10px;padding:10px 14px;border:1px solid #a8c9b2;background:#fff;color:#285139;font-weight:800;cursor:pointer}
+.beta-consent-actions #beta-consent-yes{background:#235a40;color:#fff}
+.beta-consent-actions button[aria-pressed="true"]{outline:3px solid #f1b84a;outline-offset:2px}
+.beta-consent-actions span{font-size:12px;font-weight:700;color:#466c50}
+.beta-consent a,.beta-feedback-email a{color:#1b6849;text-underline-offset:3px}
+.beta-feedback .beta-feedback-email{font-size:12px;color:#5c6e61}
+.beta-feedback button:focus-visible{outline:3px solid #e5a838;outline-offset:3px}
+.dungeon-first-tip{margin:10px 0 15px;padding:11px 14px;border:1px solid #d6e3cf;border-radius:12px;background:#f4f8ee;color:#3b5d43;font-size:12px;line-height:1.8;word-break:keep-all;overflow-wrap:normal}
+.dungeon-first-tip strong{color:#28513a}
+@media(max-width:430px){.beta-feedback{margin:22px 12px 14px;padding:17px 14px}.beta-feedback-options{grid-template-columns:1fr 1fr;gap:8px}.beta-feedback-options button{font-size:12px;padding:10px 6px;min-width:0}.beta-consent-actions button{flex:1 1 120px}.beta-consent-actions span{width:100%;text-align:center}}
