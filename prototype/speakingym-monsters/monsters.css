@@ -564,6 +564,7 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .beta-consent a,.beta-feedback-email a{color:#1b6849;text-underline-offset:3px}
 .beta-feedback .beta-feedback-email{font-size:12px;color:#5c6e61}
 .beta-feedback button:focus-visible{outline:3px solid #e5a838;outline-offset:3px}
-.dungeon-first-tip{margin:10px 0 15px;padding:11px 14px;border:1px solid #d6e3cf;border-radius:12px;background:#f4f8ee;color:#3b5d43;font-size:12px;line-height:1.8;word-break:keep-all;overflow-wrap:normal}
+.dungeon-first-tip{margin:10px 0 15px;padding:11px 14px;border:1px solid #d6e3cf;border-radius:12px;background:#f4f8ee;color:#3b5d43;font-size:12px;line-height:1.8;word-break:normal;overflow-wrap:anywhere;line-break:strict}
 .dungeon-first-tip strong{color:#28513a}
 @media(max-width:430px){.beta-feedback{margin:22px 12px 14px;padding:17px 14px}.beta-feedback-options{grid-template-columns:1fr 1fr;gap:8px}.beta-feedback-options button{font-size:12px;padding:10px 6px;min-width:0}.beta-consent-actions button{flex:1 1 120px}.beta-consent-actions span{width:100%;text-align:center}}
+@media(max-width:360px){.beta-feedback-options{grid-template-columns:1fr}}
