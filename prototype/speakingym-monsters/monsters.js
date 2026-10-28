@@ -636,11 +636,11 @@ function renderPartyFormation(){
    renderPartyFormation();
  }));
  // The artwork and empty area of each card also respond to a finger tap.
- $('[data-formation-card]',screen).forEach(card=>card.addEventListener('click',event=>{
+ $$('[data-formation-card]',screen).forEach(card=>card.addEventListener('click',event=>{
    if(event.target.closest('button'))return;
    card.querySelector('[data-formation-choice]')?.click();
  }));
- $('[data-formation-lead]',screen).forEach(button=>button.addEventListener('click',()=>{
+ $$('[data-formation-lead]',screen).forEach(button=>button.addEventListener('click',()=>{
    if(!play?.tactics?.formationPending)return;
    t.formationIds=editBattleFormation(t.formationIds,owned,button.dataset.formationLead,{leader:true});
    t.formationMessage='先頭の仲間を変更したよ！';
