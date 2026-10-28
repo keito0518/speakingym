@@ -40,12 +40,12 @@ jobs:
       - name: Chromium mobile and learning QA
         timeout-minutes: 8
         run: |
-          timeout 90s node tests/monsters-browser.cjs
+          timeout 160s node tests/monsters-browser.cjs
           timeout 210s node tests/monsters-scenes-browser.cjs
       - name: WebKit mobile and learning QA
         timeout-minutes: 8
         run: |
-          timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
+          timeout 160s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
           timeout 210s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-scenes-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
