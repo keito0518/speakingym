@@ -85,13 +85,22 @@
 .forest-tactic-forecast{display:flex;flex-wrap:wrap;gap:3px 9px;align-items:baseline;margin:6px 0 9px;padding:7px 9px;border:1px solid #b5c2e2;border-radius:8px;background:#e9eefa;color:#24395c;font-size:11px;line-height:1.6}
 .forest-tactic-forecast strong{font-size:12px;color:#223c70}
 .forest-tactic-forecast span{color:#354b65}
+.forest-ultimate-meter{display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;padding:8px 9px;margin:6px 0;border:1px solid #d6be75;border-radius:9px;background:#fff7df;color:#5c4728;font-size:11px;line-height:1.5}
+.forest-ultimate-meter strong{white-space:nowrap;font-size:12px}
+.forest-ultimate-meter small{font-size:10px;color:#5d6143}
+.forest-ultimate-track{position:relative;flex:1 1 76px;height:9px;border:1px solid #c7ae76;border-radius:99px;background:#e9dac1;overflow:hidden}
+.forest-ultimate-track span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#d79b40,#ffd56b);transition:width .22s ease}
+.forest-tactic-ability{margin:5px 0 8px;padding:6px 8px;border-left:3px solid #b68435;color:#3d5742;font-size:11px;line-height:1.6;overflow-wrap:break-word}
+.forest-tactic-ability strong{color:#3a4b2f}
 .forest-tactic-evolution{margin:5px 0 8px;padding:7px 9px;border:1px solid #d7bf79;border-radius:8px;background:#fff5d9;color:#584522;font-size:11px;line-height:1.6;font-weight:800}
 .forest-tactic-party-label{margin-top:9px;color:#305746;font-size:11px;line-height:1.5;font-weight:900}
-.forest-tactic-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.forest-tactic-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .forest-tactic-actions button,.forest-tactic-kinds button,.forest-tactic-party button{min-width:0;min-height:44px;padding:7px 5px;border:1px solid #aac1a0;border-radius:8px;background:#fffdf2;color:#2c4b38;font-weight:800;cursor:pointer;line-height:1.45;overflow-wrap:break-word;line-break:strict}
 .forest-tactic-actions button strong{display:block;font-size:12px}
 .forest-tactic-actions button small{display:block;margin-top:3px;font-size:10px;font-weight:600}
 .forest-tactic-actions button[aria-pressed="true"],.forest-tactic-kinds button[aria-pressed="true"],.forest-tactic-party button[aria-pressed="true"]{background:#226c50;border-color:#174b3b;color:#fff9d4;box-shadow:inset 0 0 0 1px #f6e2a1}
+.forest-tactic-actions button[data-tactic-action="skill"]:not(:disabled){border-color:#be912f;background:#fff1cb;color:#674513}
+.forest-tactic-actions button[data-tactic-action="skill"][aria-pressed="true"]{background:#895b1e;color:#fff4d3}
 .forest-tactic-actions button:disabled,.forest-tactic-kinds button:disabled{opacity:.55;cursor:not-allowed}
 .forest-tactic-kinds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
 .forest-tactic-kinds button{font-size:11px;min-height:42px}
