@@ -685,6 +685,7 @@ const path=require('node:path');
       const cityCard=cityPage.locator('[data-enter-forest="city"]');
       assert.equal(await cityCard.isEnabled(),false,'City is locked on fresh saves');
       assert.match(await cityCard.innerText(),/森の4エリアを攻略で解放/);
+      assert.match(await cityPage.locator('[data-enter-forest="glade"]').innerText(),/前のエリアを攻略で解放/);
       await cityPage.evaluate(async()=>{
         const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
         const {FOREST_AREAS,finishForest}=await import('./forest-engine.js');
