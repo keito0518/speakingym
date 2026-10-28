@@ -682,6 +682,14 @@ const path=require('node:path');
     for(const width of [320,375,390,430]){
       const {context:cityContext,page:cityPage}=await boot(width);
       await enterHomePanel(cityPage,'forest');
+      assert.equal(await cityPage.locator('.dungeon-world-card').count(),2,'Forest and City must be separate, clearly labelled world panels');
+      assert.equal(await cityPage.locator('#dungeon-world-forest-title').innerText(),'はじまりの森');
+      assert.equal(await cityPage.locator('#dungeon-world-city-title').innerText(),'会話の街');
+      assert.equal(await cityPage.locator('.dungeon-world-forest [data-enter-forest]').count(),4);
+      assert.equal(await cityPage.locator('.dungeon-world-city [data-enter-forest]').count(),1);
+      const worldColors=await cityPage.evaluate(()=>({forest:getComputedStyle(document.querySelector('.dungeon-world-forest')).backgroundImage,city:getComputedStyle(document.querySelector('.dungeon-world-city')).backgroundImage,scroll:document.documentElement.scrollWidth,inner:innerWidth}));
+      assert.notEqual(worldColors.forest,worldColors.city,'Distinct destinations need distinct color themes');
+      assert.ok(worldColors.scroll<=worldColors.inner+1,`${engine}/${width} world-select overflow: ${JSON.stringify(worldColors)}`);
       const cityCard=cityPage.locator('[data-enter-forest="city"]');
       assert.equal(await cityCard.isEnabled(),false,'City is locked on fresh saves');
       assert.match(await cityCard.innerText(),/森の4エリアを攻略で解放/);

@@ -3,7 +3,7 @@ import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finish
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
-import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, DUNGEON_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
+import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
 import { enemyArt } from './forest-enemies.js';
@@ -232,11 +232,22 @@ function renderHome() {
   $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityClear?'CLEAR':'未攻略'} · 冒険勝利 ${forest.clears}回`;
   const unlocked=new Set(unlockedDungeonAreas(save).map(area=>area.id));
   const dueRetention=retentionOverview(save,dayKey()).due;
-  $('#forest-area-list').innerHTML=DUNGEON_AREAS.map((area,index)=>{
+  const areaCard=(area,index)=>{
     const cleared=forest.completedAreas.includes(area.id),open=unlocked.has(area.id);
     const chapterDue=dueRetention.filter(entry=>area.focus.some(key=>entry.prompt.phraseId.startsWith(key))).length;
-    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${area.world==='city'?'CITY':String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small>${escapeHtml(area.goal)} · ${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋確認3）${chapterDue?' · 復習候補'+chapterDue+'問':''}</small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':area.world==='city'?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
-  }).join('');
+    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${area.world==='city'?'CITY':String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">全${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋ボス3問）${chapterDue?' · 復習候補'+chapterDue+'問':''}</span></small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':area.world==='city'?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
+  };
+  const forestCards=FOREST_AREAS.map((area,index)=>areaCard(area,index)).join('');
+  const cityCards=CITY_AREAS.map((area,index)=>areaCard(area,index)).join('');
+  $('#forest-area-list').innerHTML=`
+    <section class="dungeon-world-card dungeon-world-forest" aria-labelledby="dungeon-world-forest-title">
+      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 01 · FOREST</span><h3 id="dungeon-world-forest-title">はじまりの森</h3><p>聞く・話す・読む力を身につける冒険</p></div><strong class="dungeon-world-badge">${forestCount} / ${FOREST_AREAS.length} エリア攻略</strong></header>
+      <div class="dungeon-world-areas">${forestCards}</div>
+    </section>
+    <section class="dungeon-world-card dungeon-world-city" aria-labelledby="dungeon-world-city-title">
+      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · CITY</span><h3 id="dungeon-world-city-title">会話の街</h3><p>予約変更・道案内・困りごとへの対応</p></div><strong class="dungeon-world-badge">${cityClear?'攻略済み':forestCount===FOREST_AREAS.length?'挑戦可能':'森を攻略すると解放'}</strong></header>
+      <div class="dungeon-world-areas">${cityCards}</div>
+    </section>`;
   $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startSession('forest',button.dataset.enterForest)));
   $('#start-forest').textContent=cityClear?'街をもう一度冒険':`次へ：${nextDungeonArea(save).name}`;
   const weak=quizWeaknessOverview(save);

@@ -149,25 +149,44 @@
  .forest-party,.forest-active .forest-route-option{transition:none!important}
  .forest-victory .forest-world-fx{opacity:1}
 }
-/* Forest chapters plus a separately unlockable city dungeon. */
-.forest-area-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 15px;position:relative;z-index:1}
-.forest-area-card{min-width:0;display:flex;align-items:center;gap:9px;text-align:left;border:1px solid #8aa884a3;border-radius:12px;padding:10px 9px;background:#1d4838e8;color:#fff4cc;cursor:pointer;box-shadow:inset 0 1px #d2eac225;transition:background .15s,transform .15s}
-.forest-area-card:enabled:hover,.forest-area-card:enabled:focus-visible{background:#326a4e;transform:translateY(-1px);outline-color:#f5dfa7}
-.forest-area-card:disabled{cursor:not-allowed;opacity:.49;filter:grayscale(.65)}
-.forest-area-card.city-area-card{grid-column:1 / -1;background:linear-gradient(108deg,#243d64,#345a73 58%,#447879);border:1px solid #93bbcf;color:#fff7d8;min-height:70px}
-.forest-area-card.city-area-card:enabled:hover{background:linear-gradient(108deg,#344e83,#41778c)}
-.forest-area-card.city-area-card:disabled{filter:none;opacity:.67}
-.city-area-card .forest-area-number{font:900 13px/1.3 system-ui,sans-serif;letter-spacing:.07em;color:#ffdb9e}
-.city-area-card .forest-area-copy small{color:#d2e9e8}
-.forest-area-number{flex:none;font-family:Georgia,serif;color:#f4d58a;font-size:19px;font-weight:900}
-.forest-area-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
-.forest-area-copy strong{font-size:12px;line-height:1.35}
-.forest-area-copy small{font-size:10px;line-height:1.4;color:#c8dfca;overflow-wrap:anywhere}
-.forest-area-status{font-size:9px;font-weight:900;letter-spacing:.05em;white-space:nowrap;color:#f8dfa3}
+/* A whole-world selection view: Forest and City are separate game destinations. */
+.forest-area-list{display:grid;grid-template-columns:minmax(0,1fr);gap:15px;margin:17px 0 18px;position:relative;z-index:1}
+.dungeon-world-card{position:relative;isolation:isolate;min-width:0;overflow:hidden;border-radius:17px;padding:15px;border:2px solid;box-shadow:0 8px 22px #071b2033,inset 0 1px #ffffff24}
+.dungeon-world-forest{border-color:#91bc79;background:linear-gradient(136deg,#183d2b 0%,#21543b 58%,#32664b 100%)}
+.dungeon-world-city{border-color:#93bad1;background:linear-gradient(128deg,#1d3358 0%,#234767 50%,#2e697c 100%)}
+.dungeon-world-city::before{content:"";position:absolute;z-index:-1;right:12px;bottom:0;width:145px;height:74px;opacity:.16;background:repeating-linear-gradient(90deg,#d4f2ff 0 16px,transparent 16px 23px);clip-path:polygon(0 35%,19% 35%,19% 0,37% 0,37% 60%,54% 60%,54% 18%,77% 18%,77% 42%,100% 42%,100% 100%,0 100%);pointer-events:none}
+.dungeon-world-header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:13px}
+.dungeon-world-heading{min-width:0;flex:1 1 160px}
+.dungeon-world-heading>span{display:block;font:900 10px/1.4 system-ui,sans-serif;letter-spacing:.16em;color:#f9da91}
+.dungeon-world-city .dungeon-world-heading>span{color:#a9dffe}
+.dungeon-world-heading h3{margin:5px 0 3px;color:#fff4cb;font-size:clamp(20px,4.3vw,26px);line-height:1.27;font-weight:900;letter-spacing:.025em;word-break:keep-all}
+.dungeon-world-city .dungeon-world-heading h3{color:#e8f5ff}
+.dungeon-world-heading p{margin:0!important;color:#d7ecd8!important;font-size:12px!important;line-height:1.6;max-width:none!important}
+.dungeon-world-city .dungeon-world-heading p{color:#d4e9f2!important}
+.dungeon-world-badge{display:inline-flex;align-items:center;max-width:100%;min-height:29px;padding:6px 9px;border:1px solid #a6c79b88;border-radius:99px;background:#0b2d20a6;color:#eaf8dc;font-size:10px;line-height:1.5;white-space:normal;word-break:keep-all}
+.dungeon-world-city .dungeon-world-badge{border-color:#a2d5e888;background:#102e50b3;color:#e8f5ff}
+.dungeon-world-areas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.dungeon-world-city .dungeon-world-areas{grid-template-columns:minmax(0,1fr)}
+.forest-area-card{min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;column-gap:10px;row-gap:7px;text-align:left;border:1px solid #90b598a6;border-radius:12px;padding:12px 11px;background:#123c2dd9;color:#fff4cc;cursor:pointer;box-shadow:inset 0 1px #d2eac225;transition:background .15s,transform .15s}
+.forest-area-card:enabled:hover,.forest-area-card:enabled:focus-visible{background:#326a4e;transform:translateY(-1px);outline:2px solid #f5dfa7;outline-offset:2px}
+.forest-area-card:disabled{cursor:not-allowed;opacity:.65;filter:grayscale(.28)}
+.forest-area-card.city-area-card{background:#173852d9;border-color:#8fbdd5;color:#fff7d8}
+.forest-area-card.city-area-card:enabled:hover,.forest-area-card.city-area-card:enabled:focus-visible{background:#345f7a}
+.forest-area-card.city-area-card:disabled{filter:none;opacity:.75}
+.forest-area-number{font-family:Georgia,serif;color:#f4d58a;font-size:20px;font-weight:900;line-height:1.35}
+.city-area-card .forest-area-number{font:900 13px/1.5 system-ui,sans-serif;letter-spacing:.07em;color:#ffdb9e}
+.forest-area-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.forest-area-copy strong{font-size:13px;line-height:1.45;word-break:keep-all;line-break:strict}
+.forest-area-copy small{display:flex;flex-direction:column;gap:4px;font-size:11px;line-height:1.55;color:#d3e6ce;word-break:normal;line-break:strict;overflow-wrap:break-word}
+.forest-area-count{color:#f2d797;font-weight:750}
+.city-area-card .forest-area-copy small{color:#daedf5}
+.city-area-card .forest-area-count{color:#a9e2f2}
+.forest-area-status{grid-column:2;justify-self:start;max-width:100%;padding:5px 8px;border-radius:7px;background:#eddb9d18;color:#ffe3a0;font-size:10px;font-weight:850;line-height:1.4;word-break:keep-all;line-break:strict}
+.city-area-card .forest-area-status{background:#b6dcff1b;color:#d8efff}
 .forest-explore-art[data-area="glade"] .forest-world-svg{filter:hue-rotate(-26deg) saturate(1.18) brightness(1.12)}
 .forest-explore-art[data-area="thicket"] .forest-world-svg{filter:hue-rotate(95deg) saturate(.72) brightness(.81)}
 .forest-explore-art[data-area="sanctuary"] .forest-world-svg{filter:sepia(.35) hue-rotate(-8deg) saturate(1.1)}
 .forest-world-stage[data-area="glade"] .forest-world-backdrop{filter:sepia(.16) saturate(1.12) brightness(1.11)}
 .forest-world-stage[data-area="thicket"] .forest-world-backdrop{filter:hue-rotate(40deg) brightness(.78)}
 .forest-world-stage[data-area="sanctuary"] .forest-world-backdrop{filter:sepia(.32) hue-rotate(-15deg)}
-@media(max-width:540px){.forest-area-list{grid-template-columns:1fr}.forest-area-card{padding:9px 10px}}
+@media(max-width:540px){.dungeon-world-card{padding:13px 11px}.dungeon-world-areas{grid-template-columns:minmax(0,1fr)}.forest-area-card{padding:12px 10px}.dungeon-world-badge{font-size:10px}}
