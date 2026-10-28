@@ -77,7 +77,9 @@ const easy = {
  'agree-work':[row('提案に同意',intent.agree)],
  'late-bus':[row('遅れることを伝える',intent.late)],
  'late-call':[row('遅れることを伝える',intent.late)],
- 'prefer-city':[row('電車を希望する',intent.prefer)]
+ 'prefer-city':[row('電車を希望する',intent.prefer)],
+ 'boss-delay-apology':[row('謝る','sorry','apologiz'),
+   row('バスが遅れていることを伝える','bus.*(delay(?:ed)?|late)','(delay(?:ed)?|late).*bus')]
 };
 const hard = {
  'think-cafe':[row('決めるための時間を頼む',intent.think),row('原材料・乳製品を確認する','ingredient','milk','dairy','allerg'),row('後ろの人に先に注文してもらう','go ahead','order first','before me','after you')],

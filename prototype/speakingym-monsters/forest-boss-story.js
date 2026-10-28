@@ -4,12 +4,12 @@
 export const BOSS_RESPONSE_PROMPTS=Object.freeze([
   Object.freeze({id:'boss-delay-apology-easy',baseId:'boss-delay-apology',bossOnly:true,
     phraseId:'late',kind:'speak',difficulty:'easy',scene:'トゲ王との待ち合わせ',
-    cue:'バスが遅れている。トゲ王に謝って、建物の中で待っていてもらおう。',
-    task:'謝罪・バスの遅れ・屋内で待ってほしいことを伝える。',
-    answer:'Sorry, my bus is delayed. Please wait inside.',
-    alternatives:['I am sorry, the bus is running late. You can wait inside.'],
-    hint:'Sorry ... my bus ... Please wait ...',
-    tip:'状況を説明するだけでなく、相手がどうすればよいか伝えると会話が進む。'}),
+    cue:'バスが遅れている。トゲ王に「ごめん、バスが遅れてる」と伝えよう。',
+    task:'謝って、バスが遅れていることを短く伝えよう。',
+    answer:'Sorry, my bus is late.',
+    alternatives:['Sorry, my bus is delayed.','I am sorry, the bus is running late.','Sorry, my bus is delayed. Please wait inside.','I am sorry, the bus is running late. You can wait inside.'],
+    hint:'Sorry ... my bus ...',
+    tip:'やさしいモードでは「ごめん」と「バスが遅れている」の2つを伝えればOK。待つ場所の提案は標準以上の応用だよ。'}),
   Object.freeze({id:'boss-delay-apology-normal',baseId:'boss-delay-apology',bossOnly:true,
     phraseId:'late',kind:'speak',difficulty:'normal',scene:'Waiting for a friend',
     cue:'Your bus is delayed, and the person you are meeting is standing outside.',
@@ -39,7 +39,7 @@ export function bossConversationFor(wave,level){
       context:level==='easy'?'10分遅れることを、自然な語順で伝えよう。':'Tell the boss you will arrive about ten minutes late. Build a natural sentence.'}),
     Object.freeze({id:`boss-delay-apology-${level}`,turn:3,
       title:level==='easy'?'トゲ王「どうしたの？」':level==='normal'?'The boss asks: What happened to your bus?':'The bus was canceled. Your friend is waiting outside.',
-      context:level==='easy'?'バスが遅れていると伝えよう。':level==='normal'?'Apologize and explain that you are running late.':'Your delay has grown to twenty minutes. Explain why and suggest somewhere warm to wait.'})
+      context:level==='easy'?'謝って、バスが遅れていると短く伝えよう。':level==='normal'?'Apologize and explain that you are running late.':'Your delay has grown to twenty minutes. Explain why and suggest somewhere warm to wait.'})
   ]);
 }
 

@@ -514,3 +514,26 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
  .forest-active #spoken-answer{width:100%;min-width:0}
  .home-feature-content h2{overflow-wrap:normal;line-height:1.22}
 }
+
+/* Put the optional two-step speaking aid before input, where beginners can
+   find it without scrolling past the grading button. */
+.beginner-speak-tip{margin:0 0 13px;padding:10px 13px;border-radius:11px;background:#e7f3ea;color:#305b47;font-size:13px;font-weight:750;line-height:1.6;word-break:keep-all}
+.answer-quick-help{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin-bottom:14px;border:1px solid #e0d2a7;border-radius:14px;background:#fffdf6}
+.answer-quick-help>div{min-width:0;flex:1}
+.answer-quick-help strong{display:block;color:#53482a;font-size:13px;line-height:1.5}
+.answer-quick-help small{display:block;color:#736c55;font-size:11px;line-height:1.6;margin-top:3px}
+.answer-quick-help .speaking-hint-action{flex:0 0 auto;min-height:44px;min-width:116px;padding:10px 14px;border:1px solid #d5b96b;border-radius:11px;background:#ffedb5;color:#624c1c;font-size:13px;line-height:1.4}
+.answer-quick-help .speaking-hint-action:focus-visible{outline:3px solid #567c6b;outline-offset:3px}
+.answer-quick-help .speaking-hint-action:disabled{opacity:.68;cursor:default}
+.speaking-hint-panel{margin:-4px 0 16px;border:1px solid #edd6a2;font-size:13px;line-height:1.7}
+.speaking-hint-panel[hidden]{display:none}
+.speaking-hint-panel .speaking-hint-step{margin:0 0 9px;display:grid;gap:2px;overflow-wrap:anywhere}
+.speaking-hint-panel .speaking-hint-step strong{color:#7d622e;font-size:12px}
+.speaking-hint-panel .speaking-hint-step span{color:#634e26}
+.speaking-hint-panel small{color:#8b764c;font-size:11px}
+.answer-area .learning-controls{justify-content:flex-end}
+@media(max-width:430px){
+ .answer-quick-help{flex-direction:column;align-items:stretch;padding:12px}
+ .answer-quick-help .speaking-hint-action{width:100%}
+ .answer-quick-help strong{word-break:keep-all}
+}

@@ -69,8 +69,8 @@ const SCENES=Object.freeze([
       scene:'駅のアナウンス',
       cue:'駅の放送が聞き取れなかった。もう一度聞きたい。',
       task:'駅員にもう一度言ってもらおう。',
-      answer:'Could you say the announcement again?',
-      alternatives:['Can you repeat the announcement, please?'],
+      answer:'Could you say that again?',
+      alternatives:['Can you repeat that, please?','Could you say the announcement again?','Can you repeat the announcement, please?'],
       hint:'Could you say ... again?',
       tip:'聞き取れない部分があれば、遠慮せずに聞き返そう。'
     },
@@ -99,9 +99,9 @@ const SCENES=Object.freeze([
       scene:'友人との待ち合わせ',
       cue:'待ち合わせ場所を駅に変えようと言われた。同意しよう。',
       task:'駅で会うことに賛成しよう。',
-      answer:'Meeting at the station works for me.',
-      alternatives:["Sure, let's meet at the station."],
-      hint:'... works for me.',
+      answer:"Sure, let's meet at the station.",
+      alternatives:['Meeting at the station works for me.'],
+      hint:'Sure, let’s ...',
       tip:'賛成の一言に具体的な場所を入れると誤解が少ない。'
     },
     normal:{
@@ -159,9 +159,9 @@ const SCENES=Object.freeze([
       scene:'レストランで会計',
       cue:'お会計が30ドルか確認したい。',
       task:'合計が30ドルで合っているか聞こう。',
-      answer:'Just to confirm, the total is thirty dollars, right?',
-      alternatives:['Is the total thirty dollars?'],
-      hint:'Just to confirm ...?',
+      answer:'Is the total thirty dollars?',
+      alternatives:['Just to confirm, the total is thirty dollars, right?'],
+      hint:'Is the total ...?',
       tip:'確認したい数字をもう一度口に出すと行き違いを防げる。'
     },
     normal:{

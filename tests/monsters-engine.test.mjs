@@ -19,10 +19,42 @@ import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/s
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
+import { speakingHintSteps } from '../prototype/speakingym-monsters/speaking-guidance.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
 import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
+
+test('beginner speaking uses short communicative goals, two useful hints, and safe natural variants',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ const easyBoss=byId('boss-delay-apology-easy');
+ assert.ok(easyBoss.answer.split(/\s+/).length<=6,'First boss should not demand a three-part speech in easy mode');
+ assert.equal(gradeLocalResponse(easyBoss,'Sorry, my bus is late.').status,'correct');
+ assert.equal(gradeLocalResponse(easyBoss,'I am sorry, the bus is delayed.').status,'correct');
+ assert.equal(gradeLocalResponse(easyBoss,'Sorry, my bus is delayed. Please wait inside.').status,'correct','Old saved answer remains valid');
+ assert.notEqual(gradeLocalResponse(easyBoss,'Sorry, my bus is on time.').status,'correct','Opposite meaning cannot win a boss');
+ assert.notEqual(gradeLocalResponse(easyBoss,'Sorry.').status,'correct','An apology alone is not a delay message');
+ const normalBoss=byId('boss-delay-apology-normal');
+ assert.notEqual(gradeLocalResponse(normalBoss,'Sorry, my bus is late.').status,'correct','Normal still requires a practical next step');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at eleven?').status,'correct');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Just to make sure, checkout is at eleven, right?').status,'correct');
+ for(const [id,old] of [
+  ['repeat-announcement-easy','Could you say the announcement again?'],
+  ['agree-location-easy','Meeting at the station works for me.'],
+  ['clarify-charge-easy','Just to confirm, the total is thirty dollars, right?'],
+  ['order-extra',"I'd like a pizza with extra cheese, please."],
+  ['booking-haircut','Could I book a haircut for Saturday?'],
+  ['decline-overtime',"Sorry, I can't work late today."],
+  ['decline-invite',"I'm afraid I can't come after class."]
+ ])assert.equal(gradeLocalResponse(byId(id),old).status,'correct',`${id}: old vetted response must survive easier model`);
+ for(const prompt of ALL_PROMPTS.filter(p=>p.kind==='speak'&&(!p.difficulty||p.difficulty==='easy'))){
+  const phrase=PHRASES.find(p=>p.id===prompt.phraseId);
+  const steps=speakingHintSteps(prompt,phrase);
+  assert.equal(steps.length,2);
+  assert.ok(steps[0].detail.length>4&&steps[1].detail.length>3,`${prompt.id} has two helpful hints`);
+  assert.notEqual(steps[0].detail, prompt.answer,`${prompt.id}: first hint should never give the exact answer`);
+ }
+});
 
 test('dungeon reports verified learning honestly and never count assisted route as success',()=>{
  const outcomes=[

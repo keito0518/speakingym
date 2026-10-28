@@ -1002,7 +1002,20 @@ const path=require('node:path');
         const {ALL_PROMPTS}=await import('./monster-data.js');
         return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
       });
-      if(i===0)await page.locator('#show-hint').click();
+      if(i===0){
+        assert.equal(await page.locator('#hint-panel').isHidden(),true);
+        const positions=await page.evaluate(()=>({hint:document.querySelector('#show-hint').getBoundingClientRect().top,answer:document.querySelector('#spoken-answer').getBoundingClientRect().top}));
+        assert.ok(positions.hint<positions.answer,'A beginner must see the hint button before the answer input');
+        await page.locator('#show-hint').click();
+        assert.match(await page.locator('#hint-panel').innerText(),/ヒント 1 · 考え方/);
+        assert.doesNotMatch(await page.locator('#hint-panel').innerText(),/ヒント 2 · 英語の書き出し/);
+        assert.equal(await page.locator('#show-hint').getAttribute('aria-expanded'),'true');
+        await page.locator('#show-hint').click();
+        assert.match(await page.locator('#hint-panel').innerText(),/ヒント 2 · 英語の書き出し/);
+        assert.equal(await page.locator('#show-hint').isDisabled(),true);
+        const mobile=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+        assert.ok(mobile.scroll<=mobile.inner+1,`390px guided speaking must not overflow: ${JSON.stringify(mobile)}`);
+      }
       await page.locator('#spoken-answer').fill(answer);
       await page.locator('#show-answer').click();
       assert.ok((await page.locator('#feedback-panel').innerText()).includes(i===0?'+8 XP':'+16 XP'));

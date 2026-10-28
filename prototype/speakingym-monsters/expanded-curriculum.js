@@ -264,8 +264,8 @@ const SCENES = [
     "At a pizza restaurant",
     "ピザを注文して、チーズを追加したい。",
     "",
+    "A pizza with extra cheese, please.",
     "Could I have a pizza with extra cheese, please?",
-    "I'd like a pizza with extra cheese, please.",
     "You are ordering pizza and want extra cheese.",
     "Place the order with your extra topping.",
     "Could I have a margherita pizza with extra cheese, please?",
@@ -456,8 +456,8 @@ const SCENES = [
     "At a hair salon",
     "土曜日に散髪の予約をしたい。",
     "",
-    "I'd like to make an appointment for Saturday.",
     "Could I book a haircut for Saturday?",
+    "I'd like to make an appointment for Saturday.",
     "You want to get a haircut this Saturday.",
     "Ask for an appointment on Saturday.",
     "I'd like to book a haircut for Saturday, please.",
@@ -552,8 +552,8 @@ const SCENES = [
     "At work",
     "今日は残業できないと伝えよう。",
     "",
+    "I can't stay late today.",
     "I'm afraid I can't stay late today.",
-    "Sorry, I can't work late today.",
     "Your manager asks you to work late, but you have another commitment.",
     "Politely say that you cannot stay late today.",
     "I'm sorry, but I can't stay late today. I have another commitment.",
@@ -584,8 +584,8 @@ const SCENES = [
     "After class",
     "放課後の集まりに行けないと伝えよう。",
     "",
+    "I can't come after class.",
     "Sorry, I can't join you after class.",
-    "I'm afraid I can't come after class.",
     "Classmates invite you to meet after class, but you need to study.",
     "Politely decline and explain that you need to study.",
     "I'd love to, but I can't join you after class. I need to study.",
@@ -786,8 +786,16 @@ const SCENES = [
     "My train was canceled and I have a nonrefundable connection. Is there another route that will get me there tonight?"
   ]
 ];
+// Shorter beginner models are additive: older saved answers must continue to
+// receive the same verified result after a curriculum update.
+const EASY_EXTRA_ALTERNATIVES=Object.freeze({
+  'order-extra':["I'd like a pizza with extra cheese, please."],
+  'booking-haircut':['Could I book a haircut for Saturday?'],
+  'decline-overtime':["Sorry, I can't work late today."],
+  'decline-invite':["I'm afraid I can't come after class."]
+});
 export const ADDITIONAL_PROMPTS = Object.freeze(SCENES.flatMap(([id,phraseId,scene,englishScene,cue,audio,easy,alternative,normalCue,normalTask,normalAnswer,hardCue,hardTask,hardAnswer]) => [
- {id,baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',scene,cue,answer:easy,alternatives:[alternative],...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_TEXTS[id]}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
+ {id,baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',scene,cue,answer:easy,alternatives:[alternative,...(EASY_EXTRA_ALTERNATIVES[id]||[])],...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_TEXTS[id]}:{}),tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip},
  {id:id+'-normal',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'normal',scene:englishScene,cue:normalCue,task:normalTask,answer:normalAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_VARIANTS[id]?.[0]||READING_TEXTS[id]}:{})},
  {id:id+'-hard',baseId:id,phraseId,kind:audio?'listen':READING_SCENES.has(id)?'read':'speak',difficulty:'hard',scene:englishScene,cue:hardCue,task:hardTask,answer:hardAnswer,hint:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).hint,tip:ADDITIONAL_PHRASES.find(p=>p.id===phraseId).tip,...(audio?{audio}:{}),...(READING_SCENES.has(id)?{readText:READING_VARIANTS[id]?.[1]||READING_TEXTS[id]}:{})}
 ]));

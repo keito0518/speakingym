@@ -14,6 +14,7 @@ import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
+import { speakingHintSteps } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { forestEventFor, forestEventChoice } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
@@ -539,6 +540,8 @@ function renderQuestion() {
   }
   const prompt=currentPrompt();
   if (!prompt) {finishSession();return;}
+  const hintKey=`${play.mode}:${play.wave||1}:${play.index}:${prompt.id}`;
+  if(play.hintKey!==hintKey){play.hintKey=hintKey;play.hintStep=0;}
   const reviewing=!!(save.reviewPrompts?.[prompt.id] && save.reviewPrompts[prompt.id]<=dayKey());
   if(play.mode==='forest'){
     const style=prompt.kind==='listen'?'defense':prompt.kind==='read'?'reading':prompt.kind==='vocab'?'weakness':prompt.kind==='grammar'?'spell':'attack';
@@ -615,7 +618,8 @@ function renderQuestion() {
     dialogue.append(counter,title,context,warning);
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
-  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}<label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div id="speech-alternatives" class="speech-alternatives" hidden><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div><div class="learning-controls"><button class="hint-button" id="show-hint">ヒントを見る</button><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="hint-panel" class="hint-box" hidden></div><div id="feedback-panel"></div>`;
+  const beginnerTip=!englishMode&&!quizMode?`<p class="beginner-speak-tip">やさしいモード：長い英文は必要ないよ。${prompt.bossOnly?'短い2つの内容を伝えよう。':'まずは短い1文で伝えよう。'}</p>`:'';
+  $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}${beginnerTip}<div class="answer-quick-help"><div><strong>困ったらヒントを使おう</strong><small>考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">ヒントを見る</button></div><div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div><label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label><div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div><button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div id="speech-alternatives" class="speech-alternatives" hidden><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -629,6 +633,7 @@ function renderQuestion() {
     micView('ready');startRecognition();
   });
   $('#show-hint').addEventListener('click',showHint);
+  if(play.hintStep)renderHintPanel(speakingHintSteps(prompt,phraseFor(prompt.phraseId)),play.hintStep);
   $('#show-answer').addEventListener('click',gradeAnswer);
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
   const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent);
@@ -866,10 +871,23 @@ function startRecognition() {
     if(helper)helper.textContent='マイクを開始できません。英文入力で続けられます。';
   }
 }
+function renderHintPanel(steps,step){
+  const panel=$('#hint-panel'),button=$('#show-hint');
+  panel.hidden=false;
+  panel.innerHTML=steps.slice(0,step).map(item=>`<p class="speaking-hint-step"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.detail)}</span></p>`).join('')+
+    '<small>ヒントを見て正解した場合は「ヒントあり」の記録になるよ。</small>';
+  button.setAttribute('aria-expanded','true');
+  button.textContent=step<steps.length?'もう少しヒントを見る':'ヒントを表示中';
+  button.disabled=step===steps.length;
+}
 function showHint() {
-  const prompt=currentPrompt(), phrase=phraseFor(prompt.phraseId);play.hintUsed=true;
+  if(!play||play.revealed)return;
+  const prompt=currentPrompt(), phrase=phraseFor(prompt.phraseId);
+  const steps=speakingHintSteps(prompt,phrase);
+  const step=Math.min((play.hintStep||0)+1,steps.length);
+  play.hintStep=step;play.hintUsed=true;
   if(play.mode==='forest')play.encounterHelp=true;
-  $('#hint-panel').hidden=false;$('#hint-panel').textContent=`ヒント：${prompt.hint || phrase.hint}　${prompt.tip || phrase.tip}`;
+  renderHintPanel(steps,step);
 }
 async function gradeAnswer() {
   if(!play || play.revealed || play.grading)return;
