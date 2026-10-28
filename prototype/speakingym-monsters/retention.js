@@ -15,7 +15,7 @@ export function sanitizeRetention(raw){
  return Object.fromEntries(Object.entries(raw).filter(([id,v])=>
   ids.has(id)&&v&&Number.isInteger(v.stage)&&v.stage>=0&&v.stage<=4&&
   validDate(v.lastDay)&&validDate(v.nextDay)&&v.nextDay>=v.lastDay
- ).slice(-256).map(([id,v])=>[id,{
+ ).slice(-512).map(([id,v])=>[id,{
   stage:v.stage,lastDay:v.lastDay,nextDay:v.nextDay,
   ...(['retry','wait'].includes(v.recoveryPhase)?{recoveryPhase:v.recoveryPhase}:{})
  }]));

@@ -702,9 +702,9 @@ const path=require('node:path');
       assert.equal(await cityPage.locator('.dungeon-world-card').count(),2,'Forest and City must be separate, clearly labelled world panels');
       assert.equal(await cityPage.locator('#dungeon-world-forest-title').innerText(),'はじまりの森');
       assert.equal(await cityPage.locator('#dungeon-world-city-title').innerText(),'雪灯りの街');
-      assert.match(await cityPage.locator('.dungeon-world-city .dungeon-world-heading').innerText(),/雪の駅前/);
+      assert.match(await cityPage.locator('.dungeon-world-city .dungeon-world-heading').innerText(),/4エリア/);
       assert.equal(await cityPage.locator('.dungeon-world-forest [data-enter-forest]').count(),4);
-      assert.equal(await cityPage.locator('.dungeon-world-city [data-enter-forest]').count(),1);
+      assert.equal(await cityPage.locator('.dungeon-world-city [data-enter-forest]').count(),4);
       const worldColors=await cityPage.evaluate(()=>({forest:getComputedStyle(document.querySelector('.dungeon-world-forest')).backgroundImage,city:getComputedStyle(document.querySelector('.dungeon-world-city')).backgroundImage,scroll:document.documentElement.scrollWidth,inner:innerWidth}));
       assert.notEqual(worldColors.forest,worldColors.city,'Distinct destinations need distinct color themes');
       assert.ok(worldColors.scroll<=worldColors.inner+1,`${engine}/${width} world-select overflow: ${JSON.stringify(worldColors)}`);
@@ -722,7 +722,7 @@ const path=require('node:path');
       await cityPage.reload({waitUntil:'networkidle'});
       await enterHomePanel(cityPage,'forest');
       assert.equal(await cityCard.isEnabled(),true,'Four forest victories unlock the City');
-      assert.match(await cityPage.locator('#forest-home-progress').innerText(),/森 4\/4 · 街 未攻略/);
+      assert.match(await cityPage.locator('#forest-home-progress').innerText(),/森 4\/4 · 街 0\/4/);
       assert.match(await cityPage.locator('#start-forest').innerText(),/雪灯りの街/);
       if(width===390)await cityPage.screenshot({path:path.join(shots,`city-${engine}-${width}-selection.png`),fullPage:true});
       await cityCard.click();
@@ -750,6 +750,29 @@ const path=require('node:path');
       assert.match(await cityPage.locator('#forest-route-status').innerText(),/マーケット通り/);
       assert.match(await cityPage.locator('.question-top').innerText(),/ENCOUNTER 2 \/ 10/);
       await cityPage.locator('#leave-play').click();
+      if(width===390){
+        const upcoming=[['city','city-market'],['city-market','city-terminal'],['city-terminal','city-blizzard']];
+        for(const [clearedId,nextId] of upcoming){
+          await cityPage.evaluate(async areaId=>{
+            const {STORAGE_KEY}=await import('./monster-engine.js');
+            const {finishForest}=await import('./forest-engine.js');
+            const old=JSON.parse(localStorage.getItem(STORAGE_KEY));
+            const cleared=finishForest(old,'market','medamago',areaId);
+            localStorage.setItem(STORAGE_KEY,JSON.stringify(cleared.save));
+          },clearedId);
+          await cityPage.reload({waitUntil:'networkidle'});
+          await enterHomePanel(cityPage,'forest');
+          assert.equal(await cityPage.locator(`[data-enter-forest="${nextId}"]`).isEnabled(),true,`${nextId} unlocks after its predecessor`);
+          await cityPage.locator(`[data-enter-forest="${nextId}"]`).click();
+          assert.equal(await cityPage.locator('#forest-explore-art .city-world-svg').getAttribute('data-city-chapter'),nextId);
+          await cityPage.locator('#forest-explore-continue').click();
+          assert.equal(await cityPage.locator('.battle-arena-svg').getAttribute('data-city-chapter'),nextId);
+          assert.match(await cityPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 10/);
+          const m=await cityPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+          assert.ok(m.scroll<=m.inner+1,`${engine} ${nextId} scene overflow: ${JSON.stringify(m)}`);
+          await cityPage.locator('#leave-play').click();
+        }
+      }
       await cityContext.close();
     }
     // Explanations remain visible until the learner chooses to continue.

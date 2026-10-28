@@ -34,7 +34,19 @@ const LESSONS=Object.freeze({
   'forest-grammar-meet': ['日時を提案するときは、助動詞のあとに主語と動詞を並べよう。','Can we meet tomorrow? / Would tomorrow work for you? はどちらも日程を相談する表現。'],
   'forest-grammar-forgot': ['忘れた出来事は過去形。忘れた物と、し忘れた動作は言い方が違う。','I forgot my ticket. は物を忘れた。I forgot to bring my ticket. は持参し忘れた。'],
   'forest-grammar-included': ['「含まれる」は受け身の be included、または include を使う。','Is breakfast included in the price? と Does the price include breakfast? は主語が違う。'],
-  'forest-grammar-wifi': ['今の不具合・昨日から続く不具合・逆接を含む説明で時制を使い分けよう。','The Wi-Fi is not working. は今の不具合。It has not worked since yesterday. は昨日から継続。']
+  'forest-grammar-wifi': ['今の不具合・昨日から続く不具合・逆接を含む説明で時制を使い分けよう。','The Wi-Fi is not working. は今の不具合。It has not worked since yesterday. は昨日から継続。'],
+  'city-market-exchange':['同じ商品を別サイズに交換するのか、故障品の交換・返金なのか区別しよう。','exchange this for a medium はサイズ交換、request a replacement は不良品の代替品を頼むとき。'],
+  'city-market-receipt':['支払いの記録、返金、品目ごとの内訳は目的によって英語が違う。','a receipt は購入証明、a refund は返金、an itemized receipt は料金を一つずつ示す控え。'],
+  'city-market-allergy':['直接疑問文から間接疑問文へ移るときの語順と丁寧な依頼表現を確かめよう。','Does this contain nuts? を Could you tell me whether ...? や Would you mind checking ...? に変えてみよう。'],
+  'city-market-extra-charge':['追加料金の有無を確かめ、理由と内訳を別々に尋ねる練習をしよう。','Is this the final price? から Could you explain why ...? に進み、必要なら itemized receipt を頼もう。'],
+  'city-terminal-connections':['乗り換えそのもの・乗り継ぎ時間・代替交通の違いを聞き分けよう。','transfer は乗り換える動作、connection は乗り継ぎ、replacement transport は代替の交通手段。'],
+  'city-terminal-services':['少し遅れるのか、1便が運休なのか、路線全体が止まっているのか区別しよう。','A train is delayed / a service is cancelled / trains are suspended では対応がそれぞれ変わる。'],
+  'city-terminal-platform-question':['どのホームかを尋ねる直接質問から、丁寧な間接質問へ言い換えてみよう。','Which platform is it? → Could you tell me which platform ...? と進め、whether で以前の情報も確認。'],
+  'city-terminal-ticket-change':['変更できるかを尋ねるときは、変更する対象と新しい日付を具体的にしよう。','Can I change my ticket? と If the train is cancelled, could I use my ticket tomorrow? を使い分けよう。'],
+  'city-blizzard-shelter':['安全な場所・暖房付きの待合室・緊急事態のどれを話しているか確認しよう。','We need shelter. / Is there a heated waiting area? / This is an emergency. の意味の違いを整理。'],
+  'city-blizzard-road-closure':['単なる通行止め、迂回路、通行不可能な状態の違いを考えよう。','The road is closed. なら detour を尋ね、impassable の場合は安全な代案を優先しよう。'],
+  'city-blizzard-safe-help':['助けを求める短い質問から、理由と具体的な依頼まで英語で組み立てよう。','Could you help me? → Could you tell me where I can wait? → As ..., could you suggest ...? と発展。'],
+  'city-blizzard-postpone':['延期やオンラインへの変更は、理由・条件・具体的な代替案を組み合わせて伝えよう。','Can we meet later? から Since the buses are not running, could we meet online? に応用してみよう。']
 });
 
 const LEVEL_CUES=Object.freeze({

@@ -85,6 +85,10 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .forest-journal-areas,.forest-journal-events,.forest-journal-badges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 22px}
 .forest-journal-area,.forest-journal-entry,.forest-journal-badge{min-width:0;display:flex;flex-direction:column;gap:5px;border-radius:12px;padding:12px 13px;background:#fffcf2;border:1px solid #d9ccad;color:#294a3c}
 .forest-journal-area.is-cleared{border-color:#81a783;background:#ecf4e5}
+.city-journal-heading{margin:19px 0 3px;font-size:15px;line-height:1.5;color:#2d5b79;font-weight:900;letter-spacing:.035em}
+.city-journal-areas .forest-journal-area{border-color:#b2d4e4;background:#eaf5fb;color:#254d69}
+.city-journal-areas .forest-journal-area.is-cleared{border-color:#6caac9;background:#dcf2fc}
+.city-journal-areas .forest-journal-area.is-locked{background:#eff3f5;color:#71808b}
 .forest-journal-area.is-locked,.forest-journal-entry.is-hidden{background:#f2eddf;color:#677568}
 .journal-number{font-size:10px;color:#8a764f;letter-spacing:.09em;font-weight:800}
 .forest-journal-area strong,.forest-journal-entry strong{font-size:14px;line-height:1.4}

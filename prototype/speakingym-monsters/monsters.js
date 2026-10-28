@@ -228,14 +228,15 @@ function renderHome() {
   $$('[data-remove-saved]').forEach(button=>button.addEventListener('click',()=>{persist(toggleSavedPrompt(save,button.dataset.removeSaved));renderHome();}));
   const forest=cleanForest(save.forest);
   const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
-  const cityClear=forest.completedAreas.includes('city');
-  $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityClear?'CLEAR':'未攻略'} · 冒険勝利 ${forest.clears}回`;
+  const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
+  const cityClear=cityCount===CITY_AREAS.length;
+  $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityCount}/${CITY_AREAS.length} · 冒険勝利 ${forest.clears}回`;
   const unlocked=new Set(unlockedDungeonAreas(save).map(area=>area.id));
   const dueRetention=retentionOverview(save,dayKey()).due;
   const areaCard=(area,index)=>{
     const cleared=forest.completedAreas.includes(area.id),open=unlocked.has(area.id);
     const chapterDue=dueRetention.filter(entry=>area.focus.some(key=>entry.prompt.phraseId.startsWith(key))).length;
-    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${area.world==='city'?'CITY':String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">全${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋ボス3問）${chapterDue?' · 復習候補'+chapterDue+'問':''}</span></small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':area.world==='city'?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
+    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">全${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋ボス3問）${chapterDue?' · 復習候補'+chapterDue+'問':''}</span></small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':area.world==='city'&&forestCount<FOREST_AREAS.length?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
   };
   const forestCards=FOREST_AREAS.map((area,index)=>areaCard(area,index)).join('');
   const cityCards=CITY_AREAS.map((area,index)=>areaCard(area,index)).join('');
@@ -246,7 +247,7 @@ function renderHome() {
     </section>
     <div class="dungeon-world-transition" aria-hidden="true"><span>森をクリアすると次の世界へ ↓</span></div>
     <section class="dungeon-world-card dungeon-world-city" aria-labelledby="dungeon-world-city-title">
-      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · SNOW CITY</span><h3 id="dungeon-world-city-title">雪灯りの街</h3><p>雪の駅前で、予約変更・道案内・困りごとに挑戦</p></div><strong class="dungeon-world-badge">${cityClear?'攻略済み':forestCount===FOREST_AREAS.length?'挑戦可能':'森を攻略すると解放'}</strong></header>
+      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · SNOW CITY</span><h3 id="dungeon-world-city-title">雪灯りの街</h3><p>中央広場から吹雪の街外れまで、4エリアで実践英語に挑戦</p></div><strong class="dungeon-world-badge">${cityCount} / ${CITY_AREAS.length} エリア攻略${forestCount<FOREST_AREAS.length?' · 森の攻略で解放':''}</strong></header>
       <div class="dungeon-world-areas">${cityCards}</div>
     </section>`;
   $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startSession('forest',button.dataset.enterForest)));
@@ -489,7 +490,7 @@ function showForestExplore(routeChoice=false) {
   }else eventPanel.innerHTML='';
   const options=$('#forest-explore-options');
   options.hidden=!routeChoice;
-  options.innerHTML=routeChoice?(play.areaId==='city'?CITY_ROUTES:FOREST_ROUTES).map(route=>
+  options.innerHTML=routeChoice?(area.world==='city'?CITY_ROUTES:FOREST_ROUTES).map(route=>
     `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
   const forward=$('#forest-explore-continue');
   forward.hidden=routeChoice;
@@ -1141,12 +1142,12 @@ function finishSession(timedOut=false,defeated=false) {
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
   $('#result-title').textContent=ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
-    (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:ended.areaId==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
+    (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
   $('#result-description').textContent=ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
     (defeated?'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
-     `${dungeonAreaFor(ended.areaId).name}を攻略！ ${ended.areaId==='city'?'次は別の場面で英語を使ってみよう。':'次のエリアの扉が開いたよ。'}`):
+     `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
     timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
   $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
@@ -1157,7 +1158,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-discoveries').innerHTML=newMonsters+newRelics+memories;
   renderDungeonLearningReport(ended);
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
-  $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(ended.areaId==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
+  $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.mode,ended.areaId);
   showView('result');
 }

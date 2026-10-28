@@ -2,6 +2,7 @@ import { ADDITIONAL_PHRASES, ADDITIONAL_PROMPTS } from './expanded-curriculum.js
 import { FOREST_QUIZZES } from './forest-quizzes.js';
 import { BOSS_RESPONSE_PROMPTS } from './forest-boss-story.js';
 import { SPEAKING_ADVENTURES } from './speaking-adventures.js';
+import { SNOW_CITY_QUIZZES, SNOW_CITY_SPEAKING } from './snow-city-curriculum.js';
 // A compact, curated speaking curriculum: one useful expression, two situations.
 // The prototype does not claim that speech recognition can grade arbitrary English.
 export const PHRASES = Object.freeze([
@@ -278,6 +279,8 @@ export const ALL_PROMPTS = Object.freeze([
   ...PROMPTS,
   ...ADDITIONAL_PROMPTS.filter(p=>p.difficulty),
   ...FOREST_QUIZZES,
+  ...SNOW_CITY_QUIZZES,
+  ...SNOW_CITY_SPEAKING,
   ...BOSS_RESPONSE_PROMPTS,
   ...SPEAKING_ADVENTURES,
   ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => {
@@ -306,5 +309,7 @@ export const MONSTERS = Object.freeze([
   { id: 'fuwari', name: 'Flufflet', japaneseName: 'フワリコ', evolvedName: 'Nimbus', roots: [{word:'fluffy',meaning:'ふわふわした'},{word:'cloud',meaning:'雲'}], skill:{name:'Cloud Drift',description:'落ち着いて聞き直す、学習用の演出'}, kind:'綿雲のこども',color:'#add3e7', unlock:5,forestAreas:1,retentionStage:2,retentionUnlock:1,rarity:'rare',note:'朝の森に浮かぶ小さな雲。旅の話を聞くのが好き。' },
   { id: 'kompass', name: 'Northling', japaneseName: 'コンパシ', evolvedName: 'Polestar', roots:[{word:'compass',meaning:'方位磁針'},{word:'north',meaning:'北'}],skill:{name:'True North',description:'迷った時に目標を思い出す、学習用の演出'},kind:'方位磁針の旅人',color:'#b8ad8f',unlock:7,forestAreas:2,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'針が指すのは北だけじゃない。大切な人の声にも反応する。' },
   { id: 'pikap', name: 'Glimli', japaneseName: 'ピカプ', evolvedName: 'Auroraglim', roots:[{word:'glimmer',meaning:'かすかな光'},{word:'firefly',meaning:'ホタル'}],skill:{name:'Quiet Glow',description:'聞き取れた言葉を光に変える、学習用の演出'},kind:'ランタンホタル',color:'#e6c87b',masteryUnlock:3,forestAreas:3,retentionStage:3,retentionUnlock:2,rarity:'epic',note:'急いでいると消えてしまう。じっくり学ぶ旅人のそばでだけ光る。' },
-  { id: 'mokuryu', name: 'Barklit', japaneseName: 'モクリュウ', evolvedName: 'Eldrake', roots:[{word:'bark',meaning:'木の皮'},{word:'dragon',meaning:'ドラゴン'}],skill:{name:'Old Wisdom',description:'学んだ表現の復習を促す、学習用の演出'},kind:'古木の小竜',color:'#8fa57d',masteryUnlock:5,forestAreas:4,retentionStage:4,retentionUnlock:3,rarity:'legend',note:'年輪の模様が背中にある。四つの森を歩いた者の言葉にだけ耳を傾ける。' }
+  { id: 'mokuryu', name: 'Barklit', japaneseName: 'モクリュウ', evolvedName: 'Eldrake', roots:[{word:'bark',meaning:'木の皮'},{word:'dragon',meaning:'ドラゴン'}],skill:{name:'Old Wisdom',description:'学んだ表現の復習を促す、学習用の演出'},kind:'古木の小竜',color:'#8fa57d',masteryUnlock:5,forestAreas:4,retentionStage:4,retentionUnlock:3,rarity:'legend',note:'年輪の模様が背中にある。四つの森を歩いた者の言葉にだけ耳を傾ける。' },
+  { id: 'yukibell', name: 'Bellumi', japaneseName: 'ユキベル', evolvedName: 'Aurabell', roots:[{word:'bell',meaning:'鈴・ベル'},{word:'illuminate',meaning:'照らす'}],skill:{name:'Gentle Chime',description:'復習の予定を静かに思い出させる、学習用の演出'},kind:'雪灯りの鈴',color:'#9bcee8',masteryUnlock:6,cityAreas:2,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'雪の商店街に灯る鈴。翌日も覚えている言葉を聞くと、小さく鳴る。'},
+  { id: 'railfox', name: 'Railfox', japaneseName: 'レールギツネ', evolvedName: 'Aurorail', roots:[{word:'rail',meaning:'鉄道・レール'},{word:'fox',meaning:'キツネ'}],skill:{name:'Connection',description:'別の場面で使える英語の結びつきを示す、学習用の演出'},kind:'北の駅のきつね',color:'#bdd5e8',masteryUnlock:8,cityAreas:4,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'吹雪の夜に北駅へ戻ってくる。忘れずに使えた言葉だけを道しるべにする。'}
 ]);

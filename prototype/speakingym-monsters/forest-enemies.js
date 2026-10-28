@@ -25,13 +25,15 @@ Object.assign(sprites,{
 const variants=Object.freeze({
  sunmoss:'mossling',beethorn:'thistlet',glowcap:'spookap',ambernut:'bramblet',daymoth:'mothum',
  fogling:'mossling',nightthorn:'thistlet',whispercap:'spookap',bitterbud:'bramblet',duskmoth:'mothum',
- rootlet:'mossling',ancienthorn:'thistlet',oraclecap:'spookap',stonebud:'bramblet',starmoth:'mothum'
+ rootlet:'mossling',ancienthorn:'thistlet',oraclecap:'spookap',stonebud:'bramblet',starmoth:'mothum',
+ marketwarden:'metroguardian',railkeeper:'metroguardian',blizzardking:'metroguardian'
 });
 export function enemyArt(id){
  const base=variants[id]||id;
  const tint=['sunmoss','beethorn','glowcap','ambernut','daymoth'].includes(id)?'hue-rotate(-24deg) saturate(1.25)':
    ['fogling','nightthorn','whispercap','bitterbud','duskmoth'].includes(id)?'hue-rotate(105deg) saturate(.78)':
-   ['rootlet','ancienthorn','oraclecap','stonebud','starmoth'].includes(id)?'sepia(.42) saturate(.9)':'';
+   ['rootlet','ancienthorn','oraclecap','stonebud','starmoth'].includes(id)?'sepia(.42) saturate(.9)':
+   id==='marketwarden'?'sepia(.35) saturate(1.4)':id==='railkeeper'?'hue-rotate(44deg) saturate(1.12)':id==='blizzardking'?'hue-rotate(146deg) saturate(1.35)':'';
  const motif=tint?`<circle cx="117" cy="22" r="12" fill="${tint.includes('105')?'#9bb8dd':tint.includes('sepia')?'#bbcc83':'#ffe49b'}" stroke="#fff4d7" stroke-width="2"/><path d="M111 22h12m-6-6v12" stroke="#4d5c48" stroke-width="2"/>`:'';
- return `<svg class="forest-enemy-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 150" role="img" aria-label="${['signbit','tickety','signalyn','parceloo','lanternet','metroguardian'].includes(id)?'街の敵モンスター':'森の敵モンスター'}"><ellipse cx="74" cy="142" rx="58" ry="7" fill="#09271b" opacity=".23"/><g ${tint?`style="filter:${tint}"`:''}>${sprites[base]||sprites.mossling}</g>${motif}</svg>`;
+ return `<svg class="forest-enemy-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 150" role="img" aria-label="${['signbit','tickety','signalyn','parceloo','lanternet','metroguardian','marketwarden','railkeeper','blizzardking'].includes(id)?'街の敵モンスター':'森の敵モンスター'}"><ellipse cx="74" cy="142" rx="58" ry="7" fill="#09271b" opacity=".23"/><g ${tint?`style="filter:${tint}"`:''}>${sprites[base]||sprites.mossling}</g>${motif}</svg>`;
 }

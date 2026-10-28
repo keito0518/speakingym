@@ -25,13 +25,28 @@ export const CITY_AREAS=Object.freeze([
  {id:'city',name:'雪灯りの街・中央広場',english:'SNOWLIT CITY',world:'city',
   goal:'街の予定変更・問い合わせ・トラブルを解決する',
   story:'雪灯りの街で案内を読み、相手の説明を聞き、予定変更や困りごとを英語で伝えよう。',
-  focus:['booking','direction','change','clarify','problem','agree']}
+  focus:['booking','direction','change','clarify','problem','agree']},
+ {id:'city-market',name:'雪の商店街',english:'SNOW MARKET',world:'city',
+  goal:'注文・返品・料金の確認を丁寧に伝える',
+  story:'雪のマーケットで注文を工夫し、レシートを確認して、お店の人と相談しよう。',
+  focus:['order','price','clarify','problem','apology']},
+ {id:'city-terminal',name:'北のターミナル',english:'NORTH TERMINAL',world:'city',
+  goal:'乗り換え・運休情報・予約変更に対応する',
+  story:'冬のターミナルで接続時間を確かめ、遅れた列車の代わりの経路を尋ねよう。',
+  focus:['direction','booking','change','late','clarify']},
+ {id:'city-blizzard',name:'吹雪の街外れ',english:'BLIZZARD OUTSKIRTS',world:'city',
+  goal:'予期せぬトラブルを説明し、代案を相談する',
+  story:'吹雪で予定が変わった。状況を整理し、助けを求め、現実的な代案を英語で伝えよう。',
+  focus:['problem','apology','clarify','prefer','change','help']}
 ]);
 export const DUNGEON_AREAS=Object.freeze([...FOREST_AREAS,...CITY_AREAS]);
 export const dungeonAreaFor=id=>DUNGEON_AREAS.find(area=>area.id===id)||null;
 export function unlockedCityAreas(save){
  const cleared=new Set(cleanForest(save?.forest).completedAreas);
- return FOREST_AREAS.every(area=>cleared.has(area.id))?CITY_AREAS:[];
+ if(!FOREST_AREAS.every(area=>cleared.has(area.id)))return [];
+ // Sequential checkpoints, without taking existing `city` clears away.
+ const firstUncleared=CITY_AREAS.findIndex(area=>!cleared.has(area.id));
+ return CITY_AREAS.slice(0,firstUncleared<0?CITY_AREAS.length:firstUncleared+1);
 }
 export function unlockedDungeonAreas(save){return [...unlockedForestAreas(save),...unlockedCityAreas(save)];}
 export function unlockedForestAreas(save){
@@ -68,6 +83,9 @@ export const FOREST_RELICS=Object.freeze({
  ,'city-pass':{name:'City Pass',meaning:'街の通行証',description:'街での英語のやり取りを乗り越えた証。'}
  ,'market-stamp':{name:'Market Stamp',meaning:'市場の記念スタンプ',description:'マーケット通りで見つけた記念品。'}
  ,'station-stamp':{name:'Station Stamp',meaning:'駅の記念スタンプ',description:'ステーション通りで見つけた記念品。'}
+ ,'market-bell':{name:'Winter Bell',meaning:'商店街の小さな鈴',description:'雪の商店街で、お店の人ときちんと意思を交わせた証。'}
+ ,'terminal-ticket':{name:'North Ticket',meaning:'北行きの切符',description:'接続と乗り換えを英語で乗り越えた記念。'}
+ ,'snow-crystal':{name:'Snow Crystal',meaning:'吹雪の結晶',description:'吹雪の中でも冷静に問題を説明できた証。'}
 });
 export function cleanForest(input){
  const source=input&&typeof input==='object'?input:{};
@@ -82,7 +100,7 @@ export function cleanForest(input){
   routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>[...FOREST_ROUTES,...CITY_ROUTES].some(r=>r.id===x)))],
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
   completedAreas:[...new Set(completed.filter(x=>allowed.includes(x)))],
-  recentPromptIds:[...new Set((Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]).filter(id=>ALL_PROMPTS.some(p=>p.id===id)))].slice(-80),
+  recentPromptIds:[...new Set((Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]).filter(id=>ALL_PROMPTS.some(p=>p.id===id)))].slice(-128),
   // A bounded, validated collection of distinct story decisions. Old saves
   // simply start with an empty journal; replaying the same choice adds nothing.
   journal:[...new Map((Array.isArray(source.journal)?source.journal:[])
@@ -112,20 +130,21 @@ export function getForestPrompts(save,difficulty=save.difficulty||'easy'){
  return prompts;
 }
 export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[],recordAreaClear=true){
- const routePool=areaId==='city'?CITY_ROUTES:FOREST_ROUTES;
+ const isCity=dungeonAreaFor(areaId)?.world==='city';
+ const routePool=isCity?CITY_ROUTES:FOREST_ROUTES;
  if(!routePool.some(r=>r.id===routeId))throw new Error('Invalid forest route');
  if(!save.ownedMonsters?.includes(companionId))throw new Error('Companion is not owned');
  if(!DUNGEON_AREAS.some(area=>area.id===areaId))throw new Error('Invalid forest area');
  if(recordAreaClear&&!unlockedDungeonAreas(save).some(area=>area.id===areaId))throw new Error('Forest area is locked');
  const before=cleanForest(save.forest);
  const fresh=new Set(before.relics);
- const earned=[areaId==='city'?(routeId==='market'?'market-stamp':'station-stamp'):(routeId==='sunlit'?'sunlit-leaf':'moss-lantern')];
- const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn',city:'city-pass'}[areaId];
+ const earned=[isCity?(routeId==='market'?'market-stamp':'station-stamp'):(routeId==='sunlit'?'sunlit-leaf':'moss-lantern')];
+ const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn',city:'city-pass','city-market':'market-bell','city-terminal':'terminal-ticket','city-blizzard':'snow-crystal'}[areaId];
  if(areaTreasure&&recordAreaClear)earned.push(areaTreasure);
  // A narrow, purely cosmetic exploration perk tied to evolved companions.
  const evolved=(save.monsterXp?.[companionId]||0)>=160;
- if(areaId!=='city'&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
- if(areaId!=='city'&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
+ if(!isCity&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
+ if(!isCity&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
  const discovered=earned.filter(id=>!fresh.has(id));
  const next={
   ...save,
@@ -135,7 +154,7 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
    routes:[...new Set([...before.routes,routeId])],
    relics:[...new Set([...before.relics,...earned])],
    completedAreas:recordAreaClear?[...new Set([...before.completedAreas,areaId])]:before.completedAreas,
-   recentPromptIds:[...new Set([...before.recentPromptIds,...promptIds.filter(id=>ALL_PROMPTS.some(p=>p.id===id))])].slice(-80),
+   recentPromptIds:[...new Set([...before.recentPromptIds,...promptIds.filter(id=>ALL_PROMPTS.some(p=>p.id===id))])].slice(-128),
    journal:before.journal
   }
  };

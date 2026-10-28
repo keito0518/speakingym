@@ -3,7 +3,7 @@
 const evergreen=(x,y,s,tint='#204f43')=>`<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 0L-10 32L-22 37L-12 55L-27 65L-8 76L-5 108L7 108L10 76L27 65L12 55L22 37L10 32Z" fill="${tint}"/><path d="M0 14L-8 56M0 45L10 73" stroke="#83c59c" stroke-opacity=".24" stroke-width="3" fill="none"/><path d="M-4 79L-3 115L4 115L4 79" fill="#5d443a"/></g>`;
 const shrub=(x,y,s=1)=>`<g transform="translate(${x} ${y}) scale(${s})"><ellipse rx="26" ry="13" fill="#193e35"/><ellipse cx="-15" cy="-5" rx="16" ry="11" fill="#28664c"/><ellipse cx="12" cy="-7" rx="17" ry="12" fill="#306f55"/><circle cx="-10" cy="-10" r="2" fill="#a8e5aa" opacity=".5"/></g>`;
 const glimmer=(x,y,i)=>`<circle class="forest-glimmer forest-glimmer-${i%4}" cx="${x}" cy="${y}" r="${2+(i%2)}" fill="#ffefa7"/>`;
-function cityWorldArt(route){
+function cityWorldArt(route,areaId='city'){
  const market=route==='market',station=route==='station';
  const buildings=[[12,62,106,142],[127,94,87,118],[230,30,104,179],[358,74,110,136],[494,48,100,164],[608,91,101,122]];
  const skyline=buildings.map(([x,y,w,h],i)=>{
@@ -14,7 +14,14 @@ function cityWorldArt(route){
  }).join('');
  const road=market?'M62 247C196 227 255 237 344 202S526 187 644 135':'M62 247C172 228 263 192 350 207S531 158 644 135';
  const snow=[[25,26],[79,49],[141,17],[183,63],[223,17],[284,63],[342,15],[402,42],[471,24],[545,57],[602,8],[676,41],[699,86]];
- return `<svg class="forest-world-svg forest-world-area-city city-world-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 270" role="img" aria-label="雪の積もった街の屋根、あたたかい街灯、雪道で駅と商店街をつなぐ3つの関門">
+ const tint={'city-market':-16,'city-terminal':12,'city-blizzard':35}[areaId]||0;
+ const chapterLandmark={
+  'city-market':'<g transform="translate(252 160)"><rect x="-46" y="-4" width="92" height="53" rx="5" fill="#325168" stroke="#dceefa" stroke-width="3"/><path d="M-50 -5L-40 -37H40L50 -5Z" fill="#d9eef5"/><path d="M-50 -5V8Q-39 20 -27 8Q-15 20 -3 8Q10 20 23 8Q37 20 50 8V-5" fill="#de7f81" stroke="#fff2e1" stroke-width="3"/><rect x="-20" y="22" width="40" height="17" rx="3" fill="#ffe1a3"/><text x="0" y="34" font-size="10" fill="#334864" text-anchor="middle" font-weight="700">SHOP</text></g>',
+  'city-terminal':'<g transform="translate(260 156)"><rect x="-55" y="-42" width="110" height="91" rx="7" fill="#315b72" stroke="#c3e5f6" stroke-width="3"/><path d="M-62 -43H62L43 -63H-43Z" fill="#e0f3f8"/><circle cy="-23" r="15" fill="#e6f2f0" stroke="#527189" stroke-width="3"/><path d="M0 -23V-33M0 -23L8 -18" stroke="#527189" stroke-width="2"/><rect x="-40" y="0" width="80" height="30" rx="4" fill="#9bc9dc"/><rect x="-34" y="6" width="25" height="15" fill="#36506a"/><rect x="-4" y="6" width="25" height="15" fill="#36506a"/><circle cx="-28" cy="31" r="6" fill="#253a4c"/><circle cx="27" cy="31" r="6" fill="#253a4c"/></g>',
+  'city-blizzard':'<g stroke="#eefaff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".85"><path d="M40 49Q110 33 198 46M93 77Q176 69 253 81M340 39Q426 25 529 37M487 81Q570 65 695 77M31 119Q89 109 155 123M475 119Q558 99 699 117"/></g><g transform="translate(266 189)"><path d="M-34 -28V30M36 -28V30" stroke="#b7d8e8" stroke-width="6"/><rect x="-37" y="-27" width="76" height="22" rx="3" fill="#f5ecdd" stroke="#d66a6c" stroke-width="4"/><path d="M-24 -25L-10 -6M3 -25L17 -6" stroke="#d66a6c" stroke-width="6"/></g>'
+ }[areaId]||'';
+ const chapterLabel={'city':'雪の街の中央広場','city-market':'雪の屋台が並ぶ商店街','city-terminal':'時計と列車のある北のターミナル','city-blizzard':'雪風と通行止めのある街外れ'}[areaId];
+ return `<svg class="forest-world-svg forest-world-area-city city-world-svg" data-city-chapter="${areaId}" ${tint?`style="filter:hue-rotate(${tint}deg)"`:''} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 270" role="img" aria-label="雪の積もった街、${chapterLabel}、雪道と3つの関門">
  <defs><linearGradient id="citySky" x2="0" y2="1"><stop stop-color="${station?'#13244c':'#25345e'}"/><stop offset=".63" stop-color="#527eac"/><stop offset="1" stop-color="#b5d7e3"/></linearGradient><linearGradient id="cityRoad" x2="0" y2="1"><stop stop-color="#f2faff"/><stop offset="1" stop-color="#bdd7df"/></linearGradient></defs>
  <rect width="720" height="270" fill="url(#citySky)"/><circle cx="591" cy="36" r="33" fill="#e8f5ff" opacity=".7"/><circle cx="591" cy="36" r="49" fill="#e4f7ff" opacity=".13"/>
  <path d="M0 139Q115 104 211 131T458 122T720 109V270H0Z" fill="#466884" opacity=".5"/>
@@ -23,6 +30,7 @@ function cityWorldArt(route){
  <path d="${road}" fill="none" stroke="#4b6f85" stroke-width="43" stroke-linecap="round" opacity=".85"/>
  <path d="${road}" fill="none" stroke="url(#cityRoad)" stroke-width="27" stroke-linecap="round"/>
  <path d="${road}" fill="none" stroke="#fdf8d5" stroke-width="2.5" stroke-dasharray="5 15" stroke-linecap="round"/>
+ ${chapterLandmark}
  <g transform="translate(446 105)"><rect width="94" height="44" rx="8" fill="#184558" stroke="#c4dfd4" stroke-width="3"/><text x="47" y="27" fill="#fff2cc" text-anchor="middle" font-size="15" font-weight="700">${market?'MARKET':'STATION'}</text></g>
  <g transform="translate(625 160)"><path d="M0 0V-57M-10-58H10" stroke="#d3e6e8" stroke-width="5"/><rect x="-15" y="-85" width="30" height="29" rx="7" fill="#283f4e" stroke="#b7d5cf" stroke-width="3"/><circle cy="-72" r="7" fill="#ffe4a5"/><circle cy="-72" r="17" fill="#ffe4a5" opacity=".21"/></g>
  <g fill="#f9fdff" opacity=".89">${snow.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i%3===0?2.4:1.6}"/>`).join('')}</g>
@@ -32,7 +40,7 @@ function cityWorldArt(route){
  </svg>`;
 }
 export function forestWorldArt(route=null,areaId='entry'){
- if(areaId==='city')return cityWorldArt(route);
+ if(areaId==='city'||areaId.startsWith('city-'))return cityWorldArt(route,areaId);
  const moss=route==='moss',sunlit=route==='sunlit';
  const mode=moss?'moss':sunlit?'sunlit':'wild';
  const near=[[-17,70,1.18],[63,29,.85],[135,57,1.15],[217,14,.96],[309,28,1],[404,26,.86],[502,18,1.12],[582,43,1.1],[680,6,.99],[741,57,1.23]];

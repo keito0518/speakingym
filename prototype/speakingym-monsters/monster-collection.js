@@ -1,7 +1,7 @@
 import { MONSTERS } from './monster-data.js';
 import { getMonsterProgress, learningSummary, feedMonster, selectMonster, XP_PER_LEVEL, EVOLUTION_XP, companionUnlockProgress, getMonsterBondProgress } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
-import { FOREST_RELICS, FOREST_AREAS, FOREST_ROUTES, cleanForest } from './forest-engine.js';
+import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, FOREST_ROUTES, unlockedCityAreas, cleanForest } from './forest-engine.js';
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
 
@@ -15,13 +15,14 @@ function unlockText(c,save){
  const language=`${p.skillLabel} ${p.currentSkill}/${p.requiredSkill}`;
  const recallLabel={2:'翌日',3:'3日後',4:'7日後'}[p.recallStage]||'復習';
  const recall=p.requiredRecall?` · ${recallLabel}の定着チェック ${p.currentRecall}/${p.requiredRecall}表現`:'';
+ if(c.cityAreas)return `${language} · 雪灯りの街 ${p.cityCount}/${p.requiredCityAreas}エリア${recall}。すべて達成で仲間になるよ。`;
  return c.forestAreas?`${language} · 森の攻略 ${p.areaCount}/${p.requiredAreas}エリア${recall}。すべて達成で仲間になるよ。`:`${language} で出会えるよ。`;
 }
 const chapterMarks=Object.freeze([
- {name:'森の一歩',goal:'最初のエリアを攻略',condition:f=>f.completedAreas.length>=1},
+ {name:'森の一歩',goal:'最初のエリアを攻略',condition:f=>FOREST_AREAS.some(area=>f.completedAreas.includes(area.id))},
  {name:'分かれ道の探検家',goal:'両方の道を歩く',condition:f=>f.routes.length===2},
  {name:'物語の収集家',goal:'異なる4つのイベントを記録',condition:f=>new Set(f.journal.map(x=>x.eventId)).size>=4},
- {name:'森の守護者',goal:'4エリアを攻略',condition:f=>f.completedAreas.length===4},
+ {name:'森の守護者',goal:'4エリアを攻略',condition:f=>FOREST_AREAS.every(area=>f.completedAreas.includes(area.id))},
  {name:'冒険の語り部',goal:'8つのイベントすべてを記録',condition:f=>new Set(f.journal.map(x=>x.eventId)).size>=8},
  {name:'もうひとつの物語',goal:'全16種類の選択を見届ける',condition:f=>f.journal.length===16}
 ]);
@@ -40,9 +41,14 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     $('#forest-collection-relics').innerHTML = forest.relics.length ? forest.relics.map(id => `<article class="forest-relic">${relicArt(id)}<div><strong lang="en">${html(FOREST_RELICS[id].name)}</strong><small>${html(FOREST_RELICS[id].meaning)}</small></div></article>`).join('') : '<p class="forest-empty">仲間と森を探検して、宝物を見つけよう。</p>';
     const seenEvents=new Set(forest.journal.map(row=>row.eventId));
     const earnedBadges=chapterMarks.filter(mark=>mark.condition(forest));
-    $('#forest-journal-summary').textContent=`攻略 ${forest.completedAreas.length}/4エリア · イベント ${seenEvents.size}/8種類 · 選択 ${forest.journal.length}/16 · 称号 ${earnedBadges.length}/6`;
+    const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
+    const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
+    const cityOpen=new Set(unlockedCityAreas(save).map(area=>area.id));
+    $('#forest-journal-summary').textContent=`森 ${forestCount}/4 · 街 ${cityCount}/4エリア · イベント ${seenEvents.size}/8種類 · 称号 ${earnedBadges.length}/6`;
     $('#forest-journal-areas').innerHTML=FOREST_AREAS.map((area,index)=>
       `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">CHAPTER ${index+1}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':index<=forest.completedAreas.length?'未攻略':'未解放'}</span></article>`).join('');
+    $('#city-journal-areas').innerHTML=CITY_AREAS.map((area,index)=>
+      `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">CITY ${String(index+1).padStart(2,'0')}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':cityOpen.has(area.id)?'挑戦可能':'未解放'}</span></article>`).join('');
     $('#forest-journal-events').innerHTML=FOREST_AREAS.flatMap(area=>FOREST_ROUTES.map(route=>{
       const event=FOREST_EVENTS[area.id][route.id], choices=forest.journal.filter(x=>x.eventId===event.id);
       const title=seenEvents.has(event.id)?event.title:'未発見の物語';
@@ -55,7 +61,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       const owned = save.ownedMonsters.includes(c.id), g = getMonsterProgress(save,c.id);
       const p=companionUnlockProgress(save,c);
       const bond=getMonsterBondProgress(save,c.id);
-      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned&&g.evolved)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned&&g.evolved?`進化済み · 絆 Lv.${bond.rank}`:owned?`未進化 · 絆 Lv.${bond.rank}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
+      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned&&g.evolved)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned&&g.evolved?`進化済み · 絆 Lv.${bond.rank}`:owned?`未進化 · 絆 Lv.${bond.rank}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
     }).join('');
     all('[data-open-monster]').forEach(b => b.addEventListener('click',()=>renderDetail(b.dataset.openMonster)));
     $('#phrase-grid').innerHTML = summary.entries.map(({phrase,entry,level}) => `<article class="phrase-card"><strong>${html(phrase.label)}</strong><p>${html(phrase.expression)}</p><div class="phrase-progress" aria-label="習得レベル ${level} / 3">${[1,2,3].map(i=>`<span class="${i<=level?'full':''}"></span>`).join('')}</div><p>${level===3?'MASTER · 別の場面と別の日でも使えた':level===2?'自力で言えた':level===1?'練習中':'これから出会う表現'}${entry?.nextReviewDay?' · 次の目安 '+html(entry.nextReviewDay):''}</p></article>`).join('');

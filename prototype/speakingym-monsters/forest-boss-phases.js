@@ -38,6 +38,27 @@ const CHAPTER_BEATS=Object.freeze({
   titlesEn:['CITY ANNOUNCEMENT','SCHEDULE PUZZLE','YOUR CITY REPLY'],
   contexts:['街の案内音声を聞いて、要点を理解しよう。','予定や案内を自然な語順で組み立てよう。','最後は困りごとを自分の英語で伝えよう。'],
   contextsEn:['Listen to a city announcement and identify its meaning.','Put the schedule or service question in natural English order.','Explain your choice or problem in your own English.']
+ }),
+ 'city-market':Object.freeze({
+  name:'雪市の番人の試練',english:'WINTER MARKET TRIAL',
+  titles:['屋台の声','料金の確認','お店の人への返事'],
+  titlesEn:['MARKET ANNOUNCEMENT','PRICE QUESTION','YOUR MARKET REPLY'],
+  contexts:['買い物の案内を聞き、内容を理解しよう。','料金や注文の英文を自然な語順にしよう。','状況を整理して、お店の人に英語で伝えよう。'],
+  contextsEn:['Listen for a useful detail from the market.','Build a natural question about an order or price.','Respond to the shopkeeper with the details needed.']
+ }),
+ 'city-terminal':Object.freeze({
+  name:'北駅の守護者の試練',english:'NORTH TERMINAL TRIAL',
+  titles:['列車の案内','乗り換えの鍵','窓口への問い合わせ'],
+  titlesEn:['TRAIN ANNOUNCEMENT','TRANSFER KEY','ASK THE STATION'],
+  contexts:['駅のアナウンスから必要な情報をつかもう。','予定に合う英語の一語を選ぼう。','乗り換えや変更について英語で問い合わせよう。'],
+  contextsEn:['Listen for the important travel update.','Choose the word that fits the journey.','Explain what you need at the station counter.']
+ }),
+ 'city-blizzard':Object.freeze({
+  name:'吹雪の王の試練',english:'BLIZZARD TRIAL',
+  titles:['雪の知らせ','安全な提案','最後の相談'],
+  titlesEn:['STORM UPDATE','SAFE ALTERNATIVE','YOUR FINAL REQUEST'],
+  contexts:['悪天候の連絡から状況を正確に理解しよう。','安全な代案を英語で組み立てよう。','必要な助けと代案を、自分の英語で具体的に伝えよう。'],
+  contextsEn:['Listen to the weather-related service update.','Arrange a clear and safe alternative.','Explain the problem and ask for a workable next step.']
  })
 });
 export const FOREST_BOSS_CHAPTERS=CHAPTER_BEATS;
@@ -68,6 +89,21 @@ export const FOREST_BOSS_SIGNATURES=Object.freeze({
   Object.freeze({id:'announcement',name:'街の案内放送',tell:'音声の大事な情報を聞き取ろう。',guard:'信号の光がまだ赤く点滅している。'}),
   Object.freeze({id:'schedule',name:'予定表の暗号',tell:'予定を伝える英文を自然な順序に並べよう。',guard:'案内板の文字がまだ揃っていない。'}),
   Object.freeze({id:'cityreply',name:'守護機への返事',tell:'街で必要なことを英語で伝えよう。',guard:'街のゲートがまだ開いていない。'})
+ ]),
+ 'city-market':Object.freeze([
+  Object.freeze({id:'marketcall',name:'市場の呼び声',tell:'お店の案内を聞き取ろう。',guard:'ざわめきに声が隠れている。'}),
+  Object.freeze({id:'marketprice',name:'値札の暗号',tell:'料金に関する英文を考えよう。',guard:'値札がまだ読めない。'}),
+  Object.freeze({id:'marketreply',name:'店員への相談',tell:'要望を英語で伝えよう。',guard:'お店の扉がまだ閉まっている。'})
+ ]),
+ 'city-terminal':Object.freeze([
+  Object.freeze({id:'stationcall',name:'発車放送',tell:'駅の案内を聞き取ろう。',guard:'放送が響いている。'}),
+  Object.freeze({id:'stationticket',name:'切符の選択',tell:'状況に合う語を選ぼう。',guard:'乗り換えの案内が消えている。'}),
+  Object.freeze({id:'stationreply',name:'駅員への質問',tell:'必要な情報を英語で尋ねよう。',guard:'改札がまだ開かない。'})
+ ]),
+ 'city-blizzard':Object.freeze([
+  Object.freeze({id:'stormcall',name:'吹雪の放送',tell:'悪天候の連絡を聞こう。',guard:'風に声がかき消された。'}),
+  Object.freeze({id:'stormplan',name:'代案の語順',tell:'安全な提案を組み立てよう。',guard:'雪が行く手をふさいでいる。'}),
+  Object.freeze({id:'stormreply',name:'最後の相談',tell:'困りごとと代案を伝えよう。',guard:'吹雪の壁が残っている。'})
  ])
 });
 

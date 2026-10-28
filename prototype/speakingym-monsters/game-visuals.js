@@ -11,6 +11,9 @@ export function relicArt(id) {
     ,'city-pass':'<rect x="10" y="17" width="44" height="30" rx="6" fill="#b8e2dc"/><path d="M15 26H49M17 39H31M37 39H47" stroke="#4d8290" stroke-width="4"/><circle cx="41" cy="31" r="5" fill="#f8d794" stroke="none"/>'
     ,'market-stamp':'<rect x="14" y="12" width="36" height="39" rx="7" fill="#efd4a0"/><path d="M19 26H45L41 40H23Z" fill="#c99a65"/><path d="M17 24L32 15L47 24" stroke="#617d78" stroke-width="4"/>'
     ,'station-stamp':'<circle cx="32" cy="32" r="23" fill="#a7d2db"/><rect x="20" y="17" width="24" height="27" rx="5" fill="#4f7e90"/><path d="M23 23H41M24 34H40M25 49L20 55M39 49L44 55" stroke="#e6f6f0" stroke-width="3"/>'
+    ,'market-bell':'<path d="M18 38Q15 19 31 14Q47 18 46 38L52 46H12Z" fill="#c7e4f1"/><circle cx="32" cy="50" r="7" fill="#efd19b"/><path d="M26 11Q32 5 38 11" stroke="#9bc1d1" stroke-width="4" fill="none"/>'
+    ,'terminal-ticket':'<path d="M10 20H54V44H10V35Q16 32 10 28Z" fill="#c8def1"/><path d="M34 20V44" stroke="#64849c" stroke-dasharray="3 4"/><path d="M16 27H29M39 27H49M16 36H29M39 36H49" stroke="#557a96" stroke-width="3"/>'
+    ,'snow-crystal':'<path d="M32 6V58M6 32H58M14 14L50 50M50 14L14 50" stroke="#9cd4ee" stroke-width="5"/><path d="M22 13L32 21L42 13M22 51L32 43L42 51M13 22L21 32L13 42M51 22L43 32L51 42" stroke="#d4f5ff" stroke-width="3"/>'
   };
   return `<svg class="relic-svg" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g stroke="#655b40" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">${shapes[id] || shapes['sunlit-leaf']}</g></svg>`;
 }
@@ -18,7 +21,7 @@ export function guardArt() {
   return '<svg viewBox="0 0 100 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M50 5L90 20V55Q86 88 50 104Q14 88 10 55V20Z" fill="#76cddc44" stroke="#d4f8ff" stroke-width="4"/><path d="M50 18L77 28V54Q74 76 50 88Q26 76 23 54V28Z" fill="none" stroke="#8dd8e8" stroke-width="2"/><path d="M50 27V76M30 47H70" stroke="#e0faff" stroke-width="3"/></svg>';
 }
 export function battleArenaArt(boss = false,areaId='entry') {
-  if(areaId==='city')return `<svg class="battle-arena-svg battle-arena-city" data-arena="${boss?'metro-nexus':'city-platform'}" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  if(areaId==='city'||areaId.startsWith('city-'))return `<svg class="battle-arena-svg battle-arena-city" data-arena="${areaId==='city'?(boss?'metro-nexus':'city-platform'):`${areaId}-${boss?'boss':'street'}`}" data-city-chapter="${areaId}" style="filter:hue-rotate(${{'city-market':-16,'city-terminal':12,'city-blizzard':35}[areaId]||0}deg)" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
    <defs><linearGradient id="city-arena" x2="0" y2="1"><stop stop-color="${boss?'#1d2e59':'#24436e'}"/><stop offset="1" stop-color="#8eb6ce"/></linearGradient><linearGradient id="city-floor" x2="0" y2="1"><stop stop-color="#91b7c8"/><stop offset="1" stop-color="#29485d"/></linearGradient></defs>
    <rect width="800" height="300" fill="url(#city-arena)"/><circle cx="634" cy="47" r="35" fill="#e9faff" opacity=".55"/><g fill="#344d6c"><path d="M0 160V50H90V160M114 160V20H205V160M235 160V75H320V160M485 160V45H557V160M585 160V13H700V160M720 160V61H800V160"/></g>
    <g fill="#e4f6ff" stroke="#aecfe0" stroke-width="3"><path d="M0 55Q46 38 90 55H0ZM114 24Q160 7 205 24H114ZM235 80Q280 63 320 80H235ZM485 49Q524 32 557 49H485ZM585 17Q644 1 700 17H585ZM720 66Q761 50 800 66H720Z"/></g>

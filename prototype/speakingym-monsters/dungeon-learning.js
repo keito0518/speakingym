@@ -15,7 +15,10 @@ export const DUNGEON_CHAPTER_SKILLS=Object.freeze({
  glade:Object.freeze({headline:'旅の予定・希望・道案内を相談する',boss:['旅の情報を聞き取る','場面に合う単語を選ぶ','希望を英語で伝える']}),
  thicket:Object.freeze({headline:'読み違えず、条件を整理して確認する',boss:['必要な情報を聞き取る','条件に合う英文を組み立てる','誤解を防ぐ言い方で伝える']}),
  sanctuary:Object.freeze({headline:'複数の情報をまとめて意思を伝える',boss:['大切な情報を聞き取る','意味に合う表現を選ぶ','状況に合わせて自分の言葉で答える']}),
- city:Object.freeze({headline:'街の問い合わせ・予定変更・困りごとへの対応',boss:['案内の要点を聞き取る','状況に合う英文を組み立てる','問い合わせや希望を英語で伝える']})
+ city:Object.freeze({headline:'街の問い合わせ・予定変更・困りごとへの対応',boss:['案内の要点を聞き取る','状況に合う英文を組み立てる','問い合わせや希望を英語で伝える']}),
+ 'city-market':Object.freeze({headline:'屋台の注文・返品・料金の質問',boss:['お店の説明を聞き取る','条件に合う語順を作る','具体的に注文や料金を尋ねる']}),
+ 'city-terminal':Object.freeze({headline:'乗り換え・運休・予約の変更',boss:['発車・運休の情報を聞く','状況に合う語を選ぶ','代わりの経路を尋ねる']}),
+ 'city-blizzard':Object.freeze({headline:'悪天候の説明と安全な代替案',boss:['状況説明の要点を聞く','丁寧な提案を組み立てる','必要な支援・代案を伝える']})
 });
 export const DUNGEON_OUTCOME_VALUES=Object.freeze(['independent','supported','review']);
 export function summarizeDungeonAttempt(areaId,encounters=[]){

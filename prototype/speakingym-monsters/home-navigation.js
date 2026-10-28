@@ -67,7 +67,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  applyMotion();head.append(motionToggle);
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
- <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 2 WORLDS</span><h2>English<br>ダンジョン</h2><p>森の4エリアを攻略したら、雪景色が広がる「雪灯りの街」へ。英語を使って仲間と進もう。</p>
+ <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 2 WORLDS · 8 AREAS</span><h2>English<br>ダンジョン</h2><p>森の4エリアを攻略したら、4エリアの「雪灯りの街」へ。覚えた英語を使って仲間と進もう。</p>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
  <button type="button" class="home-feature-cta" data-feature-dungeon>ダンジョンへ進む <span aria-hidden="true">›</span></button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;

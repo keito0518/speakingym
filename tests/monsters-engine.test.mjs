@@ -48,8 +48,8 @@ test('dungeon reports verified learning honestly and never count assisted route 
  assert.throws(()=>summarizeDungeonAttempt('unverified',[]),/Unknown/);
  assert.throws(()=>summarizeDungeonAttempt('entry',null),/Invalid/);
 });
-test('five dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
- assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,5);
+test('eight dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
+ assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,8);
  for(const area of DUNGEON_AREAS){
    const expected=['listen','vocab','speak'];
    assert.ok(DUNGEON_CHAPTER_SKILLS[area.id].headline.length>=8);
@@ -64,7 +64,7 @@ test('five dungeon bosses have three grounded learning objectives, not new manda
    const wave=buildForestWave({areaId:area.id,difficulty:'easy',progression:'story',random:()=>.53,bossConversation:true});
    const regular=regularEncountersFor(area.id);
    assert.deepEqual(wave.prompts.slice(regular).map(p=>p.kind),[
-     'listen',['thicket','entry','city'].includes(area.id)?'grammar':'vocab','speak'
+     'listen',['thicket','entry','city','city-market','city-blizzard'].includes(area.id)?'grammar':'vocab','speak'
    ]);
    if(area.id!=='entry'){
      const last=wave.prompts.at(-1);
@@ -283,17 +283,17 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
   assert.ok(voices.size>=6,'Listening should include six distinct English voices including both Australian narrators');
 });
 
-test('curriculum contains original situations, advanced adventures, 96 quizzes and three boss replies', () => {
-  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,13);
+test('curriculum includes 4 Snowlit City chapters with authored local quizzes and speaking tasks', () => {
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,15);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,279);
+  assert.equal(ALL_PROMPTS.length,342);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,93);
-    assert.equal(new Set(level.map(p=>p.id)).size,93);
+    assert.equal(level.length,114);
+    assert.equal(new Set(level.map(p=>p.id)).size,114);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
-    assert.equal(level.filter(p=>p.kind==='vocab').length,18);
-    assert.equal(level.filter(p=>p.kind==='grammar').length,14);
+    assert.equal(level.filter(p=>p.kind==='vocab').length,24);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,20);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
@@ -554,8 +554,8 @@ test('four Forest areas unlock one at a time, preserve earlier progress and avoi
 
 test('City is a fully gated second world, with its own routes, art and save-compatible rewards',async()=>{
  assert.equal(FOREST_AREAS.length,4);
- assert.equal(CITY_AREAS.length,1);
- assert.equal(DUNGEON_AREAS.length,5);
+ assert.equal(CITY_AREAS.length,4);
+ assert.equal(DUNGEON_AREAS.length,8);
  assert.deepEqual(CITY_ROUTES.map(route=>route.id),['market','station']);
  let save=createSave();
  assert.deepEqual(unlockedCityAreas(save),[]);
@@ -579,7 +579,19 @@ test('City is a fully gated second world, with its own routes, art and save-comp
  assert.deepEqual(resumed.forest,reward.save.forest);
  assert.deepEqual(resumed.forest.completedAreas,['entry','glade','thicket','sanctuary','city']);
  assert.ok(resumed.forest.recentPromptIds.includes('city-vocab-city-platform-easy'));
- assert.equal(nextDungeonArea(resumed).id,'city','Completed City can be replayed');
+ assert.equal(nextDungeonArea(resumed).id,'city-market','Clearing the first City chapter opens the market');
+ assert.deepEqual(unlockedCityAreas(resumed).map(area=>area.id),['city','city-market']);
+ assert.throws(()=>finishForest(resumed,'market','medamago','city-terminal'),/locked/);
+ let citySave=resumed;
+ const expected=[['city-market','market-bell'],['city-terminal','terminal-ticket'],['city-blizzard','snow-crystal']];
+ for(const [areaId,relicId] of expected){
+   assert.equal(nextDungeonArea(citySave).id,areaId);
+   const finished=finishForest(citySave,'station','medamago',areaId);
+   assert.ok(finished.discovered.includes(relicId),`${areaId} has a distinct souvenir`);
+   citySave=validateSave(finished.save);
+ }
+ assert.equal(unlockedCityAreas(citySave).length,4);
+ assert.equal(nextDungeonArea(citySave).id,'city-blizzard','Completed City stays replayable');
  assert.equal(unlockedForestAreas(resumed).length,4,'City clears do not create a fifth Forest chapter');
  const rare=MONSTERS.find(monster=>monster.forestAreas===4);
  assert.ok(rare);
@@ -628,6 +640,60 @@ test('City supplies 13 unique skill-mixed encounters at all levels, including or
    assert.ok(city.prompts.slice(0,10).some(p=>p.phraseId===city.prompts.at(-1).phraseId&&(p.baseId||p.id)!==(city.prompts.at(-1).baseId||city.prompts.at(-1).id)));
   }
  }
+});
+test('later Snowlit City chapters teach their own useful English and unlock only in order',()=>{
+ const ids=CITY_AREAS.map(area=>area.id);
+ assert.deepEqual(ids,['city','city-market','city-terminal','city-blizzard']);
+ for(const difficulty of DIFFICULTIES){
+   for(const area of CITY_AREAS.slice(1)){
+     const original=ALL_PROMPTS.filter(prompt=>prompt.world===area.id&&prompt.difficulty===difficulty);
+     assert.equal(original.length,7,`${area.id} has 4 original quizzes and 3 new speaking situations at ${difficulty}`);
+     assert.deepEqual(original.filter(p=>p.kind==='vocab').length,2);
+     assert.deepEqual(original.filter(p=>p.kind==='grammar').length,2);
+     for(let seed=1;seed<=30;seed++){
+       let state=seed;
+       const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+       const wave=buildForestWave({areaId:area.id,difficulty,progression:'story',random});
+       assert.equal(wave.prompts.length,13);
+       assert.equal(new Set(wave.prompts.map(p=>p.id)).size,13);
+       assert.ok(wave.prompts.every(p=>!p.world||p.world===area.id),'Other City chapters never leak into this chapter');
+       assert.ok(wave.prompts.filter(p=>p.world===area.id).length>=3,`${area.id} needs visible chapter-specific learning`);
+       assert.equal(opponentFor(12,1,area.id).hp,3);
+       assert.match(forestWorldArt('market',area.id),/city-world-svg/);
+     }
+   }
+ }
+ let save=createSave();
+ for(const area of FOREST_AREAS)save=finishForest(save,'sunlit','medamago',area.id).save;
+ assert.deepEqual(unlockedCityAreas(save).map(x=>x.id),['city']);
+ for(const area of CITY_AREAS){
+   assert.equal(nextDungeonArea(save).id,area.id);
+   save=finishForest(save,'market','medamago',area.id).save;
+   assert.ok(save.forest.completedAreas.includes(area.id));
+ }
+ const restored=validateSave(save);
+ assert.deepEqual(unlockedCityAreas(restored).map(x=>x.id),ids);
+ assert.deepEqual(restored.forest.completedAreas,[...FOREST_AREAS,...CITY_AREAS].map(a=>a.id));
+});
+test('new Snowlit City expressions enter the same 1/3/7-day review and preserve older saves',()=>{
+ const id='city-blizzard-speak-shelter-easy';
+ assert.equal(ALL_PROMPTS.find(p=>p.id===id).world,'city-blizzard');
+ let save=rate(createSave(),id,'smooth','2026-10-20').save;
+ assert.ok(save.retention[id]);
+ assert.equal(save.retention[id].nextDay,'2026-10-21');
+ assert.equal(save.retention[id].stage,1);
+ save=rate(save,id,'smooth','2026-10-20').save;
+ assert.equal(save.retention[id].stage,1,'Repeated same-day practice cannot fake retention');
+ save=rate(save,id,'smooth','2026-10-21').save;
+ assert.equal(save.retention[id].stage,2);
+ assert.equal(save.retention[id].nextDay,'2026-10-24');
+ const hint=rate(save,id,'hint','2026-10-24').save;
+ assert.equal(hint.retention[id].stage,2,'Hints never make the word mastered');
+ assert.ok(retentionOverview(hint,'2026-10-25').due.some(row=>row.id===id));
+ assert.equal(validateSave(hint).retention[id].stage,2);
+ const legacy=createSave();
+ assert.deepEqual(validateSave(legacy).forest.completedAreas,[]);
+ assert.equal(unlockedCityAreas(legacy).length,0);
 });
 
 test('fresh save has a fried-egg companion and does not call account or AI APIs', () => {
@@ -1009,9 +1075,9 @@ test('objective local checks accept authored examples and some natural paraphras
 test('forest and city objective questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
-    assert.equal(quizzes.length,32);
-    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,18);
-    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,14);
+    assert.equal(quizzes.length,44);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,24);
+    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,20);
     assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
     for(const p of quizzes){
       assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
@@ -1106,9 +1172,9 @@ test('an overdue word or grammar point takes priority in a later forest encounte
   assert.equal(harder.prompts[2].difficulty,'normal');
   assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
 });
-test('all 96 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
+test('all 132 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
   const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
-  assert.equal(quizzes.length,96);
+  assert.equal(quizzes.length,132);
   for(const prompt of quizzes){
     const lesson=quizTeachingFor(prompt);
     assert.ok(lesson?.label&&lesson.clue.length>=22,`Missing explanatory clue: ${prompt.id}`);
@@ -1154,7 +1220,7 @@ test('every chapter and route has a meaningful but grade-neutral choice event',(
  assert.equal(forestEventFor({areaId:'entry',route:'sunlit',index:5}),null);
  assert.equal(forestEventChoice(null,'inspect'),null);
 });
-test('all five chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
+test('all eight chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
   assert.deepEqual(Object.keys(FOREST_BOSS_CHAPTERS),DUNGEON_AREAS.map(a=>a.id));
   assert.deepEqual(Object.keys(FOREST_BOSS_SIGNATURES),DUNGEON_AREAS.map(a=>a.id));
   for(const area of DUNGEON_AREAS){
@@ -1164,7 +1230,7 @@ test('all five chapter bosses stage listening, language puzzle and speaking with
       const phases=wave.prompts.slice(start).map((prompt,i)=>forestBossPhase({areaId:area.id,index:i+start,wave:1,level,prompt}));
       assert.equal(phases.length,3);
       assert.deepEqual(phases.map(p=>p.turn),[1,2,3]);
-      assert.deepEqual(phases.map(p=>p.kind),['listen',['entry','thicket','city'].includes(area.id)?'grammar':'vocab','speak']);
+      assert.deepEqual(phases.map(p=>p.kind),['listen',['entry','thicket','city','city-market','city-blizzard'].includes(area.id)?'grammar':'vocab','speak']);
       assert.ok(phases.every(p=>p.areaId===area.id&&p.title&&p.context&&p.chapter));
       assert.equal(new Set(phases.map(p=>p.signature.id)).size,3,'Boss moves change with each phase');
       assert.ok(phases.every(p=>p.signature.name&&p.signature.tell&&p.signature.guard));
@@ -1222,10 +1288,10 @@ test('first-wave boss conversation joins listening, word order and speaking with
 });
 test('expanded dungeon quizzes change targets across levels and explain the language point',()=>{
   const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
-  assert.equal(quizzes.length,96);
-  assert.equal(new Set(quizzes.map(p=>p.id)).size,96);
+  assert.equal(quizzes.length,132);
+  assert.equal(new Set(quizzes.map(p=>p.id)).size,132);
   const baseIds=new Set(quizzes.map(p=>p.baseId));
-  assert.equal(baseIds.size,32);
+  assert.equal(baseIds.size,44);
   for(const baseId of baseIds){
     const variants=quizzes.filter(p=>p.baseId===baseId);
     assert.deepEqual(variants.map(p=>p.difficulty),['easy','normal','hard']);
@@ -1339,6 +1405,35 @@ test('rare forest recruits need language, real spaced recall and cleared chapter
   assert.ok(legacy.ownedMonsters.includes('kompass'));
   assert.equal(companionUnlockProgress(createSave(),rare[0]).ready,false);
   assert.equal(companionUnlockProgress(save,rare[1]).ready,false,'New capture would wait for independent recovery');
+});
+test('Snowlit City recruits require real chapter clears and spaced retention, not XP shortcuts',()=>{
+ const bell=MONSTERS.find(creature=>creature.id==='yukibell');
+ const fox=MONSTERS.find(creature=>creature.id==='railfox');
+ assert.equal(bell.cityAreas,2);assert.equal(fox.cityAreas,4);
+ assert.equal(companionUnlockProgress(createSave(),bell).ready,false);
+ let save=createSave();
+ // Existing records remain valid and eight expressions have actually been
+ // used in two contexts on separate days; city chapters cannot replace this.
+ const mastered=Object.fromEntries(PHRASES.slice(0,8).map(phrase=>[phrase.id,{
+   attempts:2,smoothContexts:['scene-a','scene-b'],smoothDays:['2026-10-20','2026-10-21']
+ }]));
+ save={...save,progress:mastered,retention:Object.fromEntries(['think-cafe','repeat-station','prefer-city'].map(id=>
+   [id,{stage:3,lastDay:'2026-10-25',nextDay:'2026-10-28'}]))};
+ assert.equal(companionUnlockProgress(save,bell).ready,false,'Language and retention alone do not unlock city rares');
+ for(const area of [...FOREST_AREAS,...CITY_AREAS.slice(0,2)])
+   save=finishForest(save,area.world==='city'?'market':'sunlit','medamago',area.id).save;
+ assert.equal(companionUnlockProgress(save,bell).ready,true);
+ assert.equal(companionUnlockProgress(save,fox).ready,false);
+ let awarded=captureEligibleMonsters(save);
+ assert.ok(awarded.captured.includes('yukibell'));
+ assert.ok(!awarded.captured.includes('railfox'));
+ save=awarded.save;
+ for(const area of CITY_AREAS.slice(2))save=finishForest(save,'station','medamago',area.id).save;
+ assert.equal(companionUnlockProgress(save,fox).ready,true);
+ awarded=captureEligibleMonsters(save);
+ assert.ok(awarded.captured.includes('railfox'));
+ assert.equal(captureEligibleMonsters(awarded.save).captured.length,0,'No repeat recruitment on replay');
+ assert.ok(validateSave(awarded.save).ownedMonsters.includes('railfox'));
 });
 test('highest-rarity creatures need multiple 3-day and 7-day checkpoints across distinct expressions',()=>{
  let save=createSave();
