@@ -1069,8 +1069,10 @@ async function gradeAnswer() {
     :objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
   const checkingNote=prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
+  const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
+    ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${expressionCoaching}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${acceptedVariant}${expressionCoaching}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }

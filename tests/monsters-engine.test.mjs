@@ -1095,12 +1095,14 @@ test('all 52 easy speaking situations recognize reviewed natural paraphrases wit
   assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='decline-overtime-hard'),"I can't work overtime today.").status,'correct','Hard tasks have additional requirements');
 });
 
-test('additional natural examples at normal and hard levels never inherit easier conditions',()=>{
+test('beginner and higher-level scenes accept vetted alternate wording without weakening hard tasks',()=>{
   const entries=Object.entries(VETTED_LEVEL_PARAPHRASES);
-  assert.ok(entries.length>=23);
+  assert.ok(entries.length>=39);
+  const easyEntries=entries.filter(([id])=>id.endsWith('-easy'));
+  assert.equal(easyEntries.length,16,'Cover all new beginner forest/city speaking scenes');
   for(const [id,replies] of entries){
     const prompt=ALL_PROMPTS.find(p=>p.id===id);
-    assert.ok(prompt&&['normal','hard'].includes(prompt.difficulty),'Invalid level-specific scene: '+id);
+    assert.ok(prompt&&['easy','normal','hard'].includes(prompt.difficulty),'Invalid level-specific scene: '+id);
     for(const reply of replies){
       assert.equal(gradeLocalResponse(prompt,reply).status,'correct',id+' / '+reply);
       assert.equal(compareWithExamples(prompt,reply).matchesExample,true,id+' / '+reply);
@@ -1110,6 +1112,35 @@ test('additional natural examples at normal and hard levels never inherit easier
   assert.notEqual(gradeLocalResponse(hard,"Sorry, I can't work overtime today.").status,'correct','Hard refusal requires reason and alternative');
   assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='booking-table-hard'),'Can I reserve a table for two for dinner?').status,'correct','Hard booking requires time and seating preference');
   assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='prefer-city-hard'),'I prefer taking the train.').status,'correct','Hard travel preference needs bus tradeoff and reason');
+});
+
+test('beginner speech accepts realistic request variation and missing articles but does not accept reversed intent',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['prefer-window-easy','May I have window seat, please?'],
+  ['prefer-window-easy','Can I sit by the window?'],
+  ['city-market-speak-order-easy','May I have hot tea, please?'],
+  ['city-terminal-speak-ticket-easy','Could I please move my ticket to tomorrow?'],
+  ['city-blizzard-speak-shelter-easy','Can you please tell me where I can wait safely?'],
+  ['order-extra','May I have pizza with extra cheese, please?'],
+  ['direction-bus','Where can I catch the bus to the airport?'],
+  ['recommend-drink',"Could you suggest something that's not too sweet?"],
+  ['booking-haircut','Do you have a haircut appointment available on Saturday?'],
+  ['price-delivery',"What's the shipping fee for this parcel?"],
+  ['problem-food',"This isn't what I ordered."]
+ ])assert.equal(gradeLocalResponse(byId(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['prefer-window-easy','Could I have an aisle seat?'],
+  ['city-market-speak-order-easy','Could I have a cold tea?'],
+  ['city-terminal-speak-ticket-easy','Could I move my ticket to today?'],
+  ['city-blizzard-speak-shelter-easy','Where can I wait unsafely?'],
+  ['city-blizzard-speak-reschedule-easy','Can we meet today instead?'],
+  ['clarify-charge-easy','Is the total forty dollars?'],
+  ['order-extra','A pizza without cheese please.'],
+  ['direction-bus','Where is the train station?'],
+  ['booking-haircut','Can I book a haircut for Sunday?'],
+  ['problem-ticket-easy','I have already received my e-ticket.']
+ ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','Different meaning must not receive XP: '+id+' / '+answer);
 });
 
 
