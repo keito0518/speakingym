@@ -109,6 +109,9 @@
 .forest-tactic-party button{flex:1 1 110px;font-size:11px;min-height:40px}
 .forest-tactic-party button strong,.forest-tactic-party button small{display:block;line-height:1.45}
 .forest-tactic-party button small{font-size:10px;margin-top:3px}
+.forest-tactic-party button:disabled:not([aria-pressed="true"]){opacity:.59;cursor:not-allowed;background:#e2e8dc}
+.forest-tactic-party button[data-fainted="true"]{background:#f8e7e2;border-color:#a9776c;color:#664039}
+.forest-tactic-party button[data-fainted="true"] small{color:#75483d}
 .forest-active .play-card{max-width:none;min-height:0;margin:0;padding:10px 12px;border:1px solid #d6c592;border-radius:11px;background:#fffaf0;box-shadow:none}
 .forest-active .play-card h1{font-size:clamp(18px,4.7vw,26px);line-height:1.45;margin:8px 0}
 .forest-active .play-card .scenario-label{margin:8px 0 0}
