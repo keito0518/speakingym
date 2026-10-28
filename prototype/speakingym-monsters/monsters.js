@@ -605,6 +605,7 @@ function renderPartyFormation(){
  const foe=opponentFor(0,play.wave,play.areaId),weakness=foeAffinity(foe.id);
  const roster=t.formationIds,owned=(save.ownedMonsters||[]).filter(id=>MONSTERS.some(monster=>monster.id===id));
  const candidates=[...roster,...owned.filter(id=>!roster.includes(id))];
+ const guide=owned.length===1?'仲間はまだ1体だけ。編成できる仲間が増えるとここで入れ替えられるよ。今は「この編成で出発する」から始めよう。':'仲間の絵やカードをタップして選ぼう。控えの仲間は「先頭にする」でも切り替えられるよ。';
  screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span><small>得意な仲間を選ぼう。英語の問題はどの仲間でも同じように挑戦できるよ。</small></div>
  <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
  <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
@@ -615,21 +616,34 @@ function renderPartyFormation(){
    const monster=monsterFor(id),progress=getMonsterProgress(save,id),affinity=allyAffinity(id);
    const selected=roster.includes(id),leader=id===roster[0];
    const match=affinity.strong===weakness.weak?'弱点を狙える！':affinity.strong===weakness.resist?'敵に耐性あり':'技能を使い分けよう';
-   const label=leader?'先頭で出撃':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
-   return `<div class="forest-formation-card" data-formation-selected="${selected}" data-formation-leader="${leader}">
+   const label=leader?'先頭で出撃中':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
+   return `<div class="forest-formation-card" data-formation-card="${escapeHtml(id)}" data-formation-selected="${selected}" data-formation-leader="${leader}">
     <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.evolved)}</div>
     <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)}</span><span>得意 ${BATTLE_LABELS[affinity.strong]} ／ 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?' · 進化済':''}</small></div>
-    <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}" ${leader?'disabled':''}>${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
+    <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}">${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
    </div>`;
- }).join('')}</div><p class="forest-formation-help">仲間が増えてもセーブデータは変わらないよ。ここで選んだ3体だけが今回の戦闘に出撃する。</p>`;
+ }).join('')}</div><p class="forest-formation-help">仲間が増えてもセーブデータは変わらないよ。ここで選んだ3体だけが今回の戦闘に出撃する。</p><p class="forest-formation-status" role="status" aria-live="polite" id="forest-formation-status">${escapeHtml(t.formationMessage||guide)}</p>`;
  $$('[data-formation-choice]',screen).forEach(button=>button.addEventListener('click',()=>{
    if(!play?.tactics?.formationPending)return;
-   t.formationIds=editBattleFormation(t.formationIds,owned,button.dataset.formationChoice);
+   const target=button.dataset.formationChoice;
+   if(target===t.formationIds[0]){
+     t.formationMessage=owned.length===1?'今はこの仲間1体で出撃するよ。仲間が増えたらここで編成できる！':'この仲間が先頭で出撃中だよ。ほかの仲間を選ぶか「先頭にする」で変更できるよ。';
+   }else{
+     const wasSelected=t.formationIds.includes(target);
+     t.formationIds=editBattleFormation(t.formationIds,owned,target);
+     t.formationMessage=wasSelected?'控えから外したよ。もう一度タップすると戻せるよ。':'編成を更新したよ！「この編成で出発する」から戦おう。';
+   }
    renderPartyFormation();
+ }));
+ // The artwork and empty area of each card also respond to a finger tap.
+ $$('[data-formation-card]',screen).forEach(card=>card.addEventListener('click',event=>{
+   if(event.target.closest('button'))return;
+   card.querySelector('[data-formation-choice]')?.click();
  }));
  $$('[data-formation-lead]',screen).forEach(button=>button.addEventListener('click',()=>{
    if(!play?.tactics?.formationPending)return;
    t.formationIds=editBattleFormation(t.formationIds,owned,button.dataset.formationLead,{leader:true});
+   t.formationMessage='先頭の仲間を変更したよ！';
    const leader=t.formationIds[0],evolved=getMonsterProgress(save,leader).evolved;
    $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,evolved);
    renderPartyFormation();

@@ -300,6 +300,9 @@
 .forest-formation-slot strong{font-size:11px;line-height:1.5;color:#304a37;overflow-wrap:break-word}
 .forest-formation-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .forest-formation-card{display:grid;grid-template-columns:46px minmax(0,1fr);gap:5px 8px;align-items:center;padding:9px;border:1px solid #abc1ab;border-radius:10px;background:#fffdf5;min-width:0}
+.forest-formation-card{cursor:pointer;touch-action:manipulation;transition:border-color .12s ease,background .12s ease}
+.forest-formation-card:active{border-color:#247d58;background:#e3f2d8}
+.forest-formation-status{margin:0;padding:9px 10px;border:1px solid #bfa76d;border-radius:8px;background:#fff4cf;color:#584021;font-size:12px;font-weight:800;line-height:1.65;line-break:strict;overflow-wrap:break-word}
 .forest-formation-card[data-formation-selected="true"]{border:2px solid #408c62;background:#eef7e6;padding:8px}
 .forest-formation-card[data-formation-leader="true"]{border-color:#bd993f;background:#fff4d4}
 .forest-formation-creature{width:46px;height:46px}
