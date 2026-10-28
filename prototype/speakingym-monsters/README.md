@@ -1,3 +1,8 @@
+## 2026-10-28 — independent stage selection under a prominent dungeon title
+
+- Dungeon selection now leads with its **own large navy/gold Englishダンジョン banner**. Beneath the neutral page background are two **standalone** destination cards: the green **WORLD 01 はじまりの森** and the icy blue **WORLD 02 雪灯りの街**, with a simple progression divider. The Forest and City no longer look like subsections enclosed within one green Forest container.
+- Hero title wraps at a controlled Japanese word boundary on small phones; tests inspect the title/banner, both separate cards, transparent parent background and horizontal overflow at **320, 375, 390 and 430px** in both Chromium and WebKit. Existing stage buttons, unlock gates, completion status, progress, IDs, local saves, and learning rules remain identical.
+
 ## 2026-10-28 — Snowlit City visual identity and separate world selection
 
 - The player-facing second world is now **雪灯りの街 (SNOWLIT CITY)**, with the playable chapter **雪灯りの街・中央広場**. Winter blue/cyan world-card styling, snow-capped city rooftops, quiet snowflakes, illuminated station and market buildings, and a distinct snow-city battle arena make this an unmistakable second destination after the green **はじまりの森**.

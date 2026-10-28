@@ -244,6 +244,7 @@ function renderHome() {
       <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 01 · FOREST</span><h3 id="dungeon-world-forest-title">はじまりの森</h3><p>聞く・話す・読む力を身につける冒険</p></div><strong class="dungeon-world-badge">${forestCount} / ${FOREST_AREAS.length} エリア攻略</strong></header>
       <div class="dungeon-world-areas">${forestCards}</div>
     </section>
+    <div class="dungeon-world-transition" aria-hidden="true"><span>森をクリアすると次の世界へ ↓</span></div>
     <section class="dungeon-world-card dungeon-world-city" aria-labelledby="dungeon-world-city-title">
       <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · SNOW CITY</span><h3 id="dungeon-world-city-title">雪灯りの街</h3><p>雪の駅前で、予約変更・道案内・困りごとに挑戦</p></div><strong class="dungeon-world-badge">${cityClear?'攻略済み':forestCount===FOREST_AREAS.length?'挑戦可能':'森を攻略すると解放'}</strong></header>
       <div class="dungeon-world-areas">${cityCards}</div>

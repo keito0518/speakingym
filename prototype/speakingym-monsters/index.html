@@ -77,12 +77,20 @@
               <button class="button button-primary" data-start="speaking">スピーキングを始める</button>
               <button class="button button-dark" data-start="challenge">60秒チャレンジ</button>
             </div>
-            <section class="forest-invite" aria-labelledby="forest-invite-title">
-              <span class="forest-kicker">2 WORLDS · 5 SKILLS · FOREST + CITY</span>
-              <h2 id="forest-invite-title">Englishダンジョン</h2>
-              <p>森の4エリアで基礎を磨こう。攻略すると雪景色の「雪灯りの街」で、予定変更や問い合わせに挑戦できるよ。</p>
+            <section class="forest-invite dungeon-selection" aria-labelledby="forest-invite-title">
+              <header class="dungeon-selection-banner">
+                <span class="forest-kicker">MAIN ADVENTURE · ENGLISH RPG</span>
+                <div class="dungeon-selection-banner-content">
+                  <div class="dungeon-selection-banner-copy">
+                    <h2 id="forest-invite-title">English<span>ダンジョン</span></h2>
+                    <p>英語を使って、ふたつの世界を冒険しよう。</p>
+                  </div>
+                  <div class="dungeon-selection-counter" aria-label="2つのワールド"><strong>02</strong><span>WORLDS</span></div>
+                </div>
+              </header>
+              <div class="dungeon-selection-label"><strong>ワールドを選ぼう</strong><span>森から雪の街へ、冒険が広がる</span></div>
               <div id="forest-area-list" class="forest-area-list" aria-label="ダンジョンのエリア選択"></div>
-              <div class="forest-invite-action"><button type="button" id="start-forest" class="forest-primary">次のエリアへ</button><button type="button" id="start-forest-endless" class="forest-endless-button">∞ エンドレスモード</button><span id="forest-home-progress">まだ未踏の森</span></div>
+              <div class="forest-invite-action dungeon-quick-actions"><button type="button" id="start-forest" class="forest-primary">次のエリアへ</button><button type="button" id="start-forest-endless" class="forest-endless-button">∞ エンドレスモード</button><span id="forest-home-progress">まだ未踏の森</span></div>
               <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
             </section>
             <span id="save-note" class="save-note">学習記録はこの端末に保存されます</span>

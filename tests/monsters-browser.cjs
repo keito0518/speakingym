@@ -61,6 +61,23 @@ const path=require('node:path');
       const credits=await page.getByRole('link',{name:'音声クレジット'}).getAttribute('href');
       assert.equal(credits,'./audio-credits.html');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-home.png`),fullPage:true});
+      await page.locator('[data-feature-dungeon]').click();
+      const dungeonLayout=await page.evaluate(()=>{
+        const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
+        return {banner:rect('.dungeon-selection-banner'),forest:rect('.dungeon-world-forest'),city:rect('.dungeon-world-city'),
+          background:getComputedStyle(document.querySelector('.dungeon-selection')).backgroundColor,
+          title:document.querySelector('#forest-invite-title').textContent,
+          overflow:document.documentElement.scrollWidth>innerWidth+1};
+      });
+      assert.equal(dungeonLayout.title,'Englishダンジョン');
+      assert.equal(dungeonLayout.background,'rgba(0, 0, 0, 0)','Dungeon does not wrap both worlds in another green card');
+      assert.ok(dungeonLayout.banner.bottom<dungeonLayout.forest.top&&dungeonLayout.forest.bottom<dungeonLayout.city.top,
+        `${engine}/${width} standalone dungeon hero and world cards: ${JSON.stringify(dungeonLayout)}`);
+      assert.equal(dungeonLayout.overflow,false,`${engine}/${width} dungeon world selection overflows horizontally`);
+      assert.equal(await page.locator('.dungeon-world-card').count(),2);
+      assert.equal(await page.locator('.dungeon-selection-banner .dungeon-world-card').count(),0);
+      await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-world-select.png`),fullPage:true});
+      await page.locator('#home-destination-forest .home-menu-back').click();
       await enterHomePanel(page,'training');
     await page.getByRole('button',{name:/スピーキングを始める/}).click();
       const playMetrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -102,7 +119,7 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#monsters-tutorial').isVisible(),false);
     await menuPage.locator('[data-feature-dungeon]').click();
     assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
-    assert.equal(await menuPage.locator('#forest-invite-title').innerText(),'Englishダンジョン');
+    assert.equal(await menuPage.locator('#forest-invite-title').textContent(),'Englishダンジョン');
     await menuPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
     assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
     await menuPage.locator('[data-home-page="forest"]').click();
