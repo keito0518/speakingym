@@ -7,7 +7,7 @@ import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, C
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
 import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, pickBattlePrompt } from './battle-tactics.js';
-import { createBattleParty, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
+import { createBattleParty, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
 import { createCollectionViews } from './monster-collection.js';
@@ -339,7 +339,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     route:null,companionId:save.selectedMonster,combo:0,
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
-      attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
+      formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,lastAttackKind:null,nextEnemyKind:null}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
@@ -599,13 +599,52 @@ function finishEnemyTurn(){
  if(!t.attackPrompt){t.attackPrompt=null;}
  renderQuestion();
 }
+function renderPartyFormation(){
+ const t=play?.tactics,screen=$('#forest-party-formation');
+ if(!t||!t.formationPending)return;
+ const foe=opponentFor(0,play.wave,play.areaId),weakness=foeAffinity(foe.id);
+ const roster=t.formationIds,owned=(save.ownedMonsters||[]).filter(id=>MONSTERS.some(monster=>monster.id===id));
+ const candidates=[...roster,...owned.filter(id=>!roster.includes(id))];
+ screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span><small>得意な仲間を選ぼう。英語の問題はどの仲間でも同じように挑戦できるよ。</small></div>
+ <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
+ <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
+   const id=roster[index],monster=id?monsterFor(id):null,progress=id?getMonsterProgress(save,id):null;
+   return `<div class="forest-formation-slot" data-formation-slot="${index}"><small>${index===0?'先頭':`控え${index}`}</small><strong>${monster?escapeHtml(monster.japaneseName||monster.name)+(progress.evolved?' ★':''):'未選択'}</strong></div>`;
+ }).join('')}</div>
+ <div class="forest-formation-choices" role="group" aria-label="仲間を編成する">${candidates.map(id=>{
+   const monster=monsterFor(id),progress=getMonsterProgress(save,id),affinity=allyAffinity(id);
+   const selected=roster.includes(id),leader=id===roster[0];
+   const match=affinity.strong===weakness.weak?'弱点を狙える！':affinity.strong===weakness.resist?'敵に耐性あり':'技能を使い分けよう';
+   const label=leader?'先頭で出撃':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
+   return `<div class="forest-formation-card" data-formation-selected="${selected}" data-formation-leader="${leader}">
+    <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.evolved)}</div>
+    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)}</span><span>得意 ${BATTLE_LABELS[affinity.strong]} ／ 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?' · 進化済':''}</small></div>
+    <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}" ${leader?'disabled':''}>${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
+   </div>`;
+ }).join('')}</div><p class="forest-formation-help">仲間が増えてもセーブデータは変わらないよ。ここで選んだ3体だけが今回の戦闘に出撃する。</p>`;
+ $$('[data-formation-choice]',screen).forEach(button=>button.addEventListener('click',()=>{
+   if(!play?.tactics?.formationPending)return;
+   t.formationIds=editBattleFormation(t.formationIds,owned,button.dataset.formationChoice);
+   renderPartyFormation();
+ }));
+ $$('[data-formation-lead]',screen).forEach(button=>button.addEventListener('click',()=>{
+   if(!play?.tactics?.formationPending)return;
+   t.formationIds=editBattleFormation(t.formationIds,owned,button.dataset.formationLead,{leader:true});
+   const leader=t.formationIds[0],evolved=getMonsterProgress(save,leader).evolved;
+   $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,evolved);
+   renderPartyFormation();
+ }));
+}
 function showForestExplore(routeChoice=false) {
   if(!play || play.mode!=='forest')return;
   cancelAutoAdvance();
   stopAudio();
   const view=$('#play-view'), map=$('#forest-explore-art');
-  const companion=monsterFor(play.companionId);
-  const evolved=getMonsterProgress(save,play.companionId).evolved;
+  const formation=Boolean(play.tactics?.formationPending&&!routeChoice);
+  $('#forest-explore-screen').classList.toggle('is-forming-party',formation);
+  const displayCompanion=formation?play.tactics.formationIds[0]:play.companionId;
+  const companion=monsterFor(displayCompanion);
+  const evolved=getMonsterProgress(save,displayCompanion).evolved;
   const foe=opponentFor(play.index,play.wave,play.areaId);
   const area=dungeonAreaFor(play.areaId);
   const isBoss=play.index>=regularCount();
@@ -620,14 +659,18 @@ function showForestExplore(routeChoice=false) {
   const storyEvent=routeChoice?null:forestEventFor({areaId:play.areaId,route:play.route,index:play.index});
   const storyKey=storyEvent?`${play.wave}:${storyEvent.id}`:null;
   const selected=storyEvent?forestEventChoice(storyEvent,play.eventChoices[storyKey]):null;
-  $('#forest-explore-title').textContent=routeChoice?'分かれ道に到着':storyEvent?storyEvent.title:isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
+  $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':routeChoice?'分かれ道に到着':storyEvent?storyEvent.title:isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
   $('#forest-explore-description').textContent=routeChoice?'進む道を選ぼう。道によって見つかる宝物が変わるよ。':
+    formation?'最大3体まで編成して、敵の弱点に合わせて戦おう。戦闘中の交代は1戦につき1回だよ。':
     storyEvent?storyEvent.story:
     isBoss?`この先に${area.world==='city'?'街':'森'}のボスが待っている。準備ができたら進もう。`:
     play.index===0?`${area.story} 学習目標：${area.goal}。`:
     `${foe.japanese} の気配がする。次の戦闘へ進もう。`;
   const eventPanel=$('#forest-explore-event');
-  eventPanel.hidden=!storyEvent;
+  eventPanel.hidden=formation||!storyEvent;
+  const formationPanel=$('#forest-party-formation');
+  formationPanel.hidden=!formation;
+  if(formation)renderPartyFormation();
   if(storyEvent){
     eventPanel.innerHTML=selected
       ? `<p class="forest-event-label">EXPEDITION MEMORY</p><strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p><small>この選択によるXPや正誤判定の変化はありません。</small>`
@@ -651,7 +694,7 @@ function showForestExplore(routeChoice=false) {
     `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
   const forward=$('#forest-explore-continue');
   forward.hidden=routeChoice;
-  forward.textContent=storyEvent&&!selected?'物語をスキップして次の問題へ':isBoss?'最後の確認へ進む':storyEvent?'次の問題へ進む':play.index===0?(area.world==='city'?'街へ出発する':'森へ出発する'):'次の問題へ進む';
+  forward.textContent=formation?'この編成で出発する':storyEvent&&!selected?'物語をスキップして次の問題へ':isBoss?'最後の確認へ進む':storyEvent?'次の問題へ進む':play.index===0?(area.world==='city'?'街へ出発する':'森へ出発する'):'次の問題へ進む';
   if(routeChoice){
     $$('[data-forest-route]',options).forEach(button=>button.addEventListener('click',()=>{
       if(!play || play.mode!=='forest'||play.route)return;
@@ -1473,6 +1516,14 @@ homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:startSession,
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   cancelAutoAdvance();
+  if(play.tactics?.formationPending){
+    const t=play.tactics,ids=t.formationIds;
+    if(!ids.length)return;
+    t.party=createBattleParty(ids,{evolvedIds:ids.filter(id=>getMonsterProgress(save,id).evolved)});
+    play.companionId=ids[0];syncActiveFighter();
+    t.formationPending=false;
+    $('#forest-party-formation').hidden=true;
+  }
   renderQuestion();
 });
 $('#open-collection').addEventListener('click',()=>renderCollection());
