@@ -325,8 +325,9 @@ const path=require('node:path');
     assert.equal(queued.xpWallet,0);
     assert.equal(queued.reviewPrompts['help-bag'],'2020-01-01');
     await reviewContext.close();
-    // A natural request with a different verb and a missing article must
-    // earn the same XP on mobile, while explicitly reassuring the learner.
+    // A natural request with a different verb must earn the same XP on mobile
+    // and show the alternate-meaning note (article omissions have their own
+    // dedicated coaching message, covered by the unit tests).
     {
       const {context:variantContext,page:variantPage}=await boot(375);
       await variantPage.evaluate(async()=>{
@@ -339,7 +340,7 @@ const path=require('node:path');
       await enterHomePanel(variantPage,'review');
       await variantPage.locator('#start-review-practice').click();
       assert.equal(await variantPage.locator('#play-card').getAttribute('data-prompt-id'),'prefer-window-easy');
-      await variantPage.locator('#spoken-answer').fill('May I have window seat, please?');
+      await variantPage.locator('#spoken-answer').fill('May I have a window seat, please?');
       await variantPage.locator('#show-answer').click();
       assert.match(await variantPage.locator('#feedback-panel').innerText(),/その言い方でもOK！/);
       assert.match(await variantPage.locator('#feedback-panel').innerText(),/\+16 XP/);
