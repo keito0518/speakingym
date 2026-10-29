@@ -198,7 +198,7 @@ function renderHome() {
   $('#hero-level').textContent = `Lv.${growth.level}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   const nextHealthTier=[3,6,9].find(level=>level>growth.level);
-  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'}${growth.evolved?' · 進化援護が使用可能':' · Lv.5で進化援護を解放'}`;
+  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'}${growth.evolved?' · 進化援護が使用可能':' · 累計160 XPで進化援護を解放'}`;
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);
