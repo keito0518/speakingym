@@ -94,26 +94,26 @@ export function supportPartnerFor({kind,activeId,party}={}){
 }
 // Evolved reserves unlock a second, role-specific effect when helping with
 // their own specialty. The grade is *always* decided before this runs.
-export function evolvedSupportTalent(partnerId,{boss=false,foeId='mossling'}={}){
+export function evolvedSupportTalent(partnerId,{boss=false,foeId='mossling',foeProfile=null}={}){
  const type=allySkill(partnerId).type;
  if(type==='burst')return {name:'覚醒・追撃',extraDamage:boss?0:1,extraCharge:boss?1:0,extraHeal:0};
  if(type==='charge')return {name:'覚醒・共鳴',extraDamage:0,extraCharge:1,extraHeal:0};
- if(type==='pierce')return {name:'覚醒・貫通',extraDamage:!boss&&foeAffinity(foeId).resist===allyAffinity(partnerId).strong?1:0,
+ if(type==='pierce')return {name:'覚醒・貫通',extraDamage:!boss&&(foeProfile||foeAffinity(foeId)).resist===allyAffinity(partnerId).strong?1:0,
   extraCharge:0,extraHeal:boss?1:0};
  return {name:'覚醒・回復',extraDamage:0,extraCharge:0,extraHeal:1};
 }
 export function supportComboFor({kind,activeId,party,selected=false,independent=false,used=false,boss=false,
-  foeId='mossling',partnerEvolved=false}={}){
+  foeId='mossling',foeProfile=null,partnerEvolved=false}={}){
  const partnerId=supportPartnerFor({kind,activeId,party});
  const activated=Boolean(partnerId&&selected&&independent&&!used);
- const awakening=activated&&partnerEvolved?evolvedSupportTalent(partnerId,{boss,foeId}):null;
+ const awakening=activated&&partnerEvolved?evolvedSupportTalent(partnerId,{boss,foeId,foeProfile}):null;
  return {partnerId,activated,extraDamage:activated&&!boss?1+(awakening?.extraDamage||0):0,
   extraCharge:activated&&boss?1+(awakening?.extraCharge||0):activated?(awakening?.extraCharge||0):0,
   extraHeal:awakening?.extraHeal||0,awakened:awakening?.name||null};
 }
-export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false,repeated=false}={}){
+export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false,repeated=false,foeProfile=null}={}){
  if(!BATTLE_KINDS.includes(kind)||!['attack','guard','skill'].includes(action))throw Error('Invalid battle action');
- const foe=foeAffinity(foeId),ally=allyAffinity(allyId);
+ const foe=foeProfile&&BATTLE_KINDS.includes(foeProfile.weak)&&BATTLE_KINDS.includes(foeProfile.resist)?foeProfile:foeAffinity(foeId),ally=allyAffinity(allyId);
  const ability=allySkill(allyId),strong=ally.strong===kind;
  const pierce=strong&&ability.type==='pierce'&&foe.resist===kind;
  const weak=foe.weak===kind,resist=foe.resist===kind&&!pierce,poor=ally.weak===kind;
@@ -134,13 +134,18 @@ export function nextEnemyKind(last=null,random=Math.random){
 const FOE_STYLES=Object.freeze([
  Object.freeze({id:'shell',name:'かたい殻',tip:'最初の一撃は弱点以外のダメージ−1。弱点なら貫ける！'}),
  Object.freeze({id:'hunter',name:'弱点狙い',tip:'仲間の苦手技能で反撃。予告を見て交代しよう。'}),
- Object.freeze({id:'fury',name:'猛攻',tip:'防御失敗時のダメージ＋1。自力正解なら無傷！'})
+ Object.freeze({id:'fury',name:'猛攻',tip:'防御失敗時のダメージ＋1。自力正解なら無傷！'}),
+ Object.freeze({id:'shift',name:'属性変化',tip:'最初の一撃後、弱点と耐性が入れ替わる。技能を変えて追撃しよう！'})
 ]);
 const ADVANCED_AREAS=['glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard'];
 export function foeStyleFor({areaId='entry',index=0,wave=1,boss=false}={}){
  const area=ADVANCED_AREAS.indexOf(areaId);
  if(boss||area<0||!Number.isInteger(index)||index<0)return null;
  return FOE_STYLES[(index+Math.max(0,(Number(wave)||1)-1)+area)%FOE_STYLES.length];
+}
+export function foeBattleAffinity({foeId,style,shifted=false}={}){
+ const base=foeAffinity(foeId);
+ return style?.id==='shift'&&shifted?{weak:base.resist,resist:base.weak}:base;
 }
 export function foeStyledStrike({style,damage,kind,foeId,shieldIntact=true}={}){
  const safe=Math.max(1,Math.floor(Number(damage)||1));

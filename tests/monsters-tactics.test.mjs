@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -78,12 +78,36 @@ test('advanced foes have changing readable styles but entrance and boss encounte
  assert.equal(foeStyleFor({areaId:'entry',index:0}),null);
  assert.equal(foeStyleFor({areaId:'glade',index:7,boss:true}),null);
  assert.deepEqual([0,1,2].map(index=>foeStyleFor({areaId:'glade',index}).id),['shell','hunter','fury']);
- assert.deepEqual([0,1,2].map(index=>foeStyleFor({areaId:'glade',index,wave:2}).id),['hunter','fury','shell'],
+ assert.deepEqual([0,1,2].map(index=>foeStyleFor({areaId:'glade',index,wave:2}).id),['hunter','fury','shift'],
   'repeat runs change the foe mix without additional story content');
  for(const areaId of ['thicket','sanctuary','city','city-market','city-terminal','city-blizzard']){
   const style=foeStyleFor({areaId,index:0});
-  assert.ok(style.name&&style.tip&&['shell','hunter','fury'].includes(style.id));
+  assert.ok(style.name&&style.tip&&['shell','hunter','fury','shift'].includes(style.id));
  }
+});
+test('shape-shifting foes exchange weakness and resistance after the first hit, never English grading',()=>{
+ const style=foeStyleFor({areaId:'city',index:0});
+ assert.equal(style.id,'shift');
+ const before=foeBattleAffinity({foeId:'signbit',style});
+ const after=foeBattleAffinity({foeId:'signbit',style,shifted:true});
+ assert.deepEqual(before,{weak:'listen',resist:'grammar'});
+ assert.deepEqual(after,{weak:'grammar',resist:'listen'});
+ assert.deepEqual(foeBattleAffinity({foeId:'signbit',style:null,shifted:true}),before,
+  'ordinary monsters keep their original weaknesses');
+ const basic={foeId:'signbit',allyId:'koge',kind:'grammar'};
+ const initial=strikeFor({...basic,foeProfile:before});
+ const shifted=strikeFor({...basic,foeProfile:after});
+ assert.ok(initial.resist&&!initial.weak,'grammar starts as a resisted attack');
+ assert.ok(shifted.weak&&!shifted.resist,'after one hit grammar becomes a weakness');
+ assert.ok(shifted.damage>initial.damage,'changing attack skills has a real damage payoff');
+ const reserve=createBattleParty(['medamago','purupun']);
+ const support={kind:'vocab',activeId:'medamago',party:reserve,selected:true,independent:true,
+  partnerEvolved:true,foeId:'signbit'};
+ assert.equal(supportComboFor({...support,foeProfile:before}).extraDamage,1);
+ assert.equal(supportComboFor({...support,foeProfile:{weak:'listen',resist:'vocab'}}).extraDamage,2,
+  'a changed enemy resistance also changes evolved partner piercing consistently');
+ assert.equal(strikeFor({kind:'grammar',foeId:'signbit',allyId:'koge',boss:true,foeProfile:after}).damage,1,
+  'boss confirmations cannot be skipped by a changed affinity');
 });
 test('shell, hunter and fury change battle strategy without changing independent English grades',()=>{
  const shell=foeStyleFor({areaId:'glade',index:0});

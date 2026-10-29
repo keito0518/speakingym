@@ -363,6 +363,42 @@ const assert=require('node:assert/strict');
    const masteryLayout=await masteryPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(masteryLayout.scroll<=masteryLayout.width+1,`Level-up technique label must fit 320px (${JSON.stringify(masteryLayout)})`);
    await masteryContext.close();
+   // A late-dungeon enemy actually changes its weakness after surviving one
+   // attack. The player can adapt with a different English skill; the next
+   // question is still independently assessed and the enemy HP stays real.
+   const shiftingContext=await browser.newContext({viewport:{width:375,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const shiftingPage=await shiftingContext.newPage();
+   await shiftingPage.goto(url,{waitUntil:'networkidle'});
+   await shiftingPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const saved=createSave();saved.forest.completedAreas=['entry','glade','thicket','sanctuary'];
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+   });
+   await shiftingPage.reload({waitUntil:'networkidle'});
+   await shiftingPage.locator('[data-home-page="forest"]').click();
+   await shiftingPage.locator('#start-forest-tactics').click();
+   assert.match(await shiftingPage.locator('#play-mode-label').innerText(),/雪灯りの街/);
+   await shiftingPage.locator('#forest-explore-continue').click();
+   assert.equal(await shiftingPage.locator('[data-foe-style]').getAttribute('data-foe-style'),'shift');
+   assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'false');
+   assert.match(await shiftingPage.locator('.forest-tactic-heading').innerText(),/敵の弱点：リスニング.*耐性：文法/s);
+   await shiftingPage.locator('[data-tactic-kind="speak"]').click();
+   await answer(shiftingPage);
+   assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2');
+   assert.match(await shiftingPage.locator('#forest-battle-log').innerText(),/属性変化！ 次の弱点は文法/);
+   assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'true');
+   assert.match(await shiftingPage.locator('.forest-tactic-heading').innerText(),/敵の弱点：文法.*耐性：リスニング/s);
+   await shiftingPage.locator('#next-question').click();
+   await answer(shiftingPage);
+   await shiftingPage.locator('#next-question').click();
+   await shiftingPage.locator('[data-tactic-kind="grammar"]').click();
+   await answer(shiftingPage);
+   assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
+     'switching to the new weakness should finish the surviving enemy');
+   const shiftingLayout=await shiftingPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(shiftingLayout.scroll<=shiftingLayout.width+1,
+     `Changing weakness labels must not overflow mobile (${JSON.stringify(shiftingLayout)})`);
+   await shiftingContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
