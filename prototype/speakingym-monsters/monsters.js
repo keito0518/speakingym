@@ -6,8 +6,8 @@ import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
 import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
-import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
-import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, bossAttackFor, bossCounterFor, pickBattlePrompt } from './battle-tactics.js';
+import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
+import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, bossAttackFor, bossCounterFor, bossReserveCoverFor, pickBattlePrompt } from './battle-tactics.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -354,7 +354,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
-      bossCounterUsed:false,counterShield:0}:null};
+      bossCounterUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:''}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -507,6 +507,22 @@ function damageActiveFighter(damage){
  t.party=applyFighterDamage(t.party,play.companionId,damage);
  syncActiveFighter();
 }
+function absorbIncomingBossHit(damage){
+ const t=play?.tactics;
+ if(!t)return {activeDamage:damage,partnerId:null};
+ const cover=play.index>=regularCount()?bossReserveCoverFor({kind:t.enemyKind,activeId:play.companionId,
+   party:t.party,used:t.bossCoverUsed,damage}):null;
+ let actual=damage;
+ t.lastCoverNote='';
+ if(cover?.activated){
+   t.party=applyFighterDamage(t.party,cover.partnerId,cover.partnerDamage);
+   t.bossCoverUsed=true;
+   actual=cover.activeDamage;
+   t.lastCoverNote=`${monsterFor(cover.partnerId).name}が身代わり！ 出撃中の仲間へのダメージを2軽減し、控えHP−1。`;
+ }
+ damageActiveFighter(actual);
+ return {activeDamage:actual,partnerId:cover?.partnerId||null};
+}
 function healActiveFighter(amount){
  const t=play?.tactics;
  if(!t)return;
@@ -549,6 +565,9 @@ function renderTacticalControls(){
  const bossThreat=boss?bossAttackFor(foe.id,play.index-regularCount()):null;
  const counter=bossThreat?bossCounterFor({kind:bossThreat.kind,allyId:play.companionId,used:t.bossCounterUsed,
    evolved}):null;
+ const coverKind=incoming?t.enemyKind:bossThreat?.kind;
+ const coverPreview=boss?bossReserveCoverFor({kind:coverKind,activeId:play.companionId,
+   party:t.party,used:t.bossCoverUsed,damage:3}):null;
  const recallTargets=tacticalReviewTargets();
  const pendingRecall=new Set([...recallTargets.dueIds,...recallTargets.weakIds]);
  const reserved=new Set([...t.usedPromptIds,...play.prompts.map(p=>p.id)]);
@@ -566,6 +585,7 @@ function renderTacticalControls(){
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
   ${boss?`<div class="forest-boss-tactical-plan" role="group" aria-label="ボスの3手の攻撃予告"><strong>ボスの攻撃パターン</strong><ol>${[0,1,2].map(phase=>{const threat=bossAttackFor(foe.id,phase);return `<li data-boss-plan-phase="${phase}" data-current="${String(phase===play.index-regularCount())}"><span>${phase+1}手目</span><b>${BATTLE_LABELS[threat.kind]}</b><small>${threat.pressure?'強攻撃':'通常攻撃'}</small></li>`;}).join('')}</ol><small>3問すべて英語の正解が必要。事前に仲間の得意技能を確認しよう。</small></div>`:''}
   ${boss&&!incoming?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`}</p>`:''}
+  ${boss&&party.length>1?`<p class="forest-boss-cover" data-cover-ready="${String(coverPreview?.activated)}">${t.bossCoverUsed?'控えの身代わりはこのボス戦で使用済み。':coverPreview?.activated?`控えの${escapeHtml(monsterFor(coverPreview.partnerId).name)}が身代わり待機。${BATTLE_LABELS[coverKind]}で自力防御を失い、HPが2以上減るときにダメージを2軽減・控えHP−1（ボス戦で1回）。自力正解・判定保留なら発動しない。`:'控えの身代わりは「出撃中の仲間が苦手・控えが得意」な技能の敵攻撃でだけ発動するよ。'}</p>`:''}
   ${incoming?'':`<p class="forest-tactic-forecast"><strong>次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}</strong><span>${bossThreat?`ボス技「${escapeHtml(bossThreat.name)}」${bossThreat.pressure?' · 強攻撃（防御失敗でHP減少＋1）':' · 通常威力'}。`:''}正解すれば自動で防御！ 仲間を選んでから攻撃しよう。</span></p>`}
   ${!incoming&&evolved?`<p class="forest-tactic-evolution">進化ボーナス：得意な${BATTLE_LABELS[ally.strong]}の威力＋1 / 同技能の被ダメージ−1</p>`:''}
   <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span><small>ヒントなしの自力正解で＋1</small></div>
@@ -610,7 +630,7 @@ function renderTacticalControls(){
 function startEnemyTurn(){
  const t=play?.tactics;
  if(!t)return;
- t.turn='enemy';t.autoSwitchedTo=null;t.actionAtAttack=t.action;t.defenseHitTaken=false;t.lastHitDamage=0;
+ t.turn='enemy';t.autoSwitchedTo=null;t.actionAtAttack=t.action;t.defenseHitTaken=false;t.lastHitDamage=0;t.lastCoverNote='';
  const boss=play.index>=regularCount();
  const threat=boss?bossAttackFor(opponentFor(play.index,play.wave,play.areaId).id,play.index-regularCount()):null;
  t.enemyKind=threat?.kind||t.nextEnemyKind||nextEnemyKind(t.lastEnemyKind);
@@ -657,8 +677,15 @@ function renderPartyFormation(){
  const foe=opponentFor(0,play.wave,play.areaId),weakness=foeAffinity(foe.id);
  const roster=t.formationIds,owned=(save.ownedMonsters||[]).filter(id=>MONSTERS.some(monster=>monster.id===id));
  const candidates=[...roster,...owned.filter(id=>!roster.includes(id))];
+ const bossId=(AREA_BOSSES[play.areaId]||{}).id;
+ const bossForecast=bossId?[0,1,2].map(phase=>bossAttackFor(bossId,phase)):[];
+ const currentLeader=roster[0];
+ const reserveMatches=kind=>roster.slice(1).filter(id=>allyAffinity(id).strong===kind);
+ const coverCount=currentLeader?bossForecast.filter(move=>allyAffinity(currentLeader).weak===move.kind&&reserveMatches(move.kind).length).length:0;
+ const rangeCount=new Set(roster.map(id=>allyAffinity(id).strong)).size;
  const guide=owned.length===1?'仲間はまだ1体だけ。編成できる仲間が増えるとここで入れ替えられるよ。今は「この編成で出発する」から始めよう。':'仲間の絵やカードをタップして選ぼう。控えの仲間は「先頭にする」でも切り替えられるよ。';
  screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span><small>得意な仲間を選ぼう。英語の問題はどの仲間でも同じように挑戦できるよ。</small></div>
+ <div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${BATTLE_LABELS[move.kind]}${move.pressure?' · 強':''}</span>`).join('')}</div><small>編成の得意技能は${rangeCount}種類。${coverCount?'この先頭と控えなら、ボスの苦手技能に身代わりできる組み合わせがあるよ。':'控えに先頭の苦手技能が得意な仲間を入れると、ボスの被ダメージを一度だけカバーできるよ。'} 身代わりは正誤判定を変えず、自力で防げずHPが2以上減るときだけ発動。</small></div>
  <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
  <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
    const id=roster[index],monster=id?monsterFor(id):null,progress=id?getMonsterProgress(save,id):null;
@@ -807,7 +834,7 @@ function renderQuestion() {
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
         t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};
         t.counterShield=0;
-        if(play.index===regularCount())t.bossCounterUsed=false;
+        if(play.index===regularCount()){t.bossCounterUsed=false;t.bossCoverUsed=false;}
       }
     }
     renderForestHud();
@@ -1211,14 +1238,15 @@ async function gradeAnswer() {
         evolved:getMonsterProgress(save,play.companionId).evolved,
         action:play.tactics.actionAtAttack,result:'incorrect',pressure:play.tactics.enemyPressure,
         counterShield:play.tactics.counterShield});
-      damageActiveFighter(blow.damage);
-      play.tactics.lastHitDamage=blow.damage;
+      const rescue=absorbIncomingBossHit(blow.damage);
+      play.tactics.lastHitDamage=rescue.activeDamage;
       play.tactics.defenseHitTaken=true;
       updateEnemyHealth();
       const arena=$('#forest-world-stage');
       arena.classList.remove('forest-player-damaged');void arena.offsetWidth;
-      if(blow.damage)arena.classList.add('forest-player-damaged');
-      $('#forest-world-fx').textContent=blow.damage?`−${blow.damage} HP`:'GUARDED';
+      if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
+      $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'GUARDED';
+      if(rescue.partnerId)$('#forest-battle-log').textContent=`${play.tactics.lastCoverNote} 正解にはならないので、英語は確認しよう。`;
     }
     if(['review','incomplete'].includes(grade.status) && raw)persist(flagUncertainReview(save,prompt.id));
     if(grade.status==='incomplete' && raw){
@@ -1321,16 +1349,18 @@ async function gradeAnswer() {
       incomingHit({kind:t.enemyKind,allyId:play.companionId,evolved:getMonsterProgress(save,play.companionId).evolved,
         action:t.actionAtAttack,result:'correct',hinted:rating==='hint',pressure:t.enemyPressure,
         counterShield:t.counterShield});
-    if(!t.defenseHitTaken){damageActiveFighter(hit.damage);t.lastHitDamage=hit.damage;}
+    let rescue=null;
+    if(!t.defenseHitTaken){rescue=absorbIncomingBossHit(hit.damage);t.lastHitDamage=rescue.activeDamage;}
     const alreadyHit=t.defenseHitTaken;
     t.defenseHitTaken=true;
     const stage=$('#forest-world-stage');
     stage.classList.remove('forest-player-damaged','forest-defended');void stage.offsetWidth;
-    stage.classList.add(hit.damage?'forest-player-damaged':'forest-defended');
-    $('#forest-world-fx').textContent=alreadyHit?`HP −${t.lastHitDamage||0}`:hit.damage?`−${hit.damage} HP`:'BLOCK!';
+    stage.classList.add(t.lastHitDamage?'forest-player-damaged':'forest-defended');
+    $('#forest-world-fx').textContent=alreadyHit?`HP −${t.lastHitDamage||0}`:rescue?.partnerId?'COVER!':t.lastHitDamage?`−${t.lastHitDamage} HP`:'BLOCK!';
     $('#forest-battle-log').textContent=alreadyHit
-      ?`言い直しは成功！ ただし最初の被ダメージ${t.lastHitDamage||0}は残るよ。`
-      :hit.damage?`敵の${BATTLE_LABELS[t.enemyKind]}攻撃を軽減！ 味方HP −${hit.damage}。`
+      ?`言い直しは成功！ ただし最初の被ダメージ${t.lastHitDamage||0}は残るよ。 ${t.lastCoverNote}`
+      :rescue?.partnerId?`${t.lastCoverNote} 英語はヒントありで確認できたよ。`
+      :t.lastHitDamage?`敵の${BATTLE_LABELS[t.enemyKind]}攻撃を軽減！ 味方HP −${t.lastHitDamage}。`
       :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃を防いだ！ 味方HPは減らないよ。`;
     awardTacticalCharge(rating);
     updateEnemyHealth();
@@ -1440,10 +1470,11 @@ function skipAnswer(){
       const blow=incomingHit({kind:play.tactics.enemyKind,allyId:play.companionId,
         evolved:getMonsterProgress(save,play.companionId).evolved,
         action:play.tactics.actionAtAttack,result:'incorrect',counterShield:play.tactics.counterShield});
-      damageActiveFighter(blow.damage);
-      play.tactics.lastHitDamage=blow.damage;
+      const rescue=absorbIncomingBossHit(blow.damage);
+      play.tactics.lastHitDamage=rescue.activeDamage;
       play.tactics.defenseHitTaken=true;
       updateEnemyHealth();
+      if(rescue.partnerId)$('#forest-battle-log').textContent=play.tactics.lastCoverNote;
     }
     play.tactics.usedPromptIds.add(prompt.id);
     play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});

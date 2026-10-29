@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,bossCounterFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -150,6 +150,25 @@ test('boss counter rewards correctly reading a telegraph once, never skipping En
  }
  assert.equal(strikeFor({kind:'listen',foeId:'thornking',allyId:'katappo',boss:true}).damage,1,
   'counter never provides free boss hits or skips a learning task');
+});
+test('a live reserve can intercept one confirmed hit in a weak matchup but never changes the English verdict',()=>{
+ const party=createBattleParty(['katappo','koge','medamago']);
+ const result=bossReserveCoverFor({kind:'grammar',activeId:'katappo',party,damage:4});
+ assert.deepEqual(result,{partnerId:'koge',activated:true,activeDamage:2,partnerDamage:1});
+ assert.equal(incomingHit({kind:'grammar',allyId:'katappo',result:'incorrect'}).damage,3);
+ assert.equal(incomingHit({kind:'grammar',allyId:'katappo',result:'review'}).damage,0);
+ for(const options of [{used:true},{damage:0},{damage:1},{kind:'listen'},{kind:'speak'},
+   {party:createBattleParty(['katappo'])},{activeId:'unknown'},
+   {party:applyFighterDamage(party,'koge',99)}]){
+   assert.equal(bossReserveCoverFor({kind:'grammar',activeId:'katappo',party,damage:3,...options}).activated,false,
+    `No invalid or repeat intercept: ${JSON.stringify(options)}`);
+ }
+ const damaged=applyFighterDamage(party,'koge',5);
+ const worn=bossReserveCoverFor({kind:'grammar',activeId:'katappo',party:damaged,damage:3});
+ assert.equal(worn.activated,true,'reserve is still able to sacrifice their last HP');
+ assert.equal(worn.partnerDamage,1);
+ assert.equal(bossReserveCoverFor({kind:'grammar',activeId:'katappo',party,damage:0}).activeDamage,0,
+  'a clean or uncertain defense never consumes a reserve');
 });
 test('reactive defense questions reuse authored learning banks without skipping worlds or repeating prompts',()=>{
  for(const kind of BATTLE_KINDS){

@@ -125,6 +125,19 @@ export function bossCounterFor({kind,allyId,independent=false,used=false,evolved
  const activated=Boolean(matched&&independent&&!used);
  return {matched,activated,extraCharge:activated?1:0,shield:activated?1:0,heal:activated&&evolved?1:0};
 }
+// A living reserve who specializes in the active fighter's weakness can
+// intercept ONE confirmed boss hit. This reallocates HP (and saves one HP),
+// never changes the English verdict, never triggers on uncertain recognition,
+// and cannot be chained once spent. The reserve may faint while protecting.
+export function bossReserveCoverFor({kind,activeId,party,used=false,damage=0}={}){
+ const base={partnerId:null,activated:false,activeDamage:Math.max(0,damage),partnerDamage:0};
+ if(used||!BATTLE_KINDS.includes(kind)||!party?.roster?.includes(activeId)||
+    allyAffinity(activeId).weak!==kind||damage<2)return base;
+ const partnerId=party.roster.filter(id=>id!==activeId&&allyAffinity(id).strong===kind&&
+   (party.health?.[id]?.hp||0)>0).sort((a,b)=>(party.health[b]?.hp||0)-(party.health[a]?.hp||0))[0];
+ if(!partnerId)return base;
+ return {partnerId,activated:true,activeDamage:Math.max(0,damage-2),partnerDamage:1};
+}
 export function incomingHit({kind,allyId,action='attack',result='incorrect',hinted=false,evolved=false,pressure=0,counterShield=0}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid enemy attack');
  const ally=allyAffinity(allyId);

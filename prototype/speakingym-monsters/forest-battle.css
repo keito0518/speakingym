@@ -102,6 +102,8 @@
 .forest-boss-tactical-plan li small{font-size:9px;color:#5e553f}
 .forest-boss-counter{margin:5px 0;padding:9px 10px;border:1px solid #6d9d91;border-radius:8px;background:#e8f4ef;color:#254a40;font-size:11px;font-weight:700;line-height:1.7;overflow-wrap:break-word;line-break:strict}
 .forest-boss-counter[data-counter-ready="true"]{border-color:#bd8b3b;background:#fff1c8;color:#604418}
+.forest-boss-cover{margin:5px 0;padding:8px 10px;border:1px solid #9aabc1;border-radius:8px;background:#edf2f8;color:#2c455d;font-size:11px;font-weight:700;line-height:1.7;overflow-wrap:break-word;line-break:strict}
+.forest-boss-cover[data-cover-ready="true"]{border-color:#508a8a;background:#e0f3f1;color:#20545a}
 .forest-tactic-evolution{margin:5px 0 8px;padding:7px 9px;border:1px solid #d7bf79;border-radius:8px;background:#fff5d9;color:#584522;font-size:11px;line-height:1.6;font-weight:800}
 .forest-tactic-party-label{margin-top:9px;color:#305746;font-size:11px;line-height:1.5;font-weight:900}
 .forest-tactic-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
@@ -306,6 +308,11 @@
 .forest-formation-target strong{font-size:14px}
 .forest-formation-target span{font-size:12px;font-weight:850}
 .forest-formation-target small{font-size:11px;line-height:1.6;color:#365445}
+.forest-formation-boss-plan{display:grid;gap:7px;padding:10px;border:1px solid #b9a56f;border-radius:10px;background:#fff8e7;color:#453b29}
+.forest-formation-boss-plan>strong{font-size:13px;color:#4b3f27}
+.forest-formation-boss-plan>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.forest-formation-boss-plan>div span{min-width:0;padding:6px 4px;border:1px solid #d3bf87;border-radius:6px;background:#fffdf4;color:#433d2f;text-align:center;font-size:10px;font-weight:800;line-height:1.45;overflow-wrap:break-word;line-break:strict}
+.forest-formation-boss-plan>small{font-size:11px;line-height:1.6;color:#514c39}
 .forest-formation-title{display:flex;gap:5px 10px;justify-content:space-between;align-items:baseline;flex-wrap:wrap}
 .forest-formation-title strong{font-size:14px;color:#264b35}
 .forest-formation-title span{font-size:11px;color:#46604b}

@@ -43,6 +43,8 @@ jobs:
         run: |
           timeout 105s node tests/monsters-tactics-browser.cjs
           timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
+          timeout 105s node tests/monsters-boss-cover-browser.cjs
+          timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-cover-browser.cjs
       - name: Chromium mobile and learning QA
         timeout-minutes: 8
         run: |
