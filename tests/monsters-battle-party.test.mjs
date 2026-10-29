@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
- createBattleParty,editBattleFormation,fighterHealth,applyFighterDamage,healFighter,
+ createBattleParty,levelHpBonus,editBattleFormation,fighterHealth,applyFighterDamage,healFighter,
  firstStandingAlly,canTacticalSwap,consumeTacticalSwap,restorePartyForNextWave,encounterVitality
 } from '../prototype/speakingym-monsters/battle-party.js';
 
@@ -17,6 +17,18 @@ test('solo players keep original HP, while recruited allies have independent HP'
  assert.equal(fighterHealth(damaged,'katappo').hp,9);
  assert.equal(fighterHealth(team,'medamago').hp,8,'previous session state is not mutated');
  assert.equal(fighterHealth(healFighter(damaged,'medamago',100),'medamago').hp,8);
+});
+test('training at Lv3/6/9 adds capped HP without altering persistent save or solo base HP',()=>{
+ assert.deepEqual([1,2,3,5,6,8,9,25].map(levelHpBonus),[0,0,1,1,2,2,3,3]);
+ assert.equal(levelHpBonus(NaN),0);
+ assert.equal(levelHpBonus(-999),0);
+ assert.equal(createBattleParty(['medamago'],{levels:{medamago:1}}).health.medamago.maxHp,12);
+ const team=createBattleParty(['medamago','katappo','koge'],{
+  levels:{medamago:3,katappo:6,koge:9},evolvedIds:['katappo','koge']});
+ assert.deepEqual(team.health,{
+  medamago:{hp:9,maxHp:9},katappo:{hp:11,maxHp:11},koge:{hp:12,maxHp:12}
+ });
+ assert.deepEqual(Object.keys(team).sort(),['health','roster','swapsUsed'],'level is not added to the save format');
 });
 test('formation swaps its last reserve, and changes leader without editing the collection',()=>{
  const owned=['medamago','katappo','purupun','koge'];

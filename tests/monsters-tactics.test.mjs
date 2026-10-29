@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -66,17 +66,51 @@ test('a chosen team-up rewards only an independent answer, once per encounter',(
  const party=createBattleParty(['medamago','katappo']);
  const base={kind:'listen',activeId:'medamago',party,selected:true};
  assert.deepEqual(supportComboFor({...base,independent:true}),{
-  partnerId:'katappo',activated:true,extraDamage:1,extraCharge:0});
+  partnerId:'katappo',activated:true,extraDamage:1,extraCharge:0,extraHeal:0,awakened:null});
  assert.deepEqual(supportComboFor({...base,independent:true,boss:true}),{
-  partnerId:'katappo',activated:true,extraDamage:0,extraCharge:1});
+  partnerId:'katappo',activated:true,extraDamage:0,extraCharge:1,extraHeal:0,awakened:null});
  for(const options of [{independent:false},{independent:true,used:true},{independent:true,selected:false}]){
   const result=supportComboFor({...base,...options});
   assert.equal(result.activated,false);
   assert.equal(result.extraDamage,0);
   assert.equal(result.extraCharge,0);
+  assert.equal(result.extraHeal,0);
+  assert.equal(result.awakened,null);
  }
  assert.equal(supportComboFor({...base,kind:'speak',independent:true}).activated,false);
  assert.equal(supportComboFor({...base,party:createBattleParty(['medamago']),independent:true}).activated,false);
+});
+test('evolved reserves unlock distinct support moves only after independently correct English',()=>{
+ const charge=createBattleParty(['medamago','katappo']);
+ const support={kind:'listen',activeId:'medamago',party:charge,selected:true,independent:true,partnerEvolved:true};
+ const charged=supportComboFor(support);
+ assert.equal(charged.extraDamage,1);
+ assert.equal(charged.extraCharge,1,'evolved charge reserve adds a point on ordinary foes');
+ assert.equal(charged.awakened,'覚醒・共鳴');
+ assert.equal(supportComboFor({...support,boss:true}).extraCharge,2,'evolved charge reserve supports boss preparation');
+ const burst=supportComboFor({kind:'speak',activeId:'katappo',party:charge,selected:true,independent:true,partnerEvolved:true});
+ assert.equal(burst.extraDamage,2,'evolved burst adds a second strike only on ordinary foes');
+ assert.equal(supportComboFor({kind:'speak',activeId:'katappo',party:charge,selected:true,independent:true,
+  partnerEvolved:true,boss:true}).extraCharge,2,'boss still requires all three English confirmations');
+ const breaker=createBattleParty(['medamago','purupun']);
+ const piercing={kind:'vocab',activeId:'medamago',party:breaker,selected:true,independent:true,partnerEvolved:true};
+ assert.equal(supportComboFor({...piercing,foeId:'bramblet'}).extraDamage,2,'break enemy resistance');
+ assert.equal(supportComboFor({...piercing,foeId:'mossling'}).extraDamage,1,'no fake resistance bonus on a neutral foe');
+ assert.equal(supportComboFor({...piercing,boss:true}).extraHeal,1,'piercing reserve supports survival against bosses');
+ const healer=createBattleParty(['medamago','koge']);
+ const healing=supportComboFor({kind:'grammar',activeId:'medamago',party:healer,selected:true,
+  independent:true,partnerEvolved:true});
+ assert.equal(healing.extraHeal,1);
+ assert.equal(healing.awakened,'覚醒・回復');
+ assert.deepEqual(evolvedSupportTalent('koge',{boss:true}),{name:'覚醒・回復',extraDamage:0,extraCharge:0,extraHeal:1});
+ for(const mistake of [{independent:false},{used:true},{selected:false},{partnerEvolved:false}]){
+  const grade=supportComboFor({...support,...mistake});
+  assert.equal(grade.extraCharge,0,
+   'no bonus charge from unearned or unevolved team-up');
+  assert.equal(grade.awakened,null);
+  assert.equal(grade.extraHeal,0);
+ }
+ assert.equal(supportComboFor({...support,party:applyFighterDamage(charge,'katappo',99)}).activated,false);
 });
 test('telegraphed heavy boss attacks affect HP only after verified misses',()=>{
  const basic={kind:'listen',allyId:'medamago'};

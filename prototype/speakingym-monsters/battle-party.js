@@ -1,11 +1,17 @@
 // Battle-only party state. Never written to the learner's persistent save.
 // A solo learner keeps the original 12 HP so recruiting allies is optional.
-export function createBattleParty(ids,{evolvedIds=[]}={}){
+// Training matters before and after evolution, but the HP gain is capped so
+// grinding cannot replace answering English questions or switching allies.
+export function levelHpBonus(level=1){
+ const safe=Number.isFinite(level)?Math.max(1,Math.floor(level)):1;
+ return Math.min(3,Math.floor(safe/3)); // Lv.3 / Lv.6 / Lv.9
+}
+export function createBattleParty(ids,{evolvedIds=[],levels={}}={}){
  const roster=[...new Set(ids)].filter(Boolean).slice(0,3);
  const evolved=new Set(evolvedIds);
  const base=roster.length===1?12:roster.length===2?9:8;
  return {roster,health:Object.fromEntries(roster.map(id=>{
-   const maxHp=base+(evolved.has(id)?1:0);
+   const maxHp=base+(evolved.has(id)?1:0)+levelHpBonus(levels[id]);
    return [id,{hp:maxHp,maxHp}];
  })),swapsUsed:0};
 }

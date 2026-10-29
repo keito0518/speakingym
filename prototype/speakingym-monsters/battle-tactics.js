@@ -62,10 +62,24 @@ export function supportPartnerFor({kind,activeId,party}={}){
  if(!BATTLE_KINDS.includes(kind)||!party?.roster?.includes(activeId)||allyAffinity(activeId).strong===kind)return null;
  return party.roster.find(id=>id!==activeId&&allyAffinity(id).strong===kind&&(party.health?.[id]?.hp||0)>0)||null;
 }
-export function supportComboFor({kind,activeId,party,selected=false,independent=false,used=false,boss=false}={}){
+// Evolved reserves unlock a second, role-specific effect when helping with
+// their own specialty. The grade is *always* decided before this runs.
+export function evolvedSupportTalent(partnerId,{boss=false,foeId='mossling'}={}){
+ const type=allySkill(partnerId).type;
+ if(type==='burst')return {name:'覚醒・追撃',extraDamage:boss?0:1,extraCharge:boss?1:0,extraHeal:0};
+ if(type==='charge')return {name:'覚醒・共鳴',extraDamage:0,extraCharge:1,extraHeal:0};
+ if(type==='pierce')return {name:'覚醒・貫通',extraDamage:!boss&&foeAffinity(foeId).resist===allyAffinity(partnerId).strong?1:0,
+  extraCharge:0,extraHeal:boss?1:0};
+ return {name:'覚醒・回復',extraDamage:0,extraCharge:0,extraHeal:1};
+}
+export function supportComboFor({kind,activeId,party,selected=false,independent=false,used=false,boss=false,
+  foeId='mossling',partnerEvolved=false}={}){
  const partnerId=supportPartnerFor({kind,activeId,party});
  const activated=Boolean(partnerId&&selected&&independent&&!used);
- return {partnerId,activated,extraDamage:activated&&!boss?1:0,extraCharge:activated&&boss?1:0};
+ const awakening=activated&&partnerEvolved?evolvedSupportTalent(partnerId,{boss,foeId}):null;
+ return {partnerId,activated,extraDamage:activated&&!boss?1+(awakening?.extraDamage||0):0,
+  extraCharge:activated&&boss?1+(awakening?.extraCharge||0):activated?(awakening?.extraCharge||0):0,
+  extraHeal:awakening?.extraHeal||0,awakened:awakening?.name||null};
 }
 export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false,repeated=false}={}){
  if(!BATTLE_KINDS.includes(kind)||!['attack','guard','skill'].includes(action))throw Error('Invalid battle action');

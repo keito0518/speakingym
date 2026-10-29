@@ -137,7 +137,7 @@ const assert=require('node:assert/strict');
    assert.match(await partyPage.locator('[data-formation-slot="0"]').innerText(),/カタッポ/);
    await partyPage.locator('[data-formation-lead="medamago"]').click();
    await partyPage.locator('#forest-explore-continue').click();
-   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'8');
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'9','Lv3 leader gains one HP');
    assert.equal(await partyPage.locator('[data-tactic-ally]').count(),3);
    assert.equal(await partyPage.locator('[data-tactic-ally="purupun"]').count(),0,'The replaced reserve does not join this encounter');
    assert.equal(await partyPage.locator('[data-tactic-ally="koge"]').count(),1);
@@ -166,7 +166,7 @@ const assert=require('node:assert/strict');
    await answer(partyPage);
    await partyPage.locator('#next-question').click();
    assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5');
-   assert.match(await partyPage.locator('[data-tactic-ally="medamago"]').innerText(),/HP 8\/8/,'Reserve ally HP remains intact');
+   assert.match(await partyPage.locator('[data-tactic-ally="medamago"]').innerText(),/HP 9\/9/,'Trained reserve ally HP remains intact');
    assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 5\/8/);
    const persisted=await partyPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
    assert.deepEqual(persisted.ownedMonsters,['medamago','katappo','purupun','koge'],'Choosing fighters does not discard saved monsters');
@@ -182,6 +182,38 @@ const assert=require('node:assert/strict');
    const layout=await partyPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(layout.scroll<=layout.width+1,`Multi-ally commands must fit 320px (${JSON.stringify(layout)})`);
    await partyContext.close();
+   // Evolution should open an actually different team-up route, not just add a
+   // collection badge. A trained listening reserve changes ultimate timing.
+   const evolutionContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const evolutionPage=await evolutionContext.newPage();
+   await evolutionPage.goto(url,{waitUntil:'networkidle'});
+   await evolutionPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const seeded={...createSave(),ownedMonsters:['medamago','katappo'],selectedMonster:'medamago',
+       xpWallet:17,monsterXp:{medamago:0,katappo:160}};
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+   });
+   await evolutionPage.reload({waitUntil:'networkidle'});
+   await evolutionPage.locator('[data-home-page="forest"]').click();
+   await evolutionPage.locator('#start-forest-tactics').click();
+   assert.match(await evolutionPage.locator('[data-formation-card="katappo"]').innerText(),/Lv\.5.*HP成長＋2/);
+   assert.match(await evolutionPage.locator('[data-formation-card="katappo"]').innerText(),/進化援護「覚醒・共鳴」/);
+   await evolutionPage.locator('#forest-explore-continue').click();
+   await evolutionPage.locator('[data-tactic-kind="listen"]').click();
+   const assist= evolutionPage.locator('[data-tactic-action="assist"]');
+   assert.equal(await assist.isEnabled(),true);
+   assert.match(await assist.innerText(),/必殺ゲージ＋1.*覚醒・共鳴/);
+   await assist.click();
+   await answer(evolutionPage);
+   assert.match(await evolutionPage.locator('#forest-battle-log').innerText(),/覚醒・共鳴発動！.*必殺ゲージ＋1/);
+   assert.equal(await evolutionPage.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'2',
+     'independent answer and evolved charge support combine');
+   const evolvedSave=await evolutionPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.equal(evolvedSave.monsterXp.katappo,160,'new battle talent cannot spend trained XP');
+   assert.ok(evolvedSave.xpWallet>=17,'team-up never spends the saved XP wallet; correct English can still earn XP');
+   const evolvedLayout=await evolutionPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(evolvedLayout.scroll<=evolvedLayout.width+1,`Evolved support label must fit iPhone SE (${JSON.stringify(evolvedLayout)})`);
+   await evolutionContext.close();
    // Battle action selection should fetch a due task instead of silently
    // returning random content, even when the next enemy asks a new skill.
    const recallContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
