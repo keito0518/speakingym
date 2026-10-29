@@ -111,7 +111,8 @@ const path=require('node:path');
       const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.equal(before.monsterXp.medamago,200);assert.equal(before.ownedMonsters.length,15);
       await page.locator('#training-back').click();
-      assert.match(await page.locator('#detail-content').innerText(),/進化で解放済み/);
+      assert.match(await page.locator('#detail-content').innerText(),/進化後、控えからの連携で「覚醒・追撃」/,
+        'Evolved companion notes should describe the real tactical combo instead of the old placeholder');
       await page.locator('#detail-back').click();
       assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.3.*進化済み/s);
       await page.reload();
