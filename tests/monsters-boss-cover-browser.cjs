@@ -70,10 +70,14 @@ const assert=require('node:assert/strict');
    throw Error(`Unexpected tactical screen before boss, step ${step}`);
   }
   assert.equal(reachedBoss,true,'This test must reach the boss through the real English battle loop');
+  assert.equal(await page.locator('[data-boss-plan-phase="0"]').getAttribute('data-current'),'true',
+   'The grammar weakness can only be intercepted on boss phase one');
   assert.match(await page.locator('.forest-boss-cover').innerText(),/身代わり/);
   assert.equal(await page.locator('.forest-boss-cover').getAttribute('data-cover-ready'),'true');
-  await answer(); // Authored listening boss question: correct English unlocks the first strike.
-  await page.locator('#next-question').click();
+  if((await page.locator('.forest-tactic-heading').innerText()).includes('味方のターン')){
+   await answer(); // Authored listening boss question: correct English unlocks the first strike.
+   await page.locator('#next-question').click();
+  }
   assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
   assert.equal(await page.locator('.forest-boss-cover').getAttribute('data-cover-ready'),'true');
   const before=await page.locator('#forest-party-hp').getAttribute('aria-valuenow');
