@@ -117,14 +117,22 @@ export function bossAttackFor(foeId,phase=0){
  const [kind,name,pressure]=pattern[Math.max(0,Math.floor(Number(phase)||0))%pattern.length];
  return {kind,name,pressure};
 }
-export function incomingHit({kind,allyId,action='attack',result='incorrect',hinted=false,evolved=false,pressure=0}={}){
+// Once per boss, a fighter can read the telegraph and counter with an
+// independently correct answer in the same specialty. No phase is skipped,
+// no English grade is altered, and assisted retries never unlock the counter.
+export function bossCounterFor({kind,allyId,independent=false,used=false,evolved=false}={}){
+ const matched=BATTLE_KINDS.includes(kind)&&allyAffinity(allyId).strong===kind;
+ const activated=Boolean(matched&&independent&&!used);
+ return {matched,activated,extraCharge:activated?1:0,shield:activated?1:0,heal:activated&&evolved?1:0};
+}
+export function incomingHit({kind,allyId,action='attack',result='incorrect',hinted=false,evolved=false,pressure=0,counterShield=0}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid enemy attack');
  const ally=allyAffinity(allyId);
  const ward=allySkill(allyId).type==='ward'&&kind===ally.strong;
  if(result==='review'||result==='empty'||result==='ungraded')return {damage:0,blocked:false,uncertain:true};
  if(result==='correct'&&!hinted)return {damage:0,blocked:true,uncertain:false};
  const base=result==='correct'?1:2;
- return {damage:Math.max(0,base+Math.min(1,Math.max(0,Number(pressure)||0))+(kind===ally.weak?1:0)-(kind===ally.strong?1:0)-(action==='guard'?1:0)-(evolved&&kind===ally.strong?1:0)-(ward?1:0)),
+ return {damage:Math.max(0,base+Math.min(1,Math.max(0,Number(pressure)||0))+(kind===ally.weak?1:0)-(kind===ally.strong?1:0)-(action==='guard'?1:0)-(evolved&&kind===ally.strong?1:0)-(ward?1:0)-Math.min(1,Math.max(0,Number(counterShield)||0))),
    blocked:false,uncertain:false};
 }
 export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],

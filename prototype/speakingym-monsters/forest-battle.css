@@ -92,6 +92,16 @@
 .forest-ultimate-track span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#d79b40,#ffd56b);transition:width .22s ease}
 .forest-tactic-ability{margin:5px 0 8px;padding:6px 8px;border-left:3px solid #b68435;color:#3d5742;font-size:11px;line-height:1.6;overflow-wrap:break-word}
 .forest-tactic-ability strong{color:#3a4b2f}
+.forest-boss-tactical-plan{display:grid;gap:7px;margin:5px 0;padding:10px;border:1px solid #baa26e;border-radius:9px;background:#fff4d9;color:#403d2c;line-height:1.55;overflow-wrap:break-word;line-break:strict}
+.forest-boss-tactical-plan>strong{font-size:12px;color:#493b21}
+.forest-boss-tactical-plan>small{font-size:10px;color:#554c35}
+.forest-boss-tactical-plan ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:0;margin:0;list-style:none}
+.forest-boss-tactical-plan li{display:grid;align-content:center;gap:2px;min-width:0;padding:6px 4px;border:1px solid #c2b48e;border-radius:7px;background:#fffcf1;text-align:center;font-size:10px;overflow-wrap:break-word}
+.forest-boss-tactical-plan li[data-current="true"]{border:2px solid #82632e;background:#fce4ae;padding:5px 3px}
+.forest-boss-tactical-plan li b{font-size:11px;color:#343d2b}
+.forest-boss-tactical-plan li small{font-size:9px;color:#5e553f}
+.forest-boss-counter{margin:5px 0;padding:9px 10px;border:1px solid #6d9d91;border-radius:8px;background:#e8f4ef;color:#254a40;font-size:11px;font-weight:700;line-height:1.7;overflow-wrap:break-word;line-break:strict}
+.forest-boss-counter[data-counter-ready="true"]{border-color:#bd8b3b;background:#fff1c8;color:#604418}
 .forest-tactic-evolution{margin:5px 0 8px;padding:7px 9px;border:1px solid #d7bf79;border-radius:8px;background:#fff5d9;color:#584522;font-size:11px;line-height:1.6;font-weight:800}
 .forest-tactic-party-label{margin-top:9px;color:#305746;font-size:11px;line-height:1.5;font-weight:900}
 .forest-tactic-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}

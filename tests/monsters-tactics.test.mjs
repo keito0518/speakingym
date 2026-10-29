@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,bossCounterFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -122,6 +122,34 @@ test('telegraphed heavy boss attacks affect HP only after verified misses',()=>{
  assert.equal(incomingHit({...basic,result:'empty',pressure:1}).damage,0);
  assert.equal(incomingHit({...basic,result:'correct',hinted:true,pressure:1}).damage,
   incomingHit({...basic,result:'correct',hinted:true}).damage+1);
+});
+test('boss counter rewards correctly reading a telegraph once, never skipping English or a phase',()=>{
+ const base={kind:'speak',allyId:'medamago',independent:true};
+ assert.deepEqual(bossCounterFor(base),{matched:true,activated:true,extraCharge:1,shield:1,heal:0});
+ assert.deepEqual(bossCounterFor({...base,evolved:true}),{matched:true,activated:true,extraCharge:1,shield:1,heal:1});
+ for(const cases of [{independent:false},{used:true},{kind:'listen'},{kind:'read'}]){
+  const result=bossCounterFor({...base,...cases});
+  assert.equal(result.activated,false,'wrong answer, spent counter or mismatch never gives free charge');
+  assert.equal(result.extraCharge,0);
+  assert.equal(result.shield,0);
+  assert.equal(result.heal,0);
+ }
+ for(const boss of Object.values(AREA_BOSSES)){
+  const threat=bossAttackFor(boss.id,1);
+  const specialist=MONSTERS.find(monster=>allyAffinity(monster.id).strong===threat.kind);
+  assert.ok(specialist,'every boss telegraph should have at least one matching recruit');
+  assert.equal(bossCounterFor({kind:threat.kind,allyId:specialist.id,independent:true}).activated,true);
+ }
+ const heavy={kind:'listen',allyId:'medamago',result:'incorrect',pressure:1};
+ assert.equal(incomingHit({...heavy,counterShield:1}).damage,incomingHit(heavy).damage-1);
+ assert.equal(incomingHit({...heavy,counterShield:99}).damage,incomingHit(heavy).damage-1,
+  'counter protection is capped at one point, never an invincibility exploit');
+ for(const status of ['correct','review','ungraded','empty']){
+  assert.equal(incomingHit({...heavy,result:status,counterShield:1}).damage,0,
+   `${status} must remain damage-free with or without the counter`);
+ }
+ assert.equal(strikeFor({kind:'listen',foeId:'thornking',allyId:'katappo',boss:true}).damage,1,
+  'counter never provides free boss hits or skips a learning task');
 });
 test('reactive defense questions reuse authored learning banks without skipping worlds or repeating prompts',()=>{
  for(const kind of BATTLE_KINDS){
