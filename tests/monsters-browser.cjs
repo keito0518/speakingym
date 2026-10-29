@@ -682,6 +682,11 @@ const path=require('node:path');
       }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
+      assert.equal(await forestPage.locator('.boss-medal-result').getAttribute('data-medal-rank'),'2',
+        'Seven independently verified chapter gates and all three boss checks earn silver, not gold');
+      assert.match(await forestPage.locator('.boss-medal-result').innerText(),/銀ランク獲得/);
+      const medalLayout=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(medalLayout.scroll<=medalLayout.inner+1,`${engine}/${width}: trophy card overflow ${JSON.stringify(medalLayout)}`);
       assert.match(await forestPage.locator('#result-discoveries').innerText(),/Mosslight/);
       assert.match(await forestPage.locator('#result-discoveries').innerText(),/探索の記録/);
       assert.equal(await forestPage.locator('#dungeon-learning-report').isVisible(),true);
@@ -708,8 +713,11 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
       await forestPage.locator('#collection-home').click();
       assert.match(await forestPage.locator('#forest-home-progress').innerText(),/冒険勝利 1回/);
+      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/ボス勲章 1\/24/);
+      assert.match(await forestPage.locator('[data-enter-forest="entry"] .forest-area-status').innerText(),/銀勲章/);
       const saved=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.equal(saved.forest.clears,1);
+      assert.deepEqual(saved.forest.medals,{entry:{easy:2}},'Boss medal must survive a full WebKit/Chromium reload');
       assert.deepEqual(saved.forest.relics,['moss-lantern']);
       assert.equal(saved.forest.journal.length,1);
       assert.equal(saved.forest.journal[0].eventId,'entry-moss');

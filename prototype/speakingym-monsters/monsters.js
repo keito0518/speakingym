@@ -4,6 +4,7 @@ import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
+import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
 import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, bossAttackFor, bossCounterFor, pickBattlePrompt } from './battle-tactics.js';
@@ -242,13 +243,16 @@ function renderHome() {
   const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
   const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
   const cityClear=cityCount===CITY_AREAS.length;
-  $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityCount}/${CITY_AREAS.length} · 冒険勝利 ${forest.clears}回`;
+  const medalsEarned=Object.values(forest.medals).reduce((sum,levels)=>sum+Object.keys(levels).length,0);
+  $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityCount}/${CITY_AREAS.length} · ボス勲章 ${medalsEarned}/${(FOREST_AREAS.length+CITY_AREAS.length)*3} · 冒険勝利 ${forest.clears}回`;
   const unlocked=new Set(unlockedDungeonAreas(save).map(area=>area.id));
   const dueRetention=retentionOverview(save,dayKey()).due;
   const areaCard=(area,index)=>{
     const cleared=forest.completedAreas.includes(area.id),open=unlocked.has(area.id);
     const chapterDue=dueRetention.filter(entry=>area.focus.some(key=>entry.prompt.phraseId.startsWith(key))).length;
-    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">全${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋ボス3問）${chapterDue?' · 復習候補'+chapterDue+'問':''}</span></small></span><span class="forest-area-status">${cleared?'CLEAR':open?'挑戦する':area.world==='city'&&forestCount<FOREST_AREAS.length?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
+    const bestRank=forest.medals[area.id]?.[save.difficulty]||0;
+    const target=bestRank===3?'金ランク達成！':bestRank===2?'次は全問自力正解で金へ':bestRank===1?'次は自力正解75%で銀へ':'ボス3問を確認して銅勲章へ';
+    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'} ${bestRank?BOSS_MEDAL_NAMES[bestRank]+'勲章':''}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">全${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋ボス3問）${chapterDue?' · 復習候補'+chapterDue+'問':''}</span><span class="boss-medal-target">${target}</span></small></span><span class="forest-area-status" data-medal-rank="${bestRank}">${bestRank?`${BOSS_MEDAL_NAMES[bestRank]}勲章`:cleared?'CLEAR':open?'挑戦する':area.world==='city'&&forestCount<FOREST_AREAS.length?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
   };
   const forestCards=FOREST_AREAS.map((area,index)=>areaCard(area,index)).join('');
   const cityCards=CITY_AREAS.map((area,index)=>areaCard(area,index)).join('');
@@ -343,7 +347,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     route:null,companionId:save.selectedMonster,combo:0,
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
@@ -1477,14 +1481,17 @@ function advanceQuestion(){
     play.index=play.index>=regularCount()?regularCount()+play.bossHits:play.index+1;
     if(play.index>=waveLength()){
       // Reward a wave only after its full chapter and three verified boss hits.
+      const medalResult=!play.endless?evaluateBossMedal(play.prompts,play.dungeonOutcomes):null;
       const reward=finishForest(save,play.route,play.companionId,play.areaId,
-        play.tactics?[...new Set([...play.prompts.map(p=>p.id),...play.tactics.usedPromptIds])]:play.prompts.map(p=>p.id),!play.endless);
+        play.tactics?[...new Set([...play.prompts.map(p=>p.id),...play.tactics.usedPromptIds])]:play.prompts.map(p=>p.id),!play.endless,
+        medalResult?{difficulty:play.difficulty,rank:medalResult.rank}:null);
       // Unlock chapter-gated allies only after the boss was actually beaten.
       // Endless replay does not unlock new story chapters.
       const awarded=captureEligibleMonsters(reward.save);
       persist(awarded.save);
       play.captured.push(...awarded.captured);
       play.forestRelics.push(...reward.discovered);
+      if(medalResult)play.bossMedal={...reward.medal,...medalResult};
       if(!play.endless){play.completedForest=true;finishSession();return;}
       play.seenIds=cleanForest(save.forest).recentPromptIds;
       play.wave++;
@@ -1572,11 +1579,13 @@ function finishSession(timedOut=false,defeated=false) {
     timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
   $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
+  const medal=ended.bossMedal;
+  const medalDisplay=medal?`<section class="boss-medal-result" data-medal-rank="${medal.rank}"><span class="boss-medal-symbol" aria-hidden="true"></span><div><span class="tiny-caps">BOSS MASTERY · ${escapeHtml(difficultyCopy[medal.difficulty].label)}</span><h2>${medal.rank?`${BOSS_MEDAL_NAMES[medal.rank]}ランク${medal.upgraded?'獲得！':'でクリア！'}`:'練習クリア · 勲章は次の挑戦で'}</h2><p>章の問題 ${medal.independent}/${medal.total}問を自力で確認 · ボス ${medal.verifiedBoss}/3問を確認。${medal.rank===3?'全問自力でクリア！':medal.rank===2?'全問自力で金ランクを目指そう。':medal.rank===1?'75%以上を自力で確認し、ボスも2問以上自力で銀ランクへ。':'ボス3問をヒントありでも確認すると銅ランクを獲得できるよ。'}</p>${medal.best>medal.rank?`<small>この難易度の最高記録は${BOSS_MEDAL_NAMES[medal.best]}ランクのまま保存したよ。</small>`:''}</div></section>`:'';
   const newMonsters=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
-  $('#result-discoveries').innerHTML=newMonsters+newRelics+memories;
+  $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories;
   renderDungeonLearningReport(ended);
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';

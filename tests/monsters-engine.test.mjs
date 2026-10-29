@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, DUNGEON_AREAS, unlockedForestAreas, unlockedCityAreas, unlockedDungeonAreas, nextForestArea, nextDungeonArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
+import { BOSS_MEDAL_NAMES, cleanBossMedals, evaluateBossMedal } from '../prototype/speakingym-monsters/boss-mastery.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, regularEncountersFor, forestWaveLengthFor, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
@@ -536,7 +537,7 @@ test('Speaking Forest is three authored speaking gates across all difficulty lev
 });
 test('Forest stamp unlocks only on full route completion; evolved companions find extra cosmetic relics', () => {
   const initial=createSave();
-  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[],completedAreas:[],recentPromptIds:[],journal:[]});
+  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[],completedAreas:[],medals:{},recentPromptIds:[],journal:[]});
   assert.throws(()=>finishForest(initial,'unknown','medamago'),/Invalid forest route/);
   assert.throws(()=>finishForest(initial,'moss','katappo'),/not owned/);
   const one=finishForest(initial,'sunlit','medamago');
@@ -565,7 +566,46 @@ test('Forest souvenirs persist when old saves are loaded without a forest field'
  const completed=finishForest(initial,'sunlit','medamago').save;
  assert.deepEqual(validateSave(completed).forest,completed.forest);
  const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
- assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],recentPromptIds:[],journal:[]});
+ assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],medals:{},recentPromptIds:[],journal:[]});
+});
+
+test('boss medals require three verified boss questions and reward real independent chapter clears',()=>{
+ const prompts=Array.from({length:8},(_,index)=>({id:`stage-${index}`}));
+ const correct=prompts.map(prompt=>({promptId:prompt.id,outcome:'independent'}));
+ const award=outcomes=>evaluateBossMedal(prompts,outcomes);
+ assert.equal(award(correct).rank,3);
+ assert.equal(award(correct).independent,8);
+ const supported=[...correct];supported[0]={...correct[0],outcome:'supported'};
+ assert.equal(award(supported).rank,2,'one supported task cannot earn gold');
+ const bronze=correct.map((row,index)=>index<3?{...row,outcome:'supported'}:row);
+ assert.equal(award(bronze).rank,1,'multiple hints on the route reduce the earned rank');
+ const reviewBoss=correct.map((row,index)=>index===7?{...row,outcome:'review'}:row);
+ assert.equal(award(reviewBoss).rank,0,'ungraded boss skip never earns an award');
+ assert.equal(award([...correct,{promptId:'defense-extra',outcome:'independent'}]).rank,3,
+  'an extra reactive-defense answer cannot inflate the rank');
+ assert.equal(award([...correct,{promptId:'stage-7',outcome:'review'}]).rank,2,
+  'once an assisted route was used, a later answer cannot erase that history and fake gold');
+ assert.throws(()=>evaluateBossMedal([],[]),/Invalid/);
+ assert.deepEqual(BOSS_MEDAL_NAMES,['未獲得','銅','銀','金']);
+});
+
+test('boss medal bests persist per chapter and difficulty, never downgrade, never rewrite old saves',()=>{
+ const initial=createSave();
+ const earned=finishForest(initial,'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:2});
+ assert.deepEqual(initial.forest.medals,{},'historical collection must not be mutated');
+ assert.deepEqual(earned.save.forest.medals,{entry:{easy:2}});
+ assert.deepEqual(earned.medal,{difficulty:'easy',rank:2,best:2,upgraded:true});
+ const replay=finishForest(earned.save,'moss','medamago','entry',[],true,{difficulty:'easy',rank:1});
+ assert.equal(replay.medal.upgraded,false);
+ assert.equal(replay.medal.best,2);
+ const harder=finishForest(replay.save,'sunlit','medamago','entry',[],true,{difficulty:'hard',rank:3});
+ assert.deepEqual(harder.save.forest.medals,{entry:{easy:2,hard:3}});
+ assert.deepEqual(validateSave(harder.save).forest.medals,harder.save.forest.medals);
+ assert.deepEqual(finishForest(harder.save,'sunlit','medamago','entry',[],false,{difficulty:'normal',rank:3}).save.forest.medals,
+  harder.save.forest.medals,'endless never awards story medals');
+ assert.deepEqual(cleanBossMedals({entry:{easy:3,hard:4,normal:'3'},intruder:{easy:3}},['entry']),{entry:{easy:3}},
+  'unknown chapters, malformed levels and suspicious ranks are stripped');
+ assert.deepEqual(validateSave({...createSave(),forest:undefined}).forest.medals,{},'v1 saves need no migration prompt');
 });
 
 test('four Forest areas unlock one at a time, preserve earlier progress and avoid recent repeats',()=>{

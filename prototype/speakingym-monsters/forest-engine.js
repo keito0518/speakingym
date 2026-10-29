@@ -2,6 +2,7 @@
 // Forest souvenirs are cosmetic only. They never modify language grade or XP.
 import { ALL_PROMPTS } from './monster-data.js';
 import { FOREST_EVENTS, forestEventChoice } from './forest-events.js';
+import { BOSS_MEDAL_DIFFICULTIES, cleanBossMedals } from './boss-mastery.js';
 
 export const FOREST_ROUTES = Object.freeze([
   { id:'sunlit', name:'ひだまりの小道', tag:'SUNLIT TRAIL', detail:'木漏れ日をたどって、金色の葉っぱを探そう。' },
@@ -100,6 +101,7 @@ export function cleanForest(input){
   routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>[...FOREST_ROUTES,...CITY_ROUTES].some(r=>r.id===x)))],
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
   completedAreas:[...new Set(completed.filter(x=>allowed.includes(x)))],
+  medals:cleanBossMedals(source.medals,allowed),
   recentPromptIds:[...new Set((Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]).filter(id=>ALL_PROMPTS.some(p=>p.id===id)))].slice(-128),
   // A bounded, validated collection of distinct story decisions. Old saves
   // simply start with an empty journal; replaying the same choice adds nothing.
@@ -129,7 +131,7 @@ export function getForestPrompts(save,difficulty=save.difficulty||'easy'){
  if(prompts.length!==3 || prompts.some(p=>!p)||new Set(prompts.map(p=>p.phraseId)).size!==3)throw new Error('Forest curriculum unavailable');
  return prompts;
 }
-export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[],recordAreaClear=true){
+export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[],recordAreaClear=true,medalResult=null){
  const isCity=dungeonAreaFor(areaId)?.world==='city';
  const routePool=isCity?CITY_ROUTES:FOREST_ROUTES;
  if(!routePool.some(r=>r.id===routeId))throw new Error('Invalid forest route');
@@ -146,6 +148,12 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
  if(!isCity&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
  if(!isCity&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
  const discovered=earned.filter(id=>!fresh.has(id));
+ const difficulty=medalResult?.difficulty;
+ const requestedRank=medalResult?.rank;
+ const priorRank=before.medals[areaId]?.[difficulty]||0;
+ const validMedal=recordAreaClear&&BOSS_MEDAL_DIFFICULTIES.includes(difficulty)&&
+   Number.isInteger(requestedRank)&&requestedRank>=0&&requestedRank<=3;
+ const rank=validMedal?Math.max(priorRank,requestedRank):priorRank;
  const next={
   ...save,
   forest:{
@@ -154,9 +162,11 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
    routes:[...new Set([...before.routes,routeId])],
    relics:[...new Set([...before.relics,...earned])],
    completedAreas:recordAreaClear?[...new Set([...before.completedAreas,areaId])]:before.completedAreas,
+   medals:validMedal&&rank?{...before.medals,[areaId]:{...before.medals[areaId],[difficulty]:rank}}:before.medals,
    recentPromptIds:[...new Set([...before.recentPromptIds,...promptIds.filter(id=>ALL_PROMPTS.some(p=>p.id===id))])].slice(-128),
    journal:before.journal
   }
  };
- return {save:next,discovered,route:routePool.find(r=>r.id===routeId)};
+ return {save:next,discovered,route:routePool.find(r=>r.id===routeId),
+   medal:validMedal?{difficulty,rank:requestedRank,best:rank,upgraded:rank>priorRank}:null};
 }
