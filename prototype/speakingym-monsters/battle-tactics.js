@@ -176,6 +176,50 @@ export function bossAttackFor(foeId,phase=0){
  const [kind,name,pressure]=pattern[Math.max(0,Math.floor(Number(phase)||0))%pattern.length];
  return {kind,name,pressure};
 }
+// Each boss has one distinct party-composition opportunity. A live specialist
+// must be on the bench when the specified phase is cleared independently.
+// No extra question is skipped and the English grade is never rewritten.
+const BOSS_FORMATION_LINKS=Object.freeze({
+ thornking:{name:'いばらの突破口',phase:0,kind:'vocab',effect:'shield'},
+ sunwarden:{name:'陽光の連鎖',phase:0,kind:'speak',effect:'charge'},
+ mistknight:{name:'霧を払う合図',phase:1,kind:'listen',effect:'rally'},
+ elderroot:{name:'古木の鼓動',phase:1,kind:'vocab',effect:'heal'},
+ metroguardian:{name:'信号の同期',phase:0,kind:'grammar',effect:'shield'},
+ marketwarden:{name:'交渉の追い風',phase:1,kind:'listen',effect:'charge'},
+ railkeeper:{name:'時刻表の先読み',phase:0,kind:'grammar',effect:'shield'},
+ blizzardking:{name:'吹雪の共鳴',phase:1,kind:'speak',effect:'rally'}
+});
+const BOSS_LINK_EFFECTS=Object.freeze({
+ shield:'次の敵攻撃を1軽減',charge:'必殺ゲージ＋1',
+ heal:'出撃中の仲間HP＋2',rally:'戦える仲間全員のHP＋1'
+});
+export function bossFormationLinkPlan(foeId){
+ const link=BOSS_FORMATION_LINKS[foeId];
+ return link?{...link,description:BOSS_LINK_EFFECTS[link.effect]}:null;
+}
+export function bossFormationLinkFor({foeId,phase=0,activeId,party,independent=false,used=false,
+ ultimate=0,shield=0}={}){
+ const plan=bossFormationLinkPlan(foeId);
+ const base={partnerId:null,activated:false,name:plan?.name||null,extraCharge:0,shield:0,heal:0,healTeam:0};
+ if(!plan||!party?.roster?.includes(activeId)||!party?.health)return base;
+ const partnerId=party.roster.find(id=>id!==activeId&&allyAffinity(id).strong===plan.kind&&
+   (party.health[id]?.hp||0)>0)||null;
+ if(!partnerId)return base;
+ base.partnerId=partnerId;
+ if(used||!independent||phase!==plan.phase)return base;
+ const health=party.health[activeId];
+ const wounded=party.roster.some(id=>party.health[id]?.hp>0&&party.health[id].hp<party.health[id].maxHp);
+ if(plan.effect==='shield'&&shield<1)base.shield=1;
+ else if(plan.effect==='charge'&&ultimate<ULTIMATE_MAX)base.extraCharge=1;
+ else if(plan.effect==='charge'&&shield<1)base.shield=1;
+ else if(plan.effect==='heal'&&health?.hp>0&&health.hp<health.maxHp)base.heal=2;
+ else if(plan.effect==='rally'&&wounded)base.healTeam=1;
+ // A prior counter can already cover the attack. In that case a prepared
+ // teammate channels the opening into charge, without stacking invincibility.
+ else if(ultimate<ULTIMATE_MAX)base.extraCharge=1;
+ base.activated=Boolean(base.shield||base.extraCharge||base.heal||base.healTeam);
+ return base;
+}
 // Once per boss, a fighter can read the telegraph and counter with an
 // independently correct answer in the same specialty. No phase is skipped,
 // no English grade is altered, and assisted retries never unlock the counter.

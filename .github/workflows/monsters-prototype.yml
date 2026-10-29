@@ -45,6 +45,11 @@ jobs:
           timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
           timeout 105s node tests/monsters-boss-cover-browser.cjs
           timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-cover-browser.cjs
+      - name: Boss formation synergy browser QA (Chromium + WebKit)
+        timeout-minutes: 4
+        run: |
+          timeout 105s node tests/monsters-boss-formation-browser.cjs
+          timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-formation-browser.cjs
       - name: Chromium mobile and learning QA
         timeout-minutes: 8
         run: |

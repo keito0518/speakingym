@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,bossFormationLinkPlan,bossFormationLinkFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -149,6 +149,60 @@ test('each area boss advertises its own predictable three-phase attack sequence'
   assert.deepEqual(bossAttackFor(boss.id,3),phases[0],'later waves repeat the explicit cycle');
  }
  assert.equal(signatures.size,Object.keys(AREA_BOSSES).length,'all eight bosses have distinct patterns');
+});
+test('all eight bosses give a distinct, telegraphed reason to bring a particular reserve',()=>{
+ const names=new Set();
+ for(const boss of Object.values(AREA_BOSSES)){
+  const plan=bossFormationLinkPlan(boss.id);
+  assert.ok(plan?.name&&plan.description,`${boss.id} needs a visible team tactic`);
+  assert.ok([0,1].includes(plan.phase),'boss perks must happen before the final blow');
+  assert.ok(BATTLE_KINDS.includes(plan.kind));
+  names.add(plan.name);
+  const reserve=MONSTERS.find(monster=>allyAffinity(monster.id).strong===plan.kind&&monster.id!=='medamago');
+  assert.ok(reserve,`${boss.id} must have a recruitable counter`);
+  const party=createBattleParty(['medamago',reserve.id]);
+  const options={foeId:boss.id,phase:plan.phase,activeId:'medamago',party,independent:true,ultimate:0};
+  const result=bossFormationLinkFor(options);
+  assert.equal(result.partnerId,reserve.id);
+  assert.equal(result.activated,true,`${boss.id} should reward a prepared party`);
+  assert.ok(result.extraCharge||result.shield||result.heal||result.healTeam);
+  assert.equal(bossFormationLinkFor({...options,independent:false}).activated,false,'hinted and incorrect English cannot trigger the link');
+  assert.equal(bossFormationLinkFor({...options,used:true}).activated,false,'each boss link activates only once');
+  assert.equal(bossFormationLinkFor({...options,phase:2}).activated,false,'the finishing phase cannot trigger a link');
+  assert.equal(bossFormationLinkFor({...options,party:createBattleParty(['medamago'])}).activated,false,
+   'a lone fighter never gets a phantom reserve');
+  assert.equal(bossFormationLinkFor({...options,party:applyFighterDamage(party,reserve.id,99)}).activated,false,
+   'defeated reserves cannot help');
+ }
+ assert.equal(names.size,Object.keys(AREA_BOSSES).length);
+ assert.equal(bossFormationLinkPlan('mossling'),null,'regular enemies retain their own combat styles');
+});
+test('boss party links restore limited HP or grant shield without free damage or zero-HP revives',()=>{
+ const team=createBattleParty(['medamago','katappo','koge']);
+ const mist=applyFighterDamage(applyFighterDamage(team,'medamago',2),'katappo',1);
+ const rally=bossFormationLinkFor({foeId:'mistknight',phase:1,activeId:'medamago',party:mist,independent:true});
+ assert.equal(rally.healTeam,1);
+ assert.equal(rally.partnerId,'katappo');
+ assert.equal(bossFormationLinkFor({foeId:'mistknight',phase:1,activeId:'medamago',party:team,independent:true}).activated,true,
+  'full health can still convert a prepared rally into charge');
+ const fainted=applyFighterDamage(mist,'katappo',99);
+ assert.equal(bossFormationLinkFor({foeId:'mistknight',phase:1,activeId:'medamago',party:fainted,independent:true}).activated,false,
+  'fainted specialist never revives itself or enables a team heal');
+ const shield=bossFormationLinkFor({foeId:'thornking',phase:0,activeId:'medamago',
+  party:createBattleParty(['medamago','purupun']),independent:true,ultimate:0,shield:0});
+ assert.equal(shield.shield,1);
+ assert.equal(incomingHit({kind:'listen',allyId:'medamago',result:'incorrect',counterShield:shield.shield}).damage,
+  incomingHit({kind:'listen',allyId:'medamago',result:'incorrect'}).damage-1);
+ assert.equal(incomingHit({kind:'listen',allyId:'medamago',result:'ungraded',counterShield:shield.shield}).damage,0,
+  'microphone uncertainty must never deal damage');
+ assert.equal(bossFormationLinkFor({foeId:'thornking',phase:0,activeId:'medamago',
+  party:createBattleParty(['medamago','purupun']),independent:true,ultimate:0,shield:1}).extraCharge,1,
+  'an existing shield becomes a small charge instead of pointless stacking');
+ assert.equal(bossFormationLinkFor({foeId:'sunwarden',phase:0,activeId:'katappo',
+  party:createBattleParty(['katappo','medamago']),independent:true,ultimate:ULTIMATE_MAX,shield:0}).shield,1,
+  'a full gauge can use the opening as cover instead');
+ assert.equal(strikeFor({kind:'listen',foeId:'mistknight',allyId:'katappo',boss:true}).damage,1,
+  'reserves never skip any of the three authored boss questions');
 });
 test('team-up options depend on living reserves with complementary English strengths',()=>{
  const party=createBattleParty(['medamago','katappo','koge']);
