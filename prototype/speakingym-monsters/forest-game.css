@@ -125,6 +125,20 @@
 .boss-medal-result h2{font-size:18px;line-height:1.4;margin:4px 0 5px;color:#304b35;word-break:keep-all;overflow-wrap:anywhere}
 .boss-medal-result p{font-size:12px;line-height:1.75;color:#3e5243;margin:0;word-break:normal;line-break:strict;overflow-wrap:anywhere}
 .boss-medal-result small{display:block;color:#575a48;margin-top:6px;line-height:1.6}
+.boss-bonus-pill{background:#ffde8b;color:#513507;border:1px solid #cc9d45}
+.boss-medal-collection{margin:24px auto;padding:20px clamp(12px,3vw,23px);max-width:900px;background:#fefbf0;border:2px solid #d3bd85;border-radius:22px;color:#294332;box-shadow:0 7px 0 #cfc09a44}
+.boss-medal-collection-tip{font-size:12px;line-height:1.75;color:#435a4b;word-break:keep-all;overflow-wrap:anywhere}
+.boss-medal-collection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}
+.boss-medal-collection-area{min-width:0;border:1px solid #cbd7c3;border-radius:13px;background:#f2f6e9;padding:12px}
+.boss-medal-collection-area>strong{font-size:13px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
+.boss-medal-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:9px}
+.boss-medal-slot{min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 3px;border:1px solid #d1d6ce;border-radius:10px;background:#fff;color:#4d5f55}
+.boss-medal-slot small{font-size:10px;color:inherit;line-height:1.3;white-space:nowrap}
+.boss-medal-slot strong{display:grid;place-items:center;width:30px;height:30px;font-size:13px;line-height:1;border:2px solid currentColor;border-radius:50%;font-weight:900}
+.boss-medal-slot[data-medal-rank="1"]{background:#e0c2a0;color:#573317;border-color:#b78d5b}
+.boss-medal-slot[data-medal-rank="2"]{background:#e2ecf2;color:#29465a;border-color:#98b8c7}
+.boss-medal-slot[data-medal-rank="3"]{background:#ffe19a;color:#603a07;border-color:#c99a38}
+@media(max-width:620px){.boss-medal-collection-grid{grid-template-columns:minmax(0,1fr)}.boss-medal-collection{padding:16px 12px}}
 #result-view.forest-results .forest-result-relic{border:2px solid #c8ae62;background:linear-gradient(130deg,#fffae5,#f4eed2);
  box-shadow:0 5px 0 #e3d6aa;animation:forest-treasure .6s cubic-bezier(.15,.7,.3,1) both}
 @keyframes forest-breath{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
@@ -198,6 +212,9 @@
 .forest-area-status[data-medal-rank="2"]{background:#cfe1e9;color:#1e3542}
 .forest-area-status[data-medal-rank="3"]{background:#ffdb82;color:#442b02}
 .city-area-card .forest-area-status{background:#b6dcff1b;color:#d8efff}
+.city-area-card .forest-area-status[data-medal-rank="1"]{background:#b89567;color:#241b0f}
+.city-area-card .forest-area-status[data-medal-rank="2"]{background:#cfe1e9;color:#1e3542}
+.city-area-card .forest-area-status[data-medal-rank="3"]{background:#ffdb82;color:#442b02}
 .forest-explore-art[data-area="glade"] .forest-world-svg{filter:hue-rotate(-26deg) saturate(1.18) brightness(1.12)}
 .forest-explore-art[data-area="thicket"] .forest-world-svg{filter:hue-rotate(95deg) saturate(.72) brightness(.81)}
 .forest-explore-art[data-area="sanctuary"] .forest-world-svg{filter:sepia(.35) hue-rotate(-8deg) saturate(1.1)}

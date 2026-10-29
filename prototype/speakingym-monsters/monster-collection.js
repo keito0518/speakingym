@@ -4,6 +4,8 @@ import { monsterArt } from './monster-art.js';
 import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, FOREST_ROUTES, unlockedCityAreas, cleanForest } from './forest-engine.js';
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
+import { BOSS_MEDAL_NAMES } from './boss-mastery.js';
+import { allyAffinity, allySkill, BATTLE_LABELS, evolvedSupportTalent } from './battle-tactics.js';
 
 const html = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $ = s => document.querySelector(s);
@@ -27,9 +29,10 @@ const chapterMarks=Object.freeze([
  {name:'もうひとつの物語',goal:'全16種類の選択を見届ける',condition:f=>f.journal.length===16}
 ]);
 function powerFor(id) {
-  if(id === 'medamago') return {name:'Double Yolk',description:'森のボス戦で、1ウェーブに一度だけ2回攻撃。ひだまりの小道では隠し宝物も見つける。'};
-  if(id === 'katappo') return {name:'Lost & Found',description:'エンドレスで判定保留になったとき、1回の冒険に一度だけ挑戦回数を守る。こけむした抜け道では隠し宝物も見つける。'};
-  return {name:'未発見',description:'固有の戦闘モーションは実装済み。冒険に影響する能力は、今後のエリア拡張で追加予定。'};
+  const skill=allySkill(id),specialty=BATTLE_LABELS[allyAffinity(id).strong];
+  const legacy=id==='medamago'?' 従来の森モードでは進化後のDouble Yolkも使える。':
+    id==='katappo'?' 従来のエンドレスでは進化後のLost & Foundも使える。':'';
+  return {name:skill.name,description:`戦略バトルでは${specialty}が得意。${skill.description}。進化後、控えからの連携で「${evolvedSupportTalent(id).name}」が使える。${legacy}`};
 }
 export function createCollectionViews({getSave, persist, showView, stopAudio}) {
   let currentId = null;
@@ -39,6 +42,16 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     $('#collection-wallet').textContent = `${save.xpWallet} XP`;
     $('#forest-collection-count').textContent = `踏破 ${forest.clears}回 · 宝物 ${forest.relics.length}/${Object.keys(FOREST_RELICS).length}`;
     $('#forest-collection-relics').innerHTML = forest.relics.length ? forest.relics.map(id => `<article class="forest-relic">${relicArt(id)}<div><strong lang="en">${html(FOREST_RELICS[id].name)}</strong><small>${html(FOREST_RELICS[id].meaning)}</small></div></article>`).join('') : '<p class="forest-empty">仲間と森を探検して、宝物を見つけよう。</p>';
+    const awardedMedals=Object.values(forest.medals).reduce((sum,levels)=>sum+Object.keys(levels).length,0);
+    $('#boss-medal-collection-progress').textContent=`勲章 ${awardedMedals}/24 · 一度獲得した最高ランクは下がらないよ`;
+    $('#boss-medal-collection-grid').innerHTML=[...FOREST_AREAS,...CITY_AREAS].map(area=>{
+      const earned=forest.medals[area.id]||{};
+      const levels=[['easy','やさしい'],['normal','標準'],['hard','応用']].map(([key,label])=>{
+        const rank=earned[key]||0;
+        return `<span class="boss-medal-slot" data-medal-rank="${rank}" aria-label="${html(area.name)} ${label} ${rank?BOSS_MEDAL_NAMES[rank]+'勲章':'未獲得'}"><small>${label}</small><strong>${rank?BOSS_MEDAL_NAMES[rank]:'未'}</strong></span>`;
+      }).join('');
+      return `<article class="boss-medal-collection-area"><strong>${html(area.name)}</strong><div class="boss-medal-slots">${levels}</div></article>`;
+    }).join('');
     const seenEvents=new Set(forest.journal.map(row=>row.eventId));
     const earnedBadges=chapterMarks.filter(mark=>mark.condition(forest));
     const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
@@ -71,7 +84,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     const c = creatureFor(id); if(!c) return;
     currentId = id; stopAudio();
     const save = getSave(), owned = save.ownedMonsters.includes(id), g = getMonsterProgress(save,id), power = powerFor(id), bond=getMonsterBondProgress(save,id);
-    $('#detail-content').innerHTML = `<div class="character-sheet"><div class="character-portrait ${owned?'':'unowned'}">${monsterArt(id,owned&&g.evolved)}</div><span class="tiny-caps">MONSTER FIELD NOTES</span><h1 lang="en">${html(owned?displayName(c,g):c.name)}</h1><p class="character-subtitle">${html(c.japaneseName)} · ${html(c.kind)}</p><p class="character-description">${html(c.note)}</p><span class="character-badge">${owned?`Lv.${g.level} · 仲間`:'まだ仲間になっていないよ'}</span><section class="character-section"><h2>名前の由来</h2>${c.roots.map(r=>`<div class="word-row"><span><b lang="en">${html(r.word)}</b><small>${html(r.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${html(r.word)}" aria-label="${html(r.word)} の発音を聞く"><span class="audio-glyph" aria-hidden="true"></span>聞く</button></div>`).join('')}<p id="pronounce-feedback" role="status"></p></section><section class="character-section"><h2>固有能力</h2><strong lang="en">${html(power.name)}</strong><p>${html(power.description)}</p><small>${id==='medamago'||id==='katappo'?(owned&&g.evolved?'進化で解放済み':'進化すると解放'):'今後追加予定'}</small></section><section class="character-section"><h2>学習で深まる絆</h2><p>絆 Lv.${bond.rank} · ${bond.points}ポイント</p><p>${bond.maxed?'絆レベルMAX！これからも英語を使っていこう。':`次の絆レベルまで ${bond.next}ポイント`}</p><small>翌日・3日後・7日後の定着チェックを、日を空けてヒントなしでクリアすると増えるよ。XPや戦闘力には影響しない。</small></section><section class="character-section"><h2>進化の記録</h2><div class="evolution-path"><span lang="en">${html(c.name)}</span><span aria-hidden="true">→</span><span lang="en">${html(c.evolvedName)}</span></div><p>${owned?(g.evolved?'進化済み。さらにXPをあげるとレベルが上がるよ。':`あと${Math.max(0,EVOLUTION_XP-g.xp)} XPで進化。`):html(unlockText(c,save))}</p></section><p id="detail-feedback" role="status">${html(message)}</p>${owned?`<div class="character-actions"><button type="button" id="open-training" class="button button-primary">この仲間を育てる</button><button type="button" class="button button-ghost" data-select-monster="${id}" ${save.selectedMonster===id?'disabled':''}>${save.selectedMonster===id?'ホームに表示中':'一緒に冒険する'}</button></div>`:''}</div>`;
+    $('#detail-content').innerHTML = `<div class="character-sheet"><div class="character-portrait ${owned?'':'unowned'}">${monsterArt(id,owned&&g.evolved)}</div><span class="tiny-caps">MONSTER FIELD NOTES</span><h1 lang="en">${html(owned?displayName(c,g):c.name)}</h1><p class="character-subtitle">${html(c.japaneseName)} · ${html(c.kind)}</p><p class="character-description">${html(c.note)}</p><span class="character-badge">${owned?`Lv.${g.level} · 仲間`:'まだ仲間になっていないよ'}</span><section class="character-section"><h2>名前の由来</h2>${c.roots.map(r=>`<div class="word-row"><span><b lang="en">${html(r.word)}</b><small>${html(r.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${html(r.word)}" aria-label="${html(r.word)} の発音を聞く"><span class="audio-glyph" aria-hidden="true"></span>聞く</button></div>`).join('')}<p id="pronounce-feedback" role="status"></p></section><section class="character-section"><h2>固有能力</h2><strong>${html(power.name)}</strong><p>${html(power.description)}</p><small>戦略バトル（開発版）で使用可能。進化すると控えからの連携も強くなるよ。</small></section><section class="character-section"><h2>学習で深まる絆</h2><p>絆 Lv.${bond.rank} · ${bond.points}ポイント</p><p>${bond.maxed?'絆レベルMAX！これからも英語を使っていこう。':`次の絆レベルまで ${bond.next}ポイント`}</p><small>翌日・3日後・7日後の定着チェックを、日を空けてヒントなしでクリアすると増えるよ。XPや戦闘力には影響しない。</small></section><section class="character-section"><h2>進化の記録</h2><div class="evolution-path"><span lang="en">${html(c.name)}</span><span aria-hidden="true">→</span><span lang="en">${html(c.evolvedName)}</span></div><p>${owned?(g.evolved?'進化済み。さらにXPをあげるとレベルが上がるよ。':`あと${Math.max(0,EVOLUTION_XP-g.xp)} XPで進化。`):html(unlockText(c,save))}</p></section><p id="detail-feedback" role="status">${html(message)}</p>${owned?`<div class="character-actions"><button type="button" id="open-training" class="button button-primary">この仲間を育てる</button><button type="button" class="button button-ghost" data-select-monster="${id}" ${save.selectedMonster===id?'disabled':''}>${save.selectedMonster===id?'ホームに表示中':'一緒に冒険する'}</button></div>`:''}</div>`;
     all('[data-pronounce-word]').forEach(b => b.addEventListener('click',()=>{
       const feedback = $('#pronounce-feedback');
       try {

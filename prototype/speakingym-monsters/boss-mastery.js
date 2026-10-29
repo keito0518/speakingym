@@ -1,8 +1,21 @@
 // Optional, repeatable boss-clear goals. Only authored chapter questions count:
-// reactive defense questions never inflate a clear rank. Medals grant no XP,
-// unlocks, grading overrides or battle advantages.
+// reactive defense questions never inflate a clear rank. The one-time medal
+// training bonus is spendable XP, never a grading override or a free capture.
 export const BOSS_MEDAL_NAMES=Object.freeze(['未獲得','銅','銀','金']);
 export const BOSS_MEDAL_DIFFICULTIES=Object.freeze(['easy','normal','hard']);
+// Cumulative reward at each best tier. Only the *difference* is paid when
+// upgrading a medal; replaying an easier result cannot mint duplicate XP.
+export const BOSS_MEDAL_TRAINING_XP=Object.freeze({
+ easy:Object.freeze([0,8,20,36]),
+ normal:Object.freeze([0,12,28,48]),
+ hard:Object.freeze([0,16,36,64])
+});
+export function bossTrainingBonus(difficulty,oldRank,newRank){
+ const table=BOSS_MEDAL_TRAINING_XP[difficulty];
+ if(!table||![oldRank,newRank].every(rank=>Number.isInteger(rank)&&rank>=0&&rank<=3))
+  throw new Error('Invalid boss medal reward');
+ return Math.max(0,table[newRank]-table[oldRank]);
+}
 
 export function cleanBossMedals(source,areaIds){
  const input=source&&typeof source==='object'&&!Array.isArray(source)?source:{};

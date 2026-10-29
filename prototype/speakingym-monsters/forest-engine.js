@@ -2,7 +2,7 @@
 // Forest souvenirs are cosmetic only. They never modify language grade or XP.
 import { ALL_PROMPTS } from './monster-data.js';
 import { FOREST_EVENTS, forestEventChoice } from './forest-events.js';
-import { BOSS_MEDAL_DIFFICULTIES, cleanBossMedals } from './boss-mastery.js';
+import { BOSS_MEDAL_DIFFICULTIES, bossTrainingBonus, cleanBossMedals } from './boss-mastery.js';
 
 export const FOREST_ROUTES = Object.freeze([
   { id:'sunlit', name:'ひだまりの小道', tag:'SUNLIT TRAIL', detail:'木漏れ日をたどって、金色の葉っぱを探そう。' },
@@ -154,8 +154,10 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
  const validMedal=recordAreaClear&&BOSS_MEDAL_DIFFICULTIES.includes(difficulty)&&
    Number.isInteger(requestedRank)&&requestedRank>=0&&requestedRank<=3;
  const rank=validMedal?Math.max(priorRank,requestedRank):priorRank;
+ const trainingXp=validMedal?bossTrainingBonus(difficulty,priorRank,rank):0;
  const next={
   ...save,
+  xpWallet:(save.xpWallet||0)+trainingXp,
   forest:{
    clears:before.clears+1,
    bestWave:before.bestWave,
@@ -168,5 +170,5 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
   }
  };
  return {save:next,discovered,route:routePool.find(r=>r.id===routeId),
-   medal:validMedal?{difficulty,rank:requestedRank,best:rank,upgraded:rank>priorRank}:null};
+   medal:validMedal?{difficulty,rank:requestedRank,best:rank,upgraded:rank>priorRank,bonusXp:trainingXp}:null};
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, DUNGEON_AREAS, unlockedForestAreas, unlockedCityAreas, unlockedDungeonAreas, nextForestArea, nextDungeonArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
-import { BOSS_MEDAL_NAMES, cleanBossMedals, evaluateBossMedal } from '../prototype/speakingym-monsters/boss-mastery.js';
+import { BOSS_MEDAL_NAMES, bossTrainingBonus, cleanBossMedals, evaluateBossMedal } from '../prototype/speakingym-monsters/boss-mastery.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, regularEncountersFor, forestWaveLengthFor, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
@@ -594,18 +594,31 @@ test('boss medal bests persist per chapter and difficulty, never downgrade, neve
  const earned=finishForest(initial,'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:2});
  assert.deepEqual(initial.forest.medals,{},'historical collection must not be mutated');
  assert.deepEqual(earned.save.forest.medals,{entry:{easy:2}});
- assert.deepEqual(earned.medal,{difficulty:'easy',rank:2,best:2,upgraded:true});
+ assert.deepEqual(earned.medal,{difficulty:'easy',rank:2,best:2,upgraded:true,bonusXp:20});
+ assert.equal(earned.save.xpWallet,20,'first silver trophy credits XP that may be spent on any companion');
  const replay=finishForest(earned.save,'moss','medamago','entry',[],true,{difficulty:'easy',rank:1});
  assert.equal(replay.medal.upgraded,false);
  assert.equal(replay.medal.best,2);
+ assert.equal(replay.medal.bonusXp,0,'downgrading or farming the same medal cannot mint more XP');
+ assert.equal(replay.save.xpWallet,20);
+ const gold=finishForest(replay.save,'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:3});
+ assert.equal(gold.medal.bonusXp,16,'upgrading silver to gold awards only the difference');
+ assert.equal(gold.save.xpWallet,36,'cumulative bronze/silver/gold bonus cannot exceed the gold tier');
  const harder=finishForest(replay.save,'sunlit','medamago','entry',[],true,{difficulty:'hard',rank:3});
  assert.deepEqual(harder.save.forest.medals,{entry:{easy:2,hard:3}});
+ assert.equal(harder.save.xpWallet,84,'hard rewards are independent from easy rewards');
  assert.deepEqual(validateSave(harder.save).forest.medals,harder.save.forest.medals);
  assert.deepEqual(finishForest(harder.save,'sunlit','medamago','entry',[],false,{difficulty:'normal',rank:3}).save.forest.medals,
   harder.save.forest.medals,'endless never awards story medals');
  assert.deepEqual(cleanBossMedals({entry:{easy:3,hard:4,normal:'3'},intruder:{easy:3}},['entry']),{entry:{easy:3}},
   'unknown chapters, malformed levels and suspicious ranks are stripped');
  assert.deepEqual(validateSave({...createSave(),forest:undefined}).forest.medals,{},'v1 saves need no migration prompt');
+ assert.equal(bossTrainingBonus('normal',1,3),36);
+ assert.equal(bossTrainingBonus('hard',3,1),0);
+ assert.throws(()=>bossTrainingBonus('hard',0,9),/Invalid/);
+ const unverified=finishForest(createSave(),'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:0});
+ assert.equal(unverified.save.xpWallet,0,'unverified practice route cannot award battle training XP');
+ assert.deepEqual(unverified.save.forest.medals,{});
 });
 
 test('four Forest areas unlock one at a time, preserve earlier progress and avoid recent repeats',()=>{
