@@ -103,6 +103,10 @@ const assert=require('node:assert/strict');
    if(await forward.isVisible()&&await forward.isEnabled()){await forward.click();continue;}
    throw Error(`Cannot return to the party after the boss's first counter: ${(await page.locator('main').innerText()).slice(0,800)}`);
   }
+  const rosterDisclosure=page.locator('.forest-party-brief');
+  if(await rosterDisclosure.count()&&await rosterDisclosure.getAttribute('open')===null){
+   await rosterDisclosure.locator('summary').click();
+  }
   assert.match(await page.locator('[data-tactic-ally="koge"]').innerText(),/HP 8\/9|HP 7\/8/);
   assert.match(await page.locator('.forest-boss-cover').textContent(),/使用済み/, 'Reserve protection cannot be farmed in the next boss phase');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
