@@ -6,7 +6,7 @@ import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
-import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, pickBattlePrompt } from './battle-tactics.js';
+import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, bossAttackFor, pickBattlePrompt } from './battle-tactics.js';
 import { createBattleParty, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -520,11 +520,15 @@ function renderTacticalControls(){
  const boss=play.index>=regularCount();
  const incoming=t.turn==='enemy';
  const party=battleParty();
- if(!incoming&&!t.nextEnemyKind)t.nextEnemyKind=nextEnemyKind(t.lastEnemyKind);
+ const bossThreat=boss?bossAttackFor(foe.id,play.index-regularCount()):null;
+ if(!incoming){
+   if(boss)t.nextEnemyKind=bossThreat.kind;
+   else if(!t.nextEnemyKind)t.nextEnemyKind=nextEnemyKind(t.lastEnemyKind);
+ }
  panel.innerHTML=`<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 行動を選ぼう'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
-  ${incoming?'':`<p class="forest-tactic-forecast"><strong>次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}</strong><span>正解すれば自動で防御！ 仲間を選んでから攻撃しよう。</span></p>`}
+  ${incoming?'':`<p class="forest-tactic-forecast"><strong>次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}</strong><span>${bossThreat?`ボス技「${escapeHtml(bossThreat.name)}」${bossThreat.pressure?' · 強攻撃（防御失敗でHP減少＋1）':' · 通常威力'}。`:''}正解すれば自動で防御！ 仲間を選んでから攻撃しよう。</span></p>`}
   ${!incoming&&evolved?`<p class="forest-tactic-evolution">進化ボーナス：得意な${BATTLE_LABELS[ally.strong]}の威力＋1 / 同技能の被ダメージ−1</p>`:''}
   <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span><small>ヒントなしの自力正解で＋1</small></div>
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
@@ -564,7 +568,10 @@ function startEnemyTurn(){
  const t=play?.tactics;
  if(!t)return;
  t.turn='enemy';t.autoSwitchedTo=null;t.actionAtAttack=t.action;t.defenseHitTaken=false;t.lastHitDamage=0;
- t.enemyKind=t.nextEnemyKind||nextEnemyKind(t.lastEnemyKind);
+ const boss=play.index>=regularCount();
+ const threat=boss?bossAttackFor(opponentFor(play.index,play.wave,play.areaId).id,play.index-regularCount()):null;
+ t.enemyKind=threat?.kind||t.nextEnemyKind||nextEnemyKind(t.lastEnemyKind);
+ t.enemyPressure=threat?.pressure||0;
  t.nextEnemyKind=null;
  t.lastEnemyKind=t.enemyKind;
  t.defensePrompt=pickBattlePrompt({prompts:ALL_PROMPTS,kind:t.enemyKind,difficulty:play.difficulty,
@@ -1155,7 +1162,7 @@ async function gradeAnswer() {
     if(defending&&raw&&!play.tactics.defenseHitTaken&&['incorrect','incomplete'].includes(grade.status)){
       const blow=incomingHit({kind:play.tactics.enemyKind,allyId:play.companionId,
         evolved:getMonsterProgress(save,play.companionId).evolved,
-        action:play.tactics.actionAtAttack,result:'incorrect'});
+        action:play.tactics.actionAtAttack,result:'incorrect',pressure:play.tactics.enemyPressure});
       damageActiveFighter(blow.damage);
       play.tactics.lastHitDamage=blow.damage;
       play.tactics.defenseHitTaken=true;
@@ -1264,7 +1271,7 @@ async function gradeAnswer() {
     const t=play.tactics;
     const hit=t.defenseHitTaken?{damage:0,blocked:false}:
       incomingHit({kind:t.enemyKind,allyId:play.companionId,evolved:getMonsterProgress(save,play.companionId).evolved,
-        action:t.actionAtAttack,result:'correct',hinted:rating==='hint'});
+        action:t.actionAtAttack,result:'correct',hinted:rating==='hint',pressure:t.enemyPressure});
     if(!t.defenseHitTaken){damageActiveFighter(hit.damage);t.lastHitDamage=hit.damage;}
     const alreadyHit=t.defenseHitTaken;
     t.defenseHitTaken=true;

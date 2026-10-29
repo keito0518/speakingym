@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,advanceUltimate,strikeFor,nextEnemyKind,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
 test('all four English skills have names and every companion has a useful strength and weakness',()=>{
@@ -34,6 +35,32 @@ test('foe attack cycles through four randomized skills without immediate repetit
  for(let i=0;i<3;i++){const kind=nextEnemyKind('speak',()=>i/3);seen.add(kind);assert.notEqual(kind,'speak');}
  assert.equal(seen.size,3);
  for(const kind of BATTLE_KINDS)assert.ok(BATTLE_KINDS.includes(nextEnemyKind(kind,()=>.9)));
+});
+test('each area boss advertises its own predictable three-phase attack sequence',()=>{
+ const signatures=new Set();
+ for(const boss of Object.values(AREA_BOSSES)){
+  const phases=[0,1,2].map(phase=>bossAttackFor(boss.id,phase));
+  assert.equal(phases.length,3);
+  for(const attack of phases){
+   assert.ok(BATTLE_KINDS.includes(attack.kind));
+   assert.ok(attack.name.length>=4);
+   assert.ok([0,1].includes(attack.pressure));
+  }
+  signatures.add(phases.map(attack=>`${attack.kind}:${attack.pressure}`).join(','));
+  assert.deepEqual(bossAttackFor(boss.id,3),phases[0],'later waves repeat the explicit cycle');
+ }
+ assert.equal(signatures.size,Object.keys(AREA_BOSSES).length,'all eight bosses have distinct patterns');
+});
+test('telegraphed heavy boss attacks affect HP only after verified misses',()=>{
+ const basic={kind:'listen',allyId:'medamago'};
+ assert.equal(incomingHit({...basic,result:'incorrect',pressure:1}).damage,
+  incomingHit({...basic,result:'incorrect'}).damage+1);
+ assert.equal(incomingHit({...basic,result:'correct',pressure:1}).damage,0);
+ assert.equal(incomingHit({...basic,result:'review',pressure:1}).damage,0);
+ assert.equal(incomingHit({...basic,result:'ungraded',pressure:1}).damage,0);
+ assert.equal(incomingHit({...basic,result:'empty',pressure:1}).damage,0);
+ assert.equal(incomingHit({...basic,result:'correct',hinted:true,pressure:1}).damage,
+  incomingHit({...basic,result:'correct',hinted:true}).damage+1);
 });
 test('reactive defense questions reuse authored learning banks without skipping worlds or repeating prompts',()=>{
  for(const kind of BATTLE_KINDS){
