@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -16,6 +16,43 @@ test('all four English skills have names and every companion has a useful streng
   assert.notEqual(ally.strong,ally.weak);
   assert.ok(skill.name&&skill.description&&['burst','charge','pierce','ward'].includes(skill.type),`${monster.id} needs a unique combat ability`);
  }
+});
+test('all 15 companions unlock a unique trained technique only at level four',()=>{
+ assert.equal(MASTERY_LEVEL,4);
+ const names=new Set();
+ for(const monster of MONSTERS){
+  assert.equal(masterySkillFor(monster.id,3),null,`${monster.id} is not yet trained`);
+  const mastery=masterySkillFor(monster.id,4);
+  assert.ok(mastery&&mastery.description&&mastery.type===allySkill(monster.id).type);
+  names.add(mastery.name);
+ }
+ assert.equal(names.size,MONSTERS.length,'every monster needs its own named unlock');
+});
+test('trained techniques reward independent strong-skill play once, not hint-assisted correction',()=>{
+ const base={level:4,kind:'speak',independent:true};
+ assert.deepEqual(masteryEffectFor({...base,allyId:'medamago'}),{
+  activated:true,name:'黄身の二連撃',extraDamage:1,extraCharge:0,heal:0,shield:0});
+ assert.deepEqual(masteryEffectFor({...base,allyId:'medamago',boss:true}),{
+  activated:true,name:'黄身の二連撃',extraDamage:0,extraCharge:1,heal:0,shield:0},
+  'bosses still need all three independent English confirmations');
+ for(const change of [{level:3},{independent:false},{used:true},{kind:'vocab'}]){
+  const effect=masteryEffectFor({...base,...change,allyId:'medamago'});
+  assert.equal(effect.activated,false);
+  assert.equal(effect.extraDamage+effect.extraCharge+effect.heal+effect.shield,0);
+ }
+ const charge=masteryEffectFor({allyId:'katappo',level:4,kind:'listen',independent:true});
+ assert.equal(charge.extraCharge,1);
+ const heal=masteryEffectFor({allyId:'purupun',level:4,kind:'vocab',independent:true});
+ assert.equal(heal.heal,1);
+ assert.equal(masteryEffectFor({allyId:'purupun',level:4,kind:'vocab',independent:true,canHeal:false}).activated,false,
+  'a full-health fighter saves the one-use heal for a later turn');
+ const ward=masteryEffectFor({allyId:'koge',level:4,kind:'grammar',independent:true});
+ assert.equal(ward.shield,1);
+ assert.equal(masteryEffectFor({allyId:'koge',level:4,kind:'grammar',independent:true,canShield:false}).activated,false,
+  'do not spend a trained shield when the boss counter already provides one');
+ const hit={kind:'listen',allyId:'koge',result:'incorrect'};
+ assert.equal(incomingHit({...hit,counterShield:ward.shield}).damage,incomingHit(hit).damage-1);
+ assert.equal(incomingHit({...hit,counterShield:ward.shield,result:'ungraded'}).damage,0);
 });
 test('matchups change actual damage while never changing a grading verdict',()=>{
  assert.deepEqual(foeAffinity('mossling'),{weak:'listen',resist:'grammar'});

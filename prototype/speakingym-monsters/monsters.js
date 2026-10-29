@@ -7,7 +7,7 @@ import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, C
 import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
-import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, foeStyleFor, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, pickBattlePrompt } from './battle-tactics.js';
+import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, foeStyleFor, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, pickBattlePrompt } from './battle-tactics.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -203,7 +203,8 @@ function renderHome() {
   $('#hero-level').textContent = `Lv.${growth.level}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   const nextHealthTier=[3,6,9].find(level=>level>growth.level);
-  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'}${growth.evolved?' · 進化援護が使用可能':' · 累計160 XPで進化援護を解放'}`;
+  const mastery=masterySkillFor(creature.id,growth.level);
+  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'}${growth.evolved?' · 進化援護が使用可能':' · 累計160 XPで進化援護を解放'} · ${mastery?`熟練技「${mastery.name}」解放済み`:`Lv.${MASTERY_LEVEL}で熟練技解放`}`;
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);
@@ -358,7 +359,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
-      bossCounterUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true}:null};
+      bossCounterUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,masteryUsed:false}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -557,6 +558,7 @@ function compactMobileBattleNotes(panel,t){
    detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.bossPlanOpen=detail.open;});
  }
  const secondary=[...panel.querySelectorAll('.forest-boss-counter,.forest-boss-cover,.forest-tactic-evolution,.forest-tactic-ability,.forest-tactic-note')];
+ if(t.masteryUsed)secondary.push(...panel.querySelectorAll('.forest-tactic-mastery'));
  if(secondary.length){
    if(bossDetail)secondary.forEach(element=>bossDetail.append(element));
    else{
@@ -586,6 +588,7 @@ function renderTacticalControls(){
  const element=foeAffinity(foe.id),ally=allyAffinity(play.companionId);
  const evolved=getMonsterProgress(save,play.companionId).evolved;
  const ability=allySkill(play.companionId);
+ const mastery=masterySkillFor(play.companionId,getMonsterProgress(save,play.companionId).level);
  const boss=play.index>=regularCount();
  const foeStyle=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
  const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
@@ -632,6 +635,7 @@ function renderTacticalControls(){
   ${!incoming&&evolved?`<p class="forest-tactic-evolution">進化ボーナス：得意な${BATTLE_LABELS[ally.strong]}の威力＋1 / 同技能の被ダメージ−1</p>`:''}
   <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span><small>ヒントなしの自力正解で＋1</small></div>
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
+  ${mastery?`<p class="forest-tactic-mastery" data-mastery-used="${String(t.masteryUsed)}"><strong>Lv.${MASTERY_LEVEL}技：${escapeHtml(mastery.name)}${t.masteryUsed?' · 使用済み':' · 準備OK'}</strong> ${escapeHtml(mastery.description)}</p>`:''}
   ${incoming?'':`<div class="forest-tactic-actions" role="group" aria-label="行動を選ぶ">${[
     ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'ボス戦：味方HPを2回復':`高威力 · ${ability.name}`],
     ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':supportId?`${monsterFor(supportId).name}が援護 · ${previewEffect}${!supportReady?'（ゲージが満タン）':''}`:'控えの得意技能を選ぶと使える']]:[])
@@ -745,10 +749,11 @@ function renderPartyFormation(){
    const monster=monsterFor(id),progress=getMonsterProgress(save,id),affinity=allyAffinity(id);
    const selected=roster.includes(id),leader=id===roster[0];
    const match=affinity.strong===weakness.weak?'弱点を狙える！':affinity.strong===weakness.resist?'敵に耐性あり':'技能を使い分けよう';
+   const mastery=masterySkillFor(id,progress.level);
    const label=leader?'先頭で出撃中':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
    return `<div class="forest-formation-card" data-formation-card="${escapeHtml(id)}" data-formation-selected="${selected}" data-formation-leader="${leader}">
     <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.evolved)}</div>
-    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)} · Lv.${progress.level} · HP成長＋${levelHpBonus(progress.level)+(progress.evolved?1:0)}</span><span>得意 ${BATTLE_LABELS[affinity.strong]} ／ 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}</small></div>
+    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)} · Lv.${progress.level} · HP成長＋${levelHpBonus(progress.level)+(progress.evolved?1:0)}</span><span>得意 ${BATTLE_LABELS[affinity.strong]} ／ 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></div>
     <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}">${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
    </div>`;
  }).join('')}</div><p class="forest-formation-help">仲間が増えてもセーブデータは変わらないよ。ここで選んだ3体だけが今回の戦闘に出撃する。</p><p class="forest-formation-status" role="status" aria-live="polite" id="forest-formation-status">${escapeHtml(t.formationMessage||guide)}</p>`;
@@ -901,6 +906,7 @@ function renderQuestion() {
         t.enemyMax=encounterVitality(play.areaId,play.index,{boss:play.index>=regularCount()});
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
         t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;
+        if(play.index<=regularCount())t.masteryUsed=false; // Boss phases share one mastery use.
         t.counterShield=0;
         if(play.index===regularCount()){t.bossCounterUsed=false;t.bossCoverUsed=false;}
       }
@@ -1461,16 +1467,21 @@ async function gradeAnswer() {
       allyId:play.companionId,action:t.action==='assist'?'attack':t.action,boss,evolved:getMonsterProgress(save,play.companionId).evolved,
       repeated:t.lastAttackKind===attackKind}):specialStrike({companionId:play.companionId,
       evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower||!play.endless});
-    const amplified=duo?.activated?{...baseSpecial,damage:baseSpecial.damage+duo.extraDamage,tag:'DUO!'}:baseSpecial;
-    const foeStyle=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
-    const styled=t?foeStyledStrike({style:foeStyle,damage:amplified.damage,kind:attackKind,foeId:foe.id,
-      shieldIntact:t.styleShieldIntact}):null;
-    const special=styled?{...amplified,damage:styled.damage}:amplified;
     const usedUltimate=Boolean(t&&t.action==='skill');
     const bossCounter=t&&boss&&play.index<regularCount()+BOSS_HITS-1?bossCounterFor({kind:bossAttackFor(foe.id,play.index-regularCount()).kind,
       allyId:play.companionId,independent:rating==='smooth',used:t.bossCounterUsed,
       evolved:getMonsterProgress(save,play.companionId).evolved}):null;
-    const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0),t.maxHp-t.hp):0;
+    const mastery=t?masteryEffectFor({allyId:play.companionId,level:getMonsterProgress(save,play.companionId).level,
+      kind:attackKind,independent:rating==='smooth',used:t.masteryUsed,boss,
+      canHeal:t.hp+(usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0)<t.maxHp,
+      canShield:t.counterShield===0&&!bossCounter?.activated&&!(boss&&play.index===regularCount()+BOSS_HITS-1)}):null;
+    const amplified={...baseSpecial,damage:baseSpecial.damage+(duo?.extraDamage||0)+(mastery?.extraDamage||0),
+      tag:duo?.activated?'DUO!':mastery?.extraDamage?'MASTERY!':baseSpecial.tag};
+    const foeStyle=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
+    const styled=t?foeStyledStrike({style:foeStyle,damage:amplified.damage,kind:attackKind,foeId:foe.id,
+      shieldIntact:t.styleShieldIntact}):null;
+    const special=styled?{...amplified,damage:styled.damage}:amplified;
+    const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0)+(mastery?.heal||0),t.maxHp-t.hp):0;
     if(t){
       if(styled.shieldBroken)t.styleShieldIntact=false;
       if(healed)healActiveFighter(healed);
@@ -1486,6 +1497,11 @@ async function gradeAnswer() {
         t.bossCounterUsed=true;
         t.counterShield=bossCounter.shield;
         t.ultimate=advanceUltimate(t.ultimate,{independent:true});
+      }
+      if(mastery?.activated){
+        t.masteryUsed=true;
+        if(mastery.extraCharge)t.ultimate=advanceUltimate(t.ultimate,{independent:true});
+        if(mastery.shield)t.counterShield=Math.max(t.counterShield,mastery.shield);
       }
       t.lastAttackKind=attackKind;
       t.action='attack';
@@ -1514,9 +1530,10 @@ async function gradeAnswer() {
     const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
     const duoNote=duo?.activated?`${monsterFor(duo.partnerId).name}との連携成功！ ${duo.awakened?`${duo.awakened}発動！ `:''}${duo.extraDamage?`援護でダメージ＋${duo.extraDamage}。 `:''}${duo.extraCharge?`必殺ゲージ＋${duo.extraCharge}（最大${ULTIMATE_MAX}）。 `:''}${duo.extraHeal?(healed?`回復効果が発動！ `:'HP満タンで回復効果は不要だったよ。 '):''}`:choseAssist?'連携はヒントなしの自力正解で発動するよ。 ':'';
+    const masteryNote=mastery?.activated?`Lv.${MASTERY_LEVEL}技「${mastery.name}」発動！ ${mastery.extraDamage?'追撃ダメージ＋1。 ':''}${mastery.extraCharge?'必殺ゲージ＋1。 ':''}${mastery.heal?'仲間HPを回復。 ':''}${mastery.shield?'次の敵攻撃を1軽減。 ':''}`:'';
     const counterNote=bossCounter?.activated?`迎撃成功！ 必殺ゲージ＋1・次の敵攻撃−1${bossCounter.heal&&healed?'・進化回復':''}。 `:'';
     $('#forest-battle-log').textContent=t
-      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${counterNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:'次は敵の反撃！'}`
+      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${masteryNote}${counterNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:'次は敵の反撃！'}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t)renderTacticalControls();
   }

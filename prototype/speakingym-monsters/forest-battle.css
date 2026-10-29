@@ -94,6 +94,9 @@
 .forest-ultimate-track span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#d79b40,#ffd56b);transition:width .22s ease}
 .forest-tactic-ability{margin:5px 0 8px;padding:6px 8px;border-left:3px solid #b68435;color:#3d5742;font-size:11px;line-height:1.6;overflow-wrap:break-word}
 .forest-tactic-ability strong{color:#3a4b2f}
+.forest-tactic-mastery{margin:5px 0;padding:7px 9px;border:1px solid #6b998a;border-radius:8px;background:#e7f3eb;color:#244d3e;font-size:11px;font-weight:600;line-height:1.6;overflow-wrap:break-word;line-break:strict}
+.forest-tactic-mastery strong{font-size:12px;color:#164535}
+.forest-tactic-mastery[data-mastery-used="true"]{background:#edf1ed;color:#3b5648;border-color:#9cac9f}
 .forest-boss-tactical-plan{display:grid;gap:7px;margin:5px 0;padding:10px;border:1px solid #baa26e;border-radius:9px;background:#fff4d9;color:#403d2c;line-height:1.55;overflow-wrap:break-word;line-break:strict}
 .forest-boss-tactical-plan>strong{font-size:12px;color:#493b21}
 .forest-boss-tactical-plan>small{font-size:10px;color:#554c35}
@@ -678,6 +681,7 @@
  .forest-active.tactical-battle .forest-tactics[data-turn="player"] .forest-tactic-matchup{display:none}
  .forest-active.tactical-battle .forest-tactic-forecast{margin:5px 0;padding:5px 8px}
  .forest-active.tactical-battle .forest-tactic-foe-style{margin:3px 2px;padding:5px 8px}
+ .forest-active.tactical-battle .forest-tactic-mastery{margin:3px 2px;padding:5px 8px}
  .forest-active.tactical-battle .forest-tactic-forecast span{display:none}
  .forest-active.tactical-battle .forest-ultimate-meter{margin:5px 0;padding:5px 8px}
  .forest-active.tactical-battle .forest-ultimate-meter small{display:none}

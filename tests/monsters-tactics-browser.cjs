@@ -332,6 +332,37 @@ const assert=require('node:assert/strict');
    assert.equal(saved.monsterXp.medamago,160);
    assert.ok(saved.xpWallet>=27);
    await advancedContext.close();
+   // Training is a real gameplay milestone: Lv.4 grants one independent
+   // specialty technique, without consuming saved monster XP or adding UI
+   // clutter for a new Lv.1 player.
+   const masteryContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const masteryPage=await masteryContext.newPage();
+   await masteryPage.goto(url,{waitUntil:'networkidle'});
+   await masteryPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const saved=createSave();saved.monsterXp.medamago=210;saved.xpWallet=9;
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+   });
+   await masteryPage.reload({waitUntil:'networkidle'});
+   await masteryPage.locator('[data-home-page="forest"]').click();
+   await masteryPage.locator('#start-forest-tactics').click();
+   assert.match(await masteryPage.locator('[data-formation-card="medamago"]').innerText(),/Lv\.4.*熟練技「黄身の二連撃」/s);
+   await masteryPage.locator('#forest-explore-continue').click();
+   assert.match(await masteryPage.locator('.forest-tactic-mastery').innerText(),/Lv\.4技：黄身の二連撃.*準備OK/);
+   assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'false');
+   await answer(masteryPage);
+   assert.match(await masteryPage.locator('#forest-battle-log').innerText(),/黄身の二連撃.*追撃ダメージ＋1/);
+   assert.equal(await masteryPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
+     'Lv.4 first specialty strike is 1 stronger than the untrained Lv.1 version');
+   assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'true');
+   assert.equal(await masteryPage.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1',
+     'training does not claim an extra independent answer');
+   const masterySave=await masteryPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.equal(masterySave.monsterXp.medamago,210,'trained XP is not consumed in combat');
+   assert.ok(masterySave.xpWallet>=9,'existing XP wallet is not spent by the new technique');
+   const masteryLayout=await masteryPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(masteryLayout.scroll<=masteryLayout.width+1,`Level-up technique label must fit 320px (${JSON.stringify(masteryLayout)})`);
+   await masteryContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -42,6 +42,36 @@ export function allySkill(id='medamago'){
  const skill=ALLY_SKILLS[id]||ALLY_SKILLS.medamago;
  return {...skill,description:SKILL_DESCRIPTIONS[skill.type]};
 }
+// A trained companion learns a second, automatic technique at Lv.4. This is
+// battle-only: English grading, saved XP and capture requirements never change.
+export const MASTERY_LEVEL=4;
+const MASTERY_NAMES=Object.freeze({
+ medamago:'黄身の二連撃',katappo:'こだまの集中',purupun:'ぷるぷる吸収',koge:'焦げ目の結界',
+ cone:'反響の共鳴',nororo:'のんびり追撃',keshipon:'消しゴムの守護',donako:'ドーナツの回復',
+ amekurage:'雨雲の共鳴',fuwari:'風の守護',kompass:'方位の回復',pikap:'ひらめきの一撃',
+ mokuryu:'樹海の吸収',yukibell:'雪音の集中',railfox:'鉄路の守護'
+});
+const MASTERY_EFFECTS=Object.freeze({
+ burst:'得意技能の自力正解で追撃＋1。ボスでは必殺ゲージ＋1',
+ charge:'得意技能の自力正解で必殺ゲージ＋1',
+ pierce:'得意技能の自力正解でHP＋1。満タン時は温存',
+ ward:'得意技能の自力正解で次の敵攻撃を1軽減'
+});
+export function masterySkillFor(id,level=1){
+ if(!Object.hasOwn(MASTERY_NAMES,id)||!(Number(level)>=MASTERY_LEVEL))return null;
+ const type=allySkill(id).type;
+ return {name:MASTERY_NAMES[id],type,description:MASTERY_EFFECTS[type]};
+}
+export function masteryEffectFor({allyId,level=1,kind,independent=false,used=false,boss=false,canHeal=true,canShield=true}={}){
+ const skill=masterySkillFor(allyId,level);
+ const eligible=Boolean(skill&&BATTLE_KINDS.includes(kind)&&allyAffinity(allyId).strong===kind&&independent&&!used);
+ const activated=Boolean(eligible&&(skill.type!=='pierce'||canHeal)&&(skill.type!=='ward'||canShield));
+ return {activated,name:activated?skill.name:null,
+  extraDamage:activated&&skill.type==='burst'&&!boss?1:0,
+  extraCharge:activated&&(skill.type==='charge'||(skill.type==='burst'&&boss))?1:0,
+  heal:activated&&skill.type==='pierce'?1:0,
+  shield:activated&&skill.type==='ward'?1:0};
+}
 export function advanceUltimate(current,{independent=false,bonus=false,spend=false}={}){
  const value=Number.isFinite(Number(current))?Number(current):0;
  return Math.max(0,Math.min(ULTIMATE_MAX,(spend?0:value)+(independent?1:0)+(independent&&bonus?1:0)));
