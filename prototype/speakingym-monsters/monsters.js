@@ -651,7 +651,10 @@ function startEnemyTurn(){
 }
 function advanceClearedEncounter(){
  const t=play?.tactics;
- if(t){t.pendingAdvance=false;t.attackPrompt=null;t.defensePrompt=null;t.turn='player';t.action='attack';t.counterShield=0;}
+ // Keep pendingAdvance until advanceQuestion consumes the cleared encounter.
+ // Clearing it here would mistakenly launch a second enemy turn after a
+ // completed boss defense (and could trap players in endless retaliation).
+ if(t){t.attackPrompt=null;t.defensePrompt=null;t.turn='player';t.action='attack';t.counterShield=0;}
  advanceQuestion();
 }
 function finishEnemyTurn(){
