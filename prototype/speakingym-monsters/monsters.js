@@ -363,6 +363,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
+ $('#play-view').classList.toggle('tactical-battle',Boolean(tactical));
   $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
@@ -556,14 +557,25 @@ function compactMobileBattleNotes(panel,t){
    detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.bossPlanOpen=detail.open;});
  }
  const secondary=[...panel.querySelectorAll('.forest-boss-counter,.forest-boss-cover,.forest-tactic-evolution,.forest-tactic-ability,.forest-tactic-note')];
- if(!secondary.length)return;
- if(bossDetail){secondary.forEach(element=>bossDetail.append(element));return;}
- const detail=document.createElement('details'),summary=document.createElement('summary');
- detail.className='forest-tactic-more';detail.open=Boolean(t.notesOpen);
- summary.textContent='相性・固有スキルなど詳しく見る';detail.append(summary);
- secondary.forEach(element=>detail.append(element));
- panel.append(detail);
- detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.notesOpen=detail.open;});
+ if(secondary.length){
+   if(bossDetail)secondary.forEach(element=>bossDetail.append(element));
+   else{
+     const detail=document.createElement('details'),summary=document.createElement('summary');
+     detail.className='forest-tactic-more';detail.open=Boolean(t.notesOpen);
+     summary.textContent='相性・固有スキルなど詳しく見る';detail.append(summary);
+     secondary.forEach(element=>detail.append(element));
+     panel.append(detail);
+     detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.notesOpen=detail.open;});
+   }
+ }
+ const allies=panel.querySelector('.forest-tactic-party'),label=panel.querySelector('.forest-tactic-party-label');
+ if(allies&&label){
+   const detail=document.createElement('details'),summary=document.createElement('summary');
+   detail.className='forest-party-brief';detail.open=Boolean(t.partyOpen);
+   summary.textContent=t.turn==='enemy'?'敵の反撃中は仲間交代できないよ':`仲間を交代（残り${Math.max(0,1-t.party.swapsUsed)}回） · 控え${battleParty().length-1}体`;
+   detail.append(summary);label.before(detail);detail.append(label,allies);
+   detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.partyOpen=detail.open;});
+ }
 }
 function renderTacticalControls(){
  const panel=$('#forest-tactics'),t=play?.tactics;
@@ -626,8 +638,12 @@ function renderTacticalControls(){
   ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>技能を切り替えると、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
   ${boss?'<small class="forest-tactic-note">ボスの3つの確認問題は固定。必殺技でも英語の確認は省略できないよ。</small>':t.lastAttackKind?`<small class="forest-tactic-note">前回は${BATTLE_LABELS[t.lastAttackKind]}。同じ技能を連発すると敵が慣れて威力−1。違う技能を試そう！</small>`:'<small class="forest-tactic-note">技能を選ぶと問題が切り替わるよ。弱点狙いでも英語の正解が必要！</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">パーティ · それぞれにHPあり · 交代は1戦に1回（残り${1-t.party.swapsUsed}回）</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div><small class="forest-tactic-note">交代ではターンを消費しない。倒れたら控えに自動交代するよ。</small>`:'<small class="forest-tactic-note">仲間を増やすと最大3体で戦い、それぞれのHPと得意技能を使い分けられるよ。</small>'}`}`;
+ panel.dataset.turn=incoming?'enemy':'player';
  compactMobileBattleNotes(panel,t);
- if(incoming)return;
+ if(incoming){
+   $$('[data-tactic-ally]',panel).forEach(button=>{button.disabled=true;button.title='敵の反撃中は交代できません';});
+   return;
+ }
  $$('[data-tactic-action]',panel).forEach(button=>button.addEventListener('click',()=>{
    if(!play||play.revealed||play.tactics.turn!=='player')return;
    if(button.dataset.tacticAction==='skill'&&(play.tactics.ultimate<ULTIMATE_MAX||(boss&&play.tactics.hp===play.tactics.maxHp)))return;

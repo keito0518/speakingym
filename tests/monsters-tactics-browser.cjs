@@ -56,6 +56,14 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#forest-party-formation').isVisible(),false);
      assert.equal(await page.locator('#forest-party-hp').isVisible(),true);
      assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12');
+     const tacticalLayout=await page.evaluate(()=>{
+       const bounds=selector=>document.querySelector(selector).getBoundingClientRect();
+       return {question:bounds('#play-card').top,commands:bounds('#forest-tactics').top,
+         answer:bounds('#answer-area').top,arena:bounds('#forest-world-stage').height};
+     });
+     assert.ok(tacticalLayout.question<tacticalLayout.commands&&tacticalLayout.commands<tacticalLayout.answer,
+       `${engine}/${width}: read the question, select the action, then answer (${JSON.stringify(tacticalLayout)})`);
+     assert.ok(tacticalLayout.arena<=155,`${engine}/${width}: battle field must leave room for the question`);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
      assert.equal(await page.locator('[data-tactic-action]').count(),2,'Defense is automatic: only attack and ultimate remain');
      assert.equal(await page.locator('[data-tactic-action="assist"]').count(),0,'Solo players do not get an unusable team-up control');
@@ -161,9 +169,12 @@ const assert=require('node:assert/strict');
    assert.equal(await partyPage.locator('[data-tactic-ally]').count(),3);
    assert.equal(await partyPage.locator('[data-tactic-ally="purupun"]').count(),0,'The replaced reserve does not join this encounter');
    assert.equal(await partyPage.locator('[data-tactic-ally="koge"]').count(),1);
-   assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 8\/8/);
+     assert.equal(await partyPage.locator('.forest-party-brief').getAttribute('open'),null,'The party swap is one compact control on mobile');
+     await partyPage.locator('.forest-party-brief summary').click();
+     assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 8\/8/);
    await partyPage.locator('[data-tactic-ally="katappo"]').click();
    assert.equal(await partyPage.locator('[data-tactic-ally="katappo"]').getAttribute('aria-pressed'),'true');
+     assert.equal(await partyPage.locator('.forest-party-brief').getAttribute('open'),'','Party options stay open when switching companions');
    assert.equal(await partyPage.locator('[data-tactic-ally="medamago"]').isEnabled(),false,'Cannot swap twice in one encounter');
    await partyPage.locator('[data-tactic-kind="speak"]').click();
    assert.equal(await partyPage.locator('[data-tactic-action="assist"]').isEnabled(),true,'Yolkie can support Soxie speaking from the reserve');
