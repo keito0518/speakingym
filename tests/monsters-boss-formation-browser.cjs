@@ -85,7 +85,8 @@ const assert=require('node:assert/strict');
   await page.locator('#next-question').click();
   assert.match(await page.locator('.forest-boss-link').textContent(),/発動済み/,'Boss link never repeats on the next phase');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-  assert.deepEqual(saved.ownedMonsters,['medamago','purupun']);
+  assert.ok(saved.ownedMonsters.includes('medamago')&&saved.ownedMonsters.includes('purupun'),
+   'Original companions stay owned even when correct answers capture additional monsters');
   assert.equal(saved.monsterXp.purupun,160,'A battle perk does not spend monster training XP');
   assert.ok(saved.xpWallet>=67);
   assert.equal(Object.hasOwn(saved,'party'),false,'Battle-only state is never persisted');
