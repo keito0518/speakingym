@@ -91,7 +91,17 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),after);
   assert.match(await page.locator('#forest-battle-log').innerText(),/最初の被ダメージ1は残る/);
   await page.locator('#next-question').click();
+  // Optional narrative detours between boss phases are legitimate. Continue
+  // through them before inspecting the next actionable fighter roster.
+  for(let step=0;step<5&&!await page.locator('[data-tactic-ally="koge"]').count();step++){
+   const event=page.locator('[data-forest-event-option]');
+   if(await event.count()&&await event.first().isVisible()){await event.first().click();continue;}
+   const forward=page.locator('#forest-explore-continue');
+   if(await forward.isVisible()&&await forward.isEnabled()){await forward.click();continue;}
+   throw Error(`Cannot return to the party after the boss's first counter: ${(await page.locator('main').innerText()).slice(0,800)}`);
+  }
   assert.match(await page.locator('[data-tactic-ally="koge"]').innerText(),/HP 8\/9|HP 7\/8/);
+  assert.match(await page.locator('.forest-boss-cover').innerText(),/使用済み/, 'Reserve protection cannot be farmed in the next boss phase');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
   assert.deepEqual(saved.ownedMonsters,['medamago','katappo','koge']);
   assert.equal(saved.xpWallet>=49,true);
