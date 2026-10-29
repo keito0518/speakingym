@@ -311,6 +311,10 @@ function dueForestPromptIds(){
   return [...new Set([...Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id),...retentionOverview(save,today).due.map(entry=>entry.id)])];
 }
 function dueQuizWeaknessIds(){return quizWeaknessOverview(save).due.map(item=>item.id);}
+function tacticalReviewTargets(){
+ return {dueIds:dueForestPromptIds(),weakIds:dueQuizWeaknessIds(),
+   duePhraseIds:dueForestPhrases(),recentIds:cleanForest(save.forest).recentPromptIds};
+}
 function startSession(mode,requestedAreaId=null,onlyDue=false) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
@@ -524,6 +528,14 @@ function renderTacticalControls(){
  const supportId=!incoming?supportPartnerFor({kind:attackKind,activeId:play.companionId,party:t.party}):null;
  const supportReady=Boolean(supportId&&!t.comboUsed&&(!boss||t.ultimate<2));
  const bossThreat=boss?bossAttackFor(foe.id,play.index-regularCount()):null;
+ const recallTargets=tacticalReviewTargets();
+ const pendingRecall=new Set([...recallTargets.dueIds,...recallTargets.weakIds]);
+ const reserved=new Set([...t.usedPromptIds,...play.prompts.map(p=>p.id)]);
+ const recallCounts=Object.fromEntries(BATTLE_KINDS.map(kind=>[kind,ALL_PROMPTS.filter(p=>
+   p.kind===kind&&(p.difficulty||'easy')===play.difficulty&&!p.bossOnly&&
+   (!p.world||p.world===play.areaId)&&!reserved.has(p.id)&&pendingRecall.has(p.id)).length]));
+ const recallText=BATTLE_KINDS.filter(kind=>recallCounts[kind]>0)
+   .map(kind=>`${BATTLE_LABELS[kind]} ${recallCounts[kind]}問`).join(' · ');
  if(!incoming){
    if(boss)t.nextEnemyKind=bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=nextEnemyKind(t.lastEnemyKind);
@@ -540,6 +552,7 @@ function renderTacticalControls(){
     ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':boss&&t.ultimate>=2?'ゲージが十分あるので温存':supportId?`${monsterFor(supportId).name}が援護 · ${boss?'必殺ゲージ＋1':'ダメージ＋1'}`:'控えの得意技能を選ぶと使える']]:[])
   ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
   <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
+  ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>技能を切り替えると、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
   ${boss?'<small class="forest-tactic-note">ボスの3つの確認問題は固定。必殺技でも英語の確認は省略できないよ。</small>':t.lastAttackKind?`<small class="forest-tactic-note">前回は${BATTLE_LABELS[t.lastAttackKind]}。同じ技能を連発すると敵が慣れて威力−1。違う技能を試そう！</small>`:'<small class="forest-tactic-note">技能を選ぶと問題が切り替わるよ。弱点狙いでも英語の正解が必要！</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">パーティ · それぞれにHPあり · 交代は1戦に1回（残り${1-t.party.swapsUsed}回）</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div><small class="forest-tactic-note">交代ではターンを消費しない。倒れたら控えに自動交代するよ。</small>`:'<small class="forest-tactic-note">仲間を増やすと最大3体で戦い、それぞれのHPと得意技能を使い分けられるよ。</small>'}`}`;
  if(incoming)return;
@@ -563,7 +576,8 @@ function renderTacticalControls(){
    const base=play.prompts[play.index];
    const candidate=(base.kind===kind&&!play.tactics.usedPromptIds.has(base.id))?base:
      pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
-       usedIds:play.tactics.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id)});
+       usedIds:play.tactics.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),
+       ...tacticalReviewTargets()});
    if(!candidate){$('#forest-battle-log').textContent='この技能の未出題問題が見つからなかったよ。別の技能を選んでね。';return;}
    play.tactics.attackPrompt=candidate;
    play.tactics.action='attack';
@@ -581,7 +595,8 @@ function startEnemyTurn(){
  t.nextEnemyKind=null;
  t.lastEnemyKind=t.enemyKind;
  t.defensePrompt=pickBattlePrompt({prompts:ALL_PROMPTS,kind:t.enemyKind,difficulty:play.difficulty,
-   areaId:play.areaId,usedIds:t.usedPromptIds,reservedIds:play.prompts.map(p=>p.id)});
+   areaId:play.areaId,usedIds:t.usedPromptIds,reservedIds:play.prompts.map(p=>p.id),
+   ...tacticalReviewTargets()});
  // All four skill banks are expected to be available at each difficulty.
  if(!t.defensePrompt){
    t.turn='player';
@@ -608,7 +623,8 @@ function finishEnemyTurn(){
  t.nextEnemyKind=nextEnemyKind(t.lastEnemyKind);
  if(t.pendingAdvance){advanceClearedEncounter();return;}
  t.attackPrompt=pickBattlePrompt({prompts:ALL_PROMPTS,kind:nextEnemyKind(currentPrompt()?.kind),difficulty:play.difficulty,
-   areaId:play.areaId,usedIds:t.usedPromptIds,reservedIds:play.prompts.map(p=>p.id)});
+   areaId:play.areaId,usedIds:t.usedPromptIds,reservedIds:play.prompts.map(p=>p.id),
+   ...tacticalReviewTargets()});
  if(!t.attackPrompt){t.attackPrompt=null;}
  renderQuestion();
 }

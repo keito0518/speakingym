@@ -113,14 +113,30 @@ export function incomingHit({kind,allyId,action='attack',result='incorrect',hint
  return {damage:Math.max(0,base+Math.min(1,Math.max(0,Number(pressure)||0))+(kind===ally.weak?1:0)-(kind===ally.strong?1:0)-(action==='guard'?1:0)-(evolved&&kind===ally.strong?1:0)-(ward?1:0)),
    blocked:false,uncertain:false};
 }
-export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],random=Math.random}={}){
+export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],
+  dueIds=[],weakIds=[],duePhraseIds=[],recentIds=[],random=Math.random}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid battle skill');
  const used=new Set([...usedIds,...reservedIds]);
  const candidates=prompts.filter(prompt=>prompt.kind===kind&&(prompt.difficulty||'easy')===difficulty&&
   !prompt.bossOnly&&!used.has(prompt.id)&&(!prompt.world||prompt.world===areaId));
  if(!candidates.length)return null;
- const local=candidates.filter(prompt=>prompt.world===areaId);
- const pool=local.length?local:candidates;
+ // Scheduled recall wins over random encounters, even when it is an older
+ // expression from another chapter. Never change the difficulty, skill,
+ // authored world or independently verified answer to make a task fit.
+ const overdue=new Set(dueIds),weak=new Set(weakIds),phrases=new Set(duePhraseIds),recent=new Set(recentIds);
+ const baseIds=new Set(prompts.filter(p=>weak.has(p.id)).map(p=>p.baseId||p.id));
+ const tiers=[
+  candidates.filter(p=>overdue.has(p.id)),
+  candidates.filter(p=>weak.has(p.id)),
+  candidates.filter(p=>baseIds.has(p.baseId||p.id)),
+  candidates.filter(p=>phrases.has(p.phraseId))
+ ];
+ const preferred=tiers.find(group=>group.length);
+ const local=(preferred||candidates).filter(prompt=>prompt.world===areaId);
+ let pool=local.length?local:preferred||candidates;
+ // Once scheduled work is exhausted, do not keep replaying the same small
+ // bank from recent adventures if fresh questions are available.
+ if(!preferred){const fresh=pool.filter(p=>!recent.has(p.id));if(fresh.length)pool=fresh;}
  const number=Number(random());
  return pool[Math.max(0,Math.min(pool.length-1,Math.floor((Number.isFinite(number)?number:0)*pool.length)))];
 }

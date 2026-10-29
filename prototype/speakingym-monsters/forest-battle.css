@@ -107,6 +107,9 @@
 .forest-tactic-actions button[data-tactic-action="assist"]:disabled{opacity:1;background:#e5eae8;color:#415b57;border-color:#aebfba}
 .forest-tactic-kinds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
 .forest-tactic-kinds button{font-size:11px;min-height:42px}
+.forest-tactic-review{margin:7px 0 0;padding:8px 10px;border:1px solid #94baa3;border-radius:9px;background:#e6f3e8;color:#204b35;font-size:12px;font-weight:700;line-height:1.6;overflow-wrap:anywhere;line-break:strict}
+.forest-tactic-review strong{font-weight:900}
+.forest-tactic-review small{display:block;color:#285942;font-size:11px;font-weight:650}
 .forest-tactic-note{display:block;margin-top:4px}
 .forest-tactic-party{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .forest-tactic-party button{flex:1 1 110px;font-size:11px;min-height:40px}

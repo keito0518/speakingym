@@ -103,6 +103,31 @@ test('reactive defense questions reuse authored learning banks without skipping 
  }
  assert.equal(pickBattlePrompt({prompts:ALL_PROMPTS,kind:'listen',reservedIds:ALL_PROMPTS.map(p=>p.id)}),null);
 });
+test('battle questions retrieve scheduled and weak English before random fillers, without breaking constraints',()=>{
+ const prompts=[
+  {id:'new',kind:'listen',difficulty:'easy',phraseId:'new-phrase'},
+  {id:'old',kind:'listen',difficulty:'easy',phraseId:'old-phrase'},
+  {id:'due',kind:'listen',difficulty:'easy',phraseId:'due-phrase'},
+  {id:'weak',kind:'listen',difficulty:'easy',phraseId:'weak-phrase',baseId:'weak-topic'},
+  {id:'related',kind:'listen',difficulty:'easy',phraseId:'related-phrase',baseId:'weak-topic'},
+  {id:'transfer',kind:'listen',difficulty:'easy',phraseId:'due-phrase'},
+  {id:'hard-due',kind:'listen',difficulty:'hard',phraseId:'due-phrase'},
+  {id:'city-due',kind:'listen',difficulty:'easy',phraseId:'due-phrase',world:'city-terminal'},
+  {id:'boss-due',kind:'listen',difficulty:'easy',phraseId:'due-phrase',bossOnly:true},
+  {id:'speaking-due',kind:'speak',difficulty:'easy',phraseId:'due-phrase'}
+ ];
+ const options={prompts,kind:'listen',difficulty:'easy',areaId:'entry',
+  dueIds:['due','hard-due','city-due','boss-due','speaking-due'],weakIds:['weak'],duePhraseIds:['due-phrase'],
+  recentIds:['old'],random:()=>.999};
+ assert.equal(pickBattlePrompt(options).id,'due','the exact scheduled task beats random and general weakness');
+ assert.equal(pickBattlePrompt({...options,usedIds:['due']}).id,'weak','next revisit a specific missed task');
+ assert.equal(pickBattlePrompt({...options,usedIds:['due','weak']}).id,'related','a different task on a weak topic can reinforce it');
+ assert.equal(pickBattlePrompt({...options,usedIds:['due','weak','related']}).id,'transfer','related phrase can transfer to another task');
+ assert.equal(pickBattlePrompt({...options,usedIds:['due','weak','related','transfer']}).id,'new','do not repeat recent filler when fresh content exists');
+ assert.equal(pickBattlePrompt({...options,usedIds:['due','weak','related','transfer','new']}).id,'old');
+ assert.equal(pickBattlePrompt({...options,usedIds:['due','weak','related','transfer','new','old']}),null);
+ assert.equal(pickBattlePrompt({...options,reservedIds:['due']}).id,'weak','a scripted chapter question cannot be duplicated by an enemy turn');
+});
 test('verified answers block attacks, hinted answers reduce damage, uncertainty never harms',()=>{
  const base={kind:'listen',allyId:'katappo'};
  assert.equal(incomingHit({...base,result:'correct'}).damage,0);

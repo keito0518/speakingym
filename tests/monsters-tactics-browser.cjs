@@ -182,6 +182,38 @@ const assert=require('node:assert/strict');
    const layout=await partyPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(layout.scroll<=layout.width+1,`Multi-ally commands must fit 320px (${JSON.stringify(layout)})`);
    await partyContext.close();
+   // Battle action selection should fetch a due task instead of silently
+   // returning random content, even when the next enemy asks a new skill.
+   const recallContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const recallPage=await recallContext.newPage();
+   await recallPage.goto(url,{waitUntil:'networkidle'});
+   const dueGrammarIds=await recallPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const {ALL_PROMPTS}=await import('./monster-data.js');
+     const ids=ALL_PROMPTS.filter(p=>p.kind==='grammar'&&(p.difficulty||'easy')==='easy'&&!p.bossOnly&&!p.world).slice(0,6).map(p=>p.id);
+     const saved=createSave();saved.reviewPrompts=Object.fromEntries(ids.map(id=>[id,'2000-01-01']));
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+     return ids;
+   });
+   await recallPage.reload({waitUntil:'networkidle'});
+   await recallPage.locator('[data-home-page="forest"]').click();
+   await recallPage.locator('#start-forest-tactics').click();
+   await recallPage.locator('#forest-explore-continue').click();
+   assert.match(await recallPage.locator('.forest-tactic-review').innerText(),/文法 [1-9]\d*問/,'Players can see their overdue tactical review');
+   await recallPage.locator('[data-tactic-kind="grammar"]').click();
+   const selected=await recallPage.locator('#play-card').getAttribute('data-prompt-id');
+   assert.ok(dueGrammarIds.includes(selected),`A selected grammar attack should practice a due task, got ${selected}`);
+   const reportContrast=await recallPage.locator('.forest-tactic-review').evaluate(el=>{
+     const rgb=str=>str.match(/[\d.]+/g).slice(0,3).map(Number);
+     const lum=str=>rgb(str).map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
+       .reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+     const style=getComputedStyle(el),a=lum(style.color),b=lum(style.backgroundColor);
+     return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+   });
+   assert.ok(reportContrast>=4.5,`Due-review status must be readable at 320px (${reportContrast.toFixed(2)}:1)`);
+   const recallLayout=await recallPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(recallLayout.scroll<=recallLayout.width+1,`${engine}: review battle should not overflow mobile (${JSON.stringify(recallLayout)})`);
+   await recallContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
