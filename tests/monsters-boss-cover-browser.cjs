@@ -62,8 +62,9 @@ const assert=require('node:assert/strict');
    }
    if(await page.locator('#forest-tactics').isVisible()){
     const listening=page.locator('[data-tactic-kind="listen"]');
-    if(!await listening.count())throw Error(`Tactical controls missing on step ${step}: ${(await page.locator('main').innerText()).slice(0,1600)}`);
-    if(await listening.isEnabled())await listening.click();
+    // Enemy turns deliberately have no attack-type buttons: the learner must
+    // answer the enemy's preannounced skill instead of switching its quiz.
+    if(await listening.count()&&await listening.isEnabled())await listening.click();
     await answer();continue;
    }
    throw Error(`Unexpected tactical screen before boss, step ${step}`);
