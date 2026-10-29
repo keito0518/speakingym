@@ -119,6 +119,10 @@ function micView(mode='ready') {
   }
   if(retry) retry.hidden=mode!=='captured';
 }
+function showSpeechFallback(){
+ const alternatives=$('#speech-alternatives');
+ if(alternatives&&!alternatives.hidden)alternatives.open=true;
+}
 function stopRecognition(mode='ready') {
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
@@ -147,7 +151,7 @@ function finishRecognition(){
   recognitionWatchdog=setTimeout(()=>{
     if(recognition!==active)return;
     const text=$('#spoken-answer')?.value.trim();
-    if(!text)recognitionFailures++;
+    if(!text){recognitionFailures++;showSpeechFallback();}
     stopRecognition(text?'captured':'ready');
     if(helper)helper.textContent=text
       ?'聞き取れた部分を残しました。英文を確認して判定してね。'
@@ -538,6 +542,29 @@ function awardTacticalCharge(rating,{spent=false}={}){
  t.ultimate=advanceUltimate(t.ultimate,{independent:rating==='smooth',bonus,spend:spent});
  if(bonus)t.bonusChargeUsed=true;
 }
+function compactMobileBattleNotes(panel,t){
+ if(!window.matchMedia('(max-width:690px)').matches)return;
+ const boss=panel.querySelector('.forest-boss-tactical-plan');
+ let bossDetail=null;
+ if(boss){
+   const detail=document.createElement('details'),summary=document.createElement('summary');
+   detail.className='forest-boss-brief';detail.open=Boolean(t.bossPlanOpen);
+   summary.textContent='ボスの攻撃順・相性を確認';detail.append(summary);
+   while(boss.firstChild)detail.append(boss.firstChild);
+   boss.append(detail);
+   bossDetail=detail;
+   detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.bossPlanOpen=detail.open;});
+ }
+ const secondary=[...panel.querySelectorAll('.forest-boss-counter,.forest-boss-cover,.forest-tactic-evolution,.forest-tactic-ability,.forest-tactic-note')];
+ if(!secondary.length)return;
+ if(bossDetail){secondary.forEach(element=>bossDetail.append(element));return;}
+ const detail=document.createElement('details'),summary=document.createElement('summary');
+ detail.className='forest-tactic-more';detail.open=Boolean(t.notesOpen);
+ summary.textContent='相性・固有スキルなど詳しく見る';detail.append(summary);
+ secondary.forEach(element=>detail.append(element));
+ panel.append(detail);
+ detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.notesOpen=detail.open;});
+}
 function renderTacticalControls(){
  const panel=$('#forest-tactics'),t=play?.tactics;
  if(!panel)return;
@@ -599,6 +626,7 @@ function renderTacticalControls(){
   ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>技能を切り替えると、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
   ${boss?'<small class="forest-tactic-note">ボスの3つの確認問題は固定。必殺技でも英語の確認は省略できないよ。</small>':t.lastAttackKind?`<small class="forest-tactic-note">前回は${BATTLE_LABELS[t.lastAttackKind]}。同じ技能を連発すると敵が慣れて威力−1。違う技能を試そう！</small>`:'<small class="forest-tactic-note">技能を選ぶと問題が切り替わるよ。弱点狙いでも英語の正解が必要！</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">パーティ · それぞれにHPあり · 交代は1戦に1回（残り${1-t.party.swapsUsed}回）</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div><small class="forest-tactic-note">交代ではターンを消費しない。倒れたら控えに自動交代するよ。</small>`:'<small class="forest-tactic-note">仲間を増やすと最大3体で戦い、それぞれのHPと得意技能を使い分けられるよ。</small>'}`}`;
+ compactMobileBattleNotes(panel,t);
  if(incoming)return;
  $$('[data-tactic-action]',panel).forEach(button=>button.addEventListener('click',()=>{
    if(!play||play.revealed||play.tactics.turn!=='player')return;
@@ -812,6 +840,24 @@ function showForestRouteChoice() {
   showForestExplore(true);
 }
 
+function keepMobileQuestionInView(){
+ if(play?.mode!=='forest'||window.innerWidth>690)return;
+ const session=play;
+ // The old answer/review panel can be much taller than the next task. On
+ // Safari, scroll anchoring then strands the player below the NEW question.
+ // Position that question immediately beneath the sticky battle field after
+ // the next DOM render, without opening the keyboard or animating the page.
+ requestAnimationFrame(()=>{
+   const card=$('#play-card'),field=$('#forest-journey');
+   if(play!==session||$('#play-view').hidden||!card||!field||field.hidden||document.hidden)return;
+   const reserved=Math.min(300,field.getBoundingClientRect().height)+12;
+   const desired=window.scrollY+card.getBoundingClientRect().top-reserved;
+   const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+   const target=Math.max(0,Math.min(desired,max));
+   if(Math.abs(window.scrollY-target)>24)window.scrollTo({top:target,behavior:'auto'});
+ });
+}
+
 function renderQuestion() {
   if (!play) return;
   cancelAutoAdvance();
@@ -932,7 +978,7 @@ function renderQuestion() {
     <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
     <div class="answer-quick-help"><div><strong>${guidedCloze?'空欄だけの練習から始められるよ':'困ったらヒントを使おう'}</strong><small>${guidedCloze?'1単語だけ言ったら確認。そのあとで全文に挑戦しよう。':'考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。'}</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">${guidedCloze?'穴埋めヒントを見る':'ヒントを見る'}</button></div>
     <div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div>
-    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><div id="speech-alternatives" class="speech-alternatives" hidden><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
+    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないときの入力方法</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -951,11 +997,13 @@ function renderQuestion() {
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
   const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent);
   $('#speech-alternatives').hidden=quizMode||!isIOS;
+  $('#speech-alternatives').open=play.mode!=='forest';
   if(isIOS && play.mode==='forest' && play.index===regularCount()+BOSS_HITS-1 && !quizMode){
     // Safari/WebKit may stop reporting recognition after HTMLAudioElement
     // playback. Keep the native keyboard dictation route unmistakable at the
     // last speaking gate; don't mislabel a browser failure as an English miss.
     $('#speech-alternatives').classList.add('speech-alternatives-priority');
+    showSpeechFallback();
     $('#native-dictation').textContent='おすすめ：iPhone標準の音声入力で答える';
     $('#speech-alternative-help').textContent='直前のリスニング音声の影響で、ブラウザの「話す」が反応しないことがあるよ。こちらを押してキーボードのマイクで話そう。';
   }
@@ -1034,6 +1082,7 @@ function renderQuestion() {
       void gradeAnswer();
     }));
   }
+  keepMobileQuestionInView();
 }
 function browserSpeakLine(line,onUnavailable,level='easy') {
   try {
@@ -1096,6 +1145,7 @@ function startRecognition() {
   const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Constructor){
     micView('ready');
+    showSpeechFallback();
     if(helper)helper.textContent='このブラウザは音声認識に対応していません。英文を入力して判定できます。';
     return;
   }
@@ -1145,6 +1195,7 @@ function startRecognition() {
       if(recognition!==instance || play!==session)return;
       recognitionFailures++;
       stopRecognition();
+      showSpeechFallback();
       if(helper){
         const error=event?.error;
         helper.textContent=error==='not-allowed'||error==='service-not-allowed'
@@ -1160,7 +1211,7 @@ function startRecognition() {
       if(recognition!==instance || play!==session)return;
       const transcript=$('#spoken-answer')?.value.trim();
       $('#spoken-answer')?.classList.remove('transcript-interim');
-      if(!transcript)recognitionFailures++;
+      if(!transcript){recognitionFailures++;showSpeechFallback();}
       else recognitionFailures=0;
       stopRecognition(transcript?'captured':'ready');
       if(helper)helper.textContent=transcript
@@ -1174,6 +1225,7 @@ function startRecognition() {
       if(recognition!==instance||play!==session)return;
       recognitionFailures++;
       stopRecognition();
+      showSpeechFallback();
       if(helper)helper.textContent='マイクから応答がありません。iPhoneでは下の標準音声入力（キーボードのマイク）か手入力で続けられるよ。';
     },4500);
     instance.start();
@@ -1181,6 +1233,7 @@ function startRecognition() {
     if(helper)helper.textContent='音声認識を開始しています。7秒たっても文字にならなければ、標準の音声入力を試してね。';
   }catch{
     stopRecognition();
+    showSpeechFallback();
     if(helper)helper.textContent='マイクを開始できません。英文入力で続けられます。';
   }
 }

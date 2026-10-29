@@ -658,6 +658,7 @@ const path=require('node:path');
           // The mic must recover and expose actual keyboard dictation, rather
           // than trap the learner with a permanently orange dead button.
           assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),true);
+          assert.equal(await forestPage.locator('#speech-alternatives').getAttribute('open'),'','Final boss keeps the iPhone fallback ready');
           assert.match(await forestPage.locator('#native-dictation').innerText(),/おすすめ/);
           await forestPage.locator('#mic-button').click();
           assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
@@ -1019,6 +1020,17 @@ const path=require('node:path');
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true,'Native keyboard fallback must focus the editable field after an explicit tap');
     await iosPage.locator('#spoken-answer').fill('That is fine with me.');
     assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'That is fine with me.');
+    await iosPage.locator('#leave-play').click();
+    await enterHomePanel(iosPage,'forest');
+    await iosPage.locator('#start-forest-tactics').click();
+    await iosPage.locator('#forest-explore-continue').click();
+    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),true,'iPhone always retains microphone alternatives');
+    assert.equal(await iosPage.locator('#speech-alternatives').getAttribute('open'),null,'Normal battle starts with the extra help collapsed');
+    assert.equal(await iosPage.locator('#native-dictation').isVisible(),false,'Alternative input is one optional disclosure, not a wall of text');
+    await iosPage.locator('#mic-button').click();
+    await iosPage.evaluate(()=>window.__silentSpeech.onend());
+    assert.equal(await iosPage.locator('#speech-alternatives').getAttribute('open'),'','Microphone failure reveals native dictation automatically');
+    assert.equal(await iosPage.locator('#native-dictation').isVisible(),true);
     await iosContext.close();
     const {context,page}=await boot(390);
     await page.evaluate(async()=>{

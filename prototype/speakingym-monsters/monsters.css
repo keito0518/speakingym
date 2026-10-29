@@ -272,8 +272,15 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .tutorial-actions{display:flex;justify-content:space-between;gap:12px;margin-top:23px}
 .tutorial-actions button{border:1px solid #a9c3ab;background:#f3f7ec;color:#2f6344;border-radius:12px;font-weight:800;min-height:47px;padding:10px 24px}
 .tutorial-actions #tutorial-next{background:#247951;color:white;border-color:#247951}
-.speech-alternatives{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding:12px;border-radius:13px;border:1px solid #bcd8c4;background:#eff8ef}
+.speech-alternatives{display:block;margin-top:12px;padding:12px;border-radius:13px;border:1px solid #bcd8c4;background:#eff8ef}
 .speech-alternatives[hidden]{display:none!important}
+.speech-alternatives>summary{display:none}
+.speech-alternatives-actions{display:flex;flex-wrap:wrap;gap:8px}
+.forest-active .speech-alternatives{padding:0;border:0;background:transparent}
+.forest-active .speech-alternatives>summary{display:block;min-height:44px;padding:11px 12px;border:1px solid #a8c5b0;border-radius:10px;background:#edf5ef;color:#275641;font-size:12px;font-weight:800;line-height:1.6;cursor:pointer;line-break:strict}
+.forest-active .speech-alternatives[open]>summary{border-radius:10px 10px 0 0}
+.forest-active .speech-alternatives-actions{padding:10px;border:1px solid #bcd8c4;border-top:0;border-radius:0 0 10px 10px;background:#eff8ef}
+.forest-active .speech-alternatives>summary:focus-visible{outline:3px solid #2c7659;outline-offset:2px}
 .speech-alternatives button{flex:1 1 200px;border:1px solid #9ebfa6;background:#fffdf6;color:#276549;border-radius:9px;padding:11px 9px;font-size:12px;min-height:44px;font-weight:800;line-height:1.45}
 .speech-alternatives .speech-native-button{background:#dbefdf}
 .speech-alternatives p{width:100%;font-size:12px;line-height:1.7;color:#406650}

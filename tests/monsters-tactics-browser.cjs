@@ -63,7 +63,19 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('[data-tactic-action="skill"]').isEnabled(),false,'Ultimate requires three independent answers');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'0');
      assert.equal(await page.locator('[data-tactic-kind]').count(),4);
+     const extra=page.locator('.forest-tactic-more');
+     assert.equal(await extra.count(),1,`${engine}/${width}: verbose strategy notes must be collapsible on mobile`);
+     assert.equal(await extra.getAttribute('open'),null,'The long help text starts collapsed');
+     assert.equal(await page.locator('.forest-tactic-ability').isVisible(),false);
+     await extra.locator('summary').click();
+     assert.equal(await page.locator('.forest-tactic-ability').isVisible(),true);
      assert.match(await page.locator('#forest-tactics').innerText(),/固有スキル：ことばの連撃/);
+     await extra.locator('summary').click();
+     assert.equal(await page.locator('.forest-tactic-ability').isVisible(),false);
+     assert.equal(await page.locator('.answer-quick-help > div').isVisible(),false,'Long hint explanation should not distract from the question');
+     assert.equal(await page.locator('#show-hint').isVisible(),true,'Hint remains available with one tap');
+     const mobileTextarea=await page.locator('#spoken-answer').evaluate(el=>el.getBoundingClientRect().height);
+     assert.ok(mobileTextarea<=96,`${engine}/${width}: answer input must fit a phone (${mobileTextarea}px)`);
      assert.match(await page.locator('#forest-tactics').innerText(),/リスニング.*文法/s);
      assert.match(await page.locator('#forest-tactics').innerText(),/次の敵攻撃：文法/,'Enemy must telegraph the upcoming skill before the ally commits');
      await answer(page);
@@ -77,6 +89,14 @@ const assert=require('node:assert/strict');
      await page.locator('#next-question').click();
      assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id')!==null,true);
+     await page.waitForTimeout(100);
+     const scrollResult=await page.evaluate(()=>({
+       questionTop:document.querySelector('#play-card').getBoundingClientRect().top,
+       fieldHeight:document.querySelector('#forest-journey').getBoundingClientRect().height,
+       viewportHeight:innerHeight
+     }));
+     assert.ok(scrollResult.questionTop>=-2&&scrollResult.questionTop<scrollResult.viewportHeight-100,
+       `${engine}/${width}: next question should not be stranded below the viewport (${JSON.stringify(scrollResult)})`);
      if(width===390){
        // A definitely wrong grammar answer really costs HP, only once per attack.
        await page.locator('#spoken-answer').fill('wrong answer');

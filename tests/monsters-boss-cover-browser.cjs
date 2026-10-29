@@ -70,8 +70,11 @@ const assert=require('node:assert/strict');
    throw Error(`Unexpected tactical screen before boss, step ${step}`);
   }
   assert.equal(reachedBoss,true,'This test must reach the boss through the real English battle loop');
+  assert.equal(await page.locator('.forest-boss-brief').count(),1,'Boss battle details are condensed for mobile');
+  assert.equal(await page.locator('.forest-boss-brief').getAttribute('open'),null);
   assert.equal(await page.locator('[data-boss-plan-phase="0"]').getAttribute('data-current'),'true',
    'The grammar weakness can only be intercepted on boss phase one');
+  await page.locator('.forest-boss-brief summary').click();
   assert.match(await page.locator('.forest-boss-cover').innerText(),/身代わり/);
   assert.equal(await page.locator('.forest-boss-cover').getAttribute('data-cover-ready'),'true');
   if((await page.locator('.forest-tactic-heading').innerText()).includes('味方のターン')){
@@ -101,7 +104,7 @@ const assert=require('node:assert/strict');
    throw Error(`Cannot return to the party after the boss's first counter: ${(await page.locator('main').innerText()).slice(0,800)}`);
   }
   assert.match(await page.locator('[data-tactic-ally="koge"]').innerText(),/HP 8\/9|HP 7\/8/);
-  assert.match(await page.locator('.forest-boss-cover').innerText(),/使用済み/, 'Reserve protection cannot be farmed in the next boss phase');
+  assert.match(await page.locator('.forest-boss-cover').textContent(),/使用済み/, 'Reserve protection cannot be farmed in the next boss phase');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
   assert.deepEqual(saved.ownedMonsters,['medamago','katappo','koge']);
   assert.equal(saved.xpWallet>=49,true);
