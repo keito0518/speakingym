@@ -118,7 +118,8 @@ const assert=require('node:assert/strict');
    await partyPage.goto(url,{waitUntil:'networkidle'});
    await partyPage.evaluate(async()=>{
      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
-     const seeded={...createSave(),ownedMonsters:['medamago','katappo','purupun','koge'],selectedMonster:'medamago'};
+     const seeded={...createSave(),ownedMonsters:['medamago','katappo','purupun','koge'],selectedMonster:'medamago',
+       xpWallet:137,monsterXp:{medamago:84,katappo:53,purupun:22,koge:11}};
      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
    });
    await partyPage.reload({waitUntil:'networkidle'});
@@ -155,7 +156,15 @@ const assert=require('node:assert/strict');
    assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 5\/8/);
    const persisted=await partyPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
    assert.deepEqual(persisted.ownedMonsters,['medamago','katappo','purupun','koge'],'Choosing fighters does not discard saved monsters');
+   assert.equal(persisted.selectedMonster,'medamago','Temporary battle leader does not overwrite the collection selection');
+   assert.ok(persisted.xpWallet>=137,'Existing XP wallet must not be lost by tactical battles');
+   assert.deepEqual(persisted.monsterXp,{medamago:84,katappo:53,purupun:22,koge:11},'Individual monster XP remains intact');
    assert.equal(Object.hasOwn(persisted,'party'),false,'HP is not added to persistent save');
+   await partyPage.reload({waitUntil:'networkidle'});
+   const afterReload=await partyPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.deepEqual(afterReload.ownedMonsters,persisted.ownedMonsters,'Monster collection survives reload');
+   assert.deepEqual(afterReload.monsterXp,persisted.monsterXp,'Growth XP survives reload');
+   assert.equal(afterReload.xpWallet,persisted.xpWallet,'Wallet survives reload');
    const layout=await partyPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(layout.scroll<=layout.width+1,`Multi-ally commands must fit 320px (${JSON.stringify(layout)})`);
    await partyContext.close();
