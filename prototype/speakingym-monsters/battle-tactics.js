@@ -99,6 +99,30 @@ export function nextEnemyKind(last=null,random=Math.random){
  const value=Number(random());
  return pool[Math.max(0,Math.min(pool.length-1,Math.floor((Number.isFinite(value)?value:0)*pool.length)))];
 }
+// Advanced-area regular foes gain one readable combat behavior. A style only
+// changes damage or the *announced* next attack kind, never English grading.
+const FOE_STYLES=Object.freeze([
+ Object.freeze({id:'shell',name:'かたい殻',tip:'最初の一撃は弱点以外のダメージ−1。弱点なら貫ける！'}),
+ Object.freeze({id:'hunter',name:'弱点狙い',tip:'仲間の苦手技能で反撃。予告を見て交代しよう。'}),
+ Object.freeze({id:'fury',name:'猛攻',tip:'防御失敗時のダメージ＋1。自力正解なら無傷！'})
+]);
+const ADVANCED_AREAS=['glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard'];
+export function foeStyleFor({areaId='entry',index=0,wave=1,boss=false}={}){
+ const area=ADVANCED_AREAS.indexOf(areaId);
+ if(boss||area<0||!Number.isInteger(index)||index<0)return null;
+ return FOE_STYLES[(index+Math.max(0,(Number(wave)||1)-1)+area)%FOE_STYLES.length];
+}
+export function foeStyledStrike({style,damage,kind,foeId,shieldIntact=true}={}){
+ const safe=Math.max(1,Math.floor(Number(damage)||1));
+ const shieldBroken=Boolean(style?.id==='shell'&&shieldIntact);
+ const mitigated=shieldBroken&&foeAffinity(foeId).weak!==kind&&safe>1;
+ return {damage:mitigated?safe-1:safe,mitigated,shieldBroken};
+}
+export function foePlannedAttack({style,activeId,last=null,random=Math.random}={}){
+ const targeted=style?.id==='hunter'?allyAffinity(activeId).weak:null;
+ return targeted&&targeted!==last?targeted:nextEnemyKind(last,random);
+}
+export function foeAttackPressure(style){return style?.id==='fury'?1:0;}
 // Bosses telegraph a distinct three-phase attack sequence. The pressure bonus
 // affects HP only after a definite miss (or an assisted defense), never the
 // independent English verdict or a failed/uncertain speech recognition result.

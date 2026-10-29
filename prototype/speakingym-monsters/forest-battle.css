@@ -85,6 +85,8 @@
 .forest-tactic-forecast{display:flex;flex-wrap:wrap;gap:3px 9px;align-items:baseline;margin:6px 0 9px;padding:7px 9px;border:1px solid #b5c2e2;border-radius:8px;background:#e9eefa;color:#24395c;font-size:11px;line-height:1.6}
 .forest-tactic-forecast strong{font-size:12px;color:#223c70}
 .forest-tactic-forecast span{color:#354b65}
+.forest-tactic-foe-style{margin:5px 0;padding:6px 9px;border:1px solid #b49363;border-radius:8px;background:#fff1d4;color:#503817;font-size:11px;line-height:1.6;overflow-wrap:break-word;line-break:strict}
+.forest-tactic-foe-style strong{color:#493014;font-size:12px}
 .forest-ultimate-meter{display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;padding:8px 9px;margin:6px 0;border:1px solid #d6be75;border-radius:9px;background:#fff7df;color:#5c4728;font-size:11px;line-height:1.5}
 .forest-ultimate-meter strong{white-space:nowrap;font-size:12px}
 .forest-ultimate-meter small{font-size:10px;color:#5d6143}
@@ -675,6 +677,7 @@
  .forest-active.tactical-battle .forest-tactic-heading span{font-size:10px}
  .forest-active.tactical-battle .forest-tactics[data-turn="player"] .forest-tactic-matchup{display:none}
  .forest-active.tactical-battle .forest-tactic-forecast{margin:5px 0;padding:5px 8px}
+ .forest-active.tactical-battle .forest-tactic-foe-style{margin:3px 2px;padding:5px 8px}
  .forest-active.tactical-battle .forest-tactic-forecast span{display:none}
  .forest-active.tactical-battle .forest-ultimate-meter{margin:5px 0;padding:5px 8px}
  .forest-active.tactical-battle .forest-ultimate-meter small{display:none}

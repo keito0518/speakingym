@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
@@ -36,6 +36,43 @@ test('foe attack cycles through four randomized skills without immediate repetit
  for(let i=0;i<3;i++){const kind=nextEnemyKind('speak',()=>i/3);seen.add(kind);assert.notEqual(kind,'speak');}
  assert.equal(seen.size,3);
  for(const kind of BATTLE_KINDS)assert.ok(BATTLE_KINDS.includes(nextEnemyKind(kind,()=>.9)));
+});
+test('advanced foes have changing readable styles but entrance and boss encounters remain familiar',()=>{
+ assert.equal(foeStyleFor({areaId:'entry',index:0}),null);
+ assert.equal(foeStyleFor({areaId:'glade',index:7,boss:true}),null);
+ assert.deepEqual([0,1,2].map(index=>foeStyleFor({areaId:'glade',index}).id),['shell','hunter','fury']);
+ assert.deepEqual([0,1,2].map(index=>foeStyleFor({areaId:'glade',index,wave:2}).id),['hunter','fury','shell'],
+  'repeat runs change the foe mix without additional story content');
+ for(const areaId of ['thicket','sanctuary','city','city-market','city-terminal','city-blizzard']){
+  const style=foeStyleFor({areaId,index:0});
+  assert.ok(style.name&&style.tip&&['shell','hunter','fury'].includes(style.id));
+ }
+});
+test('shell, hunter and fury change battle strategy without changing independent English grades',()=>{
+ const shell=foeStyleFor({areaId:'glade',index:0});
+ assert.deepEqual(foeStyledStrike({style:shell,damage:3,kind:'speak',foeId:'sunmoss'}),
+  {damage:2,mitigated:true,shieldBroken:true});
+ assert.deepEqual(foeStyledStrike({style:shell,damage:3,kind:'listen',foeId:'sunmoss'}),
+  {damage:3,mitigated:false,shieldBroken:true},'a weakness strike immediately pierces the shell');
+ assert.equal(foeStyledStrike({style:shell,damage:3,kind:'speak',foeId:'sunmoss',shieldIntact:false}).damage,3,
+  'after the first hit the foe cannot keep its first-hit shield');
+ assert.equal(foeStyledStrike({style:shell,damage:1,kind:'grammar',foeId:'sunmoss'}).damage,1,
+  'a shield cannot turn a correct answer into zero progress');
+ const hunter=foeStyleFor({areaId:'glade',index:1});
+ assert.equal(foePlannedAttack({style:hunter,activeId:'medamago',last:'grammar'}),'listen');
+ assert.equal(foePlannedAttack({style:hunter,activeId:'katappo',last:'speak'}),'grammar',
+  'party composition changes an explicitly announced attack');
+ assert.notEqual(foePlannedAttack({style:hunter,activeId:'medamago',last:'listen',random:()=>0}),'listen',
+  'even a hunter cannot repeat the same skill immediately');
+ const fury=foeStyleFor({areaId:'glade',index:2});
+ assert.equal(foeAttackPressure(fury),1);
+ assert.equal(foeAttackPressure(hunter),0);
+ const base={kind:'speak',allyId:'katappo'};
+ assert.equal(incomingHit({...base,result:'correct',pressure:foeAttackPressure(fury)}).damage,0);
+ assert.equal(incomingHit({...base,result:'ungraded',pressure:foeAttackPressure(fury)}).damage,0,
+  'speech recognition uncertainty must never cause an enemy hit');
+ assert.equal(incomingHit({...base,result:'incorrect',pressure:foeAttackPressure(fury)}).damage,
+  incomingHit({...base,result:'incorrect'}).damage+1,'only a real miss increases damage');
 });
 test('each area boss advertises its own predictable three-phase attack sequence',()=>{
  const signatures=new Set();

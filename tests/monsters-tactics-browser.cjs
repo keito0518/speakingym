@@ -292,6 +292,46 @@ const assert=require('node:assert/strict');
    const recallLayout=await recallPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(recallLayout.scroll<=recallLayout.width+1,`${engine}: review battle should not overflow mobile (${JSON.stringify(recallLayout)})`);
    await recallContext.close();
+   // Later chapters introduce announced foe roles. The armored enemy really
+   // survives a non-weak first hit, even from an evolved attacker; no grading
+   // verdict, save data or mobile layout is changed by that defense.
+   const advancedContext=await browser.newContext({viewport:{width:375,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const advancedPage=await advancedContext.newPage();
+   await advancedPage.goto(url,{waitUntil:'networkidle'});
+   await advancedPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const saved=createSave();
+     saved.forest.completedAreas=['entry'];saved.monsterXp.medamago=160;saved.xpWallet=27;
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+   });
+   await advancedPage.reload({waitUntil:'networkidle'});
+   await advancedPage.locator('[data-home-page="forest"]').click();
+   await advancedPage.locator('#start-forest-tactics').click();
+   assert.match(await advancedPage.locator('#play-mode-label').innerText(),/木漏れ日の小道/);
+   await advancedPage.locator('#forest-explore-continue').click();
+   assert.equal(await advancedPage.locator('[data-foe-style]').getAttribute('data-foe-style'),'shell');
+   assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/最初の一撃は弱点以外のダメージ−1/);
+   await advancedPage.locator('[data-tactic-kind="speak"]').click();
+   await answer(advancedPage);
+   assert.equal(await advancedPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1',
+     'An evolved specialty attack deals 3, but the enemy shell visibly absorbs 1');
+   assert.match(await advancedPage.locator('#forest-battle-log').innerText(),/敵の殻に威力を1防がれた/);
+   assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/殻は破れた/);
+   const advancedContrast=await advancedPage.locator('.forest-tactic-foe-style').evaluate(el=>{
+     const luminance=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{
+       const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;
+     }).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+     const style=getComputedStyle(el),a=luminance(style.color),b=luminance(style.backgroundColor);
+     return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+   });
+   assert.ok(advancedContrast>=4.5,`Enemy style advice must remain readable on iPhone (${advancedContrast.toFixed(2)}:1)`);
+   const advancedWidth=await advancedPage.evaluate(()=>({screen:innerWidth,page:document.documentElement.scrollWidth}));
+   assert.ok(advancedWidth.page<=advancedWidth.screen+1,`Advanced battle must fit iPhone (${JSON.stringify(advancedWidth)})`);
+   const saved=await advancedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.deepEqual(saved.forest.completedAreas,['entry']);
+   assert.equal(saved.monsterXp.medamago,160);
+   assert.ok(saved.xpWallet>=27);
+   await advancedContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
