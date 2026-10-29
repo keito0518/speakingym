@@ -354,7 +354,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
-      bossCounterUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:''}:null};
+      bossCounterUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -548,6 +548,7 @@ function renderTacticalControls(){
  const evolved=getMonsterProgress(save,play.companionId).evolved;
  const ability=allySkill(play.companionId);
  const boss=play.index>=regularCount();
+ const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
  const incoming=t.turn==='enemy';
  const party=battleParty();
  const attackKind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
@@ -577,16 +578,16 @@ function renderTacticalControls(){
  const recallText=BATTLE_KINDS.filter(kind=>recallCounts[kind]>0)
    .map(kind=>`${BATTLE_LABELS[kind]} ${recallCounts[kind]}問`).join(' · ');
  if(!incoming){
-   if(boss)t.nextEnemyKind=bossThreat.kind;
+   if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=nextEnemyKind(t.lastEnemyKind);
  }
  panel.innerHTML=`<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 行動を選ぼう'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
-  ${boss?`<div class="forest-boss-tactical-plan" role="group" aria-label="ボスの3手の攻撃予告"><strong>ボスの攻撃パターン</strong><ol>${[0,1,2].map(phase=>{const threat=bossAttackFor(foe.id,phase);return `<li data-boss-plan-phase="${phase}" data-current="${String(phase===play.index-regularCount())}"><span>${phase+1}手目</span><b>${BATTLE_LABELS[threat.kind]}</b><small>${threat.pressure?'強攻撃':'通常攻撃'}</small></li>`;}).join('')}</ol><small>3問すべて英語の正解が必要。事前に仲間の得意技能を確認しよう。</small></div>`:''}
-  ${boss&&!incoming?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`}</p>`:''}
-  ${boss&&party.length>1?`<p class="forest-boss-cover" data-cover-ready="${String(coverPreview?.activated)}">${t.bossCoverUsed?'控えの身代わりはこのボス戦で使用済み。':coverPreview?.activated?`控えの${escapeHtml(monsterFor(coverPreview.partnerId).name)}が身代わり待機。${BATTLE_LABELS[coverKind]}で自力防御を失い、HPが2以上減るときにダメージを2軽減・控えHP−1（ボス戦で1回）。自力正解・判定保留なら発動しない。`:'控えの身代わりは「出撃中の仲間が苦手・控えが得意」な技能の敵攻撃でだけ発動するよ。'}</p>`:''}
-  ${incoming?'':`<p class="forest-tactic-forecast"><strong>次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}</strong><span>${bossThreat?`ボス技「${escapeHtml(bossThreat.name)}」${bossThreat.pressure?' · 強攻撃（防御失敗でHP減少＋1）':' · 通常威力'}。`:''}正解すれば自動で防御！ 仲間を選んでから攻撃しよう。</span></p>`}
+  ${boss?`<div class="forest-boss-tactical-plan" role="group" aria-label="ボスの3手の攻撃予告"><strong>ボスの攻撃パターン</strong><ol>${[0,1,2].map(phase=>{const threat=bossAttackFor(foe.id,phase);return `<li data-boss-plan-phase="${phase}" data-current="${String(phase===play.index-regularCount())}"><span>${phase+1}手目</span><b>${BATTLE_LABELS[threat.kind]}</b><small>${phase===2?'撃破で反撃なし':threat.pressure?'強攻撃':'通常攻撃'}</small></li>`;}).join('')}</ol><small>最初の2手は敵が反撃する。3つの英語確認をすべてクリアすると勝利！</small></div>`:''}
+  ${boss&&!incoming&&!finalBossStrike?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`}</p>`:''}
+  ${boss&&party.length>1&&!finalBossStrike?`<p class="forest-boss-cover" data-cover-ready="${String(coverPreview?.activated)}">${t.bossCoverUsed?'控えの身代わりはこのボス戦で使用済み。':coverPreview?.activated?`控えの${escapeHtml(monsterFor(coverPreview.partnerId).name)}が身代わり待機。${BATTLE_LABELS[coverKind]}で自力防御を失い、HPが2以上減るときにダメージを2軽減・控えHP−1（ボス戦で1回）。自力正解・判定保留なら発動しない。`:'控えの身代わりは「出撃中の仲間が苦手・控えが得意」な技能の敵攻撃でだけ発動するよ。'}</p>`:''}
+  ${incoming?'':finalBossStrike?'<p class="forest-tactic-forecast"><strong>最終撃：正解すれば勝利！</strong><span>最後の英語を確認しよう。撃破したボスは反撃しないよ。</span></p>':`<p class="forest-tactic-forecast"><strong>次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}</strong><span>${bossThreat?`ボス技「${escapeHtml(bossThreat.name)}」${bossThreat.pressure?' · 強攻撃（防御失敗でHP減少＋1）':' · 通常威力'}。`:''}正解すれば自動で防御！ 仲間を選んでから攻撃しよう。</span></p>`}
   ${!incoming&&evolved?`<p class="forest-tactic-evolution">進化ボーナス：得意な${BATTLE_LABELS[ally.strong]}の威力＋1 / 同技能の被ダメージ−1</p>`:''}
   <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span><small>ヒントなしの自力正解で＋1</small></div>
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
@@ -685,7 +686,7 @@ function renderPartyFormation(){
  const rangeCount=new Set(roster.map(id=>allyAffinity(id).strong)).size;
  const guide=owned.length===1?'仲間はまだ1体だけ。編成できる仲間が増えるとここで入れ替えられるよ。今は「この編成で出発する」から始めよう。':'仲間の絵やカードをタップして選ぼう。控えの仲間は「先頭にする」でも切り替えられるよ。';
  screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span><small>得意な仲間を選ぼう。英語の問題はどの仲間でも同じように挑戦できるよ。</small></div>
- <div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${BATTLE_LABELS[move.kind]}${move.pressure?' · 強':''}</span>`).join('')}</div><small>編成の得意技能は${rangeCount}種類。${coverCount?'この先頭と控えなら、ボスの苦手技能に身代わりできる組み合わせがあるよ。':'控えに先頭の苦手技能が得意な仲間を入れると、ボスの被ダメージを一度だけカバーできるよ。'} 身代わりは正誤判定を変えず、自力で防げずHPが2以上減るときだけ発動。</small></div>
+ <div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${i===2?'最終撃':BATTLE_LABELS[move.kind]}${i===2?'':move.pressure?' · 強':''}</span>`).join('')}</div><small>編成の得意技能は${rangeCount}種類。${coverCount?'この先頭と控えなら、ボスの苦手技能に身代わりできる組み合わせがあるよ。':'控えに先頭の苦手技能が得意な仲間を入れると、ボスの被ダメージを一度だけカバーできるよ。'} ボスは2回反撃し、最後の一撃で撃破。身代わりは正誤判定を変えず、自力で防げずHPが2以上減るときだけ発動。</small></div>
  <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
  <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
    const id=roster[index],monster=id?monsterFor(id):null,progress=id?getMonsterProgress(save,id):null;
@@ -832,7 +833,7 @@ function renderQuestion() {
         t.encounterIndex=play.index;t.enemyHp=play.index>=regularCount()?BOSS_HITS-play.bossHits:encounterVitality(play.areaId,play.index);
         t.enemyMax=encounterVitality(play.areaId,play.index,{boss:play.index>=regularCount()});
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
-        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};
+        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;
         t.counterShield=0;
         if(play.index===regularCount()){t.bossCounterUsed=false;t.bossCoverUsed=false;}
       }
@@ -1384,7 +1385,7 @@ async function gradeAnswer() {
       evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower||!play.endless});
     const special=duo?.activated?{...baseSpecial,damage:baseSpecial.damage+duo.extraDamage,tag:'DUO!'}:baseSpecial;
     const usedUltimate=Boolean(t&&t.action==='skill');
-    const bossCounter=t&&boss?bossCounterFor({kind:bossAttackFor(foe.id,play.index-regularCount()).kind,
+    const bossCounter=t&&boss&&play.index<regularCount()+BOSS_HITS-1?bossCounterFor({kind:bossAttackFor(foe.id,play.index-regularCount()).kind,
       allyId:play.companionId,independent:rating==='smooth',used:t.bossCounterUsed,
       evolved:getMonsterProgress(save,play.companionId).evolved}):null;
     const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0),t.maxHp-t.hp):0;
@@ -1502,7 +1503,18 @@ function advanceQuestion(){
   if(!play || !play.revealed)return;
   cancelAutoAdvance();
   if(play.mode==='forest'&&play.tactics?.turn==='enemy'){finishEnemyTurn();return;}
-  if(play.mode==='forest'&&play.tactics&&!play.tactics.pendingAdvance){startEnemyTurn();return;}
+  if(play.mode==='forest'&&play.tactics){
+    const t=play.tactics;
+    if(!t.pendingAdvance){startEnemyTurn();return;}
+    // A boss phase is NOT a knockout: after the first two successful
+    // English gates, the living boss retaliates with its advertised skill.
+    // Only the final third hit defeats it before the next reaction.
+    if(play.index>=regularCount()&&play.bossHits<BOSS_HITS&&!t.bossReactionCompleted){
+      t.bossReactionCompleted=true;
+      startEnemyTurn();
+      return;
+    }
+  }
   if(play.mode==='forest' && play.index===0 && !play.route){
     play.index=1;
     showForestRouteChoice();
