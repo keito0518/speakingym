@@ -8,8 +8,11 @@ import { gradeDelayMeaning } from './speaking-meaning.js';
 
 const OR = (...parts) => parts.join('|');
 const intent = {
- think: OR('let me think','give me (a |one )?(moment|minute|second)','need (a |some )?(time|moment)','can i (have|get) (a |some )?(moment|minute|time)','not (sure|ready)( yet)?'),
- repeat: OR('(could|can|would) you (please )?(repeat|say|go over)','say (that|it) again','didn.t (catch|hear)','come again'),
+ think: OR('let me think','give me (a |one )?(moment|minute|second)','need (a |some )?(time|moment)','can i (have|get) (a |some )?(moment|minute|time)','not (sure|ready)( yet)?',
+   '(?:can|could) i (?:have|get|take) (?:a little|a bit|some) more time (?:to (?:decide|think))?',
+   'i (?:need|would like) (?:a little|a bit|some) more time (?:to (?:decide|think))?'),
+ repeat: OR('(could|can|would) you (please )?(repeat|say|go over)','say (that|it) again','didn.t (catch|hear)','come again',
+   'would you mind (?:repeating|saying|going over) (?:that|it|the .+|what you said)'),
  agree: OR('(works|is fine|is good) for me','sounds (great|good|fine)','(that|friday|saturday|lunch|three|nine) (is|would be) (fine|good|great|ok|okay)','i can (make|do) (it|that|friday)'),
  late: OR('(running|be|arriv(e|ing)|get(ting)?) (about |a little |some |a bit |roughly |around |approximately )?([a-z0-9 ]+ )?late','won.t (be|get|make it) (there |on )?time','(delay|delayed)','behind schedule'),
  clarify: OR('just to (make sure|confirm|check)','(could|can) (i|you) (confirm|check)','(is|are|does|do|should) .+ (right|correct|okay)','which (time|deadline)'),
@@ -39,19 +42,25 @@ const rubric = {
    '(?:can|could) i (?:get|have) (?:some )?help (?:with )?(?:my |the |this )?(?:bag|suitcase|luggage)',
    '(?:would you mind )?(?:helping me|giving me a hand) (?:with|carrying) (?:this |my |the )?(?:bag|suitcase|luggage)')],
  'order-coffee': [row('アイスコーヒーを注文する',
-   '(?:i.d |i would )?(?:like|love) (?:an? |one )?iced coffee',
-   '(?:can|could|may) i (?:have|get|order) (?:an? |one )?iced coffee',
+   '(?:i.d |i would )?(?:like|love) (?:an? |one )?(?:large |big )?iced coffee',
+   '(?:i.d|i would) (?:like|love) to order (?:an? |one )?(?:large |big )?iced coffee',
+   '(?:can|could|may) i (?:have|get|order) (?:an? |one )?(?:large |big )?iced coffee',
    '(?:one |an? )?iced coffee please')],
  'direction-station': [row('駅への行き方を尋ねる',
-   '(?:where is|where.s) (?:the |a )?(?:train )?station',
-   'how (?:do|can) i (?:get|go|walk) to (?:the |a )?(?:train )?station',
-   '(?:could|can|would) you (?:please )?(?:tell|show) me (?:how to get to|where|the way to) (?:the |a )?(?:train )?station')],
+   '(?:where is|where.s) (?:the |a )?(?:nearest |closest )?(?:train )?station',
+   'how (?:do|can) i (?:get|go|walk) to (?:the |a )?(?:nearest |closest )?(?:train )?station',
+   '(?:what.s|what is) the (?:best|quickest|fastest|shortest|easiest) way to (?:the |a )?(?:nearest |closest )?(?:train )?station',
+   '(?:can|could|would) you (?:please )?(?:point me in the direction of|show me the quickest way to) (?:the |a )?(?:nearest |closest )?(?:train )?station',
+   '(?:could|can|would) you (?:please )?(?:tell|show) me (?:how to get to|where|the way to) (?:the |a )?(?:nearest |closest )?(?:train )?station')],
  'booking-table':[row('2人分のテーブルを予約する',
    '(?:can|could|may) i (?:book|reserve|get) (?:a |one )?table for (?:two|2)',
    '(?:i.d |i would )?like to (?:book|reserve) (?:a |one )?table for (?:two|2)',
+   '(?:i.d |i would )?like (?:to make )?a reservation for (?:two|2)',
+   '(?:can|could) i make a reservation for (?:two|2)',
    '(?:do you have|is there) (?:a |one )?table for (?:two|2) (?:available|free)')],
  'price-ticket':[row('チケット料金を尋ねる',
    'how much (?:is|does|do|are) (?:the |a |one )?(?:admission|entry|entrance|ticket|tickets|fee)',
+   'how much (?:is|does) (?:an? |the )?adult (?:admission |entry )?ticket (?:cost)?',
    '(?:what.s|what is) (?:the )?(?:ticket price|entry fee|admission fee|entrance fee|price of (?:a |the )?ticket)')],
  'think-cafe': [row('少し考える時間を頼む', intent.think)],
  'think-trip': [row('決める時間が必要だと伝える', intent.think)],
@@ -81,7 +90,39 @@ const easy = {
  'boss-delay-apology':[row('謝る','sorry','apologiz'),
    row('バスが遅れていることを伝える','bus.*(delay(?:ed)?|late)','(delay(?:ed)?|late).*bus')]
 };
+// Normal and hard tasks must not fall through to an easier single-intent
+// rubric. Each row describes a meaning-bearing condition from the actual
+// authored task; matching one keyword alone is not a complete answer.
+const normal = {
+ 'direction-station':[...rubric['direction-station'],row('最寄りの駅を探す','nearest','closest')],
+ 'booking-table':[...rubric['booking-table'],row('夕食の予約','dinner','evening')],
+ 'price-ticket':[row('大人用チケットの料金を尋ねる',
+   'how much (?:is|does) (?:an? |the )?adult (?:admission |entry )?ticket(?: cost)?',
+   'how much (?:is|does) (?:the |a )?(?:admission|entry|entrance) (?:fee )?for (?:an? |one )?adult',
+   '(?:what.s|what is) (?:the )?(?:price|cost) of (?:an? |the )?adult ticket')]
+};
 const hard = {
+ 'help-bag':[row('2個の荷物の手伝いを頼む',
+   '(?:could|can|would) you (?:please )?(?:help me|give me a hand|assist me|carry|lift) (?:with |carry |carrying |lifting )?(?:these two|both|my two|the two) (?:heavy )?(?:suitcases|bags|cases)',
+   '(?:would you mind )?(?:helping me|giving me a hand) (?:with |carrying )?(?:these two|both|my two|the two) (?:heavy )?(?:suitcases|bags|cases)'),
+   row('2個の荷物','two (?:heavy )?(?:suitcases|bags|cases)','2 (?:heavy )?(?:suitcases|bags|cases)','both (?:suitcases|bags|cases)'),
+   row('エレベーターが使えない理由','(?:elevator|lift).*(?:out of order|broken|not working|unavailable)','(?:out of order|broken).*(?:elevator|lift)')],
+ 'order-coffee':[...rubric['order-coffee'],row('大きいサイズ','large','big'),
+   row('砂糖なし','without (?:added )?sugar','no (?:added )?sugar','unsweetened','sugar.free'),
+   row('持ち帰り','to go','takeaway','take away','takeout','take out')],
+ 'direction-station':[...normal['direction-station'],row('階段を避ける','step.free','without (?:using )?stairs','avoid (?:the )?stairs','no stairs','accessible route')],
+ 'booking-table':[...rubric['booking-table'],row('7時の予約','seven','7'),
+   row('入口から離れた席','away from (?:the )?(?:entrance|door)','not near (?:the )?(?:entrance|door)','quiet table (?:away|far) from (?:the )?(?:entrance|door)')],
+ 'price-ticket':[row('合計料金を尋ねる',
+   'how much (?:would|will|does) (?:it|the total|everything|two adult|2 adult).*(?:cost|be)',
+   'how much (?:is|for) (?:the )?(?:total|two adults|2 adults|two adult tickets|2 adult tickets)',
+   'what (?:is|would be) the (?:total )?(?:price|cost)'),
+   row('大人2人と学生1人','two adult (?:tickets|admissions|fares)','2 adult (?:tickets|admissions|fares)','two adults','2 adults'),
+   row('学生1人の券','one student (?:ticket|admission|fare)','1 student (?:ticket|admission|fare)','one student','1 student'),
+   row('学生割引を確認','student discount','student rate','discount for students')],
+ 'apology-late':[...rubric['apology-late'],row('20分待たせた','twenty minutes','20 minutes'),
+   row('電車のトラブルを説明','train.*(?:stopp?ed|broke down|was delayed|got stuck)','(?:stopp?ed|delayed|stuck).*train'),
+   row('待ってくれたことに感謝','thank you for waiting','thanks for waiting','thank you for your patience','thanks for your patience')],
  'think-cafe':[row('決めるための時間を頼む',intent.think),row('原材料・乳製品を確認する','ingredient','milk','dairy','allerg'),row('後ろの人に先に注文してもらう','go ahead','order first','before me','after you')],
  'think-trip':[row('決める時間が必要',intent.think),row('勤務予定の確認','schedule','work','shift','availability'),row('今夜返答する','tonight','this evening','by the end of the day')],
  'repeat-station':[row('聞き返しを依頼',intent.repeat),row('乗り換え駅','transfer','change trains','change at','connection'),row('ホーム番号','platform','track')],
@@ -110,7 +151,7 @@ function passes(text, requirement) {
 }
 // Detect changes of intent that keyword rubrics would otherwise mistake
 // for success. Ambiguity -> review, NOT incorrect: spoken English remains open.
-function conflictingDetails(base,text){
+function conflictingDetails(base,text,difficulty='easy'){
   const note=message=>({status:'review',reasons:[message],confidence:'low',method:'context-safety'});
   if(/\b(?:but actually|actually i (?:want|prefer|need)|instead of|rather than)\b/.test(text))
     return note('途中で希望を変更している可能性があります。最終的に伝えたい内容を一文で確認してみよう。');
@@ -121,6 +162,8 @@ function conflictingDetails(base,text){
   }
   if(base==='order-coffee'&&/\b(?:hot coffee|warm coffee|hot tea|tea instead|without ice)\b/.test(text))
     return note('この場面はアイスコーヒーの注文です。温かい飲み物と取り違えていないか確認しよう。');
+  if(base==='order-coffee'&&difficulty==='hard'&&/\b(?:with (?:extra )?sugar|sweetened|for here)\b/.test(text))
+    return note('この場面は砂糖なし・持ち帰りです。追加した条件を確認してみよう。');
   if(base==='direction-station'&&/\b(?:bus stop|airport|hospital|supermarket)\b/.test(text))
     return note('行き先は駅です。別の施設を尋ねていないか確認しよう。');
   if(base==='agree-friend'){
@@ -176,7 +219,17 @@ export function gradeLocalResponse(prompt, raw) {
  // A vocabulary signal within a negated sentence is not evidence that the
  // requested meaning was conveyed. Only narrow, positive-intent negatives
  // ("not on time" and "not sure yet") may use the heuristic rubric.
- const hasNegation=/\b(?:not|never|no|won't|can't|cannot|don't|doesn't|didn't|isn't|aren't|wasn't|weren't)\b/.test(text);
+ // "No sugar" and "no stairs" are the requested positive constraints in
+ // these specific tasks, not a negation of the learner's chosen action.
+ // Redact ONLY those narrow spans; any other negation still stops scoring.
+ let polarityText=text;
+ if(difficulty==='hard'){
+   if(base==='order-coffee')polarityText=polarityText.replace(/\bno (?:added )?sugar\b/g,'');
+   if(base==='direction-station')polarityText=polarityText.replace(/\bno stairs\b/g,'');
+   if(base==='help-bag')polarityText=polarityText.replace(/\b(?:elevator|lift) (?:is )?not working\b/g,'');
+   if(base==='booking-table')polarityText=polarityText.replace(/\bnot near (?:the )?(?:entrance|door)\b/g,'');
+ }
+ const hasNegation=/\b(?:not|never|no|won't|can't|cannot|don't|doesn't|didn't|isn't|aren't|wasn't|weren't)\b/.test(polarityText);
  const intendedNegative=(
    (prompt.phraseId==='late'&&/\b(?:won't|will not|can't|cannot) (?:be |get |make it )?(?:there )?on time\b/.test(text)) ||
    (prompt.phraseId==='think'&&/\bnot (?:sure|ready|decided)\b/.test(text))
@@ -185,9 +238,9 @@ export function gradeLocalResponse(prompt, raw) {
    return {status:'review',reasons:['否定表現が含まれているため、伝えたい意味が逆になっていないか確認しよう。'],confidence:'low',method:'polarity-review'};
  // A rubric can match a keyword from an abandoned or conflicting choice.
  // Guard *before* crediting any non-exact spoken phrase.
- const conflict=conflictingDetails(base,text);
+ const conflict=conflictingDetails(base,text,difficulty);
  if(conflict)return conflict;
- const list=difficulty==='hard'?hard[base]:difficulty==='easy'?(easy[base]||rubric[base]):rubric[base];
+ const list=difficulty==='hard'?hard[base]:difficulty==='normal'?(normal[base]||rubric[base]):(easy[base]||rubric[base]);
  if(!list?.length) return {status:'review',reasons:['この場面では、登録済みの例文や言い換えとは異なる表現でした。自然な英語の可能性があるので誤答とは判定しません。'],confidence:'low',method:'example-review'};
  const missing=list.filter(item=>!passes(text,item)).map(item=>item.label);
  if(!missing.length) {

@@ -998,6 +998,73 @@ test('narrow natural paraphrases are accepted but contradictory meanings stay un
   assert.equal(gradeLocalResponse(prompt('booking-table'),'Could I reserve a table for six?').status,'review');
   assert.equal(gradeLocalResponse(prompt('problem-wifi'),'The Wi-Fi is working perfectly.').status,'review');
 });
+test('speaking rubrics accept natural requests but require every normal/hard scene detail',()=>{
+ const prompt=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['order-coffee',"I'd like to order an iced coffee, please."],
+  ['direction-station',"What's the quickest way to the train station?"],
+  ['booking-table',"I'd like a reservation for two, please."],
+  ['think-cafe','Could I have a bit more time to decide?'],
+  ['repeat-station','Would you mind repeating the platform number?'],
+  ['direction-station-normal','Could you tell me how to get to the closest train station?'],
+  ['booking-table-normal',"I'd like a reservation for two for dinner."],
+  ['price-ticket-normal','How much is admission for an adult?'],
+  ['price-ticket-normal','How much does an adult ticket cost?'],
+  ['help-bag-hard','Could you carry both suitcases? The lift is broken.'],
+  ['help-bag-hard','Could you help me carry these two suitcases? The elevator is not working.'],
+  ['order-coffee-hard',"I'd like to order a large iced coffee with no sugar to go."],
+  ['direction-station-hard',"What's the quickest way to the nearest station without using stairs?"],
+  ['direction-station-hard','How do I get to the closest train station with no stairs?'],
+  ['booking-table-hard','Could I make a reservation for two at seven tonight, at a table away from the door?'],
+  ['booking-table-hard','Can I reserve a table for two at seven, not near the entrance?'],
+  ['price-ticket-hard','How much would two adult tickets and one student ticket cost? Is there a student discount?'],
+  ['apology-late-hard',"I'm sorry I kept you waiting twenty minutes. The train was delayed. Thank you for waiting."]
+ ])assert.equal(gradeLocalResponse(prompt(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['order-coffee-hard','Could I have a large iced coffee to go?'],
+  ['order-coffee-hard','Could I have a large iced coffee with sugar to go?'],
+  ['order-coffee-hard',"I don't want a large iced coffee without sugar to go."],
+  ['help-bag-hard','Could you not help me carry these two suitcases? The elevator is not working.'],
+  ['booking-table-normal','Can I book a table for two?'],
+  ['price-ticket-normal',"How much is a child ticket? I'm an adult."],
+  ['booking-table-hard',"I don't want a table for two at seven, not near the door."],
+  ['booking-table-hard','Can I reserve a table for two at seven tonight near the door?'],
+  ['direction-station-normal','Where is the station?'],
+  ['direction-station-hard','How do I get to the nearest train station?'],
+  ['direction-station-hard','How do I get to the bus stop without stairs?'],
+  ['help-bag-hard','Could you carry one suitcase? The elevator is broken.'],
+  ['price-ticket-hard','How much is one adult ticket and one student ticket? Is there a student discount?'],
+  ['apology-late-hard','Sorry for being late by twenty minutes. Thanks for waiting.']
+ ])assert.notEqual(gradeLocalResponse(prompt(id),answer).status,'correct',id+' / '+answer);
+});
+test('advanced daily-life situations accept vetted rephrasing but reject incomplete or altered requests',()=>{
+ const advancedIds=[
+  'help-form-normal','help-form-hard','order-veg-normal','order-veg-hard','order-extra-normal','order-extra-hard',
+  'direction-bus-normal','direction-bus-hard','direction-transfer-normal','direction-transfer-hard',
+  'recommend-visit-normal','recommend-visit-hard','recommend-drink-normal','recommend-drink-hard',
+  'booking-hotel-normal','booking-hotel-hard','booking-haircut-normal','booking-haircut-hard',
+  'apology-spill-normal','apology-spill-hard','apology-noise-normal','apology-noise-hard',
+  'decline-invite-normal','decline-invite-hard','price-delivery-normal','price-delivery-hard',
+  'price-service-normal','price-service-hard','change-room-normal','change-room-hard',
+  'change-date-normal','change-date-hard','problem-food-normal','problem-food-hard'
+ ];
+ for(const id of advancedIds){
+  const prompt=ALL_PROMPTS.find(p=>p.id===id),reply=VETTED_LEVEL_PARAPHRASES[id]?.[0];
+  assert.ok(prompt&&reply,`Missing vetted scenario ${id}`);
+  assert.equal(gradeLocalResponse(prompt,reply).status,'correct',id+' / '+reply);
+ }
+ for(const [id,reply] of [
+  ['help-form-hard','Can you help me fill out a form?'],
+  ['order-veg-hard','Could I have the vegetable plate with fish sauce?'],
+  ['order-extra-hard','Can I have a margherita pizza with extra cheese on both halves?'],
+  ['direction-bus-hard','Where is the stop for the local airport bus?'],
+  ['booking-hotel-hard','Could I book a room for one night?'],
+  ['recommend-drink-hard','Can I have a hot coffee with sugar?'],
+  ['change-room-hard','Could I change rooms?'],
+  ['change-date-hard','Can I move it to Tuesday?'],
+  ['problem-food-hard','The meat dish is great, thank you.']
+ ])assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id===id),reply).status,'correct',id+' must keep all authored constraints');
+});
 test('difficulty selection preserves progress and rewards, and variants share scene mastery', () => {
   const start=createSave();
   assert.throws(()=>chooseDifficulty(start,'extreme'),/Invalid difficulty/);

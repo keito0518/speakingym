@@ -187,6 +187,21 @@ const assert=require('node:assert/strict');
    const recallContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
    const recallPage=await recallContext.newPage();
    await recallPage.goto(url,{waitUntil:'networkidle'});
+   const grading=await recallPage.evaluate(async()=>{
+     const {ALL_PROMPTS}=await import('./monster-data.js');
+     const {gradeLocalResponse}=await import('./monster-grader.js');
+     const cases=[
+       ['order-coffee',"I'd like to order an iced coffee, please."],
+       ['order-coffee-hard',"I'd like to order a large iced coffee with no sugar to go."],
+       ['order-coffee-hard','Could I have a large iced coffee to go?'],
+       ['direction-station-hard',"What's the quickest way to the nearest station without using stairs?"],
+       ['booking-table-hard','Can I reserve a table for two at seven, not near the entrance?'],
+       ['booking-table-hard','Can I book a table for two?']
+     ];
+     return cases.map(([id,answer])=>gradeLocalResponse(ALL_PROMPTS.find(p=>p.id===id),answer).status);
+   });
+   assert.deepEqual(grading,['correct','correct','review','correct','correct','review'],
+     `${engine}: local semantic safety and natural alternatives work in a browser`);
    const dueGrammarIds=await recallPage.evaluate(async()=>{
      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
      const {ALL_PROMPTS}=await import('./monster-data.js');
