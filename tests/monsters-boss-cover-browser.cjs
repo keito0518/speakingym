@@ -45,6 +45,10 @@ const assert=require('node:assert/strict');
   let reachedBoss=false;
   for(let step=0;step<110;step++){
    if(await page.locator('.forest-boss-tactical-plan').isVisible()){reachedBoss=true;break;}
+   const event=page.locator('[data-forest-event-option]');
+   if(await event.count()&&await event.first().isVisible()){
+    await event.first().click();continue;
+   }
    if(await page.locator('#forest-explore-options').isVisible()){
     await page.locator('[data-forest-route]').first().click();
     continue;
@@ -58,6 +62,7 @@ const assert=require('node:assert/strict');
    }
    if(await page.locator('#forest-tactics').isVisible()){
     const listening=page.locator('[data-tactic-kind="listen"]');
+    if(!await listening.count())throw Error(`Tactical controls missing on step ${step}: ${(await page.locator('main').innerText()).slice(0,1600)}`);
     if(await listening.isEnabled())await listening.click();
     await answer();continue;
    }
