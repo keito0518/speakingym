@@ -1247,7 +1247,9 @@ async function gradeAnswer() {
       arena.classList.remove('forest-player-damaged');void arena.offsetWidth;
       if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
       $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'GUARDED';
-      if(rescue.partnerId)$('#forest-battle-log').textContent=`${play.tactics.lastCoverNote} 正解にはならないので、英語は確認しよう。`;
+      $('#forest-battle-log').textContent=rescue.partnerId
+        ?`${play.tactics.lastCoverNote} 正解にはならないので、英語は確認しよう。`
+        :`敵の${BATTLE_LABELS[play.tactics.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
     }
     if(['review','incomplete'].includes(grade.status) && raw)persist(flagUncertainReview(save,prompt.id));
     if(grade.status==='incomplete' && raw){
@@ -1262,7 +1264,7 @@ async function gradeAnswer() {
       play.hintUsed=true;
       if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;}
     }
-    if(play.mode==='forest' && raw){
+    if(play.mode==='forest' && raw && !defending){
       const world=$('#forest-world-stage');
       world.classList.remove('forest-attack','forest-guarding','forest-player-damaged');
       void world.offsetWidth;
@@ -1275,6 +1277,8 @@ async function gradeAnswer() {
         ? `${guard}。今回は攻撃できなかった。別の答えを試そう。`
         : `${guard}。判定保留のため攻撃は発生しません。正しい別表現の可能性もあるので、言い換えて再挑戦できます。`;
     }
+    if(defending&&raw&&['review','ungraded'].includes(grade.status))
+      $('#forest-battle-log').textContent='判定保留：敵の攻撃によるダメージはありません。音声や入力を確認して再挑戦しよう。';
     if(play.mode==='forest'&&!defending&&play.endless&&['incorrect','incomplete'].includes(grade.status)&&raw){
       play.attemptReviewed=true;
       // An uncertain paraphrase or failed recognizer never consumes a try.
