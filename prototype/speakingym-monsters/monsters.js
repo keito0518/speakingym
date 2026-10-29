@@ -6,7 +6,7 @@ import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
-import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, bossAttackFor, pickBattlePrompt } from './battle-tactics.js';
+import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, foeAffinity, allyAffinity, allySkill, supportPartnerFor, supportComboFor, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, bossAttackFor, pickBattlePrompt } from './battle-tactics.js';
 import { createBattleParty, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -340,7 +340,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
-      encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,lastAttackKind:null,nextEnemyKind:null}:null};
+      encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -520,6 +520,9 @@ function renderTacticalControls(){
  const boss=play.index>=regularCount();
  const incoming=t.turn==='enemy';
  const party=battleParty();
+ const attackKind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
+ const supportId=!incoming?supportPartnerFor({kind:attackKind,activeId:play.companionId,party:t.party}):null;
+ const supportReady=Boolean(supportId&&!t.comboUsed&&(!boss||t.ultimate<2));
  const bossThreat=boss?bossAttackFor(foe.id,play.index-regularCount()):null;
  if(!incoming){
    if(boss)t.nextEnemyKind=bossThreat.kind;
@@ -533,8 +536,9 @@ function renderTacticalControls(){
   <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span><small>ヒントなしの自力正解で＋1</small></div>
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
   ${incoming?'':`<div class="forest-tactic-actions" role="group" aria-label="行動を選ぶ">${[
-    ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'ボス戦：味方HPを2回復':`高威力 · ${ability.name}`]
-  ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
+    ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'ボス戦：味方HPを2回復':`高威力 · ${ability.name}`],
+    ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':boss&&t.ultimate>=2?'ゲージが十分あるので温存':supportId?`${monsterFor(supportId).name}が援護 · ${boss?'必殺ゲージ＋1':'ダメージ＋1'}`:'控えの得意技能を選ぶと使える']]:[])
+  ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
   <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
   ${boss?'<small class="forest-tactic-note">ボスの3つの確認問題は固定。必殺技でも英語の確認は省略できないよ。</small>':t.lastAttackKind?`<small class="forest-tactic-note">前回は${BATTLE_LABELS[t.lastAttackKind]}。同じ技能を連発すると敵が慣れて威力−1。違う技能を試そう！</small>`:'<small class="forest-tactic-note">技能を選ぶと問題が切り替わるよ。弱点狙いでも英語の正解が必要！</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">パーティ · それぞれにHPあり · 交代は1戦に1回（残り${1-t.party.swapsUsed}回）</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div><small class="forest-tactic-note">交代ではターンを消費しない。倒れたら控えに自動交代するよ。</small>`:'<small class="forest-tactic-note">仲間を増やすと最大3体で戦い、それぞれのHPと得意技能を使い分けられるよ。</small>'}`}`;
@@ -542,13 +546,14 @@ function renderTacticalControls(){
  $$('[data-tactic-action]',panel).forEach(button=>button.addEventListener('click',()=>{
    if(!play||play.revealed||play.tactics.turn!=='player')return;
    if(button.dataset.tacticAction==='skill'&&(play.tactics.ultimate<ULTIMATE_MAX||(boss&&play.tactics.hp===play.tactics.maxHp)))return;
+   if(button.dataset.tacticAction==='assist'&&!supportReady)return;
    play.tactics.action=button.dataset.tacticAction;
    renderTacticalControls();
  }));
  $$('[data-tactic-ally]',panel).forEach(button=>button.addEventListener('click',()=>{
    if(!play||play.revealed||play.tactics.turn!=='player'||!canTacticalSwap(play.tactics.party,play.companionId,button.dataset.tacticAlly))return;
    play.tactics.party=consumeTacticalSwap(play.tactics.party,play.companionId,button.dataset.tacticAlly);
-   play.companionId=button.dataset.tacticAlly;syncActiveFighter();
+   play.companionId=button.dataset.tacticAlly;play.tactics.action='attack';syncActiveFighter();
    renderForestHud();renderTacticalControls();
  }));
  $$('[data-tactic-kind]',panel).forEach(button=>button.addEventListener('click',()=>{
@@ -561,6 +566,7 @@ function renderTacticalControls(){
        usedIds:play.tactics.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id)});
    if(!candidate){$('#forest-battle-log').textContent='この技能の未出題問題が見つからなかったよ。別の技能を選んでね。';return;}
    play.tactics.attackPrompt=candidate;
+   play.tactics.action='attack';
    renderQuestion();
  }));
 }
@@ -760,7 +766,7 @@ function renderQuestion() {
         t.encounterIndex=play.index;t.enemyHp=play.index>=regularCount()?BOSS_HITS-play.bossHits:encounterVitality(play.areaId,play.index);
         t.enemyMax=encounterVitality(play.areaId,play.index,{boss:play.index>=regularCount()});
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
-        t.bonusChargeUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};
+        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};
       }
     }
     renderForestHud();
@@ -1294,10 +1300,14 @@ async function gradeAnswer() {
     const companionName=getMonsterProgress(save,play.companionId).evolved?companion.evolvedName:companion.name;
     const t=play.tactics;
     const attackKind=prompt.kind==='read'?'speak':prompt.kind;
-    const special=t?strikeFor({kind:attackKind,foeId:foe.id,
-      allyId:play.companionId,action:t.action,boss,evolved:getMonsterProgress(save,play.companionId).evolved,
+    const choseAssist=Boolean(t?.action==='assist');
+    const duo=t?supportComboFor({kind:attackKind,activeId:play.companionId,party:t.party,
+      selected:choseAssist,independent:rating==='smooth',used:t.comboUsed,boss}):null;
+    const baseSpecial=t?strikeFor({kind:attackKind,foeId:foe.id,
+      allyId:play.companionId,action:t.action==='assist'?'attack':t.action,boss,evolved:getMonsterProgress(save,play.companionId).evolved,
       repeated:t.lastAttackKind===attackKind}):specialStrike({companionId:play.companionId,
       evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower||!play.endless});
+    const special=duo?.activated?{...baseSpecial,damage:baseSpecial.damage+duo.extraDamage,tag:'DUO!'}:baseSpecial;
     const usedUltimate=Boolean(t&&t.action==='skill');
     const healed=usedUltimate&&boss?Math.min(2,t.maxHp-t.hp):0;
     if(t){
@@ -1306,6 +1316,10 @@ async function gradeAnswer() {
       else t.enemyHp=Math.max(0,t.enemyHp-special.damage);
       t.pendingAdvance=boss||t.enemyHp<=0;
       awardTacticalCharge(rating,{spent:usedUltimate});
+      if(duo?.activated){
+        t.comboUsed=true;
+        if(duo.extraCharge)t.ultimate=advanceUltimate(t.ultimate,{independent:true});
+      }
       t.lastAttackKind=attackKind;
       t.action='attack';
     }else{
@@ -1332,8 +1346,9 @@ async function gradeAnswer() {
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
+    const duoNote=duo?.activated?`${monsterFor(duo.partnerId).name}との連携成功！ ${boss?'必殺ゲージ＋1。 ':'援護でダメージ＋1。 '}`:choseAssist?'連携はヒントなしの自力正解で発動するよ。 ':'';
     $('#forest-battle-log').textContent=t
-      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:'次は敵の反撃！'}`
+      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:'次は敵の反撃！'}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t)renderTacticalControls();
   }

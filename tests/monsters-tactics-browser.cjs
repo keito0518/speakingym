@@ -58,6 +58,7 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
      assert.equal(await page.locator('[data-tactic-action]').count(),2,'Defense is automatic: only attack and ultimate remain');
+     assert.equal(await page.locator('[data-tactic-action="assist"]').count(),0,'Solo players do not get an unusable team-up control');
      assert.equal(await page.locator('[data-tactic-action="guard"]').count(),0);
      assert.equal(await page.locator('[data-tactic-action="skill"]').isEnabled(),false,'Ultimate requires three independent answers');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'0');
@@ -144,7 +145,20 @@ const assert=require('node:assert/strict');
    await partyPage.locator('[data-tactic-ally="katappo"]').click();
    assert.equal(await partyPage.locator('[data-tactic-ally="katappo"]').getAttribute('aria-pressed'),'true');
    assert.equal(await partyPage.locator('[data-tactic-ally="medamago"]').isEnabled(),false,'Cannot swap twice in one encounter');
+   await partyPage.locator('[data-tactic-kind="speak"]').click();
+   assert.equal(await partyPage.locator('[data-tactic-action="assist"]').isEnabled(),true,'Yolkie can support Soxie speaking from the reserve');
+   await partyPage.locator('[data-tactic-action="assist"]').click();
+   assert.equal(await partyPage.locator('[data-tactic-action="assist"]').getAttribute('aria-pressed'),'true');
    await answer(partyPage);
+   assert.match(await partyPage.locator('#forest-battle-log').innerText(),/連携成功！.*ダメージ＋1/);
+   assert.equal(await partyPage.locator('[data-tactic-action="assist"]').isEnabled(),false,'Only one team-up per encounter');
+   const assistContrast=await partyPage.locator('[data-tactic-action="assist"]').evaluate(el=>{
+     const luminance=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
+       .reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+     const style=getComputedStyle(el),a=luminance(style.color),b=luminance(style.backgroundColor);
+     return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+   });
+   assert.ok(assistContrast>=4.5,`Disabled team-up text must remain readable on iPhone (${assistContrast.toFixed(2)}:1)`);
    await partyPage.locator('#next-question').click();
    await partyPage.locator('#spoken-answer').fill('wrong answer');
    await partyPage.locator('#show-answer').click();

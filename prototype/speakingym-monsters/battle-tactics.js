@@ -55,6 +55,18 @@ export function foeAffinity(id='mossling'){
 export function allyAffinity(id='medamago'){
  return ALLY_TYPES[id]||{strong:'speak',weak:'grammar'};
 }
+// A live reserve can assist the active fighter on its own strong skill, but
+// not when the active fighter already specializes in the same skill. Choosing
+// complementary companions therefore changes which attack kinds can combo.
+export function supportPartnerFor({kind,activeId,party}={}){
+ if(!BATTLE_KINDS.includes(kind)||!party?.roster?.includes(activeId)||allyAffinity(activeId).strong===kind)return null;
+ return party.roster.find(id=>id!==activeId&&allyAffinity(id).strong===kind&&(party.health?.[id]?.hp||0)>0)||null;
+}
+export function supportComboFor({kind,activeId,party,selected=false,independent=false,used=false,boss=false}={}){
+ const partnerId=supportPartnerFor({kind,activeId,party});
+ const activated=Boolean(partnerId&&selected&&independent&&!used);
+ return {partnerId,activated,extraDamage:activated&&!boss?1:0,extraCharge:activated&&boss?1:0};
+}
 export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false,repeated=false}={}){
  if(!BATTLE_KINDS.includes(kind)||!['attack','guard','skill'].includes(action))throw Error('Invalid battle action');
  const foe=foeAffinity(foeId),ally=allyAffinity(allyId);

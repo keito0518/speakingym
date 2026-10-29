@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,foeAffinity,allyAffinity,allySkill,supportPartnerFor,supportComboFor,advanceUltimate,strikeFor,nextEnemyKind,bossAttackFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
+import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
 test('all four English skills have names and every companion has a useful strength and weakness',()=>{
@@ -50,6 +51,32 @@ test('each area boss advertises its own predictable three-phase attack sequence'
   assert.deepEqual(bossAttackFor(boss.id,3),phases[0],'later waves repeat the explicit cycle');
  }
  assert.equal(signatures.size,Object.keys(AREA_BOSSES).length,'all eight bosses have distinct patterns');
+});
+test('team-up options depend on living reserves with complementary English strengths',()=>{
+ const party=createBattleParty(['medamago','katappo','koge']);
+ assert.equal(supportPartnerFor({kind:'listen',activeId:'medamago',party}),'katappo');
+ assert.equal(supportPartnerFor({kind:'grammar',activeId:'medamago',party}),'koge');
+ assert.equal(supportPartnerFor({kind:'speak',activeId:'medamago',party}),null,'same-skill allies cannot self-support');
+ assert.equal(supportPartnerFor({kind:'speak',activeId:'katappo',party}),'medamago','a switch changes available team-ups');
+ assert.equal(supportPartnerFor({kind:'listen',activeId:'unknown',party}),null);
+ const fainted=applyFighterDamage(party,'katappo',99);
+ assert.equal(supportPartnerFor({kind:'listen',activeId:'medamago',party:fainted}),null,'fainted reserves cannot lend a skill');
+});
+test('a chosen team-up rewards only an independent answer, once per encounter',()=>{
+ const party=createBattleParty(['medamago','katappo']);
+ const base={kind:'listen',activeId:'medamago',party,selected:true};
+ assert.deepEqual(supportComboFor({...base,independent:true}),{
+  partnerId:'katappo',activated:true,extraDamage:1,extraCharge:0});
+ assert.deepEqual(supportComboFor({...base,independent:true,boss:true}),{
+  partnerId:'katappo',activated:true,extraDamage:0,extraCharge:1});
+ for(const options of [{independent:false},{independent:true,used:true},{independent:true,selected:false}]){
+  const result=supportComboFor({...base,...options});
+  assert.equal(result.activated,false);
+  assert.equal(result.extraDamage,0);
+  assert.equal(result.extraCharge,0);
+ }
+ assert.equal(supportComboFor({...base,kind:'speak',independent:true}).activated,false);
+ assert.equal(supportComboFor({...base,party:createBattleParty(['medamago']),independent:true}).activated,false);
 });
 test('telegraphed heavy boss attacks affect HP only after verified misses',()=>{
  const basic={kind:'listen',allyId:'medamago'};
