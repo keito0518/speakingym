@@ -1,11 +1,26 @@
 // Organize the prototype into clear destinations without cloning content or
 // disrupting existing IDs/listeners. This is a navigation-only change.
+// Keep long explanations here, where players deliberately ask for them. The
+// dungeon itself only needs the current question, action and next threat.
 const STEPS=Object.freeze([
- {title:'1. Englishダンジョンに挑戦',body:'最初の冒険は英語の5問と最後の確認。聞く・話す・単語・文法を組み合わせて進もう。ダンジョン選択では解放したエリアを選べるよ。'},
- {title:'2. リスニングとスピーキングは別々',body:'リスニングは音声を聞いて意味を選ぶだけでクリア。話す問題は独立しているよ。聞き終わったあとマイクを使う必要はないから、安心して挑戦してね。'},
- {title:'3. 話す問題でマイクが動かないとき',body:'スピーキングではSafariで試すか、iPhone標準キーボードのマイクから英文を入力できるよ。声が文字にならないだけで英語の成績を下げることはないよ。'},
- {title:'4. 解説を読んで問題を保存',body:'答えたあとに「なぜそうなるか」を確認。「☆ 問題を保存」を押すと、復習から同じ問題を解き直せる。間違えた問題は復習候補にもなるよ。'},
- {title:'5. ダンジョンと図鑑は、自分のペースで',body:'ダンジョンで経験を積み、仲間を育てよう。短時間の練習なら「今日の5分ジム」。仲間や学習記録は別のメニューから確認できるよ。'}
+ {chapter:'basic',title:'1. Englishダンジョンに挑戦',body:'エリアを選ぶと冒険スタート。問題をクリアして敵を倒し、最後のボスを目指そう。',
+  scene:['ワールド選択','森の入口','挑戦する'],tips:['最初は「やさしい」がオススメ。','先に英語を覚えていなくても始められるよ。']},
+ {chapter:'basic',title:'2. 聞く・選ぶ・話すを順番に',body:'リスニングとスピーキングは別の問題。画面のお題を見て、今必要な操作だけをしよう。',
+  scene:['リスニング','音声を再生','意味を選ぶ'],tips:['単語・文法は選択問題で確認するよ。','リスニングのあとに同じ英文を話す必要はないよ。']},
+ {chapter:'basic',title:'3. iPhoneでマイクが使えないとき',body:'話す問題は文字入力でも挑戦できる。認識に失敗しただけで英語の不正解にはならないよ。',
+  scene:['スピーキング','話す / 文字入力','回答を確認'],tips:['iPhoneならSafariやキーボードの音声入力も試してね。','自然な別表現は判定保留になることもあるよ。']},
+ {chapter:'battle',title:'4. まず仲間を編成しよう',body:'戦略バトルでは、出撃前に最大3体を選べる。先頭の仲間と控えの得意技能が作戦のカギ。',
+  scene:['出撃編成','先頭 1体 + 控え 2体','この編成で出発'],tips:['仲間カードをタップして追加・入れ替え。','戦闘中の手動交代は1戦に1回。HPは仲間ごとに違うよ。']},
+ {chapter:'battle',title:'5. 英語で攻撃しよう',body:'自分のターンは攻撃する技能を選び、英語の問題に答える。正解すると敵のHPを削れるよ。',
+  scene:['味方のターン','スピーキング / 単語 / 文法 / リスニング','正解 → 攻撃'],tips:['敵の弱点技能を選ぶとダメージが増える。','属性や仲間の強さで英語の誤答が正解になることはないよ。']},
+ {chapter:'battle',title:'6. 敵の反撃は問題で防ぐ',body:'敵が生き残ると反撃。予告された技能の問題に自力正解すれば、HPは減らないよ。',
+  scene:['次の敵攻撃：文法','英語の問題に回答','正解 → ダメージ 0'],tips:['敵の攻撃を予告で確認して仲間を選ぼう。','音声認識エラーや判定保留だけではHPを減らさないよ。']},
+ {chapter:'battle',title:'7. 連携・必殺技を使い分ける',body:'ヒントなしで正解すると必殺ゲージがたまる。得意技能の異なる控えがいれば連携も狙えるよ。',
+  scene:['必殺ゲージ','1 / 3 → 2 / 3 → 3 / 3','必殺技を使う'],tips:['必殺技は使うタイミングが大事。','ボスによって役立つ控えが違う。詳しい相性は攻略メモで見よう。']},
+ {chapter:'growth',title:'8. 仲間を育てて進化させよう',body:'冒険でXPをため、好きな仲間に分けて育成。レベル4では仲間固有の熟練技も解放されるよ。',
+  scene:['仲間の図鑑','XPを使ってレベルアップ','進化・熟練技'],tips:['仲間の得意技能や固有能力はそれぞれ違うよ。','育てた仲間の組み合わせで攻略方法が変わる。']},
+ {chapter:'growth',title:'9. 間違いは復習につなげよう',body:'問題のあとで解説を読もう。「問題を保存」から後日やり直すと、使える英語として定着していくよ。',
+  scene:['学習の記録','間違い・保存した問題','復習に挑戦'],tips:['ヒントは使ってOK。ただし自力正解とは区別して記録。','毎日長く遊ぶ必要はないよ。少しずつ続けよう。']}
 ]);
 export function setupHomeNavigation({home,startMode,showCollection}){
  const sections={
@@ -42,7 +57,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   {id:'challenge',icon:'05',title:'60秒チャレンジ',desc:'瞬発力を鍛える短時間練習',action:()=>startMode('challenge')},
   {id:'collection',icon:'06',title:'なかま・図鑑',desc:'仲間と冒険の記録を確認',action:showCollection},
   {id:'progress',icon:'07',title:'学習記録',desc:'復習や定着度を確認する',action:()=>showPage('progress')},
-  {id:'tutorial',icon:'08',title:'はじめての方へ',desc:'操作方法と音声入力のコツ',action:openTutorial}
+  {id:'tutorial',icon:'08',title:'遊び方ガイド',desc:'英語の問題・戦闘・育成を図解で確認',action:openTutorial}
  ];
  const menu=document.createElement('section');
  menu.className='home-navigation';menu.id='home-navigation';
@@ -99,21 +114,37 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  }
  menu.append(head,feature,label,grid);home.prepend(menu);
  const dialog=document.createElement('div');dialog.className='tutorial-backdrop';dialog.id='monsters-tutorial';dialog.hidden=true;
- dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
- home.append(dialog);
- let step=0,lastFocused=null;
+ dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
+ document.body.append(dialog);
+ let step=0,lastFocused=null,fromGame=false;
  const close=()=>{dialog.hidden=true;lastFocused?.focus?.({preventScroll:true});};
  function renderStep(){
   const record=STEPS[step];dialog.querySelector('#tutorial-counter').textContent=`STEP ${step+1} / ${STEPS.length}`;
   dialog.querySelector('#tutorial-heading').textContent=record.title;
   dialog.querySelector('#tutorial-description').textContent=record.body;
+  dialog.querySelector('#tutorial-scene-label').textContent=record.scene[0];
+  dialog.querySelector('#tutorial-scene-main').textContent=record.scene[1];
+  dialog.querySelector('#tutorial-scene-result').textContent=record.scene[2];
+  dialog.querySelector('#tutorial-tips').replaceChildren(...record.tips.map(tip=>{const li=document.createElement('li');li.textContent=tip;return li;}));
+  dialog.querySelector('#tutorial-progress-fill').style.width=`${100*(step+1)/STEPS.length}%`;
+  dialog.querySelectorAll('[data-tutorial-chapter]').forEach(button=>{
+   const selected=button.dataset.tutorialChapter===record.chapter;
+   button.setAttribute('aria-pressed',String(selected));
+  });
   dialog.querySelector('#tutorial-previous').disabled=step===0;
   dialog.querySelector('#tutorial-next').textContent=step===STEPS.length-1?'使ってみる':'次へ →';
  }
- function openTutorial(){lastFocused=document.activeElement;step=0;renderStep();dialog.hidden=false;dialog.querySelector('#tutorial-close').focus();}
+ function openTutorial(topic='basic'){
+  lastFocused=document.activeElement;fromGame=!document.querySelector('#play-view')?.hidden;
+  step=topic==='battle'?3:topic==='growth'?7:0;
+  renderStep();dialog.hidden=false;dialog.querySelector('#tutorial-close').focus();
+ }
  dialog.querySelector('#tutorial-close').addEventListener('click',close);
  dialog.querySelector('#tutorial-previous').addEventListener('click',()=>{if(step>0){step--;renderStep();}});
- dialog.querySelector('#tutorial-next').addEventListener('click',()=>{if(step===STEPS.length-1){close();showPage('forest');}else{step++;renderStep();}});
+ dialog.querySelector('#tutorial-next').addEventListener('click',()=>{if(step===STEPS.length-1){close();if(!fromGame)showPage('forest');}else{step++;renderStep();}});
+ dialog.querySelectorAll('[data-tutorial-chapter]').forEach(button=>button.addEventListener('click',()=>{
+  step=button.dataset.tutorialChapter==='battle'?3:button.dataset.tutorialChapter==='growth'?7:0;renderStep();
+ }));
  dialog.addEventListener('click',event=>{if(event.target===dialog)close();});
  dialog.addEventListener('keydown',event=>{
   if(event.key==='Escape'){event.preventDefault();close();}

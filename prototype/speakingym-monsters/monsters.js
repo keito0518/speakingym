@@ -361,6 +361,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
+  $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
@@ -473,7 +474,7 @@ function renderForestHud() {
   $('#forest-scene-story').textContent=brief?`ボス確認 ${brief.phase}/3 · ${brief.objective}`:
     `${play.index+1}/${regularCount()}問 · ${objective.label}：${objective.goal}`;
   const log=$('#forest-battle-log');
-  log.textContent=bossPhase?`最後の確認 ${bossPhase.turn}/3 · ${bossPhase.kind==='listen'?'聞き取り':bossPhase.kind==='speak'?'英語で話す':'言葉の問題'}`:'まず問題に集中しよう。';
+  log.textContent=bossPhase?`ボス ${bossPhase.turn}/3 · ${bossPhase.kind==='listen'?'聞き取り':bossPhase.kind==='speak'?'スピーキング':'言葉の問題'}`:'';
 }
 function updateEnemyHealth(hit=false) {
   if(play?.mode!=='forest')return;
@@ -544,8 +545,7 @@ function awardTacticalCharge(rating,{spent=false}={}){
  t.ultimate=advanceUltimate(t.ultimate,{independent:rating==='smooth',bonus,spend:spent});
  if(bonus)t.bonusChargeUsed=true;
 }
-function compactMobileBattleNotes(panel,t){
- if(!window.matchMedia('(max-width:690px)').matches)return;
+function compactBattleNotes(panel,t){
  const boss=panel.querySelector('.forest-boss-tactical-plan');
  let bossDetail=null;
  if(boss){
@@ -636,12 +636,12 @@ function renderTacticalControls(){
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
   ${boss?`<div class="forest-boss-tactical-plan" role="group" aria-label="ボスの3手の攻撃予告"><strong>ボスの攻撃パターン</strong><ol>${[0,1,2].map(phase=>{const threat=bossAttackFor(foe.id,phase);return `<li data-boss-plan-phase="${phase}" data-current="${String(phase===play.index-regularCount())}"><span>${phase+1}手目</span><b>${BATTLE_LABELS[threat.kind]}</b><small>${phase===2?'撃破で反撃なし':threat.pressure?'強攻撃':'通常攻撃'}</small></li>`;}).join('')}</ol><small>最初の2手は敵が反撃する。3つの英語確認をすべてクリアすると勝利！</small></div>`:''}
-  ${boss?`<p class="forest-boss-link" data-link-ready="${String(!t.bossLinkUsed&&linkPreview?.partnerId&&play.index-regularCount()===bossLink.phase)}" data-link-used="${String(t.bossLinkUsed)}"><strong>ボス連携「${escapeHtml(bossLink.name)}」</strong> ${bossLink.phase+1}手目の自力正解時、控えに${BATTLE_LABELS[bossLink.kind]}が得意な仲間がいれば${bossLink.description}。${t.bossLinkUsed?' 発動済み。':linkPreview?.partnerId?` ${escapeHtml(monsterFor(linkPreview.partnerId).name)}が待機中！`:' 対応する控えが必要。'}</p>`:''}
+  ${boss?`<p class="forest-boss-link" data-link-ready="${String(!t.bossLinkUsed&&linkPreview?.partnerId&&play.index-regularCount()===bossLink.phase)}" data-link-used="${String(t.bossLinkUsed)}"><strong>連携：${escapeHtml(bossLink.name)}</strong> ${bossLink.phase+1}手目 · 控えの${BATTLE_LABELS[bossLink.kind]}で${bossLink.description}。${t.bossLinkUsed?' 発動済み。':linkPreview?.partnerId?` ${escapeHtml(monsterFor(linkPreview.partnerId).name)}が待機中！`:' 控えが必要。'}</p>`:''}
   ${boss&&!incoming&&!finalBossStrike?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`}</p>`:''}
   ${boss&&party.length>1&&!finalBossStrike?`<p class="forest-boss-cover" data-cover-ready="${String(coverPreview?.activated)}">${t.bossCoverUsed?'控えの身代わりはこのボス戦で使用済み。':coverPreview?.activated?`控えの${escapeHtml(monsterFor(coverPreview.partnerId).name)}が身代わり待機。${BATTLE_LABELS[coverKind]}で自力防御を失い、HPが2以上減るときにダメージを2軽減・控えHP−1（ボス戦で1回）。自力正解・判定保留なら発動しない。`:'控えの身代わりは「出撃中の仲間が苦手・控えが得意」な技能の敵攻撃でだけ発動するよ。'}</p>`:''}
-  ${incoming?'':finalBossStrike?'<p class="forest-tactic-forecast"><strong>最終撃：正解すれば勝利！</strong><span>最後の英語を確認しよう。撃破したボスは反撃しないよ。</span></p>':`<p class="forest-tactic-forecast"><strong>次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}</strong><span>${bossThreat?`ボス技「${escapeHtml(bossThreat.name)}」${bossThreat.pressure?' · 強攻撃（防御失敗でHP減少＋1）':' · 通常威力'}。`:''}正解すれば自動で防御！ 仲間を選んでから攻撃しよう。</span></p>`}
+  ${incoming?'':`<p class="forest-tactic-forecast"><strong>${finalBossStrike?'最終撃：正解で勝利！':`次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}`}</strong></p>`}
   ${!incoming&&evolved?`<p class="forest-tactic-evolution">進化ボーナス：得意な${BATTLE_LABELS[ally.strong]}の威力＋1 / 同技能の被ダメージ−1</p>`:''}
-  <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span><small>ヒントなしの自力正解で＋1</small></div>
+  <div class="forest-ultimate-meter" role="progressbar" aria-label="必殺ゲージ" aria-valuemin="0" aria-valuemax="${ULTIMATE_MAX}" aria-valuenow="${t.ultimate}"><strong>必殺ゲージ ${t.ultimate} / ${ULTIMATE_MAX}</strong><span class="forest-ultimate-track"><span style="width:${100*t.ultimate/ULTIMATE_MAX}%"></span></span></div>
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
   ${mastery?`<p class="forest-tactic-mastery" data-mastery-used="${String(t.masteryUsed)}"><strong>Lv.${MASTERY_LEVEL}技：${escapeHtml(mastery.name)}${t.masteryUsed?' · 使用済み':' · 準備OK'}</strong> ${escapeHtml(mastery.description)}</p>`:''}
   ${incoming?'':`<div class="forest-tactic-actions" role="group" aria-label="行動を選ぶ">${[
@@ -650,10 +650,10 @@ function renderTacticalControls(){
   ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
   <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
   ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>技能を切り替えると、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
-  ${boss?'<small class="forest-tactic-note">ボスの3つの確認問題は固定。必殺技でも英語の確認は省略できないよ。</small>':t.lastAttackKind?`<small class="forest-tactic-note">前回は${BATTLE_LABELS[t.lastAttackKind]}。同じ技能を連発すると敵が慣れて威力−1。違う技能を試そう！</small>`:'<small class="forest-tactic-note">技能を選ぶと問題が切り替わるよ。弱点狙いでも英語の正解が必要！</small>'}
-  ${party.length>1?`<div class="forest-tactic-party-label">パーティ · それぞれにHPあり · 交代は1戦に1回（残り${1-t.party.swapsUsed}回）</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div><small class="forest-tactic-note">交代ではターンを消費しない。倒れたら控えに自動交代するよ。</small>`:'<small class="forest-tactic-note">仲間を増やすと最大3体で戦い、それぞれのHPと得意技能を使い分けられるよ。</small>'}`}`;
+  ${boss?'<small class="forest-tactic-note">ボスは3問すべて正解で勝利。必殺技も英語の正解が必要。</small>':t.lastAttackKind?`<small class="forest-tactic-note">${BATTLE_LABELS[t.lastAttackKind]}を連続使用すると威力−1。</small>`:'<small class="forest-tactic-note">技能を変えると攻撃問題も切り替わるよ。</small>'}
+  ${party.length>1?`<div class="forest-tactic-party-label">仲間交代 · 残り${1-t.party.swapsUsed}回</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div>`:''}`}`;
  panel.dataset.turn=incoming?'enemy':'player';
- compactMobileBattleNotes(panel,t);
+ compactBattleNotes(panel,t);
  if(incoming){
    $$('[data-tactic-ally]',panel).forEach(button=>{button.disabled=true;button.title='敵の反撃中は交代できません';});
    return;
@@ -747,8 +747,8 @@ function renderPartyFormation(){
  const coverCount=currentLeader?bossForecast.filter(move=>allyAffinity(currentLeader).weak===move.kind&&reserveMatches(move.kind).length).length:0;
  const rangeCount=new Set(roster.map(id=>allyAffinity(id).strong)).size;
  const guide=owned.length===1?'仲間はまだ1体だけ。編成できる仲間が増えるとここで入れ替えられるよ。今は「この編成で出発する」から始めよう。':'仲間の絵やカードをタップして選ぼう。控えの仲間は「先頭にする」でも切り替えられるよ。';
- screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span><small>得意な仲間を選ぼう。英語の問題はどの仲間でも同じように挑戦できるよ。</small></div>
- <div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${i===2?'最終撃':BATTLE_LABELS[move.kind]}${i===2?'':move.pressure?' · 強':''}</span>`).join('')}</div><small>編成の得意技能は${rangeCount}種類。${coverCount?'この先頭と控えなら、ボスの苦手技能に身代わりできる組み合わせがあるよ。':'控えに先頭の苦手技能が得意な仲間を入れると、ボスの被ダメージを一度だけカバーできるよ。'} ボスは2回反撃、最後の一撃で撃破。</small>${link?`<p class="forest-formation-link"><strong>ボス連携：${escapeHtml(link.name)}</strong> ${link.phase+1}手目の自力正解時、控えに${BATTLE_LABELS[link.kind]}が得意な仲間がいると${link.description}。${reserveMatches(link.kind).length?' この編成で狙える！':' 対応する仲間を控えに入れると有利。'}</p>`:''}</div>
+ screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span></div>
+ <div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${i===2?'最終撃':BATTLE_LABELS[move.kind]}${i===2?'':move.pressure?' · 強':''}</span>`).join('')}</div>${link?`<p class="forest-formation-link"><strong>連携：${escapeHtml(link.name)}</strong> ${link.phase+1}手目 · 控えの${BATTLE_LABELS[link.kind]}で${link.description}。${reserveMatches(link.kind).length?' この編成で狙える！':' 控えを選ぼう。'}</p>`:''}<details class="forest-formation-extra"><summary>${coverCount?'身代わりできる組み合わせあり':'身代わり・相性の詳しい条件'}</summary><p>編成の得意技能は${rangeCount}種類。控えが先頭の苦手技能を得意としていると、ボスの反撃で身代わりできることがあるよ。身代わりはボス戦で1回。英語の正誤判定は変わらない。</p></details></div>
  <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
  <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
    const id=roster[index],monster=id?monsterFor(id):null,progress=id?getMonsterProgress(save,id):null;
@@ -765,7 +765,7 @@ function renderPartyFormation(){
     <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)} · Lv.${progress.level} · HP成長＋${levelHpBonus(progress.level)+(progress.evolved?1:0)}</span><span>得意 ${BATTLE_LABELS[affinity.strong]} ／ 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></div>
     <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}">${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
    </div>`;
- }).join('')}</div><p class="forest-formation-help">仲間が増えてもセーブデータは変わらないよ。ここで選んだ3体だけが今回の戦闘に出撃する。</p><p class="forest-formation-status" role="status" aria-live="polite" id="forest-formation-status">${escapeHtml(t.formationMessage||guide)}</p>`;
+ }).join('')}</div><p class="forest-formation-status" role="status" aria-live="polite" id="forest-formation-status">${escapeHtml(t.formationMessage||guide)}</p>`;
  $$('[data-formation-choice]',screen).forEach(button=>button.addEventListener('click',()=>{
    if(!play?.tactics?.formationPending)return;
    const target=button.dataset.formationChoice;
@@ -817,12 +817,12 @@ function showForestExplore(routeChoice=false) {
   const storyKey=storyEvent?`${play.wave}:${storyEvent.id}`:null;
   const selected=storyEvent?forestEventChoice(storyEvent,play.eventChoices[storyKey]):null;
   $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':routeChoice?'分かれ道に到着':storyEvent?storyEvent.title:isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
-  $('#forest-explore-description').textContent=routeChoice?'進む道を選ぼう。道によって見つかる宝物が変わるよ。':
-    formation?'最大3体まで編成して、敵の弱点に合わせて戦おう。戦闘中の交代は1戦につき1回だよ。':
+  $('#forest-explore-description').textContent=routeChoice?'道によって宝物が変わる。':
+    formation?'最大3体を編成。先頭を決めて出発！':
     storyEvent?storyEvent.story:
-    isBoss?`この先に${area.world==='city'?'街':'森'}のボスが待っている。準備ができたら進もう。`:
+    isBoss?`${area.world==='city'?'街':'森'}のボスが待っている。`:
     play.index===0?`${area.story} 学習目標：${area.goal}。`:
-    `${foe.japanese} の気配がする。次の戦闘へ進もう。`;
+    `${foe.japanese} の気配がする。`;
   const eventPanel=$('#forest-explore-event');
   eventPanel.hidden=formation||!storyEvent;
   const formationPanel=$('#forest-party-formation');
@@ -1793,6 +1793,8 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:startSession,showCollection:()=>renderCollection()});
+$('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
+$('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
   cancelAutoAdvance();

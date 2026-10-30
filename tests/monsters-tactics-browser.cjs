@@ -44,6 +44,19 @@ const assert=require('node:assert/strict');
      assert.ok(hintContrast>=4.5,`${engine}/${width}: beginner hint needs readable contrast, got ${hintContrast.toFixed(2)}:1`);
      await page.locator('#start-forest-tactics').click();
      assert.equal(await page.locator('#forest-party-formation').isVisible(),true,'Battle starts with a clear party-formation screen');
+     if(width===320){
+       await page.locator('#open-battle-guide').click();
+       assert.equal(await page.locator('#monsters-tutorial').isVisible(),true,'The game has an on-demand guide without leaving battle');
+       assert.match(await page.locator('#tutorial-heading').innerText(),/仲間を編成/);
+       const guideBounds=await page.locator('.tutorial-dialog').boundingBox();
+       assert.ok(guideBounds.width<=width&&guideBounds.y>=0&&guideBounds.y+guideBounds.height<=844,
+         `The tutorial must fit the entire iPhone screen (${JSON.stringify(guideBounds)})`);
+       await page.locator('[data-tutorial-chapter="battle"]').click();
+       await page.locator('#tutorial-next').click();
+       assert.match(await page.locator('#tutorial-heading').innerText(),/英語で攻撃/);
+       await page.locator('#tutorial-close').click();
+       assert.equal(await page.locator('#forest-party-formation').isVisible(),true,'Closing the guide preserves the party screen');
+     }
      assert.match(await page.locator('#forest-party-formation').innerText(),/出撃メンバー 1 \/ 3体/);
      assert.match(await page.locator('#forest-party-formation').innerText(),/弱点：リスニング/);
      // A solo player's only companion must give tap feedback rather than appear broken.

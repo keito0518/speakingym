@@ -265,13 +265,35 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .home-destination .review-journal{margin-bottom:40px}
 .tutorial-backdrop{position:fixed;inset:0;z-index:5000;background:#172a21b8;display:grid;place-items:center;padding:20px;overflow-y:auto}
 .tutorial-backdrop[hidden]{display:none!important}
-.tutorial-dialog{position:relative;background:#fffdf5;border:1px solid #d7dfcf;border-radius:23px;max-width:550px;width:100%;padding:33px 26px;box-shadow:0 20px 50px #15271d53}
+.tutorial-dialog{position:relative;background:#fffdf5;border:1px solid #d7dfcf;border-radius:23px;max-width:550px;width:100%;max-height:min(92dvh,850px);overflow-y:auto;overscroll-behavior:contain;padding:33px 26px;box-shadow:0 20px 50px #15271d53}
 .tutorial-dialog h2{font-size:clamp(21px,4vw,28px);line-height:1.4;color:#284a37;margin:16px 0}
 .tutorial-dialog>p:not(.tiny-caps){font-size:15px;line-height:1.85;color:#4c6554;min-height:96px}
 .tutorial-close{position:absolute;right:15px;top:12px;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;border:1px solid #d8e1d1;background:white;color:#315943}
 .tutorial-actions{display:flex;justify-content:space-between;gap:12px;margin-top:23px}
 .tutorial-actions button{border:1px solid #a9c3ab;background:#f3f7ec;color:#2f6344;border-radius:12px;font-weight:800;min-height:47px;padding:10px 24px}
 .tutorial-actions #tutorial-next{background:#247951;color:white;border-color:#247951}
+.tutorial-chapters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:14px 0 9px}
+.tutorial-chapters button{min-height:42px;min-width:0;border:1px solid #b7c8b4;border-radius:9px;background:#f0f5ed;color:#33553f;font-size:11px;font-weight:800;cursor:pointer;overflow-wrap:break-word;line-break:strict}
+.tutorial-chapters button[aria-pressed="true"]{background:#285c45;color:#fffdf5;border-color:#285c45}
+.tutorial-step-progress{height:5px;overflow:hidden;border-radius:10px;background:#dce6d6}
+.tutorial-step-progress span{display:block;height:100%;border-radius:10px;background:#49966b;transition:width .18s ease}
+.tutorial-dialog #tutorial-heading{margin:13px 0 8px;font-size:clamp(18px,4vw,24px)}
+.tutorial-dialog #tutorial-description{min-height:0;margin:0 0 12px;font-size:13px;line-height:1.7;color:#344e3c}
+.tutorial-scene{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:12px;border:1px solid #a8c0ae;border-radius:12px;background:linear-gradient(145deg,#e8f2e6,#f6faf0);text-align:center;line-height:1.4}
+.tutorial-scene>span:first-child{justify-self:start;padding:3px 8px;border-radius:5px;background:#315e48;color:#fff;font-size:10px;font-weight:900}
+.tutorial-scene strong{justify-self:stretch;padding:10px 7px;border:1px solid #92ab9b;border-radius:9px;background:#fffdf7;color:#234d37;font-size:clamp(14px,3.5vw,18px);overflow-wrap:break-word;line-break:strict}
+.tutorial-scene>span:last-child{font-size:12px;font-weight:900;color:#28543c}
+.tutorial-tips{margin:11px 0 0;padding-left:19px;display:grid;gap:5px;color:#425e4a;font-size:12px;line-height:1.55}
+.tutorial-actions{margin-top:14px}
+.tutorial-dialog button:focus-visible{outline:3px solid #c2862e;outline-offset:2px}
+.dungeon-guide-link,.battle-guide-button{min-height:40px;padding:7px 11px;border:1px solid #779c7f;border-radius:9px;background:#e9f4e9;color:#244f36;font-size:12px;font-weight:900;cursor:pointer}
+.dungeon-guide-link{margin-left:8px;vertical-align:middle;background:#fffef7}
+.battle-guide-button[hidden]{display:none}
+.forest-active .play-topline .clock{display:none}
+.forest-active .play-topline .battle-guide-button{margin-left:auto}
+.forest-active .play-topline .mode-chip{max-width:50%;white-space:normal;line-height:1.4}
+@media(max-width:690px){.forest-active .play-topline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}.forest-active .play-topline .mode-chip{grid-column:1/-1;grid-row:2;max-width:100%;font-size:10px;padding:5px 10px}.forest-active .play-topline .battle-guide-button{grid-column:2;grid-row:1;min-height:38px}.dungeon-guide-link{margin-left:4px}}
+@media(max-width:600px){.tutorial-backdrop{padding:10px}.tutorial-dialog{padding:21px 15px 16px;border-radius:16px}.tutorial-dialog #tutorial-description{min-height:0}.tutorial-close{right:8px;top:7px}.tutorial-chapters{margin-top:9px}.tutorial-scene{padding:9px}.tutorial-actions button{padding:9px 16px}}
 .speech-alternatives{display:block;margin-top:12px;padding:12px;border-radius:13px;border:1px solid #bcd8c4;background:#eff8ef}
 .speech-alternatives[hidden]{display:none!important}
 .speech-alternatives>summary{display:none}
