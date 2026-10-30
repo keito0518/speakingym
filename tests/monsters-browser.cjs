@@ -114,7 +114,7 @@ const path=require('node:path');
     assert.match(await menuPage.locator('#tutorial-heading').innerText(),/Englishダンジョン/);
     await menuPage.locator('#tutorial-next').click();
     await menuPage.locator('#tutorial-next').click();
-    assert.match(await menuPage.locator('#tutorial-description').innerText(),/iPhone/);
+    assert.match(await menuPage.locator('#tutorial-tips').innerText(),/iPhone/);
     assert.equal(await menuPage.locator('#tutorial-tips li').count(),2,'Every step explains a practical action');
     assert.match(await menuPage.locator('#tutorial-scene-main').innerText(),/話す \/ 文字入力/);
     await menuPage.locator('[data-tutorial-chapter="battle"]').click();
