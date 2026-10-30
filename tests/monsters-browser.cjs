@@ -134,8 +134,12 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).animationName),'none','Reduced motion setting stops movement');
     assert.equal(await menuPage.locator('[data-home-page="forest"] .home-navigation-icon svg').count(),1);
-    const forestColumnSpan=await menuPage.locator('[data-home-page="forest"]').evaluate(el=>getComputedStyle(el).gridColumnStart);
-    assert.equal(forestColumnSpan,'auto','Optional stage selection should not dominate the main menu');
+    const forestPlacement=await menuPage.locator('[data-home-page="forest"]').evaluate(el=>({
+      gridColumn:getComputedStyle(el).gridColumnStart,
+      inDisclosure:!!el.closest('#home-extra-modes')
+    }));
+    assert.deepEqual(forestPlacement,{gridColumn:'span 2',inDisclosure:true},
+      'Optional stage selection can use a wider row inside the collapsed extra menu, not the main menu');
     assert.match(await menuPage.locator('.home-feature').innerText(),/英語/);
     assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
     assert.equal(await menuPage.locator('.home-destination:visible').count(),0);
