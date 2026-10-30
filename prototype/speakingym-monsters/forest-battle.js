@@ -92,6 +92,13 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
  const bossStages=bossConversation&&areaId==='entry'?bossConversationFor(wave,level):null;
  const reservedBossIds=new Set((bossStages||[]).map(turn=>turn.id));
  const previous=new Set(previousIds);
+ // A different question about the very same expression still feels like a
+ // repeat. Track the last adventure's expressions, not only exact task IDs.
+ // This is a preference, never a ban: due reviews and chapter objectives win.
+ const recentWindow=forestWaveLengthFor(areaId);
+ const promptById=new Map(ALL_PROMPTS.map(prompt=>[prompt.id,prompt]));
+ const recentPhrases=new Set(previousIds.slice(-recentWindow)
+  .map(id=>promptById.get(id)?.phraseId).filter(Boolean));
  const dueIds=new Set(reviewPromptIds);
  const duePhrases=new Set(reviewPhraseIds);
  const weakQuizIds=new Set(quizWeaknessIds);
@@ -185,10 +192,17 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
      if(unseen.length)candidates=unseen;
    }
    const focus=new Set(DUNGEON_AREAS.find(area=>area.id===areaId).focus);
+   const chapterFocusCount=prompts.slice(0,regular).filter(p=>focus.has(p.phraseId)).length;
+   const needsChapterFocus=areaId!=='entry'&&slot<regular&&chapterFocusCount<2;
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
-     previous.has(p.id)?1:0,
      cityChapter&&p.world===areaId?0:1,
+     // Keep a boss's chapter theme intact, even if that theme was practiced
+     // earlier. First teach two chapter-linked encounters before allowing
+     // regular foes to branch into a broader transfer vocabulary.
+     (bossSlot||needsChapterFocus)&&!focus.has(p.phraseId)?1:0,
+     recentPhrases.has(p.phraseId)?1:0,
+     previous.has(p.id)?1:0,
      areaId==='entry'||focus.has(p.phraseId)?0:1
    ];
    candidates.sort((a,b)=>{

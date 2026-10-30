@@ -73,6 +73,19 @@ const BASE_SETS=Object.freeze([
   ['think-cafe','repeat-station','prefer-city'],
   ['think-trip','repeat-class','prefer-friend']
 ]);
+// Keep the most recently practiced task last. Replaying a task must refresh
+// its position, otherwise the variety picker mistakes it for ancient history.
+function recentForestPromptIds(ids){
+ const allowed=new Set(ALL_PROMPTS.map(prompt=>prompt.id));
+ const seen=new Set(),newest=[];
+ for(let index=ids.length-1;index>=0&&newest.length<128;index--){
+  const id=ids[index];
+  if(typeof id==='string'&&allowed.has(id)&&!seen.has(id)){
+   seen.add(id);newest.push(id);
+  }
+ }
+ return newest.reverse();
+}
 export const FOREST_RELICS=Object.freeze({
  'sunlit-leaf':{name:'Sunleaf',meaning:'ひだまりの葉',description:'ひだまりの小道で拾った光る葉っぱ。'},
  'moss-lantern':{name:'Mosslight',meaning:'こけの灯り',description:'こけむした抜け道で見つけた不思議な光。'},
@@ -102,7 +115,7 @@ export function cleanForest(input){
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
   completedAreas:[...new Set(completed.filter(x=>allowed.includes(x)))],
   medals:cleanBossMedals(source.medals,allowed),
-  recentPromptIds:[...new Set((Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]).filter(id=>ALL_PROMPTS.some(p=>p.id===id)))].slice(-128),
+  recentPromptIds:recentForestPromptIds(Array.isArray(source.recentPromptIds)?source.recentPromptIds:[]),
   // A bounded, validated collection of distinct story decisions. Old saves
   // simply start with an empty journal; replaying the same choice adds nothing.
   journal:[...new Map((Array.isArray(source.journal)?source.journal:[])
@@ -165,7 +178,7 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
    relics:[...new Set([...before.relics,...earned])],
    completedAreas:recordAreaClear?[...new Set([...before.completedAreas,areaId])]:before.completedAreas,
    medals:validMedal&&rank?{...before.medals,[areaId]:{...before.medals[areaId],[difficulty]:rank}}:before.medals,
-   recentPromptIds:[...new Set([...before.recentPromptIds,...promptIds.filter(id=>ALL_PROMPTS.some(p=>p.id===id))])].slice(-128),
+   recentPromptIds:recentForestPromptIds([...before.recentPromptIds,...promptIds]),
    journal:before.journal
   }
  };

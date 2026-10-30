@@ -181,6 +181,27 @@ test('full four-chapter campaigns select 44 distinct questions across randomized
   }
  }
 });
+test('repeat adventures rotate expressions, not merely question IDs, while keeping due reviews',()=>{
+ const seeded=seed=>()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
+ for(const areaId of ['entry','glade','city']){
+  let withMemory=0,withoutMemory=0;
+  for(let seed=1;seed<=96;seed++){
+   const earlier=buildForestWave({areaId,progression:'story',wave:1,random:seeded(seed)}).prompts;
+   const recent=new Set(earlier.map(prompt=>prompt.phraseId));
+   const next=buildForestWave({areaId,progression:'story',wave:2,
+    previousIds:earlier.map(prompt=>prompt.id),random:seeded(seed+4000)}).prompts;
+   const unbalanced=buildForestWave({areaId,progression:'story',wave:2,random:seeded(seed+4000)}).prompts;
+   withMemory+=next.filter(prompt=>recent.has(prompt.phraseId)).length;
+   withoutMemory+=unbalanced.filter(prompt=>recent.has(prompt.phraseId)).length;
+  }
+  assert.ok(withMemory<withoutMemory*.82,
+   `${areaId}: repeated expressions must noticeably decrease between adventures`);
+ }
+ const due=buildForestWave({difficulty:'easy',areaId:'entry',random:()=>.3,
+  previousIds:['forest-vocab-ticket-easy'],reviewPromptIds:['forest-vocab-ticket-easy']});
+ assert.ok(due.prompts.some(prompt=>prompt.id==='forest-vocab-ticket-easy'),
+  'Overdue review is more important than avoiding a recent phrase');
+});
 test('five-minute gym mixes new, due and transfer tasks without duplicates or paid AI calls',()=>{
  const today='2026-10-27';
  let save=createSave();
@@ -571,6 +592,14 @@ test('Forest souvenirs persist when old saves are loaded without a forest field'
  assert.deepEqual(validateSave(completed).forest,completed.forest);
  const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
  assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],medals:{},recentPromptIds:[],journal:[]});
+});
+test('repeated Forest prompts refresh their position in bounded recent history',()=>{
+ assert.deepEqual(cleanForest({recentPromptIds:['think-cafe','repeat-station','think-cafe','unknown']}).recentPromptIds,
+  ['repeat-station','think-cafe']);
+ const initial=createSave();
+ const first=finishForest(initial,'sunlit','medamago','entry',['think-cafe','repeat-station']).save;
+ const second=finishForest(first,'sunlit','medamago','entry',['think-cafe']).save;
+ assert.deepEqual(second.forest.recentPromptIds,['repeat-station','think-cafe']);
 });
 
 test('boss medals require three verified boss questions and reward real independent chapter clears',()=>{

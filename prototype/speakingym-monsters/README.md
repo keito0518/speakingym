@@ -1,3 +1,10 @@
+## 2026-10-30 — replay variety without weakening targeted review
+
+- Forest and City expedition selection now considers **recently practiced expressions**, not just unique question IDs. A fresh question that uses the same sentence pattern as yesterday is recognized as a potential repeat; regular encounters prefer a different expression when other suitable questions exist. This uses the existing local prompt bank and does not generate unchecked exercises or call AI.
+- Chapter-linked teaching remains intact: at least two eligible regular encounters still prioritize the current chapter's focus before broader transfer exercises, and boss questions retain their chapter objective. **Overdue review prompts and known vocabulary/grammar weaknesses are never discarded** just to increase variety.
+- The existing 128-item local recent-question history now moves replayed prompt IDs to the newest position, so a repeatedly practiced task cannot become falsely "old" merely because it was first seen weeks earlier. Old saves migrate through the same cleaning function without changing the save schema.
+- Deterministic 96-seed regression tests compare the next expedition with and without recent-expression memory in Forest entry, Forest glade and Snowlit City; all show a substantial decrease in repeated phrases, while the full 44-question Forest campaign and boss transfer tests still pass. Rewards, mastery, AI usage, audio, payments and production systems are unchanged.
+
 ## 2026-10-30 — authored NPC replies during Forest exploration
 
 - All **four Forest chapters × two route choices** now include a short authored NPC exchange at the existing exploration event: an English question, two natural English replies, and a distinct NPC response to the player's choice. The interaction is integrated into the same map checkpoint, not a second compulsory combat task.
