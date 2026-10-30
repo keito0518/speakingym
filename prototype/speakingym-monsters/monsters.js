@@ -1592,9 +1592,18 @@ async function gradeAnswer() {
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
     ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
-  const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">解説を読んで、準備ができたら次へ進もう。</p>`:'';
+  const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">準備ができたら次へ。詳しい解説は必要なときに開けるよ。</p>`:'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${prompt.kind==='listen'?'':`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`}${acceptedVariant}${expressionCoaching}${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${autoNote}<button id="next-question" class="grading-next">${defending?'自分のターンへ →':autoForest&&play.tactics?'次のターンへ →':autoForest?'今すぐ次へ →':'次の問題へ →'}</button></div>`;
+  const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
+  const answerPreview=prompt.kind==='listen'
+    ?(autoForest?`<div class="feedback-answer forest-listen-answer">${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</div>`:'')
+    :`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`;
+  const nextLabel=defending?'自分のターンへ →':autoForest&&play.tactics?'次のターンへ →':autoForest?'今すぐ次へ →':'次の問題へ →';
+  const nextButton=`<button id="next-question" class="grading-next">${nextLabel}</button>`;
+  const learningDetails=autoForest
+    ?`<details id="forest-success-explanation" class="forest-success-explanation"><summary>解説・復習のポイントを見る</summary><div class="forest-success-explanation-body">${correctBody}</div></details>`
+    :correctBody;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${answerPreview}${acceptedVariant}${expressionCoaching}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }

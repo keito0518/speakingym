@@ -651,7 +651,16 @@ const path=require('node:path');
           assert.match(await forestPage.locator('#forest-grammar-built').innerText(),/ /);
         }
         await answer();
+        assert.equal(await forestPage.locator('#forest-success-explanation').getAttribute('open'),null,
+          'Success feedback starts concise, with extra teaching available on request');
+        assert.equal(await forestPage.locator('#next-question').isVisible(),true,
+          'Next step remains immediately available without reading long details');
         if(mob===3 || mob===4){
+          assert.equal(await forestPage.locator('.forest-teaching-title').isVisible(),false,
+            'The detailed explanation must not push the next button below it');
+          await forestPage.locator('#forest-success-explanation > summary').click();
+          assert.equal(await forestPage.locator('.forest-teaching-title').isVisible(),true,
+            'Learners can choose to inspect the full teaching content');
           assert.match(await forestPage.locator('.forest-teaching-title').innerText(),mob===3?/なぜこの単語を使う/:/なぜこの語順になる/);
           assert.match(await forestPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
           assert.equal(await forestPage.locator('#pause-auto').count(),0);
@@ -888,6 +897,9 @@ const path=require('node:path');
     await autoPage.locator('#forest-explore-continue').click();
     await autoAnswer();
     assert.match(await autoPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
+    assert.equal(await autoPage.locator('#forest-success-explanation').getAttribute('open'),null);
+    const nextAboveDetails=await autoPage.evaluate(()=>document.querySelector('#next-question').getBoundingClientRect().top<document.querySelector('#forest-success-explanation').getBoundingClientRect().top);
+    assert.equal(nextAboveDetails,true,'Progress is accessible ahead of optional teaching on phones');
     const firstPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
     await autoPage.waitForTimeout(3000);
     assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),firstPrompt,'Reading time is unlimited');

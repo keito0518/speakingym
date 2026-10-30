@@ -635,3 +635,16 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .result-detail-panel .result-rewards{margin:10px 0}
 .result-detail-panel .result-discoveries{margin:12px auto}
 @media(max-width:540px){.result-detail-panel{margin:12px 0}.result-quick-summary{font-size:12px}}
+
+/* After a correct forest answer, a single next action stays above optional
+   teaching notes. Incorrect answers still show coaching immediately. */
+.forest-success-explanation{margin:13px 0 0;border:1px solid #c6dfcb;border-radius:11px;background:#f4f9ee;text-align:left}
+.forest-success-explanation>summary{display:flex;align-items:center;min-height:44px;padding:10px 12px;cursor:pointer;color:#285b3e;font-size:12px;font-weight:850;line-height:1.6;overflow-wrap:break-word;line-break:strict}
+.forest-success-explanation>summary:focus-visible{outline:3px solid #c48c36;outline-offset:2px}
+.forest-success-explanation-body{padding:0 12px 12px;display:grid;gap:7px}
+.forest-success-explanation-body .forest-teaching{margin:0}
+.forest-success-explanation-body .forest-checking-note{margin:0}
+.forest-active #feedback-panel .grading-correct #next-question{display:block;width:100%;min-height:48px;margin:12px 0 0;text-align:center}
+.forest-active #feedback-panel .grading-correct #forest-auto-status{font-size:11px;line-height:1.5;margin:8px 0 0;text-align:center}
+.forest-active #feedback-panel .forest-listen-answer{font-size:clamp(15px,3.8vw,20px);line-height:1.45}
+@media(max-width:540px){.forest-success-explanation>summary{font-size:12px}.forest-success-explanation-body{padding:0 9px 10px}}
