@@ -75,7 +75,7 @@ const assert=require('node:assert/strict');
   }
   assert.equal(reachedBoss,true,'Boss synergy must be tested through real English battles');
   assert.equal(await page.locator('.forest-boss-link').getAttribute('data-link-ready'),'true');
-  assert.match(await page.locator('.forest-boss-link').innerText(),/Purupun|プルプン|待機中/);
+  assert.match(await page.locator('.forest-boss-link').textContent(),/Purupun|プルプン|待機中/);
   await answer();
   assert.match(await page.locator('#forest-battle-log').innerText(),/ボス連携「いばらの突破口」成功！.*次の反撃−1/);
   assert.equal(await page.locator('.forest-boss-link').getAttribute('data-link-used'),'true');
