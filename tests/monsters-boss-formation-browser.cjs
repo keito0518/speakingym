@@ -39,7 +39,7 @@ const assert=require('node:assert/strict');
    localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('[data-home-page="forest"]').click();
+  await page.locator('[data-feature-worlds]').click();
   await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await page.locator('#start-forest-tactics').click();
   assert.equal(await page.locator('.forest-formation-boss-wrap').getAttribute('open'),null,
     'Boss strategy is optional while forming a team');

@@ -15,6 +15,9 @@ const assert=require('node:assert/strict');
         await route.fulfill({status:200,contentType:'text/javascript',body:''});
       });
       await page.goto(base,{waitUntil:'networkidle'});
+      assert.equal(await page.locator('#beta-feedback-disclosure').getAttribute('open'),null,
+        'Feedback and consent are optional information, hidden until requested');
+      await page.locator('#beta-feedback-disclosure > summary').click();
       assert.equal(vendor.length,0,'No Google request before opt-in');
       assert.equal(await page.locator('[data-beta-reaction]').count(),5);
       assert.equal(await page.locator('[data-beta-reaction="fun"]').isDisabled(),true);
@@ -42,7 +45,8 @@ const assert=require('node:assert/strict');
       assert.equal(events[1][2].reaction,'grading');
       assert.equal(Object.prototype.hasOwnProperty.call(events[1][2],'transcript'),false);
       await page.locator('[data-feature-dungeon]').click();
-      await page.locator('#start-forest').click();
+      assert.equal(await page.locator('#forest-explore-screen').isVisible(),true,
+        'Primary CTA enters the dungeon without an extra selection step');
       const started=await page.evaluate(()=>window.dataLayer.map(args=>Array.from(args)).filter(args=>args[1]==='monsters_beta_start'));
       assert.equal(started.length,1);
       assert.equal(started[0][2].mode,'forest');
@@ -54,6 +58,7 @@ const assert=require('node:assert/strict');
       assert.equal(await page.locator('[data-beta-reaction="fun"]').isDisabled(),true);
       assert.equal(await page.locator('#beta-consent-yes').getAttribute('aria-pressed'),'true');
       if(width===390){
+        await page.locator('#beta-feedback-disclosure > summary').click();
         await page.locator('#beta-consent-no').click();
         assert.equal(await page.evaluate(()=>window['ga-disable-G-DRH440861Y']),true);
         assert.equal(await page.locator('[data-beta-reaction="fun"]').isDisabled(),true);
