@@ -649,11 +649,6 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .forest-active #feedback-panel .forest-listen-answer{font-size:clamp(15px,3.8vw,20px);line-height:1.45}
 @media(max-width:540px){.forest-success-explanation>summary{font-size:12px}.forest-success-explanation-body{padding:0 9px 10px}}
 
-/* Dungeon answers should be one clear input and one primary action. Hints
-   remain available with a 44px tap target, without a second instructional
-   card competing with the question and battle. */
-.forest-active .answer-quick-help{border:0;background:transparent;padding:0;margin:7px 0 5px;justify-content:flex-end}
-.forest-active .answer-quick-help>div{display:none}
-.forest-active .answer-quick-help .speaking-hint-action{min-height:44px;min-width:116px;padding:8px 13px}
+/* Keep the default, redundant instruction absent without losing microphone
+   troubleshooting text when an actual speech problem occurs. */
 .forest-active .answer-helper:empty{display:none}
-@media(max-width:430px){.forest-active .answer-quick-help{flex-direction:row;align-items:center}.forest-active .answer-quick-help .speaking-hint-action{width:auto}}
