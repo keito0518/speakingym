@@ -80,8 +80,9 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.forest-boss-brief').getAttribute('open'),null);
   assert.equal(await page.locator('[data-boss-plan-phase="0"]').getAttribute('data-current'),'true',
    'The grammar weakness can only be intercepted on boss phase one');
-  await page.locator('.forest-tactic-strategy > summary').click();
-  await page.locator('.forest-boss-brief summary').click();
+  if(await page.locator('.forest-tactic-strategy').getAttribute('open')===null)
+   await page.locator('.forest-tactic-strategy > summary').click();
+  await page.locator('.forest-boss-brief > summary').click();
   assert.match(await page.locator('.forest-boss-cover').innerText(),/身代わり/);
   assert.equal(await page.locator('.forest-boss-cover').getAttribute('data-cover-ready'),'true');
   if((await page.locator('.forest-tactic-heading').innerText()).includes('味方のターン')){
