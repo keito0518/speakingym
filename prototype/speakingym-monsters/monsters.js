@@ -589,7 +589,7 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
    kinds.hidden=incoming||play.index>=regularCount();
    const label=document.createElement('p');
    label.className='forest-tactic-kind-label';
-   label.textContent='問題の種類';
+   label.textContent='問題の種類を変える';
    label.hidden=kinds.hidden;
    kinds.before(label);
  }
@@ -598,10 +598,10 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  strategy.open=Boolean(t.strategyOpen);
  const ready=t.ultimate>=ULTIMATE_MAX&&(play.index<regularCount()||t.hp<t.maxHp);
  const status=!incoming&&ready?'必殺技が使える！':!incoming&&supportReady?'連携チャンス！':`必殺 ${t.ultimate}/${ULTIMATE_MAX}`;
- summary.innerHTML=`<span>${incoming?'戦況を詳しく見る':'戦術・仲間を変更する'}</span><small>${status}</small>`;
+ summary.innerHTML=`<span>${incoming?'戦況を詳しく見る':'出題・戦術を変更する'}</span><small>${status}</small>`;
  strategy.append(summary);
  [...panel.children].filter(child=>child!==strategy&&
-   !child.matches('.forest-turn-task,.forest-tactic-kinds,.forest-tactic-kind-label'))
+   !child.matches('.forest-turn-task'))
    .forEach(child=>strategy.append(child));
  panel.append(strategy);
  strategy.addEventListener('toggle',()=>{
@@ -965,7 +965,9 @@ function renderQuestion() {
     const style=enemyTurn?'incoming':prompt.kind==='listen'?'defense':prompt.kind==='read'?'reading':prompt.kind==='vocab'?'weakness':prompt.kind==='grammar'?'spell':'attack';
     $('#forest-world-stage').dataset.action=style;
     const move=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt});
-    $('#forest-battle-log').textContent=enemyTurn?`敵の反撃：${BATTLE_LABELS[play.tactics.enemyKind]}。正解で防ごう。`:style==='defense'?'音声を聞いて選ぼう。':style==='reading'?'文章を読んで答えよう。':style==='weakness'?'単語を選ぼう。':style==='spell'?'単語を並べよう。':'英語で答えよう。';
+    // Tactical turn instructions are already next to the question. Reserve
+    // the large battle log for meaningful results and state changes.
+    $('#forest-battle-log').textContent=play.tactics?'':enemyTurn?`敵の反撃：${BATTLE_LABELS[play.tactics.enemyKind]}。正解で防ごう。`:style==='defense'?'音声を聞いて選ぼう。':style==='reading'?'文章を読んで答えよう。':style==='weakness'?'単語を選ぼう。':style==='spell'?'単語を並べよう。':'英語で答えよう。';
   }
   $('#play-progress-fill').style.width=`${100*play.index/play.prompts.length}%`;
   const englishMode = (prompt.difficulty||'easy')!=='easy';

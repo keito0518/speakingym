@@ -101,6 +101,14 @@
 /* Tactical battles: the language prompt stays in front; strategy is an
    optional layer. This applies on desktop as well as narrow phones. */
 .forest-active.tactical-battle .forest-tactic-strategy{margin:7px 0 0;min-width:0}
+.forest-active.tactical-battle .forest-command-window{display:flex;flex-direction:column;gap:5px}
+.forest-active.tactical-battle .play-progress{order:0}
+.forest-active.tactical-battle #forest-battle-log{order:1}
+.forest-active.tactical-battle #play-card{order:2}
+.forest-active.tactical-battle #answer-area{order:3}
+.forest-active.tactical-battle #forest-tactics{order:4}
+.forest-active.tactical-battle #forest-battle-log:empty{display:none!important}
+.forest-active.tactical-battle .forest-tries{display:none!important}
 .forest-active.tactical-battle .forest-tactic-strategy>summary{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:42px;padding:9px 11px;border:1px solid #91b6a2;border-radius:10px;background:#f8fdf5;color:#24523e;font-size:12px;font-weight:850;cursor:pointer;list-style:none}
 .forest-active.tactical-battle .forest-tactic-strategy>summary::-webkit-details-marker{display:none}
 .forest-active.tactical-battle .forest-tactic-strategy>summary:after{content:'＋';font-size:16px;line-height:1;order:3}
@@ -110,6 +118,7 @@
 .forest-active.tactical-battle .forest-tactic-strategy[open]>summary{margin-bottom:9px}
 .forest-active.tactical-battle .forest-tactic-strategy>.forest-tactic-heading{margin:6px 0}
 .forest-active.tactical-battle .forest-tactic-strategy>.forest-tactic-actions{margin:9px 0}
+.forest-active.tactical-battle .forest-tactic-strategy>.forest-tactic-kinds{margin:5px 0 9px}
 .forest-active.tactical-battle .forest-turn-task{padding:8px 10px;margin:0 0 5px;min-height:0}
 .forest-active.tactical-battle .forest-turn-task strong{font-size:13px}
 .forest-active.tactical-battle .forest-turn-task span{font-size:12px}

@@ -91,9 +91,11 @@ const assert=require('node:assert/strict');
        return {question:bounds('#play-card').top,commands:bounds('#forest-tactics').top,
          answer:bounds('#answer-area').top,arena:bounds('#forest-world-stage').height};
      });
-     assert.ok(tacticalLayout.question<tacticalLayout.commands&&tacticalLayout.commands<tacticalLayout.answer,
-       `${engine}/${width}: read the question, select the action, then answer (${JSON.stringify(tacticalLayout)})`);
+     assert.ok(tacticalLayout.question<tacticalLayout.answer&&tacticalLayout.answer<tacticalLayout.commands,
+       `${engine}/${width}: show the question and answer before optional tactics (${JSON.stringify(tacticalLayout)})`);
      assert.ok(tacticalLayout.arena<=155,`${engine}/${width}: battle field must leave room for the question`);
+     assert.equal(await page.locator('#forest-battle-log').isVisible(),false,
+       'The initial empty battle log must not repeat the same instruction above the question');
      const answerViewport=await page.evaluate(()=>({top:document.querySelector('#spoken-answer').getBoundingClientRect().top,viewport:innerHeight}));
      assert.ok(answerViewport.top<answerViewport.viewport,
        `${engine}/${width}: the first answer field must appear without scrolling past tactical explanations (${JSON.stringify(answerViewport)})`);
@@ -106,10 +108,11 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('[data-tactic-kind]').count(),4);
      const strategy=page.locator('.forest-tactic-strategy');
      assert.equal(await strategy.getAttribute('open'),null,'Advanced tactics start collapsed');
-     assert.equal(await page.locator('.forest-tactic-kinds').isVisible(),true,'Question types remain directly accessible');
+     assert.equal(await page.locator('.forest-tactic-kinds').isVisible(),false,'Question switching is optional, so the first view stays focused');
      assert.equal(await page.locator('.forest-tactic-actions').isVisible(),false,'Attack is automatic until a player requests other tactics');
      assert.equal(await page.locator('.forest-ultimate-meter').isVisible(),false,'The large meter is available in details, not the first view');
      await strategy.locator('summary').click();
+     assert.equal(await page.locator('.forest-tactic-kinds').isVisible(),true,'All four question types are one tap away');
      const extra=page.locator('.forest-tactic-more');
      assert.equal(await extra.count(),1,`${engine}/${width}: verbose strategy notes must be collapsible on mobile`);
      assert.equal(await extra.getAttribute('open'),null,'The long help text starts collapsed');
@@ -124,7 +127,7 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#show-hint').isVisible(),true,'Hint remains available with one tap');
      const mobileTextarea=await page.locator('#spoken-answer').evaluate(el=>el.getBoundingClientRect().height);
      assert.ok(mobileTextarea<=96,`${engine}/${width}: answer input must fit a phone (${mobileTextarea}px)`);
-     assert.match(await page.locator('#forest-tactics').innerText(),/リスニング.*文法/s);
+     assert.match(await page.locator('.forest-tactic-kinds').textContent(),/リスニング.*文法/s);
      assert.match(await page.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：文法/,'Enemy forecast remains available in tactical details');
      await answer(page);
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
@@ -164,6 +167,8 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1');
      const browserLayout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
      assert.ok(browserLayout.scroll<=browserLayout.width+1,`${engine}/${width}: horizontal overflow ${JSON.stringify(browserLayout)}`);
+     if(await page.locator('.forest-tactic-strategy').getAttribute('open')===null)
+       await page.locator('.forest-tactic-strategy > summary').click();
      await page.locator('[data-tactic-kind="listen"]').click();
      assert.equal(await page.locator('[data-tactic-kind="listen"]').getAttribute('aria-pressed'),'true');
      await answer(page);
@@ -276,8 +281,8 @@ const assert=require('node:assert/strict');
    assert.match(await evolvedCard.innerText(),/HP成長＋2/);
    assert.match(await evolvedCard.innerText(),/進化援護「覚醒・共鳴」/);
    await evolutionPage.locator('#forest-explore-continue').click();
-   await evolutionPage.locator('[data-tactic-kind="listen"]').click();
    await evolutionPage.locator('.forest-tactic-strategy > summary').click();
+   await evolutionPage.locator('[data-tactic-kind="listen"]').click();
    const assist= evolutionPage.locator('[data-tactic-action="assist"]');
    assert.equal(await assist.isEnabled(),true);
    assert.match(await assist.innerText(),/必殺ゲージ＋1.*覚醒・共鳴/);
@@ -325,6 +330,7 @@ const assert=require('node:assert/strict');
    await recallPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await recallPage.locator('#start-forest-tactics').click();
    await recallPage.locator('#forest-explore-continue').click();
    assert.match(await recallPage.locator('.forest-tactic-review').innerText(),/文法 [1-9]\d*問/,'Players can see their overdue tactical review');
+   await recallPage.locator('.forest-tactic-strategy > summary').click();
    await recallPage.locator('[data-tactic-kind="grammar"]').click();
    const selected=await recallPage.locator('#play-card').getAttribute('data-prompt-id');
    assert.ok(dueGrammarIds.includes(selected),`A selected grammar attack should practice a due task, got ${selected}`);
@@ -358,6 +364,7 @@ const assert=require('node:assert/strict');
    await advancedPage.locator('#forest-explore-continue').click();
    assert.equal(await advancedPage.locator('[data-foe-style]').getAttribute('data-foe-style'),'shell');
    assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/最初の一撃は弱点以外のダメージ−1/);
+   await advancedPage.locator('.forest-tactic-strategy > summary').click();
    await advancedPage.locator('[data-tactic-kind="speak"]').click();
    await answer(advancedPage);
    assert.equal(await advancedPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1',
@@ -432,6 +439,7 @@ const assert=require('node:assert/strict');
    assert.equal(await shiftingPage.locator('[data-foe-style]').getAttribute('data-foe-style'),'shift');
    assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'false');
    assert.match(await shiftingPage.locator('.forest-tactic-heading').innerText(),/敵の弱点：リスニング.*耐性：文法/s);
+   await shiftingPage.locator('.forest-tactic-strategy > summary').click();
    await shiftingPage.locator('[data-tactic-kind="speak"]').click();
    await answer(shiftingPage);
    assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2');
@@ -441,6 +449,8 @@ const assert=require('node:assert/strict');
    await shiftingPage.locator('#next-question').click();
    await answer(shiftingPage);
    await shiftingPage.locator('#next-question').click();
+   if(await shiftingPage.locator('.forest-tactic-strategy').getAttribute('open')===null)
+     await shiftingPage.locator('.forest-tactic-strategy > summary').click();
    await shiftingPage.locator('[data-tactic-kind="grammar"]').click();
    await answer(shiftingPage);
    assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',

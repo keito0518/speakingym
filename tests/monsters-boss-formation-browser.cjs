@@ -64,7 +64,11 @@ const assert=require('node:assert/strict');
    }
    if(await page.locator('#forest-tactics').isVisible()){
     const listening=page.locator('[data-tactic-kind="listen"]');
-    if(await listening.count()&&await listening.isEnabled())await listening.click();
+    if(await listening.count()&&await listening.isEnabled()){
+     if(await page.locator('.forest-tactic-strategy').getAttribute('open')===null)
+      await page.locator('.forest-tactic-strategy > summary').click();
+     await listening.click();
+    }
     await answer();continue;
    }
    throw Error(`Cannot progress to the boss at step ${step}`);

@@ -66,7 +66,11 @@ const assert=require('node:assert/strict');
     const listening=page.locator('[data-tactic-kind="listen"]');
     // Enemy turns deliberately have no attack-type buttons: the learner must
     // answer the enemy's preannounced skill instead of switching its quiz.
-    if(await listening.count()&&await listening.isEnabled())await listening.click();
+    if(await listening.count()&&await listening.isEnabled()){
+     if(await page.locator('.forest-tactic-strategy').getAttribute('open')===null)
+      await page.locator('.forest-tactic-strategy > summary').click();
+     await listening.click();
+    }
     await answer();continue;
    }
    throw Error(`Unexpected tactical screen before boss, step ${step}`);
