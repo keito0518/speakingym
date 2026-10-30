@@ -257,6 +257,20 @@
 .forest-invite.dungeon-selection .dungeon-quick-actions{align-items:center;justify-content:flex-start;gap:12px;padding:17px 16px;border:1px solid #cbdbcb;border-radius:17px;background:#f6f9f1;box-shadow:0 4px 13px #142d2010}
 .forest-invite.dungeon-selection #forest-home-progress{color:#456c54;line-height:1.5}
 .forest-invite.dungeon-selection .forest-weakness-summary{color:#ffe6a5!important}
+/* New players see one clear next step. Optional modes stay reachable without
+   making the main route compete with two equally prominent buttons. */
+.forest-invite.dungeon-selection .dungeon-quick-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin:13px 0 18px}
+.forest-invite.dungeon-selection .dungeon-quick-actions #start-forest{width:100%;min-height:57px;padding:12px 15px;font-size:16px;text-align:center}
+.dungeon-other-modes{min-width:0}
+.dungeon-other-modes>summary{display:flex;align-items:center;justify-content:center;min-height:44px;padding:9px 12px;border:1px solid #adc9b0;border-radius:10px;background:#e6f0e8;color:#214a35;font-size:13px;font-weight:850;cursor:pointer}
+.dungeon-other-modes>summary:focus-visible{outline:3px solid #2f8260;outline-offset:2px}
+.dungeon-other-modes-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px 0 2px}
+.dungeon-other-modes-actions button{width:100%;min-width:0;min-height:47px;white-space:normal}
+.forest-invite.dungeon-selection #forest-home-progress{font-size:11px;line-height:1.45;overflow-wrap:break-word}
+.forest-invite.dungeon-selection .dungeon-selection-label{margin-top:16px}
+.forest-invite.dungeon-selection .forest-area-count,
+.forest-invite.dungeon-selection .boss-medal-target{display:none}
+@media(max-width:420px){.dungeon-other-modes-actions{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:540px){
  .dungeon-selection-banner{padding:24px 17px;border-radius:19px}
  .dungeon-selection-banner-content{gap:10px}

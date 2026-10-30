@@ -40,7 +40,7 @@ const assert=require('node:assert/strict');
   });
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-home-page="forest"]').click();
-  await page.locator('#start-forest-tactics').click();
+  await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await page.locator('#start-forest-tactics').click();
   assert.match(await page.locator('.forest-formation-link').innerText(),/いばらの突破口.*1手目.*単語.*次の敵攻撃を1軽減/);
   assert.match(await page.locator('.forest-formation-link').innerText(),/この編成で狙える/);
   await page.locator('#forest-explore-continue').click();

@@ -746,9 +746,9 @@ function renderPartyFormation(){
  const reserveMatches=kind=>roster.slice(1).filter(id=>allyAffinity(id).strong===kind);
  const coverCount=currentLeader?bossForecast.filter(move=>allyAffinity(currentLeader).weak===move.kind&&reserveMatches(move.kind).length).length:0;
  const rangeCount=new Set(roster.map(id=>allyAffinity(id).strong)).size;
- const guide=owned.length===1?'仲間はまだ1体だけ。編成できる仲間が増えるとここで入れ替えられるよ。今は「この編成で出発する」から始めよう。':'仲間の絵やカードをタップして選ぼう。控えの仲間は「先頭にする」でも切り替えられるよ。';
+ const guide=owned.length===1?'この仲間で始められるよ。下の「出発」を押そう。':'仲間をタップして選ぼう。準備できたら出発！';
  screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span></div>
- <div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${i===2?'最終撃':BATTLE_LABELS[move.kind]}${i===2?'':move.pressure?' · 強':''}</span>`).join('')}</div>${link?`<p class="forest-formation-link"><strong>連携：${escapeHtml(link.name)}</strong> ${link.phase+1}手目 · 控えの${BATTLE_LABELS[link.kind]}で${link.description}。${reserveMatches(link.kind).length?' この編成で狙える！':' 控えを選ぼう。'}</p>`:''}<details class="forest-formation-extra"><summary>${coverCount?'身代わりできる組み合わせあり':'身代わり・相性の詳しい条件'}</summary><p>編成の得意技能は${rangeCount}種類。控えが先頭の苦手技能を得意としていると、ボスの反撃で身代わりできることがあるよ。身代わりはボス戦で1回。英語の正誤判定は変わらない。</p></details></div>
+ <details class="forest-formation-boss-wrap"><summary>ボスの攻撃・連携を見る</summary><div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${i===2?'最終撃':BATTLE_LABELS[move.kind]}${i===2?'':move.pressure?' · 強':''}</span>`).join('')}</div>${link?`<p class="forest-formation-link"><strong>連携：${escapeHtml(link.name)}</strong> ${link.phase+1}手目 · 控えの${BATTLE_LABELS[link.kind]}で${link.description}。${reserveMatches(link.kind).length?' この編成で狙える！':' 控えを選ぼう。'}</p>`:''}<details class="forest-formation-extra"><summary>${coverCount?'身代わりできる組み合わせあり':'身代わり・相性の詳しい条件'}</summary><p>編成の得意技能は${rangeCount}種類。控えが先頭の苦手技能を得意としていると、ボスの反撃で身代わりできることがあるよ。身代わりはボス戦で1回。英語の正誤判定は変わらない。</p></details></div></details>
  <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
  <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
    const id=roster[index],monster=id?monsterFor(id):null,progress=id?getMonsterProgress(save,id):null;
@@ -762,7 +762,7 @@ function renderPartyFormation(){
    const label=leader?'先頭で出撃中':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
    return `<div class="forest-formation-card" data-formation-card="${escapeHtml(id)}" data-formation-selected="${selected}" data-formation-leader="${leader}">
     <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.evolved)}</div>
-    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)} · Lv.${progress.level} · HP成長＋${levelHpBonus(progress.level)+(progress.evolved?1:0)}</span><span>得意 ${BATTLE_LABELS[affinity.strong]} ／ 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></div>
+    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.evolved?' ★':''}</strong><span>Lv.${progress.level} · 得意 ${BATTLE_LABELS[affinity.strong]}</span><details class="forest-formation-monster-more"><summary>能力を見る</summary><span>${escapeHtml(progress.evolved?monster.evolvedName:monster.name)} · HP成長＋${levelHpBonus(progress.level)+(progress.evolved?1:0)} · 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></details></div>
     <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}">${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
    </div>`;
  }).join('')}</div><p class="forest-formation-status" role="status" aria-live="polite" id="forest-formation-status">${escapeHtml(t.formationMessage||guide)}</p>`;
@@ -780,7 +780,7 @@ function renderPartyFormation(){
  }));
  // The artwork and empty area of each card also respond to a finger tap.
  $$('[data-formation-card]',screen).forEach(card=>card.addEventListener('click',event=>{
-   if(event.target.closest('button'))return;
+   if(event.target.closest('button,summary,details'))return;
    card.querySelector('[data-formation-choice]')?.click();
  }));
  $$('[data-formation-lead]',screen).forEach(button=>button.addEventListener('click',()=>{
@@ -817,12 +817,12 @@ function showForestExplore(routeChoice=false) {
   const storyKey=storyEvent?`${play.wave}:${storyEvent.id}`:null;
   const selected=storyEvent?forestEventChoice(storyEvent,play.eventChoices[storyKey]):null;
   $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':routeChoice?'分かれ道に到着':storyEvent?storyEvent.title:isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
-  $('#forest-explore-description').textContent=routeChoice?'道によって宝物が変わる。':
-    formation?'最大3体を編成。先頭を決めて出発！':
+  $('#forest-explore-description').textContent=routeChoice?'好きな道を選ぼう。':
+    formation?'この編成で出発できるよ。':
     storyEvent?storyEvent.story:
-    isBoss?`${area.world==='city'?'街':'森'}のボスが待っている。`:
-    play.index===0?`${area.story} 学習目標：${area.goal}。`:
-    `${foe.japanese} の気配がする。`;
+    isBoss?'ボスが待っている！':
+    play.index===0?'出発して最初の問題に挑もう。':
+    '次の戦闘へ進もう。';
   const eventPanel=$('#forest-explore-event');
   eventPanel.hidden=formation||!storyEvent;
   const formationPanel=$('#forest-party-formation');
@@ -851,7 +851,7 @@ function showForestExplore(routeChoice=false) {
     `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
   const forward=$('#forest-explore-continue');
   forward.hidden=routeChoice;
-  forward.textContent=formation?'この編成で出発する':storyEvent&&!selected?'物語をスキップして次の問題へ':isBoss?'最後の確認へ進む':storyEvent?'次の問題へ進む':play.index===0?(area.world==='city'?'街へ出発する':'森へ出発する'):'次の問題へ進む';
+  forward.textContent=formation?'この仲間で出発':storyEvent&&!selected?'選ばず次の問題へ':isBoss?'ボスと戦う':storyEvent?'次の問題へ':play.index===0?'冒険を始める':'次の問題へ';
   if(routeChoice){
     $$('[data-forest-route]',options).forEach(button=>button.addEventListener('click',()=>{
       if(!play || play.mode!=='forest'||play.route)return;
@@ -933,7 +933,7 @@ function renderQuestion() {
     const style=enemyTurn?'incoming':prompt.kind==='listen'?'defense':prompt.kind==='read'?'reading':prompt.kind==='vocab'?'weakness':prompt.kind==='grammar'?'spell':'attack';
     $('#forest-world-stage').dataset.action=style;
     const move=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt});
-    $('#forest-battle-log').textContent=enemyTurn?`敵の反撃！ ${BATTLE_LABELS[play.tactics.enemyKind]}で防ごう。自力正解ならダメージ0。`:style==='defense'?'音声を聞いて内容を理解しよう。話す必要はないよ。':style==='reading'?'文章を読んで英語で答えよう。':style==='weakness'?'文脈に合う単語を選ぼう。':style==='spell'?'単語を自然な語順に並べよう。':'自分の英語で意味を伝えよう。';
+    $('#forest-battle-log').textContent=enemyTurn?`敵の反撃：${BATTLE_LABELS[play.tactics.enemyKind]}。正解で防ごう。`:style==='defense'?'音声を聞いて選ぼう。':style==='reading'?'文章を読んで答えよう。':style==='weakness'?'単語を選ぼう。':style==='spell'?'単語を並べよう。':'英語で答えよう。';
   }
   $('#play-progress-fill').style.width=`${100*play.index/play.prompts.length}%`;
   const englishMode = (prompt.difficulty||'easy')!=='easy';
