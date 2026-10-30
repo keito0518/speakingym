@@ -597,3 +597,29 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .dungeon-first-tip strong{color:#28513a}
 @media(max-width:430px){.beta-feedback{margin:22px 12px 14px;padding:17px 14px}.beta-feedback-options{grid-template-columns:1fr 1fr;gap:8px}.beta-feedback-options button{font-size:12px;padding:10px 6px;min-width:0}.beta-consent-actions button{flex:1 1 120px}.beta-consent-actions span{width:100%;text-align:center}}
 @media(max-width:360px){.beta-feedback-options{grid-template-columns:1fr}}
+
+/* Learn by touching: sandbox demo, no XP, no save mutations. */
+.dungeon-practice-link{display:inline-flex;align-items:center;min-height:42px;padding:8px 12px;margin:4px 4px 4px 8px;border:1px solid #237553;border-radius:10px;background:#246c50;color:#fff;font-size:12px;font-weight:900}
+.tutorial-try-battle{width:100%;min-height:47px;margin:10px 0 3px;border:1px solid #1e7453;border-radius:11px;background:#237451;color:#fff;font-size:13px;font-weight:900}
+.practice-battle-backdrop{position:fixed;inset:0;z-index:5100;display:grid;place-items:center;padding:12px;background:#122e2bc9}
+.practice-battle-dialog{position:relative;width:100%;max-width:430px;max-height:92dvh;overflow-y:auto;padding:23px 18px 18px;border:2px solid #b4ccac;border-radius:18px;background:#fcfff4;color:#263e30;box-shadow:0 20px 55px #11251c85;text-align:center}
+.practice-battle-close{display:block;margin-left:auto;min-height:40px;padding:6px 11px;border:1px solid #a5bda7;border-radius:9px;background:#edf5eb;color:#264b3b;font-weight:800}
+.practice-battle-progress{font-size:12px;font-weight:850;color:#31684f;margin:0 0 7px}
+.practice-battle-dialog h2{font-size:clamp(19px,5vw,25px);line-height:1.4}
+.practice-battle-arena{display:flex;align-items:center;justify-content:space-around;gap:10px;min-height:105px;margin:15px 0 13px;padding:10px;border:1px solid #98bba5;border-radius:15px;background:linear-gradient(135deg,#23493d,#345a68);color:#fff1d2;font-size:12px;font-weight:850}
+.practice-battle-arena span{min-width:0}.practice-battle-arena b{display:block;margin-top:4px;font-size:15px;color:#fff}
+.practice-battle-foe{width:62px;min-width:62px;height:62px;border:4px solid #f3e2b0;border-radius:49% 51% 45% 55%;background:radial-gradient(circle at 35% 34%,#faf2db 3px,transparent 5px),radial-gradient(circle at 66% 34%,#faf2db 3px,transparent 5px),linear-gradient(140deg,#8e67ab,#5f518f);box-shadow:inset 0 -9px 0 #3d347d,0 7px 14px #152c45}
+#practice-battle-prompt{margin:10px auto 15px;font-size:15px;font-weight:800;line-height:1.65;overflow-wrap:break-word;line-break:strict}
+.practice-battle-actions{display:grid;grid-template-columns:1fr;gap:9px}
+.practice-battle-actions button{min-height:48px;padding:10px 12px;border:1px solid #3e7b5b;border-radius:11px;background:#e9f5e8;color:#254634;font-size:14px;font-weight:850;overflow-wrap:break-word}
+.practice-battle-actions .practice-battle-main{background:#227a54;color:#fff}
+.practice-battle-actions button:disabled{opacity:.6}
+.practice-battle-feedback{min-height:24px;margin-top:10px;font-size:12px;line-height:1.6;font-weight:750;color:#326b4d}
+.practice-battle-no-reward{margin-top:9px;color:#576c59;font-size:11px;line-height:1.5}
+.forest-turn-task{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 7px;padding:10px 11px;border:1px solid #4b9276;border-radius:10px;background:#dff1e5;color:#214c37;line-height:1.45}
+.forest-turn-task strong{font-size:14px}.forest-turn-task span{font-size:12px;font-weight:700}
+.forest-turn-task[data-turn="enemy"]{border-color:#c18f60;background:#fff0d9;color:#634322}
+.result-next-panel{display:grid;gap:10px;justify-items:center;margin:20px auto 6px;padding:18px;border:1px solid #abd1b0;border-radius:15px;background:#e5f4e6}
+.result-next-panel strong{font-size:15px;color:#21573c;line-height:1.55}
+.result-next-panel .button{max-width:100%;white-space:normal;font-size:15px}
+@media(max-width:430px){.dungeon-practice-link{margin-left:4px}.practice-battle-dialog{padding:16px 12px}.forest-turn-task{padding:8px}.forest-turn-task span{font-size:11px}.result-next-panel{padding:12px}}

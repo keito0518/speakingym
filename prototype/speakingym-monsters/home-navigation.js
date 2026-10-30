@@ -114,7 +114,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  }
  menu.append(head,feature,label,grid);home.prepend(menu);
  const dialog=document.createElement('div');dialog.className='tutorial-backdrop';dialog.id='monsters-tutorial';dialog.hidden=true;
- dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
+ dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><button type="button" id="tutorial-try-battle" class="tutorial-try-battle">操作して覚える練習バトル</button><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
  document.body.append(dialog);
  let step=0,lastFocused=null,fromGame=false;
  const close=()=>{dialog.hidden=true;lastFocused?.focus?.({preventScroll:true});};
@@ -139,6 +139,55 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   step=topic==='battle'?3:topic==='growth'?7:0;
   renderStep();dialog.hidden=false;dialog.querySelector('#tutorial-close').focus();
  }
+ // Four real taps teach the flow without awards or changes to player saves.
+ // This is a standalone, deterministic simulation, never the English grader.
+ const practice=document.createElement('div');
+ practice.id='monsters-practice-battle';practice.className='practice-battle-backdrop';practice.hidden=true;
+ practice.innerHTML='<section class="practice-battle-dialog" role="dialog" aria-modal="true" aria-labelledby="practice-battle-title"><button type="button" class="practice-battle-close" id="practice-battle-close" aria-label="練習をやめる">閉じる</button><p class="practice-battle-progress" id="practice-battle-progress"></p><h2 id="practice-battle-title">はじめてのバトル</h2><div class="practice-battle-arena" aria-label="練習バトルのHP"><span>なかま <b id="practice-ally-hp">HP 3/3</b></span><span class="practice-battle-foe" aria-hidden="true"></span><span>敵 <b id="practice-enemy-hp">HP 2/2</b></span></div><p id="practice-battle-prompt"></p><div class="practice-battle-actions" id="practice-battle-actions"></div><p class="practice-battle-feedback" id="practice-battle-feedback" role="status" aria-live="polite"></p><p class="practice-battle-no-reward">練習バトルです。XPや仲間の記録は変わりません。</p></section>';
+ document.body.append(practice);
+ let practiceStage=0,practiceMessage='',practiceReturnFocus=null;
+ const practiceQuestions=[
+  {title:'1. こうげきを選ぼう',prompt:'まずは「こうげき」を押してみよう。',options:[['attack','こうげき'],['skill','必殺技（まだ使えない）']],answer:'attack',success:'よし！ 英語の問題に答えて攻撃しよう。'},
+  {title:'2. 英語で攻撃！',prompt:'「少し待ってください」を英語で伝えるなら？',options:[['wait','Just a moment, please.'],['night','Good night.']],answer:'wait',success:'正解！ 攻撃が当たり、敵のHPが減ったよ。'},
+  {title:'3. 敵の反撃を防ごう',prompt:'敵の文法攻撃！「I ___ happy.」に入るのは？',options:[['am','am'],['is','is']],answer:'am',success:'正解！ ダメージ0で防御成功。'},
+ ];
+ const closePractice=()=>{practice.hidden=true;practiceReturnFocus?.focus?.({preventScroll:true});};
+ function renderPractice(){
+  const done=practiceStage>=practiceQuestions.length;
+  const current=practiceQuestions[practiceStage];
+  practice.querySelector('#practice-battle-progress').textContent=done?'練習クリア':`練習 ${practiceStage+1} / ${practiceQuestions.length}`;
+  practice.querySelector('#practice-battle-title').textContent=done?'練習バトル、クリア！':current.title;
+  practice.querySelector('#practice-battle-prompt').textContent=done?'攻撃して、英語で答えて、敵の反撃を防げたね。実際のダンジョンへ進もう！':current.prompt;
+  practice.querySelector('#practice-ally-hp').textContent='HP 3/3';
+  practice.querySelector('#practice-enemy-hp').textContent=`HP ${practiceStage>=2?0:2}/2`;
+  practice.querySelector('#practice-battle-feedback').textContent=practiceMessage;
+  practice.querySelector('#practice-battle-actions').innerHTML=done?'<button type="button" data-practice-action="begin" class="practice-battle-main">ダンジョンへ進む</button><button type="button" data-practice-action="again">もう一度練習する</button>':
+   current.options.map(([id,label])=>`<button type="button" data-practice-action="${id}" ${id==='skill'?'disabled':''}>${label}</button>`).join('');
+  practice.querySelectorAll('[data-practice-action]').forEach(button=>button.addEventListener('click',()=>{
+   const action=button.dataset.practiceAction;
+   if(action==='begin'){closePractice();showPage('forest');return;}
+   if(action==='again'){practiceStage=0;practiceMessage='';renderPractice();return;}
+   if(action!==current.answer){practiceMessage='惜しい！ 問題を見て、もう一度選んでみよう。';renderPractice();return;}
+   practiceMessage=current.success;practiceStage++;renderPractice();
+  }));
+  practice.querySelector('[data-practice-action]:not(:disabled)')?.focus({preventScroll:true});
+ }
+ function startPracticeBattle(){
+  if(!dialog.hidden)close();
+  practiceReturnFocus=document.activeElement;
+  practiceStage=0;practiceMessage='';
+  practice.hidden=false;renderPractice();
+ }
+ practice.querySelector('#practice-battle-close').addEventListener('click',closePractice);
+ practice.addEventListener('click',event=>{if(event.target===practice)closePractice();});
+ practice.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();closePractice();return;}
+  if(event.key!=='Tab')return;
+  const controls=[...practice.querySelectorAll('button:not(:disabled)')];
+  if(event.shiftKey&&document.activeElement===controls[0]){event.preventDefault();controls.at(-1).focus();}
+  if(!event.shiftKey&&document.activeElement===controls.at(-1)){event.preventDefault();controls[0].focus();}
+ });
+ dialog.querySelector('#tutorial-try-battle').addEventListener('click',startPracticeBattle);
  dialog.querySelector('#tutorial-close').addEventListener('click',close);
  dialog.querySelector('#tutorial-previous').addEventListener('click',()=>{if(step>0){step--;renderStep();}});
  dialog.querySelector('#tutorial-next').addEventListener('click',()=>{if(step===STEPS.length-1){close();if(!fromGame)showPage('forest');}else{step++;renderStep();}});
@@ -180,7 +229,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      tile.append(walker);
    });
  }
- return {showMenu,showPage,openTutorial,updateWalkers,
+ return {showMenu,showPage,openTutorial,startPracticeBattle,updateWalkers,
    updateHero({art,name,level,mastered,due,xp,areasCleared=0,bondRank=0,cityUnlocked=false,cityCleared=false}){
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;

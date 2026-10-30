@@ -631,7 +631,7 @@ function renderTacticalControls(){
    if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=foePlannedAttack({style:foeStyle,activeId:play.companionId,last:t.lastEnemyKind});
  }
- panel.innerHTML=`<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 行動を選ぼう'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
+ panel.innerHTML=`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'敵の反撃！':'あなたのターン'}</strong><span>${incoming?'今の英語問題に答えて防ごう。':'攻撃の種類を選んで、英語で答えよう。'}</span></p><div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 行動を選ぼう'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
@@ -1773,6 +1773,16 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories;
   renderDungeonLearningReport(ended);
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
+  const nextArea=forestFinished&&!ended.endless?nextDungeonArea(save):null;
+  const canContinue=Boolean(nextArea&&nextArea.id!==ended.areaId&&unlockedDungeonAreas(save).some(area=>area.id===nextArea.id));
+  $('#result-next-panel').hidden=!canContinue;
+  if(canContinue){
+    $('#result-next-message').textContent=`次のエリアが解放されたよ！ +${ended.earnedXp} XPを獲得`;
+    $('#result-next').textContent=`次へ：${nextArea.name}`;
+    $('#result-next').onclick=()=>startSession(ended.tactics?'forest-tactics':'forest',nextArea.id);
+  }else $('#result-next').onclick=null;
+  $('#result-collection').classList.toggle('button-ghost',canContinue);
+  $('#result-collection').classList.toggle('button-primary',!canContinue);
   $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.areaId);
   showView('result');
@@ -1794,6 +1804,7 @@ $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:startSession,showCollection:()=>renderCollection()});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
+$('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
 $('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));
 $('#forest-explore-continue').addEventListener('click',()=>{
   if(play?.mode!=='forest'||!$('#play-view').classList.contains('forest-exploring')||!$('#forest-explore-options').hidden)return;
