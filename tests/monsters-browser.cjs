@@ -686,10 +686,16 @@ const path=require('node:path');
             // Choosing a scene must not affect XP, attempts or language gates.
             assert.equal(await forestPage.locator('#forest-explore-event').isVisible(),true);
             assert.equal(await forestPage.locator('[data-forest-event-option]').count(),2);
+            assert.equal(await forestPage.locator('.forest-npc-dialogue').isVisible(),true);
+            assert.match(await forestPage.locator('.forest-npc-dialogue [lang="en"]').innerText(),/Did you hear that voice/);
+            assert.match(await forestPage.locator('[data-forest-event-option]').first().innerText(),/Let's listen again/);
+            assert.equal(await forestPage.locator('.forest-npc-dialogue > small').isVisible(),true,
+              'Easy mode retains a clear Japanese meaning underneath the NPC line');
             assert.equal(await forestPage.locator('#forest-explore-continue').isVisible(),true,'Optional story may be skipped');
             const beforeChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
             await forestPage.locator('[data-forest-event-option]').first().click();
             assert.match(await forestPage.locator('#forest-explore-event').innerText(),/探索の記録|EXPEDITION MEMORY/);
+            assert.match(await forestPage.locator('.forest-npc-reply [lang="en"]').innerText(),/sound is bouncing off the rocks/);
             assert.equal(await forestPage.locator('[data-forest-event-option]').count(),0);
             const afterChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
             assert.equal(afterChoice.xpWallet,beforeChoice.xpWallet,'Story choices cannot award XP');

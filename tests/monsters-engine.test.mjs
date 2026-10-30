@@ -16,7 +16,7 @@ import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teachin
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
-import { FOREST_EVENTS, forestEventFor, forestEventChoice } from '../prototype/speakingym-monsters/forest-events.js';
+import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
@@ -1417,8 +1417,12 @@ test('every chapter and route has a meaningful but grade-neutral choice event',(
    assert.ok(!ids.has(event.id),'Each story chapter and route must be distinct');
    ids.add(event.id);
    assert.ok(event.title.length>=5&&event.story.length>=15);
+   const npc=forestNpcDialogueFor(event);
+   assert.ok(npc?.name&&npc.line.length>=30&&npc.meaning.length>=10,
+     `Each Forest encounter needs a contextual English NPC line: ${event.id}`);
    assert.equal(event.options.length,2);
    assert.equal(new Set(event.options.map(o=>o.id)).size,2);
+   assert.deepEqual(Object.keys(npc.replies).sort(),event.options.map(o=>o.id).sort());
    for(const option of event.options){
     assert.equal(forestEventChoice(event,option.id),option);
     assert.ok(option.outcome.length>=25&&option.memento.length>=5);
@@ -1426,17 +1430,24 @@ test('every chapter and route has a meaningful but grade-neutral choice event',(
     outcomes.add(option.outcome);
     assert.equal(Object.hasOwn(option,'xp'),false);
     assert.equal(Object.hasOwn(option,'grade'),false);
+    const reply=npc.replies[option.id];
+    assert.ok(reply.answer.length>=12&&reply.reaction.length>=20,
+      `Choice and response should be useful English, not filler: ${event.id}/${option.id}`);
+    assert.equal(Object.hasOwn(reply,'xp'),false);
+    assert.equal(Object.hasOwn(reply,'grade'),false);
    }
    assert.equal(forestEventFor({areaId:area.id,route:route.id,index:3}),null);
    assert.equal(forestEventChoice(event,'not-a-choice'),null);
   }
  }
  assert.equal(ids.size,8);
+ assert.deepEqual(Object.keys(FOREST_NPC_DIALOGUES).sort(),[...ids].sort());
  assert.equal(outcomes.size,16);
  assert.equal(forestEventFor({areaId:'unknown',route:'sunlit',index:4}),null);
  assert.equal(forestEventFor({areaId:'entry',route:'unknown',index:4}),null);
  assert.equal(forestEventFor({areaId:'entry',route:'sunlit',index:5}),null);
  assert.equal(forestEventChoice(null,'inspect'),null);
+ assert.equal(forestNpcDialogueFor(null),null);
 });
 test('all eight chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
   assert.deepEqual(Object.keys(FOREST_BOSS_CHAPTERS),DUNGEON_AREAS.map(a=>a.id));

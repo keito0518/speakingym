@@ -1,3 +1,10 @@
+## 2026-10-30 — authored NPC replies during Forest exploration
+
+- All **four Forest chapters × two route choices** now include a short authored NPC exchange at the existing exploration event: an English question, two natural English replies, and a distinct NPC response to the player's choice. The interaction is integrated into the same map checkpoint, not a second compulsory combat task.
+- Easy difficulty displays Japanese support beside the NPC's English line and action meaning; normal/hard provide the NPC translation only when requested. On narrow phones the response buttons stack vertically, keeping complete English sentences readable.
+- NPC replies are **story choices, not graded language checks**. Either response can progress; they do not grant XP, battle damage, mastery, or free access past any existing English task. Saved story event identifiers, outcomes, journals, old localStorage data, and existing reward rules remain unchanged.
+- This is authored text, not synthesized NPC audio or open-ended dialogue. Future NPC listening can use reviewed recorded clips; don't present this as a listening or pronunciation test. No AI calls, paid services, production data, Worker, main branch or Stripe changes.
+
 ## 2026-10-30 — competitive learning UX follow-up
 
 - The offline **five-minute gym** now rotates its otherwise-unseen task choices by local calendar day and difficulty, instead of always presenting the alphabetically first prompts. The same day's plan stays deterministic; real overdue review work retains its priority, and unresolved due quiz mistakes receive extra priority. Prompts already practiced today are discouraged for non-review slots. This changes only task selection, **not** rewards, save schema or assessment.

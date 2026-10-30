@@ -62,3 +62,54 @@ export function forestEventChoice(event,choiceId){
  if(!event||typeof choiceId!=='string')return null;
  return event.options.find(x=>x.id===choiceId)||null;
 }
+
+// Short, authored NPC exchanges give exploration a real language moment.
+// Both actions are legitimate story choices; neither is an English verdict,
+// a listening test, a reward gate, or a substitute for combat practice.
+const dialogue=(name,line,meaning,replies)=>Object.freeze({
+ name,line,meaning,replies:Object.freeze(Object.fromEntries(Object.entries(replies).map(([id,[answer,reaction]])=>
+  [id,Object.freeze({answer,reaction})])))
+});
+export const FOREST_NPC_DIALOGUES=Object.freeze({
+ 'entry-sunlit':dialogue('Trailkeeper','This sign is broken. How should we find the old gate?',
+  '看板が壊れています。古い門への道をどうやって見つけましょうか？',{
+   inspect:["Let's put the sign back together.",'Good idea. The missing words may point us toward the gate.'],
+   follow:["Let's follow the footprints.",'Then watch your step. Someone went through the grass.']
+  }),
+ 'entry-moss':dialogue('Echo Sprite',"Did you hear that voice? I can't tell where it came from.",
+  'あの声が聞こえましたか？ どこから来たのか分かりません。',{
+   listen:["Let's listen again before we move.",'I hear it now. The sound is bouncing off the rocks.'],
+   observe:["Let's follow the lights instead.",'The mushrooms are flashing toward the clearing.']
+  }),
+ 'glade-sunlit':dialogue('Wandering Cartographer','I lost my map. Do you think this is the right trail?',
+  '地図をなくしました。この道で合っていると思いますか？',{
+   restore:["Let me unfold the map first.",'That helps! The sunny trail is marked here.'],
+   return:["Let's find out who dropped it.",'A good thought. The owner may know the safest route.']
+  }),
+ 'glade-moss':dialogue('Mail Sprite','This letter has no envelope. What should we do with it?',
+  'この手紙には封筒がありません。どうしましょうか？',{
+   read:["I'll check who the letter is for.","It says, 'To the friend who follows the light.'"],
+   protect:["Let's keep the letter dry.","Thanks. Now the rain won't wash the words away."]
+  }),
+ 'thicket-sunlit':dialogue('Lost Hiker',"I can't read the sign in this fog. Which way should we go?",
+  '霧で標識が読めません。どちらへ進みましょうか？',{
+   trace:["Let me read the letters that are still visible.","Those marks look like a knight's crest."],
+   scout:["Let's look for another sign.",'There is one farther down the trail!']
+  }),
+ 'thicket-moss':dialogue('Lantern Keeper','My lantern went out, and the path is hard to see.',
+  'ランタンが消えて、道がよく見えません。',{
+   repair:["Let's repair the lantern first.",'A little light is enough to keep moving.'],
+   mark:["Let's mark our way with stones.",'Now we can find our way back.']
+  }),
+ 'sanctuary-sunlit':dialogue('Elder Scout','These rings look like a map. What do they mean?',
+  'この年輪は地図のようです。どんな意味でしょうか？',{
+   count:["Let's follow the rings toward the center.",'They point to the heart of the sanctuary.'],
+   rest:["Let's rest and listen to the trees.",'The wind sounds like a quiet warning.']
+  }),
+ 'sanctuary-moss':dialogue('Root Sprite',"These stones haven't moved in years. Should we touch them?",
+  'この石は何年も動いていません。触ってもよいでしょうか？',{
+   arrange:["I'll arrange them carefully.",'They form the shape of a leaf.'],
+   leave:["Let's leave them as they are.",'Thank you for protecting the roots.']
+  })
+});
+export function forestNpcDialogueFor(event){return event?FOREST_NPC_DIALOGUES[event.id]||null:null;}

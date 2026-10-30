@@ -629,6 +629,15 @@
 .forest-event-choices button:focus-visible{outline:3px solid #f4d179;outline-offset:3px}
 .forest-event-choices strong{font-size:13px;line-height:1.4}
 .forest-event-choices small,.forest-explore-event>small{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.forest-npc-dialogue,.forest-npc-reply{padding:12px 13px;border:1px solid #6d9a85;border-radius:12px;background:#10291f;color:#f9f5e7;min-width:0}
+.forest-npc-name,.forest-npc-reply>span{display:block;color:#ffe0a1;font-size:10px;letter-spacing:.08em;font-weight:850;margin-bottom:6px}
+.forest-npc-dialogue p,.forest-npc-reply p{font-size:clamp(14px,3.8vw,17px);font-weight:750;line-height:1.55;overflow-wrap:break-word;margin:0}
+.forest-npc-dialogue small{display:block;color:#d7e7d6;font-size:11px;line-height:1.6;margin-top:7px}
+.forest-npc-dialogue details{margin-top:8px;border-top:1px solid #486c5d;padding-top:5px}
+.forest-npc-dialogue summary{min-height:40px;display:flex;align-items:center;color:#ffe0a1;font-size:11px;font-weight:800;cursor:pointer}
+.forest-npc-dialogue summary:focus-visible{outline:3px solid #f4d179;outline-offset:2px}
+.forest-explore-event.has-npc .forest-event-choices strong{font-size:clamp(13px,3.4vw,15px);line-height:1.5;overflow-wrap:break-word}
+.forest-explore-event.has-npc .forest-event-choices button{min-height:72px}
 .forest-explore-event>strong{color:#ffe6a3;font-size:15px}
 .forest-event-outcome{font-size:13px;line-height:1.7;overflow-wrap:anywhere;margin:0}
 .forest-event-memory{padding:12px 14px;border:1px solid #bdccae;border-radius:11px;background:#f1f5e9}
@@ -643,6 +652,7 @@
 .forest-world-stage.forest-boss-stage[data-boss-phase="3"] .forest-world-vignette::after{border-width:6px}
 @keyframes boss-charge-glow{from{opacity:.45}to{opacity:1}}
 @media(max-width:360px){.forest-event-choices{gap:6px}.forest-event-choices button{padding:8px}.forest-event-choices strong{font-size:12px}}
+@media(max-width:540px){.forest-explore-event.has-npc .forest-event-choices{grid-template-columns:minmax(0,1fr)}.forest-explore-event.has-npc .forest-event-choices button{min-height:64px}}
 @media(prefers-reduced-motion:reduce){.forest-world-stage.forest-boss-stage .forest-world-vignette::after{animation:none!important}}
 
 

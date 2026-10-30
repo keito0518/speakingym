@@ -19,7 +19,7 @@ import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
-import { forestEventFor, forestEventChoice } from './forest-events.js';
+import { forestEventFor, forestEventChoice, forestNpcDialogueFor } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
@@ -829,10 +829,14 @@ function showForestExplore(routeChoice=false) {
   formationPanel.hidden=!formation;
   if(formation)renderPartyFormation();
   if(storyEvent){
+    const npc=forestNpcDialogueFor(storyEvent);
+    eventPanel.classList.toggle('has-npc',Boolean(npc));
+    const easy=play.difficulty==='easy';
+    const npcPrompt=npc?`<div class="forest-npc-dialogue"><span class="forest-npc-name">NPC · ${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.line)}</p>${easy?`<small>${escapeHtml(npc.meaning)}</small>`:`<details><summary>日本語で意味を確認</summary><small>${escapeHtml(npc.meaning)}</small></details>`}</div>`:'';
     eventPanel.innerHTML=selected
-      ? `<p class="forest-event-label">EXPEDITION MEMORY</p><strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p><small>この選択によるXPや正誤判定の変化はありません。</small>`
-      : `<p class="forest-event-label">STORY EVENT · 行動を選ぼう</p><div class="forest-event-choices">${storyEvent.options.map(choice=>
-        `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong>${escapeHtml(choice.label)}</strong><small>${escapeHtml(choice.detail)}</small></button>`).join('')}</div><small>どちらを選んでも英語の問題・XPは同じです。</small>`;
+      ? `<p class="forest-event-label">EXPEDITION MEMORY</p>${npc?`<div class="forest-npc-reply"><span>NPC · ${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.replies[selected.id].reaction)}</p></div>`:''}<strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p><small>この会話は探索の記録。XPや英語の正誤判定には含まれません。</small>`
+      : `<p class="forest-event-label">STORY EVENT · ${npc?'NPCに返事をしよう':'行動を選ぼう'}</p>${npcPrompt}<div class="forest-event-choices">${storyEvent.options.map(choice=>
+        `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong ${npc?'lang="en"':''}>${escapeHtml(npc?.replies[choice.id]?.answer||choice.label)}</strong>${easy||!npc?`<small>${escapeHtml(choice.label)} · ${escapeHtml(choice.detail)}</small>`:''}</button>`).join('')}</div><small>どちらの返事も物語の選択。英語の正誤判定やXPには影響しません。</small>`;
     if(!selected){
       $$('[data-forest-event-option]',eventPanel).forEach(button=>button.addEventListener('click',()=>{
         if(!play || play.mode!=='forest'||play.eventChoices[storyKey])return;
@@ -844,7 +848,7 @@ function showForestExplore(routeChoice=false) {
         showForestExplore(false);
       }));
     }
-  }else eventPanel.innerHTML='';
+  }else{eventPanel.innerHTML='';eventPanel.classList.remove('has-npc');}
   const options=$('#forest-explore-options');
   options.hidden=!routeChoice;
   options.innerHTML=routeChoice?(area.world==='city'?CITY_ROUTES:FOREST_ROUTES).map(route=>
