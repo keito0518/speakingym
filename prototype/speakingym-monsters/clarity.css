@@ -126,7 +126,6 @@
 .forest-active.tactical-battle .forest-tactic-kinds{margin:0;gap:5px}
 .forest-active.tactical-battle .forest-tactic-kinds[hidden],.forest-active.tactical-battle .forest-tactic-kind-label[hidden]{display:none!important}
 .forest-active.tactical-battle .forest-tactic-kinds button{min-height:40px;padding:6px 2px;font-size:11px}
-.forest-active.tactical-battle .forest-tactic-actions button small{display:none}
 .forest-active.tactical-battle .forest-tactic-actions button{min-height:43px}
 @media(max-width:690px){
  .forest-active.tactical-battle .forest-tries,.forest-active.tactical-battle .forest-foe-pattern{display:none!important}
