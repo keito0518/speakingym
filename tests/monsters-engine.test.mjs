@@ -193,6 +193,10 @@ test('five-minute gym mixes new, due and transfer tasks without duplicates or pa
  assert.equal(fresh.counts.new,3);
  assert.equal(fresh.counts.mixed,5);
  assert.deepEqual(dailyTrainingPlan(save,{today}).prompts.map(p=>p.id),fresh.prompts.map(p=>p.id));
+ const tomorrow=dailyTrainingPlan(save,{today:'2026-10-28'});
+ assert.equal(tomorrow.prompts.length,8);
+ assert.notDeepEqual(tomorrow.prompts.map(p=>p.id),fresh.prompts.map(p=>p.id),
+  'Untouched daily plans rotate by date instead of repeating alphabetic tasks forever');
  save=recordAnswer(save,'think-cafe','smooth','2026-10-26').save;
  save=recordAnswer(save,'repeat-station','again','2026-10-20').save;
  const mixed=dailyTrainingPlan(save,{today});

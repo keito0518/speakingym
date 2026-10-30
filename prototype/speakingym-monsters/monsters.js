@@ -875,18 +875,18 @@ function showForestRouteChoice() {
 function keepMobileQuestionInView(){
  if(play?.mode!=='forest'||window.innerWidth>690)return;
  const session=play;
- // The old answer/review panel can be much taller than the next task. On
- // Safari, scroll anchoring then strands the player below the NEW question.
- // Position that question immediately beneath the sticky battle field after
- // the next DOM render, without opening the keyboard or animating the page.
+ // A long previous answer can leave Safari scrolled below the new question.
+ // Correct that upward only. Never pull the learner downward on the first
+ // encounter or when the new task is already visible; that felt like a jump.
  requestAnimationFrame(()=>{
    const card=$('#play-card'),field=$('#forest-journey');
    if(play!==session||$('#play-view').hidden||!card||!field||field.hidden||document.hidden)return;
+   if(card.getBoundingClientRect().top>=16)return;
    const reserved=Math.min(300,field.getBoundingClientRect().height)+12;
    const desired=window.scrollY+card.getBoundingClientRect().top-reserved;
    const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
    const target=Math.max(0,Math.min(desired,max));
-   if(Math.abs(window.scrollY-target)>24)window.scrollTo({top:target,behavior:'auto'});
+   if(target<window.scrollY-24)window.scrollTo({top:target,behavior:'instant'});
  });
 }
 
@@ -1064,6 +1064,7 @@ function renderQuestion() {
     if(isIOS)$('#speech-helper').textContent=play.mode==='forest'&&play.index===regularCount()+BOSS_HITS-1
       ?'ボス最終問：話すボタンが反応しないときは、下のiPhone標準音声入力でも声で答えられるよ。'
       :'内蔵ブラウザの音声認識が使えない場合は、下のiPhone標準の音声入力に切り替えてね。';
+    else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
   if(reviewing)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(listenMode){

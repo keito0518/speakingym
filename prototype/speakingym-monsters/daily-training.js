@@ -8,6 +8,16 @@ const QUIZ_KINDS=new Set(['vocab','grammar']);
 const eligible=(p,level)=>!p.bossOnly&&(p.difficulty||'easy')===level&&Boolean(p.answer)&&
   ['speak','listen','read','vocab','grammar'].includes(p.kind);
 const baseId=p=>p.baseId||p.id;
+// A reproducible daily rotation: the same learner sees a stable plan today,
+// but an untouched account isn't sent through the same alphabetic first eight
+// questions every day. No account identifier, network call or new save field.
+function dailyRank(today,difficulty,id){
+ let hash=2166136261;
+ for(const letter of `${today}:${difficulty}:${id}`){
+   hash=Math.imul(hash^letter.charCodeAt(0),16777619);
+ }
+ return hash>>>0;
+}
 export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today=dayKey(),size=8}={}){
  if(!['easy','normal','hard'].includes(difficulty)||!/^\d{4}-\d{2}-\d{2}$/.test(today)||size<1||size>12||!Number.isInteger(size))
    throw Error('Invalid daily training options');
@@ -15,6 +25,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
  const weak=new Set(quizWeaknessOverview(save,today).due.map(q=>q.id));
  const review=new Set(Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id));
  const hasPracticed=p=>Boolean(save.progress?.[p.phraseId]?.attempts);
+ const practicedToday=p=>save.progress?.[p.phraseId]?.lastDay===today||save.quizProgress?.[p.id]?.lastCleanDay===today;
  const due=p=>weak.has(p.id)||review.has(p.id)||Boolean(save.retention?.[p.id]?.nextDay&&save.retention[p.id].nextDay<=today)||Boolean(save.progress?.[p.phraseId]?.nextReviewDay&&save.progress[p.phraseId].nextReviewDay<=today);
  const transfer=p=>hasPracticed(p)&&!QUIZ_KINDS.has(p.kind)&&
    !(save.progress?.[p.phraseId]?.smoothContexts||[]).includes(baseId(p));
@@ -25,11 +36,12 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
    if(!candidates.length)break;
    candidates.sort((a,b)=>{
     const score=p=>(
-     (bases.has(baseId(p))?8:0)+
-     (kinds.has(p.kind)?3:0)+
+     (bases.has(baseId(p))?16:0)+
+     (kinds.has(p.kind)?4:0)+
+     (category==='review'?(weak.has(p.id)?-8:0):practicedToday(p)?35:0)+
      ((save.savedPromptIds||[]).includes(p.id)?-1:0)
     );
-    return score(a)-score(b)||a.id.localeCompare(b.id);
+    return score(a)-score(b)||dailyRank(today,difficulty,a.id)-dailyRank(today,difficulty,b.id)||a.id.localeCompare(b.id);
    });
    const chosen=candidates[0];selections.push(chosen);keys.add(chosen.id);
    bases.add(baseId(chosen));kinds.add(chosen.kind);phases.push(category);

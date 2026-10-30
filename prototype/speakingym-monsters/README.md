@@ -1,3 +1,10 @@
+## 2026-10-30 — competitive learning UX follow-up
+
+- The offline **five-minute gym** now rotates its otherwise-unseen task choices by local calendar day and difficulty, instead of always presenting the alphabetically first prompts. The same day's plan stays deterministic; real overdue review work retains its priority, and unresolved due quiz mistakes receive extra priority. Prompts already practiced today are discouraged for non-review slots. This changes only task selection, **not** rewards, save schema or assessment.
+- Dungeon answer screens are calmer: the hint remains a large optional control immediately under the answer, without an extra explanatory card. On non-iOS dungeon speaking turns, the redundant initial microphone instruction is removed; actual microphone failure/help messages still appear. iPhone dictation recovery guidance remains available.
+- Mobile encounter rendering now fixes a previous-answer scroll position **upward only**, so starting or viewing a new question no longer triggers an automatic downward jump. The next-step action and hidden detailed feedback from the preceding iteration remain unchanged.
+- The changes are local-only, with no AI calls, pronunciation claims, new payments, server-side progress, main merge or production deployment. Actual iPhone testing remains necessary.
+
 ## 2026-10-28 — article-tolerant speaking, beginner cloze and visible evolutions
 
 - Speaking answers that otherwise match a **verified model or approved alternative exactly** are accepted when only up to two English articles (`a`/`an`/`the`) are omitted. For example, `I'd prefer window seat` succeeds against `I'd prefer a window seat.` and displays a gentle explanation plus the more natural full sentence. This does **not** accept altered numbers, negatives, destinations, or arbitrary unreviewed paraphrases: it is a narrowly bounded improvement, not general semantic or pronunciation grading.

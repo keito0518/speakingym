@@ -530,7 +530,15 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),false);
       assert.equal(await forestPage.locator('#forest-explore-art > svg').count(),1);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-explore.png`),fullPage:true});
-      await forestPage.locator('#forest-explore-continue').click();
+      // Start from the page top without Playwright's auto-scroll. The game
+      // must not drag a learner down to the answer box on encounter entry.
+      await forestPage.evaluate(()=>{
+        window.scrollTo({top:0,behavior:'instant'});
+        document.querySelector('#forest-explore-continue').click();
+      });
+      await forestPage.waitForTimeout(80);
+      assert.ok((await forestPage.evaluate(()=>window.scrollY))<=2,
+        `${engine}/${width}: a new encounter must not force downward scrolling`);
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),true);
       assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),false);
       assert.equal(await forestPage.locator('.forest-battle-shell #play-card').count(),1);
@@ -546,6 +554,11 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-foe'),'mossling');
       assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/霧のこだま/);
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
+      assert.equal(await forestPage.locator('.answer-quick-help > div').isVisible(),false,
+        'Dungeon inputs keep the optional hint, without an extra competing instruction card');
+      assert.equal(await forestPage.locator('#show-hint').isVisible(),true);
+      assert.ok((await forestPage.locator('#show-hint').boundingBox()).height>=44,
+        'The streamlined hint remains easy to tap');
       const battleMetrics=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(battleMetrics.scroll<=battleMetrics.inner+1,`${engine}/${width} forest battle overflow: ${JSON.stringify(battleMetrics)}`);
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-battle.png`),fullPage:true});
