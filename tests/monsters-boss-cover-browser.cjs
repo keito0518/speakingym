@@ -46,7 +46,7 @@ const assert=require('node:assert/strict');
   await page.locator('#forest-explore-continue').click();
   let reachedBoss=false;
   for(let step=0;step<110;step++){
-   if(await page.locator('.forest-boss-tactical-plan').isVisible()){reachedBoss=true;break;}
+   if(await page.locator('#forest-world-stage.forest-boss-stage').isVisible()){reachedBoss=true;break;}
    const event=page.locator('[data-forest-event-option]');
    if(await event.count()&&await event.first().isVisible()){
     await event.first().click();continue;
@@ -76,6 +76,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.forest-boss-brief').getAttribute('open'),null);
   assert.equal(await page.locator('[data-boss-plan-phase="0"]').getAttribute('data-current'),'true',
    'The grammar weakness can only be intercepted on boss phase one');
+  await page.locator('.forest-tactic-strategy > summary').click();
   await page.locator('.forest-boss-brief summary').click();
   assert.match(await page.locator('.forest-boss-cover').innerText(),/身代わり/);
   assert.equal(await page.locator('.forest-boss-cover').getAttribute('data-cover-ready'),'true');
@@ -106,6 +107,8 @@ const assert=require('node:assert/strict');
    throw Error(`Cannot return to the party after the boss's first counter: ${(await page.locator('main').innerText()).slice(0,800)}`);
   }
   const rosterDisclosure=page.locator('.forest-party-brief');
+  if(await page.locator('.forest-tactic-strategy').getAttribute('open')===null)
+   await page.locator('.forest-tactic-strategy > summary').click();
   if(await rosterDisclosure.count()&&await rosterDisclosure.getAttribute('open')===null){
    await rosterDisclosure.locator('summary').click();
   }

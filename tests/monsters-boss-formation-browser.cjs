@@ -49,7 +49,7 @@ const assert=require('node:assert/strict');
   await page.locator('#forest-explore-continue').click();
   let reachedBoss=false;
   for(let step=0;step<110;step++){
-   if(await page.locator('.forest-boss-tactical-plan').isVisible()){reachedBoss=true;break;}
+   if(await page.locator('#forest-world-stage.forest-boss-stage').isVisible()){reachedBoss=true;break;}
    const event=page.locator('[data-forest-event-option]');
    if(await event.count()&&await event.first().isVisible()){await event.first().click();continue;}
    if(await page.locator('#forest-explore-options').isVisible()){

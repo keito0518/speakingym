@@ -580,6 +580,34 @@ function compactBattleNotes(panel,t){
    detail.addEventListener('toggle',()=>{if(play?.tactics===t&&detail.isConnected)t.partyOpen=detail.open;});
  }
 }
+// The story battle is a language exercise first. Keep the four question types
+// available, but let the player opt in to matchup calculations, alternate
+// actions, party swaps and long boss notes only when they need them.
+function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
+ const kinds=panel.querySelector('.forest-tactic-kinds');
+ if(kinds){
+   kinds.hidden=incoming||play.index>=regularCount();
+   const label=document.createElement('p');
+   label.className='forest-tactic-kind-label';
+   label.textContent='問題の種類';
+   label.hidden=kinds.hidden;
+   kinds.before(label);
+ }
+ const strategy=document.createElement('details'),summary=document.createElement('summary');
+ strategy.className='forest-tactic-strategy';
+ strategy.open=Boolean(t.strategyOpen);
+ const ready=t.ultimate>=ULTIMATE_MAX&&(play.index<regularCount()||t.hp<t.maxHp);
+ const status=!incoming&&ready?'必殺技が使える！':!incoming&&supportReady?'連携チャンス！':`必殺 ${t.ultimate}/${ULTIMATE_MAX}`;
+ summary.innerHTML=`<span>${incoming?'戦況を詳しく見る':'戦術・仲間を変更する'}</span><small>${status}</small>`;
+ strategy.append(summary);
+ [...panel.children].filter(child=>child!==strategy&&
+   !child.matches('.forest-turn-task,.forest-tactic-kinds,.forest-tactic-kind-label'))
+   .forEach(child=>strategy.append(child));
+ panel.append(strategy);
+ strategy.addEventListener('toggle',()=>{
+   if(play?.tactics===t&&strategy.isConnected)t.strategyOpen=strategy.open;
+ });
+}
 function renderTacticalControls(){
  const panel=$('#forest-tactics'),t=play?.tactics;
  if(!panel)return;
@@ -630,7 +658,7 @@ function renderTacticalControls(){
    if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=foePlannedAttack({style:foeStyle,activeId:play.companionId,last:t.lastEnemyKind});
  }
- panel.innerHTML=`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'敵の反撃！':'あなたのターン'}</strong><span>${incoming?'今の英語問題に答えて防ごう。':'攻撃の種類を選んで、英語で答えよう。'}</span></p><div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 行動を選ぼう'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
+ panel.innerHTML=`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'敵のターン':'あなたのターン'}</strong><span>${incoming?`${BATTLE_LABELS[t.enemyKind]}の問題に答えて防ごう。`:'英語で答えると攻撃！'}</span></p><div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 行動を選ぼう'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
@@ -653,6 +681,7 @@ function renderTacticalControls(){
   ${party.length>1?`<div class="forest-tactic-party-label">仲間交代 · 残り${1-t.party.swapsUsed}回</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div>`:''}`}`;
  panel.dataset.turn=incoming?'enemy':'player';
  compactBattleNotes(panel,t);
+ simplifyTacticalInterface(panel,t,{incoming,supportReady});
  if(incoming){
    $$('[data-tactic-ally]',panel).forEach(button=>{button.disabled=true;button.title='敵の反撃中は交代できません';});
    return;
