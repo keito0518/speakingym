@@ -137,6 +137,8 @@ const path=require('node:path');
     assert.match(await menuPage.locator('#practice-battle-progress').innerText(),/2 \/ 3/);
     await menuPage.locator('[data-practice-action="wait"]').click();
     await menuPage.locator('[data-practice-action="am"]').click();
+    assert.equal(await menuPage.locator('#practice-enemy-hp').innerText(),'HP 1/2','Successful guard does not harm enemy');
+    await menuPage.locator('[data-practice-action="thanks"]').click();
     assert.match(await menuPage.locator('#practice-battle-title').innerText(),/クリア/);
     assert.equal(await menuPage.locator('#practice-enemy-hp').innerText(),'HP 0/2');
     await menuPage.locator('[data-practice-action="begin"]').click();

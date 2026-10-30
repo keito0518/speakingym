@@ -150,6 +150,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   {title:'1. こうげきを選ぼう',prompt:'まずは「こうげき」を押してみよう。',options:[['attack','こうげき'],['skill','必殺技（まだ使えない）']],answer:'attack',success:'よし！ 英語の問題に答えて攻撃しよう。'},
   {title:'2. 英語で攻撃！',prompt:'「少し待ってください」を英語で伝えるなら？',options:[['wait','Just a moment, please.'],['night','Good night.']],answer:'wait',success:'正解！ 攻撃が当たり、敵のHPが減ったよ。'},
   {title:'3. 敵の反撃を防ごう',prompt:'敵の文法攻撃！「I ___ happy.」に入るのは？',options:[['am','am'],['is','is']],answer:'am',success:'正解！ ダメージ0で防御成功。'},
+  {title:'4. 最後のひと押し',prompt:'敵のHPは残り1！「ありがとう」を英語で伝えるなら？',options:[['thanks','Thank you.'],['sorry','I am sorry.']],answer:'thanks',success:'正解！ 最後の攻撃で敵を倒したよ。'},
  ];
  const closePractice=()=>{practice.hidden=true;practiceReturnFocus?.focus?.({preventScroll:true});};
  function renderPractice(){
@@ -159,7 +160,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   practice.querySelector('#practice-battle-title').textContent=done?'練習バトル、クリア！':current.title;
   practice.querySelector('#practice-battle-prompt').textContent=done?'攻撃して、英語で答えて、敵の反撃を防げたね。実際のダンジョンへ進もう！':current.prompt;
   practice.querySelector('#practice-ally-hp').textContent='HP 3/3';
-  practice.querySelector('#practice-enemy-hp').textContent=`HP ${practiceStage>=2?0:2}/2`;
+  practice.querySelector('#practice-enemy-hp').textContent=`HP ${practiceStage>=practiceQuestions.length?0:practiceStage>=2?1:2}/2`;
   practice.querySelector('#practice-battle-feedback').textContent=practiceMessage;
   practice.querySelector('#practice-battle-actions').innerHTML=done?'<button type="button" data-practice-action="begin" class="practice-battle-main">ダンジョンへ進む</button><button type="button" data-practice-action="again">もう一度練習する</button>':
    current.options.map(([id,label])=>`<button type="button" data-practice-action="${id}" ${id==='skill'?'disabled':''}>${label}</button>`).join('');
