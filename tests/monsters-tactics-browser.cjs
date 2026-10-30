@@ -244,8 +244,13 @@ const assert=require('node:assert/strict');
    await evolutionPage.reload({waitUntil:'networkidle'});
    await evolutionPage.locator('[data-home-page="forest"]').click();
    await evolutionPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await evolutionPage.locator('#start-forest-tactics').click();
-   assert.match(await evolutionPage.locator('[data-formation-card="katappo"]').innerText(),/Lv\.3.*HP成長＋2/);
-   assert.match(await evolutionPage.locator('[data-formation-card="katappo"]').innerText(),/進化援護「覚醒・共鳴」/);
+   const evolvedCard=evolutionPage.locator('[data-formation-card="katappo"]');
+   assert.match(await evolvedCard.innerText(),/Lv\.3/);
+   assert.equal(await evolvedCard.locator('.forest-formation-monster-more small').isVisible(),false,
+     'Advanced evolved abilities should stay hidden until requested');
+   await evolvedCard.locator('.forest-formation-monster-more > summary').click();
+   assert.match(await evolvedCard.innerText(),/HP成長＋2/);
+   assert.match(await evolvedCard.innerText(),/進化援護「覚醒・共鳴」/);
    await evolutionPage.locator('#forest-explore-continue').click();
    await evolutionPage.locator('[data-tactic-kind="listen"]').click();
    const assist= evolutionPage.locator('[data-tactic-action="assist"]');
