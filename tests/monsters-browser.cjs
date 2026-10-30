@@ -91,6 +91,7 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#home-menu-art svg').count(),1);
     assert.match(await menuPage.locator('.home-feature h2').innerText(),/English\s*ダンジョン/);
     assert.equal(await menuPage.locator('[data-feature-dungeon]').isVisible(),true);
+    assert.equal(await menuPage.locator('#home-feature-practice').isVisible(),true,'First-time visitors see a practice shortcut');
     assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),1,'Only the one unlocked starter companion walks');
     assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'false');
     await menuPage.locator('#toggle-simple-motion').click();
@@ -141,10 +142,16 @@ const path=require('node:path');
     await menuPage.locator('[data-practice-action="thanks"]').click();
     assert.match(await menuPage.locator('#practice-battle-title').innerText(),/クリア/);
     assert.equal(await menuPage.locator('#practice-enemy-hp').innerText(),'HP 0/2');
+    const practiceSaveAfter=await menuPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
+    assert.ok(practiceSaveAfter,'Practice should leave the ordinary save in place');
+    assert.match(await menuPage.locator('[data-practice-action="begin"]').innerText(),/戦略バトルを始める/);
     await menuPage.locator('[data-practice-action="begin"]').click();
     assert.equal(await menuPage.locator('#monsters-practice-battle').isVisible(),false);
-    assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
-    await menuPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
+    assert.equal(await menuPage.locator('#forest-party-formation').isVisible(),true,
+      'Practice should lead to the same turn-based rule set, not the standard forest');
+    assert.equal(await menuPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),practiceSaveAfter,
+      'The practice must not award XP or change save data');
+    await menuPage.locator('#leave-play').click();
     await menuPage.locator('[data-feature-dungeon]').click();
     assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
     assert.equal(await menuPage.locator('#forest-invite-title').textContent(),'Englishダンジョン');
@@ -721,6 +728,10 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
     assert.equal(await forestPage.locator('#result-next-panel').isVisible(),true,'Cleared chapter should offer a direct next action');
     assert.match(await forestPage.locator('#result-next').innerText(),/次へ/);
+      assert.equal(await forestPage.locator('#result-detail-panel').getAttribute('open'),null,
+        'Detailed medals and learning report should begin collapsed for clarity');
+      assert.match(await forestPage.locator('#result-quick-summary').innerText(),/XP/);
+      await forestPage.locator('#result-detail-panel > summary').click();
       assert.equal(await forestPage.locator('.boss-medal-result').getAttribute('data-medal-rank'),'2',
         'Seven independently verified chapter gates and all three boss checks earn silver, not gold');
       assert.match(await forestPage.locator('.boss-medal-result').innerText(),/銀ランク獲得/);

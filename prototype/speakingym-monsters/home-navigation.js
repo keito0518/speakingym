@@ -84,9 +84,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 2 WORLDS · 8 AREAS</span><h2>English<br>ダンジョン</h2><p>森の4エリアを攻略したら、4エリアの「雪灯りの街」へ。覚えた英語を使って仲間と進もう。</p>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
- <button type="button" class="home-feature-cta" data-feature-dungeon>ダンジョンへ進む <span aria-hidden="true">›</span></button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
+ <button type="button" class="home-feature-cta" data-feature-dungeon>ダンジョンへ進む <span aria-hidden="true">›</span></button><button type="button" id="home-feature-practice" class="home-feature-practice">初めての人へ · まず戦い方を練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
  feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>showPage('forest'));
+ feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
  const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>トレーニング & 仲間</h2><p>学びたいことから選ぼう</p>';
  // Local vector symbols make each destination recognizable on iOS as well
  // as desktop. No fonts, animations or image downloads are required.
@@ -145,7 +146,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  practice.id='monsters-practice-battle';practice.className='practice-battle-backdrop';practice.hidden=true;
  practice.innerHTML='<section class="practice-battle-dialog" role="dialog" aria-modal="true" aria-labelledby="practice-battle-title"><button type="button" class="practice-battle-close" id="practice-battle-close" aria-label="練習をやめる">閉じる</button><p class="practice-battle-progress" id="practice-battle-progress"></p><h2 id="practice-battle-title">はじめてのバトル</h2><div class="practice-battle-arena" aria-label="練習バトルのHP"><span>なかま <b id="practice-ally-hp">HP 3/3</b></span><span class="practice-battle-foe" aria-hidden="true"></span><span>敵 <b id="practice-enemy-hp">HP 2/2</b></span></div><p id="practice-battle-prompt"></p><div class="practice-battle-actions" id="practice-battle-actions"></div><p class="practice-battle-feedback" id="practice-battle-feedback" role="status" aria-live="polite"></p><p class="practice-battle-no-reward">練習バトルです。XPや仲間の記録は変わりません。</p></section>';
  document.body.append(practice);
- let practiceStage=0,practiceMessage='',practiceReturnFocus=null;
+ let practiceStage=0,practiceMessage='',practiceReturnFocus=null,practiceFromGame=false;
  const practiceQuestions=[
   {title:'1. こうげきを選ぼう',prompt:'まずは「こうげき」を押してみよう。',options:[['attack','こうげき'],['skill','必殺技（まだ使えない）']],answer:'attack',success:'よし！ 英語の問題に答えて攻撃しよう。'},
   {title:'2. 英語で攻撃！',prompt:'「少し待ってください」を英語で伝えるなら？',options:[['wait','Just a moment, please.'],['night','Good night.']],answer:'wait',success:'正解！ 攻撃が当たり、敵のHPが減ったよ。'},
@@ -158,15 +159,15 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   const current=practiceQuestions[practiceStage];
   practice.querySelector('#practice-battle-progress').textContent=done?'練習クリア':`練習 ${practiceStage+1} / ${practiceQuestions.length}`;
   practice.querySelector('#practice-battle-title').textContent=done?'練習バトル、クリア！':current.title;
-  practice.querySelector('#practice-battle-prompt').textContent=done?'攻撃して、英語で答えて、敵の反撃を防げたね。実際のダンジョンへ進もう！':current.prompt;
+  practice.querySelector('#practice-battle-prompt').textContent=done?(practiceFromGame?'これで実戦の流れはばっちり！ 元の戦闘に戻ろう。':'攻撃・英語で回答・反撃を防ぐ流れを体験できたよ！ 次は同じルールの戦略バトルへ。'):current.prompt;
   practice.querySelector('#practice-ally-hp').textContent='HP 3/3';
   practice.querySelector('#practice-enemy-hp').textContent=`HP ${practiceStage>=practiceQuestions.length?0:practiceStage>=2?1:2}/2`;
   practice.querySelector('#practice-battle-feedback').textContent=practiceMessage;
-  practice.querySelector('#practice-battle-actions').innerHTML=done?'<button type="button" data-practice-action="begin" class="practice-battle-main">ダンジョンへ進む</button><button type="button" data-practice-action="again">もう一度練習する</button>':
+  practice.querySelector('#practice-battle-actions').innerHTML=done?`<button type="button" data-practice-action="begin" class="practice-battle-main">${practiceFromGame?'戦闘へ戻る':'戦略バトルを始める'}</button><button type="button" data-practice-action="again">もう一度練習する</button>`:
    current.options.map(([id,label])=>`<button type="button" data-practice-action="${id}" ${id==='skill'?'disabled':''}>${label}</button>`).join('');
   practice.querySelectorAll('[data-practice-action]').forEach(button=>button.addEventListener('click',()=>{
    const action=button.dataset.practiceAction;
-   if(action==='begin'){closePractice();showPage('forest');return;}
+   if(action==='begin'){closePractice();if(!practiceFromGame)startMode('forest-tactics');return;}
    if(action==='again'){practiceStage=0;practiceMessage='';renderPractice();return;}
    if(action!==current.answer){practiceMessage='惜しい！ 問題を見て、もう一度選んでみよう。';renderPractice();return;}
    practiceMessage=current.success;practiceStage++;renderPractice();
@@ -176,6 +177,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  function startPracticeBattle(){
   if(!dialog.hidden)close();
   practiceReturnFocus=document.activeElement;
+  practiceFromGame=!document.querySelector('#play-view')?.hidden;
   practiceStage=0;practiceMessage='';
   practice.hidden=false;renderPractice();
  }
@@ -238,6 +240,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
+     menu.querySelector('#home-feature-practice').hidden=areasCleared>0;
      menu.querySelector('#home-feature-progress').textContent=cityCleared?'森と雪灯りの街を攻略！復習で英語を定着させよう':cityUnlocked?'森の4エリア攻略！次は「雪灯りの街」へ':'森の冒険 '+areasCleared+' / 4エリア · 街は森の攻略後に解放';
    }
  };

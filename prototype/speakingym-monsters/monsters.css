@@ -623,3 +623,15 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .result-next-panel strong{font-size:15px;color:#21573c;line-height:1.55}
 .result-next-panel .button{max-width:100%;white-space:normal;font-size:15px}
 @media(max-width:430px){.dungeon-practice-link{margin-left:4px}.practice-battle-dialog{padding:16px 12px}.forest-turn-task{padding:8px}.forest-turn-task span{font-size:11px}.result-next-panel{padding:12px}}
+
+/* First visit: training is one quiet secondary action, never the main CTA. */
+.home-feature-practice{display:block;width:100%;min-height:44px;margin:9px 0 0;padding:10px 13px;border:1px solid #b8dbcc;border-radius:12px;background:#e8f4ed;color:#24533e;font-size:12px;font-weight:850;text-align:center}
+.home-feature-practice:focus-visible{outline:3px solid #f1bd65;outline-offset:3px}
+.result-quick-summary{margin:13px auto 5px;padding:9px 13px;width:max-content;max-width:100%;border:1px solid #a9d5b5;border-radius:12px;background:#edf8ed;color:#24573e;font-size:14px;font-weight:900;line-height:1.5;overflow-wrap:break-word}
+.result-detail-panel{margin:15px auto;padding:0 13px 12px;border:1px solid #d9e5d6;border-radius:13px;background:#fbfcf5;text-align:left}
+.result-detail-panel>summary{min-height:47px;display:flex;align-items:center;padding:11px 6px;color:#30583e;font-size:13px;font-weight:900;line-height:1.55;cursor:pointer}
+.result-detail-panel>summary:focus-visible{outline:3px solid #ddb55e;outline-offset:2px}
+.result-detail-panel:not([open]){padding-bottom:0}
+.result-detail-panel .result-rewards{margin:10px 0}
+.result-detail-panel .result-discoveries{margin:12px auto}
+@media(max-width:540px){.result-detail-panel{margin:12px 0}.result-quick-summary{font-size:12px}}

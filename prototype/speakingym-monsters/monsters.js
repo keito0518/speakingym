@@ -1775,14 +1775,23 @@ function finishSession(timedOut=false,defeated=false) {
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   const nextArea=forestFinished&&!ended.endless?nextDungeonArea(save):null;
   const canContinue=Boolean(nextArea&&nextArea.id!==ended.areaId&&unlockedDungeonAreas(save).some(area=>area.id===nextArea.id));
-  $('#result-next-panel').hidden=!canContinue;
+  const canRetry=ended.mode==='forest'&&defeated;
+  $('#result-quick-summary').hidden=ended.mode!=='forest';
+  if(ended.mode==='forest')$('#result-quick-summary').textContent=`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体`;
+  $('#result-detail-panel').open=ended.mode!=='forest';
+  $('#result-next-panel').hidden=!canContinue&&!canRetry;
   if(canContinue){
-    $('#result-next-message').textContent=`次のエリアが解放されたよ！ +${ended.earnedXp} XPを獲得`;
+    $('#result-next-message').textContent='次のエリアが解放されたよ！';
     $('#result-next').textContent=`次へ：${nextArea.name}`;
     $('#result-next').onclick=()=>startSession(ended.tactics?'forest-tactics':'forest',nextArea.id);
+  }else if(canRetry){
+    $('#result-next-message').textContent='ここまでの経験を生かして、もう一度！';
+    $('#result-next').textContent='同じエリアに再挑戦する';
+    $('#result-next').onclick=()=>startSession(ended.tactics?'forest-tactics':'forest',ended.areaId);
   }else $('#result-next').onclick=null;
-  $('#result-collection').classList.toggle('button-ghost',canContinue);
-  $('#result-collection').classList.toggle('button-primary',!canContinue);
+  $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry);
+  $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry);
+  $('#replay-run').hidden=canRetry;
   $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.areaId);
   showView('result');

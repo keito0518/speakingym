@@ -72,6 +72,19 @@ const assert=require('node:assert/strict');
      await page.locator('#forest-explore-continue').click();
      assert.equal(await page.locator('#forest-party-formation').isVisible(),false);
      assert.equal(await page.locator('#forest-party-hp').isVisible(),true);
+     if(width===320){
+       const before=await page.evaluate(()=>({hp:document.querySelector('#forest-party-hp').getAttribute('aria-valuenow'),save:localStorage.getItem('speakingym-monsters-prototype-v1')}));
+       await page.locator('#open-battle-guide').click();
+       await page.locator('#tutorial-try-battle').click();
+       assert.equal(await page.locator('#monsters-practice-battle').isVisible(),true);
+       for(const id of ['attack','wait','am','thanks'])await page.locator('[data-practice-action="'+id+'"]').click();
+       assert.match(await page.locator('[data-practice-action="begin"]').innerText(),/戦闘へ戻る/);
+       await page.locator('[data-practice-action="begin"]').click();
+       assert.equal(await page.locator('#forest-party-hp').isVisible(),true,
+         'The in-battle guide must restore the current encounter without creating a new one');
+       assert.deepEqual(await page.evaluate(()=>({hp:document.querySelector('#forest-party-hp').getAttribute('aria-valuenow'),save:localStorage.getItem('speakingym-monsters-prototype-v1')})),before,
+         'Training during a live fight must not modify health or saved progress');
+     }
      assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12');
      const tacticalLayout=await page.evaluate(()=>{
        const bounds=selector=>document.querySelector(selector).getBoundingClientRect();
