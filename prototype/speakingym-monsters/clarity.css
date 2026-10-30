@@ -1,0 +1,99 @@
+/* Adventure-first navigation. Keep optional modes discoverable but out of the
+   initial decision: start, repeat a short training, review, or see companions. */
+.home-navigation{margin-top:0}
+.home-navigation-head{margin:0 0 13px;padding:0}
+.home-navigation-head .tiny-caps{font-size:9px;letter-spacing:.13em}
+.home-navigation-head h1{font-size:clamp(25px,3.8vw,34px);line-height:1.22;margin:4px 0 7px}
+.home-navigation-head p{font-size:12px;line-height:1.55;margin:0}
+.home-feature{min-height:285px;padding:23px 28px}
+.home-feature-content h2{font-size:clamp(31px,4.6vw,45px);margin:9px 0}
+.home-feature-content>p{font-size:13px;line-height:1.65;margin:0 0 13px}
+.home-feature-info{display:none}
+.home-feature-cta{width:min(100%,305px);min-height:56px;font-size:17px;gap:12px}
+.home-feature-progress{font-size:11px!important;margin:10px 0 0!important}
+.home-world-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:8px 6px 0 0;padding:5px 10px;border:1px solid #c5dfbb8c;border-radius:10px;background:#f0ffdf1c;color:#f2f8df;font-size:12px;font-weight:850;cursor:pointer}
+.home-feature-practice{display:inline-flex;min-height:42px;align-items:center;justify-content:center;margin:7px 0 0;padding:7px 12px;border:0;background:transparent;box-shadow:none;color:#e2efd8;text-decoration:underline;text-underline-offset:4px;font-size:12px}
+.home-feature-cta:focus-visible,.home-world-link:focus-visible,.home-feature-practice:focus-visible{outline:3px solid #ffe4a0;outline-offset:3px}
+.home-navigation-label{margin:16px 2px 9px}
+.home-navigation-label h2{font-size:17px}
+.home-main-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.home-navigation-grid.home-main-actions .home-navigation-tile{grid-column:auto;min-height:77px;padding:10px 12px;gap:9px;border-radius:13px}
+.home-navigation-grid.home-main-actions .home-navigation-icon{width:38px;height:38px;flex-basis:38px}
+.home-navigation-grid.home-main-actions .home-navigation-icon svg{width:22px;height:22px}
+.home-navigation-grid.home-main-actions .home-navigation-copy strong{font-size:14px}
+.home-navigation-grid.home-main-actions .home-navigation-copy small{display:none}
+.home-extra-modes{margin:12px 0 0;border:1px solid #cbdccc;border-radius:15px;background:#f4f7ee}
+.home-extra-modes>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:12px 17px;color:#315943;cursor:pointer;font-size:13px;font-weight:850;list-style:none}
+.home-extra-modes>summary::-webkit-details-marker{display:none}
+.home-extra-modes>summary:after{content:'+';font-size:20px;line-height:1}
+.home-extra-modes[open]>summary:after{content:'−'}
+.home-extra-modes>summary:focus-visible{outline:3px solid #e0af57;outline-offset:3px}
+.home-extra-grid{padding:0 12px 12px;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.home-extra-modes .motion-toggle{margin:0 12px 15px;min-height:43px;font-size:12px}
+.home-extra-grid .home-navigation-tile[data-home-page="forest"]{grid-column:auto;min-height:116px}
+.home-extra-grid .home-navigation-tile[data-home-page="forest"] .home-navigation-icon{width:47px;height:47px;flex-basis:47px}
+.home-extra-grid .home-navigation-tile[data-home-page="forest"] .home-navigation-copy strong{font-size:16px}
+.dungeon-stage-list{margin:14px 0;border:1px solid #bbd1c0;border-radius:14px;background:#f3f8ee;color:#244d37;overflow:hidden}
+.dungeon-stage-list>summary{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 16px;cursor:pointer;font-size:14px;font-weight:900;list-style:none}
+.dungeon-stage-list>summary:after{content:'＋';font-size:19px;line-height:1}
+.dungeon-stage-list[open]>summary:after{content:'－'}
+.dungeon-stage-list>summary::-webkit-details-marker{display:none}
+.dungeon-stage-list>summary:focus-visible{outline:3px solid #e2aa5d;outline-offset:2px}
+.dungeon-stage-list .dungeon-selection-label{margin:12px 13px 0}
+.dungeon-stage-list .forest-area-list{margin:10px 12px 14px}
+.dungeon-stage-list .forest-area-count,.dungeon-stage-list .boss-medal-target{display:none}
+.dungeon-quick-actions .forest-primary{min-height:56px;font-size:17px}
+.dungeon-first-tip{font-size:12px;line-height:1.7}
+.beta-feedback-disclosure{max-width:960px;margin:18px auto 24px}
+.beta-feedback-disclosure>summary{min-height:48px;display:flex;align-items:center;padding:11px 16px;border:1px solid #c7d9c9;border-radius:12px;background:#f2f6ed;color:#345947;cursor:pointer;font-weight:800;font-size:13px}
+.beta-feedback-disclosure>summary:focus-visible{outline:3px solid #e0af57;outline-offset:2px}
+.beta-feedback-disclosure .beta-feedback{margin-top:12px}
+@media(max-width:690px){
+ .home-navigation{margin:0 0 23px}
+ .home-navigation-head{margin:0 0 11px}
+ .home-navigation-head h1{font-size:clamp(23px,6.5vw,28px);line-height:1.2;margin:4px 0}
+ .home-navigation-head p{font-size:11px}
+ .home-feature{min-height:270px;grid-template-columns:minmax(0,1.1fr) minmax(90px,.8fr);padding:15px 13px;border-radius:17px}
+ .home-feature-content h2{font-size:clamp(24px,6vw,33px);margin:8px 0}
+ .home-feature-content>p{font-size:11px;line-height:1.55;margin:0 0 10px}
+ .home-feature-cta{width:100%;min-height:53px;font-size:14px;padding:10px 8px;gap:5px}
+ .home-feature-cta span{font-size:19px}
+ .home-world-link{margin:6px 0 0;min-height:42px;font-size:11px}
+ .home-feature-practice{display:block;margin:0;padding:5px 0;min-height:34px;text-align:left;font-size:10px}
+ .home-feature-companion{justify-content:center}
+ #home-menu-art{height:140px}
+ .home-navigation-label{margin:13px 2px 9px}
+ .home-main-actions{grid-template-columns:1fr;gap:8px}
+ .home-navigation-grid.home-main-actions .home-navigation-tile{min-height:61px;padding:8px 13px;align-items:center}
+ .home-navigation-grid.home-main-actions .home-navigation-copy strong{font-size:14px}
+ .home-extra-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .home-extra-grid .home-navigation-tile{min-height:90px}
+ .home-extra-grid .home-navigation-tile[data-home-page="forest"]{grid-column:span 2}
+ /* Shrink the cinematic framing, not the gameplay buttons. The learner's
+    question and response should appear without scrolling past decorations. */
+ .forest-active:not(.forest-exploring) .forest-journey{padding:7px!important;margin:5px auto 6px!important}
+ .forest-active:not(.forest-exploring) .forest-journey-header{padding:0 2px 5px}
+ .forest-active:not(.forest-exploring) .forest-journey-title .forest-kicker{display:none}
+ .forest-active:not(.forest-exploring) .forest-world-stage{height:119px!important}
+ .forest-active:not(.forest-exploring) .forest-mission-panel{display:none!important}
+ .forest-active:not(.forest-exploring):not(.tactical-battle) .forest-foe-pattern{display:none}
+ .forest-active:not(.forest-exploring):not(.tactical-battle) .forest-gates{display:none}
+ .forest-active .forest-command-window{padding:0 8px 12px}
+ .forest-active .play-card{min-height:0;padding:13px!important;border-radius:13px}
+ .forest-active .play-card h1{font-size:clamp(20px,5.3vw,26px);line-height:1.45;margin:10px 0 7px}
+ .forest-active .question-caption{margin:4px 0 0;line-height:1.5}
+ .forest-active .answer-area{padding:12px!important;margin:6px auto 15px!important;border-radius:12px}
+ .forest-active .answer-area textarea.answer-input{height:78px!important;min-height:78px!important}
+ .forest-active .answer-label{margin-bottom:5px}
+ .forest-active .learning-controls{margin-top:9px}
+ .forest-active .beginner-speak-tip,.forest-active .answer-quick-help>div{display:none}
+ .forest-active .answer-quick-help{margin-top:8px;justify-content:flex-start}
+ .forest-active .learning-controls .reveal-button{width:100%;min-height:51px;font-size:15px}
+ .forest-active .forest-explore-screen{min-height:0;padding:13px;gap:10px}
+ .forest-active .forest-explore-heading{gap:3px}
+ .forest-active .forest-explore-heading h2{font-size:22px}
+ .forest-active .forest-explore-heading p{font-size:12px;line-height:1.5}
+ .forest-active .forest-explore-art{flex:0 0 174px;min-height:174px;max-height:174px}
+ .forest-active .forest-explore-continue{min-height:53px;margin-top:0}
+ .forest-active .forest-explore-screen.is-forming-party .forest-explore-art{flex-basis:110px;min-height:110px;max-height:110px}
+}

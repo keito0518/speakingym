@@ -62,7 +62,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  const menu=document.createElement('section');
  menu.className='home-navigation';menu.id='home-navigation';
  const head=document.createElement('div');head.className='home-navigation-head';
- head.innerHTML='<span class="tiny-caps">WELCOME TO SPEAKINGYM MONSTERS</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>知っている英語を、実際に使える英語へ。今日はどこまで進める？</p>';
+ head.innerHTML='<span class="tiny-caps">SPEAKINGYM MONSTERS</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>問題に答えて敵を倒そう。仲間と一緒に強くなる英語RPG。</p>';
  // Optional lower-motion UI for iPhone users; CSS still honors system
  // Reduced Motion. This setting changes visuals only, not English grading.
  const motionToggle=document.createElement('button');
@@ -82,13 +82,14 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  applyMotion();head.append(motionToggle);
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
- <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE · 2 WORLDS · 8 AREAS</span><h2>English<br>ダンジョン</h2><p>森の4エリアを攻略したら、4エリアの「雪灯りの街」へ。覚えた英語を使って仲間と進もう。</p>
+ <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2><p>英語で攻撃して、ボスを倒せばクリア。<br>まずは森の入口から！</p>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
- <button type="button" class="home-feature-cta" data-feature-dungeon>ダンジョンへ進む <span aria-hidden="true">›</span></button><button type="button" id="home-feature-practice" class="home-feature-practice">初めての人へ · まず戦い方を練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
+ <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link" data-feature-worlds>ステージを選ぶ</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら30秒の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
- feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>showPage('forest'));
+ feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>startMode('forest'));
+ feature.querySelector('[data-feature-worlds]').addEventListener('click',()=>showPage('forest'));
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
- const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>トレーニング & 仲間</h2><p>学びたいことから選ぼう</p>';
+ const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>ほかにできること</h2><p>冒険以外はここから</p>';
  // Local vector symbols make each destination recognizable on iOS as well
  // as desktop. No fonts, animations or image downloads are required.
  const iconPaths={
@@ -102,7 +103,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   progress:'<path d="M3 21V11h4v10M10 21V6h4v15M17 21V3h4v18"/>',
   tutorial:'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 116 0c0 2-3 2-3 4M12 17h.01"/>'
  };
- const grid=document.createElement('div');grid.className='home-navigation-grid';
+ const grid=document.createElement('div');grid.className='home-navigation-grid home-main-actions';
+ const extra=document.createElement('details');extra.className='home-extra-modes';extra.id='home-extra-modes';
+ extra.innerHTML='<summary>ほかの練習・設定を見る</summary>';
+ const extraGrid=document.createElement('div');extraGrid.className='home-navigation-grid home-extra-grid';
  for(const item of buttons){
   const button=document.createElement('button');button.type='button';button.className='home-navigation-tile';button.dataset.homePage=item.id;
   const icon=document.createElement('span');icon.className='home-navigation-icon';icon.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconPaths[item.id]}</svg>`;icon.setAttribute('aria-hidden','true');
@@ -111,9 +115,11 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   const small=document.createElement('small');small.textContent=item.desc;
   copy.append(strong,small);
   const arrow=document.createElement('span');arrow.className='home-navigation-arrow';arrow.textContent='›';arrow.setAttribute('aria-hidden','true');
-  button.append(icon,copy,arrow);button.addEventListener('click',item.action);grid.append(button);
+  button.append(icon,copy,arrow);button.addEventListener('click',item.action);
+  (['daily','review','collection'].includes(item.id)?grid:extraGrid).append(button);
  }
- menu.append(head,feature,label,grid);home.prepend(menu);
+ extra.append(extraGrid,motionToggle);
+ menu.append(head,feature,label,grid,extra);home.prepend(menu);
  const dialog=document.createElement('div');dialog.className='tutorial-backdrop';dialog.id='monsters-tutorial';dialog.hidden=true;
  dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><button type="button" id="tutorial-try-battle" class="tutorial-try-battle">操作して覚える練習バトル</button><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
  document.body.append(dialog);
@@ -148,9 +154,9 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  document.body.append(practice);
  let practiceStage=0,practiceMessage='',practiceReturnFocus=null,practiceFromGame=false;
  const practiceQuestions=[
-  {title:'1. こうげきを選ぼう',prompt:'まずは「こうげき」を押してみよう。',options:[['attack','こうげき'],['skill','必殺技（まだ使えない）']],answer:'attack',success:'よし！ 英語の問題に答えて攻撃しよう。'},
+  {title:'1. 敵を見つけよう',prompt:'敵が出てきた！「こうげき」を押してみよう。',options:[['attack','こうげき'],['skill','必殺技（まだ使えない）']],answer:'attack',success:'よし！ 英語の問題に答えて敵を倒そう。'},
   {title:'2. 英語で攻撃！',prompt:'「少し待ってください」を英語で伝えるなら？',options:[['wait','Just a moment, please.'],['night','Good night.']],answer:'wait',success:'正解！ 攻撃が当たり、敵のHPが減ったよ。'},
-  {title:'3. 敵の反撃を防ごう',prompt:'敵の文法攻撃！「I ___ happy.」に入るのは？',options:[['am','am'],['is','is']],answer:'am',success:'正解！ ダメージ0で防御成功。'},
+  {title:'3. 次の問題に答えよう',prompt:'次は文法！「I ___ happy.」に入る単語は？',options:[['am','am'],['is','is']],answer:'am',success:'正解！ いろいろな英語の問題が出てくるよ。'},
   {title:'4. 最後のひと押し',prompt:'敵のHPは残り1！「ありがとう」を英語で伝えるなら？',options:[['thanks','Thank you.'],['sorry','I am sorry.']],answer:'thanks',success:'正解！ 最後の攻撃で敵を倒したよ。'},
  ];
  const closePractice=()=>{practice.hidden=true;practiceReturnFocus?.focus?.({preventScroll:true});};
@@ -159,15 +165,15 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   const current=practiceQuestions[practiceStage];
   practice.querySelector('#practice-battle-progress').textContent=done?'練習クリア':`練習 ${practiceStage+1} / ${practiceQuestions.length}`;
   practice.querySelector('#practice-battle-title').textContent=done?'練習バトル、クリア！':current.title;
-  practice.querySelector('#practice-battle-prompt').textContent=done?(practiceFromGame?'これで実戦の流れはばっちり！ 元の戦闘に戻ろう。':'攻撃・英語で回答・反撃を防ぐ流れを体験できたよ！ 次は同じルールの戦略バトルへ。'):current.prompt;
+  practice.querySelector('#practice-battle-prompt').textContent=done?(practiceFromGame?'練習は完了！ 元の画面に戻ろう。':'お題を読んで英語で答える。それだけで冒険は進むよ！'):current.prompt;
   practice.querySelector('#practice-ally-hp').textContent='HP 3/3';
   practice.querySelector('#practice-enemy-hp').textContent=`HP ${practiceStage>=practiceQuestions.length?0:practiceStage>=2?1:2}/2`;
   practice.querySelector('#practice-battle-feedback').textContent=practiceMessage;
-  practice.querySelector('#practice-battle-actions').innerHTML=done?`<button type="button" data-practice-action="begin" class="practice-battle-main">${practiceFromGame?'戦闘へ戻る':'戦略バトルを始める'}</button><button type="button" data-practice-action="again">もう一度練習する</button>`:
+  practice.querySelector('#practice-battle-actions').innerHTML=done?`<button type="button" data-practice-action="begin" class="practice-battle-main">${practiceFromGame?'戦闘へ戻る':'本編の冒険を始める'}</button><button type="button" data-practice-action="again">もう一度練習する</button>`:
    current.options.map(([id,label])=>`<button type="button" data-practice-action="${id}" ${id==='skill'?'disabled':''}>${label}</button>`).join('');
   practice.querySelectorAll('[data-practice-action]').forEach(button=>button.addEventListener('click',()=>{
    const action=button.dataset.practiceAction;
-   if(action==='begin'){closePractice();if(!practiceFromGame)startMode('forest-tactics');return;}
+   if(action==='begin'){closePractice();if(!practiceFromGame)startMode('forest');return;}
    if(action==='again'){practiceStage=0;practiceMessage='';renderPractice();return;}
    if(action!==current.answer){practiceMessage='惜しい！ 問題を見て、もう一度選んでみよう。';renderPractice();return;}
    practiceMessage=current.success;practiceStage++;renderPractice();
@@ -220,7 +226,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  function updateWalkers(owned){
    for(const tile of grid.querySelectorAll('.home-navigation-tile'))
      tile.querySelectorAll('.home-walker').forEach(node=>node.remove());
-   const positions=['forest','collection','daily'];
+   const positions=['daily','collection','review'];
    owned.slice(0,3).forEach((entry,index)=>{
      const tile=grid.querySelector('[data-home-page="'+positions[index]+'"]');
      if(!tile||!entry?.art)return;
@@ -240,8 +246,9 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
+     menu.querySelector('[data-feature-dungeon]').firstChild.textContent=cityCleared?'もう一度冒険 ':areasCleared?'つづきから冒険 ':'冒険をはじめる ';
      menu.querySelector('#home-feature-practice').hidden=areasCleared>0;
-     menu.querySelector('#home-feature-progress').textContent=cityCleared?'森と雪灯りの街を攻略！復習で英語を定着させよう':cityUnlocked?'森の4エリア攻略！次は「雪灯りの街」へ':'森の冒険 '+areasCleared+' / 4エリア · 街は森の攻略後に解放';
+     menu.querySelector('#home-feature-progress').textContent=cityCleared?'全エリア攻略！好きな場所で遊ぼう':cityUnlocked?'次は雪灯りの街へ！':'森の攻略 '+areasCleared+' / 4';
    }
  };
 }

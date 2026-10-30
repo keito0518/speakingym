@@ -23,8 +23,11 @@ const path=require('node:path');
     return {context,page};
   };
   const enterHomePanel=async(page,target)=>{
-    if(await page.locator('#home-navigation').isVisible())
-      await page.locator(`[data-home-page="${target}"]`).click();
+    if(await page.locator('#home-navigation').isVisible()){
+      const tile=page.locator(`[data-home-page="${target}"]`);
+      if(!await tile.isVisible())await page.locator('#home-extra-modes > summary').click();
+      await tile.click();
+    }
   };
   const unlockListening=async page=>{
     if(!await page.locator('#play-audio').count())return;
@@ -37,6 +40,22 @@ const path=require('node:path');
     await page.locator(`[data-listening-choice="${correct}"]`).click();
   };
   try{
+    const {context:quickContext,page:quickPage}=await boot(390);
+    await quickPage.locator('[data-feature-dungeon]').click();
+    assert.equal(await quickPage.locator('#play-view').isVisible(),true,
+      'Main CTA enters the actual adventure in one tap, bypassing the area catalogue');
+    assert.equal(await quickPage.locator('#forest-explore-continue').isVisible(),true);
+    await quickPage.locator('#forest-explore-continue').click();
+    assert.equal(await quickPage.locator('#play-card').isVisible(),true,
+      'New players reach the first English prompt directly from the main CTA');
+    const firstFight=await quickPage.evaluate(()=>({
+      stage:document.querySelector('#forest-world-stage').getBoundingClientRect().height,
+      answerTop:document.querySelector('#spoken-answer').getBoundingClientRect().top,
+      viewport:innerHeight
+    }));
+    assert.ok(firstFight.stage<=130&&firstFight.answerTop<firstFight.viewport,
+      `Mobile first fight must show the answer field without a long decorative scroll: ${JSON.stringify(firstFight)}`);
+    await quickContext.close();
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
       assert.equal(await page.getByRole('heading',{name:/英語で戦って/}).isVisible(),true);
@@ -61,7 +80,10 @@ const path=require('node:path');
       const credits=await page.getByRole('link',{name:'音声クレジット'}).getAttribute('href');
       assert.equal(credits,'./audio-credits.html');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-home.png`),fullPage:true});
-      await page.locator('[data-feature-dungeon]').click();
+      await page.locator('[data-feature-worlds]').click();
+      assert.equal(await page.locator('#dungeon-stage-list').getAttribute('open'),null,
+        'Locked stages and chapter metadata start hidden');
+      await page.locator('#dungeon-stage-list > summary').click();
       const dungeonLayout=await page.evaluate(()=>{
         const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
         return {banner:rect('.dungeon-selection-banner'),forest:rect('.dungeon-world-forest'),city:rect('.dungeon-world-city'),
@@ -88,6 +110,12 @@ const path=require('node:path');
     // The home is an actual menu, not eight stacked screens. Tutorial works on mobile.
     const {context:menuContext,page:menuPage}=await boot(390);
     assert.equal(await menuPage.locator('#home-navigation [data-home-page]').count(),9);
+    assert.equal(await menuPage.locator('.home-main-actions [data-home-page]').count(),3,
+      'Only training, review and companions compete with the main adventure');
+    assert.equal(await menuPage.locator('#home-extra-modes').getAttribute('open'),null);
+    assert.equal(await menuPage.locator('[data-home-page="forest"]').isVisible(),false);
+    await menuPage.locator('#home-extra-modes > summary').click();
+    assert.equal(await menuPage.locator('[data-home-page="forest"]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-menu-art svg').count(),1);
     assert.match(await menuPage.locator('.home-feature h2').innerText(),/English\s*ダンジョン/);
     assert.equal(await menuPage.locator('[data-feature-dungeon]').isVisible(),true);
@@ -99,6 +127,7 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).animationName),'none');
     await menuPage.reload();
     assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'true','Lightweight mode persists across reload');
+    await menuPage.locator('#home-extra-modes > summary').click();
     await menuPage.locator('#toggle-simple-motion').click();
     assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'false');
     assert.equal(await menuPage.locator('.home-walker').getAttribute('aria-hidden'),'true');
@@ -106,7 +135,7 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('.home-walker').evaluate(el=>getComputedStyle(el).animationName),'none','Reduced motion setting stops movement');
     assert.equal(await menuPage.locator('[data-home-page="forest"] .home-navigation-icon svg').count(),1);
     const forestColumnSpan=await menuPage.locator('[data-home-page="forest"]').evaluate(el=>getComputedStyle(el).gridColumnStart);
-    assert.equal(forestColumnSpan,'span 2','Dungeon takes the featured menu space');
+    assert.equal(forestColumnSpan,'auto','Optional stage selection should not dominate the main menu');
     assert.match(await menuPage.locator('.home-feature').innerText(),/英語/);
     assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
     assert.equal(await menuPage.locator('.home-destination:visible').count(),0);
@@ -144,20 +173,22 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#practice-enemy-hp').innerText(),'HP 0/2');
     const practiceSaveAfter=await menuPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
     assert.ok(practiceSaveAfter,'Practice should leave the ordinary save in place');
-    assert.match(await menuPage.locator('[data-practice-action="begin"]').innerText(),/戦略バトルを始める/);
+    assert.match(await menuPage.locator('[data-practice-action="begin"]').innerText(),/本編の冒険を始める/);
     await menuPage.locator('[data-practice-action="begin"]').click();
     assert.equal(await menuPage.locator('#monsters-practice-battle').isVisible(),false);
-    assert.equal(await menuPage.locator('#forest-party-formation').isVisible(),true,
-      'Practice should lead to the same turn-based rule set, not the standard forest');
+    assert.equal(await menuPage.locator('#forest-explore-screen').isVisible(),true,
+      'Beginner practice leads to the main story dungeon, not advanced tactics');
     assert.equal(await menuPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),practiceSaveAfter,
       'The practice must not award XP or change save data');
     await menuPage.locator('#leave-play').click();
-    await menuPage.locator('[data-feature-dungeon]').click();
+    await menuPage.locator('[data-feature-worlds]').click();
     assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
     assert.equal(await menuPage.locator('#forest-invite-title').textContent(),'Englishダンジョン');
     assert.equal(await menuPage.locator('#dungeon-other-modes').getAttribute('open'),null,'Optional modes start collapsed');
     assert.equal(await menuPage.locator('#start-forest-tactics').isVisible(),false,'Beginner sees only the main start action');
     assert.equal(await menuPage.locator('#start-forest').isVisible(),true,'Main adventure is immediately available');
+    assert.equal(await menuPage.locator('#dungeon-stage-list').getAttribute('open'),null);
+    await menuPage.locator('#dungeon-stage-list > summary').click();
     const startBeforeWorlds=await menuPage.evaluate(()=>document.querySelector('#start-forest').getBoundingClientRect().top < document.querySelector('#forest-area-list').getBoundingClientRect().top);
     assert.equal(startBeforeWorlds,true,'New players can start before reading eight area cards');
     await menuPage.locator('#open-dungeon-tutorial').click();
@@ -284,7 +315,7 @@ const path=require('node:path');
     await enterHomePanel(hardPage,'training');
     await hardPage.locator('[data-difficulty="hard"]').click();
     await hardPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
-    await hardPage.locator('[data-home-page="challenge"]').click();
+    await enterHomePanel(hardPage,'challenge');
     assert.match(await hardPage.locator('.question-top').innerText(),/1 \/ 3/);
     for(let i=0;i<3;i++){
       if(await hardPage.locator('#play-audio').count())await unlockListening(hardPage);
@@ -320,7 +351,7 @@ const path=require('node:path');
       localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
     });
     await listenPage.reload();
-    await listenPage.locator('[data-home-page="listening"]').click();
+    await enterHomePanel(listenPage,'listening');
     assert.equal(await listenPage.locator('#play-card').getAttribute('data-prompt-id'),'late-call');
     assert.equal(await listenPage.locator('#answer-area').isVisible(),false);
     assert.equal(await listenPage.locator('#listening-response').isVisible(),false);
@@ -791,8 +822,7 @@ const path=require('node:path');
       await forestPage.locator('[data-home-page="collection"]').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Mosslight/);
       await forestPage.locator('#collection-home').click();
-      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/冒険勝利 1回/);
-      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/ボス勲章 1\/24/);
+      assert.match(await forestPage.locator('#forest-home-progress').innerText(),/森 1\/4/);
       assert.match(await forestPage.locator('[data-enter-forest="entry"] .forest-area-status').innerText(),/銀勲章/);
       await forestPage.locator('[data-home-page="collection"]').click();
       assert.equal(await forestPage.locator('.boss-medal-collection-area').count(),8);
@@ -821,6 +851,7 @@ const path=require('node:path');
     for(const width of [320,375,390,430]){
       const {context:cityContext,page:cityPage}=await boot(width);
       await enterHomePanel(cityPage,'forest');
+      await cityPage.locator('#dungeon-stage-list > summary').click();
       assert.equal(await cityPage.locator('.dungeon-world-card').count(),2,'Forest and City must be separate, clearly labelled world panels');
       assert.equal(await cityPage.locator('#dungeon-world-forest-title').innerText(),'はじまりの森');
       assert.equal(await cityPage.locator('#dungeon-world-city-title').innerText(),'雪灯りの街');

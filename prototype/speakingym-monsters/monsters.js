@@ -248,8 +248,7 @@ function renderHome() {
   const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
   const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
   const cityClear=cityCount===CITY_AREAS.length;
-  const medalsEarned=Object.values(forest.medals).reduce((sum,levels)=>sum+Object.keys(levels).length,0);
-  $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityCount}/${CITY_AREAS.length} · ボス勲章 ${medalsEarned}/${(FOREST_AREAS.length+CITY_AREAS.length)*3} · 冒険勝利 ${forest.clears}回`;
+  $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityCount}/${CITY_AREAS.length}`;
   const unlocked=new Set(unlockedDungeonAreas(save).map(area=>area.id));
   const dueRetention=retentionOverview(save,dayKey()).due;
   const areaCard=(area,index)=>{
@@ -1011,8 +1010,8 @@ function renderQuestion() {
   const beginnerTip=!englishMode&&!quizMode?`<p class="beginner-speak-tip">やさしいモード：長い英文は必要ないよ。${prompt.bossOnly?'短い2つの内容を伝えよう。':'まずは短い1文で伝えよう。'}</p>`:'';
   const guidedCloze=beginnerClozeFor(prompt);
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}${beginnerTip}
-    <label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（直接入力もできます）':'英語で答えよう（音声認識または入力）'}</label>
-    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話した英語がここに表示されるよ。手入力もOK"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
+    <label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（手入力もOK）':'英語で答えよう · 話すか入力'}</label>
+    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="ここに英語を入力（マイクもOK）"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
     <div class="answer-quick-help"><div><strong>${guidedCloze?'空欄だけの練習から始められるよ':'困ったらヒントを使おう'}</strong><small>${guidedCloze?'1単語だけ言ったら確認。そのあとで全文に挑戦しよう。':'考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。'}</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">${guidedCloze?'穴埋めヒントを見る':'ヒントを見る'}</button></div>
     <div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div>
     <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないときの入力方法</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
@@ -1847,7 +1846,10 @@ $('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{cancelAutoAdvance();clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active','review-only');renderHome();});
 $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
-$('#result-feedback').addEventListener('click',()=>$('#beta-feedback').scrollIntoView({behavior:'smooth',block:'start'}));
+$('#result-feedback').addEventListener('click',()=>{
+ $('#beta-feedback-disclosure').open=true;
+ $('#beta-feedback').scrollIntoView({behavior:'smooth',block:'start'});
+});
 $('#collection-home').addEventListener('click',renderHome);
 persist(save);
 window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});

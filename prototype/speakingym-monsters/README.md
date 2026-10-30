@@ -1,3 +1,10 @@
+## 2026-10-30 — adventure-first UI simplification
+
+- The home screen now has **one prominent immediate adventure button** that opens the next unlocked story dungeon directly; optional stage selection has its own quieter link. Only quick training, review and the companion collection remain visible as secondary actions. Six less-frequent modes plus reduced-motion controls are available in a clearly labeled, closed-by-default disclosure. Nothing is removed from the game.
+- The dungeon selection page leads with one start button. Eight chapter cards, locked-stage descriptions, medal targets and advanced modes are tucked behind separate opt-in disclosures; the visible progress label is kept short. First-time guided battle practice now takes players into the ordinary story dungeon, rather than surprising them with advanced tactics after the tutorial.
+- On narrow screens, the battle illustration becomes a compact but still animated arena, the redundant mission/banner and repeated beginner helper copy no longer push the prompt out of view, and the answer area uses a prominent full-width action. Exploration art is also shortened so the **continue** button appears sooner; important English prompts, health, real difficulty, hints and actual grading are preserved.
+- The optional beta-feedback/legal-consent panel is collapsed beneath its own disclosure, but the result-screen feedback action opens it before scrolling. No analytics consent rules or event payloads were altered. A dedicated `clarity.css` contains these presentation-only overrides. Existing local save schema, mastery, XP, microphone recovery, AI quotas, Stripe, production and main remain untouched.
+
 ## 2026-10-30 — replay variety without weakening targeted review
 
 - Forest and City expedition selection now considers **recently practiced expressions**, not just unique question IDs. A fresh question that uses the same sentence pattern as yesterday is recognized as a potential repeat; regular encounters prefer a different expression when other suitable questions exist. This uses the existing local prompt bank and does not generate unchecked exercises or call AI.
