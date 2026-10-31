@@ -652,6 +652,41 @@ const assert=require('node:assert/strict');
    assert.equal(Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterListenMiss,
      'Correcting a listening miss does not cause another enemy hit');
    await listenContext.close();
+   // A listening challenge on the ENEMY turn is an obligatory defensive
+   // task. It must retaliate on an incorrect meaning, never on speech errors.
+   const defenseContext=await browser.newContext({viewport:{width:375,height:844},isMobile:engine==='webkit',hasTouch:true});
+   const defensePage=await defenseContext.newPage();
+   await defensePage.addInitScript(()=>{Math.random=()=>.3;}); // Enemy's first planned skill is listening.
+   await defensePage.goto(url,{waitUntil:'networkidle'});
+   await defensePage.locator('[data-feature-worlds]').click();
+   await defensePage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+   await defensePage.locator('#start-forest-tactics').click();
+   await defensePage.locator('#forest-explore-continue').click();
+   assert.match(await defensePage.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：リスニング/);
+   await answer(defensePage);
+   await defensePage.locator('#next-question').click();
+   assert.equal(await defensePage.locator('#forest-tactics').getAttribute('data-turn'),'enemy');
+   assert.equal(await defensePage.locator('#play-audio').count(),1,'The forced enemy listening defense uses audio choices');
+   await defensePage.locator('#play-audio').click();
+   const defenseCorrect=await defensePage.evaluate(async()=>{
+     const {ALL_PROMPTS}=await import('./monster-data.js');
+     const {listeningChallengeFor}=await import('./listening-challenges.js');
+     const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+     return listeningChallengeFor(prompt).correctIndex;
+   });
+   const defenseWrong=(defenseCorrect+1)%3;
+   const hpBeforeDefense=Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   await defensePage.locator(`[data-listening-choice="${defenseWrong}"]`).click();
+   const hpAfterDefense=Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   assert.ok(hpAfterDefense<hpBeforeDefense,'Wrong forced listening defense must deal real enemy damage');
+   await defensePage.locator(`[data-listening-choice="${defenseWrong}"]`).click();
+   assert.equal(Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterDefense,
+     'Wrong enemy listening defense cannot charge damage twice');
+   await defensePage.locator(`[data-listening-choice="${defenseCorrect}"]`).click();
+   await defensePage.locator('#next-question').click();
+   assert.equal(Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterDefense,
+     'Defensive correction must not cause an extra hit');
+   await defenseContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
