@@ -150,12 +150,14 @@
  padding:195px 0 0;border:1px solid #59869c;border-radius:15px;
  background:#132a41;box-shadow:inset 0 0 0 2px #153448}
 .forest-active.tactical-battle #forest-world-stage .forest-party{top:33px}
-.forest-active.tactical-battle #forest-world-stage .forest-enemy{top:62px;right:10%}
-.forest-active.tactical-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:45px;right:5%}
+/* Match the specificity of the later scene-game.css rules. Otherwise the
+   enemy floats into the WEAK badge, especially during a boss encounter. */
+#play-view.forest-active.tactical-battle #forest-world-stage .forest-enemy{top:56px;right:10%}
+#play-view.forest-active.tactical-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:48px;right:5%}
 .forest-enemy-weakness[hidden]{display:none!important}
 .forest-active.tactical-battle .forest-enemy-weakness{
- position:absolute;top:14px;right:5%;z-index:14;display:flex;
- align-items:center;justify-content:center;width:65px;height:24px;padding:2px 5px;
+ position:absolute;top:5px;right:5%;z-index:14;display:flex;
+ align-items:center;justify-content:center;width:65px;height:22px;padding:2px 5px;
  border:1.5px solid #f5d57a;border-radius:7px;background:#44233fe9;
  color:#fff7db;box-shadow:0 2px 0 #24142a,0 0 9px #f5c77465;
  font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;
