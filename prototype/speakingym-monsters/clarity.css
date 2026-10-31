@@ -1,0 +1,319 @@
+/* Adventure-first navigation. Keep optional modes discoverable but out of the
+   initial decision: start, repeat a short training, review, or see companions. */
+.home-navigation{margin-top:0}
+.home-navigation-head{margin:0 0 13px;padding:0}
+.home-navigation-head .tiny-caps{font-size:9px;letter-spacing:.13em}
+.home-navigation-head h1{font-size:clamp(25px,3.8vw,34px);line-height:1.22;margin:4px 0 7px}
+.home-navigation-head p{font-size:12px;line-height:1.55;margin:0}
+.home-feature{min-height:285px;padding:23px 28px}
+.home-feature-content h2{font-size:clamp(31px,4.6vw,45px);margin:9px 0}
+.home-feature-content>p{font-size:13px;line-height:1.65;margin:0 0 13px}
+.home-feature-info{display:none}
+.home-feature-cta{width:min(100%,305px);min-height:56px;font-size:17px;gap:12px}
+.home-feature-progress{font-size:11px!important;margin:10px 0 0!important}
+.home-world-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:8px 6px 0 0;padding:5px 10px;border:1px solid #c5dfbb8c;border-radius:10px;background:#f0ffdf1c;color:#f2f8df;font-size:12px;font-weight:850;cursor:pointer}
+.home-feature-practice{display:inline-flex;min-height:42px;align-items:center;justify-content:center;margin:7px 0 0;padding:7px 12px;border:0;background:transparent;box-shadow:none;color:#e2efd8;text-decoration:underline;text-underline-offset:4px;font-size:12px}
+.home-feature-cta:focus-visible,.home-world-link:focus-visible,.home-feature-practice:focus-visible{outline:3px solid #ffe4a0;outline-offset:3px}
+.home-navigation-label{margin:16px 2px 9px}
+.home-navigation-label h2{font-size:17px}
+.home-main-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.home-navigation-grid.home-main-actions .home-navigation-tile{grid-column:auto;min-height:77px;padding:10px 12px;gap:9px;border-radius:13px}
+.home-navigation-grid.home-main-actions .home-navigation-icon{width:38px;height:38px;flex-basis:38px}
+.home-navigation-grid.home-main-actions .home-navigation-icon svg{width:22px;height:22px}
+.home-navigation-grid.home-main-actions .home-navigation-copy strong{font-size:14px}
+.home-navigation-grid.home-main-actions .home-navigation-copy small{display:none}
+.home-extra-modes{margin:12px 0 0;border:1px solid #cbdccc;border-radius:15px;background:#f4f7ee}
+.home-extra-modes>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:12px 17px;color:#315943;cursor:pointer;font-size:13px;font-weight:850;list-style:none}
+.home-extra-modes>summary::-webkit-details-marker{display:none}
+.home-extra-modes>summary:after{content:'+';font-size:20px;line-height:1}
+.home-extra-modes[open]>summary:after{content:'−'}
+.home-extra-modes>summary:focus-visible{outline:3px solid #e0af57;outline-offset:3px}
+.home-extra-grid{padding:0 12px 12px;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.home-extra-modes .motion-toggle{margin:0 12px 15px;min-height:43px;font-size:12px}
+.home-extra-grid .home-navigation-tile[data-home-page="forest"]{grid-column:auto;min-height:116px}
+.home-extra-grid .home-navigation-tile[data-home-page="forest"] .home-navigation-icon{width:47px;height:47px;flex-basis:47px}
+.home-extra-grid .home-navigation-tile[data-home-page="forest"] .home-navigation-copy strong{font-size:16px}
+.dungeon-stage-list{margin:14px 0;border:1px solid #bbd1c0;border-radius:14px;background:#f3f8ee;color:#244d37;overflow:hidden}
+.dungeon-stage-list>summary{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 16px;cursor:pointer;font-size:14px;font-weight:900;list-style:none}
+.dungeon-stage-list>summary:after{content:'＋';font-size:19px;line-height:1}
+.dungeon-stage-list[open]>summary:after{content:'－'}
+.dungeon-stage-list>summary::-webkit-details-marker{display:none}
+.dungeon-stage-list>summary:focus-visible{outline:3px solid #e2aa5d;outline-offset:2px}
+.dungeon-stage-list .dungeon-selection-label{margin:12px 13px 0}
+.dungeon-stage-list .forest-area-list{margin:10px 12px 14px}
+.dungeon-stage-list .forest-area-count,.dungeon-stage-list .boss-medal-target{display:none}
+.dungeon-quick-actions .forest-primary{min-height:56px;font-size:17px}
+.dungeon-first-tip{font-size:12px;line-height:1.7}
+.beta-feedback-disclosure{max-width:960px;margin:18px auto 24px}
+.beta-feedback-disclosure>summary{min-height:48px;display:flex;align-items:center;padding:11px 16px;border:1px solid #c7d9c9;border-radius:12px;background:#f2f6ed;color:#345947;cursor:pointer;font-weight:800;font-size:13px}
+.beta-feedback-disclosure>summary:focus-visible{outline:3px solid #e0af57;outline-offset:2px}
+.beta-feedback-disclosure .beta-feedback{margin-top:12px}
+@media(max-width:690px){
+ .home-navigation{margin:0 0 23px}
+ .home-navigation-head{margin:0 0 11px}
+ .home-navigation-head h1{font-size:clamp(23px,6.5vw,28px);line-height:1.2;margin:4px 0}
+ .home-navigation-head p{font-size:11px}
+ .home-feature{min-height:270px;grid-template-columns:minmax(0,1.1fr) minmax(90px,.8fr);padding:15px 13px;border-radius:17px}
+ .home-feature-content h2{font-size:clamp(24px,6vw,33px);margin:8px 0}
+ .home-feature-content>p{font-size:11px;line-height:1.55;margin:0 0 10px}
+ .home-feature-cta{width:100%;min-height:53px;font-size:14px;padding:10px 8px;gap:5px}
+ .home-feature-cta span{font-size:19px}
+ .home-world-link{margin:6px 0 0;min-height:42px;font-size:11px}
+ .home-feature-practice{display:block;margin:0;padding:5px 0;min-height:34px;text-align:left;font-size:10px}
+ .home-feature-companion{justify-content:center}
+ #home-menu-art{height:140px}
+ .home-navigation-label{margin:13px 2px 9px}
+ .home-main-actions{grid-template-columns:1fr;gap:8px}
+ .home-navigation-grid.home-main-actions .home-navigation-tile{min-height:61px;padding:8px 13px;align-items:center}
+ .home-navigation-grid.home-main-actions .home-navigation-copy strong{font-size:14px}
+ .home-extra-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .home-extra-grid .home-navigation-tile{min-height:90px}
+ .home-extra-grid .home-navigation-tile[data-home-page="forest"]{grid-column:span 2}
+ /* Shrink the cinematic framing, not the gameplay buttons. The learner's
+    question and response should appear without scrolling past decorations. */
+ .forest-active:not(.forest-exploring) .forest-journey{padding:7px!important;margin:5px auto 6px!important}
+ .forest-active:not(.forest-exploring) .forest-journey-header{padding:0 2px 5px}
+ .forest-active:not(.forest-exploring) .forest-journey-title .forest-kicker{display:none}
+ .forest-active:not(.forest-exploring) .forest-world-stage{height:119px!important}
+ .forest-active:not(.forest-exploring) .forest-mission-panel{display:none!important}
+ .forest-active:not(.forest-exploring):not(.tactical-battle) .forest-foe-pattern{display:none}
+ .forest-active:not(.forest-exploring):not(.tactical-battle) .forest-gates{display:none}
+ .forest-active .forest-command-window{padding:0 8px 12px}
+ .forest-active .play-card{min-height:0;padding:13px!important;border-radius:13px}
+ .forest-active .play-card h1{font-size:clamp(20px,5.3vw,26px);line-height:1.45;margin:10px 0 7px}
+ .forest-active .question-caption{margin:4px 0 0;line-height:1.5}
+ .forest-active .answer-area{padding:12px!important;margin:6px auto 15px!important;border-radius:12px}
+ .forest-active .answer-area textarea.answer-input{height:78px!important;min-height:78px!important}
+ .forest-active .answer-label{margin-bottom:5px}
+ .forest-active .learning-controls{margin-top:9px}
+ .forest-active .beginner-speak-tip,.forest-active .answer-quick-help>div{display:none}
+ .forest-active .answer-quick-help{margin-top:8px;justify-content:flex-start}
+ .forest-active .learning-controls .reveal-button{width:100%;min-height:51px;font-size:15px}
+ .forest-active .forest-explore-screen{min-height:0;padding:13px;gap:10px}
+ .forest-active .forest-explore-heading{gap:3px}
+ .forest-active .forest-explore-heading h2{font-size:22px}
+ .forest-active .forest-explore-heading p{font-size:12px;line-height:1.5}
+ .forest-active .forest-explore-art{flex:0 0 174px;min-height:174px;max-height:174px}
+ .forest-active .forest-explore-continue{min-height:53px;margin-top:0}
+ .forest-active .forest-explore-screen.is-forming-party .forest-explore-art{flex-basis:110px;min-height:110px;max-height:110px}
+}
+
+/* Tactical battles: the language prompt stays in front; strategy is an
+   optional layer. This applies on desktop as well as narrow phones. */
+.forest-active.tactical-battle .forest-tactic-strategy{margin:7px 0 0;min-width:0}
+.forest-active.tactical-battle .forest-command-window{display:flex;flex-direction:column;gap:5px}
+.forest-active.tactical-battle .play-progress{order:0}
+.forest-active.tactical-battle #forest-battle-log{order:1}
+.forest-active.tactical-battle #play-card{order:2}
+.forest-active.tactical-battle #answer-area{order:3}
+.forest-active.tactical-battle #forest-tactics{order:4}
+.forest-active.tactical-battle #forest-battle-log:empty{display:none!important}
+/* CSS layout rules must not override the pre-question hidden state. */
+.forest-active.tactical-battle #play-card[hidden],
+.forest-active.tactical-battle #answer-area[hidden]{display:none!important}
+.forest-active.tactical-battle .forest-tries{display:none!important}
+.forest-active.tactical-battle .forest-tactic-strategy>summary{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:42px;padding:9px 11px;border:1px solid #91b6a2;border-radius:10px;background:#f8fdf5;color:#24523e;font-size:12px;font-weight:850;cursor:pointer;list-style:none}
+.forest-active.tactical-battle .forest-tactic-strategy>summary::-webkit-details-marker{display:none}
+.forest-active.tactical-battle .forest-tactic-strategy>summary:after{content:'＋';font-size:16px;line-height:1;order:3}
+.forest-active.tactical-battle .forest-tactic-strategy[open]>summary:after{content:'－'}
+.forest-active.tactical-battle .forest-tactic-strategy>summary small{font-size:11px;font-weight:850;color:#2c6a52;white-space:nowrap}
+.forest-active.tactical-battle .forest-tactic-strategy>summary:focus-visible{outline:3px solid #d9ad58;outline-offset:2px}
+.forest-active.tactical-battle .forest-tactic-strategy[open]>summary{margin-bottom:9px}
+.forest-active.tactical-battle .forest-tactic-strategy>.forest-tactic-heading{margin:6px 0}
+.forest-active.tactical-battle .forest-tactic-strategy>.forest-tactic-actions{margin:9px 0}
+.forest-active.tactical-battle .forest-tactic-strategy>.forest-tactic-kinds{margin:5px 0 9px}
+.forest-active.tactical-battle .forest-turn-task{padding:8px 10px;margin:0 0 5px;min-height:0}
+.forest-active.tactical-battle .forest-turn-task strong{font-size:13px}
+.forest-active.tactical-battle .forest-turn-task span{font-size:12px}
+.forest-active.tactical-battle .forest-tactic-kind-label{margin:7px 0 5px;color:#345f46;font-size:12px;font-weight:850}
+.forest-active.tactical-battle .forest-tactic-kinds{margin:0;gap:5px}
+.forest-active.tactical-battle .forest-tactic-kinds[hidden],.forest-active.tactical-battle .forest-tactic-kind-label[hidden]{display:none!important}
+.forest-active.tactical-battle .forest-tactic-kinds button{min-height:40px;padding:6px 2px;font-size:11px}
+/* The attack choice is a separate first step, before any English question. */
+.forest-active.tactical-battle .forest-attack-select{
+ display:grid;gap:9px;padding:13px;border:2px solid #dfb76e;border-radius:13px;
+ background:linear-gradient(155deg,#153f51,#0b2f40);color:#f8f1d8}
+.forest-active.tactical-battle .forest-attack-select>strong{font-size:17px;line-height:1.4;color:#fff5cd}
+.forest-active.tactical-battle .forest-attack-select>span{font-size:12px;line-height:1.5;color:#d8f2e9}
+.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:3px 0 0}
+.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button{
+ min-height:48px;padding:10px 5px;border:2px solid #87b2a7;border-radius:9px;
+ background:#f6f7e9;color:#23473b;font-size:13px;font-weight:900;box-shadow:0 3px 0 #507b75}
+.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button:focus-visible{
+ outline:3px solid #ffd37a;outline-offset:2px}
+.forest-active.tactical-battle .forest-tactic-actions button{min-height:43px}
+@media(max-width:690px){
+ .forest-active.tactical-battle .forest-tries,.forest-active.tactical-battle .forest-foe-pattern{display:none!important}
+ .forest-active.tactical-battle .forest-battle-info{padding:6px 7px;margin:0;gap:5px;min-height:0}
+ .forest-active.tactical-battle .forest-foe-name{font-size:12px}
+ .forest-active.tactical-battle .forest-boss-hp{font-size:12px;padding:5px 7px}
+ .forest-active.tactical-battle .forest-party-hp{margin:0 7px 5px;padding:5px 9px;font-size:11px}
+ .forest-active.tactical-battle #forest-tactics{margin:0 2px;padding:9px 8px}
+ .forest-active.tactical-battle .forest-tactic-strategy>summary{padding:8px;gap:4px;font-size:11px}
+ .forest-active.tactical-battle .forest-tactic-strategy>summary small{font-size:10px}
+}
+
+/* SINGLE-SCREEN BATTLE: the illustrated arena actually owns the live question
+   and answer controls. No second scrolling command card or sticky stage. */
+.forest-arena-console[hidden]{display:none!important}
+.forest-active.tactical-battle .forest-command-window{display:none!important}
+.forest-active.tactical-battle:not(.forest-exploring) .forest-journey{
+ position:relative!important;top:auto!important;z-index:1;box-shadow:none!important;
+ padding:7px!important;margin:0!important;background:#0c2533!important}
+.forest-active.tactical-battle:not(.forest-exploring) #forest-world-stage{
+ position:relative;height:auto!important;min-height:0;overflow:hidden;
+ padding:195px 0 0;border:1px solid #59869c;border-radius:15px;
+ background:#132a41;box-shadow:inset 0 0 0 2px #153448}
+.forest-active.tactical-battle #forest-world-stage .forest-party{top:33px}
+/* Match the specificity of the later scene-game.css rules. Otherwise the
+   enemy floats into the WEAK badge, especially during a boss encounter. */
+#play-view.forest-active.tactical-battle #forest-world-stage .forest-enemy{top:56px;right:10%}
+#play-view.forest-active.tactical-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:48px;right:5%}
+.forest-enemy-weakness[hidden]{display:none!important}
+.forest-active.tactical-battle .forest-enemy-weakness{
+ position:absolute;top:5px;right:5%;z-index:14;display:flex;
+ align-items:center;justify-content:center;box-sizing:border-box;width:max-content;min-width:105px;max-width:calc(100% - 136px);height:24px;padding:3px 9px;white-space:nowrap;
+ border:1.5px solid #f5d57a;border-radius:7px;background:#44233fe9;
+ color:#fff7db;box-shadow:0 2px 0 #24142a,0 0 9px #f5c77465;
+ font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;font-weight:900;
+ letter-spacing:.02em;text-align:center;line-height:1;pointer-events:none}
+.forest-active.tactical-battle .forest-enemy-weakness[data-kind="listen"]{border-color:#8ae4ee;background:#184c5de9}
+.forest-active.tactical-battle .forest-enemy-weakness[data-kind="vocab"]{border-color:#a8f5a4;background:#29543be9}
+.forest-active.tactical-battle .forest-enemy-weakness[data-kind="grammar"]{border-color:#cbb5ff;background:#41345fe9}
+.forest-active.tactical-battle #forest-world-stage .forest-world-trail-label{top:8px}
+.forest-active.tactical-battle #forest-world-stage .forest-battle-info{
+ position:absolute;top:134px;left:8px;right:8px;z-index:12;min-height:0;
+ display:flex;gap:5px;align-items:center;justify-content:space-between;
+ padding:5px 7px!important;margin:0!important;border:1px solid #5c9d9a;border-radius:9px;
+ background:#092a38e9;color:#fff4d1}
+.forest-active.tactical-battle #forest-world-stage .forest-foe-name{font-size:12px;color:#fff1ca}
+.forest-active.tactical-battle #forest-world-stage .forest-boss-hp{font-size:12px;letter-spacing:.02em}
+.forest-active.tactical-battle #forest-world-stage .forest-party-hp{
+ position:absolute;top:169px;left:9px;z-index:12;margin:0!important;
+ padding:3px 9px!important;font-size:10px;line-height:1.5}
+.forest-active.tactical-battle .forest-arena-console{
+ position:relative;z-index:13;display:flex;flex-direction:column;gap:4px;
+ min-width:0;margin:0;padding:11px 10px 12px;
+ border-top:1px solid #70c8bb80;
+ background:linear-gradient(175deg,#143f50e9,#0f3143f9 43%,#071f30)}
+.forest-active.tactical-battle .forest-arena-console .play-progress{
+ order:0;margin:-11px -10px 4px!important;max-width:none;height:4px;
+ background:#326474;border-radius:0}
+.forest-active.tactical-battle .forest-arena-console #forest-battle-log{
+ order:1;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+ overflow:hidden;min-height:0;margin:0;padding:5px 8px;font-size:11px;
+ color:#fceabc;background:#244359;border-color:#476a74}
+.forest-active.tactical-battle .forest-arena-console #play-card{
+ order:2;max-width:none;margin:0;padding:12px 12px 4px!important;
+ border:0;border-left:3px solid #81dcce;border-radius:3px;
+ background:linear-gradient(90deg,#75d8d016,transparent 85%);box-shadow:none}
+.forest-active.tactical-battle .forest-arena-console #answer-area{
+ order:3;max-width:none;margin:0!important;padding:8px 11px 10px!important;
+ border:0;border-radius:5px;
+ background:transparent;box-shadow:none}
+.forest-active.tactical-battle .forest-arena-console .question-top{color:#b9d8d9}
+.forest-active.tactical-battle .forest-arena-console .question-tag{color:#ffdfa0;background:#163d52;border-color:#6b8084}
+.forest-active.tactical-battle .forest-arena-console #play-card h1,
+.forest-active.tactical-battle .forest-arena-console .english-situation{color:#fff9e7;text-shadow:0 2px 9px #030e1ccc}
+.forest-active.tactical-battle .forest-arena-console .question-caption{color:#bcdad9}
+.forest-active.tactical-battle .forest-arena-console .answer-label,
+.forest-active.tactical-battle .forest-arena-console .answer-helper{color:#c7e1df}
+.forest-active.tactical-battle .forest-arena-console .answer-quick-help{color:#e3d5aa}
+.forest-active.tactical-battle .forest-arena-console .answer-input{
+ border:2px solid #76bcb4;background:#f4fcf8;box-shadow:0 0 20px #4edec420;
+ color:#163746}
+.forest-active.tactical-battle .forest-arena-console .answer-input:focus-visible{
+ border-color:#f5d584;outline:2px solid #f5d584;outline-offset:2px}
+.forest-active.tactical-battle .forest-arena-console .hint-button{color:#ffe0a6}
+.forest-active.tactical-battle .forest-arena-console .reveal-button{
+ background:linear-gradient(125deg,#ffdf8a,#ffb958);color:#1b3241;
+ box-shadow:0 3px 0 #80532a;font-weight:900}
+.forest-active.tactical-battle .forest-arena-console .task-panel{
+ color:#1c403e;background:#e4f2e8;border-color:#82aea4}
+.forest-active.tactical-battle .forest-arena-console .listen-control{background:#e5f4e9}
+.forest-active.tactical-battle .forest-arena-console .transcript-fallback{color:#d6eeee}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics{
+ order:4;margin:0;padding:0;background:transparent;border:0;color:#e7f2e6}
+.forest-active.tactical-battle .forest-arena-console .forest-tactic-strategy>summary{
+ background:#143f4b;color:#eaf8f0;border:1px solid #638c83}
+.forest-active.tactical-battle .forest-arena-console .forest-tactic-strategy>summary small{color:#c7eee1}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics .forest-tactic-strategy[open]{
+ padding:8px;border-radius:12px;background:#eef5e8;color:#264a38}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics .forest-tactic-strategy[open]>summary{
+ background:#eff9f0;color:#23533d}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics .forest-tactic-strategy[open]>summary small{color:#27664b}
+.forest-active.tactical-battle .forest-arena-console .forest-ultimate-shortcut{
+ display:block;width:100%;min-height:43px;margin:3px 0 5px;padding:9px 13px;
+ border:2px solid #ffe0a0;border-radius:10px;background:linear-gradient(110deg,#fcda86,#e9a958);
+ color:#3c301f;font-size:13px;font-weight:900;box-shadow:0 2px 0 #9c663d;cursor:pointer}
+.forest-active.tactical-battle .forest-arena-console .forest-ultimate-shortcut[aria-pressed="true"]{
+ background:#6f3856;color:#fff3d3;border-color:#f4c0ab}
+.forest-active.tactical-battle .forest-arena-console .forest-party-brief>summary{
+ min-height:42px;background:#194b57;color:#ecfaf2;border-color:#80a4a1}
+.forest-active.tactical-battle .forest-arena-console .forest-party-brief[open]{
+ padding:6px;border-radius:10px;background:#eaf2e9;color:#244838}
+.forest-active.tactical-battle .forest-turn-task[data-turn="player"]{border-left:3px solid #ffd580}
+.forest-active.tactical-battle .forest-turn-task[data-turn="enemy"]{border-left:3px solid #f59a89}
+.forest-active.tactical-battle #forest-world-stage .forest-damage{top:14%;right:14%}
+.forest-active.tactical-battle #forest-world-stage .forest-world-fx{top:24%;bottom:auto}
+.forest-active.tactical-battle #forest-world-stage .forest-combo{top:32%}
+@media(max-width:690px){
+ .forest-active.tactical-battle .forest-battle-shell{overflow:hidden!important;border-radius:17px}
+ .forest-active.tactical-battle .forest-arena-console{padding:9px 7px 11px}
+ .forest-active.tactical-battle .forest-arena-console .play-progress{margin:-9px -7px 4px!important}
+ .forest-active.tactical-battle .forest-arena-console #play-card{padding:10px 10px 4px!important}
+ .forest-active.tactical-battle .forest-arena-console #answer-area{padding:8px 9px!important}
+ .forest-active.tactical-battle .forest-arena-console .play-card h1{font-size:clamp(17px,5vw,22px);line-height:1.35;margin:7px 0 5px}
+ .forest-active.tactical-battle .forest-arena-console .question-caption{font-size:11px;line-height:1.4}
+ .forest-active.tactical-battle .forest-arena-console textarea.answer-input{height:62px!important;min-height:62px!important}
+ .forest-active.tactical-battle .forest-arena-console .learning-controls{margin-top:6px}
+ .forest-active.tactical-battle .forest-arena-console .learning-controls .reveal-button{min-height:46px}
+}
+
+/* Original shonen-action language: ink flashes, energy rings and decisive
+   hit-stop. All shapes are CSS; no anime character or copyrighted asset. */
+.forest-cinematic-layer{position:absolute;z-index:10;inset:0 0 auto;height:195px;pointer-events:none;overflow:hidden;isolation:isolate}
+.cinematic-ring,.cinematic-strike,.cinematic-callout{position:absolute;pointer-events:none;opacity:0}
+.cinematic-ring{left:50%;top:51%;width:190px;height:190px;margin:-95px 0 0 -95px;border-radius:50%;
+ border:6px solid #69e7e1;box-shadow:0 0 0 12px #6ce2dd30,inset 0 0 28px #91ffff80,0 0 30px #6ef6e6;
+ transform:scale(.16)}
+.cinematic-strike{left:-28%;top:46%;width:160%;height:9px;
+ border-top:2px solid #fffce4;background:linear-gradient(90deg,transparent,#7aebff,#fff6c4,#a78aff,transparent);
+ box-shadow:0 0 20px #a2dcff,0 0 45px #6b72d7;transform:rotate(-19deg) scaleX(.1)}
+.cinematic-strike-b{top:57%;height:6px;transform:rotate(23deg) scaleX(.1)}
+.cinematic-callout{left:50%;top:44%;width:max-content;max-width:90%;text-align:center;
+ font-family:Impact,'Arial Black',sans-serif;font-size:clamp(28px,10vw,65px);font-weight:1000;
+ font-style:italic;letter-spacing:.06em;line-height:1.06;color:#fff4cf;
+ -webkit-text-stroke:1px #25304a;text-shadow:3px 4px 0 #142638,0 0 22px #ffe6b4;
+ transform:translate(-50%,-40%) rotate(-8deg) scale(.5)}
+#forest-world-stage[data-cinematic="opening"] .cinematic-callout:before{content:'ENGAGE!'}
+#forest-world-stage[data-cinematic="attack"] .cinematic-callout:before{content:'STRIKE!'}
+#forest-world-stage[data-cinematic="guard"] .cinematic-callout:before{content:'BLOCK!'}
+#forest-world-stage[data-cinematic="enemy"] .cinematic-callout:before{content:'IMPACT!'}
+#forest-world-stage[data-cinematic="victory"] .cinematic-callout:before{content:'K.O.!'}
+#forest-world-stage.forest-boss-stage[data-cinematic="victory"] .cinematic-callout:before{content:'BOSS DOWN!'}
+#forest-world-stage[data-cinematic="opening"] .cinematic-ring{animation:cinematic-open .95s ease-out both}
+#forest-world-stage[data-cinematic="opening"] .cinematic-callout{animation:cinematic-type .95s cubic-bezier(.18,.8,.3,1) both}
+#forest-world-stage[data-cinematic="attack"] .cinematic-strike,
+#forest-world-stage[data-cinematic="victory"] .cinematic-strike{animation:cinematic-slice .85s cubic-bezier(.15,.85,.28,1) both}
+#forest-world-stage[data-cinematic="attack"] .cinematic-strike-b,
+#forest-world-stage[data-cinematic="victory"] .cinematic-strike-b{animation-name:cinematic-slice-cross;animation-delay:.075s}
+#forest-world-stage[data-cinematic="attack"] .cinematic-callout,
+#forest-world-stage[data-cinematic="guard"] .cinematic-callout,
+#forest-world-stage[data-cinematic="enemy"] .cinematic-callout{animation:cinematic-type .85s cubic-bezier(.15,.8,.24,1) both}
+#forest-world-stage[data-cinematic="guard"] .cinematic-ring{animation:cinematic-shield .9s ease-out both}
+#forest-world-stage[data-cinematic="enemy"] .cinematic-ring{border-color:#ff8a9f;box-shadow:0 0 45px #ef4a6580;animation:cinematic-shield .7s ease-out both}
+#forest-world-stage[data-cinematic="victory"] .cinematic-ring{border-color:#ffdc83;box-shadow:0 0 0 15px #ffcb543b,0 0 60px #ffcb70;animation:cinematic-finish 1.5s ease-out both}
+#forest-world-stage[data-cinematic="victory"] .cinematic-callout{animation:cinematic-finisher 1.5s cubic-bezier(.18,.8,.22,1) both}
+@keyframes cinematic-open{0%{opacity:0;transform:scale(.1) rotate(-35deg)}25%{opacity:.9}75%{opacity:.55}100%{opacity:0;transform:scale(1.8) rotate(25deg)}}
+@keyframes cinematic-type{0%{opacity:0;transform:translate(-50%,-30%) rotate(-13deg) scale(.5)}24%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1.1)}64%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1)}100%{opacity:0;transform:translate(-50%,-75%) rotate(-3deg) scale(1.07)}}
+@keyframes cinematic-slice{0%,12%{opacity:0;transform:translateX(-25%) rotate(-19deg) scaleX(.1)}23%,48%{opacity:1;transform:translateX(0) rotate(-19deg) scaleX(1)}100%{opacity:0;transform:translateX(26%) rotate(-19deg) scaleX(.3)}}
+@keyframes cinematic-slice-cross{0%,12%{opacity:0;transform:translateX(25%) rotate(23deg) scaleX(.1)}23%,48%{opacity:1;transform:translateX(0) rotate(23deg) scaleX(1)}100%{opacity:0;transform:translateX(-26%) rotate(23deg) scaleX(.3)}}
+@keyframes cinematic-shield{0%{opacity:0;transform:scale(.25)}25%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes cinematic-finish{0%{opacity:0;transform:scale(.15)}18%{opacity:1;transform:scale(1.05)}62%{opacity:.85;transform:scale(1.55)}100%{opacity:0;transform:scale(2.8)}}
+@keyframes cinematic-finisher{0%{opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(.3)}15%{opacity:1;transform:translate(-50%,-50%) rotate(-7deg) scale(1.3)}58%{opacity:1;transform:translate(-50%,-50%) rotate(-4deg) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) rotate(-2deg) scale(1.1)}}
+@media(prefers-reduced-motion:reduce){
+ .forest-cinematic-layer,.forest-cinematic-layer *{animation:none!important;transition:none!important}
+ .forest-cinematic-layer{display:none!important}
+}

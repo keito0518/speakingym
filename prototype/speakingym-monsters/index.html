@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f5ed">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="知ってる英語を、話せる英語に。60秒スピーキングと不思議なモンスター育成の試作版。">
+  <title>Speakingym Monsters — 学んで、話して、育てよう</title>
+  <link rel="stylesheet" href="./monsters.css">
+  <link rel="stylesheet" href="./forest-game.css">
+  <link rel="stylesheet" href="./forest-battle.css">
+  <link rel="stylesheet" href="./character-screens.css">
+  <link rel="stylesheet" href="./clarity.css">
+  <link rel="stylesheet" href="./scene-game.css">
+  <script src="../../analytics-config.js"></script>
+  <script type="module" src="./monsters.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Speakingym Monsters ホーム"><span class="brand-icon" aria-hidden="true">M</span><span>Speakingym <b>Monsters</b><small>ことばが育つ、ふしぎな世界。</small></span></a>
+      <span class="prototype-tag">PLAYABLE PROTOTYPE</span>
+    </header>
+
+    <main id="main-content">
+      <section id="home-view" class="view">
+        <section class="daily-gym" aria-labelledby="daily-gym-title">
+          <div class="daily-gym-copy">
+            <span class="tiny-caps">TODAY'S FIVE-MINUTE TRAINING</span>
+            <h2 id="daily-gym-title">今日の5分ジム</h2>
+            <p>苦手を確認 → 新しい表現 → 別の場面で応用。8問で自分の英語を育てよう。解説は好きなだけ読めるよ。</p>
+            <p id="daily-plan-status" class="daily-plan-status" role="status">今日の練習を準備中…</p>
+            <button type="button" id="start-daily-gym" class="button button-primary">今日の5分を始める →</button>
+          </div>
+          <div class="daily-gym-progress" aria-label="自力で言えた割合の記録">
+            <span class="tiny-caps">YOUR PROGRESS</span>
+            <strong id="daily-last-rate">―</strong><small>直近の自力正解率</small>
+            <p id="daily-growth-note">5分ジムを完了すると、成長を記録できるよ。</p>
+          </div>
+        </section>
+        <section class="saved-review" aria-labelledby="saved-review-title">
+          <div class="saved-review-heading"><span class="tiny-caps">MY SAVED QUESTIONS</span><h2 id="saved-review-title">保存した問題を復習</h2>
+            <p>自分が残した問題を、戦闘演出なしで何度でも練習。</p>
+            <button type="button" id="start-saved-review" class="review-journal-action" disabled>保存した問題を解く（0問）</button><button type="button" id="start-due-saved-review" class="review-journal-action saved-review-due" disabled>要復習から練習（0問）</button></div>
+          <div id="saved-question-list" class="saved-question-list"></div>
+        </section>
+        <section class="retention-hub" aria-labelledby="retention-title">
+          <span class="tiny-caps">SPACED RECALL · 1 / 3 / 7 DAYS</span>
+          <h2 id="retention-title">忘れない英語に育てよう</h2>
+          <p>昨日・3日後・7日後にもう一度。日を空けて自力で答えるほど、仲間との絆も深まるよ。</p>
+          <div class="retention-hub-metrics">
+            <span id="retention-due-label">今日のチェック 0問</span>
+            <span id="retention-stable-label">7日後チェック達成 0問</span>
+            <span id="retention-transfer-label">別の場面で応用 0問</span>
+          </div>
+          <div class="retention-bond-status" aria-label="復習で育つ仲間との絆">
+            <strong id="retention-bond-label">Yolkieとの絆 Lv.0</strong>
+            <div id="retention-bond-meter" class="retention-bond-meter" role="meter" aria-label="次の絆レベルまでの進捗" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="retention-bond-fill"></span></div>
+            <small>ヒントなしで翌日・3日後・7日後の復習を達成すると絆が成長。音声認識の失敗では減らないよ。</small>
+          </div>
+          <button type="button" id="start-retention-review" disabled>今日の定着チェック（0問）</button>
+          <p id="retention-next" class="retention-next" aria-live="polite">初めて解いた問題は翌日の復習候補になるよ。</p>
+        </section>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="eyebrow-dot"></span> SPEAKING FIRST. FUN ALWAYS.</div>
+            <h1>英語を話すほど、<br><em>仲間が育つ。</em></h1>
+            <p>知っているはずの言葉が、とっさに出てこない。そんな瞬間を、楽しい60秒に変えていこう。</p>
+            <div class="difficulty-picker" aria-label="問題の難易度">
+              <span class="difficulty-title">難易度を選ぶ</span>
+              <div class="difficulty-options" role="group" aria-label="問題の難易度">
+                <button type="button" data-difficulty="easy" aria-pressed="true">やさしい<small>日本語 → 英語</small></button>
+                <button type="button" data-difficulty="normal" aria-pressed="false">ふつう<small>英語 → 英語</small></button>
+                <button type="button" data-difficulty="hard" aria-pressed="false">むずかしい<small>英語 → 英語</small></button>
+              </div>
+              <p id="difficulty-description" class="difficulty-description" aria-live="polite">日本語の状況を読んで、英語で答える。</p>
+            </div>
+            <div class="hero-buttons">
+              <button class="button button-primary" data-start="speaking">スピーキングを始める</button>
+              <button class="button button-dark" data-start="challenge">60秒チャレンジ</button>
+            </div>
+            <section class="forest-invite dungeon-selection" aria-labelledby="forest-invite-title">
+              <header class="dungeon-selection-banner">
+                <span class="forest-kicker">MAIN ADVENTURE · ENGLISH RPG</span>
+                <div class="dungeon-selection-banner-content">
+                  <div class="dungeon-selection-banner-copy">
+                    <h2 id="forest-invite-title">English<span>ダンジョン</span></h2>
+                    <p>英語を使って、ふたつの世界を冒険しよう。</p>
+                  </div>
+                  <div class="dungeon-selection-counter" aria-label="2つのワールド"><strong>02</strong><span>WORLDS</span></div>
+                </div>
+              </header>
+              <div class="forest-invite-action dungeon-quick-actions">
+                <button type="button" id="start-forest" class="forest-primary">次のエリアへ進む</button>
+                <details id="dungeon-other-modes" class="dungeon-other-modes"><summary>ほかの遊び方を見る</summary><div class="dungeon-other-modes-actions">
+                  <button type="button" id="start-forest-tactics" class="forest-tactics-start">仲間を編成して挑戦</button>
+                  <button type="button" id="start-forest-simple" class="forest-endless-button">ライトバトル（敵の反撃なし）</button>
+                  <button type="button" id="start-forest-endless" class="forest-endless-button">エンドレスに挑戦</button>
+                </div></details>
+                <span id="forest-home-progress">まだ未踏の森</span>
+              </div>
+              <p class="dungeon-first-tip">初めてなら <button type="button" id="start-practice-battle" class="dungeon-practice-link">操作を練習</button> <button type="button" id="open-dungeon-tutorial" class="dungeon-guide-link">遊び方を見る</button></p>
+              <details class="dungeon-stage-list" id="dungeon-stage-list"><summary>エリア一覧から選ぶ</summary>
+                <div class="dungeon-selection-label"><strong>行きたいエリアを選ぼう</strong><span>未解放の場所は冒険を進めると開くよ</span></div>
+                <div id="forest-area-list" class="forest-area-list" aria-label="ダンジョンのエリア選択"></div>
+              </details>
+              <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
+            </section>
+            <span id="save-note" class="save-note">学習記録はこの端末に保存されます</span>
+          </div>
+          <div class="companion-showcase">
+            <div class="showcase-glow" aria-hidden="true"></div>
+            <span class="showcase-top">YOUR COMPANION</span>
+            <div id="hero-monster-art" class="hero-monster-art"></div>
+            <div class="showcase-footer"><div><strong id="hero-monster-name">メダマゴ</strong><span id="hero-monster-species">めだまやきモンスター</span></div><span id="hero-level" class="level-pill">Lv.1</span></div>
+            <div id="hero-vocab" class="hero-vocab" aria-label="名前の由来になった英単語"></div>
+            <div class="xp-track" aria-label="モンスター成長ゲージ"><span id="hero-xp-fill"></span></div>
+            <p id="hero-next-level">あと70 XPでレベルアップ</p>
+            <button class="wallet-link" id="open-wallet"><span>ためたXP <strong id="home-wallet">0</strong></span><span>仲間にあげる →</span></button>
+          </div>
+        </div>
+
+        <div class="section-head"><div><span class="tiny-caps">TODAY'S PROGRESS</span><h2>今日も、ひとこと前進。</h2></div><button class="quiet-link" id="open-collection">なかま・図鑑を見る →</button></div>
+        <div class="stat-grid">
+          <article class="stat-card"><span class="stat-icon" aria-hidden="true">01</span><strong id="stat-independent">0<span> / 6</span></strong><p>ヒントなしで学んだ表現</p></article>
+          <article class="stat-card"><span class="stat-icon" aria-hidden="true">02</span><strong id="stat-review">0</strong><p>今日の復習候補</p></article>
+          <article class="stat-card"><span class="stat-icon" aria-hidden="true">03</span><strong id="stat-monsters">1<span> / 5</span></strong><p>仲間になったモンスター</p></article>
+        </div>
+        <section class="review-journal" aria-labelledby="review-journal-title">
+          <div class="review-journal-head">
+            <div><span class="tiny-caps">REVIEW JOURNAL</span><h2 id="review-journal-title">英語が身につくまでの記録</h2></div>
+            <button id="start-review-practice" type="button" class="review-journal-action">復習する</button>
+          </div>
+          <div class="review-journal-progress" role="meter" aria-label="ヒントなしで学んだ表現の割合" aria-valuemin="0" aria-valuemax="16" aria-valuenow="0" id="review-mastery-meter"><span id="review-mastery-fill"></span></div>
+          <p id="review-mastery-description" class="review-mastery-description">覚えた表現が増えると、ゲージが伸びていきます。</p>
+          <div class="review-journal-counts">
+            <div><strong id="review-due-count">0</strong><span>今日の復習</span></div>
+            <div><strong id="review-upcoming-count">0</strong><span>3日以内の復習</span></div>
+            <div><strong id="review-mastered-count">0</strong><span>定着した表現</span></div>
+          </div>
+          <div id="review-journal-list" class="review-journal-list" aria-live="polite"></div>
+        </section>
+        <div class="notice-card"><div><strong>このゲームの主役は、英語を話すあなた。</strong><p>問題を解いてXPをため、好きな仲間にあげよう。ヒントなしで使える表現が増えると、新しい仲間にも出会えるよ。</p></div></div>
+      </section>
+
+      <section id="play-view" class="view" hidden>
+        <div class="play-topline"><button class="back-button" id="leave-play">← ホームへ</button><button type="button" id="open-battle-guide" class="battle-guide-button" hidden>遊び方</button><span id="play-mode-label" class="mode-chip">練習モード</span><span id="play-clock" class="clock" aria-live="off">自分のペースで</span></div>
+        <div class="forest-battle-shell"><section id="forest-journey" class="forest-journey" hidden aria-label="はじまりの森の進行状況">
+          <div class="forest-journey-header">
+            <div class="forest-companion-art" id="forest-companion-art" aria-hidden="true"></div>
+            <div class="forest-journey-title"><span class="forest-kicker">BEGINNING FOREST</span><strong id="forest-companion-name">Yolkie と探検中</strong><small id="forest-route-status">まず森の入口へ</small></div>
+          </div>
+          <div class="forest-world-stage" id="forest-world-stage" data-stage="0" data-route="wild" aria-label="モンスターとの戦闘フィールド">
+            <div id="forest-world-backdrop" class="forest-world-backdrop" aria-hidden="true"></div>
+            <div class="forest-world-vignette" aria-hidden="true"></div>
+            <div class="forest-world-trail-label"><span class="forest-chapter-pin">MOONSTONE ARENA</span><span id="forest-world-counter" class="forest-world-counter">GATE 1 OF 3</span></div>
+            <div id="forest-party" class="forest-party" aria-hidden="true"><div id="forest-player-art" class="forest-player-art"></div><span class="forest-player-shadow"></span></div>
+            <div id="forest-enemy" class="forest-enemy" aria-hidden="true"></div><div id="forest-enemy-weakness" class="forest-enemy-weakness" role="status" hidden></div><div id="forest-guard" class="forest-guard" aria-hidden="true"></div><div id="forest-damage" class="forest-damage" aria-hidden="true"></div><div id="forest-world-fx" class="forest-world-fx" aria-live="off"></div><div id="forest-combo" class="forest-combo" aria-hidden="true"></div>
+            <div id="forest-cinematic-layer" class="forest-cinematic-layer" aria-hidden="true"><span class="scene-gate-flash"></span><span class="scene-energy-motes"></span><span class="cinematic-chain-halo"></span><span class="cinematic-speed-trails"></span><span class="cinematic-hit-stop"></span><span class="cinematic-shockwave"></span><span class="cinematic-victory-crown"></span><span class="cinematic-boss-sigil"></span><span class="cinematic-combo-orbit"></span><span class="cinematic-combo-flare"></span><span class="cinematic-ring"></span><span class="cinematic-strike cinematic-strike-a"></span><span class="cinematic-strike cinematic-strike-b"></span><span class="cinematic-callout"></span></div>
+            <div id="forest-arena-console" class="forest-arena-console" hidden></div>
+          </div>
+          <div class="forest-battle-info" aria-live="polite">
+            <span class="forest-foe-name" id="forest-foe-name">Mossling</span><span class="forest-foe-pattern" id="forest-foe-pattern">敵の動きを観察しよう</span>
+            <span id="forest-boss-hp" class="forest-boss-hp" hidden role="meter" aria-label="ボスのHP" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3">HP 3 / 3</span>
+            <span id="forest-tries" class="forest-tries">チャレンジ</span>
+          </div>
+          <div id="forest-party-hp" class="forest-party-hp" role="meter" aria-label="味方チームのHP" aria-valuemin="0" aria-valuemax="12" aria-valuenow="12" hidden></div>
+          <div id="forest-gates" class="forest-gates" aria-label="英語の問題とボス戦">
+            <span class="forest-gate" data-forest-gate="0">1</span>
+            <span class="forest-gate" data-forest-gate="1">2</span>
+            <span class="forest-gate" data-forest-gate="2">3</span>
+            <span class="forest-gate" data-forest-gate="3">4</span>
+            <span class="forest-gate" data-forest-gate="4">5</span>
+            <span class="forest-gate forest-boss-gate" data-forest-boss="true">BOSS</span>
+          </div>
+          <div class="forest-mission-panel"><p id="forest-scene-story" class="forest-scene-story"></p></div>
+        </section>
+        <section id="forest-explore-screen" class="forest-explore-screen" hidden aria-label="森の探索"><div class="forest-explore-heading"><span class="forest-kicker">FOREST EXPLORATION</span><h2 id="forest-explore-title">森を進もう</h2><p id="forest-explore-description">次の地点を目指そう。</p></div><div id="forest-explore-art" class="forest-explore-art" aria-hidden="true"></div><section id="forest-party-formation" class="forest-party-formation" aria-label="出撃パーティの編成" hidden></section><section id="forest-explore-event" class="forest-explore-event" aria-label="森の探索イベント" hidden></section><div id="forest-explore-options" class="forest-explore-options" hidden></div><button type="button" id="forest-explore-continue" class="forest-primary forest-explore-continue">先へ進む</button></section><div class="forest-command-window">
+          <div class="play-progress"><span id="play-progress-fill"></span></div>
+          <div id="forest-battle-log" class="forest-battle-log" role="status" aria-live="polite" hidden></div>
+          <section id="forest-tactics" class="forest-tactics" aria-label="バトルの行動選択" hidden></section>
+          <div id="play-card" class="play-card" aria-live="polite"></div>
+          <div id="answer-area" class="answer-area"></div>
+        </div></div>
+      </section>
+
+      <section id="result-view" class="view" hidden>
+        <div class="result-surface"><span class="tiny-caps" id="result-kicker">TRAINING COMPLETE</span><h1 id="result-title">よく頑張った！</h1><p id="result-description"></p><p id="result-quick-summary" class="result-quick-summary" hidden></p><section id="result-next-panel" class="result-next-panel" hidden aria-label="次にできること"><strong id="result-next-message">次の冒険へ</strong><button type="button" class="button button-primary" id="result-next">次のエリアへ進む</button></section><details id="result-detail-panel" class="result-detail-panel" open><summary>報酬・英語の学習記録を見る</summary><div id="result-rewards" class="result-rewards"></div><div id="result-discoveries" class="result-discoveries"></div><section id="dungeon-learning-report" class="dungeon-learning-report" aria-labelledby="dungeon-report-title" hidden></section></details><div class="result-actions"><button class="button button-primary" id="result-collection">ためたXPで仲間を育てる</button><button class="button button-ghost" id="replay-run">もう一回やる</button><button class="button button-ghost" id="result-home">ホームへ戻る</button><button class="button button-ghost" id="result-feedback">30秒で感想を伝える</button></div></div>
+      </section>
+
+      <section id="collection-view" class="view" hidden>
+        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、仲間をタップして、育成画面であげられます。</small></div></div>
+        <div id="collection-grid" class="collection-grid"></div>
+        <section class="forest-treasures" aria-labelledby="forest-treasures-title">
+          <div class="forest-treasures-heading"><span class="tiny-caps">FOREST EXPEDITION</span><h2 id="forest-treasures-title">森で見つけた宝物</h2><p id="forest-collection-count">まだ見つけていないよ。</p></div>
+          <div id="forest-collection-relics" class="forest-collection-relics"></div>
+        </section>
+        <section class="boss-medal-collection" aria-labelledby="boss-medal-collection-title">
+          <div class="forest-treasures-heading"><span class="tiny-caps">BOSS MASTERY</span><h2 id="boss-medal-collection-title">ボス討伐の勲章</h2><p id="boss-medal-collection-progress">各エリアの勲章を集めよう。</p></div>
+          <p class="boss-medal-collection-tip">やさしい・標準・応用の3段階で銅・銀・金を目指そう。初めて獲得・昇格した分だけ育成XPを受け取れるよ。</p>
+          <div id="boss-medal-collection-grid" class="boss-medal-collection-grid"></div>
+        </section>
+        <section class="forest-journal" aria-labelledby="forest-journal-title">
+          <div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE COMPENDIUM</span><h2 id="forest-journal-title">冒険図鑑 · 森と雪の街</h2><p id="forest-journal-summary">まだ記録はありません。</p></div>
+          <div id="forest-journal-areas" class="forest-journal-areas"></div>
+          <h3 class="city-journal-heading">WORLD 02 · 雪灯りの街</h3>
+          <div id="city-journal-areas" class="forest-journal-areas city-journal-areas"></div>
+          <div id="forest-journal-events" class="forest-journal-events"></div>
+          <div id="forest-journal-badges" class="forest-journal-badges"></div>
+        </section>
+        <div class="section-head phrase-head"><div><span class="tiny-caps">LANGUAGE GROWTH</span><h2>ことばの成長記録</h2></div></div>
+        <div id="phrase-grid" class="phrase-grid"></div>
+      </section>
+      <section id="detail-view" class="view character-view" hidden aria-label="モンスターの詳細">
+        <button type="button" id="detail-back" class="back-button">← なかま・図鑑へ</button>
+        <div id="detail-content"></div>
+      </section>
+      <section id="training-view" class="view character-view" hidden aria-label="モンスターの育成">
+        <button type="button" id="training-back" class="back-button">← キャラの詳細へ</button>
+        <div id="training-content"></div>
+      </section>
+    </main>
+
+    <details class="beta-feedback-disclosure" id="beta-feedback-disclosure"><summary>遊んだ感想を伝える（任意）</summary>
+    <section id="beta-feedback" class="beta-feedback" aria-labelledby="beta-feedback-title">
+      <span class="tiny-caps">EARLY ACCESS · 30 SECOND FEEDBACK</span>
+      <h2 id="beta-feedback-title">遊んでみて、どうだった？</h2>
+      <p>一番気になったことを、ひとつ選んで教えてね。英文や音声の入力は不要だよ。</p>
+      <div class="beta-feedback-options" role="group" aria-label="試遊の感想">
+        <button type="button" data-beta-reaction="fun">楽しかった</button>
+        <button type="button" data-beta-reaction="hard">難しかった</button>
+        <button type="button" data-beta-reaction="grading">正誤判定が気になる</button>
+        <button type="button" data-beta-reaction="usability">操作に迷った</button>
+        <button type="button" data-beta-reaction="audio">音声で困った</button>
+      </div>
+      <p id="beta-feedback-status" class="beta-feedback-status" role="status" aria-live="polite">感想を集計するには、下の任意の同意が必要です。</p>
+      <div class="beta-consent" aria-label="試遊データの任意計測設定">
+        <p>同意した場合のみ、閲覧・練習開始・エリアクリア・再訪・選んだ感想をGoogle Analyticsで集計します。Cookie等の識別情報が利用されます。<strong>回答英文・音声・学習記録・名前は送りません。</strong> 同意しなくてもすべて遊べます。</p>
+        <div class="beta-consent-actions">
+          <button type="button" id="beta-consent-yes">計測に同意する</button>
+          <button type="button" id="beta-consent-no">同意しない</button>
+          <span id="beta-consent-status" role="status" aria-live="polite">未選択・計測停止中</span>
+        </div>
+        <a href="./beta-privacy.html">データの取り扱い・設定変更について</a>
+      </div>
+      <p class="beta-feedback-email">具体的な不具合の報告は <a href="mailto:odentabetaina.oden@gmail.com?subject=Speakingym%20Monsters%20%E8%A9%A6%E9%81%8A%E6%84%9F%E6%83%B3">メールでも送れます</a>（個人情報や回答英文は記載しないでね）。</p>
+    </section></details>
+    <footer><span>Speakingym Monsters · 試作版</span><span>AI判定API・課金なし / 学習記録はこの端末のみ · <a href="./audio-credits.html">音声クレジット</a></span></footer>
+  </div>
+</body>
+</html>
