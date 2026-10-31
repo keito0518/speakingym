@@ -393,11 +393,9 @@ const assert=require('node:assert/strict');
    await knockoutPage.locator('#forest-explore-continue').click();
    await knockoutPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    assert.equal(await knockoutPage.locator('#forest-party').getAttribute('data-companion'),'medamago');
-   const definitelyWrong=['I am a banana.','The sky is green.','That is my chair.',
-     'We walk in the city.','This is my hat.','I like apples.','The door is open.'];
-   for(const sentence of definitelyWrong){
+   for(let attempt=0;attempt<15;attempt++){
      if(await knockoutPage.locator('#forest-party').getAttribute('data-companion')!=='medamago')break;
-     await knockoutPage.locator('#spoken-answer').fill(sentence);
+     await knockoutPage.locator('#spoken-answer').fill('I am a banana.');
      await knockoutPage.locator('#show-answer').click();
    }
    assert.equal(await knockoutPage.locator('#forest-party').getAttribute('data-companion'),'katappo',
