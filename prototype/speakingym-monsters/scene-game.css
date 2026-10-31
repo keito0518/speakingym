@@ -417,17 +417,18 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  animation:scene-boss-shatter 1.5s ease-in-out both;
 }
 /* Vary the INNER sprite's follow-through, leaving named monster motions on
-   .forest-party intact. The battle never changes accuracy or damage at random. */
-#play-view.scene-battle [data-cinematic="attack"][data-strike-motion="dash"] .forest-player-art,
-#play-view.scene-battle [data-cinematic="victory"][data-strike-motion="dash"] .forest-player-art{
+   .forest-party intact. Evolved friends keep their signature evolved-strike
+   animation; their randomly selected impact/speed-line FX still vary. */
+#play-view.scene-battle [data-evolved="false"][data-cinematic="attack"][data-strike-motion="dash"] .forest-player-art,
+#play-view.scene-battle [data-evolved="false"][data-cinematic="victory"][data-strike-motion="dash"] .forest-player-art{
  animation:scene-hero-dash .9s cubic-bezier(.14,.8,.26,1) both;
 }
-#play-view.scene-battle [data-cinematic="attack"][data-strike-motion="rising"] .forest-player-art,
-#play-view.scene-battle [data-cinematic="victory"][data-strike-motion="rising"] .forest-player-art{
+#play-view.scene-battle [data-evolved="false"][data-cinematic="attack"][data-strike-motion="rising"] .forest-player-art,
+#play-view.scene-battle [data-evolved="false"][data-cinematic="victory"][data-strike-motion="rising"] .forest-player-art{
  animation:scene-hero-rising .94s cubic-bezier(.14,.8,.26,1) both;
 }
-#play-view.scene-battle [data-cinematic="attack"][data-strike-motion="spiral"] .forest-player-art,
-#play-view.scene-battle [data-cinematic="victory"][data-strike-motion="spiral"] .forest-player-art{
+#play-view.scene-battle [data-evolved="false"][data-cinematic="attack"][data-strike-motion="spiral"] .forest-player-art,
+#play-view.scene-battle [data-evolved="false"][data-cinematic="victory"][data-strike-motion="spiral"] .forest-player-art{
  animation:scene-hero-spiral 1s cubic-bezier(.14,.8,.26,1) both;
 }
 @keyframes scene-chain-breathe{from{transform:scale(.78);filter:hue-rotate(0deg)}to{transform:scale(1.08);filter:hue-rotate(16deg)}}
