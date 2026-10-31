@@ -376,6 +376,35 @@ const assert=require('node:assert/strict');
    const layout=await partyPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(layout.scroll<=layout.width+1,`Multi-ally commands must fit 320px (${JSON.stringify(layout)})`);
    await partyContext.close();
+   // Repeated confirmed misses can knock out the active ally; a live reserve
+   // must take over immediately so the player cannot hide behind a zero-HP unit.
+   const knockoutContext=await browser.newContext({viewport:{width:375,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const knockoutPage=await knockoutContext.newPage();
+   await knockoutPage.goto(url,{waitUntil:'networkidle'});
+   await knockoutPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const seeded={...createSave(),ownedMonsters:['medamago','katappo'],selectedMonster:'medamago'};
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+   });
+   await knockoutPage.reload({waitUntil:'networkidle'});
+   await knockoutPage.locator('[data-feature-worlds]').click();
+   await knockoutPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+   await knockoutPage.locator('#start-forest-tactics').click();
+   await knockoutPage.locator('#forest-explore-continue').click();
+   await knockoutPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
+   assert.equal(await knockoutPage.locator('#forest-party').getAttribute('data-companion'),'medamago');
+   for(let n=0;n<7&&await knockoutPage.locator('#forest-party').getAttribute('data-companion')==='medamago';n++){
+     await knockoutPage.locator('#spoken-answer').fill('wrong attempt '+n);
+     await knockoutPage.locator('#show-answer').click();
+   }
+   assert.equal(await knockoutPage.locator('#forest-party').getAttribute('data-companion'),'katappo',
+     'A healthy reserve must automatically join as soon as the leader faints');
+   assert.ok(Number(await knockoutPage.locator('#forest-party-hp').getAttribute('aria-valuenow'))>0,
+     'The replacement fighter is alive and has its own HP');
+   assert.match(await knockoutPage.locator('#forest-battle-log').innerText(),/交代/);
+   assert.equal(await knockoutPage.locator('#play-card').isVisible(),true,
+     'The same English task continues after the automatic replacement');
+   await knockoutContext.close();
    // Evolution should open an actually different team-up route, not just add a
    // collection badge. A trained listening reserve changes ultimate timing.
    const evolutionContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
@@ -622,16 +651,16 @@ const assert=require('node:assert/strict');
    assert.match(await counterPage.locator('#forest-battle-log').textContent(),/反撃！/);
    await counterPage.locator('#spoken-answer').fill('still wrong');
    await counterPage.locator('#show-answer').click();
-   assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfter,
-     'Repeated mistakes in one turn cannot drain multiple HP charges');
+   const hpAfterSecond=Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   assert.ok(hpAfterSecond<hpAfter,'A second definite wrong answer must cost another counterattack');
    await answer(counterPage);
    await counterPage.locator('#next-question').click();
-   assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfter,
-     'Correction never triggers a second scheduled enemy retaliation');
+   assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterSecond,
+     'A correct correction never schedules an additional attack');
    assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたのターン.*攻撃/s);
    await counterContext.close();
-   // Objective listening mistakes bypass the text grader. They must still
-   // trigger exactly one enemy retaliation, even before a correct choice.
+   // Each different wrong listening meaning costs HP, while the same option
+   // cannot be tapped twice to manufacture another attack.
    const listenContext=await browser.newContext({viewport:{width:390,height:844},isMobile:engine==='webkit',hasTouch:true});
    const listenPage=await listenContext.newPage();
    await listenPage.goto(url,{waitUntil:'networkidle'});
@@ -657,14 +686,17 @@ const assert=require('node:assert/strict');
    const afterListenMiss=Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
    assert.ok(afterListenMiss<preListenMiss,'Wrong listening choice immediately triggers enemy damage');
    assert.equal(await listenPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'enemy');
-   await listenPage.locator(`[data-listening-choice="${wrongChoice}"]`).click();
-   assert.equal(Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterListenMiss,
-     'A second wrong choice cannot trigger duplicate enemy damage');
+   assert.equal(await listenPage.locator(`[data-listening-choice="${wrongChoice}"]`).isDisabled(),true,
+     'The first rejected meaning cannot be tapped a second time');
+   const anotherWrongChoice=(correctChoice+2)%3;
+   await listenPage.locator(`[data-listening-choice="${anotherWrongChoice}"]`).click();
+   const afterSecondListenMiss=Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   assert.ok(afterSecondListenMiss<afterListenMiss,'A different wrong meaning causes another enemy strike');
    await listenPage.locator(`[data-listening-choice="${correctChoice}"]`).click();
    await listenPage.locator('#next-question').waitFor({state:'visible'});
    await listenPage.locator('#next-question').click();
-   assert.equal(Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterListenMiss,
-     'Correcting a listening miss does not cause another enemy hit');
+   assert.equal(Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterSecondListenMiss,
+     'Correcting a listening miss does not cause a third enemy hit');
    await listenContext.close();
    // A listening challenge on the ENEMY turn is an obligatory defensive
    // task. It must retaliate on an incorrect meaning, never on speech errors.
@@ -694,12 +726,15 @@ const assert=require('node:assert/strict');
    await defensePage.locator(`[data-listening-choice="${defenseWrong}"]`).click();
    const hpAfterDefense=Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
    assert.ok(hpAfterDefense<hpBeforeDefense,'Wrong forced listening defense must deal real enemy damage');
-   await defensePage.locator(`[data-listening-choice="${defenseWrong}"]`).click();
-   assert.equal(Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterDefense,
-     'Wrong enemy listening defense cannot charge damage twice');
+   assert.equal(await defensePage.locator(`[data-listening-choice="${defenseWrong}"]`).isDisabled(),true,
+     'The same enemy-defense choice cannot charge twice');
+   const secondDefenseWrong=(defenseCorrect+2)%3;
+   await defensePage.locator(`[data-listening-choice="${secondDefenseWrong}"]`).click();
+   const hpAfterSecondDefense=Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   assert.ok(hpAfterSecondDefense<hpAfterDefense,'Each distinct wrong defense meaning must cost HP');
    await defensePage.locator(`[data-listening-choice="${defenseCorrect}"]`).click();
    await defensePage.locator('#next-question').click();
-   assert.equal(Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterDefense,
+   assert.equal(Number(await defensePage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterSecondDefense,
      'Defensive correction must not cause an extra hit');
    await defenseContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
