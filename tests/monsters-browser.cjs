@@ -64,6 +64,8 @@ const path=require('node:path');
       firstFight.stage>firstFight.viewport*.55&&firstFight.answerTop<firstFight.viewport&&
       firstFight.actorTop>=0&&firstFight.actorBottom<firstFight.viewport,
       `Mobile first fight must show monsters AND answer in a single onscreen scene: ${JSON.stringify(firstFight)}`);
+    assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
+      'Even the ordinary first-stage battle starts with an opening cut-in');
     // Real iPhone in-app browsers can expose a much shorter visual viewport
     // than the 844px mobile emulator. The submit action must remain tappable
     // without scrolling the question panel, while the actors stay on screen.
@@ -105,8 +107,6 @@ const path=require('node:path');
     });
     assert.ok(nextLayout.visible&&nextLayout.hitIsButton&&nextLayout.bottom<=680-4,
       `The next-turn action must replace Submit in the visible action dock: ${JSON.stringify(nextLayout)}`);
-    assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
-      'Even the ordinary first-stage battle starts with an opening cut-in');
     await quickContext.close();
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
