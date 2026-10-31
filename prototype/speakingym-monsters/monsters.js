@@ -29,14 +29,14 @@ import { setupBetaFeedback } from './beta-feedback.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-// Tactical mode uses a single arena for characters, the question and its
+// Every dungeon encounter uses a single arena for characters, the question and its
 // answer controls. Move the existing live nodes instead of duplicating a form:
 // recognition, quiz choices, hints and review listeners must keep one owner.
-function arrangeBattleScene(tactical){
+function arrangeBattleScene(forestMode){
   const world=$('#forest-world-stage'),consolePanel=$('#forest-arena-console');
   const home=$('.forest-command-window');
   const info=$('.forest-battle-info'),partyHp=$('#forest-party-hp');
-  if(tactical){
+  if(forestMode){
     world.insertBefore(info,consolePanel);
     world.insertBefore(partyHp,consolePanel);
     for(const selector of ['.play-progress','#forest-battle-log','#play-card','#answer-area','#forest-tactics'])
@@ -47,14 +47,25 @@ function arrangeBattleScene(tactical){
     for(const selector of ['.play-progress','#forest-battle-log','#forest-tactics','#play-card','#answer-area'])
       home.appendChild($(selector));
   }
-  consolePanel.hidden=!tactical;
+  consolePanel.hidden=!forestMode;
 }
 function playBattleCinematic(kind){
-  if(!play?.tactics)return;
+  if(play?.mode!=='forest')return;
   const world=$('#forest-world-stage');
+  if(kind==='attack'||kind==='victory'){
+    const effects=['arc','burst','storm'];
+    const choice=Math.floor(Math.random()*effects.length);
+    world.dataset.fxVariant=effects[(choice+(effects[choice]===world.dataset.fxVariant?1:0))%effects.length];
+  }
   world.dataset.cinematic='idle';
   void world.offsetWidth; // Restart CSS cut-ins for each independently graded turn.
   world.dataset.cinematic=kind;
+}
+function syncBattleAura(){
+  const world=$('#forest-world-stage'),chain=play?.mode==='forest'?play.combo||0:0;
+  world.dataset.chainTier=String(chain>=5?3:chain>=3?2:chain>=2?1:0);
+  world.classList.toggle('forest-combo-boost',chain>=3);
+  $('#forest-combo').textContent=chain>=2?`${chain} CHAIN`:'';
 }
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
@@ -392,7 +403,8 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
  $('#play-view').classList.toggle('tactical-battle',Boolean(tactical));
-  arrangeBattleScene(tactical);
+  $('#play-view').classList.toggle('scene-battle',forestMode);
+  arrangeBattleScene(forestMode);
   $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
@@ -880,6 +892,7 @@ function showForestExplore(routeChoice=false) {
     play.index===0?'出発して最初の問題に挑もう。':
     '次の戦闘へ進もう。';
   const eventPanel=$('#forest-explore-event');
+  $('#forest-explore-screen').classList.toggle('has-story-event',Boolean(storyEvent)&&!formation);
   eventPanel.hidden=formation||!storyEvent;
   const formationPanel=$('#forest-party-formation');
   formationPanel.hidden=!formation;
@@ -888,11 +901,11 @@ function showForestExplore(routeChoice=false) {
     const npc=forestNpcDialogueFor(storyEvent);
     eventPanel.classList.toggle('has-npc',Boolean(npc));
     const easy=play.difficulty==='easy';
-    const npcPrompt=npc?`<div class="forest-npc-dialogue"><span class="forest-npc-name">NPC · ${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.line)}</p>${easy?`<small>${escapeHtml(npc.meaning)}</small>`:`<details><summary>日本語で意味を確認</summary><small>${escapeHtml(npc.meaning)}</small></details>`}</div>`:'';
+    const npcPrompt=npc?`<div class="forest-npc-dialogue"><span class="forest-npc-name">旅人との会話 · ${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.line)}</p>${easy?`<small>${escapeHtml(npc.meaning)}</small>`:`<details><summary>日本語で意味を確認</summary><small>${escapeHtml(npc.meaning)}</small></details>`}</div>`:'';
     eventPanel.innerHTML=selected
-      ? `<p class="forest-event-label">EXPEDITION MEMORY</p>${npc?`<div class="forest-npc-reply"><span>NPC · ${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.replies[selected.id].reaction)}</p></div>`:''}<strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p><small>この会話は探索の記録。XPや英語の正誤判定には含まれません。</small>`
-      : `<p class="forest-event-label">STORY EVENT · ${npc?'NPCに返事をしよう':'行動を選ぼう'}</p>${npcPrompt}<div class="forest-event-choices">${storyEvent.options.map(choice=>
-        `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong ${npc?'lang="en"':''}>${escapeHtml(npc?.replies[choice.id]?.answer||choice.label)}</strong>${easy||!npc?`<small>${escapeHtml(choice.label)} · ${escapeHtml(choice.detail)}</small>`:''}</button>`).join('')}</div><small>どちらの返事も物語の選択。英語の正誤判定やXPには影響しません。</small>`;
+      ? `<p class="forest-event-label">STORY · 会話のつづき</p>${npc?`<div class="forest-npc-reply"><span>${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.replies[selected.id].reaction)}</p></div>`:''}<strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p>`
+      : `<p class="forest-event-label">STORY · ${npc?'どちらを返す？':'どうする？'}</p>${npcPrompt}<div class="forest-event-choices">${storyEvent.options.map(choice=>
+        `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong ${npc?'lang="en"':''}>${escapeHtml(npc?.replies[choice.id]?.answer||choice.label)}</strong>${easy||!npc?`<small>${escapeHtml(choice.label)}${npc?'':` · ${escapeHtml(choice.detail)}`}</small>`:''}</button>`).join('')}</div><small>どちらを選んでも物語が進むよ。正誤判定はありません。</small>`;
     if(!selected){
       $$('[data-forest-event-option]',eventPanel).forEach(button=>button.addEventListener('click',()=>{
         if(!play || play.mode!=='forest'||play.eventChoices[storyKey])return;
@@ -911,7 +924,7 @@ function showForestExplore(routeChoice=false) {
     `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
   const forward=$('#forest-explore-continue');
   forward.hidden=routeChoice;
-  forward.textContent=formation?'この仲間で出発':storyEvent&&!selected?'選ばず次の問題へ':isBoss?'ボスと戦う':storyEvent?'次の問題へ':play.index===0?'冒険を始める':'次の問題へ';
+  forward.textContent=formation?'この仲間で出発':storyEvent&&!selected?'会話をスキップして進む':isBoss?'ボスと戦う':storyEvent?'次の問題へ進む':play.index===0?'冒険を始める':'次の問題へ';
   if(routeChoice){
     $$('[data-forest-route]',options).forEach(button=>button.addEventListener('click',()=>{
       if(!play || play.mode!=='forest'||play.route)return;
@@ -934,6 +947,7 @@ function showForestRouteChoice() {
 
 function keepMobileQuestionInView(){
  if(play?.mode!=='forest'||window.innerWidth>690)return;
+ if($('#play-view').classList.contains('scene-battle'))return; // The characters remain onscreen; only the inner console scrolls.
  const session=play;
  // A long previous answer can leave Safari scrolled below the new question.
  // Correct that upward only. Never pull the learner downward on the first
@@ -966,7 +980,7 @@ function renderQuestion() {
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
-      openingEncounter=Boolean(play.tactics);
+      openingEncounter=true;
       play.encounterKey=key;
       play.encounterHelp=false;play.hintUsed=false;
       play.remainingTries=DIFFICULTY_TRIES[play.difficulty];
@@ -983,11 +997,14 @@ function renderQuestion() {
       }
     }
     renderForestHud();
-    if(play.tactics)$('#forest-world-stage').dataset.cinematic='idle';
+    $('#forest-world-stage').dataset.cinematic='idle';
+    $('#forest-world-stage').dataset.encounter=String(play.index+1);
+    syncBattleAura();
   }
   renderTacticalControls();
   const prompt=currentPrompt();
   if (!prompt) {finishSession();return;}
+  if(play.mode==='forest')$('#forest-world-stage').dataset.challenge={speak:'スピーキング',listen:'リスニング',vocab:'単語',grammar:'文法',read:'読解'}[prompt.kind]||'英語チャレンジ';
   const hintKey=`${play.mode}:${play.wave||1}:${play.index}:${prompt.id}`;
   if(play.hintKey!==hintKey){play.hintKey=hintKey;play.hintStep=0;if(play.tactics)play.hintUsed=false;}
   const reviewing=!!(save.reviewPrompts?.[prompt.id] && save.reviewPrompts[prompt.id]<=dayKey());
@@ -1413,13 +1430,13 @@ async function gradeAnswer() {
       // A confirmed missing detail is instructional feedback. A later
       // corrected answer is earned, but cannot count as a first-try combo.
       play.hintUsed=true;
-      if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;}
+      if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;syncBattleAura();}
     }
     if(grade.status==='incorrect' && raw){
       // Only a confident contradiction or an objective wrong quiz is a miss.
       if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
       play.hintUsed=true;
-      if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;}
+      if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;syncBattleAura();}
     }
     if(play.mode==='forest' && raw && !defending){
       const world=$('#forest-world-stage');
@@ -1476,7 +1493,7 @@ async function gradeAnswer() {
       play.assistedGates=(play.assistedGates||0)+1;
       play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});
       play.encounterHelp=true;play.hintUsed=true;
-      play.combo=0;
+      play.combo=0;syncBattleAura();
       play.revealed=true;
       if(play.tactics?.turn==='enemy'){
         play.tactics.usedPromptIds.add(prompt.id);
@@ -1652,9 +1669,7 @@ async function gradeAnswer() {
     streak=advanceBattleChain({chain:play.combo,best:play.bestCombo,independent:rating==='smooth'});
     play.combo=streak.chain;
     play.bestCombo=streak.best;
-    const arena=$('#forest-world-stage');
-    $('#forest-combo').textContent=streak.chain>=2?`${streak.chain} CHAIN`:'';
-    arena.classList.toggle('forest-combo-boost',streak.chain>=3);
+    syncBattleAura();
   }
   const autoForest=play.mode==='forest';
   const objectiveQuiz=prompt.kind==='vocab'||prompt.kind==='grammar';
@@ -1697,7 +1712,7 @@ function skipAnswer(){
   const learnerAnswer=$('#spoken-answer')?.value||'';
   if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
   play.revealed=true;stopAudio();
-  if(play.mode==='forest')play.combo=0;
+  if(play.mode==='forest'){play.combo=0;syncBattleAura();}
   if(defending){
     if(!play.tactics.defenseHitTaken&&['vocab','grammar'].includes(prompt.kind)){
       const blow=incomingHit({kind:play.tactics.enemyKind,allyId:play.companionId,

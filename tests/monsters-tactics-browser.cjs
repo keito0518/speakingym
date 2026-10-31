@@ -103,6 +103,10 @@ const assert=require('node:assert/strict');
      assert.equal(tacticalLayout.separateConsole,'none','No duplicate command window can appear below the arena');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
        'The first encounter needs an opening cut-in, not just an abrupt form');
+     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-encounter'),'1',
+       'Opening cinematic should identify the upcoming stage');
+     assert.match(await page.locator('#forest-world-stage').getAttribute('data-challenge'),/スピーキング|リスニング|単語|文法|読解/,
+       'Stage transition identifies the English challenge inside the game scene');
      assert.equal(await page.locator('#forest-battle-log').isVisible(),false,
        'The initial empty battle log must not repeat the same instruction above the question');
      const answerViewport=await page.evaluate(()=>({top:document.querySelector('#spoken-answer').getBoundingClientRect().top,viewport:innerHeight}));
@@ -141,6 +145,9 @@ const assert=require('node:assert/strict');
      await answer(page);
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'attack',
        'A verified hit should trigger its own impact cut-in');
+     assert.match(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),/^(arc|burst|storm)$/,
+       'Each attack should have an authored, varied motion style');
+     const firstFxVariant=await page.locator('#forest-world-stage').getAttribute('data-fx-variant');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
      assert.equal(await page.locator('.forest-chain-result').count(),0,'A first answer should not add another badge to the UI');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
@@ -175,6 +182,8 @@ const assert=require('node:assert/strict');
        assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12','Independent defense blocks enemy damage');
        assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'2');
        assert.match(await page.locator('.forest-chain-result').innerText(),/2 CHAIN/,'Defending correctly must extend the attack streak');
+       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-chain-tier'),'1',
+         'Two clean turns should awaken the ally aura');
      }
      await page.locator('#next-question').click();
      assert.match(await page.locator('#forest-tactics').innerText(),/あなたのターン/);
@@ -198,6 +207,8 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'victory',
        'Defeating the foe triggers a unique knockout cut-in');
+     assert.notEqual(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),firstFxVariant,
+       'Consecutive strikes should vary the spectacle without changing the English grading');
      assert.equal(await page.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-defeated')),true);
      if(width!==375)await page.waitForTimeout(1350);
      const defeatedEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));
@@ -205,15 +216,16 @@ const assert=require('node:assert/strict');
      await page.locator('#next-question').click();
      assert.equal(await page.locator('#forest-explore-options').isVisible(),true,'First encounter unlocks route after actual victory');
      if(width===320){
-       // One arena owns the controls only during tactical battles. Leaving for
-       // ordinary forest play must restore every original live form element.
+       // The simple and tactical dungeon share the same full-screen arena;
+       // unrelated training modes must still restore the original form.
        await page.locator('#leave-play').click();
        await page.locator('[data-feature-worlds]').click();
        await page.locator('#start-forest').click();
        await page.locator('#forest-explore-continue').click();
-       assert.equal(await page.locator('.forest-command-window #play-card').count(),1);
-       assert.equal(await page.locator('.forest-command-window #answer-area').count(),1);
-       assert.equal(await page.locator('#forest-arena-console').isVisible(),false);
+       assert.equal(await page.locator('#forest-arena-console #play-card').count(),1);
+       assert.equal(await page.locator('#forest-arena-console #answer-area').count(),1);
+       assert.equal(await page.locator('#forest-arena-console').isVisible(),true);
+       assert.equal(await page.locator('.forest-command-window').isVisible(),false);
      }
      assert.deepEqual(errors,[]);
      await context.close();

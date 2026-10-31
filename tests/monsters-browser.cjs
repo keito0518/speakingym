@@ -51,10 +51,19 @@ const path=require('node:path');
     const firstFight=await quickPage.evaluate(()=>({
       stage:document.querySelector('#forest-world-stage').getBoundingClientRect().height,
       answerTop:document.querySelector('#spoken-answer').getBoundingClientRect().top,
-      viewport:innerHeight
+      actorTop:document.querySelector('#forest-party').getBoundingClientRect().top,
+      actorBottom:document.querySelector('#forest-party').getBoundingClientRect().bottom,
+      viewport:innerHeight,
+      isFullScene:getComputedStyle(document.querySelector('#play-view')).position==='fixed',
+      arenaOwnsAnswer:document.querySelector('#forest-world-stage').contains(document.querySelector('#spoken-answer')),
+      bodyScroll:getComputedStyle(document.body).overflow
     }));
-    assert.ok(firstFight.stage<=130&&firstFight.answerTop<firstFight.viewport,
-      `Mobile first fight must show the answer field without a long decorative scroll: ${JSON.stringify(firstFight)}`);
+    assert.ok(firstFight.isFullScene&&firstFight.arenaOwnsAnswer&&
+      firstFight.stage>firstFight.viewport*.55&&firstFight.answerTop<firstFight.viewport&&
+      firstFight.actorTop>=0&&firstFight.actorBottom<firstFight.viewport,
+      `Mobile first fight must show monsters AND answer in a single onscreen scene: ${JSON.stringify(firstFight)}`);
+    assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
+      'Even the ordinary first-stage battle starts with an opening cut-in');
     await quickContext.close();
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
@@ -729,8 +738,17 @@ const path=require('node:path');
             assert.equal(await forestPage.locator('#forest-explore-continue').isVisible(),true,'Optional story may be skipped');
             const beforeChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
             await forestPage.locator('[data-forest-event-option]').first().click();
-            assert.match(await forestPage.locator('#forest-explore-event').innerText(),/探索の記録|EXPEDITION MEMORY/);
+            assert.match(await forestPage.locator('#forest-explore-event').innerText(),/会話のつづき/);
             assert.match(await forestPage.locator('.forest-npc-reply [lang="en"]').innerText(),/sound is bouncing off the rocks/);
+            const sceneLayout=await forestPage.evaluate(()=>{
+              const map=document.querySelector('#forest-explore-art').getBoundingClientRect();
+              const event=document.querySelector('#forest-explore-event').getBoundingClientRect();
+              const actor=document.querySelector('.forest-explore-companion').getBoundingClientRect();
+              return {map:map.toJSON(),event:event.toJSON(),actor:actor.toJSON(),viewport:innerHeight};
+            });
+            assert.ok(sceneLayout.map.top<=sceneLayout.event.top&&sceneLayout.event.bottom<=sceneLayout.viewport+1&&
+              sceneLayout.actor.top>=0&&sceneLayout.actor.bottom<sceneLayout.viewport,
+              `NPC choices should be overlaid ON the visible exploration map (${JSON.stringify(sceneLayout)})`);
             assert.equal(await forestPage.locator('[data-forest-event-option]').count(),0);
             const afterChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
             assert.equal(afterChoice.xpWallet,beforeChoice.xpWallet,'Story choices cannot award XP');

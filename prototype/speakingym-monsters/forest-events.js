@@ -81,10 +81,10 @@ export const FOREST_NPC_DIALOGUES=Object.freeze({
    listen:["Let's listen again before we move.",'I hear it now. The sound is bouncing off the rocks.'],
    observe:["Let's follow the lights instead.",'The mushrooms are flashing toward the clearing.']
   }),
- 'glade-sunlit':dialogue('Wandering Cartographer','I lost my map. Do you think this is the right trail?',
-  '地図をなくしました。この道で合っていると思いますか？',{
-   restore:["Let me unfold the map first.",'That helps! The sunny trail is marked here.'],
-   return:["Let's find out who dropped it.",'A good thought. The owner may know the safest route.']
+ 'glade-sunlit':dialogue('Wandering Cartographer','I found this torn map. Should we check it or look for its owner?',
+  '破れた地図を見つけました。地図を調べますか？ それとも持ち主を探しますか？',{
+   restore:["Let's check the map first.",'That helps! The sunny trail is marked here.'],
+   return:["Let's find the owner of the map.",'Good idea. The owner may know the safest route.']
   }),
  'glade-moss':dialogue('Mail Sprite','This letter has no envelope. What should we do with it?',
   'この手紙には封筒がありません。どうしましょうか？',{
