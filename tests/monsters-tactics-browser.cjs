@@ -89,11 +89,20 @@ const assert=require('node:assert/strict');
      const tacticalLayout=await page.evaluate(()=>{
        const bounds=selector=>document.querySelector(selector).getBoundingClientRect();
        return {question:bounds('#play-card').top,commands:bounds('#forest-tactics').top,
-         answer:bounds('#answer-area').top,arena:bounds('#forest-world-stage').height};
+         answer:bounds('#answer-area').top,arena:bounds('#forest-world-stage').height,
+         integrated:['#play-card','#answer-area','#forest-tactics','.forest-battle-info','#forest-party-hp']
+           .every(selector=>document.querySelector('#forest-world-stage').contains(document.querySelector(selector))),
+         sticky:getComputedStyle(document.querySelector('#forest-journey')).position==='sticky',
+         separateConsole:getComputedStyle(document.querySelector('.forest-command-window')).display};
      });
      assert.ok(tacticalLayout.question<tacticalLayout.answer&&tacticalLayout.answer<tacticalLayout.commands,
        `${engine}/${width}: show the question and answer before optional tactics (${JSON.stringify(tacticalLayout)})`);
-     assert.ok(tacticalLayout.arena<=155,`${engine}/${width}: battle field must leave room for the question`);
+     assert.ok(tacticalLayout.integrated&&tacticalLayout.arena>300,
+       `${engine}/${width}: the live question, answer and HP must share the illustrated arena (${JSON.stringify(tacticalLayout)})`);
+     assert.equal(tacticalLayout.sticky,false,'The integrated battlefield must scroll naturally instead of covering the question');
+     assert.equal(tacticalLayout.separateConsole,'none','No duplicate command window can appear below the arena');
+     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
+       'The first encounter needs an opening cut-in, not just an abrupt form');
      assert.equal(await page.locator('#forest-battle-log').isVisible(),false,
        'The initial empty battle log must not repeat the same instruction above the question');
      const answerViewport=await page.evaluate(()=>({top:document.querySelector('#spoken-answer').getBoundingClientRect().top,viewport:innerHeight}));
@@ -130,6 +139,8 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('.forest-tactic-kinds').textContent(),/リスニング.*文法/s);
      assert.match(await page.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：文法/,'Enemy forecast remains available in tactical details');
      await answer(page);
+     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'attack',
+       'A verified hit should trigger its own impact cut-in');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
      assert.equal(await page.locator('.forest-chain-result').count(),0,'A first answer should not add another badge to the UI');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
@@ -185,12 +196,25 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),width===390?'2':'3');
      assert.equal(await page.locator('[data-tactic-action="skill"]').isEnabled(),width!==390);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
+     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'victory',
+       'Defeating the foe triggers a unique knockout cut-in');
      assert.equal(await page.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-defeated')),true);
      if(width!==375)await page.waitForTimeout(1350);
      const defeatedEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));
      assert.ok(defeatedEnemyOpacity<.05,`${engine}/${width}: defeated enemy should finish the knockout animation (${defeatedEnemyOpacity})`);
      await page.locator('#next-question').click();
      assert.equal(await page.locator('#forest-explore-options').isVisible(),true,'First encounter unlocks route after actual victory');
+     if(width===320){
+       // One arena owns the controls only during tactical battles. Leaving for
+       // ordinary forest play must restore every original live form element.
+       await page.locator('#leave-play').click();
+       await page.locator('[data-feature-worlds]').click();
+       await page.locator('#start-forest').click();
+       await page.locator('#forest-explore-continue').click();
+       assert.equal(await page.locator('.forest-command-window #play-card').count(),1);
+       assert.equal(await page.locator('.forest-command-window #answer-area').count(),1);
+       assert.equal(await page.locator('#forest-arena-console').isVisible(),false);
+     }
      assert.deepEqual(errors,[]);
      await context.close();
    }

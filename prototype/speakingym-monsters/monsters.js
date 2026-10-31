@@ -29,6 +29,33 @@ import { setupBetaFeedback } from './beta-feedback.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+// Tactical mode uses a single arena for characters, the question and its
+// answer controls. Move the existing live nodes instead of duplicating a form:
+// recognition, quiz choices, hints and review listeners must keep one owner.
+function arrangeBattleScene(tactical){
+  const world=$('#forest-world-stage'),consolePanel=$('#forest-arena-console');
+  const home=$('.forest-command-window');
+  const info=$('.forest-battle-info'),partyHp=$('#forest-party-hp');
+  if(tactical){
+    world.insertBefore(info,consolePanel);
+    world.insertBefore(partyHp,consolePanel);
+    for(const selector of ['.play-progress','#forest-battle-log','#play-card','#answer-area','#forest-tactics'])
+      consolePanel.appendChild($(selector));
+  }else{
+    world.after(info);
+    info.after(partyHp);
+    for(const selector of ['.play-progress','#forest-battle-log','#forest-tactics','#play-card','#answer-area'])
+      home.appendChild($(selector));
+  }
+  consolePanel.hidden=!tactical;
+}
+function playBattleCinematic(kind){
+  if(!play?.tactics)return;
+  const world=$('#forest-world-stage');
+  world.dataset.cinematic='idle';
+  void world.offsetWidth; // Restart CSS cut-ins for each independently graded turn.
+  world.dataset.cinematic=kind;
+}
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
 const monsterFor = id => MONSTERS.find(monster => monster.id === id);
@@ -365,6 +392,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   $('#forest-battle-log').hidden=!forestMode;
   $('#play-view').classList.toggle('forest-active',forestMode);
  $('#play-view').classList.toggle('tactical-battle',Boolean(tactical));
+  arrangeBattleScene(tactical);
   $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
@@ -924,6 +952,7 @@ function keepMobileQuestionInView(){
 
 function renderQuestion() {
   if (!play) return;
+  let openingEncounter=false;
   cancelAutoAdvance();
   $('#play-view').classList.remove('forest-exploring');
   $('#forest-explore-screen').hidden=true;
@@ -937,6 +966,7 @@ function renderQuestion() {
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
+      openingEncounter=Boolean(play.tactics);
       play.encounterKey=key;
       play.encounterHelp=false;play.hintUsed=false;
       play.remainingTries=DIFFICULTY_TRIES[play.difficulty];
@@ -953,6 +983,7 @@ function renderQuestion() {
       }
     }
     renderForestHud();
+    if(play.tactics)$('#forest-world-stage').dataset.cinematic='idle';
   }
   renderTacticalControls();
   const prompt=currentPrompt();
@@ -1150,6 +1181,7 @@ function renderQuestion() {
       void gradeAnswer();
     }));
   }
+  if(openingEncounter)playBattleCinematic('opening');
   keepMobileQuestionInView();
 }
 function browserSpeakLine(line,onUnavailable,level='easy') {
@@ -1370,6 +1402,7 @@ async function gradeAnswer() {
       const arena=$('#forest-world-stage');
       arena.classList.remove('forest-player-damaged');void arena.offsetWidth;
       if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
+      playBattleCinematic('enemy');
       $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'GUARDED';
       $('#forest-battle-log').textContent=rescue.partnerId
         ?`${play.tactics.lastCoverNote} 正解にはならないので、英語は確認しよう。`
@@ -1486,6 +1519,7 @@ async function gradeAnswer() {
     stage.classList.remove('forest-player-damaged','forest-defended');void stage.offsetWidth;
     stage.classList.add(t.lastHitDamage?'forest-player-damaged':'forest-defended');
     $('#forest-world-fx').textContent=alreadyHit?`HP −${t.lastHitDamage||0}`:rescue?.partnerId?'COVER!':t.lastHitDamage?`−${t.lastHitDamage} HP`:'BLOCK!';
+    playBattleCinematic(t.lastHitDamage?'enemy':'guard');
     $('#forest-battle-log').textContent=alreadyHit
       ?`言い直しは成功！ ただし最初の被ダメージ${t.lastHitDamage||0}は残るよ。 ${t.lastCoverNote}`
       :rescue?.partnerId?`${t.lastCoverNote} 英語はヒントありで確認できたよ。`
@@ -1597,6 +1631,7 @@ async function gradeAnswer() {
     $('#forest-world-fx').textContent=t?special.tag:prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss?play.bossHits>=BOSS_HITS:Boolean(t&&t.enemyHp<=0);
+    playBattleCinematic(defeated?'victory':'attack');
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';

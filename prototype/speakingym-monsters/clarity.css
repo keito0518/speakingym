@@ -137,3 +137,121 @@
  .forest-active.tactical-battle .forest-tactic-strategy>summary{padding:8px;gap:4px;font-size:11px}
  .forest-active.tactical-battle .forest-tactic-strategy>summary small{font-size:10px}
 }
+
+/* SINGLE-SCREEN BATTLE: the illustrated arena actually owns the live question
+   and answer controls. No second scrolling command card or sticky stage. */
+.forest-arena-console[hidden]{display:none!important}
+.forest-active.tactical-battle .forest-command-window{display:none!important}
+.forest-active.tactical-battle:not(.forest-exploring) .forest-journey{
+ position:relative!important;top:auto!important;z-index:1;box-shadow:none!important;
+ padding:7px!important;margin:0!important;background:#0c2533!important}
+.forest-active.tactical-battle:not(.forest-exploring) #forest-world-stage{
+ position:relative;height:auto!important;min-height:0;overflow:hidden;
+ padding:195px 0 0;border:1px solid #59869c;border-radius:15px;
+ background:#132a41;box-shadow:inset 0 0 0 2px #153448}
+.forest-active.tactical-battle #forest-world-stage .forest-party{top:33px}
+.forest-active.tactical-battle #forest-world-stage .forest-enemy{top:35px;right:10%}
+.forest-active.tactical-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:14px;right:5%}
+.forest-active.tactical-battle #forest-world-stage .forest-world-trail-label{top:8px}
+.forest-active.tactical-battle #forest-world-stage .forest-battle-info{
+ position:absolute;top:134px;left:8px;right:8px;z-index:12;min-height:0;
+ display:flex;gap:5px;align-items:center;justify-content:space-between;
+ padding:5px 7px!important;margin:0!important;border:1px solid #5c9d9a;border-radius:9px;
+ background:#092a38e9;color:#fff4d1}
+.forest-active.tactical-battle #forest-world-stage .forest-foe-name{font-size:12px;color:#fff1ca}
+.forest-active.tactical-battle #forest-world-stage .forest-boss-hp{font-size:12px;letter-spacing:.02em}
+.forest-active.tactical-battle #forest-world-stage .forest-party-hp{
+ position:absolute;top:169px;left:9px;z-index:12;margin:0!important;
+ padding:3px 9px!important;font-size:10px;line-height:1.5}
+.forest-active.tactical-battle .forest-arena-console{
+ position:relative;z-index:13;display:flex;flex-direction:column;gap:4px;
+ min-width:0;margin:0;padding:11px 10px 12px;
+ border-top:3px solid #6dc8b7;
+ background:linear-gradient(150deg,#102e41f5,#103e47f7 42%,#092e3efb)}
+.forest-active.tactical-battle .forest-arena-console .play-progress{
+ order:0;margin:-11px -10px 4px!important;max-width:none;height:4px;
+ background:#326474;border-radius:0}
+.forest-active.tactical-battle .forest-arena-console #forest-battle-log{
+ order:1;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+ overflow:hidden;min-height:0;margin:0;padding:5px 8px;font-size:11px;
+ color:#fceabc;background:#244359;border-color:#476a74}
+.forest-active.tactical-battle .forest-arena-console #play-card{
+ order:2;max-width:none;margin:0;padding:12px 12px 9px!important;
+ border:1px solid #8ea8a9;border-radius:12px 12px 5px 5px;
+ background:linear-gradient(145deg,#fffdf1,#eef5f0);box-shadow:0 3px 0 #071e2c55}
+.forest-active.tactical-battle .forest-arena-console #answer-area{
+ order:3;max-width:none;margin:0!important;padding:9px 11px 10px!important;
+ border:1px solid #9cafaa;border-radius:5px 5px 12px 12px;
+ background:#eaf3eaf7;box-shadow:0 4px 14px #041d2766}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics{
+ order:4;margin:0;padding:0;background:transparent;border:0;color:#e7f2e6}
+.forest-active.tactical-battle .forest-arena-console .forest-tactic-strategy>summary{
+ background:#143f4b;color:#eaf8f0;border:1px solid #638c83}
+.forest-active.tactical-battle .forest-arena-console .forest-tactic-strategy>summary small{color:#c7eee1}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics .forest-tactic-strategy[open]{
+ padding:8px;border-radius:12px;background:#eef5e8;color:#264a38}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics .forest-tactic-strategy[open]>summary{
+ background:#eff9f0;color:#23533d}
+.forest-active.tactical-battle .forest-arena-console #forest-tactics .forest-tactic-strategy[open]>summary small{color:#27664b}
+.forest-active.tactical-battle #forest-world-stage .forest-damage{top:14%;right:14%}
+.forest-active.tactical-battle #forest-world-stage .forest-world-fx{top:24%;bottom:auto}
+.forest-active.tactical-battle #forest-world-stage .forest-combo{top:32%}
+@media(max-width:690px){
+ .forest-active.tactical-battle .forest-battle-shell{overflow:hidden!important;border-radius:17px}
+ .forest-active.tactical-battle .forest-arena-console{padding:9px 7px 11px}
+ .forest-active.tactical-battle .forest-arena-console .play-progress{margin:-9px -7px 4px!important}
+ .forest-active.tactical-battle .forest-arena-console #play-card{padding:10px 10px 7px!important}
+ .forest-active.tactical-battle .forest-arena-console #answer-area{padding:8px 9px!important}
+ .forest-active.tactical-battle .forest-arena-console .play-card h1{font-size:clamp(17px,5vw,22px);line-height:1.35;margin:7px 0 5px}
+ .forest-active.tactical-battle .forest-arena-console .question-caption{font-size:11px;line-height:1.4}
+ .forest-active.tactical-battle .forest-arena-console textarea.answer-input{height:62px!important;min-height:62px!important}
+ .forest-active.tactical-battle .forest-arena-console .learning-controls{margin-top:6px}
+ .forest-active.tactical-battle .forest-arena-console .learning-controls .reveal-button{min-height:46px}
+}
+
+/* Original shonen-action language: ink flashes, energy rings and decisive
+   hit-stop. All shapes are CSS; no anime character or copyrighted asset. */
+.forest-cinematic-layer{position:absolute;z-index:10;inset:0 0 auto;height:195px;pointer-events:none;overflow:hidden;isolation:isolate}
+.cinematic-ring,.cinematic-strike,.cinematic-callout{position:absolute;pointer-events:none;opacity:0}
+.cinematic-ring{left:50%;top:51%;width:190px;height:190px;margin:-95px 0 0 -95px;border-radius:50%;
+ border:6px solid #69e7e1;box-shadow:0 0 0 12px #6ce2dd30,inset 0 0 28px #91ffff80,0 0 30px #6ef6e6;
+ transform:scale(.16)}
+.cinematic-strike{left:-28%;top:46%;width:160%;height:9px;
+ border-top:2px solid #fffce4;background:linear-gradient(90deg,transparent,#7aebff,#fff6c4,#a78aff,transparent);
+ box-shadow:0 0 20px #a2dcff,0 0 45px #6b72d7;transform:rotate(-19deg) scaleX(.1)}
+.cinematic-strike-b{top:57%;height:6px;transform:rotate(23deg) scaleX(.1)}
+.cinematic-callout{left:50%;top:44%;width:max-content;max-width:90%;text-align:center;
+ font-family:Impact,'Arial Black',sans-serif;font-size:clamp(28px,10vw,65px);font-weight:1000;
+ font-style:italic;letter-spacing:.06em;line-height:1.06;color:#fff4cf;
+ -webkit-text-stroke:1px #25304a;text-shadow:3px 4px 0 #142638,0 0 22px #ffe6b4;
+ transform:translate(-50%,-40%) rotate(-8deg) scale(.5)}
+#forest-world-stage[data-cinematic="opening"] .cinematic-callout:before{content:'ENGAGE!'}
+#forest-world-stage[data-cinematic="attack"] .cinematic-callout:before{content:'STRIKE!'}
+#forest-world-stage[data-cinematic="guard"] .cinematic-callout:before{content:'BLOCK!'}
+#forest-world-stage[data-cinematic="enemy"] .cinematic-callout:before{content:'IMPACT!'}
+#forest-world-stage[data-cinematic="victory"] .cinematic-callout:before{content:'K.O.!'}
+#forest-world-stage.forest-boss-stage[data-cinematic="victory"] .cinematic-callout:before{content:'BOSS DOWN!'}
+#forest-world-stage[data-cinematic="opening"] .cinematic-ring{animation:cinematic-open .95s ease-out both}
+#forest-world-stage[data-cinematic="opening"] .cinematic-callout{animation:cinematic-type .95s cubic-bezier(.18,.8,.3,1) both}
+#forest-world-stage[data-cinematic="attack"] .cinematic-strike,
+#forest-world-stage[data-cinematic="victory"] .cinematic-strike{animation:cinematic-slice .85s cubic-bezier(.15,.85,.28,1) both}
+#forest-world-stage[data-cinematic="attack"] .cinematic-strike-b,
+#forest-world-stage[data-cinematic="victory"] .cinematic-strike-b{animation-name:cinematic-slice-cross;animation-delay:.075s}
+#forest-world-stage[data-cinematic="attack"] .cinematic-callout,
+#forest-world-stage[data-cinematic="guard"] .cinematic-callout,
+#forest-world-stage[data-cinematic="enemy"] .cinematic-callout{animation:cinematic-type .85s cubic-bezier(.15,.8,.24,1) both}
+#forest-world-stage[data-cinematic="guard"] .cinematic-ring{animation:cinematic-shield .9s ease-out both}
+#forest-world-stage[data-cinematic="enemy"] .cinematic-ring{border-color:#ff8a9f;box-shadow:0 0 45px #ef4a6580;animation:cinematic-shield .7s ease-out both}
+#forest-world-stage[data-cinematic="victory"] .cinematic-ring{border-color:#ffdc83;box-shadow:0 0 0 15px #ffcb543b,0 0 60px #ffcb70;animation:cinematic-finish 1.5s ease-out both}
+#forest-world-stage[data-cinematic="victory"] .cinematic-callout{animation:cinematic-finisher 1.5s cubic-bezier(.18,.8,.22,1) both}
+@keyframes cinematic-open{0%{opacity:0;transform:scale(.1) rotate(-35deg)}25%{opacity:.9}75%{opacity:.55}100%{opacity:0;transform:scale(1.8) rotate(25deg)}}
+@keyframes cinematic-type{0%{opacity:0;transform:translate(-50%,-30%) rotate(-13deg) scale(.5)}24%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1.1)}64%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1)}100%{opacity:0;transform:translate(-50%,-75%) rotate(-3deg) scale(1.07)}}
+@keyframes cinematic-slice{0%,12%{opacity:0;transform:translateX(-25%) rotate(-19deg) scaleX(.1)}23%,48%{opacity:1;transform:translateX(0) rotate(-19deg) scaleX(1)}100%{opacity:0;transform:translateX(26%) rotate(-19deg) scaleX(.3)}}
+@keyframes cinematic-slice-cross{0%,12%{opacity:0;transform:translateX(25%) rotate(23deg) scaleX(.1)}23%,48%{opacity:1;transform:translateX(0) rotate(23deg) scaleX(1)}100%{opacity:0;transform:translateX(-26%) rotate(23deg) scaleX(.3)}}
+@keyframes cinematic-shield{0%{opacity:0;transform:scale(.25)}25%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes cinematic-finish{0%{opacity:0;transform:scale(.15)}18%{opacity:1;transform:scale(1.05)}62%{opacity:.85;transform:scale(1.55)}100%{opacity:0;transform:scale(2.8)}}
+@keyframes cinematic-finisher{0%{opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(.3)}15%{opacity:1;transform:translate(-50%,-50%) rotate(-7deg) scale(1.3)}58%{opacity:1;transform:translate(-50%,-50%) rotate(-4deg) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) rotate(-2deg) scale(1.1)}}
+@media(prefers-reduced-motion:reduce){
+ .forest-cinematic-layer,.forest-cinematic-layer *{animation:none!important;transition:none!important}
+ .forest-cinematic-layer{display:none!important}
+}
