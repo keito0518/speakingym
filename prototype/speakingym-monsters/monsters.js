@@ -587,6 +587,9 @@ function damageActiveFighter(damage){
 function absorbIncomingBossHit(damage,kind=play?.tactics?.enemyKind){
  const t=play?.tactics;
  if(!t)return {activeDamage:damage,partnerId:null};
+ // A shield protects against one incoming strike, not every retry forever.
+ // The already-computed hit used its reduction before this call.
+ t.counterShield=0;
  const cover=play.index>=regularCount()?bossReserveCoverFor({kind,activeId:play.companionId,
    party:t.party,used:t.bossCoverUsed,damage}):null;
  let actual=damage;
