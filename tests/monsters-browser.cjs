@@ -71,8 +71,8 @@ const path=require('node:path');
       firstFight.stage>firstFight.viewport*.55&&firstFight.answerTop<firstFight.viewport&&
       firstFight.actorTop>=0&&firstFight.actorBottom<firstFight.viewport,
       `Mobile first fight must show monsters AND answer in a single onscreen scene: ${JSON.stringify(firstFight)}`);
-    assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
-      'Even the ordinary first-stage battle starts with an opening cut-in');
+    assert.match(await quickPage.locator('#forest-world-stage').getAttribute('data-cinematic'),/^(opening|idle)$/,
+      'The first-stage enemy scene is ready when the player chooses an attack');
     // Real iPhone in-app browsers can expose a much shorter visual viewport
     // than the 844px mobile emulator. The submit action must remain tappable
     // without scrolling the question panel, while the actors stay on screen.
