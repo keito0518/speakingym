@@ -273,7 +273,9 @@ const assert=require('node:assert/strict');
      assert.ok(defeatedEnemyOpacity<.05,`${engine}/${width}: defeated enemy should finish the knockout animation (${defeatedEnemyOpacity})`);
      await page.locator('#next-question').click();
      assert.equal(await page.locator('#forest-explore-options').isVisible(),false,'Completed encounter continues without an irrelevant route decision');
-     assert.match(await page.locator('.question-top').innerText(),/ENCOUNTER 2/);
+     assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Encounter 2 begins with attack choice, not a preselected question');
+     assert.equal(await page.locator('#play-card').isVisible(),false,'The new encounter keeps its question hidden until chosen');
+     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-encounter'),'2');
      if(width===320){
        // The simple and tactical dungeon share the same full-screen arena;
        // unrelated training modes must still restore the original form.
