@@ -21,7 +21,7 @@ import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-a
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
-import { speakingHintSteps, beginnerClozeFor } from '../prototype/speakingym-monsters/speaking-guidance.js';
+import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
 import { monsterArt } from '../prototype/speakingym-monsters/monster-art.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
 import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
@@ -73,6 +73,20 @@ test('beginner speaking uses short communicative goals, fill-in hints, and safe 
  assert.equal(beginnerClozeFor(byId('prefer-window-easy')).word,'window');
  assert.equal(beginnerClozeFor(byId('prefer-window-normal')),null);
  assert.equal(speakingHintSteps(byId('prefer-window-normal'),PHRASES.find(p=>p.id==='prefer')).length,2);
+});
+
+test('speaking starters follow the exact question, not unrelated phrase-wide templates',()=>{
+ const transfer=ALL_PROMPTS.find(p=>p.id==='direction-transfer');
+ assert.ok(transfer,'Transfer question is in the curriculum');
+ const steps=speakingHintSteps(transfer,PHRASES.find(p=>p.id==='direction'));
+ assert.match(steps[0].detail,/乗り換え|transfer|change trains/i);
+ assert.equal(steps[1].detail,'Where do I ...?');
+ assert.doesNotMatch(steps.map(s=>s.detail).join(' '),/How do I get to/i);
+ for(const prompt of ALL_PROMPTS.filter(p=>p.kind==='read'||p.kind==='speak'&&(p.difficulty||'easy')!=='easy')){
+  const opening=speakingHintSteps(prompt,PHRASES.find(p=>p.id===prompt.phraseId)).at(-1).detail;
+  assert.equal(opening,answerAlignedOpening(prompt.answer),`${prompt.id}: starter must come from this answer`);
+  assert.notEqual(opening,prompt.answer,`${prompt.id}: starter should not expose the whole answer`);
+ }
 });
 
 test('article omissions that preserve the entire intended answer pass with explicit language coaching',()=>{

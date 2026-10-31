@@ -3,7 +3,7 @@ import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finish
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
-import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest, recordForestEvent } from './forest-engine.js';
+import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest } from './forest-engine.js';
 import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
@@ -19,7 +19,6 @@ import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor } from './speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
-import { forestEventFor, forestEventChoice, forestNpcDialogueFor } from './forest-events.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
@@ -393,7 +392,9 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
-    route:null,companionId:save.selectedMonster,combo:0,bestCombo:0,
+    // The expedition follows one clear route. Decorative story/NPC choices
+    // did not change grading or outcomes and interrupted every battle.
+    route:area?.world==='city'?CITY_ROUTES[0].id:FOREST_ROUTES[0].id,companionId:save.selectedMonster,combo:0,bestCombo:0,
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
@@ -865,12 +866,12 @@ function renderPartyFormation(){
    renderPartyFormation();
  }));
 }
-function showForestExplore(routeChoice=false) {
+function showForestExplore() {
   if(!play || play.mode!=='forest')return;
   cancelAutoAdvance();
   stopAudio();
   const view=$('#play-view'), map=$('#forest-explore-art');
-  const formation=Boolean(play.tactics?.formationPending&&!routeChoice);
+  const formation=Boolean(play.tactics?.formationPending);
   $('#forest-explore-screen').classList.toggle('is-forming-party',formation);
   const displayCompanion=formation?play.tactics.formationIds[0]:play.companionId;
   const companion=monsterFor(displayCompanion);
@@ -897,70 +898,30 @@ function showForestExplore(routeChoice=false) {
   map.dataset.route=play.route||'wild';
   map.dataset.area=play.areaId;
   $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
-  const storyEvent=routeChoice?null:forestEventFor({areaId:play.areaId,route:play.route,index:play.index});
-  const storyKey=storyEvent?`${play.wave}:${storyEvent.id}`:null;
-  const selected=storyEvent?forestEventChoice(storyEvent,play.eventChoices[storyKey]):null;
-  $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':routeChoice?'分かれ道に到着':storyEvent?storyEvent.title:isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
-  $('#forest-explore-description').textContent=routeChoice?'好きな道を選ぼう。':
-    formation?'この編成で出発できるよ。':
-    storyEvent?storyEvent.story:
+  $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
+  $('#forest-explore-description').textContent=formation?'この編成で出発できるよ。':
     isBoss?'ボスが待っている！':
     play.index===0?'出発して最初の問題に挑もう。':
     '次の戦闘へ進もう。';
   const eventPanel=$('#forest-explore-event');
-  $('#forest-explore-screen').classList.toggle('has-story-event',Boolean(storyEvent)&&!formation);
-  eventPanel.hidden=formation||!storyEvent;
+  $('#forest-explore-screen').classList.remove('has-story-event');
+  eventPanel.hidden=true;
+  eventPanel.replaceChildren();
   const formationPanel=$('#forest-party-formation');
   formationPanel.hidden=!formation;
   if(formation)renderPartyFormation();
-  if(storyEvent){
-    const npc=forestNpcDialogueFor(storyEvent);
-    eventPanel.classList.toggle('has-npc',Boolean(npc));
-    const easy=play.difficulty==='easy';
-    const npcPrompt=npc?`<div class="forest-npc-dialogue"><span class="forest-npc-name">旅人との会話 · ${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.line)}</p>${easy?`<small>${escapeHtml(npc.meaning)}</small>`:`<details><summary>日本語で意味を確認</summary><small>${escapeHtml(npc.meaning)}</small></details>`}</div>`:'';
-    eventPanel.innerHTML=selected
-      ? `<p class="forest-event-label">STORY · 会話のつづき</p>${npc?`<div class="forest-npc-reply"><span>${escapeHtml(npc.name)}</span><p lang="en">${escapeHtml(npc.replies[selected.id].reaction)}</p></div>`:''}<strong>${escapeHtml(selected.memento)}</strong><p class="forest-event-outcome" role="status">${escapeHtml(selected.outcome)}</p>`
-      : `<p class="forest-event-label">STORY · ${npc?'どちらを返す？':'どうする？'}</p>${npcPrompt}<div class="forest-event-choices">${storyEvent.options.map(choice=>
-        `<button type="button" data-forest-event-option="${escapeHtml(choice.id)}"><strong ${npc?'lang="en"':''}>${escapeHtml(npc?.replies[choice.id]?.answer||choice.label)}</strong>${easy||!npc?`<small>${escapeHtml(choice.label)}${npc?'':` · ${escapeHtml(choice.detail)}`}</small>`:''}</button>`).join('')}</div><small>どちらを選んでも物語が進むよ。正誤判定はありません。</small>`;
-    if(!selected){
-      $$('[data-forest-event-option]',eventPanel).forEach(button=>button.addEventListener('click',()=>{
-        if(!play || play.mode!=='forest'||play.eventChoices[storyKey])return;
-        const choice=forestEventChoice(storyEvent,button.dataset.forestEventOption);
-        if(!choice)return;
-        play.eventChoices[storyKey]=choice.id;
-        persist(recordForestEvent(save,storyEvent.id,choice.id).save);
-        play.eventMemories.push({title:storyEvent.title,memento:choice.memento,outcome:choice.outcome});
-        showForestExplore(false);
-      }));
-    }
-  }else{eventPanel.innerHTML='';eventPanel.classList.remove('has-npc');}
   const options=$('#forest-explore-options');
-  options.hidden=!routeChoice;
-  options.innerHTML=routeChoice?(area.world==='city'?CITY_ROUTES:FOREST_ROUTES).map(route=>
-    `<button type="button" class="forest-explore-route" data-forest-route="${route.id}"><strong>${escapeHtml(route.name)}</strong><small>${escapeHtml(route.detail)}</small></button>`).join(''):'';
+  options.hidden=true;
+  options.replaceChildren();
   const forward=$('#forest-explore-continue');
-  forward.hidden=routeChoice;
-  forward.textContent=formation?'この仲間で出発':storyEvent&&!selected?'会話をスキップして進む':isBoss?'ボスと戦う':storyEvent?'次の問題へ進む':play.index===0?'冒険を始める':'次の問題へ';
-  if(routeChoice){
-    $$('[data-forest-route]',options).forEach(button=>button.addEventListener('click',()=>{
-      if(!play || play.mode!=='forest'||play.route)return;
-      play.route=button.dataset.forestRoute;
-      showForestExplore(false);
-      queueForestEncounter();
-    }));
-  }
+  forward.hidden=false;
+  forward.textContent=formation?'この仲間で出発':isBoss?'ボスと戦う':play.index===0?'冒険を始める':'次の問題へ';
   view.classList.add('forest-exploring');
   $('#forest-explore-screen').hidden=false;
   $('#forest-journey').hidden=true;
   $('.forest-command-window').hidden=true;
   window.scrollTo({top:0,behavior:'instant'});
 }
-function showForestRouteChoice() {
-  if(!play || play.mode!=='forest')return;
-  play.revealed=true;
-  showForestExplore(true);
-}
-
 function keepMobileQuestionInView(){
  if(play?.mode!=='forest'||window.innerWidth>690)return;
  if($('#play-view').classList.contains('scene-battle'))return; // The characters remain onscreen; only the inner console scrolls.
@@ -1779,11 +1740,6 @@ function advanceQuestion(){
       return;
     }
   }
-  if(play.mode==='forest' && play.index===0 && !play.route){
-    play.index=1;
-    showForestRouteChoice();
-    return;
-  }
   if(play.mode==='forest'){
     play.index=play.index>=regularCount()?regularCount()+play.bossHits:play.index+1;
     if(play.index>=waveLength()){
@@ -1819,12 +1775,9 @@ function advanceQuestion(){
       $('#play-mode-label').textContent=`∞ WAVE ${play.wave} · ${dungeonAreaFor(play.areaId).name} · ${difficultyCopy[wave.level].label}`;
       showForestExplore(false);queueForestEncounter();return;
     }
-    // Learning first: ordinary questions flow directly into the next task.
-    // Only route decisions, optional story discoveries and boss approaches
-    // briefly return to exploration. Keep explanations manual above.
-    const storyDetour=Boolean(forestEventFor({areaId:play.areaId,route:play.route,index:play.index}));
+    // Ordinary encounters progress directly; show only the boss approach.
     const bossApproach=play.index===regularCount();
-    if(storyDetour||bossApproach){
+    if(bossApproach){
       showForestExplore(false);
       if(bossApproach)queueForestEncounter();
     }else renderQuestion();

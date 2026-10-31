@@ -216,7 +216,8 @@ const assert=require('node:assert/strict');
      const defeatedEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));
      assert.ok(defeatedEnemyOpacity<.05,`${engine}/${width}: defeated enemy should finish the knockout animation (${defeatedEnemyOpacity})`);
      await page.locator('#next-question').click();
-     assert.equal(await page.locator('#forest-explore-options').isVisible(),true,'First encounter unlocks route after actual victory');
+     assert.equal(await page.locator('#forest-explore-options').isVisible(),false,'Completed encounter continues without an irrelevant route decision');
+     assert.match(await page.locator('.question-top').innerText(),/ENCOUNTER 2/);
      if(width===320){
        // The simple and tactical dungeon share the same full-screen arena;
        // unrelated training modes must still restore the original form.

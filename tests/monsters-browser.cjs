@@ -561,8 +561,7 @@ const path=require('node:path');
     await weakPage.locator('#spoken-answer').fill(firstAnswer);
     await weakPage.locator('#show-answer').click();
     await weakPage.locator('#next-question').click();
-    await weakPage.locator('[data-forest-route="moss"]').click();
-    if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
+    assert.equal(await weakPage.locator('[data-forest-route]').count(),0,'Routes are automatic');
     await unlockListening(weakPage);
     assert.equal(await weakPage.locator('#spoken-answer').isVisible(),false);
     await weakPage.locator('#next-question').click();
@@ -595,7 +594,7 @@ const path=require('node:path');
     assert.equal(await practicePage.locator('#continue-as-practice').isVisible(),true);
     const practiceXp=await practicePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
     await practicePage.locator('#continue-as-practice').click();
-    assert.equal(await practicePage.locator('#forest-explore-options').isVisible(),true,'Opt-in practice should advance without demanding the model sentence');
+    assert.match(await practicePage.locator('.question-top').innerText(),/ENCOUNTER 2/,'Opt-in practice continues directly without a story choice');
     assert.equal(await practicePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),practiceXp,'No XP for unverified expression');
     await practicePage.locator('#leave-play').click();
     await enterHomePanel(practicePage,'review');
@@ -636,7 +635,7 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-world-stage .forest-world-svg').count(),0);
       assert.equal(await forestPage.locator('#forest-world-stage [data-landmark]').count(),0);
       assert.equal(await forestPage.locator('#forest-enemy svg').count(),1);
-      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'wild');
+      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'sunlit');
       assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Mossling/);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-foe'),'mossling');
       assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/霧のこだま/);
@@ -667,6 +666,16 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-attack')),true);
         assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-guarding')),false);
         assert.equal(await forestPage.locator('#forest-damage').isVisible(),true);
+        const fxLayout=await forestPage.evaluate(()=>{
+          const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+          const consoleTop=rect('#forest-arena-console').top;
+          return {consoleTop,damageTop:rect('#forest-damage').top,
+            chainTop:rect('#forest-combo').top,fxTop:rect('#forest-world-fx').top,
+            cinematicBottom:rect('#forest-cinematic-layer').bottom};
+        });
+        assert.ok(fxLayout.damageTop<fxLayout.consoleTop&&fxLayout.chainTop<fxLayout.consoleTop&&
+          fxLayout.fxTop<fxLayout.consoleTop&&fxLayout.cinematicBottom<=fxLayout.consoleTop+1,
+        `All attack FX must stay above the scrolling question console: ${JSON.stringify(fxLayout)}`);
         const action=await forestPage.locator('#forest-world-stage').getAttribute('data-action');
         assert.match(await forestPage.locator('#forest-battle-log').textContent(),/1ダメージ！/);
         if(action==='defense')assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-defended')),true);
@@ -689,18 +698,13 @@ const path=require('node:path');
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
       await answer();
       await moveOn();
-      assert.match(await forestPage.locator('#forest-explore-title').innerText(),/分かれ道/);
-      assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
-      assert.equal(await forestPage.locator('#answer-area').isVisible(),false);
-      assert.equal(await forestPage.locator('[data-forest-route]').count(),2);
+      assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),false);
+      assert.equal(await forestPage.locator('[data-forest-route]').count(),0);
+      assert.equal(await forestPage.locator('[data-forest-event-option]').count(),0);
       const routeMetrics=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
-      assert.ok(routeMetrics.scroll<=routeMetrics.inner+1,`${engine}/${width} forest choice overflow: ${JSON.stringify(routeMetrics)}`);
-      await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-route.png`),fullPage:true});
-      await forestPage.locator('[data-forest-route="moss"]').click();
-      assert.equal(await forestPage.locator('#forest-explore-art').getAttribute('data-route'),'moss');
-      if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
+      assert.ok(routeMetrics.scroll<=routeMetrics.inner+1,`${engine}/${width} linear battle overflow: ${JSON.stringify(routeMetrics)}`);
       await forestPage.locator('#forest-journey').waitFor({state:'visible'});
-      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'moss');
+      assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'sunlit');
       for(let mob=2;mob<=5;mob++){
         assert.match(await forestPage.locator('.question-top').innerText(),new RegExp('ENCOUNTER '+mob+' \/ 5'));
         if(mob===3){
@@ -767,42 +771,8 @@ const path=require('node:path');
           assert.ok((await forestPage.locator('.feedback-note').innerText()).length>35,'Objective quizzes should explain the answer, not only mark it right');
         }
         await moveOn();
-        if(await forestPage.locator('#forest-explore-screen').isVisible()){
-          if(mob===4){
-            // One interactive story event per chapter, before the fifth foe.
-            // Choosing a scene must not affect XP, attempts or language gates.
-            assert.equal(await forestPage.locator('#forest-explore-event').isVisible(),true);
-            assert.equal(await forestPage.locator('[data-forest-event-option]').count(),2);
-            assert.equal(await forestPage.locator('.forest-npc-dialogue').isVisible(),true);
-            assert.match(await forestPage.locator('.forest-npc-dialogue [lang="en"]').innerText(),/Did you hear that voice/);
-            assert.match(await forestPage.locator('[data-forest-event-option]').first().innerText(),/Let's listen again/);
-            assert.equal(await forestPage.locator('.forest-npc-dialogue > small').isVisible(),true,
-              'Easy mode retains a clear Japanese meaning underneath the NPC line');
-            assert.equal(await forestPage.locator('#forest-explore-continue').isVisible(),true,'Optional story may be skipped');
-            const beforeChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-            await forestPage.locator('[data-forest-event-option]').first().click();
-            assert.match(await forestPage.locator('#forest-explore-event').innerText(),/会話のつづき/);
-            assert.match(await forestPage.locator('.forest-npc-reply [lang="en"]').innerText(),/sound is bouncing off the rocks/);
-            const sceneLayout=await forestPage.evaluate(()=>{
-              const map=document.querySelector('#forest-explore-art').getBoundingClientRect();
-              const event=document.querySelector('#forest-explore-event').getBoundingClientRect();
-              const actor=document.querySelector('.forest-explore-companion').getBoundingClientRect();
-              return {map:map.toJSON(),event:event.toJSON(),actor:actor.toJSON(),viewport:innerHeight};
-            });
-            assert.ok(sceneLayout.map.top<=sceneLayout.event.top&&sceneLayout.event.bottom<=sceneLayout.viewport+1&&
-              sceneLayout.actor.top>=0&&sceneLayout.actor.bottom<sceneLayout.viewport,
-              `NPC choices should be overlaid ON the visible exploration map (${JSON.stringify(sceneLayout)})`);
-            assert.equal(await forestPage.locator('[data-forest-event-option]').count(),0);
-            const afterChoice=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-            assert.equal(afterChoice.xpWallet,beforeChoice.xpWallet,'Story choices cannot award XP');
-            assert.deepEqual(afterChoice.ownedMonsters,beforeChoice.ownedMonsters);
-            assert.deepEqual(afterChoice.progress,beforeChoice.progress);
-            assert.deepEqual(afterChoice.reviewPrompts,beforeChoice.reviewPrompts);
-            assert.equal(afterChoice.forest.journal.length,beforeChoice.forest.journal.length+1,'Events should persist to the adventure journal');
-            assert.equal(afterChoice.forest.journal.at(-1).eventId,'entry-moss');
-          }
-          await forestPage.locator('#forest-explore-continue').click();
-        }
+        assert.equal(await forestPage.locator('#forest-explore-event').isVisible(),false,'Unscored story forks never interrupt a battle');
+        if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
         await forestPage.locator('#forest-journey').waitFor({state:'visible'});
       }
       assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
@@ -962,9 +932,8 @@ const path=require('node:path');
       if(width===390)await cityPage.screenshot({path:path.join(shots,`city-${engine}-${width}-battle.png`),fullPage:true});
       await unlockListening(cityPage);
       await cityPage.locator('#next-question').click();
-      assert.equal(await cityPage.locator('#forest-explore-options').isVisible(),true);
-      assert.equal(await cityPage.locator('[data-forest-route]').count(),2);
-      await cityPage.locator('[data-forest-route="market"]').click();
+      assert.equal(await cityPage.locator('#forest-explore-options').isVisible(),false);
+      assert.equal(await cityPage.locator('[data-forest-route]').count(),0);
       await cityPage.locator('#forest-journey').waitFor({state:'visible'});
       assert.match(await cityPage.locator('#forest-route-status').innerText(),/マーケット通り/);
       assert.match(await cityPage.locator('.question-top').innerText(),/ENCOUNTER 2 \/ 10/);
@@ -1030,8 +999,7 @@ const path=require('node:path');
     assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),firstPrompt,'Reading time is unlimited');
     assert.equal(await autoPage.locator('#next-question').isVisible(),true);
     await autoPage.locator('#next-question').click();
-    assert.match(await autoPage.locator('#forest-explore-title').innerText(),/分かれ道/);
-    await autoPage.locator('[data-forest-route="sunlit"]').click();
+    assert.equal(await autoPage.locator('[data-forest-route]').count(),0);
     await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
     assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 2/);
     await autoAnswer();
@@ -1074,10 +1042,7 @@ const path=require('node:path');
     await endlessPage.locator('#spoken-answer').fill(openingAnswer);
     await endlessPage.locator('#show-answer').click();
     await endlessPage.locator('#next-question').click();
-    if(await endlessPage.locator('#forest-explore-screen').isVisible()){
-      await endlessPage.locator('[data-forest-route="moss"]').click();
-      if(await endlessPage.locator('#forest-explore-screen').isVisible())await endlessPage.locator('#forest-explore-continue').click();
-    }
+    assert.equal(await endlessPage.locator('[data-forest-route]').count(),0);
     // Continue past the listening task with an authored answer, then verify
     // that an objectively incorrect vocabulary choice does spend the try.
     await unlockListening(endlessPage);

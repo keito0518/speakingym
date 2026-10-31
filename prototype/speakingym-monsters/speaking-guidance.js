@@ -41,12 +41,22 @@ export function beginnerClozeFor(prompt){
  const template=prompt.answer.slice(0,target.index)+'____'+prompt.answer.slice(target.index+target[0].length);
  return Object.freeze({template,word:target[0].toLowerCase()});
 }
+// A phrase can cover several distinct tasks: "get to the station" and
+// "change trains" are not interchangeable. Build the starter from this
+// question's vetted answer, never from the generic phrase-level hint.
+export function answerAlignedOpening(answer){
+ const words=String(answer||'').trim().split(/\s+/).filter(Boolean);
+ if(!words.length)return '短い英語の一文から始めてみよう。';
+ const count=Math.min(3,Math.max(1,words.length-1));
+ const opening=words.slice(0,count).join(' ').replace(/[,.!?;:]+$/,'');
+ return `${opening} ...${/[?]\s*$/.test(answer)?'?':''}`;
+}
 export function speakingHintSteps(prompt,phrase){
  const easy=(!prompt?.difficulty||prompt.difficulty==='easy')&&prompt.kind==='speak';
  const cloze=easy?beginnerClozeFor(prompt):null;
  if(cloze)return Object.freeze([Object.freeze({label:'穴埋めヒント · ここだけ言ってみよう',detail:'空欄に入る英単語を1つ声に出そう。できたら全文も言ってみよう。',cloze})]);
- const thinking=((easy&&!prompt.bossOnly&&EASY_THINKING[prompt.phraseId])||prompt?.tip||phrase?.tip||'場面に必要な情報を一つずつ整理しよう。').trim();
- const opening=(prompt?.hint||phrase?.hint||'短い英語の一文から始めてみよう。').trim();
+ const thinking=((easy&&!prompt.bossOnly&&EASY_THINKING[prompt.phraseId])||prompt?.task||prompt?.cue||prompt?.tip||phrase?.tip||'場面に必要な情報を一つずつ整理しよう。').trim();
+ const opening=answerAlignedOpening(prompt?.answer);
  return Object.freeze([
   Object.freeze({label:'ヒント 1 · 考え方',detail:thinking}),
   Object.freeze({label:'ヒント 2 · 英語の書き出し',detail:opening})
