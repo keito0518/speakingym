@@ -584,10 +584,10 @@ function damageActiveFighter(damage){
  t.party=applyFighterDamage(t.party,play.companionId,damage);
  syncActiveFighter();
 }
-function absorbIncomingBossHit(damage){
+function absorbIncomingBossHit(damage,kind=play?.tactics?.enemyKind){
  const t=play?.tactics;
  if(!t)return {activeDamage:damage,partnerId:null};
- const cover=play.index>=regularCount()?bossReserveCoverFor({kind:t.enemyKind,activeId:play.companionId,
+ const cover=play.index>=regularCount()?bossReserveCoverFor({kind,activeId:play.companionId,
    party:t.party,used:t.bossCoverUsed,damage}):null;
  let actual=damage;
  t.lastCoverNote='';
@@ -598,7 +598,15 @@ function absorbIncomingBossHit(damage){
    t.lastCoverNote=`${monsterFor(cover.partnerId).name}が身代わり！ 出撃中の仲間へのダメージを2軽減し、控えHP−1。`;
  }
  damageActiveFighter(actual);
- return {activeDamage:actual,partnerId:cover?.partnerId||null};
+ // A defeated front-line ally cannot absorb later misses without consequence.
+ // Bring in a healthy reserve immediately; this is not a manual party swap.
+ const next=firstStandingAlly(t.party,play.companionId);
+ let autoSwitchedTo=null;
+ if(next&&next!==play.companionId){
+  play.companionId=next;syncActiveFighter();t.autoSwitchedTo=next;
+  renderForestHud();renderTacticalControls();autoSwitchedTo=next;
+ }
+ return {activeDamage:actual,partnerId:cover?.partnerId||null,autoSwitchedTo};
 }
 function healActiveFighter(amount){
  const t=play?.tactics;
@@ -1237,6 +1245,9 @@ function renderQuestion() {
         }
         button.classList.add('is-miss');
         button.setAttribute('aria-invalid','true');
+        // Do not charge accidental repeat taps on a previously rejected option.
+        // A different wrong meaning remains a new damaging attempt.
+        button.disabled=true;
         if(!play.tactics||(!play.tactics.playerMissCountered&&!play.tactics.defenseHitTaken))
           $('#listening-status').textContent=englishMode?'Not quite. Listen again and compare the details.':'少し違うかも。もう一度聞いて、細かい違いに注目しよう。';
         return;
@@ -1439,15 +1450,16 @@ function showHint() {
 }
 function counterPlayerMiss(status){
   const t=play?.mode==='forest'&&play.tactics?.turn==='player'?play.tactics:null;
-  if(!t||!shouldCounterPlayerMiss({status,hasInput:true,alreadyCountered:t.playerMissCountered,turn:t.turn}))return false;
+  if(!t||!shouldCounterPlayerMiss({status,hasInput:true,turn:t.turn}))return false;
   const foe=opponentFor(play.index,play.wave,play.areaId),boss=play.index>=regularCount();
   const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
-  const attack=t.nextEnemyKind||foePlannedAttack({style,activeId:play.companionId,last:t.lastEnemyKind});
+  const attack=t.playerMissCountered&&t.lastEnemyKind?t.lastEnemyKind:
+    t.nextEnemyKind||foePlannedAttack({style,activeId:play.companionId,last:t.lastEnemyKind});
   const pressure=boss?bossAttackFor(foe.id,play.index-regularCount())?.pressure||0:foeAttackPressure(style);
   const blow=incomingHit({kind:attack,allyId:play.companionId,
     evolved:getMonsterProgress(save,play.companionId).evolved,
     result:'incorrect',action:t.action,pressure,counterShield:t.counterShield});
-  const rescue=absorbIncomingBossHit(blow.damage);
+  const rescue=absorbIncomingBossHit(blow.damage,attack);
   t.playerMissCountered=true;t.lastEnemyKind=attack;t.nextEnemyKind=null;
   updateEnemyHealth();
   const arena=$('#forest-world-stage');
@@ -1456,12 +1468,13 @@ function counterPlayerMiss(status){
   playBattleCinematic('enemy');
   $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'BLOCK!';
   $('#forest-battle-log').textContent=`${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
+  if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
   if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return 'finished';}
   return true;
 }
 function counterEnemyDefenseMiss(){
   const t=play?.mode==='forest'&&play.tactics?.turn==='enemy'?play.tactics:null;
-  if(!t||t.defenseHitTaken)return false;
+  if(!t)return false;
   const blow=incomingHit({kind:t.enemyKind,allyId:play.companionId,
     evolved:getMonsterProgress(save,play.companionId).evolved,
     action:t.actionAtAttack,result:'incorrect',pressure:t.enemyPressure,counterShield:t.counterShield});
@@ -1476,6 +1489,7 @@ function counterEnemyDefenseMiss(){
   $('#forest-battle-log').textContent=rescue.partnerId
     ?`${t.lastCoverNote} 正解にはならないので、英語は確認しよう。`
     :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
+  if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
   if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return 'finished';}
   return true;
 }
