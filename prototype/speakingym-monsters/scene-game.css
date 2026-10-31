@@ -144,7 +144,7 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-arena-console .beginner-speak-tip,
 #play-view.scene-battle #forest-arena-console .answer-quick-help>div{display:none!important}
 #play-view.scene-battle #forest-arena-console .answer-quick-help{margin:4px 0;justify-content:flex-end}
-#play-view.scene-battle #forest-arena-console .answer-quick-help .speaking-hint-action{min-height:38px}
+#play-view.scene-battle #forest-arena-console .answer-quick-help .speaking-hint-action{min-height:46px}
 #play-view.scene-battle #forest-arena-console .listening-first{min-height:0}
 #play-view.scene-battle #forest-arena-console .listening-heading{margin:5px 0!important}
 #play-view.scene-battle #forest-arena-console .listening-play{min-height:46px;margin:9px 0 3px}
