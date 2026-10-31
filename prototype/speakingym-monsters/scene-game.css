@@ -277,12 +277,8 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-world-stage[data-fx-variant="burst"]:is([data-cinematic="attack"],[data-cinematic="victory"]) .cinematic-strike-b{animation-name:scene-burst-cross}
 #play-view.scene-battle #forest-world-stage[data-fx-variant="storm"]:is([data-cinematic="attack"],[data-cinematic="victory"]) .cinematic-strike-a{animation-name:scene-storm-slice}
 #play-view.scene-battle #forest-world-stage[data-fx-variant="storm"]:is([data-cinematic="attack"],[data-cinematic="victory"]) .cinematic-strike-b{animation-name:scene-storm-cross}
-#play-view.scene-battle #forest-world-stage.forest-attack[data-fx-variant="burst"] .forest-party{
- animation:combo-burst-lunge .65s cubic-bezier(.16,.75,.22,1) both!important;
-}
-#play-view.scene-battle #forest-world-stage.forest-attack[data-fx-variant="storm"] .forest-party{
- animation:combo-storm-dash .7s cubic-bezier(.16,.8,.2,1) both!important;
-}
+/* Preserve each monster's own attack keyframe (yolk-dive, sock-spring, etc.).
+   Random impact variants belong to the cinematic effects, not the actor. */
 #play-view.scene-battle #forest-world-stage[data-cinematic="opening"] .cinematic-callout{font-size:clamp(19px,6vw,39px);white-space:nowrap}
 #play-view.scene-battle #forest-world-stage[data-cinematic="opening"] .cinematic-callout::before{content:"STAGE " attr(data-encounter) " · " attr(data-challenge)}
 #play-view.scene-battle #forest-world-stage.forest-boss-stage[data-cinematic="opening"] .cinematic-callout::before{content:"BOSS BATTLE"}
@@ -305,6 +301,8 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 }
 #play-view.scene-battle #forest-world-stage[data-cinematic="opening"] .scene-gate-flash{animation:scene-gate-wipe 1.05s ease-out both}
 #play-view.scene-battle #forest-world-stage[data-cinematic="attack"] .scene-gate-flash{animation:scene-impact-flash .58s ease-out both}
+#play-view.scene-battle #forest-world-stage[data-cinematic="attack"][data-fx-variant="burst"] .scene-energy-motes{animation:scene-finish-sparks .85s ease-out both}
+#play-view.scene-battle #forest-world-stage[data-cinematic="attack"][data-fx-variant="storm"] .scene-energy-motes{animation:scene-storm-sparks .95s ease-out both}
 #play-view.scene-battle #forest-world-stage[data-cinematic="victory"] .scene-energy-motes{animation:scene-finish-sparks 1.55s ease-out both}
 #play-view.scene-battle #forest-world-stage[data-chain-tier="3"][data-cinematic="attack"] .scene-energy-motes{animation:scene-finish-sparks 1.3s ease-out both}
 @keyframes combo-aura-rise{from{transform:scale(.68) rotate(-10deg)}to{transform:scale(1.14) rotate(12deg)}}
@@ -313,6 +311,7 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 @keyframes combo-storm-dash{0%{transform:translate(calc(-50% - 10px),9%) scale(.9);opacity:.65}20%{transform:translate(calc(-50% + 23px),-4px) scale(1.04);opacity:1}43%{transform:translate(calc(-50% + 70px),-8px) scale(1.08)}68%{transform:translate(calc(-50% + 41px),-3px)}100%{transform:translate(-50%,9%) scale(1)}}
 @keyframes scene-victory-flare{0%{box-shadow:inset 0 0 0 transparent}23%{box-shadow:inset 0 0 95px 34px #ffe5a96d}100%{box-shadow:inset 0 0 15px transparent}}
 @keyframes scene-gate-wipe{0%{opacity:1;transform:translateX(-120%) skew(-12deg)}42%{opacity:.95}100%{opacity:0;transform:translateX(120%) skew(-12deg)}}
+@keyframes scene-storm-sparks{0%{opacity:0;transform:scale(.25) rotate(-55deg)}35%{opacity:.98;transform:scale(1.2) rotate(30deg)}100%{opacity:0;transform:scale(1.8) rotate(98deg)}}
 @keyframes scene-impact-flash{0%,9%{opacity:0;transform:translateX(-70%) skew(-15deg)}22%{opacity:1}60%,100%{opacity:0;transform:translateX(75%) skew(-15deg)}}
 @keyframes scene-finish-sparks{0%{opacity:0;transform:scale(.1) rotate(-18deg)}22%{opacity:.95}65%{opacity:.86;transform:scale(1.2) rotate(9deg)}100%{opacity:0;transform:scale(2.7) rotate(25deg)}}
 @keyframes scene-burst-slice{0%,12%{opacity:0;transform:translateX(-38%) rotate(12deg) scaleX(.1)}23%,49%{opacity:1;transform:translateX(0) rotate(12deg) scaleX(1)}100%{opacity:0;transform:translateX(29%) rotate(12deg) scaleX(.2)}}
