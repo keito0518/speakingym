@@ -603,7 +603,7 @@ function absorbIncomingBossHit(damage,kind=play?.tactics?.enemyKind){
  const next=firstStandingAlly(t.party,play.companionId);
  let autoSwitchedTo=null;
  if(next&&next!==play.companionId){
-  play.companionId=next;syncActiveFighter();t.autoSwitchedTo=next;
+  play.companionId=next;t.action='attack';syncActiveFighter();t.autoSwitchedTo=next;
   renderForestHud();renderTacticalControls();autoSwitchedTo=next;
  }
  return {activeDamage:actual,partnerId:cover?.partnerId||null,autoSwitchedTo};
