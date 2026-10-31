@@ -612,7 +612,7 @@ const assert=require('node:assert/strict');
    await counterPage.locator('#next-question').click();
    assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfter,
      'Correction never triggers a second scheduled enemy retaliation');
-   assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたの攻撃/);
+   assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたのターン.*攻撃/s);
    await counterContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
