@@ -1977,6 +1977,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
+  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):'TRAINING COMPLETE';
   if(forestFinished&&!ended.endless)betaTelemetry.track('monsters_beta_chapter_clear',{
     chapter:ended.areaId,difficulty:ended.baseDifficulty
   });
