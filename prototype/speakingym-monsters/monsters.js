@@ -884,7 +884,7 @@ function showForestExplore(routeChoice=false) {
   const routeSvg=map.querySelector('svg.forest-world-svg');
   if(routeSvg){
     const ambient=routeSvg.cloneNode(true);
-    ambient.classList.remove('forest-world-svg');ambient.classList.add('forest-depth-svg');
+    ambient.classList.remove('forest-world-svg','city-world-svg');ambient.classList.add('forest-depth-svg');
     ambient.setAttribute('preserveAspectRatio','xMidYMid slice');
     map.querySelector('.forest-explore-depth').appendChild(ambient);
   }
