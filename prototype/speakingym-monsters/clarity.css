@@ -154,13 +154,12 @@
 .forest-active.tactical-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:45px;right:5%}
 .forest-enemy-weakness[hidden]{display:none!important}
 .forest-active.tactical-battle .forest-enemy-weakness{
- position:absolute;top:26px;right:3%;z-index:14;display:flex;flex-direction:column;
- align-items:center;gap:1px;max-width:49%;min-width:110px;padding:5px 8px 6px;
- border:1.5px solid #f5d57a;border-radius:10px;background:#44233fe9;
- color:#fff7db;box-shadow:0 3px 0 #24142a,0 0 13px #f5c77472;
- text-align:center;line-height:1.3;pointer-events:none}
-.forest-active.tactical-battle .forest-enemy-weakness strong{font-size:clamp(10px,2.8vw,12px);letter-spacing:.04em}
-.forest-active.tactical-battle .forest-enemy-weakness small{font-size:9px;color:#fff0bb;font-weight:800}
+ position:absolute;top:14px;right:5%;z-index:14;display:flex;
+ align-items:center;justify-content:center;width:65px;height:24px;padding:2px 5px;
+ border:1.5px solid #f5d57a;border-radius:7px;background:#44233fe9;
+ color:#fff7db;box-shadow:0 2px 0 #24142a,0 0 9px #f5c77465;
+ font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;
+ letter-spacing:.09em;text-align:center;line-height:1;pointer-events:none}
 .forest-active.tactical-battle .forest-enemy-weakness[data-kind="listen"]{border-color:#8ae4ee;background:#184c5de9}
 .forest-active.tactical-battle .forest-enemy-weakness[data-kind="vocab"]{border-color:#a8f5a4;background:#29543be9}
 .forest-active.tactical-battle .forest-enemy-weakness[data-kind="grammar"]{border-color:#cbb5ff;background:#41345fe9}

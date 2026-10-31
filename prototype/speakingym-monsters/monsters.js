@@ -419,7 +419,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
-      bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false}:null};
+      bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
@@ -503,7 +503,7 @@ function renderForestHud() {
   const affinity=play.tactics?foeBattleAffinity({foeId:foe.id,style:foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:play.index>=regularCount()}),shifted:play.tactics.foeShifted}):foeAffinity(foe.id);
   const weak=$('#forest-enemy-weakness');
   weak.hidden=!play.tactics;
-  if(play.tactics){weak.innerHTML=`<strong>WEAK · ${escapeHtml(BATTLE_LABELS[affinity.weak])}</strong><small>この問題で弱点攻撃</small>`;weak.dataset.kind=affinity.weak;}
+  if(play.tactics){weak.textContent='WEAK';weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[affinity.weak]}`);weak.dataset.kind=affinity.weak;}
   // Separate the English name and Japanese epithet at a meaningful line break.
   $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
   $('#forest-foe-pattern').textContent=bossPhase?`${tactic.name} · ${bossPhase.signature.name}`:tactic.name;
@@ -669,7 +669,9 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  strategy.open=Boolean(t.strategyOpen);
  const ready=t.ultimate>=ULTIMATE_MAX&&(play.index<regularCount()||t.hp<t.maxHp);
  const status=!incoming&&ready?'必殺技が使える！':!incoming&&supportReady?'連携チャンス！':`必殺 ${t.ultimate}/${ULTIMATE_MAX}`;
- summary.innerHTML=`<span>${incoming?'敵の攻撃を確認':'技・問題の種類を変える'}</span><small>${status}</small>`;
+ const kind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
+ const locked=t.kindRerolled||t.attackCommitted;
+ summary.innerHTML=`<span>${incoming?'敵の攻撃を確認':`攻撃：${BATTLE_LABELS[kind]} ${locked?'· 変更不可':'· 変更可能'}`}</span><small>${status}</small>`;
  strategy.append(summary);
  [...panel.children].filter(child=>child!==strategy&&
    !child.matches('.forest-turn-task'))
@@ -708,7 +710,7 @@ function renderTacticalControls(){
  const foeStyle=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
  const element=foeBattleAffinity({foeId:foe.id,style:foeStyle,shifted:t.foeShifted});
  const weak=$('#forest-enemy-weakness');
- if(weak){weak.hidden=false;weak.innerHTML=`<strong>WEAK · ${escapeHtml(BATTLE_LABELS[element.weak])}</strong><small>弱点をつくと強い</small>`;weak.dataset.kind=element.weak;}
+ if(weak){weak.hidden=false;weak.textContent='WEAK';weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[element.weak]}`);weak.dataset.kind=element.weak;}
  const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
  const incoming=t.turn==='enemy';
  const party=battleParty();
@@ -763,9 +765,9 @@ function renderTacticalControls(){
     ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'ボス戦：味方HPを2回復':`高威力 · ${ability.name}`],
     ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':supportId?`${monsterFor(supportId).name}が援護 · ${previewEffect}${!supportReady?'（ゲージが満タン）':''}`:'控えの得意技能を選ぶと使える']]:[])
   ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
-  <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
+  <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss||t.kindRerolled||t.attackCommitted?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
   ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>技能を切り替えると、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
-  ${boss?'<small class="forest-tactic-note">ボスは3問すべて正解で勝利。必殺技も英語の正解が必要。</small>':t.lastAttackKind?`<small class="forest-tactic-note">${BATTLE_LABELS[t.lastAttackKind]}を連続使用すると威力−1。</small>`:'<small class="forest-tactic-note">技能を変えると攻撃問題も切り替わるよ。</small>'}
+  ${boss?'<small class="forest-tactic-note">ボスは3問すべて正解で勝利。必殺技も英語の正解が必要。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは自動で決まるけど、敵1体につき1回だけ変更できるよ。弱点を狙う切り札にしよう。</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">仲間交代 · 残り${1-t.party.swapsUsed}回</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div>`:''}`}`;
  panel.dataset.turn=incoming?'enemy':'player';
  compactBattleNotes(panel,t);
@@ -788,7 +790,7 @@ function renderTacticalControls(){
    renderForestHud();renderTacticalControls();
  }));
  $$('[data-tactic-kind]',panel).forEach(button=>button.addEventListener('click',()=>{
-   if(!play||play.revealed||play.tactics.turn!=='player'||play.index>=regularCount())return;
+   if(!play||play.revealed||play.tactics.turn!=='player'||play.index>=regularCount()||play.tactics.kindRerolled||play.tactics.attackCommitted)return;
    const kind=button.dataset.tacticKind;
    if((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)return;
    const base=play.prompts[play.index];
@@ -798,6 +800,7 @@ function renderTacticalControls(){
        ...tacticalReviewTargets()});
    if(!candidate){$('#forest-battle-log').textContent='この技能の未出題問題が見つからなかったよ。別の技能を選んでね。';return;}
    play.tactics.attackPrompt=candidate;
+   play.tactics.kindRerolled=true;
    play.tactics.action='attack';
    renderQuestion();
  }));
@@ -840,7 +843,7 @@ function finishEnemyTurn(){
    play.companionId=active;syncActiveFighter();
    t.autoSwitchedTo=active;
  }
- t.turn='player';t.defensePrompt=null;t.action='attack';t.counterShield=0;t.playerMissCountered=false;
+ t.turn='player';t.defensePrompt=null;t.action='attack';t.counterShield=0;t.playerMissCountered=false;t.attackCommitted=false;
  t.nextEnemyKind=foePlannedAttack({style:foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:play.index>=regularCount()}),activeId:play.companionId,last:t.lastEnemyKind});
  if(t.pendingAdvance){advanceClearedEncounter();return;}
  t.attackPrompt=pickBattlePrompt({prompts:ALL_PROMPTS,kind:nextEnemyKind(currentPrompt()?.kind),difficulty:play.difficulty,
@@ -1009,7 +1012,7 @@ function renderQuestion() {
         t.encounterIndex=play.index;t.enemyHp=play.index>=regularCount()?BOSS_HITS-play.bossHits:encounterVitality(play.areaId,play.index);
         t.enemyMax=encounterVitality(play.areaId,play.index,{boss:play.index>=regularCount()});
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
-        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;t.foeShifted=false;t.playerMissCountered=false;
+        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;t.foeShifted=false;t.playerMissCountered=false;t.kindRerolled=false;t.attackCommitted=false;
         if(play.index<=regularCount())t.masteryUsed=false; // Boss phases share one mastery use.
         t.counterShield=0;
         if(play.index===regularCount()){t.bossCounterUsed=false;t.bossCoverUsed=false;t.bossLinkUsed=false;}
@@ -1172,6 +1175,7 @@ function renderQuestion() {
       state.usedTranscript=true;
       play.hintUsed=true; // A transcript-assisted listening clear is supported, not independent.
       if(play.mode==='forest')play.encounterHelp=true;
+      if(play.tactics?.turn==='player')play.tactics.attackCommitted=true;
       $('#transcript').hidden=false;
       $('#transcript').textContent=comprehension.audio;
       showChoices();
@@ -1180,6 +1184,8 @@ function renderQuestion() {
     $('#play-audio').addEventListener('click',()=>{
       if(state.understood)return;
       state.played=true;
+      if(play.tactics?.turn==='player')play.tactics.attackCommitted=true;
+      if(play.tactics?.turn==='player')renderTacticalControls();
       showChoices();
       speakLine(comprehension.audio,revealTranscript,comprehension.level,prompt.id);
     });
@@ -1190,10 +1196,19 @@ function renderQuestion() {
       if(selected!==comprehension.correctIndex){
         state.misses++;
         play.hintUsed=true;
-        persist(flagUncertainReview(save,prompt.id));
+        // A selected wrong meaning is an objective listening miss. This is
+        // different from a failed player microphone or uncertain transcript.
+        if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
+        if(play.mode==='forest'){
+          play.encounterHelp=true;play.combo=0;syncBattleAura();
+          const outcome=play.tactics?.turn==='enemy'?counterEnemyDefenseMiss():counterPlayerMiss('incorrect');
+          if(outcome==='finished')return;
+          if(outcome)$('#listening-status').textContent='聞き取り失敗！ 敵の攻撃を受けたよ。意味を確認して再挑戦しよう。';
+        }
         button.classList.add('is-miss');
         button.setAttribute('aria-invalid','true');
-        $('#listening-status').textContent=englishMode?'Not quite. Listen again and compare the details.':'少し違うかも。もう一度聞いて、細かい違いに注目しよう。';
+        if(!play.tactics||(!play.tactics.playerMissCountered&&!play.tactics.defenseHitTaken))
+          $('#listening-status').textContent=englishMode?'Not quite. Listen again and compare the details.':'少し違うかも。もう一度聞いて、細かい違いに注目しよう。';
         return;
       }
       state.understood=true;
@@ -1389,7 +1404,50 @@ function showHint() {
   const step=Math.min((play.hintStep||0)+1,steps.length);
   play.hintStep=step;play.hintUsed=true;
   if(play.mode==='forest')play.encounterHelp=true;
+  if(play.tactics?.turn==='player'){play.tactics.attackCommitted=true;renderTacticalControls();}
   renderHintPanel(steps,step);
+}
+function counterPlayerMiss(status){
+  const t=play?.mode==='forest'&&play.tactics?.turn==='player'?play.tactics:null;
+  if(!t||!shouldCounterPlayerMiss({status,hasInput:true,alreadyCountered:t.playerMissCountered,turn:t.turn}))return false;
+  const foe=opponentFor(play.index,play.wave,play.areaId),boss=play.index>=regularCount();
+  const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
+  const attack=t.nextEnemyKind||foePlannedAttack({style,activeId:play.companionId,last:t.lastEnemyKind});
+  const pressure=boss?bossAttackFor(foe.id,play.index-regularCount())?.pressure||0:foeAttackPressure(style);
+  const blow=incomingHit({kind:attack,allyId:play.companionId,
+    evolved:getMonsterProgress(save,play.companionId).evolved,
+    result:'incorrect',action:t.action,pressure,counterShield:t.counterShield});
+  const rescue=absorbIncomingBossHit(blow.damage);
+  t.playerMissCountered=true;t.lastEnemyKind=attack;t.nextEnemyKind=null;
+  updateEnemyHealth();
+  const arena=$('#forest-world-stage');
+  arena.classList.remove('forest-guarding','forest-attack','forest-player-damaged');void arena.offsetWidth;
+  if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
+  playBattleCinematic('enemy');
+  $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'BLOCK!';
+  $('#forest-battle-log').textContent=`${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
+  if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return 'finished';}
+  return true;
+}
+function counterEnemyDefenseMiss(){
+  const t=play?.mode==='forest'&&play.tactics?.turn==='enemy'?play.tactics:null;
+  if(!t||t.defenseHitTaken)return false;
+  const blow=incomingHit({kind:t.enemyKind,allyId:play.companionId,
+    evolved:getMonsterProgress(save,play.companionId).evolved,
+    action:t.actionAtAttack,result:'incorrect',pressure:t.enemyPressure,counterShield:t.counterShield});
+  const rescue=absorbIncomingBossHit(blow.damage);
+  t.lastHitDamage=rescue.activeDamage;t.defenseHitTaken=true;
+  updateEnemyHealth();
+  const arena=$('#forest-world-stage');
+  arena.classList.remove('forest-player-damaged');void arena.offsetWidth;
+  if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
+  playBattleCinematic('enemy');
+  $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'GUARDED';
+  $('#forest-battle-log').textContent=rescue.partnerId
+    ?`${t.lastCoverNote} 正解にはならないので、英語は確認しよう。`
+    :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
+  if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return 'finished';}
+  return true;
 }
 async function gradeAnswer() {
   if(!play || play.revealed || play.grading)return;
@@ -1400,6 +1458,7 @@ async function gradeAnswer() {
   const session=play,prompt=currentPrompt();
   const listeningComplete=prompt.kind==='listen'&&play.listeningState?.understood===true;
   const raw=listeningComplete?'':$('#spoken-answer').value.trim();
+  if(play.tactics?.turn==='player'&&(raw||listeningComplete))play.tactics.attackCommitted=true;
   // One-word cloze practice is a non-scored stepping stone. It cannot mint
   // XP or clear a boss, even when the blank is perfectly completed.
   const cloze=play.hintStep?beginnerClozeFor(prompt):null;
@@ -1427,45 +1486,11 @@ async function gradeAnswer() {
   if(grade.status!=='correct'){
     const defending=play.mode==='forest'&&play.tactics?.turn==='enemy';
     const t=play.mode==='forest'&&!defending?play.tactics:null;
-    let playerCounteredNow=false;
-    if(t&&shouldCounterPlayerMiss({status:grade.status,hasInput:Boolean(raw),alreadyCountered:t.playerMissCountered,turn:t.turn})){
-      const foe=opponentFor(play.index,play.wave,play.areaId);
-      const boss=play.index>=regularCount();
-      const attack= t.nextEnemyKind||foePlannedAttack({style:foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss}),activeId:play.companionId,last:t.lastEnemyKind});
-      const pressure=boss?bossAttackFor(foe.id,play.index-regularCount())?.pressure||0:
-        foeAttackPressure(foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss}));
-      const blow=incomingHit({kind:attack,allyId:play.companionId,
-        evolved:getMonsterProgress(save,play.companionId).evolved,
-        result:'incorrect',action:t.action,pressure,counterShield:t.counterShield});
-      const rescue=absorbIncomingBossHit(blow.damage);
-      t.playerMissCountered=true;t.lastEnemyKind=attack;t.nextEnemyKind=null;
-      playerCounteredNow=true;
-      updateEnemyHealth();
-      const arena=$('#forest-world-stage');
-      arena.classList.remove('forest-guarding','forest-attack','forest-player-damaged');void arena.offsetWidth;
-      if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
-      playBattleCinematic('enemy');
-      $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'BLOCK!';
-      $('#forest-battle-log').textContent=`${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
-      if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return;}
-    }
-    if(defending&&raw&&!play.tactics.defenseHitTaken&&['incorrect','incomplete'].includes(grade.status)){
-      const blow=incomingHit({kind:play.tactics.enemyKind,allyId:play.companionId,
-        evolved:getMonsterProgress(save,play.companionId).evolved,
-        action:play.tactics.actionAtAttack,result:'incorrect',pressure:play.tactics.enemyPressure,
-        counterShield:play.tactics.counterShield});
-      const rescue=absorbIncomingBossHit(blow.damage);
-      play.tactics.lastHitDamage=rescue.activeDamage;
-      play.tactics.defenseHitTaken=true;
-      updateEnemyHealth();
-      const arena=$('#forest-world-stage');
-      arena.classList.remove('forest-player-damaged');void arena.offsetWidth;
-      if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
-      playBattleCinematic('enemy');
-      $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'GUARDED';
-      $('#forest-battle-log').textContent=rescue.partnerId
-        ?`${play.tactics.lastCoverNote} 正解にはならないので、英語は確認しよう。`
-        :`敵の${BATTLE_LABELS[play.tactics.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
+    const missResult=!defending&&raw&&['incorrect','incomplete'].includes(grade.status)?counterPlayerMiss(grade.status):false;
+    if(missResult==='finished')return;
+    const playerCounteredNow=missResult===true;
+    if(defending&&raw&&['incorrect','incomplete'].includes(grade.status)){
+      if(counterEnemyDefenseMiss()==='finished')return;
     }
     if(['review','incomplete'].includes(grade.status) && raw)persist(flagUncertainReview(save,prompt.id));
     if(grade.status==='incomplete' && raw){

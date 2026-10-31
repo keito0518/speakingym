@@ -566,10 +566,11 @@ const assert=require('node:assert/strict');
    await shiftingPage.locator('#next-question').click();
    if(await shiftingPage.locator('.forest-tactic-strategy').getAttribute('open')===null)
      await shiftingPage.locator('.forest-tactic-strategy > summary').click();
-   await shiftingPage.locator('[data-tactic-kind="grammar"]').click();
+   assert.equal(await shiftingPage.locator('[data-tactic-kind="grammar"]').isEnabled(),false,
+     'A type change is spent for this foe, so a new weakness cannot be freely exploited');
    await answer(shiftingPage);
-   assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
-     'switching to the new weakness should finish the surviving enemy');
+   assert.ok(Number(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'))<=2,
+     'The battle continues with the committed skill type until the foe is defeated');
    const shiftingLayout=await shiftingPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(shiftingLayout.scroll<=shiftingLayout.width+1,
      `Changing weakness labels must not overflow mobile (${JSON.stringify(shiftingLayout)})`);
@@ -584,16 +585,17 @@ const assert=require('node:assert/strict');
    await counterPage.locator('#start-forest-tactics').click();
    await counterPage.locator('#forest-explore-continue').click();
    const weakness=counterPage.locator('#forest-enemy-weakness');
-   assert.equal(await weakness.isVisible(),true,'A foe weakness is displayed over the enemy in the battle scene');
-   assert.match(await weakness.innerText(),/WEAK.*リスニング/s);
+   assert.equal(await weakness.isVisible(),true,'A foe weakness label is displayed in the battle scene');
+   assert.equal(await weakness.innerText(),'WEAK','Only WEAK is shown; details stay in optional tactics');
+   assert.match(await weakness.getAttribute('aria-label'),/敵の弱点：リスニング/);
    const weaknessLayout=await counterPage.evaluate(()=>{
      const badge=document.querySelector('#forest-enemy-weakness').getBoundingClientRect();
      const foe=document.querySelector('#forest-enemy').getBoundingClientRect();
      const arena=document.querySelector('#forest-world-stage').getBoundingClientRect();
      return {badgeY:badge.y,badgeBottom:badge.bottom,foeY:foe.y,foeBottom:foe.bottom,arenaTop:arena.y,arenaWidth:arena.width};
    });
-   assert.ok(weaknessLayout.badgeY>=weaknessLayout.arenaTop&&weaknessLayout.badgeY<weaknessLayout.foeBottom,
-     `Weakness belongs to the foe scene above its sprite: ${JSON.stringify(weaknessLayout)}`);
+   assert.ok(weaknessLayout.badgeY>=weaknessLayout.arenaTop&&weaknessLayout.badgeBottom<=weaknessLayout.foeY,
+     `WEAK label must never cover the monster sprite: ${JSON.stringify(weaknessLayout)}`);
    await counterPage.locator('.forest-tactic-strategy > summary').click();
    await counterPage.locator('[data-tactic-kind="grammar"]').click();
    await counterPage.locator('.forest-tactic-strategy > summary').click();
@@ -614,6 +616,42 @@ const assert=require('node:assert/strict');
      'Correction never triggers a second scheduled enemy retaliation');
    assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたのターン.*攻撃/s);
    await counterContext.close();
+   // Objective listening mistakes bypass the text grader. They must still
+   // trigger exactly one enemy retaliation, even before a correct choice.
+   const listenContext=await browser.newContext({viewport:{width:390,height:844},isMobile:engine==='webkit',hasTouch:true});
+   const listenPage=await listenContext.newPage();
+   await listenPage.goto(url,{waitUntil:'networkidle'});
+   await listenPage.locator('[data-feature-worlds]').click();
+   await listenPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+   await listenPage.locator('#start-forest-tactics').click();
+   await listenPage.locator('#forest-explore-continue').click();
+   await listenPage.locator('.forest-tactic-strategy > summary').click();
+   await listenPage.locator('[data-tactic-kind="listen"]').click();
+   assert.equal(await listenPage.locator('#play-audio').count(),1,'Listening attack uses choice assessment');
+   await listenPage.locator('#play-audio').click();
+   assert.equal(await listenPage.locator('[data-tactic-kind="speak"]').isEnabled(),false,
+     'A started listening attack cannot be swapped out after seeing its choices');
+   const correctChoice=await listenPage.evaluate(async()=>{
+     const {ALL_PROMPTS}=await import('./monster-data.js');
+     const {listeningChallengeFor}=await import('./listening-challenges.js');
+     const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+     return listeningChallengeFor(prompt).correctIndex;
+   });
+   const wrongChoice=(correctChoice+1)%3;
+   const preListenMiss=Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   await listenPage.locator(`[data-listening-choice="${wrongChoice}"]`).click();
+   const afterListenMiss=Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   assert.ok(afterListenMiss<preListenMiss,'Wrong listening choice immediately triggers enemy damage');
+   assert.equal(await listenPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'enemy');
+   await listenPage.locator(`[data-listening-choice="${wrongChoice}"]`).click();
+   assert.equal(Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterListenMiss,
+     'A second wrong choice cannot trigger duplicate enemy damage');
+   await listenPage.locator(`[data-listening-choice="${correctChoice}"]`).click();
+   await listenPage.locator('#next-question').waitFor({state:'visible'});
+   await listenPage.locator('#next-question').click();
+   assert.equal(Number(await listenPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterListenMiss,
+     'Correcting a listening miss does not cause another enemy hit');
+   await listenContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
