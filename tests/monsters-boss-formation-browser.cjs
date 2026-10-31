@@ -77,7 +77,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.forest-boss-link').getAttribute('data-link-ready'),'true');
   assert.match(await page.locator('.forest-boss-link').textContent(),/Purupun|プルプン|待機中/);
   await answer();
-  assert.match(await page.locator('#forest-battle-log').innerText(),/ボス連携「いばらの突破口」成功！.*次の反撃−1/);
+  assert.match(await page.locator('#forest-battle-log').textContent(),/ボス連携「いばらの突破口」成功！.*次の反撃−1/);
   assert.equal(await page.locator('.forest-boss-link').getAttribute('data-link-used'),'true');
   await page.locator('#next-question').click();
   assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
