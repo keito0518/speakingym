@@ -1,9 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,advanceBattleChain,battleChainTier,pickBattleSpectacle,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,bossFormationLinkPlan,bossFormationLinkFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,advanceBattleChain,battleChainTier,pickBattleSpectacle,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,bossFormationLinkPlan,bossFormationLinkFor,incomingHit,shouldCounterPlayerMiss,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
+
+test('only a confirmed first player miss triggers an immediate enemy counter',()=>{
+ for(const status of ['incorrect','incomplete'])
+   assert.equal(shouldCounterPlayerMiss({status,hasInput:true}),true);
+ for(const status of ['review','ungraded','empty','correct'])
+   assert.equal(shouldCounterPlayerMiss({status,hasInput:true}),false,status);
+ assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:false}),false);
+ assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:true,alreadyCountered:true}),false);
+ assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:true,turn:'enemy'}),false);
+});
 
 test('independent attacks and defenses form one meaningful chain, while hints and misses reset it',()=>{
  let streak=advanceBattleChain({independent:true});

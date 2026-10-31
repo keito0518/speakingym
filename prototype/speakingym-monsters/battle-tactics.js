@@ -241,6 +241,11 @@ export function bossReserveCoverFor({kind,activeId,party,used=false,damage=0}={}
  if(!partnerId)return base;
  return {partnerId,activated:true,activeDamage:Math.max(0,damage-2),partnerDamage:1};
 }
+// One confirmed miss gets one immediate enemy counter. Unclear speech,
+// empty input and a correction on the same turn must never drain HP.
+export function shouldCounterPlayerMiss({status,hasInput=false,alreadyCountered=false,turn='player'}={}){
+ return turn==='player'&&hasInput&&!alreadyCountered&&(status==='incorrect'||status==='incomplete');
+}
 export function incomingHit({kind,allyId,action='attack',result='incorrect',hinted=false,evolved=false,pressure=0,counterShield=0}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid enemy attack');
  const ally=allyAffinity(allyId);

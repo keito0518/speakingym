@@ -574,6 +574,46 @@ const assert=require('node:assert/strict');
    assert.ok(shiftingLayout.scroll<=shiftingLayout.width+1,
      `Changing weakness labels must not overflow mobile (${JSON.stringify(shiftingLayout)})`);
    await shiftingContext.close();
+   // A player-side wrong answer must cause a visible, single enemy counter
+   // immediately, without an extra defense charge after the correction.
+   const counterContext=await browser.newContext({viewport:{width:375,height:844},isMobile:engine==='webkit',hasTouch:true});
+   const counterPage=await counterContext.newPage();
+   await counterPage.goto(url,{waitUntil:'networkidle'});
+   await counterPage.locator('[data-feature-worlds]').click();
+   await counterPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+   await counterPage.locator('#start-forest-tactics').click();
+   await counterPage.locator('#forest-explore-continue').click();
+   const weakness=counterPage.locator('#forest-enemy-weakness');
+   assert.equal(await weakness.isVisible(),true,'A foe weakness is displayed over the enemy in the battle scene');
+   assert.match(await weakness.innerText(),/WEAK.*リスニング/s);
+   const weaknessLayout=await counterPage.evaluate(()=>{
+     const badge=document.querySelector('#forest-enemy-weakness').getBoundingClientRect();
+     const foe=document.querySelector('#forest-enemy').getBoundingClientRect();
+     const arena=document.querySelector('#forest-world-stage').getBoundingClientRect();
+     return {badgeY:badge.y,badgeBottom:badge.bottom,foeY:foe.y,foeBottom:foe.bottom,arenaTop:arena.y,arenaWidth:arena.width};
+   });
+   assert.ok(weaknessLayout.badgeY>=weaknessLayout.arenaTop&&weaknessLayout.badgeY<weaknessLayout.foeBottom,
+     `Weakness belongs to the foe scene above its sprite: ${JSON.stringify(weaknessLayout)}`);
+   await counterPage.locator('.forest-tactic-strategy > summary').click();
+   await counterPage.locator('[data-tactic-kind="grammar"]').click();
+   await counterPage.locator('.forest-tactic-strategy > summary').click();
+   const hpBefore=Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   await counterPage.locator('#spoken-answer').fill('wrong answer');
+   await counterPage.locator('#show-answer').click();
+   const hpAfter=Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
+   assert.ok(hpAfter<hpBefore,'Confirmed mistake triggers an immediate enemy attack before any correct answer');
+   assert.equal(await counterPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'enemy');
+   assert.match(await counterPage.locator('#forest-battle-log').textContent(),/反撃！/);
+   await counterPage.locator('#spoken-answer').fill('still wrong');
+   await counterPage.locator('#show-answer').click();
+   assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfter,
+     'Repeated mistakes in one turn cannot drain multiple HP charges');
+   await answer(counterPage);
+   await counterPage.locator('#next-question').click();
+   assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfter,
+     'Correction never triggers a second scheduled enemy retaliation');
+   assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたの攻撃/);
+   await counterContext.close();
    console.log(`${engine}: tactical battle, weakness, enemy turn, HP defense and mobile widths passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
