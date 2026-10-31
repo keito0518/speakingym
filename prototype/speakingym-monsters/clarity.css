@@ -157,11 +157,11 @@
 .forest-enemy-weakness[hidden]{display:none!important}
 .forest-active.tactical-battle .forest-enemy-weakness{
  position:absolute;top:5px;right:5%;z-index:14;display:flex;
- align-items:center;justify-content:center;width:65px;height:22px;padding:2px 5px;
+ align-items:center;justify-content:center;box-sizing:border-box;width:max-content;min-width:105px;max-width:calc(100% - 136px);height:24px;padding:3px 9px;white-space:nowrap;
  border:1.5px solid #f5d57a;border-radius:7px;background:#44233fe9;
  color:#fff7db;box-shadow:0 2px 0 #24142a,0 0 9px #f5c77465;
- font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;
- letter-spacing:.09em;text-align:center;line-height:1;pointer-events:none}
+ font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;font-weight:900;
+ letter-spacing:.02em;text-align:center;line-height:1;pointer-events:none}
 .forest-active.tactical-battle .forest-enemy-weakness[data-kind="listen"]{border-color:#8ae4ee;background:#184c5de9}
 .forest-active.tactical-battle .forest-enemy-weakness[data-kind="vocab"]{border-color:#a8f5a4;background:#29543be9}
 .forest-active.tactical-battle .forest-enemy-weakness[data-kind="grammar"]{border-color:#cbb5ff;background:#41345fe9}
