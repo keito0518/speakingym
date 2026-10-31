@@ -419,7 +419,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
-      bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false}:null};
+      bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
@@ -657,10 +657,10 @@ function compactBattleNotes(panel,t){
 function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  const kinds=panel.querySelector('.forest-tactic-kinds');
  if(kinds){
-   kinds.hidden=incoming||play.index>=regularCount();
+   kinds.hidden=true; // Type selection happens before the question.
    const label=document.createElement('p');
    label.className='forest-tactic-kind-label';
-   label.textContent='問題の種類を変える';
+   label.textContent='攻撃タイプ';
    label.hidden=kinds.hidden;
    kinds.before(label);
  }
@@ -670,8 +670,7 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  const ready=t.ultimate>=ULTIMATE_MAX&&(play.index<regularCount()||t.hp<t.maxHp);
  const status=!incoming&&ready?'必殺技が使える！':!incoming&&supportReady?'連携チャンス！':`必殺 ${t.ultimate}/${ULTIMATE_MAX}`;
  const kind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
- const locked=t.kindRerolled||t.attackCommitted;
- summary.innerHTML=`<span>${incoming?'敵の攻撃を確認':`攻撃：${BATTLE_LABELS[kind]} ${locked?'· 変更不可':'· 変更可能'}`}</span><small>${status}</small>`;
+ summary.innerHTML=`<span>${incoming?'敵の攻撃を確認':`攻撃：${BATTLE_LABELS[kind]} · 確定`}</span><small>${status}</small>`;
  strategy.append(summary);
  [...panel.children].filter(child=>child!==strategy&&
    !child.matches('.forest-turn-task'))
@@ -696,11 +695,36 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
    if(play?.tactics===t&&strategy.isConnected)t.strategyOpen=strategy.open;
  });
 }
+function renderAttackChoice(panel,t){
+ const foe=opponentFor(play.index,play.wave,play.areaId);
+ const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:false});
+ const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
+ panel.dataset.turn='choose';
+ panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
+  <strong>どの英語で攻撃する？</strong><span>敵の弱点：${BATTLE_LABELS[affinity.weak]} · 選ぶと問題が出るよ</span>
+  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
+ $('[data-tactic-kind]',panel).forEach(button=>button.addEventListener('click',()=>{
+  if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
+  const kind=button.dataset.tacticKind;
+  if(!BATTLE_KINDS.includes(kind))return;
+  const base=play.prompts[play.index],baseKind=base.kind==='read'?'speak':base.kind;
+  const candidate=baseKind===kind&&!t.usedPromptIds.has(base.id)?base:
+   pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
+    usedIds:t.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),...tacticalReviewTargets()});
+  if(!candidate){
+   $('#forest-battle-log').textContent='この種類の問題が見つからなかったよ。別の攻撃を選んでね。';
+   return;
+  }
+  t.attackPrompt=candidate;t.attackKindChosen=true;t.attackCommitted=true;t.action='attack';
+  renderQuestion();
+ }));
+}
 function renderTacticalControls(){
  const panel=$('#forest-tactics'),t=play?.tactics;
  if(!panel)return;
  panel.hidden=play?.mode!=='forest'||!t;
  if(panel.hidden)return;
+ if(t.turn==='player'&&play.index<regularCount()&&!t.attackKindChosen){renderAttackChoice(panel,t);return;}
  const foe=opponentFor(play.index,play.wave,play.areaId);
  const ally=allyAffinity(play.companionId);
  const evolved=getMonsterProgress(save,play.companionId).evolved;
@@ -766,8 +790,8 @@ function renderTacticalControls(){
     ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':supportId?`${monsterFor(supportId).name}が援護 · ${previewEffect}${!supportReady?'（ゲージが満タン）':''}`:'控えの得意技能を選ぶと使える']]:[])
   ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
   <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss||t.kindRerolled||t.attackCommitted?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
-  ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>技能を切り替えると、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
-  ${boss?'<small class="forest-tactic-note">ボスは3問すべて正解で勝利。必殺技も英語の正解が必要。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは自動で決まるけど、敵1体につき1回だけ変更できるよ。弱点を狙う切り札にしよう。</small>'}
+  ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>攻撃タイプを選ぶとき、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
+  ${boss?'<small class="forest-tactic-note">ボスは3問すべて正解で勝利。必殺技も英語の正解が必要。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは問題を見る前に選ぼう。出題後は変更できないよ。</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">仲間交代 · 残り${1-t.party.swapsUsed}回</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div>`:''}`}`;
  panel.dataset.turn=incoming?'enemy':'player';
  compactBattleNotes(panel,t);
@@ -843,13 +867,10 @@ function finishEnemyTurn(){
    play.companionId=active;syncActiveFighter();
    t.autoSwitchedTo=active;
  }
- t.turn='player';t.defensePrompt=null;t.action='attack';t.counterShield=0;t.playerMissCountered=false;t.attackCommitted=false;
+ t.turn='player';t.defensePrompt=null;t.action='attack';t.counterShield=0;t.playerMissCountered=false;t.attackCommitted=false;t.attackKindChosen=false;
  t.nextEnemyKind=foePlannedAttack({style:foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:play.index>=regularCount()}),activeId:play.companionId,last:t.lastEnemyKind});
  if(t.pendingAdvance){advanceClearedEncounter();return;}
- t.attackPrompt=pickBattlePrompt({prompts:ALL_PROMPTS,kind:nextEnemyKind(currentPrompt()?.kind),difficulty:play.difficulty,
-   areaId:play.areaId,usedIds:t.usedPromptIds,reservedIds:play.prompts.map(p=>p.id),
-   ...tacticalReviewTargets()});
- if(!t.attackPrompt){t.attackPrompt=null;}
+ t.attackPrompt=null;t.attackKindChosen=false;
  renderQuestion();
 }
 function renderPartyFormation(){
@@ -996,6 +1017,7 @@ function renderQuestion() {
   $('.forest-command-window').hidden=false;
   stopAudio();
   $('#answer-area').hidden=false;
+  $('#play-card').hidden=false;
   $('#answer-area').classList.remove('listening-result-only');
   $('#forest-journey').classList.remove('forest-victory');
   play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;
@@ -1012,7 +1034,7 @@ function renderQuestion() {
         t.encounterIndex=play.index;t.enemyHp=play.index>=regularCount()?BOSS_HITS-play.bossHits:encounterVitality(play.areaId,play.index);
         t.enemyMax=encounterVitality(play.areaId,play.index,{boss:play.index>=regularCount()});
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
-        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;t.foeShifted=false;t.playerMissCountered=false;t.kindRerolled=false;t.attackCommitted=false;
+        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;t.foeShifted=false;t.playerMissCountered=false;t.kindRerolled=false;t.attackCommitted=false;t.attackKindChosen=false;
         if(play.index<=regularCount())t.masteryUsed=false; // Boss phases share one mastery use.
         t.counterShield=0;
         if(play.index===regularCount()){t.bossCounterUsed=false;t.bossCoverUsed=false;t.bossLinkUsed=false;}
@@ -1024,6 +1046,14 @@ function renderQuestion() {
     syncBattleAura();
   }
   renderTacticalControls();
+  if(play.mode==='forest'&&play.tactics?.turn==='player'&&play.index<regularCount()&&!play.tactics.attackKindChosen){
+   $('#play-card').hidden=true;
+   delete $('#play-card').dataset.promptId;
+   $('#answer-area').hidden=true;
+   $('#forest-battle-log').textContent='';
+   $('#forest-world-stage').dataset.challenge='攻撃タイプ選択';
+   return;
+  }
   const prompt=currentPrompt();
   if (!prompt) {finishSession();return;}
   if(play.mode==='forest')$('#forest-world-stage').dataset.challenge={speak:'スピーキング',listen:'リスニング',vocab:'単語',grammar:'文法',read:'読解'}[prompt.kind]||'英語チャレンジ';
