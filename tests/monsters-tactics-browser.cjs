@@ -148,6 +148,27 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),/^(arc|burst|storm)$/,
        'Each attack should have an authored, varied motion style');
      const firstFxVariant=await page.locator('#forest-world-stage').getAttribute('data-fx-variant');
+     const firstStrikeMotion=await page.locator('#forest-world-stage').getAttribute('data-strike-motion');
+     assert.match(firstStrikeMotion,/^(dash|rising|spiral)$/,
+       'A successful attack chooses an original character follow-through');
+     const impactScene=await page.evaluate(()=>{
+       const layer=document.querySelector('#forest-cinematic-layer');
+       const panel=document.querySelector('#forest-arena-console');
+       const impact=document.querySelector('.cinematic-hit-stop');
+       const rect=impact.getBoundingClientRect();
+       return {layerBottom:layer.getBoundingClientRect().bottom,panelTop:panel.getBoundingClientRect().top,
+         impactCenter:rect.top+rect.height/2,impactAnimation:getComputedStyle(impact).animationName,
+         shockwaveAnimation:getComputedStyle(document.querySelector('.cinematic-shockwave')).animationName,
+         spriteAnimation:getComputedStyle(document.querySelector('#forest-player-art')).animationName};
+     });
+     assert.ok(impactScene.impactCenter<impactScene.layerBottom&&impactScene.layerBottom<=impactScene.panelTop+1,
+       `${engine}/${width}: impact must appear above the English quiz (${JSON.stringify(impactScene)})`);
+     if(width===375){assert.equal(impactScene.impactAnimation,'none','Reduced-motion users do not see hit-stop flashes');}
+     else{
+       assert.match(impactScene.impactAnimation,/scene-hit-stop/,'A held contact frame conveys impact');
+       assert.match(impactScene.shockwaveAnimation,/scene-shockwave/,'Hits generate a visible shockwave');
+       assert.match(impactScene.spriteAnimation,/scene-hero-/,'The companion performs its own extra attack motion');
+     }
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
      assert.equal(await page.locator('.forest-chain-result').count(),0,'A first answer should not add another badge to the UI');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
@@ -211,6 +232,12 @@ const assert=require('node:assert/strict');
        'Defeating the foe triggers a unique knockout cut-in');
      assert.notEqual(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),firstFxVariant,
        'Consecutive strikes should vary the spectacle without changing the English grading');
+     assert.notEqual(await page.locator('#forest-world-stage').getAttribute('data-strike-motion'),firstStrikeMotion,
+       'Consecutive successful hits must change the companion motion, too');
+     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-finisher'),'regular',
+       'A normal enemy knockout uses a special finishing composition, not a boss effect');
+     if(width!==375)assert.match(await page.locator('.cinematic-victory-crown').evaluate(el=>getComputedStyle(el).animationName),/scene-ko-crown/,
+       'Victory must have its own knockout burst inside the scenic viewport');
      assert.equal(await page.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-defeated')),true);
      if(width!==375)await page.waitForTimeout(1350);
      const defeatedEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));

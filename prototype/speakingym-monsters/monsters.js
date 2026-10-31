@@ -57,7 +57,13 @@ function playBattleCinematic(kind){
     const effects=['arc','burst','storm'];
     const choice=Math.floor(Math.random()*effects.length);
     world.dataset.fxVariant=effects[(choice+(effects[choice]===world.dataset.fxVariant?1:0))%effects.length];
+    // Preserve each monster's signature attack while adding a varied sprite
+    // motion inside it. Consecutive hits never repeat the same choreography.
+    const motions=['dash','rising','spiral'];
+    const motionChoice=Math.floor(Math.random()*motions.length);
+    world.dataset.strikeMotion=motions[(motionChoice+(motions[motionChoice]===world.dataset.strikeMotion?1:0))%motions.length];
   }
+  world.dataset.finisher=kind==='victory'?(world.classList.contains('forest-boss-stage')?'boss':'regular'):'none';
   world.dataset.cinematic='idle';
   void world.offsetWidth; // Restart CSS cut-ins for each independently graded turn.
   world.dataset.cinematic=kind;
@@ -471,6 +477,7 @@ function renderForestHud() {
   const area=dungeonAreaFor(play.areaId);
   $('.forest-chapter-pin').textContent=play.index>=regularCount()?`${area.english} · BOSS`:area.english;
   world.classList.remove('forest-attack','forest-player-damaged','forest-boss-defeated','forest-guarding','forest-defended','forest-reading-hit','forest-weakness-hit','forest-spell-cast');
+  world.dataset.finisher='none';
   const foe=opponentFor(play.index,play.wave,play.areaId);
   const tactic=enemyTacticFor(play.index,play.wave,play.areaId);
   const bossPhase=forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt:currentPrompt()});

@@ -104,6 +104,11 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-world-stage.forest-boss-stage.forest-attack::before{
  top:clamp(20px,4dvh,43px);right:1%;width:clamp(105px,25vw,160px);
 }
+/* The legacy slash used top:44% of the ENTIRE (tall) stage and vanished
+   behind the question panel. Anchor its path to the short scenic strip. */
+#play-view.scene-battle #forest-world-stage.forest-attack::after{
+ top:calc(var(--scene-top) * .46);left:39%;width:44%;z-index:12;
+}
 #play-view.scene-battle #forest-world-stage:is(.forest-attack,.forest-player-damaged,.forest-defended) .forest-world-fx:not(:empty){
  animation:forest-hit-label 1s ease-out .12s both;
 }
@@ -321,6 +326,124 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-world-stage[data-chain-tier="3"] .forest-player-art{
  filter:drop-shadow(0 0 11px #a6fff4);
 }
+/* Battle VFX II: all the effects below are children of the short cinematic
+   viewport, never of the scrolling quiz. Graphics cannot occlude controls. */
+#play-view.scene-battle .cinematic-chain-halo,
+#play-view.scene-battle .cinematic-speed-trails,
+#play-view.scene-battle .cinematic-hit-stop,
+#play-view.scene-battle .cinematic-shockwave,
+#play-view.scene-battle .cinematic-victory-crown,
+#play-view.scene-battle .cinematic-boss-sigil{
+ position:absolute;pointer-events:none;opacity:0;box-sizing:border-box;
+}
+#play-view.scene-battle .cinematic-chain-halo{
+ z-index:0;top:4%;left:8%;width:clamp(92px,29vw,172px);height:94%;border-radius:50%;
+ border:2px solid #90ffeea6;
+ background:radial-gradient(ellipse,#bbfff83f 2%,#60e7da21 47%,transparent 70%);
+ box-shadow:0 0 17px 7px #5bead466,inset 0 0 24px #b6ffff88;
+ transform:scale(.76);mix-blend-mode:screen;
+}
+#play-view.scene-battle [data-chain-tier="1"] .cinematic-chain-halo{
+ opacity:.5;animation:scene-chain-breathe 2.4s ease-in-out infinite alternate;
+}
+#play-view.scene-battle [data-chain-tier="2"] .cinematic-chain-halo{
+ opacity:.83;border-width:4px;box-shadow:0 0 28px 10px #59f8e180,inset 0 0 29px #c9ffffc2;
+ animation:scene-chain-breathe 1.7s ease-in-out infinite alternate;
+}
+#play-view.scene-battle [data-chain-tier="3"] .cinematic-chain-halo{
+ opacity:1;border:4px double #ffe7a6;
+ background:radial-gradient(ellipse,#fff8bd77,#edb85230 48%,transparent 72%);
+ box-shadow:0 0 32px 12px #ffca71a0,inset 0 0 38px #fff1acbd;
+ animation:scene-chain-awaken 1.4s ease-in-out infinite alternate;
+}
+#play-view.scene-battle .cinematic-speed-trails{
+ z-index:1;inset:11% 10% 17% 20%;
+ background:repeating-linear-gradient(165deg,transparent 0 15px,#fff5be94 17px 20px,transparent 22px 39px);
+ clip-path:polygon(0 18%,100% 0,100% 100%,0 78%);
+ transform:translateX(-110%) skewX(-16deg);mix-blend-mode:screen;
+}
+#play-view.scene-battle .cinematic-hit-stop{
+ z-index:4;left:72%;top:43%;width:clamp(82px,24vw,150px);aspect-ratio:1;
+ border-radius:50%;transform:translate(-50%,-50%) scale(.2);
+ background:radial-gradient(circle,#fff 0 9%,#fff9c8 10% 17%,#163044 20% 24%,#e8ffff 27% 32%,transparent 50%);
+ filter:drop-shadow(0 0 14px #e5faff);mix-blend-mode:screen;
+}
+#play-view.scene-battle .cinematic-shockwave{
+ z-index:3;left:72%;top:43%;width:clamp(82px,22vw,154px);aspect-ratio:1;
+ border:5px solid #f9e8b7;border-radius:50%;transform:translate(-50%,-50%) scale(.2);
+ box-shadow:0 0 0 3px #18384fd9,0 0 25px #fff2af,inset 0 0 28px #fff3ac8c;
+}
+#play-view.scene-battle .cinematic-victory-crown{
+ z-index:3;left:71%;top:42%;width:clamp(135px,39vw,250px);aspect-ratio:1;
+ transform:translate(-50%,-50%) scale(.12) rotate(-22deg);
+ border-radius:50%;mix-blend-mode:screen;
+ background:repeating-conic-gradient(from -16deg,#fff8d5 0deg 5deg,#f7bc5a 6deg 9deg,transparent 10deg 27deg),
+  radial-gradient(circle,#fffced 0 8%,#ffd36f 12% 23%,transparent 55%);
+ filter:drop-shadow(0 0 12px #ffdb81);
+}
+#play-view.scene-battle .cinematic-boss-sigil{
+ z-index:2;left:70%;top:45%;width:clamp(108px,31vw,205px);aspect-ratio:1;
+ border:4px double #eea9ff;border-radius:50%;transform:translate(-50%,-50%) scale(.35) rotate(-32deg);
+ box-shadow:0 0 19px #bc62ee,inset 0 0 19px #ac77ff;
+ background:repeating-conic-gradient(#ae77e982 0deg 4deg,transparent 4deg 33deg),
+  radial-gradient(circle,transparent 38%,#b771e344 40% 42%,transparent 44%);
+ mix-blend-mode:screen;
+}
+#play-view.scene-battle [data-cinematic="attack"] .cinematic-speed-trails,
+#play-view.scene-battle [data-cinematic="victory"] .cinematic-speed-trails{
+ animation:scene-charged-trails .72s cubic-bezier(.12,.85,.3,1) both;
+}
+#play-view.scene-battle [data-cinematic="attack"] .cinematic-hit-stop,
+#play-view.scene-battle [data-cinematic="victory"] .cinematic-hit-stop{
+ animation:scene-hit-stop .88s steps(1,end) both;
+}
+#play-view.scene-battle [data-cinematic="attack"] .cinematic-shockwave,
+#play-view.scene-battle [data-cinematic="victory"] .cinematic-shockwave{
+ animation:scene-shockwave .95s cubic-bezier(.11,.72,.35,1) .23s both;
+}
+#play-view.scene-battle [data-finisher="regular"][data-cinematic="victory"] .cinematic-victory-crown{
+ animation:scene-ko-crown 1.32s cubic-bezier(.13,.75,.21,1) .15s both;
+}
+#play-view.scene-battle [data-finisher="boss"][data-cinematic="victory"] .cinematic-victory-crown{
+ animation:scene-boss-ko 1.85s cubic-bezier(.13,.75,.21,1) .18s both;
+}
+#play-view.scene-battle .forest-boss-stage[data-cinematic="opening"] .cinematic-boss-sigil{
+ animation:scene-boss-entry 1.45s ease-out both;
+}
+#play-view.scene-battle .forest-boss-stage[data-boss-phase="3"]:not([data-cinematic="victory"]) .cinematic-boss-sigil{
+ opacity:.4;animation:scene-boss-menace 4s linear infinite;
+}
+#play-view.scene-battle [data-finisher="boss"][data-cinematic="victory"] .cinematic-boss-sigil{
+ animation:scene-boss-shatter 1.5s ease-in-out both;
+}
+/* Vary the INNER sprite's follow-through, leaving named monster motions on
+   .forest-party intact. The battle never changes accuracy or damage at random. */
+#play-view.scene-battle [data-cinematic="attack"][data-strike-motion="dash"] .forest-player-art,
+#play-view.scene-battle [data-cinematic="victory"][data-strike-motion="dash"] .forest-player-art{
+ animation:scene-hero-dash .9s cubic-bezier(.14,.8,.26,1) both;
+}
+#play-view.scene-battle [data-cinematic="attack"][data-strike-motion="rising"] .forest-player-art,
+#play-view.scene-battle [data-cinematic="victory"][data-strike-motion="rising"] .forest-player-art{
+ animation:scene-hero-rising .94s cubic-bezier(.14,.8,.26,1) both;
+}
+#play-view.scene-battle [data-cinematic="attack"][data-strike-motion="spiral"] .forest-player-art,
+#play-view.scene-battle [data-cinematic="victory"][data-strike-motion="spiral"] .forest-player-art{
+ animation:scene-hero-spiral 1s cubic-bezier(.14,.8,.26,1) both;
+}
+@keyframes scene-chain-breathe{from{transform:scale(.78);filter:hue-rotate(0deg)}to{transform:scale(1.08);filter:hue-rotate(16deg)}}
+@keyframes scene-chain-awaken{from{transform:scale(.94) rotate(-12deg)}to{transform:scale(1.14) rotate(16deg)}}
+@keyframes scene-charged-trails{0%,11%{opacity:0;transform:translateX(-110%) skewX(-16deg)}24%{opacity:.93}48%{opacity:.7;transform:translateX(23%) skewX(-16deg)}100%{opacity:0;transform:translateX(112%) skewX(-16deg)}}
+/* A single held contact frame creates hit-stop without flashing the page. */
+@keyframes scene-hit-stop{0%,24%{opacity:0;transform:translate(-50%,-50%) scale(.2)}25%,36%{opacity:.98;transform:translate(-50%,-50%) scale(1)}37%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.14)}}
+@keyframes scene-shockwave{0%,19%{opacity:0;transform:translate(-50%,-50%) scale(.13)}30%{opacity:1}80%,100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
+@keyframes scene-ko-crown{0%,10%{opacity:0;transform:translate(-50%,-50%) scale(.12) rotate(-22deg)}27%{opacity:.93;transform:translate(-50%,-50%) scale(.85) rotate(0)}47%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(12deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.8) rotate(35deg)}}
+@keyframes scene-boss-ko{0%,9%{opacity:0;transform:translate(-50%,-50%) scale(.12) rotate(-22deg)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.05) rotate(0)}49%{opacity:1;transform:translate(-50%,-50%) scale(1.38) rotate(16deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.4) rotate(57deg)}}
+@keyframes scene-boss-entry{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-80deg)}29%{opacity:.75}65%{opacity:.65;transform:translate(-50%,-50%) scale(1.07) rotate(8deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2) rotate(25deg)}}
+@keyframes scene-boss-menace{0%{transform:translate(-50%,-50%) rotate(0deg)}100%{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes scene-boss-shatter{0%,18%{opacity:.86;transform:translate(-50%,-50%) scale(.86) rotate(0)}45%{opacity:1;transform:translate(-50%,-50%) scale(1.34) rotate(60deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.8) rotate(160deg)}}
+@keyframes scene-hero-dash{0%,17%{transform:translateX(-8px) scale(.94)}32%,40%{transform:translateX(24px) scale(1.12)}62%{transform:translateX(0) scale(1.04)}100%{transform:none}}
+@keyframes scene-hero-rising{0%,15%{transform:translateY(8px) scale(.94)}35%,44%{transform:translate(9px,-19px) scale(1.16) rotate(-9deg)}70%{transform:translateY(3px) scale(1.02)}100%{transform:none}}
+@keyframes scene-hero-spiral{0%,13%{transform:rotate(-18deg) scale(.9)}37%,48%{transform:translate(14px,-5px) rotate(45deg) scale(1.17)}71%{transform:rotate(-13deg) scale(1.04)}100%{transform:none}}
 #play-view.scene-battle #forest-world-stage[data-fx-variant="burst"] .cinematic-strike{
  height:14px;
  background:linear-gradient(90deg,transparent,#a1eafa,#fff,#f5be74,transparent);
@@ -399,6 +522,30 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  #play-view.scene-battle .scene-gate-flash,
  #play-view.scene-battle .scene-energy-motes{animation:none!important}
  #play-view.scene-battle #forest-world-stage .forest-party{animation:none!important}
+ #play-view.scene-battle .cinematic-chain-halo,
+ #play-view.scene-battle .cinematic-speed-trails,
+ #play-view.scene-battle .cinematic-hit-stop,
+ #play-view.scene-battle .cinematic-shockwave,
+ #play-view.scene-battle .cinematic-victory-crown,
+ #play-view.scene-battle .cinematic-boss-sigil,
+ #play-view.scene-battle #forest-world-stage .forest-player-art{animation:none!important}
+ #play-view.scene-battle .cinematic-speed-trails,
+ #play-view.scene-battle .cinematic-hit-stop,
+ #play-view.scene-battle .cinematic-shockwave,
+ #play-view.scene-battle .cinematic-victory-crown,
+ #play-view.scene-battle .cinematic-boss-sigil{opacity:0!important}
 }
 html.monsters-quiet-motion #play-view.scene-battle .forest-party::before,
-html.monsters-quiet-motion #play-view.scene-battle .forest-world-vignette{animation:none!important}
+html.monsters-quiet-motion #play-view.scene-battle .forest-world-vignette,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-chain-halo,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-speed-trails,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-hit-stop,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-shockwave,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-victory-crown,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-boss-sigil,
+html.monsters-quiet-motion #play-view.scene-battle #forest-world-stage .forest-player-art{animation:none!important}
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-speed-trails,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-hit-stop,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-shockwave,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-victory-crown,
+html.monsters-quiet-motion #play-view.scene-battle .cinematic-boss-sigil{opacity:0!important}
