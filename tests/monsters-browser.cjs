@@ -105,7 +105,7 @@ const path=require('node:path');
       return {viewport:innerHeight,bottom:rect.bottom,visible:rect.top>=0,
         hitIsButton:button===hit||button.contains(hit)};
     });
-    assert.ok(nextLayout.visible&&nextLayout.hitIsButton&&nextLayout.bottom<=680-4,
+    assert.ok(nextLayout.visible&&nextLayout.hitIsButton&&nextLayout.bottom<=680-4&&nextLayout.bottom>=680-50,
       `The next-turn action must replace Submit in the visible action dock: ${JSON.stringify(nextLayout)}`);
     await quickContext.close();
     for(const width of [320,375,390,430]){
@@ -1022,7 +1022,8 @@ const path=require('node:path');
       return {position:getComputedStyle(button).position,top:rect.top,bottom:rect.bottom,
         viewport:innerHeight,canTap:hit===button||button.contains(hit)};
     });
-    assert.ok(pinnedNext.position==='fixed'&&pinnedNext.top>=0&&pinnedNext.bottom<=pinnedNext.viewport-4&&pinnedNext.canTap,
+    assert.ok(pinnedNext.position==='fixed'&&pinnedNext.top>=0&&
+      pinnedNext.bottom<=pinnedNext.viewport-4&&pinnedNext.bottom>=pinnedNext.viewport-50&&pinnedNext.canTap,
       `Progress must stay visible and tappable while optional teaching scrolls: ${JSON.stringify(pinnedNext)}`);
     const firstPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
     await autoPage.waitForTimeout(3000);

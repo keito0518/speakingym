@@ -195,6 +195,13 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-arena-console .forest-tactic-strategy>summary{background:#163f4c;color:#e8f7f0}
 #play-view.scene-battle #forest-arena-console .forest-tactic-strategy>summary small{color:#e5ead3}
 #play-view.scene-battle #forest-arena-console .feedback-box{margin-top:6px}
+/* The old reward slide-in uses transform with animation-fill-mode:both. That
+   makes the fixed next-turn button relative to the feedback card instead of
+   the viewport, so it can disappear when the explanation scrolls. The arena
+   supplies the victory FX; keep this card transform-free. */
+#play-view.scene-battle #forest-arena-console .feedback-box{
+ animation:none!important;transform:none!important;
+}
 #play-view.scene-battle #forest-arena-console .forest-boss-dialogue{margin:7px 0}
 
 /* Exploration is a different full-screen scene. The map stays visible while
