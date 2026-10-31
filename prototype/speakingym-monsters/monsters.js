@@ -38,7 +38,9 @@ function arrangeBattleScene(forestMode){
   const info=$('.forest-battle-info'),partyHp=$('#forest-party-hp');
   if(forestMode){
     world.insertBefore(info,consolePanel);
-    world.insertBefore(partyHp,consolePanel);
+    // All HP meters belong in ONE slim HUD row. A separately positioned ally
+    // meter used to straddle the question layer and got clipped on iPhone.
+    info.insertBefore(partyHp,$('#forest-boss-hp'));
     for(const selector of ['.play-progress','#forest-battle-log','#play-card','#answer-area','#forest-tactics'])
       consolePanel.appendChild($(selector));
   }else{

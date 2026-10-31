@@ -64,6 +64,47 @@ const path=require('node:path');
       firstFight.stage>firstFight.viewport*.55&&firstFight.answerTop<firstFight.viewport&&
       firstFight.actorTop>=0&&firstFight.actorBottom<firstFight.viewport,
       `Mobile first fight must show monsters AND answer in a single onscreen scene: ${JSON.stringify(firstFight)}`);
+    // Real iPhone in-app browsers can expose a much shorter visual viewport
+    // than the 844px mobile emulator. The submit action must remain tappable
+    // without scrolling the question panel, while the actors stay on screen.
+    for(const height of [610,680,844]){
+      await quickPage.setViewportSize({width:390,height});
+      const layout=await quickPage.evaluate(()=>{
+        const button=document.querySelector('#show-answer');
+        const rect=button.getBoundingClientRect();
+        const actor=document.querySelector('#forest-party').getBoundingClientRect();
+        const question=document.querySelector('#play-card').getBoundingClientRect();
+        const ally=document.querySelector('#forest-party-hp');
+        const foeBar=document.querySelector('.forest-battle-info').getBoundingClientRect();
+        const allyRect=ally.getBoundingClientRect();
+        const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+        return {viewport:innerHeight,top:rect.top,bottom:rect.bottom,actorTop:actor.top,
+          actorBottom:actor.bottom,questionTop:question.top,
+          allyInHud:ally.parentElement.classList.contains('forest-battle-info'),
+          allyClipped:!ally.hidden&&(allyRect.top<foeBar.top-1||allyRect.bottom>foeBar.bottom+1),
+          position:getComputedStyle(button.closest('.learning-controls')).position,
+          hitIsButton:button===hit||button.contains(hit)};
+      });
+      assert.ok(layout.position==='fixed'&&layout.hitIsButton&&layout.top>layout.actorBottom&&
+        layout.bottom<=height-4&&layout.questionTop<height&&layout.actorTop>=0&&
+        layout.allyInHud&&!layout.allyClipped,
+      `iPhone ${height}px must show the live scene and tappable Submit without scrolling: ${JSON.stringify(layout)}`);
+    }
+    await quickPage.setViewportSize({width:390,height:680});
+    const quickAnswer=await quickPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+    });
+    await quickPage.locator('#spoken-answer').fill(quickAnswer);
+    await quickPage.locator('#show-answer').click();
+    const nextLayout=await quickPage.locator('#next-question').evaluate(button=>{
+      const rect=button.getBoundingClientRect();
+      const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+      return {viewport:innerHeight,bottom:rect.bottom,visible:rect.top>=0,
+        hitIsButton:button===hit||button.contains(hit)};
+    });
+    assert.ok(nextLayout.visible&&nextLayout.hitIsButton&&nextLayout.bottom<=680-4,
+      `The next-turn action must replace Submit in the visible action dock: ${JSON.stringify(nextLayout)}`);
     assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
       'Even the ordinary first-stage battle starts with an opening cut-in');
     await quickContext.close();
