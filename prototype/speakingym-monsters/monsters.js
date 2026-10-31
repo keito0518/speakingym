@@ -701,7 +701,7 @@ function renderAttackChoice(panel,t){
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
  panel.dataset.turn='choose';
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
-  <strong>どの英語で攻撃する？</strong><span>敵の弱点：${BATTLE_LABELS[affinity.weak]} · 選ぶと問題が出るよ</span>
+  <strong>あなたのターン · 攻撃を選ぼう</strong><span>敵の弱点：${BATTLE_LABELS[affinity.weak]} · 選ぶと問題が出るよ</span>
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
  $('[data-tactic-kind]',panel).forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
