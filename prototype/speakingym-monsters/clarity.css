@@ -108,6 +108,9 @@
 .forest-active.tactical-battle #answer-area{order:3}
 .forest-active.tactical-battle #forest-tactics{order:4}
 .forest-active.tactical-battle #forest-battle-log:empty{display:none!important}
+/* CSS layout rules must not override the pre-question hidden state. */
+.forest-active.tactical-battle #play-card[hidden],
+.forest-active.tactical-battle #answer-area[hidden]{display:none!important}
 .forest-active.tactical-battle .forest-tries{display:none!important}
 .forest-active.tactical-battle .forest-tactic-strategy>summary{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:42px;padding:9px 11px;border:1px solid #91b6a2;border-radius:10px;background:#f8fdf5;color:#24523e;font-size:12px;font-weight:850;cursor:pointer;list-style:none}
 .forest-active.tactical-battle .forest-tactic-strategy>summary::-webkit-details-marker{display:none}
