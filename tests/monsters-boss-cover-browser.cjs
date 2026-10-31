@@ -96,11 +96,11 @@ const assert=require('node:assert/strict');
   await page.locator('#show-answer').click();
   const after=await page.locator('#forest-party-hp').getAttribute('aria-valuenow');
   assert.equal(Number(before)-Number(after),1,'Reserve intercepts two of the three HP damage from the weak grammar matchup');
-  assert.match(await page.locator('#forest-battle-log').innerText(),/身代わり.*ダメージを2軽減/);
-  assert.equal(await page.locator('#forest-world-fx').innerText(),'COVER!');
+  assert.match(await page.locator('#forest-battle-log').textContent(),/身代わり.*ダメージを2軽減/);
+  assert.equal((await page.locator('#forest-world-fx').textContent()).trim(),'COVER!');
   await answer(); // Correction must not refund HP, re-trigger cover, or count as unaided.
   assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),after);
-  assert.match(await page.locator('#forest-battle-log').innerText(),/最初の被ダメージ1は残る/);
+  assert.match(await page.locator('#forest-battle-log').textContent(),/最初の被ダメージ1は残る/);
   await page.locator('#next-question').click();
   // Optional narrative detours between boss phases are legitimate. Continue
   // through them before inspecting the next actionable fighter roster.
