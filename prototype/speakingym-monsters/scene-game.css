@@ -171,6 +171,13 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  position:absolute;inset:0;z-index:0;width:100%;height:100%;max-height:none;min-height:0;
  border:0;border-radius:0;box-shadow:none;overflow:hidden;
 }
+#play-view.scene-battle .forest-explore-art{background:#173b42}
+#play-view.scene-battle .forest-explore-art .forest-world-svg{z-index:1;filter:drop-shadow(0 8px 18px #09262b99)}
+#play-view.scene-battle .forest-explore-depth{
+ position:absolute;z-index:0;inset:-18px;overflow:hidden;pointer-events:none;
+ opacity:.48;filter:blur(9px) saturate(1.1);
+}
+#play-view.scene-battle .forest-depth-svg{display:block;width:100%;height:100%}
 #play-view.scene-battle .forest-explore-heading{
  position:absolute;top:0;left:0;right:0;z-index:3;
  gap:3px;padding:13px 13px 25px;

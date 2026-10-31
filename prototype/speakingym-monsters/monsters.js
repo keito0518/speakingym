@@ -875,8 +875,19 @@ function showForestExplore(routeChoice=false) {
   const isBoss=play.index>=regularCount();
   const stage=Math.min(4,Math.max(0,Math.round(4*play.index/Math.max(1,regularCount()))));
   map.innerHTML=forestWorldArt(play.route,play.areaId)+
+    '<div class="forest-explore-depth" aria-hidden="true"></div>'+
     '<div class="forest-explore-companion">'+monsterArt(companion.id,evolved)+'</div>'+
     '<div class="forest-explore-destination" aria-hidden="true"></div>';
+  // Repeat a softly blurred crop behind the legible, full-width route map.
+  // A landscape SVG in a portrait iPhone would otherwise leave huge blank
+  // bands above and below the path, making the opening feel unfinished.
+  const routeSvg=map.querySelector('svg.forest-world-svg');
+  if(routeSvg){
+    const ambient=routeSvg.cloneNode(true);
+    ambient.classList.remove('forest-world-svg');ambient.classList.add('forest-depth-svg');
+    ambient.setAttribute('preserveAspectRatio','xMidYMid slice');
+    map.querySelector('.forest-explore-depth').appendChild(ambient);
+  }
   map.dataset.step=String(stage);
   map.dataset.route=play.route||'wild';
   map.dataset.area=play.areaId;

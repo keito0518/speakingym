@@ -45,6 +45,8 @@ const path=require('node:path');
     assert.equal(await quickPage.locator('#play-view').isVisible(),true,
       'Main CTA enters the actual adventure in one tap, bypassing the area catalogue');
     assert.equal(await quickPage.locator('#forest-explore-continue').isVisible(),true);
+    assert.equal(await quickPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
+      'Portrait exploration must fill the scenery behind the readable route map');
     await quickPage.locator('#forest-explore-continue').click();
     assert.equal(await quickPage.locator('#play-card').isVisible(),true,
       'New players reach the first English prompt directly from the main CTA');
