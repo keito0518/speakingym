@@ -48,12 +48,15 @@ const path=require('node:path');
     assert.equal(await quickPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
       'Portrait exploration must fill the scenery behind the readable route map');
     await quickPage.locator('#forest-explore-continue').click();
+    assert.equal(await quickPage.locator('.forest-attack-select').isVisible(),true,'Main adventure shows attack choices before any English question');
+    assert.equal(await quickPage.locator('#play-card').isVisible(),false,'No arbitrary first question is revealed');
+    await quickPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
     assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-tactics'),'true',
       'The home screen main adventure button must enter the turn-based dungeon');
     assert.equal(await quickPage.locator('#forest-party-formation').isVisible(),false,
       'Home quick start never forces beginners through the formation screen');
     assert.equal(await quickPage.locator('#play-card').isVisible(),true,
-      'New players reach the first English prompt directly from the main CTA');
+      'The chosen attack reveals the first English prompt');
     const firstFight=await quickPage.evaluate(()=>({
       stage:document.querySelector('#forest-world-stage').getBoundingClientRect().height,
       answerTop:document.querySelector('#spoken-answer').getBoundingClientRect().top,
@@ -1188,6 +1191,7 @@ const path=require('node:path');
     await enterHomePanel(iosPage,'forest');
     await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();
     await iosPage.locator('#forest-explore-continue').click();
+    await iosPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
     assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),true,'iPhone always retains microphone alternatives');
     assert.equal(await iosPage.locator('#speech-alternatives').getAttribute('open'),null,'Normal battle starts with the extra help collapsed');
     assert.equal(await iosPage.locator('#native-dictation').isVisible(),false,'Alternative input is one optional disclosure, not a wall of text');
