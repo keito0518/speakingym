@@ -346,7 +346,7 @@ export const VETTED_PARAPHRASES=Object.freeze({
   'recommend-food':['Do you have a local dish you would suggest?', "What's your most popular dish?"],
   'recommend-visit':['Is there anywhere interesting to visit nearby?'],
   'recommend-gift':['Can you suggest a gift for my friend?'],
-  'recommend-drink':["Can you recommend a drink that isn't very sweet?","Do you have a drink that isn't too sweet?","Could you suggest something that's not too sweet?"],
+  'recommend-drink':["Can you recommend a drink that isn't very sweet?","Do you have a drink that isn't too sweet?","Could you suggest something that's not too sweet?","Could you recommend a drink that is not too sweet?"],
   'booking-table':['Could I reserve a table for two?','Can I reserve a table for two people?'],
   'booking-hotel':['Can I book a room for tonight?','Could I book a room for one night?',"I'd like a room for one night, please."],
   'booking-tour':["Could I book a place on tomorrow's tour?"],

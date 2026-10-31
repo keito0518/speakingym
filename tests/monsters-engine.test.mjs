@@ -1579,6 +1579,10 @@ test('expanded dungeon quizzes change targets across levels and explain the lang
   assert.ok(drink.alternatives.every(answer=>/not too sweet|isn't too sweet/i.test(answer)),
     'All model answers must retain the key sweetness constraint');
   assert.equal(gradeLocalResponse(drink,drink.answer).status,'correct');
+  assert.equal(gradeLocalResponse(drink,'Could you recommend a drink that is not too sweet?').status,'correct',
+    'A natural meaning-preserving drink request must not interrupt the battle as uncertain');
+  assert.notEqual(gradeLocalResponse(drink,'Could you recommend a drink that is very sweet?').status,'correct',
+    'Removing the sweetness restriction must not earn XP');
 });
 test('forest quiz controls respect English-only difficulty and keep typed vocabulary choices in sync',()=>{
   for(const difficulty of DIFFICULTIES){

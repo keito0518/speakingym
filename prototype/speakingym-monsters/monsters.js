@@ -1199,6 +1199,7 @@ function renderQuestion() {
     }));
   }
   if(openingEncounter)playBattleCinematic('opening');
+  if(play.mode==='forest')$('#forest-arena-console').scrollTop=0;
   keepMobileQuestionInView();
 }
 function browserSpeakLine(line,onUnavailable,level='easy') {

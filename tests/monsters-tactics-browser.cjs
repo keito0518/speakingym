@@ -160,6 +160,8 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id')!==null,true);
      await page.waitForTimeout(100);
+     assert.equal(await page.locator('#forest-arena-console').evaluate(el=>el.scrollTop),0,
+       'Every new encounter starts with its prompt visible at the top of the inner game HUD');
      const scrollResult=await page.evaluate(()=>({
        questionTop:document.querySelector('#play-card').getBoundingClientRect().top,
        fieldHeight:document.querySelector('#forest-journey').getBoundingClientRect().height,
@@ -273,7 +275,9 @@ const assert=require('node:assert/strict');
    await partyPage.locator('[data-tactic-action="assist"]').click();
    assert.equal(await partyPage.locator('[data-tactic-action="assist"]').getAttribute('aria-pressed'),'true');
    await answer(partyPage);
-   assert.match(await partyPage.locator('#forest-battle-log').innerText(),/連携成功！.*ダメージ＋1/);
+   const assistLog=await partyPage.locator('#forest-battle-log').evaluate(el=>({text:el.textContent?.trim()||'',hidden:el.hidden,visible:el.getBoundingClientRect().height>0}));
+   assert.ok(assistLog.visible&&!assistLog.hidden,'Team-up combat text must be visible in the actual scene: '+JSON.stringify(assistLog));
+   assert.match(assistLog.text,/連携成功！.*ダメージ＋1/,'Team-up should award its visible damage bonus: '+JSON.stringify(assistLog));
    assert.equal(await partyPage.locator('[data-tactic-action="assist"]').isEnabled(),false,'Only one team-up per encounter');
    const assistContrast=await partyPage.locator('[data-tactic-action="assist"]').evaluate(el=>{
      const luminance=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
