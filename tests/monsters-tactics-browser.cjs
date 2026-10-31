@@ -357,6 +357,8 @@ const assert=require('node:assert/strict');
    assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5','Only the active ally loses HP');
    await answer(partyPage);
    await partyPage.locator('#next-question').click();
+   assert.equal(await partyPage.locator('.forest-attack-select').isVisible(),true,'The following player turn waits for an attack choice');
+   await partyPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
    assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5');
    assert.match(await partyPage.locator('[data-tactic-ally="medamago"]').innerText(),/HP 8\/8/,'Lv2 reserve ally HP remains intact');
    assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 5\/8/);
