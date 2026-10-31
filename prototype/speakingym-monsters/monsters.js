@@ -1913,7 +1913,7 @@ $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:startSession,showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode==='forest'?startMainDungeon():startSession(mode),showCollection:()=>renderCollection()});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
 $('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
 $('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));

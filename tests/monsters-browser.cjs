@@ -48,6 +48,10 @@ const path=require('node:path');
     assert.equal(await quickPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
       'Portrait exploration must fill the scenery behind the readable route map');
     await quickPage.locator('#forest-explore-continue').click();
+    assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-tactics'),'true',
+      'The home screen main adventure button must enter the turn-based dungeon');
+    assert.equal(await quickPage.locator('#forest-party-formation').isVisible(),false,
+      'Home quick start never forces beginners through the formation screen');
     assert.equal(await quickPage.locator('#play-card').isVisible(),true,
       'New players reach the first English prompt directly from the main CTA');
     const firstFight=await quickPage.evaluate(()=>({
@@ -921,7 +925,8 @@ const path=require('node:path');
       assert.match(await cityPage.locator('#forest-home-progress').innerText(),/森 4\/4 · 街 0\/4/);
       assert.match(await cityPage.locator('#start-forest').innerText(),/雪灯りの街/);
       if(width===390)await cityPage.screenshot({path:path.join(shots,`city-${engine}-${width}-selection.png`),fullPage:true});
-      await cityCard.click();
+      await cityPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+      await cityPage.locator('#start-forest-simple').click();
       assert.match(await cityPage.locator('#forest-explore-title').innerText(),/雪灯りの街/);
       assert.equal(await cityPage.locator('#forest-explore-art .city-world-svg').count(),1);
       assert.match(await cityPage.locator('#forest-explore-art .city-world-svg').getAttribute('aria-label'),/雪の積もった街/);
@@ -959,7 +964,8 @@ const path=require('node:path');
           await enterHomePanel(cityPage,'forest');
           await cityPage.locator('#dungeon-stage-list > summary').click();
           assert.equal(await cityPage.locator(`[data-enter-forest="${nextId}"]`).isEnabled(),true,`${nextId} unlocks after its predecessor`);
-          await cityPage.locator(`[data-enter-forest="${nextId}"]`).click();
+          await cityPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+          await cityPage.locator('#start-forest-simple').click();
           assert.equal(await cityPage.locator('#forest-explore-art .city-world-svg').getAttribute('data-city-chapter'),nextId);
           await cityPage.locator('#forest-explore-continue').click();
           assert.equal(await cityPage.locator('.battle-arena-svg').getAttribute('data-city-chapter'),nextId);
