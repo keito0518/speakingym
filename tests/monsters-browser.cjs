@@ -627,7 +627,7 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-guarding')),false);
         assert.equal(await forestPage.locator('#forest-damage').isVisible(),true);
         const action=await forestPage.locator('#forest-world-stage').getAttribute('data-action');
-        assert.match(await forestPage.locator('#forest-battle-log').innerText(),/1ダメージ！/);
+        assert.match(await forestPage.locator('#forest-battle-log').textContent(),/1ダメージ！/);
         if(action==='defense')assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-defended')),true);
         if(action==='reading')assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-reading-hit')),true);
       };
@@ -639,7 +639,7 @@ const path=require('node:path');
       await forestPage.locator('#spoken-answer').fill('I have no idea.');
       await forestPage.locator('#show-answer').click();
       assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-attack')),false);
-      assert.match(await forestPage.locator('#forest-battle-log').innerText(),/霧に身を隠して.*判定保留.*攻撃は発生しません/);
+      assert.match(await forestPage.locator('#forest-battle-log').textContent(),/霧に身を隠して.*判定保留.*攻撃は発生しません/);
       assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-guarding')),true);
       assert.equal(await forestPage.locator('#forest-guard svg').count(),1);
       assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1');
@@ -795,7 +795,7 @@ const path=require('node:path');
         }
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
-        if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').innerText(),/Thorn Kingをたおした！/);
+        if(hit===3)assert.match(await forestPage.locator('#forest-battle-log').textContent(),/Thorn Kingをたおした！/);
         if(width===390&&hit===2){
           // Emulate iPhone Safari immediately before its final boss card is
           // rendered; Chrome and WebKit each exercise this no-callback path.
