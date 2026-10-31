@@ -658,6 +658,15 @@ const assert=require('node:assert/strict');
    assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterSecond,
      'A correct correction never schedules an additional attack');
    assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたのターン.*攻撃/s);
+   await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
+   for(let n=0;n<6&&!await counterPage.locator('#result-view').isVisible();n++){
+     await counterPage.locator('#spoken-answer').fill('another definite wrong answer '+n);
+     await counterPage.locator('#show-answer').click();
+   }
+   assert.equal(await counterPage.locator('#result-view').isVisible(),true,
+     'A solo fighter is defeated once cumulative missed answers remove all HP');
+   assert.equal(await counterPage.locator('#result-kicker').innerText(),'BATTLE LOST',
+     'A defeat must not incorrectly be labeled training complete');
    await counterContext.close();
    // Each different wrong listening meaning costs HP, while the same option
    // cannot be tapped twice to manufacture another attack.
