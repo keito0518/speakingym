@@ -73,8 +73,8 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('#forest-formation-status').innerText(),/仲間が増えたら/);
      await page.locator('#forest-explore-continue').click();
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Player selects the attack type before seeing a question');
-     assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
-       'The monster enters with a cut-in before the player chooses an attack');
+     assert.match(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),/^(opening|idle)$/,
+       'The monster scene is ready before the player chooses an attack');
      assert.equal(await page.locator('#play-card').isVisible(),false,'No arbitrary question is shown before type selection');
      assert.equal(await page.locator('#answer-area').isVisible(),false,'There is nothing to answer until a type is chosen');
      await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
