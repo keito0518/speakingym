@@ -707,8 +707,8 @@ function renderAttackChoice(panel,t){
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
   if(!BATTLE_KINDS.includes(kind))return;
-  const base=play.prompts[play.index],baseKind=base.kind==='read'?'speak':base.kind;
-  const candidate=baseKind===kind&&!t.usedPromptIds.has(base.id)?base:
+  const base=play.prompts[play.index];
+  const candidate=base.kind===kind&&!t.usedPromptIds.has(base.id)?base:
    pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
     usedIds:t.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),...tacticalReviewTargets()});
   if(!candidate){
