@@ -131,6 +131,7 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：文法/,'Enemy forecast remains available in tactical details');
      await answer(page);
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
+     assert.equal(await page.locator('.forest-chain-result').count(),0,'A first answer should not add another badge to the UI');
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-tactics'),'true');
      assert.equal(await page.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-defeated')),false,'A living enemy must not be flagged defeated');
@@ -157,10 +158,12 @@ const assert=require('node:assert/strict');
        await answer(page);
        assert.equal(Number(await page.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterMiss,'Correction does not erase first hit or double-charge');
        assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1','A mistake followed by correction must not fill the gauge');
+       assert.equal(await page.locator('.forest-chain-result').count(),0,'Corrections after an error cannot create a streak');
      }else{
        await answer(page);
        assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12','Independent defense blocks enemy damage');
        assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'2');
+       assert.match(await page.locator('.forest-chain-result').innerText(),/2 CHAIN/,'Defending correctly must extend the attack streak');
      }
      await page.locator('#next-question').click();
      assert.match(await page.locator('#forest-tactics').innerText(),/あなたのターン/);
@@ -172,6 +175,13 @@ const assert=require('node:assert/strict');
      await page.locator('[data-tactic-kind="listen"]').click();
      assert.equal(await page.locator('[data-tactic-kind="listen"]').getAttribute('aria-pressed'),'true');
      await answer(page);
+     if(width===390){
+       assert.equal(await page.locator('.forest-chain-result').count(),0,'A defensive miss resets momentum for the next attack');
+     }else{
+       assert.match(await page.locator('.forest-chain-result').innerText(),/3 CHAIN/);
+       assert.equal(await page.locator('.forest-chain-milestone').count(),1,'A third independent answer should feel like a milestone');
+       assert.match(await page.locator('#forest-combo').textContent(),/3 CHAIN/);
+     }
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),width===390?'2':'3');
      assert.equal(await page.locator('[data-tactic-action="skill"]').isEnabled(),width!==390);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');

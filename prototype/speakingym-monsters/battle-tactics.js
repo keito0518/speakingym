@@ -251,6 +251,14 @@ export function incomingHit({kind,allyId,action='attack',result='incorrect',hint
  return {damage:Math.max(0,base+Math.min(1,Math.max(0,Number(pressure)||0))+(kind===ally.weak?1:0)-(kind===ally.strong?1:0)-(action==='guard'?1:0)-(evolved&&kind===ally.strong?1:0)-(ward?1:0)-Math.min(1,Math.max(0,Number(counterShield)||0))),
    blocked:false,uncertain:false};
 }
+// A chain is earned by consecutive independent English answers, not just
+// attacks. Successful defense keeps the momentum alive; hints, corrections
+// and confirmed mistakes never create a streak or a second reward.
+export function advanceBattleChain({chain=0,best=0,independent=false}={}){
+ const next=independent?Math.min(999,Math.max(0,chain)+1):0;
+ const record=Math.max(Math.max(0,best),next);
+ return {chain:next,best:record,milestone:independent&&next>=3&&next%3===0};
+}
 export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],
   dueIds=[],weakIds=[],duePhraseIds=[],recentIds=[],random=Math.random}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid battle skill');

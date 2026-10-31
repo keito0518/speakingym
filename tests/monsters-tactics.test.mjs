@@ -1,9 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,bossFormationLinkPlan,bossFormationLinkFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
+import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,advanceBattleChain,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,bossFormationLinkPlan,bossFormationLinkFor,incomingHit,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
+
+test('independent attacks and defenses form one meaningful chain, while hints and misses reset it',()=>{
+ let streak=advanceBattleChain({independent:true});
+ assert.deepEqual(streak,{chain:1,best:1,milestone:false});
+ streak=advanceBattleChain({...streak,independent:true}); // defended successfully
+ assert.deepEqual(streak,{chain:2,best:2,milestone:false});
+ streak=advanceBattleChain({...streak,independent:true}); // attacked again
+ assert.deepEqual(streak,{chain:3,best:3,milestone:true});
+ streak=advanceBattleChain({...streak,independent:false}); // used a hint
+ assert.deepEqual(streak,{chain:0,best:3,milestone:false});
+ streak=advanceBattleChain({...streak,independent:true});
+ assert.deepEqual(streak,{chain:1,best:3,milestone:false});
+ for(let count=2;count<=6;count++)streak=advanceBattleChain({...streak,independent:true});
+ assert.deepEqual(streak,{chain:6,best:6,milestone:true});
+});
 
 test('all four English skills have names and every companion has a useful strength and weakness',()=>{
  assert.deepEqual(BATTLE_KINDS,['speak','listen','vocab','grammar']);

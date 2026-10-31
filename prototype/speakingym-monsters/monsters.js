@@ -7,7 +7,7 @@ import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, C
 import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
-import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, strikeFor, incomingHit, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
+import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, strikeFor, incomingHit, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -353,7 +353,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
-    route:null,companionId:save.selectedMonster,combo:0,
+    route:null,companionId:save.selectedMonster,combo:0,bestCombo:0,
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
@@ -1597,9 +1597,6 @@ async function gradeAnswer() {
     $('#forest-world-fx').textContent=t?special.tag:prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss?play.bossHits>=BOSS_HITS:Boolean(t&&t.enemyHp<=0);
-    play.combo++;
-    $('#forest-combo').textContent=play.combo>=2?`${play.combo} HIT COMBO`:'';
-    stage.classList.toggle('forest-combo-boost',play.combo>=3);
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
@@ -1612,6 +1609,17 @@ async function gradeAnswer() {
       ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:'次は敵の反撃！'}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t)renderTacticalControls();
+  }
+  // Count clean attack AND defense answers. A tactical round alternates the
+  // two, so resetting on each enemy turn made its old combo effect unreachable.
+  let streak=null;
+  if(play.mode==='forest'){
+    streak=advanceBattleChain({chain:play.combo,best:play.bestCombo,independent:rating==='smooth'});
+    play.combo=streak.chain;
+    play.bestCombo=streak.best;
+    const arena=$('#forest-world-stage');
+    $('#forest-combo').textContent=streak.chain>=2?`${streak.chain} CHAIN`:'';
+    arena.classList.toggle('forest-combo-boost',streak.chain>=3);
   }
   const autoForest=play.mode==='forest';
   const objectiveQuiz=prompt.kind==='vocab'||prompt.kind==='grammar';
@@ -1638,7 +1646,11 @@ async function gradeAnswer() {
   const learningDetails=autoForest
     ?`<details id="forest-success-explanation" class="forest-success-explanation"><summary>解説・復習のポイントを見る</summary><div class="forest-success-explanation-body">${correctBody}</div></details>`
     :correctBody;
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${answerPreview}${acceptedVariant}${expressionCoaching}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
+  // Keep the payoff where the learner answered; the arena may be off-screen
+  // on mobile. This is a short-lived result, never another battle control.
+  const streakNote=streak?.chain>=2
+    ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
@@ -1781,6 +1793,8 @@ function finishSession(timedOut=false,defeated=false) {
   if(!play)return;
   cancelAutoAdvance();
   const ended=play;play=null;clearTimer();stopAudio();
+  if(ended.tactics&&ended.bestCombo>(save.bestBattleChain||0))
+    persist({...save,bestBattleChain:ended.bestCombo});
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
   if(ended.mode==='daily'&&ended.index>=ended.prompts.length){
     persist(recordDailyCompletion(save,{difficulty:ended.difficulty,date:dayKey(),
@@ -1821,7 +1835,7 @@ function finishSession(timedOut=false,defeated=false) {
   const canContinue=Boolean(nextArea&&nextArea.id!==ended.areaId&&unlockedDungeonAreas(save).some(area=>area.id===nextArea.id));
   const canRetry=ended.mode==='forest'&&defeated;
   $('#result-quick-summary').hidden=ended.mode!=='forest';
-  if(ended.mode==='forest')$('#result-quick-summary').textContent=`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体`;
+  if(ended.mode==='forest')$('#result-quick-summary').textContent=`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体${ended.tactics&&ended.bestCombo>=2?` · 最高 ${ended.bestCombo} CHAIN`:''}`;
   $('#result-detail-panel').open=ended.mode!=='forest';
   $('#result-next-panel').hidden=!canContinue&&!canRetry;
   if(canContinue){

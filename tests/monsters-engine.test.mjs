@@ -19,6 +19,7 @@ import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeo
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor } from '../prototype/speakingym-monsters/speaking-guidance.js';
 import { monsterArt } from '../prototype/speakingym-monsters/monster-art.js';
@@ -26,6 +27,15 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '..
 import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
+
+test('personal battle chain records survive reload and discard invalid values',()=>{
+ const oldSave=createSave();
+ delete oldSave.bestBattleChain;
+ assert.equal(validateSave(oldSave).bestBattleChain,0);
+ assert.equal(validateSave({...oldSave,bestBattleChain:7}).bestBattleChain,7);
+ assert.equal(validateSave({...oldSave,bestBattleChain:'999999'}).bestBattleChain,0);
+ assert.equal(validateSave({...oldSave,bestBattleChain:999999}).bestBattleChain,999);
+});
 
 test('beginner speaking uses short communicative goals, fill-in hints, and safe natural variants',()=>{
  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
