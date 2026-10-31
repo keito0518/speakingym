@@ -534,7 +534,10 @@ function updateEnemyHealth(hit=false) {
   }
   if(party&&play.tactics){
     const active=monsterFor(play.companionId);
-    party.textContent=`${active?.name||'味方'} HP ${play.tactics.hp} / ${play.tactics.maxHp}`;
+    // The active monster is named in the battle header. Keep this HUD meter
+    // short enough to share one line with the foe's name and HP on iPhone.
+    party.textContent=`味方 ${play.tactics.hp}/${play.tactics.maxHp}`;
+    party.setAttribute('aria-label',`${active?.name||'味方'}のHP`);
     party.setAttribute('aria-valuenow',String(play.tactics.hp));
     party.setAttribute('aria-valuemax',String(play.tactics.maxHp));
     party.style.setProperty('--party-health',`${100*play.tactics.hp/play.tactics.maxHp}%`);
