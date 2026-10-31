@@ -101,6 +101,16 @@ const assert=require('node:assert/strict');
        `${engine}/${width}: the live question, answer and HP must share the illustrated arena (${JSON.stringify(tacticalLayout)})`);
      assert.equal(tacticalLayout.sticky,false,'The integrated battlefield must scroll naturally instead of covering the question');
      assert.equal(tacticalLayout.separateConsole,'none','No duplicate command window can appear below the arena');
+     const shieldLayout=await page.evaluate(()=>{
+       const shield=document.querySelector('#forest-guard').getBoundingClientRect();
+       const cinematic=document.querySelector('#forest-cinematic-layer').getBoundingClientRect();
+       const console=document.querySelector('#forest-arena-console').getBoundingClientRect();
+       return {shieldTop:shield.top,shieldBottom:shield.bottom,
+         cinematicTop:cinematic.top,cinematicBottom:cinematic.bottom,consoleTop:console.top};
+     });
+     assert.ok(shieldLayout.shieldTop>=shieldLayout.cinematicTop-1&&
+       shieldLayout.shieldBottom<=shieldLayout.consoleTop+1,
+       `${engine}/${width}: the GUARD shield must be inside the animated scene, not behind English text (${JSON.stringify(shieldLayout)})`);
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'opening',
        'The first encounter needs an opening cut-in, not just an abrupt form');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-encounter'),'1',

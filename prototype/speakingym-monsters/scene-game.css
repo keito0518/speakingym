@@ -98,6 +98,17 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-world-stage .forest-combo{
  top:8px;left:43%;z-index:13;max-width:53%;
 }
+/* A blocked attack raises its shield beside the monster. The old guard used
+   bottom:12% / height:76% of the entire tall stage, putting it BEHIND the
+   question text once combat and exercises were merged into one screen. */
+#play-view.scene-battle #forest-world-stage .forest-guard{
+ top:clamp(4px,1.5dvh,12px);bottom:auto;right:6%;
+ width:clamp(85px,25vw,165px);height:calc(var(--scene-top) - 16px);
+ z-index:12;
+}
+#play-view.scene-battle #forest-world-stage .forest-guard::after{
+ bottom:8%;font-size:clamp(12px,3.2vw,18px);
+}
 #play-view.scene-battle #forest-world-stage.forest-attack::before{
  top:clamp(30px,5dvh,55px);right:5%;width:clamp(90px,21vw,145px);
 }

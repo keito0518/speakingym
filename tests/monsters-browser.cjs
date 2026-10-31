@@ -790,17 +790,23 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/こだま|暗号|トゲ王の問い/);
         if(width===390&&hit===3){
-          // Regression: after the boss's recorded listening task, iOS WebKit
-          // may never send onstart/onerror/onend at the final speaking task.
-          // The mic must recover and expose actual keyboard dictation, rather
-          // than trap the learner with a permanently orange dead button.
+          // Regression: iOS embedded WebKit can leave SpeechRecognition in an
+          // endless orange STOP state after the preceding boss listening turn.
+          // The final speaking button must open reliable native keyboard
+          // dictation directly, without starting that unsupported recognizer.
           assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),true);
-          assert.equal(await forestPage.locator('#speech-alternatives').getAttribute('open'),'','Final boss keeps the iPhone fallback ready');
+          assert.equal(await forestPage.locator('#speech-alternatives').getAttribute('open'),null,'Optional fallback details stay collapsed');
           assert.match(await forestPage.locator('#native-dictation').innerText(),/おすすめ/);
+          assert.match(await forestPage.locator('#mic-button').innerText(),/入力/);
+          assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイク/);
           await forestPage.locator('#mic-button').click();
-          assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
-          await forestPage.locator('#speech-helper').filter({hasText:/マイクから応答がありません/}).waitFor({timeout:6500});
+          assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true,
+            'Boss speaking button must focus the actual native dictation field');
           assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
+          assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイクを押して/);
+          assert.equal(await forestPage.evaluate(()=>window.__hungRecognizerStarts||0),0,
+            'iOS boss button must not start the recognizer that never returns a transcript');
+          await forestPage.locator('#speech-alternatives > summary').click();
           await forestPage.locator('#native-dictation').click();
           assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true);
         }
@@ -812,7 +818,8 @@ const path=require('node:path');
           // rendered; Chrome and WebKit each exercise this no-callback path.
           await forestPage.evaluate(()=>{
             Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15'});
-            class HungRecognition{start(){}stop(){this.stopped=true;}abort(){this.aborted=true;}}
+            window.__hungRecognizerStarts=0;
+            class HungRecognition{start(){window.__hungRecognizerStarts++;}stop(){this.stopped=true;}abort(){this.aborted=true;}}
             Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:HungRecognition});
           });
         }
