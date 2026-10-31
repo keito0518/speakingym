@@ -338,7 +338,15 @@ const assert=require('node:assert/strict');
    assert.match(await assist.innerText(),/必殺ゲージ＋1.*覚醒・共鳴/);
    await assist.click();
    await answer(evolutionPage);
-   assert.match(await evolutionPage.locator('#forest-battle-log').innerText(),/覚醒・共鳴発動！.*必殺ゲージ＋1/);
+   const evolutionResult=await evolutionPage.evaluate(()=>({
+     log:document.querySelector('#forest-battle-log').textContent||'',
+     hidden:document.querySelector('#forest-battle-log').hidden,
+     prompt:document.querySelector('#play-card').dataset.promptId,
+     feedback:document.querySelector('.feedback-box')?.textContent?.slice(0,180)||'',
+     gauge:document.querySelector('[aria-label="必殺ゲージ"]')?.getAttribute('aria-valuenow')||''
+   }));
+   assert.match(evolutionResult.log,/覚醒・共鳴発動！.*必殺ゲージ＋1/,
+     'Evolved reserve ability must activate in WebKit: '+JSON.stringify(evolutionResult));
    assert.equal(await evolutionPage.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'2',
      'independent answer and evolved charge support combine');
    const evolvedSave=await evolutionPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
@@ -420,7 +428,7 @@ const assert=require('node:assert/strict');
    await answer(advancedPage);
    assert.equal(await advancedPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1',
      'An evolved specialty attack deals 3, but the enemy shell visibly absorbs 1');
-   assert.match(await advancedPage.locator('#forest-battle-log').innerText(),/敵の殻に威力を1防がれた/);
+   assert.match(await advancedPage.locator('#forest-battle-log').textContent(),/敵の殻に威力を1防がれた/);
    assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/殻は破れた/);
    const advancedContrast=await advancedPage.locator('.forest-tactic-foe-style').evaluate(el=>{
      const luminance=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{
@@ -459,7 +467,7 @@ const assert=require('node:assert/strict');
    assert.match(await masteryPage.locator('.forest-tactic-mastery').textContent(),/Lv\.4技：黄身の二連撃.*準備OK/);
    assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'false');
    await answer(masteryPage);
-   assert.match(await masteryPage.locator('#forest-battle-log').innerText(),/黄身の二連撃.*追撃ダメージ＋1/);
+   assert.match(await masteryPage.locator('#forest-battle-log').textContent(),/黄身の二連撃.*追撃ダメージ＋1/);
    assert.equal(await masteryPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
      'Lv.4 first specialty strike is 1 stronger than the untrained Lv.1 version');
    assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'true');
@@ -495,7 +503,7 @@ const assert=require('node:assert/strict');
    await shiftingPage.locator('[data-tactic-kind="speak"]').click();
    await answer(shiftingPage);
    assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2');
-   assert.match(await shiftingPage.locator('#forest-battle-log').innerText(),/属性変化！ 次の弱点は文法/);
+   assert.match(await shiftingPage.locator('#forest-battle-log').textContent(),/属性変化！ 次の弱点は文法/);
    assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'true');
    assert.match(await shiftingPage.locator('.forest-tactic-heading').textContent(),/敵の弱点：文法.*耐性：リスニング/s);
    await shiftingPage.locator('#next-question').click();
