@@ -1015,8 +1015,15 @@ const path=require('node:path');
     await autoAnswer();
     assert.match(await autoPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
     assert.equal(await autoPage.locator('#forest-success-explanation').getAttribute('open'),null);
-    const nextAboveDetails=await autoPage.evaluate(()=>document.querySelector('#next-question').getBoundingClientRect().top<document.querySelector('#forest-success-explanation').getBoundingClientRect().top);
-    assert.equal(nextAboveDetails,true,'Progress is accessible ahead of optional teaching on phones');
+    const pinnedNext=await autoPage.evaluate(()=>{
+      const button=document.querySelector('#next-question');
+      const rect=button.getBoundingClientRect();
+      const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+      return {position:getComputedStyle(button).position,top:rect.top,bottom:rect.bottom,
+        viewport:innerHeight,canTap:hit===button||button.contains(hit)};
+    });
+    assert.ok(pinnedNext.position==='fixed'&&pinnedNext.top>=0&&pinnedNext.bottom<=pinnedNext.viewport-4&&pinnedNext.canTap,
+      `Progress must stay visible and tappable while optional teaching scrolls: ${JSON.stringify(pinnedNext)}`);
     const firstPrompt=await autoPage.locator('#play-card').getAttribute('data-prompt-id');
     await autoPage.waitForTimeout(3000);
     assert.equal(await autoPage.locator('#play-card').getAttribute('data-prompt-id'),firstPrompt,'Reading time is unlimited');
