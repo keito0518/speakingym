@@ -44,8 +44,11 @@ const assert=require('node:assert/strict');
     // button at the answer area. No offscreen navigation/autoscroll is involved.
     assert.match(await page.locator('#feedback-panel').innerText(),/関門突破/);
     await page.locator('#next-question').click();
-    assert.equal(await page.locator('#forest-explore-screen').isVisible(),true);
-    assert.equal(await page.locator('#forest-journey').isVisible(),false);
+    assert.equal(await page.locator('#forest-explore-screen').isVisible(),false,
+      'After a verified attack, the next question must appear without a story fork');
+    assert.equal(await page.locator('#forest-journey').isVisible(),true);
+    assert.match(await page.locator('.question-top').innerText(),/ENCOUNTER 2/);
+    assert.equal(await page.locator('[data-forest-route],[data-forest-event-option]').count(),0);
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
     await page.locator('#leave-play').click();
     assert.equal(await page.locator('#home-view').isVisible(),true,`WebKit navigation errors: ${errors.join(' | ')}; current view: ${await page.locator('.view:not([hidden])').evaluateAll(nodes=>nodes.map(n=>n.id).join(','))}`);
