@@ -1616,6 +1616,14 @@ async function gradeAnswer() {
         finishEnemyTurn();
         return;
       }
+      if(play.tactics){
+        // A review-only answer is not a successful attack: it cannot remove
+        // enemy HP or clear a boss phase. Yield the action without XP instead.
+        play.tactics.usedPromptIds.add(prompt.id);
+        $('#forest-battle-log').textContent='判定保留：攻撃は命中していないよ。HP・XPはそのままで敵のターンへ。';
+        advanceQuestion();
+        return;
+      }
       if(play.index>=regularCount())play.bossHits=Math.min(BOSS_HITS,play.bossHits+1);
       $('#forest-battle-log').textContent='自然な別表現かもしれないので、判定を保留して練習ルートで進むよ。XP・習得実績は増えません。';
       advanceQuestion();
