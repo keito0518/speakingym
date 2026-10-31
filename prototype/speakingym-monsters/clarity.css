@@ -166,8 +166,8 @@
 .forest-active.tactical-battle .forest-arena-console{
  position:relative;z-index:13;display:flex;flex-direction:column;gap:4px;
  min-width:0;margin:0;padding:11px 10px 12px;
- border-top:3px solid #6dc8b7;
- background:linear-gradient(150deg,#102e41f5,#103e47f7 42%,#092e3efb)}
+ border-top:1px solid #70c8bb80;
+ background:linear-gradient(175deg,#143f50e9,#0f3143f9 43%,#071f30)}
 .forest-active.tactical-battle .forest-arena-console .play-progress{
  order:0;margin:-11px -10px 4px!important;max-width:none;height:4px;
  background:#326474;border-radius:0}
@@ -176,13 +176,34 @@
  overflow:hidden;min-height:0;margin:0;padding:5px 8px;font-size:11px;
  color:#fceabc;background:#244359;border-color:#476a74}
 .forest-active.tactical-battle .forest-arena-console #play-card{
- order:2;max-width:none;margin:0;padding:12px 12px 9px!important;
- border:1px solid #8ea8a9;border-radius:12px 12px 5px 5px;
- background:linear-gradient(145deg,#fffdf1,#eef5f0);box-shadow:0 3px 0 #071e2c55}
+ order:2;max-width:none;margin:0;padding:12px 12px 4px!important;
+ border:0;border-left:3px solid #81dcce;border-radius:3px;
+ background:linear-gradient(90deg,#75d8d016,transparent 85%);box-shadow:none}
 .forest-active.tactical-battle .forest-arena-console #answer-area{
- order:3;max-width:none;margin:0!important;padding:9px 11px 10px!important;
- border:1px solid #9cafaa;border-radius:5px 5px 12px 12px;
- background:#eaf3eaf7;box-shadow:0 4px 14px #041d2766}
+ order:3;max-width:none;margin:0!important;padding:8px 11px 10px!important;
+ border:0;border-radius:5px;
+ background:transparent;box-shadow:none}
+.forest-active.tactical-battle .forest-arena-console .question-top{color:#b9d8d9}
+.forest-active.tactical-battle .forest-arena-console .question-tag{color:#ffdfa0;background:#163d52;border-color:#6b8084}
+.forest-active.tactical-battle .forest-arena-console #play-card h1,
+.forest-active.tactical-battle .forest-arena-console .english-situation{color:#fff9e7;text-shadow:0 2px 9px #030e1ccc}
+.forest-active.tactical-battle .forest-arena-console .question-caption{color:#bcdad9}
+.forest-active.tactical-battle .forest-arena-console .answer-label,
+.forest-active.tactical-battle .forest-arena-console .answer-helper{color:#c7e1df}
+.forest-active.tactical-battle .forest-arena-console .answer-quick-help{color:#e3d5aa}
+.forest-active.tactical-battle .forest-arena-console .answer-input{
+ border:2px solid #76bcb4;background:#f4fcf8;box-shadow:0 0 20px #4edec420;
+ color:#163746}
+.forest-active.tactical-battle .forest-arena-console .answer-input:focus-visible{
+ border-color:#f5d584;outline:2px solid #f5d584;outline-offset:2px}
+.forest-active.tactical-battle .forest-arena-console .hint-button{color:#ffe0a6}
+.forest-active.tactical-battle .forest-arena-console .reveal-button{
+ background:linear-gradient(125deg,#ffdf8a,#ffb958);color:#1b3241;
+ box-shadow:0 3px 0 #80532a;font-weight:900}
+.forest-active.tactical-battle .forest-arena-console .task-panel{
+ color:#1c403e;background:#e4f2e8;border-color:#82aea4}
+.forest-active.tactical-battle .forest-arena-console .listen-control{background:#e5f4e9}
+.forest-active.tactical-battle .forest-arena-console .transcript-fallback{color:#d6eeee}
 .forest-active.tactical-battle .forest-arena-console #forest-tactics{
  order:4;margin:0;padding:0;background:transparent;border:0;color:#e7f2e6}
 .forest-active.tactical-battle .forest-arena-console .forest-tactic-strategy>summary{
@@ -200,7 +221,7 @@
  .forest-active.tactical-battle .forest-battle-shell{overflow:hidden!important;border-radius:17px}
  .forest-active.tactical-battle .forest-arena-console{padding:9px 7px 11px}
  .forest-active.tactical-battle .forest-arena-console .play-progress{margin:-9px -7px 4px!important}
- .forest-active.tactical-battle .forest-arena-console #play-card{padding:10px 10px 7px!important}
+ .forest-active.tactical-battle .forest-arena-console #play-card{padding:10px 10px 4px!important}
  .forest-active.tactical-battle .forest-arena-console #answer-area{padding:8px 9px!important}
  .forest-active.tactical-battle .forest-arena-console .play-card h1{font-size:clamp(17px,5vw,22px);line-height:1.35;margin:7px 0 5px}
  .forest-active.tactical-battle .forest-arena-console .question-caption{font-size:11px;line-height:1.4}
