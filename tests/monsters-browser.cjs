@@ -796,7 +796,8 @@ const path=require('node:path');
           // dictation directly, without starting that unsupported recognizer.
           assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),true);
           assert.equal(await forestPage.locator('#speech-alternatives').getAttribute('open'),null,'Optional fallback details stay collapsed');
-          assert.match(await forestPage.locator('#native-dictation').innerText(),/おすすめ/);
+          assert.match(await forestPage.locator('#native-dictation').textContent(),/おすすめ/,
+            'The optional native-dictation help remains available when expanded');
           assert.match(await forestPage.locator('#mic-button').innerText(),/入力/);
           assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイク/);
           await forestPage.locator('#mic-button').click();
