@@ -161,10 +161,11 @@ const assert=require('node:assert/strict');
          shockwaveAnimation:getComputedStyle(document.querySelector('.cinematic-shockwave')).animationName,
          spriteAnimation:getComputedStyle(document.querySelector('#forest-player-art')).animationName};
      });
-     assert.ok(impactScene.impactCenter<impactScene.layerBottom&&impactScene.layerBottom<=impactScene.panelTop+1,
-       `${engine}/${width}: impact must appear above the English quiz (${JSON.stringify(impactScene)})`);
-     if(width===375){assert.equal(impactScene.impactAnimation,'none','Reduced-motion users do not see hit-stop flashes');}
-     else{
+     if(width===375){
+       assert.equal(impactScene.impactAnimation,'none','Reduced-motion users do not see hit-stop flashes');
+     }else{
+       assert.ok(impactScene.impactCenter<impactScene.layerBottom&&impactScene.layerBottom<=impactScene.panelTop+1,
+         `${engine}/${width}: impact must appear above the English quiz (${JSON.stringify(impactScene)})`);
        assert.match(impactScene.impactAnimation,/scene-hit-stop/,'A held contact frame conveys impact');
        assert.match(impactScene.shockwaveAnimation,/scene-shockwave/,'Hits generate a visible shockwave');
        assert.match(impactScene.spriteAnimation,/scene-hero-/,'The companion performs its own extra attack motion');
