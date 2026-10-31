@@ -703,7 +703,7 @@ function renderAttackChoice(panel,t){
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
   <strong>あなたのターン · 攻撃を選ぼう</strong><span>敵の弱点：${BATTLE_LABELS[affinity.weak]} · 選ぶと問題が出るよ</span>
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
- $('[data-tactic-kind]',panel).forEach(button=>button.addEventListener('click',()=>{
+ panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
   if(!BATTLE_KINDS.includes(kind))return;
