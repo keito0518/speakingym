@@ -966,7 +966,7 @@ const path=require('node:path');
     await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
     assert.match(await autoPage.locator('.question-top').innerText(),/ENCOUNTER 2/);
     await autoAnswer();
-    assert.match(await autoPage.locator('#forest-combo').innerText(),/2 HIT COMBO/);
+    assert.match(await autoPage.locator('#forest-combo').innerText(),/2 CHAIN/);
     await autoPage.locator('#next-question').click();
     if(await autoPage.locator('#forest-explore-screen').isVisible())await autoPage.locator('#forest-explore-continue').click();
     await autoPage.locator('#forest-journey').waitFor({state:'visible',timeoutMs:4500});
