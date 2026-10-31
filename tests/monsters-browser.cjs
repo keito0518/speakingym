@@ -552,7 +552,7 @@ const path=require('node:path');
     await weakPage.reload();
     assert.match(await weakPage.locator('#forest-weakness-summary').innerText(),/苦手の復習 1問/);
     await enterHomePanel(weakPage,'forest');
-    await weakPage.locator('#start-forest').click();
+    await weakPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await weakPage.locator('#start-forest-simple').click();
     await weakPage.locator('#forest-explore-continue').click();
     const firstAnswer=await weakPage.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
@@ -583,7 +583,7 @@ const path=require('node:path');
     // in the forest. They may choose a non-rewarded practice route instead.
     const {context:practiceContext,page:practicePage}=await boot(390);
     await enterHomePanel(practicePage,'forest');
-    await practicePage.locator('#start-forest').click();
+    await practicePage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await practicePage.locator('#start-forest-simple').click();
     await practicePage.locator('#forest-explore-continue').click();
     const recordedPrompt=await practicePage.locator('#play-card').getAttribute('data-prompt-id');
     await practicePage.locator('#bookmark-question').click();
@@ -611,7 +611,7 @@ const path=require('node:path');
     for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);
       await enterHomePanel(forestPage,'forest');
-    await forestPage.locator('#start-forest').click();
+    await forestPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await forestPage.locator('#start-forest-simple').click();
       assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true);
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),false);
       assert.equal(await forestPage.locator('#forest-explore-art > svg').count(),1);
@@ -986,7 +986,7 @@ const path=require('node:path');
       }
     };
     await enterHomePanel(autoPage,'forest');
-    await autoPage.locator('#start-forest').click();
+    await autoPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await autoPage.locator('#start-forest-simple').click();
     await autoPage.locator('#forest-explore-continue').click();
     await autoAnswer();
     assert.match(await autoPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);

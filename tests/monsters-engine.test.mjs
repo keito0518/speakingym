@@ -52,6 +52,14 @@ test('beginner speaking uses short communicative goals, fill-in hints, and safe 
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at eleven?').status,'correct');
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at 11?').status,'correct',
    'Spoken numeral 11 and model word eleven have identical meaning');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Excuse me, is the checkout time 11?').status,'correct',
+   'A polite direct confirmation with a numeric time must count');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Please tell me if check-out is at 11.').status,'correct',
+   'A different natural request to confirm the same hotel checkout time must count');
+ assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Excuse me, is the checkout time 10?').status,'correct',
+   'The polite wrapper may not hide a wrong checkout time');
+ assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Is checkout not at eleven?').status,'correct',
+   'A negated question must not be credited as affirmative confirmation');
  assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at 10?').status,'correct',
    'A different hour must not earn XP');
  const checkoutBlank=beginnerClozeFor(byId('clarify-hotel'));

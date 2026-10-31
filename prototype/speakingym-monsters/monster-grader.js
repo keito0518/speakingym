@@ -70,7 +70,13 @@ const rubric = {
  'agree-work': [row('変更を承諾する',intent.agree),row('金曜日に言及する','friday')],
  'late-bus': [row('遅れることを伝える',intent.late),row('申し訳ないと添える','sorry','apologiz')],
  'late-call': [row('遅れることを伝える',intent.late),row('10分程度と伝える','ten','10')],
- 'clarify-hotel': [row('確認する',intent.clarify),row('11時と伝える','eleven','11'),row('チェックアウトについて話す','check ?out','checkout')],
+ 'clarify-hotel': [row('確認する',intent.clarify,
+   // A direct question and a polite request for the time are confirmations too.
+   // Keep this scoped to hotel checkout, not to every open-ended question.
+   '(?:is|does) (?:the )?check ?out(?: time)? (?:at |set for |scheduled for )?(?:eleven|11)',
+   '(?:please )?tell me (?:if|whether) check ?out is (?:at )?(?:eleven|11)',
+   '(?:can|could|would) you (?:please )?(?:tell me|confirm) (?:if|whether) check ?out is (?:at )?(?:eleven|11)'),
+   row('11時と伝える','eleven','11'),row('チェックアウトについて話す','check ?out','checkout')],
  'clarify-office': [row('確認する',intent.clarify),row('昼食前の締め切りに触れる','before lunch','by lunch','lunchtime')],
  'prefer-city': [row('電車を希望する', intent.prefer),row('理由を伝える','because','since','as it is','faster','quicker','speed')],
  'prefer-friend': [row('電車を希望する', intent.prefer)],

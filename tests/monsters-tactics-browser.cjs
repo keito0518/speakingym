@@ -262,7 +262,13 @@ const assert=require('node:assert/strict');
        await page.locator('#leave-play').click();
        await page.locator('[data-feature-worlds]').click();
        await page.locator('#start-forest').click();
+       assert.equal(await page.locator('#forest-party-formation').isVisible(),false,
+         'Main dungeon must skip the advanced party setup and start with the current ally');
        await page.locator('#forest-explore-continue').click();
+       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-tactics'),'true',
+         'The main English dungeon must use real turn-based combat');
+       assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3',
+         'The normal foe must survive the first regular hit instead of disappearing');
        assert.equal(await page.locator('#forest-arena-console #play-card').count(),1);
        assert.equal(await page.locator('#forest-arena-console #answer-area').count(),1);
        assert.equal(await page.locator('#forest-arena-console').isVisible(),true);

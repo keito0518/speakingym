@@ -315,7 +315,7 @@ function renderHome() {
     const chapterDue=dueRetention.filter(entry=>area.focus.some(key=>entry.prompt.phraseId.startsWith(key))).length;
     const bestRank=forest.medals[area.id]?.[save.difficulty]||0;
     const target=bestRank===3?'金ランク達成！':bestRank===2?'次は全問自力正解で金へ':bestRank===1?'次は自力正解75%で銀へ':'ボス3問を確認して銅勲章へ';
-    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'} ${bestRank?BOSS_MEDAL_NAMES[bestRank]+'勲章':''}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">全${forestWaveLengthFor(area.id)}問（通常${regularEncountersFor(area.id)}＋ボス3問）${chapterDue?' · 復習候補'+chapterDue+'問':''}</span><span class="boss-medal-target">${target}</span></small></span><span class="forest-area-status" data-medal-rank="${bestRank}">${bestRank?`${BOSS_MEDAL_NAMES[bestRank]}勲章`:cleared?'CLEAR':open?'挑戦する':area.world==='city'&&forestCount<FOREST_AREAS.length?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
+    return `<button type="button" class="forest-area-card ${area.world==='city'?'city-area-card':''}" data-enter-forest="${area.id}" ${open?'':'disabled'} aria-label="${escapeHtml(area.name)} ${cleared?'攻略済み':open?'挑戦可能':'未解放'} ${bestRank?BOSS_MEDAL_NAMES[bestRank]+'勲章':''}"><span class="forest-area-number">${String(index+1).padStart(2,'0')}</span><span class="forest-area-copy"><strong>${escapeHtml(area.name)}</strong><small><span class="forest-area-goal">${escapeHtml(area.goal)}</span><span class="forest-area-count">通常${regularEncountersFor(area.id)}戦＋ボス3段階 · 敵の反撃あり${chapterDue?' · 復習候補'+chapterDue+'問':''}</span><span class="boss-medal-target">${target}</span></small></span><span class="forest-area-status" data-medal-rank="${bestRank}">${bestRank?`${BOSS_MEDAL_NAMES[bestRank]}勲章`:cleared?'CLEAR':open?'挑戦する':area.world==='city'&&forestCount<FOREST_AREAS.length?'森の4エリアを攻略で解放':'前のエリアを攻略で解放'}</span></button>`;
   };
   const forestCards=FOREST_AREAS.map((area,index)=>areaCard(area,index)).join('');
   const cityCards=CITY_AREAS.map((area,index)=>areaCard(area,index)).join('');
@@ -329,7 +329,7 @@ function renderHome() {
       <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 02 · SNOW CITY</span><h3 id="dungeon-world-city-title">雪灯りの街</h3><p>中央広場から吹雪の街外れまで、4エリアで実践英語に挑戦</p></div><strong class="dungeon-world-badge">${cityCount} / ${CITY_AREAS.length} エリア攻略${forestCount<FOREST_AREAS.length?' · 森の攻略で解放':''}</strong></header>
       <div class="dungeon-world-areas">${cityCards}</div>
     </section>`;
-  $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startSession('forest',button.dataset.enterForest)));
+  $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startMainDungeon(button.dataset.enterForest)));
   $('#start-forest').textContent=cityClear?'雪灯りの街をもう一度冒険':`次へ：${nextDungeonArea(save).name}`;
   const weak=quizWeaknessOverview(save);
   const weakSummary=$('#forest-weakness-summary');
@@ -387,7 +387,10 @@ function tacticalReviewTargets(){
  return {dueIds:dueForestPromptIds(),weakIds:dueQuizWeaknessIds(),
    duePhraseIds:dueForestPhrases(),recentIds:cleanForest(save.forest).recentPromptIds};
 }
-function startSession(mode,requestedAreaId=null,onlyDue=false) {
+// The main dungeon starts immediately with the player's current companions.
+// Party formation remains optional in the advanced battle mode.
+function startMainDungeon(areaId=null){startSession('forest-tactics',areaId,false,true);}
+function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const difficulty=save.difficulty;
   const endless=mode==='forest-endless',tactical=mode==='forest-tactics',forestMode=mode==='forest'||endless||tactical;
@@ -408,7 +411,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   const prompts=forestMode?firstWave.prompts:focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
   const roster=[save.selectedMonster,...(save.ownedMonsters||[])].filter(id=>(save.ownedMonsters||[]).includes(id));
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
-  play={mode:forestMode?'forest':mode,endless,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
+  play={mode:forestMode?'forest':mode,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
@@ -417,10 +420,10 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
     route:area?.world==='city'?CITY_ROUTES[0].id:FOREST_ROUTES[0].id,companionId:save.selectedMonster,combo:0,bestCombo:0,
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
-      formationPending:true,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
+      formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false}:null};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -437,7 +440,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false) {
   }
   showView('play');
   betaTelemetry.track('monsters_beta_start',{
-    mode:mode==='forest-endless'?'forest-endless':mode,
+    mode:mode==='forest-endless'?'forest-endless':tactical&&quickStart?'forest':mode,
     difficulty:mode==='retention'?'mixed':difficulty,
     chapter:area?.id||'other'
   });
@@ -1881,17 +1884,17 @@ function finishSession(timedOut=false,defeated=false) {
   if(canContinue){
     $('#result-next-message').textContent='次のエリアが解放されたよ！';
     $('#result-next').textContent=`次へ：${nextArea.name}`;
-    $('#result-next').onclick=()=>startSession(ended.tactics?'forest-tactics':'forest',nextArea.id);
+    $('#result-next').onclick=()=>ended.quickStart?startMainDungeon(nextArea.id):startSession(ended.tactics?'forest-tactics':'forest',nextArea.id);
   }else if(canRetry){
     $('#result-next-message').textContent='ここまでの経験を生かして、もう一度！';
     $('#result-next').textContent='同じエリアに再挑戦する';
-    $('#result-next').onclick=()=>startSession(ended.tactics?'forest-tactics':'forest',ended.areaId);
+    $('#result-next').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.tactics?'forest-tactics':'forest',ended.areaId);
   }else $('#result-next').onclick=null;
   $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry);
   $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry);
   $('#replay-run').hidden=canRetry;
   $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
-  $('#replay-run').onclick=()=>startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.areaId);
+  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.areaId);
   showView('result');
 }
 const {renderCollection} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
@@ -1901,7 +1904,8 @@ $$('[data-difficulty]').forEach(button => button.addEventListener('click', () =>
   renderDifficulty();
 }));
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
-$('#start-forest').addEventListener('click',()=>startSession('forest'));
+$('#start-forest').addEventListener('click',()=>startMainDungeon());
+$('#start-forest-simple').addEventListener('click',()=>startSession('forest'));
 $('#start-forest-tactics').addEventListener('click',()=>startSession('forest-tactics'));
 $('#start-forest-endless').addEventListener('click',()=>startSession('forest-endless'));
 $('#start-review-practice').addEventListener('click',()=>startSession('practice'));
