@@ -291,10 +291,24 @@ export function normalizeEnglish(value) {
   return String(value || '').toLowerCase().replace(/[’‘]/g, "'").replace(/\b(i am)\b/g, "i'm").replace(/\b(i would)\b/g, "i'd").replace(/[^a-z0-9\s']/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// A speech recognizer may output "11" while a model answer spells "eleven".
+// The quantity is identical; this safe surface normalization is shared by
+// example matching, one-word hints and exact-answer quiz grading.
+const NUMBER_WORDS=Object.freeze({
+  '0':'zero','1':'one','2':'two','3':'three','4':'four','5':'five',
+  '6':'six','7':'seven','8':'eight','9':'nine','10':'ten','11':'eleven',
+  '12':'twelve','13':'thirteen','14':'fourteen','15':'fifteen',
+  '16':'sixteen','17':'seventeen','18':'eighteen','19':'nineteen',
+  '20':'twenty','30':'thirty','38':'thirty eight','40':'forty','50':'fifty'
+});
+export function normalizeEnglishNumbers(value) {
+  return normalizeEnglish(value).replace(/\b(?:[0-9]{1,2})\b/g, number=>NUMBER_WORDS[number]||number);
+}
+
 // Safe surface variants only: polite openers/endings and can/could requests.
 // Do not remove negation or compare keyword overlap; an uncertain meaning stays review.
 function canonicalVettedReply(value) {
-  return normalizeEnglish(value)
+  return normalizeEnglishNumbers(value)
     // Match speech-recognition spelling variants only when their meaning is
     // unchanged. These are surface forms, never approximate word overlap.
     .replace(/\bi have not\b/g, "i haven't")
@@ -303,10 +317,6 @@ function canonicalVettedReply(value) {
     // "have" is a main verb, not an auxiliary contraction.
     .replace(/\bi cannot\b/g, "i can't")
     .replace(/\bwe will\b/g, "we'll")
-    .replace(/\b(5|8|10|11|15|20|30|38)\b/g, number => ({
-      '5':'five','8':'eight','10':'ten','11':'eleven','15':'fifteen',
-      '20':'twenty','30':'thirty','38':'thirty eight'
-    })[number])
     .replace(/\be ticket\b/g, 'eticket')
     .replace(/^(?:(?:excuse me|hello|hi) )+/, '')
     .replace(/^(?:could|can|may) i please /, 'could i ')

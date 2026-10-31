@@ -18,7 +18,7 @@ import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '.
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
@@ -50,6 +50,18 @@ test('beginner speaking uses short communicative goals, fill-in hints, and safe 
  assert.notEqual(gradeLocalResponse(normalBoss,'Sorry, my bus is late.').status,'correct','Normal still requires a practical next step');
  assert.match(speakingHintSteps(byId('apology-noise'),PHRASES.find(p=>p.id==='apology'))[0].detail,/空欄/);
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at eleven?').status,'correct');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at 11?').status,'correct',
+   'Spoken numeral 11 and model word eleven have identical meaning');
+ assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at 10?').status,'correct',
+   'A different hour must not earn XP');
+ const checkoutBlank=beginnerClozeFor(byId('clarify-hotel'));
+ assert.equal(checkoutBlank.word,'eleven');
+ assert.equal(normalizeEnglishNumbers('11'),normalizeEnglishNumbers(checkoutBlank.word),
+   'The easy-level one-word cloze accepts numeric 11 for eleven');
+ assert.equal(normalizeEnglishNumbers('3'),normalizeEnglishNumbers('three'),
+   'Other ordinary numeral/word surface variants remain equivalent');
+ assert.notEqual(normalizeEnglishNumbers('12'),normalizeEnglishNumbers('eleven'),
+   'Different quantities must stay distinct');
  assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Just to make sure, checkout is at eleven, right?').status,'correct');
  for(const [id,old] of [
   ['repeat-announcement-easy','Could you say the announcement again?'],

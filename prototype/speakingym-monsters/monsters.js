@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -1383,7 +1383,7 @@ async function gradeAnswer() {
   // XP or clear a boss, even when the blank is perfectly completed.
   const cloze=play.hintStep?beginnerClozeFor(prompt):null;
   if(cloze&&raw&&!/\s/.test(raw)){
-    const matched=normalizeEnglish(raw)===normalizeEnglish(cloze.word);
+    const matched=normalizeEnglishNumbers(raw)===normalizeEnglishNumbers(cloze.word);
     const helper=$('#cloze-practice-status');
     if(helper)helper.textContent=matched?'空欄は正解！ よくできたね。次は英文全体を声に出してみよう。':'空欄の単語をもう一度考えてみよう。全文の判定にはまだ進んでいないよ。';
     if(matched){$('#spoken-answer').value='';$('#spoken-answer').focus();}

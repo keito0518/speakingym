@@ -3,7 +3,7 @@
 // This is NOT an AI / pronunciation / full grammar grade. Unclear paraphrases remain
 // 'review', not 'wrong'. No reward is ever minted from empty/unsupported answers.
 import { ALL_PROMPTS } from './monster-data.js';
-import { normalizeEnglish, compareWithExamples } from './monster-engine.js';
+import { normalizeEnglish, normalizeEnglishNumbers, compareWithExamples } from './monster-engine.js';
 import { gradeDelayMeaning } from './speaking-meaning.js';
 
 const OR = (...parts) => parts.join('|');
@@ -186,7 +186,7 @@ export function gradeLocalResponse(prompt, raw) {
  // order is objectively incorrect, unlike open-ended spoken English.
  if(prompt.kind==='vocab'||prompt.kind==='grammar'){
    if(!text)return {status:'empty',reasons:['単語を選ぶか、カードを並べて答えてください。'],confidence:'none'};
-   if(text===normalizeEnglish(prompt.answer))
+   if(normalizeEnglishNumbers(raw)===normalizeEnglishNumbers(prompt.answer))
      return {status:'correct',reasons:[],confidence:'high',method:'exact-quiz'};
    return {status:'incorrect',reasons:[prompt.kind==='vocab'?'別の単語を選んでみよう。':'語順をもう一度考えてみよう。'],confidence:'high',method:'exact-quiz'};
  }
