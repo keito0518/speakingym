@@ -235,6 +235,16 @@ const assert=require('node:assert/strict');
        assert.match(await page.locator('.forest-chain-result').innerText(),/3 CHAIN/);
        assert.equal(await page.locator('.forest-chain-milestone').count(),1,'A third independent answer should feel like a milestone');
        assert.match(await page.locator('#forest-combo').textContent(),/3 CHAIN/);
+       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-chain-tier'),'2',
+         'Third clean answer unlocks the second visible aura tier in the same attack');
+       assert.match(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),/^(burst|storm|flare)$/,
+         'Higher combo unlocks a new strike palette rather than repeating starter art');
+       assert.match(await page.locator('#forest-world-stage').getAttribute('data-strike-motion'),/^(rising|spiral|corkscrew)$/,
+         'Higher combo unlocks an additional character movement');
+       assert.equal(await page.locator('.cinematic-combo-orbit').count(),1,
+         'The charged ring belongs to the scene instead of being drawn behind the answer');
+       if(width!==375)assert.match(await page.locator('.cinematic-combo-orbit').evaluate(el=>getComputedStyle(el).animationName),/scene-combo-orbit/,
+         'Normal motion users see the new combo ring inside the upper battlefield');
      }
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),width===390?'2':'3');
      assert.equal(await page.locator('[data-tactic-action="skill"]').isEnabled(),width!==390);

@@ -259,6 +259,30 @@ export function advanceBattleChain({chain=0,best=0,independent=false}={}){
  const record=Math.max(Math.max(0,best),next);
  return {chain:next,best:record,milestone:independent&&next>=3&&next%3===0};
 }
+// The visual lottery never changes hit points, grades or XP. Every tier makes
+// new choreography available, while the final selection avoids an exact repeat.
+// Injecting random keeps both regular and reduced-motion tests deterministic.
+export function battleChainTier(chain=0){
+ const value=Math.max(0,Number(chain)||0);
+ return value>=8?4:value>=5?3:value>=3?2:value>=2?1:0;
+}
+export function pickBattleSpectacle({chain=0,previousFx='',previousMotion='',random=Math.random}={}){
+ const tier=battleChainTier(chain);
+ const fx=[['arc','burst','storm'],['arc','burst','storm'],['burst','storm','flare'],
+   ['storm','flare','nova'],['flare','nova','eclipse']][tier];
+ const motions=[['dash','rising','spiral'],['dash','rising','spiral'],['rising','spiral','corkscrew'],
+   ['spiral','corkscrew','comet'],['corkscrew','comet','phantom']][tier];
+ const choose=(pool,previous)=>{
+   const fresh=pool.filter(choice=>choice!==previous);
+   const candidates=fresh.length?fresh:pool;
+   const roll=Math.min(.999999,Math.max(0,Number(random())||0));
+   return candidates[Math.floor(roll*candidates.length)];
+ };
+ const fxVariant=choose(fx,previousFx),strikeMotion=choose(motions,previousMotion);
+ const roll=Math.min(.999999,Math.max(0,Number(random())||0));
+ const specialFx=tier>=4&&roll<.3?'apex':tier>=2&&roll<.28?'surge':'none';
+ return {tier,fxVariant,strikeMotion,specialFx};
+}
 export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],
   dueIds=[],weakIds=[],duePhraseIds=[],recentIds=[],random=Math.random}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid battle skill');

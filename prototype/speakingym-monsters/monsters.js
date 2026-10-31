@@ -7,7 +7,7 @@ import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_RELICS, FOREST_AREAS, C
 import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
-import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, strikeFor, incomingHit, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
+import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, battleChainTier, pickBattleSpectacle, strikeFor, incomingHit, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -50,19 +50,16 @@ function arrangeBattleScene(forestMode){
   }
   consolePanel.hidden=!forestMode;
 }
-function playBattleCinematic(kind){
+function playBattleCinematic(kind,chain=play?.combo||0){
   if(play?.mode!=='forest')return;
   const world=$('#forest-world-stage');
   if(kind==='attack'||kind==='victory'){
-    const effects=['arc','burst','storm'];
-    const choice=Math.floor(Math.random()*effects.length);
-    world.dataset.fxVariant=effects[(choice+(effects[choice]===world.dataset.fxVariant?1:0))%effects.length];
-    // Preserve each monster's signature attack while adding a varied sprite
-    // motion inside it. Consecutive hits never repeat the same choreography.
-    const motions=['dash','rising','spiral'];
-    const motionChoice=Math.floor(Math.random()*motions.length);
-    world.dataset.strikeMotion=motions[(motionChoice+(motions[motionChoice]===world.dataset.strikeMotion?1:0))%motions.length];
-  }
+    const style=pickBattleSpectacle({chain,previousFx:world.dataset.fxVariant,
+      previousMotion:world.dataset.strikeMotion});
+    world.dataset.fxVariant=style.fxVariant;
+    world.dataset.strikeMotion=style.strikeMotion;
+    world.dataset.specialFx=style.specialFx;
+  }else world.dataset.specialFx='none';
   world.dataset.finisher=kind==='victory'?(world.classList.contains('forest-boss-stage')?'boss':'regular'):'none';
   world.dataset.cinematic='idle';
   void world.offsetWidth; // Restart CSS cut-ins for each independently graded turn.
@@ -70,7 +67,7 @@ function playBattleCinematic(kind){
 }
 function syncBattleAura(){
   const world=$('#forest-world-stage'),chain=play?.mode==='forest'?play.combo||0:0;
-  world.dataset.chainTier=String(chain>=5?3:chain>=3?2:chain>=2?1:0);
+  world.dataset.chainTier=String(battleChainTier(chain));
   world.classList.toggle('forest-combo-boost',chain>=3);
   $('#forest-combo').textContent=chain>=2?`${chain} CHAIN`:'';
 }
@@ -1649,7 +1646,9 @@ async function gradeAnswer() {
     $('#forest-world-fx').textContent=t?special.tag:prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss?play.bossHits>=BOSS_HITS:Boolean(t&&t.enemyHp<=0);
-    playBattleCinematic(defeated?'victory':'attack');
+    // Use the clean answer being resolved *now*, so the third and fifth hits
+    // immediately unlock their stronger animations instead of lagging a turn.
+    playBattleCinematic(defeated?'victory':'attack',play.combo+(rating==='smooth'?1:0));
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
