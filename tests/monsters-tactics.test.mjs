@@ -6,13 +6,14 @@ import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
-test('only a confirmed first player miss triggers an immediate enemy counter',()=>{
+test('every confirmed player miss triggers a counter, but uncertainty and empties do not',()=>{
  for(const status of ['incorrect','incomplete'])
    assert.equal(shouldCounterPlayerMiss({status,hasInput:true}),true);
  for(const status of ['review','ungraded','empty','correct'])
    assert.equal(shouldCounterPlayerMiss({status,hasInput:true}),false,status);
  assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:false}),false);
- assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:true,alreadyCountered:true}),false);
+ assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:true,alreadyCountered:true}),true,
+   'Another confirmed wrong attempt cannot become free after the first counter');
  assert.equal(shouldCounterPlayerMiss({status:'incorrect',hasInput:true,turn:'enemy'}),false);
 });
 
