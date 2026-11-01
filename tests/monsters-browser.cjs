@@ -378,7 +378,7 @@ const path=require('node:path');
         await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
         await levelPage.getByRole('button',{name:/スピーキングを始める/}).click();
-        assert.match(await levelPage.locator('#play-card').innerText(),/ENGLISH → ENGLISH|LISTENING ONLY/);
+        assert.match(await levelPage.locator('#play-card').innerText(),/英語 → 英語|リスニング/);
         if(await levelPage.locator('#play-audio').count()){
           assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening task text must start hidden');
           assert.equal(await levelPage.locator('#answer-area').isVisible(),false);
