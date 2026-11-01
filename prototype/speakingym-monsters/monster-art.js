@@ -25,5 +25,5 @@ export function monsterArt(id,evolved=false){
   // Square glints make the evolution reveal read as pixel art, not vector rays.
   const back=evolved?'<g class="monster-evolution-morph monster-evolution-back" aria-hidden="true"><rect x="21" y="34" width="8" height="8" fill="#f8dc8e"/><rect x="151" y="22" width="10" height="10" fill="#ffe69b"/><rect x="160" y="48" width="5" height="5" fill="#fff4c1"/></g>':'';
   const front=evolved?'<g class="monster-evolution-morph monster-evolution-front" aria-hidden="true"><rect x="13" y="81" width="6" height="6" fill="#fff2b4"/><rect x="158" y="112" width="7" height="7" fill="#f8d783"/><rect x="144" y="132" width="4" height="4" fill="#fff9dd"/></g>':'';
-  return `<svg viewBox="0 0 180 164" class="monster-svg pixel-art ${evolved?'monster-evolved':''}" data-pixel-sprite="${id}" data-evolved="${evolved}" role="img" aria-label="${evolved?'進化した':'通常の'}モンスターのドット絵" xmlns="http://www.w3.org/2000/svg">${back}${sprite}${front}</svg>`;
+  return `<svg viewBox="0 0 180 164" class="monster-svg pixel-art ${evolved?'monster-evolved':''}" data-pixel-sprite="${id}" data-evolved="${evolved}" role="img" aria-label="${evolved?'進化した':'通常の'}モンスターのイラスト" xmlns="http://www.w3.org/2000/svg">${back}${sprite}${front}</svg>`;
 }
