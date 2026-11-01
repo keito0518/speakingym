@@ -797,26 +797,17 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/こだま|暗号|トゲ王の問い/);
         if(width===390&&hit===3){
-          // Regression: iOS embedded WebKit can leave SpeechRecognition in an
-          // endless orange STOP state after the preceding boss listening turn.
-          // The final speaking button must open reliable native keyboard
-          // dictation directly, without starting that unsupported recognizer.
-          assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),true);
-          assert.equal(await forestPage.locator('#speech-alternatives').getAttribute('open'),null,'Optional fallback details stay collapsed');
-          assert.match(await forestPage.locator('#native-dictation').textContent(),/おすすめ/,
-            'The optional native-dictation help remains available when expanded');
-          assert.match(await forestPage.locator('#mic-button').innerText(),/入力/);
+          // No iPhone speaking stage may launch the hanging WebSpeech recognizer.
+          assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),false);
+          assert.equal(await forestPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
+          assert.match(await forestPage.locator('#mic-button').innerText(),/入力を開く/);
           assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイク/);
           await forestPage.locator('#mic-button').click();
           assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true,
-            'Boss speaking button must focus the actual native dictation field');
+            'Boss tap focuses the iPhone native keyboard dictation field');
           assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
-          assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイクを押して/);
           assert.equal(await forestPage.evaluate(()=>window.__hungRecognizerStarts||0),0,
-            'iOS boss button must not start the recognizer that never returns a transcript');
-          await forestPage.locator('#speech-alternatives > summary').click();
-          await forestPage.locator('#native-dictation').click();
-          assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true);
+            'Boss speaking must not start a recognizer that can hang indefinitely');
         }
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
@@ -1174,32 +1165,59 @@ const path=require('node:path');
     await enterHomePanel(iosPage,'training');
     await iosPage.getByRole('button',{name:/スピーキングを始める/}).click();
     await unlockListening(iosPage);
-    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),true);
-    assert.equal(await iosPage.locator('#native-dictation').isVisible(),true);
+    // iPhone LINE, Safari and regular forest speaking use keyboard dictation.
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
+    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),false);
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/入力を開く.*キーボードのマイク/s);
     await iosPage.locator('#mic-button').click();
-    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
-    await iosPage.evaluate(()=>window.__silentSpeech.onend());
-    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
-    await iosPage.locator('#mic-button').click();
-    await iosPage.evaluate(()=>window.__silentSpeech.onend());
-    assert.match(await iosPage.locator('#speech-helper').innerText(),/声を文字にできていません/);
-    await iosPage.locator('#native-dictation').click();
-    assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true,'Native keyboard fallback must focus the editable field after an explicit tap');
+    assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
+    assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
     await iosPage.locator('#spoken-answer').fill('That is fine with me.');
-    assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'That is fine with me.');
     await iosPage.locator('#leave-play').click();
     await enterHomePanel(iosPage,'forest');
     await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();
     await iosPage.locator('#forest-explore-continue').click();
     await iosPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
-    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),true,'iPhone always retains microphone alternatives');
-    assert.equal(await iosPage.locator('#speech-alternatives').getAttribute('open'),null,'Normal battle starts with the extra help collapsed');
-    assert.equal(await iosPage.locator('#native-dictation').isVisible(),false,'Alternative input is one optional disclosure, not a wall of text');
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
     await iosPage.locator('#mic-button').click();
-    await iosPage.evaluate(()=>window.__silentSpeech.onend());
-    assert.equal(await iosPage.locator('#speech-alternatives').getAttribute('open'),'','Microphone failure reveals native dictation automatically');
-    assert.equal(await iosPage.locator('#native-dictation').isVisible(),true);
+    assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
+    assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
     await iosContext.close();
+    // Evolved Yolkie must survive reload and agree in home, collection and battle.
+    const {context:evolvedContext,page:evolvedPage}=await boot(390);
+    await evolvedPage.evaluate(async()=>{
+      const {createSave,feedMonster,STORAGE_KEY}=await import('./monster-engine.js');
+      const start=createSave();start.xpWallet=160;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(feedMonster(start,'medamago',160).save));
+    });
+    await evolvedPage.reload();
+    assert.match(await evolvedPage.locator('#hero-monster-name').innerText(),/Sunnyolk.*進化済み/);
+    await enterHomePanel(evolvedPage,'collection');
+    assert.match(await evolvedPage.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*進化済み/s);
+    await evolvedPage.locator('[data-open-monster="medamago"]').click();
+    assert.match(await evolvedPage.locator('#detail-content h1').innerText(),/Sunnyolk/);
+    assert.match(await evolvedPage.locator('.character-badge').innerText(),/Lv\.3.*進化済み/);
+    assert.equal(await evolvedPage.locator('.character-portrait .monster-evolved').count(),1);
+    await evolvedPage.locator('#detail-back').click();
+    await evolvedPage.locator('#collection-home').click();
+    await evolvedPage.locator('[data-feature-dungeon]').click();
+    await evolvedPage.locator('#forest-explore-continue').click();
+    assert.match(await evolvedPage.locator('#forest-companion-name').innerText(),/Sunnyolk/);
+    assert.equal(await evolvedPage.locator('#forest-party').getAttribute('data-evolved'),'true');
+    await evolvedPage.locator('#leave-play').click();
+    await evolvedPage.locator('#save-transfer > summary').click();
+    await evolvedPage.locator('#save-export').click();
+    const portableSave=await evolvedPage.locator('#save-import').inputValue();
+    assert.match(portableSave,/"medamago":160/);
+    const {context:restoreContext,page:restorePage}=await boot(390);
+    await restorePage.locator('#save-transfer > summary').click();
+    await restorePage.locator('#save-import').fill(portableSave);
+    restorePage.once('dialog',dialog=>dialog.accept());
+    await restorePage.locator('#save-import-button').click();
+    assert.match(await restorePage.locator('#save-transfer-status').textContent(),/復元できた/);
+    assert.match(await restorePage.locator('#hero-monster-name').innerText(),/Sunnyolk/);
+    await restoreContext.close();
+    await evolvedContext.close();
     const {context,page}=await boot(390);
     await page.evaluate(async()=>{
       const {createSave,recordAnswer,STORAGE_KEY}=await import('./monster-engine.js');
