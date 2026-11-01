@@ -1243,6 +1243,20 @@ const path=require('node:path');
     await iosPage.locator('#forest-explore-continue').click();
     await iosPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
     assert.equal(await iosPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
+    // This is the actual screen from the reported iPhone screenshot, not the
+    // lighter standalone speaking-training page.
+    const battleContrast=await iosPage.evaluate(()=>{
+      const helper=document.querySelector('#speech-helper');
+      const field=document.querySelector('#spoken-answer');
+      const rgb=color=>[...color.matchAll(/[0-9.]+/g)].slice(0,3).map(m=>Number(m[0]));
+      const luminance=color=>rgb(color).map(c=>{const x=c/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;})
+        .reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
+      const contrast=(a,b)=>{const l=[luminance(a),luminance(b)].sort((x,y)=>y-x);return (l[0]+.05)/(l[1]+.05);};
+      const help=getComputedStyle(helper),input=getComputedStyle(field);
+      return {help:contrast(help.color,help.backgroundColor),placeholder:contrast(getComputedStyle(field,'::placeholder').color,input.backgroundColor),helpColor:help.color,helpBackground:help.backgroundColor};
+    });
+    assert.ok(battleContrast.help>=7&&battleContrast.placeholder>=4.5,
+      `Real forest battle's pale helper and placeholder must remain legible: ${JSON.stringify(battleContrast)}`);
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
