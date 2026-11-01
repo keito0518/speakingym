@@ -670,11 +670,21 @@ const assert=require('node:assert/strict');
      'A correct correction never schedules an additional attack');
    assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたのターン.*攻撃/s);
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
-   for(const sentence of ['I am a banana.','The sky is green.','That is my chair.',
-     'We walk in the city.','This is my hat.','I like apples.']){
+   // Damage varies with guard/ally affinity. Keep submitting verified misses
+   // until HP reaches zero; a fixed six misses is not enough on every engine.
+   const wrongReplies=['I am a banana.','The sky is green.','That is my chair.',
+     'We walk in the city.','This is my hat.','I like apples.'];
+   for(let attempt=0;attempt<24;attempt++){
      if(await counterPage.locator('#result-view').isVisible())break;
-     await counterPage.locator('#spoken-answer').fill(sentence);
-     await counterPage.locator('#show-answer').click();
+     if(await counterPage.locator('.forest-attack-select').isVisible()){
+       await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
+     }
+     if(await counterPage.locator('#show-answer').isVisible()){
+       await counterPage.locator('#spoken-answer').fill(wrongReplies[attempt%wrongReplies.length]);
+       await counterPage.locator('#show-answer').click();
+     }else if(await counterPage.locator('#next-question').isVisible()){
+       await counterPage.locator('#next-question').click();
+     }
    }
    assert.equal(await counterPage.locator('#result-view').isVisible(),true,
      'A solo fighter is defeated once cumulative missed answers remove all HP');
