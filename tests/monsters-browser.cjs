@@ -1257,9 +1257,11 @@ const path=require('node:path');
     });
     assert.ok(battleContrast.help>=7&&battleContrast.placeholder>=4.5,
       `Real forest battle's pale helper and placeholder must remain legible: ${JSON.stringify(battleContrast)}`);
+    await iosPage.evaluate(()=>{window.__lastSilentSpeech=window.__silentSpeech;});
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
-    assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
+    assert.equal(await iosPage.evaluate(()=>window.__silentSpeech===window.__lastSilentSpeech),true,
+      'Tapping native keyboard in the dungeon must not start another browser microphone session');
     await iosContext.close();
     // Evolved Yolkie must survive reload and agree in home, collection and battle.
     const {context:evolvedContext,page:evolvedPage}=await boot(390);
