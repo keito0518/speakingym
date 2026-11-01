@@ -107,7 +107,15 @@
               </details>
               <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
             </section>
-            <span id="save-note" class="save-note">学習記録はこの端末に保存されます</span>
+            <span id="save-note" class="save-note">記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）</span>
+            <details class="save-transfer" id="save-transfer"><summary>セーブのバックアップ・引き継ぎ</summary>
+              <p>別のURLやブラウザへ移ると記録は自動で移りません。移動前に「コピー」で保存し、移動先の同じ欄へ貼り付けて復元できます。</p>
+              <button type="button" id="save-export" class="save-transfer-button">今のセーブをコピー</button>
+              <label for="save-import">セーブデータ（コピー・貼り付け用）</label>
+              <textarea id="save-import" rows="3" spellcheck="false" autocapitalize="off" placeholder="ここにセーブデータを貼り付け"></textarea>
+              <button type="button" id="save-import-button" class="save-transfer-button">貼り付けたセーブを復元</button>
+              <p id="save-transfer-status" role="status" aria-live="polite">セーブ内容には学習記録が入るので、他人には送らないでね。</p>
+            </details>
           </div>
           <div class="companion-showcase">
             <div class="showcase-glow" aria-hidden="true"></div>
