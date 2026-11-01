@@ -597,6 +597,8 @@ const path=require('node:path');
     if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
     assert.equal(await weakPage.locator('#play-card').getAttribute('data-prompt-id'),'forest-vocab-ticket-easy');
     assert.match(await weakPage.locator('.question-tag').innerText(),/単語を選ぶ/,'Skill labels must tell Japanese beginners what to do');
+    assert.match(await weakPage.locator('.forest-quiz-guide').innerText(),/空欄に合う単語/,'Vocab hints must not claim to exploit a non-vocab enemy weakness');
+    assert.doesNotMatch(await weakPage.locator('#play-card').innerText(),/弱点を見つけよう/,'Skill questions must not promise automatic weakness damage');
     assert.match(await weakPage.locator('.forest-review-banner').innerText(),/苦手の再挑戦/);
     await weakPage.locator('#spoken-answer').fill('wrong vocabulary word');
     await weakPage.locator('#show-answer').click();
