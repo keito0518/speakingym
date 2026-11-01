@@ -50,6 +50,7 @@ const assert=require('node:assert/strict');
     assert.match(await page.locator('.question-top').innerText(),/ENCOUNTER 2/);
     assert.equal(await page.locator('[data-forest-route],[data-forest-event-option]').count(),0);
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
+    page.once('dialog',dialog=>dialog.accept());
     await page.locator('#leave-play').click();
     assert.equal(await page.locator('#home-view').isVisible(),true,`WebKit navigation errors: ${errors.join(' | ')}; current view: ${await page.locator('.view:not([hidden])').evaluateAll(nodes=>nodes.map(n=>n.id).join(','))}`);
     assert.deepEqual(errors,[]);
