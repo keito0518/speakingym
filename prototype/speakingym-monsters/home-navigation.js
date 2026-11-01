@@ -154,7 +154,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  practice.id='monsters-practice-battle';practice.className='practice-battle-backdrop';practice.hidden=true;
  practice.innerHTML='<section class="practice-battle-dialog" role="dialog" aria-modal="true" aria-labelledby="practice-battle-title"><button type="button" class="practice-battle-close" id="practice-battle-close" aria-label="練習をやめる">閉じる</button><p class="practice-battle-progress" id="practice-battle-progress"></p><h2 id="practice-battle-title">はじめてのバトル</h2><div class="practice-battle-arena" aria-label="練習バトルのHP"><span>なかま <b id="practice-ally-hp">HP 4/4</b></span><span class="practice-battle-foe" aria-hidden="true"></span><span>敵 <b id="practice-enemy-hp">HP 2/2</b></span></div><p id="practice-battle-prompt"></p><div class="practice-battle-actions" id="practice-battle-actions"></div><p class="practice-battle-feedback" id="practice-battle-feedback" role="status" aria-live="polite"></p><p class="practice-battle-no-reward">練習バトルです。XPや仲間の記録は変わりません。</p></section>';
  document.body.append(practice);
- let practiceStage=0,practiceMessage='',practiceReturnFocus=null,practiceFromGame=false;
+ let practiceStage=0,practiceMessage='',practiceReturnFocus=null,practiceFromGame=false,practiceReturnToTutorial=false;
  const practiceQuestions=[
   {type:'choose',title:'1. 攻撃タイプを選ぼう',prompt:'敵の弱点は「単語」！ 4種類の攻撃から「単語」を選ぼう。問題は選んだあとに出るよ。',options:[['speak','スピーキング'],['listen','リスニング'],['vocab','単語（敵の弱点）'],['grammar','文法']],answer:'vocab',success:'単語を選んだので、単語の問題が出たよ。'},
   {type:'answer',title:'2. 英語で攻撃！',prompt:'「確認する」という意味の英単語はどれ？',options:[['confirm','confirm'],['forget','forget'],['invite','invite']],answer:'confirm',success:'正解！ 単語で攻撃して敵のHPが1減ったよ。'},
@@ -163,9 +163,18 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   {type:'answer',title:'5. スピーキングでとどめ',prompt:'「ありがとう」を英語で伝えるなら？（練習は選択式。本番はマイク・文字入力）',options:[['thanks','Thank you.'],['sorry','I am sorry.']],answer:'thanks',success:'正解！ 最後の攻撃で敵を倒したよ。'},
  ];
  let practiceHp=4;
- const practiceMissedStages=new Set();
- const resetPractice=()=>{practiceStage=0;practiceMessage='';practiceHp=4;practiceMissedStages.clear();};
- const closePractice=()=>{practice.hidden=true;practiceReturnFocus?.focus?.({preventScroll:true});};
+ const practiceMissedChoices=new Map();
+ const resetPractice=()=>{practiceStage=0;practiceMessage='';practiceHp=4;practiceMissedChoices.clear();};
+ const closePractice=({resumeGuide=true}={})=>{
+  practice.hidden=true;
+  if(resumeGuide&&practiceReturnToTutorial){
+   dialog.hidden=false;
+   dialog.querySelector('#tutorial-try-battle').focus({preventScroll:true});
+  }else if(practiceReturnToTutorial){
+   (practiceFromGame?document.querySelector('#open-battle-guide'):document.querySelector('[data-feature-dungeon]'))?.focus({preventScroll:true});
+  }else practiceReturnFocus?.focus?.({preventScroll:true});
+  practiceReturnToTutorial=false;
+ };
  function renderPractice(){
   const done=practiceStage>=practiceQuestions.length;
   const current=practiceQuestions[practiceStage];
@@ -175,29 +184,33 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   practice.querySelector('#practice-ally-hp').textContent=`HP ${practiceHp}/4`;
   practice.querySelector('#practice-enemy-hp').textContent=`HP ${done?0:practiceStage>=2?1:2}/2`;
   practice.querySelector('#practice-battle-feedback').textContent=practiceMessage;
+  const attempted=practiceMissedChoices.get(practiceStage)||new Set();
   practice.querySelector('#practice-battle-actions').innerHTML=done?`<button type="button" data-practice-action="begin" class="practice-battle-main">${practiceFromGame?'戦闘へ戻る':'本編の冒険を始める'}</button><button type="button" data-practice-action="again">もう一度練習する</button>`:
-   current.options.map(([id,label])=>`<button type="button" data-practice-action="${id}">${label}</button>`).join('');
+   current.options.map(([id,label])=>`<button type="button" data-practice-action="${id}" ${attempted.has(id)?'disabled aria-disabled="true"':''}>${label}${attempted.has(id)?'（選択済み）':''}</button>`).join('');
   practice.querySelectorAll('[data-practice-action]').forEach(button=>button.addEventListener('click',()=>{
    const action=button.dataset.practiceAction;
-   if(action==='begin'){closePractice();if(!practiceFromGame)startMode('forest');return;}
+   if(action==='begin'){closePractice({resumeGuide:false});if(!practiceFromGame)startMode('forest');return;}
    if(action==='again'){resetPractice();renderPractice();return;}
    if(action!==current.answer){
     if(current.type==='choose'){
      practiceMessage='その種類でも攻撃できるけど、今回は案内された種類を選んでみよう。';
-    }else if(!practiceMissedStages.has(practiceStage)){
-     practiceMissedStages.add(practiceStage);
+    }else if(!attempted.has(action)){
+     attempted.add(action);
+     practiceMissedChoices.set(practiceStage,attempted);
+     const healthBefore=practiceHp;
      practiceHp=Math.max(1,practiceHp-1);
-     practiceMessage='今回は不正解。敵の反撃でHP−1！ 同じ問題で何度間違えても、追加ダメージはないよ。';
-    }else practiceMessage='同じ問題は反撃済み。HPはもう減らないよ。答えを確認してもう一度！';
+     practiceMessage=healthBefore===1?'不正解！ 本編では別の間違いごとに反撃されるよ。操作練習はHP1で続けられるよ。':'不正解！ 敵の反撃でHP−1。間違えた選択肢は選べなくなるので、ほかの答えを試してみよう。';
+    }
     renderPractice();return;
    }
    practiceMessage=current.success;practiceStage++;renderPractice();
   }));
-  practice.querySelector('[data-practice-action]')?.focus({preventScroll:true});
+  practice.querySelector('[data-practice-action]:not(:disabled)')?.focus({preventScroll:true});
  }
  function startPracticeBattle(){
-  if(!dialog.hidden)close();
   practiceReturnFocus=document.activeElement;
+  practiceReturnToTutorial=!dialog.hidden;
+  if(practiceReturnToTutorial)dialog.hidden=true;
   practiceFromGame=!document.querySelector('#play-view')?.hidden;
   resetPractice();
   practice.hidden=false;renderPractice();
