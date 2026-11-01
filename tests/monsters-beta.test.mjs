@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {BETA_CONSENT_KEY,createBetaTelemetry,safeBetaEvent} from '../prototype/speakingym-monsters/beta-telemetry.js';
 
 function fixture({initial={},day=1,id='G-DRH440861Y'}={}){
@@ -75,4 +76,20 @@ test('invalid measurement ID never loads Google code or pretends feedback was su
   assert.equal(f.instance.track('monsters_beta_feedback',{reaction:'fun'}),false);
   assert.equal(f.scripts.length,0);
   assert.equal(f.calls.length,0);
+});
+
+test('Monsters preview exposes privacy, terms, support and honest save/voice information',()=>{
+  const game=readFileSync(new URL('../prototype/speakingym-monsters/index.html',import.meta.url),'utf8');
+  const privacy=readFileSync(new URL('../prototype/speakingym-monsters/beta-privacy.html',import.meta.url),'utf8');
+  assert.match(game,/<nav class="monster-support-links" aria-label="利用案内とお問い合わせ">/);
+  for(const href of ['./beta-privacy.html','../../terms.html','../../contact.html','./audio-credits.html']){
+    assert.ok(game.includes(`href="${href}"`),`Missing help link: ${href}`);
+  }
+  assert.match(privacy,/LINE内ブラウザとSafari/);
+  assert.match(privacy,/自動で同期されません/);
+  assert.match(privacy,/バックアップのない記録は復元できません/);
+  assert.match(privacy,/iPhoneキーボードの標準音声入力/);
+  assert.match(privacy,/文字入力でプレイできます/);
+  assert.match(privacy,/限定的なローカル判定/);
+  assert.match(game,/<meta name="robots" content="noindex,nofollow">/,'Preview must remain unindexed until approved publication');
 });

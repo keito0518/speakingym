@@ -27,6 +27,20 @@ const assert=require('node:assert/strict');
       const policy=await page.locator('.beta-consent a').getAttribute('href');
       assert.equal(policy,'./beta-privacy.html');
       if(width===390){
+        const helpLinks=await page.locator('footer .monster-support-links a').evaluateAll(links=>links.map(a=>({
+          label:a.textContent.trim(),href:a.getAttribute('href')
+        })));
+        assert.deepEqual(helpLinks.map(a=>a.href),[
+          './beta-privacy.html','../../terms.html','../../contact.html','./audio-credits.html'
+        ]);
+        for(const link of helpLinks){
+          const response=await page.request.get(new URL(link.href,base).href);
+          assert.equal(response.status(),200,`${engine}: broken ${link.label} link`);
+        }
+        const helpWidth=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+        assert.ok(helpWidth.scroll<=helpWidth.width+1,`${engine}: help links overflow ${JSON.stringify(helpWidth)}`);
+      }
+      if(width===390){
         await page.locator('#beta-consent-no').click();
         assert.equal(vendor.length,0,'Refusal never loads Google');
         assert.equal(await page.locator('[data-beta-reaction="fun"]').isDisabled(),true);
