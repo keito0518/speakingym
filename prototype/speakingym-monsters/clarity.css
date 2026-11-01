@@ -343,4 +343,3 @@
 /* Pixel-art atlas: always scale with hard, nearest-neighbor edges on iPhone and desktop. */
 .monster-svg.pixel-art image,.forest-enemy-svg.pixel-art image{image-rendering:crisp-edges;image-rendering:pixelated}
 .monster-svg.pixel-art,.forest-enemy-svg.pixel-art{shape-rendering:crispEdges}
-.monster-svg.pixel-art>svg,.forest-enemy-svg.pixel-art svg{overflow:hidden!important}

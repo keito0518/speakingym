@@ -1949,7 +1949,8 @@ test('all companion evolutions and dungeon enemies use compact pixel-art atlases
   assert.match(young,/class="monster-svg pixel-art /,monster.id);
   assert.match(young,/href="\.\/pixel-companions.png"/,monster.id);
   assert.match(grown,/href="\.\/pixel-companions.png"/,monster.id);
-  assert.match(grown,/viewBox="\d+ 44 48 44"/,monster.id);
+  assert.match(grown,/y="-44"/,monster.id);
+  assert.match(grown,/<clipPath /,monster.id);
   assert.notEqual(young,grown,monster.id);
  }
  for(const id of ['mossling','thistlet','spookap','bramblet','mothum','thornking','sunwarden','mistknight','elderroot','signbit','tickety','signalyn','parceloo','lanternet','metroguardian','sunmoss','fogling','rootlet','marketwarden','railkeeper','blizzardking']){
