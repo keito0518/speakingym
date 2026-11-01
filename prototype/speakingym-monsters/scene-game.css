@@ -657,3 +657,48 @@ html.monsters-quiet-motion #play-view.scene-battle .cinematic-victory-crown,
 html.monsters-quiet-motion #play-view.scene-battle .cinematic-boss-sigil,
 html.monsters-quiet-motion #play-view.scene-battle .cinematic-combo-orbit,
 html.monsters-quiet-motion #play-view.scene-battle .cinematic-combo-flare{opacity:0!important}
+
+
+/* iPhone speaking input: override earlier dark-console text rules on the
+   pale green help card. They previously made instructions nearly invisible. */
+#play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech .answer-helper{
+  display:block!important;
+  background:#edf9ed;
+  color:#173c2b!important;
+  border:2px solid #5b9b74;
+  border-radius:11px;
+  padding:11px 13px;
+  margin:9px 0 12px;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.65;
+  opacity:1!important;
+  -webkit-text-fill-color:#173c2b;
+}
+#play-view.scene-battle #forest-arena-console textarea.answer-input::placeholder{
+  color:#4c625a;
+  opacity:1;
+  -webkit-text-fill-color:#4c625a;
+}
+#play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech #mic-button{
+  display:flex;align-items:center;justify-content:center;
+  min-height:62px;border:2px solid #8fe1b6;border-radius:12px;
+  background:#237b56;color:#fffef4;font-size:12px;font-weight:900;
+  cursor:pointer;text-align:center;user-select:none;touch-action:manipulation;
+}
+#play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech #mic-button:focus-visible{
+  outline:3px solid #f6ca73;outline-offset:2px;
+}
+#play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech #mic-button[aria-disabled="true"]{
+  opacity:.55;pointer-events:none;
+}
+#play-view.scene-battle #forest-arena-console .ios-webspeech-try{
+  display:block;width:100%;min-height:44px;margin:5px 0 8px;padding:8px 12px;
+  border:1px solid #93c9b7;border-radius:10px;
+  background:#174a4f;color:#f6fff8;
+  font-size:12px;font-weight:800;text-align:center;
+}
+#play-view.scene-battle #forest-arena-console .ios-webspeech-try[aria-pressed="true"]{
+  background:#b85e42;color:#fff8e9;border-color:#f1bd93;
+}
+#play-view.scene-battle #forest-arena-console .ios-webspeech-try[hidden]{display:none!important}
