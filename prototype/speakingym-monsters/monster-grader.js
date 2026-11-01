@@ -16,7 +16,8 @@ const intent = {
  agree: OR('(works|is fine|is good) for me','sounds (great|good|fine)','(that|friday|saturday|lunch|three|nine) (is|would be) (fine|good|great|ok|okay)','i can (make|do) (it|that|friday)'),
  late: OR('(running|be|arriv(e|ing)|get(ting)?) (about |a little |some |a bit |roughly |around |approximately )?([a-z0-9 ]+ )?late','won.t (be|get|make it) (there |on )?time','(delay|delayed)','behind schedule'),
  clarify: OR('just to (make sure|confirm|check)','(could|can) (i|you) (confirm|check)','(is|are|does|do|should) .+ (right|correct|okay)','which (time|deadline)'),
- prefer: OR('(i.d|i would|i) rather','(i.d|i would|i) prefer','(let.s|we should) take the train','train (is|would be) (better|faster|cheaper)')
+ prefer: OR('(i.d|i would|i) rather','(i.d|i would|i) prefer','(let.s|we should) take the train','train (is|would be) (better|faster|cheaper)',
+    '(?:i.d|i would|i.ll|i will|i) (?:choose|go with) (?:the )?train')
 };
 const row=(label, ...patterns) => ({label, patterns});
 const rubric = {
@@ -75,7 +76,9 @@ const rubric = {
    // Keep this scoped to hotel checkout, not to every open-ended question.
    '(?:is|does) (?:the )?check ?out(?: time)? (?:at |set for |scheduled for )?(?:eleven|11)',
    '(?:please )?tell me (?:if|whether) check ?out is (?:at )?(?:eleven|11)',
-   '(?:can|could|would) you (?:please )?(?:tell me|confirm) (?:if|whether) check ?out is (?:at )?(?:eleven|11)'),
+   '(?:can|could|would) you (?:please )?(?:tell me|confirm) (?:if|whether) check ?out is (?:at )?(?:eleven|11)',
+    'are we (?:supposed|expected) to check ?out (?:at|by) (?:eleven|11)',
+    'do we (?:need|have) to check ?out (?:at|by) (?:eleven|11)'),
    row('11時と伝える','eleven','11'),row('チェックアウトについて話す','check ?out','checkout')],
  'clarify-office': [row('確認する',intent.clarify),row('昼食前の締め切りに触れる','before lunch','by lunch','lunchtime')],
  'prefer-city': [row('電車を希望する', intent.prefer),row('理由を伝える','because','since','as it is','faster','quicker','speed')],
