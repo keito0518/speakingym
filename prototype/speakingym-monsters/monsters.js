@@ -69,7 +69,7 @@ function syncBattleAura(){
   const world=$('#forest-world-stage'),chain=play?.mode==='forest'?play.combo||0:0;
   world.dataset.chainTier=String(battleChainTier(chain));
   world.classList.toggle('forest-combo-boost',chain>=3);
-  $('#forest-combo').textContent=chain>=2?`${chain} CHAIN`:'';
+  $('#forest-combo').textContent=chain>=1?`${chain} CHAIN`:'';
 }
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
@@ -713,7 +713,7 @@ function renderAttackChoice(panel,t){
  panel.dataset.turn='choose';
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
   <strong>あなたのターン · 攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
-  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
+  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
