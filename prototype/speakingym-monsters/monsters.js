@@ -194,7 +194,7 @@ function openNativeDictation(){
   if(!field||field.disabled)return;
   field.focus({preventScroll:false});
   const helper=$('#speech-helper');
-  if(helper)helper.textContent='入力欄を開いたよ。英語キーボードのマイクをタップして話してね。キーボードが出ない場合は白い入力欄を直接タップ。手入力でも判定できるよ。';
+  if(helper)helper.textContent='入力欄を開いたよ。キーボードのマイクで英語を話すか、直接入力してね。';
   const help=$('#speech-alternative-help');
   if(help)help.textContent='入力欄を開いたよ。英語キーボードのマイクで話すと、英文が入力されるよ。';
 }
@@ -1222,7 +1222,7 @@ function renderQuestion() {
     });
     $('#spoken-answer').addEventListener('focus',()=>{
       if(recognition)stopRecognition();
-      $('#speech-helper').textContent='入力欄が選ばれたよ。英語キーボードのマイクを押して話してね。音声入力できないときは手入力でもOK。';
+      $('#speech-helper').textContent='入力欄が選ばれたよ。キーボードのマイクで話すか、直接入力してね。';
     });
     if(window.SpeechRecognition||window.webkitSpeechRecognition){
       const tryButton=document.createElement('button');
@@ -1255,7 +1255,7 @@ function renderQuestion() {
   });
   if(!quizMode){
     micView('ready');
-    if(nativeIOSSpeech)$('#speech-helper').textContent='声で答えるには「キーボードで話す」をタップ → 英語キーボードのマイクを押す → 英文を確認して判定。※Webサイトからキーボードのマイクを直接起動することはできません。';
+    if(nativeIOSSpeech)$('#speech-helper').textContent='「キーボードで話す」→ キーボードのマイクで英語を話す → 英文を判定。直接入力もOK。';
     else if(isIOS)$('#speech-helper').textContent='iPhoneではキーボードのマイクで英語を入力できるよ。';
     else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
