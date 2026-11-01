@@ -8,10 +8,10 @@ const STEPS=Object.freeze([
  {chapter:'basic',title:'2. 聞く・選ぶ・話すを順番に',body:'リスニングとスピーキングは別の問題。画面のお題を見て、今必要な操作だけをしよう。',
   scene:['リスニング','音声を再生','意味を選ぶ'],tips:['単語・文法は選択問題で確認するよ。','リスニングのあとに同じ英文を話す必要はないよ。']},
  {chapter:'basic',title:'3. iPhoneでマイクが使えないとき',body:'話す問題は文字入力でも挑戦できる。認識に失敗しただけで英語の不正解にはならないよ。',
-  scene:['スピーキング','話す / 文字入力','回答を確認'],tips:['iPhoneならSafariやキーボードの音声入力も試してね。','自然な別表現は判定保留になることもあるよ。']},
+  scene:['スピーキング','話す / 文字入力','回答を確認'],tips:['iPhoneでは「入力を開く」でキーボードを表示し、キーボードのマイクで話してね。','自然な別表現は判定保留になることもあるよ。']},
  {chapter:'battle',title:'4. まず仲間を編成しよう',body:'戦略バトルでは、出撃前に最大3体を選べる。先頭の仲間と控えの得意技能が作戦のカギ。',
   scene:['出撃編成','先頭 1体 + 控え 2体','この編成で出発'],tips:['仲間カードをタップして追加・入れ替え。','戦闘中の手動交代は1戦に1回。HPは仲間ごとに違うよ。']},
- {chapter:'battle',title:'5. 英語で攻撃しよう',body:'自分のターンは、問題を選んで英語で答えるだけ。正解すると仲間が自動で攻撃するよ。',
+ {chapter:'battle',title:'5. 英語で攻撃しよう',body:'自分のターンは、4つから攻撃の種類を選ぼう。その種類の問題に正解すると仲間が自動で攻撃するよ。',
   scene:['問題の種類を選ぶ','英語で答える','正解 → 自動で攻撃'],tips:['まずは表示された問題をそのまま解いてOK。','敵の弱点や耐性は「戦術・仲間を変更する」から確認できるよ。']},
  {chapter:'battle',title:'6. 敵の反撃は問題で防ぐ',body:'敵が生き残ると反撃。予告された技能の問題に自力正解すれば、HPは減らないよ。',
   scene:['次の敵攻撃：文法','英語の問題に回答','正解 → ダメージ 0'],tips:['敵の攻撃を予告で確認して仲間を選ぼう。','音声認識エラーや判定保留だけではHPを減らさないよ。']},
@@ -57,6 +57,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   {id:'challenge',icon:'05',title:'60秒チャレンジ',desc:'瞬発力を鍛える短時間練習',action:()=>startMode('challenge')},
   {id:'collection',icon:'06',title:'なかま・図鑑',desc:'仲間と冒険の記録を確認',action:showCollection},
   {id:'progress',icon:'07',title:'学習記録',desc:'復習や定着度を確認する',action:()=>showPage('progress')},
+  {id:'save',icon:'10',title:'セーブの引き継ぎ',desc:'進化や学習記録を別のURLへ移す',action:()=>{showPage('training');const transfer=document.querySelector('#save-transfer');transfer.open=true;transfer.scrollIntoView({block:'start',behavior:'instant'});}},
   {id:'tutorial',icon:'08',title:'遊び方ガイド',desc:'英語の問題・戦闘・育成を図解で確認',action:openTutorial}
  ];
  const menu=document.createElement('section');
@@ -101,6 +102,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   challenge:'<circle cx="12" cy="13" r="9"/><path d="M12 13l4-4M12 13V6M9 2h6"/>',
   collection:'<path d="M6 10l6-6 6 6-2 10H8l-2-10Z"/><path d="M9 11l3 4 3-4M12 4v-2"/>',
   progress:'<path d="M3 21V11h4v10M10 21V6h4v15M17 21V3h4v18"/>',
+  save:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9zM8 11h8M8 15h8"/>',
   tutorial:'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 116 0c0 2-3 2-3 4M12 17h.01"/>'
  };
  const grid=document.createElement('div');grid.className='home-navigation-grid home-main-actions';
