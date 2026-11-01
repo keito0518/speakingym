@@ -175,9 +175,9 @@ function openNativeDictation(){
   if(!field||field.disabled)return;
   field.focus({preventScroll:false});
   const helper=$('#speech-helper');
-  if(helper)helper.textContent='キーボードのマイクを押して英語で話してね。文字になった英文を確認して判定できるよ。';
+  if(helper)helper.textContent='英語キーボードのマイクを押して話してね。マイクが出ない場合はiPhoneの設定で「音声入力を有効にする」を確認。文字になった英文を判定できるよ。';
   const help=$('#speech-alternative-help');
-  if(help)help.textContent='入力欄を開いたよ。iPhoneキーボードのマイクで話すと、英文が入力されるよ。';
+  if(help)help.textContent='入力欄を開いたよ。英語キーボードのマイクで話すと、英文が入力されるよ。';
 }
 function stopRecognition(mode='ready') {
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
@@ -1184,7 +1184,7 @@ function renderQuestion() {
   $('#speech-alternatives').hidden=quizMode||!isIOS||nativeIOSSpeech;
   $('#speech-alternatives').open=play.mode!=='forest';
   if(nativeIOSSpeech){
-    $('#spoken-answer').placeholder='キーボードのマイクで話すか、英語を入力';
+    $('#spoken-answer').placeholder='英語キーボードのマイクで話すか、直接入力';
     $('#answer-area').classList.add('native-ios-speech');
   }else $('#answer-area').classList.remove('native-ios-speech');
   $('#native-dictation').addEventListener('click',openNativeDictation);
@@ -1202,7 +1202,7 @@ function renderQuestion() {
   });
   if(!quizMode){
     micView('ready');
-    if(nativeIOSSpeech)$('#speech-helper').textContent='声で答える：緑の「入力を開く」→ iPhoneキーボードのマイクで英語を話す → 英文を確認して「答えを判定する」。手入力もOK。';
+    if(nativeIOSSpeech)$('#speech-helper').textContent='声で答える：①緑の「入力を開く」②英語キーボードのマイクで話す ③英文を確認して「答えを判定する」。マイクが出ないときはiPhoneの音声入力設定を確認。手入力もOK。';
     else if(isIOS)$('#speech-helper').textContent='iPhoneではキーボードのマイクで英語を入力できるよ。';
     else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
