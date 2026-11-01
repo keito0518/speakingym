@@ -1214,7 +1214,7 @@ const path=require('node:path');
     const iosContrast=await iosPage.evaluate(()=>{
       const helper=document.querySelector('#speech-helper');
       const field=document.querySelector('#spoken-answer');
-      const parse=v=>[...v.matchAll(/[\\d.]+/g)].slice(0,3).map(x=>Number(x[0]));
+      const parse=v=>[...v.matchAll(/[0-9.]+/g)].slice(0,3).map(x=>Number(x[0]));
       const luminance=rgb=>rgb.map(n=>{const x=n/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;}).reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
       const ratio=(a,b)=>{const l=[luminance(parse(a)),luminance(parse(b))].sort((x,y)=>y-x);return (l[0]+.05)/(l[1]+.05);};
       const style=getComputedStyle(helper),placeholder=getComputedStyle(field,'::placeholder');
