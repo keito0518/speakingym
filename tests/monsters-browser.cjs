@@ -596,6 +596,7 @@ const path=require('node:path');
     await weakPage.locator('#next-question').click();
     if(await weakPage.locator('#forest-explore-screen').isVisible())await weakPage.locator('#forest-explore-continue').click();
     assert.equal(await weakPage.locator('#play-card').getAttribute('data-prompt-id'),'forest-vocab-ticket-easy');
+    assert.match(await weakPage.locator('.question-tag').innerText(),/単語を選ぶ/,'Skill labels must tell Japanese beginners what to do');
     assert.match(await weakPage.locator('.forest-review-banner').innerText(),/苦手の再挑戦/);
     await weakPage.locator('#spoken-answer').fill('wrong vocabulary word');
     await weakPage.locator('#show-answer').click();
