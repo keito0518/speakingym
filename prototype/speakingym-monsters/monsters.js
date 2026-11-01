@@ -145,7 +145,7 @@ function loadSave() {
 }
 function persist(next = save) {
   save = next;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(save)); $('#save-note').textContent = '学習記録はこの端末に保存されます'; }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(save)); $('#save-note').textContent = '記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）'; }
   catch { $('#save-note').textContent = '保存できない環境です。このタブを閉じると進捗が消えます'; }
 }
 function micView(mode='ready') {
@@ -154,9 +154,9 @@ function micView(mode='ready') {
     const native=button.dataset.nativeDictation==='true'&&mode==='ready';
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.innerHTML=mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':`<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${native?'入力':'話す'}</span>`;
-    button.title=mode==='listening'?'録音を停止する':native?'iPhoneキーボードで音声入力する':'マイクで話す';
-    button.setAttribute('aria-label',mode==='listening'?'録音を停止する':native?'iPhoneの音声入力を開く':'マイクで話す');
+    button.innerHTML=mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':`<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${native?'入力を開く':'話す'}</span>`;
+    button.title=mode==='listening'?'録音を停止する':native?'入力欄を開き、iPhoneキーボードのマイクで話す':'マイクで話す';
+    button.setAttribute('aria-label',mode==='listening'?'録音を停止する':native?'入力欄を開いてiPhoneキーボードで音声入力する':'マイクで話す');
     button.hidden=mode==='done';
     button.disabled=mode==='done';
   }
@@ -173,7 +173,7 @@ function openNativeDictation(){
   if(recognition)finishRecognition();
   const field=$('#spoken-answer');
   if(!field||field.disabled)return;
-  field.focus();
+  field.focus({preventScroll:false});
   const helper=$('#speech-helper');
   if(helper)helper.textContent='キーボードのマイクを押して英語で話してね。文字になった英文を確認して判定できるよ。';
   const help=$('#speech-alternative-help');
@@ -712,7 +712,7 @@ function renderAttackChoice(panel,t){
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
  panel.dataset.turn='choose';
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
-  <strong>あなたのターン · 攻撃を選ぼう</strong><span>敵の弱点：${BATTLE_LABELS[affinity.weak]} · 選ぶと問題が出るよ</span>
+  <strong>あなたのターン · 攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
@@ -1153,10 +1153,11 @@ function renderQuestion() {
   const guidedCloze=beginnerClozeFor(prompt);
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}${beginnerTip}
     <label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（手入力もOK）':'英語で答えよう · 話すか入力'}</label>
-    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="ここに英語を入力（マイクもOK）"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
+    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" inputmode="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="ここに英語を入力（マイクもOK）"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
+    <p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p>
     <div class="answer-quick-help"><div><strong>${guidedCloze?'空欄だけの練習から始められるよ':'困ったらヒントを使おう'}</strong><small>${guidedCloze?'1単語だけ言ったら確認。そのあとで全文に挑戦しよう。':'考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。'}</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">${guidedCloze?'穴埋めヒントを見る':'ヒントを見る'}</button></div>
     <div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div>
-    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないときの入力方法</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
+    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないときの入力方法</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -1173,19 +1174,19 @@ function renderQuestion() {
   if(play.hintStep)renderHintPanel(speakingHintSteps(prompt,phraseFor(prompt.phraseId)),play.hintStep);
   $('#show-answer').addEventListener('click',gradeAnswer);
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
-  const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent);
-  const nativeBossSpeech=isIOS && play.mode==='forest' && play.index===regularCount()+BOSS_HITS-1 && !quizMode;
-  $('#mic-button').dataset.nativeDictation=String(nativeBossSpeech);
-  $('#speech-alternatives').hidden=quizMode||!isIOS;
+  const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent)||
+    (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  // iOS embedded browsers can expose SpeechRecognition but never deliver
+  // a transcript. Use Apple keyboard dictation on every iPhone speaking
+  // question, not only the last boss phase.
+  const nativeIOSSpeech=isIOS&&!quizMode&&prompt.kind==='speak';
+  $('#mic-button').dataset.nativeDictation=String(nativeIOSSpeech);
+  $('#speech-alternatives').hidden=quizMode||!isIOS||nativeIOSSpeech;
   $('#speech-alternatives').open=play.mode!=='forest';
-  if(nativeBossSpeech){
-    // The final boss's speaking prompt follows listening playback. iOS
-    // embedded browsers can fire onstart but never return a transcript.
-    // Use keyboard dictation as the primary mic path, not the stalled API.
-    $('#speech-alternatives').classList.add('speech-alternatives-priority');
-    $('#native-dictation').textContent='おすすめ：iPhone標準の音声入力で答える';
-    $('#speech-alternative-help').textContent='話すボタンはiPhoneのキーボードを開くよ。キーボードのマイクを押して話してね。';
-  }
+  if(nativeIOSSpeech){
+    $('#spoken-answer').placeholder='キーボードのマイクで話すか、英語を入力';
+    $('#answer-area').classList.add('native-ios-speech');
+  }else $('#answer-area').classList.remove('native-ios-speech');
   $('#native-dictation').addEventListener('click',openNativeDictation);
   $('#copy-safari-url').addEventListener('click',async()=>{
     try{
@@ -1201,12 +1202,11 @@ function renderQuestion() {
   });
   if(!quizMode){
     micView('ready');
-    if(isIOS)$('#speech-helper').textContent=nativeBossSpeech
-      ?'ボス最終問：緑の「入力」でキーボードを開き、キーボードのマイクを押して話そう。'
-      :'内蔵ブラウザの音声認識が使えない場合は、下のiPhone標準の音声入力に切り替えてね。';
+    if(nativeIOSSpeech)$('#speech-helper').textContent='声で答える：緑の「入力を開く」→ iPhoneキーボードのマイクで英語を話す → 英文を確認して「答えを判定する」。手入力もOK。';
+    else if(isIOS)$('#speech-helper').textContent='iPhoneではキーボードのマイクで英語を入力できるよ。';
     else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
-  if(reviewing)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
+  if(reviewing&&!nativeIOSSpeech)$('#speech-helper').textContent=quizMode?'苦手の復習です。前回のヒントを思い出して解いてみよう。':'復習問題です。前回とは違う言い方でも挑戦してみよう。';
   if(listenMode){
     $('#answer-area').hidden=true;
     const state=play.listeningState;
@@ -2074,6 +2074,32 @@ $('#result-feedback').addEventListener('click',()=>{
  $('#beta-feedback').scrollIntoView({behavior:'smooth',block:'start'});
 });
 $('#collection-home').addEventListener('click',renderHome);
+// Keep progression portable between Cloudflare preview URLs and iOS browsers.
+// Imported saves are strictly validated before anything replaces the current one.
+$('#save-export').addEventListener('click',async()=>{
+  const backup=JSON.stringify(save),field=$('#save-import'),status=$('#save-transfer-status');
+  field.value=backup;
+  try{
+    await navigator.clipboard.writeText(backup);
+    status.textContent='セーブをコピーしたよ。移動先の「セーブの引き継ぎ」に貼り付けてね。';
+  }catch{
+    field.focus();field.select();
+    status.textContent='データを欄に表示したよ。選択された文字を「コピー」して保管してね。';
+  }
+});
+$('#save-import-button').addEventListener('click',()=>{
+  const field=$('#save-import'),status=$('#save-transfer-status');
+  let restored=null;
+  try{
+    if(field.value.length>300000)throw Error('too long');
+    restored=validateSave(JSON.parse(field.value));
+  }catch{/* invalid content */}
+  if(!restored){status.textContent='正しいセーブデータではないよ。コピーした内容を全部貼り付けてね。';return;}
+  if(!window.confirm('今このURLで保存されている記録を、貼り付けたセーブで上書きしますか？'))return;
+  persist(restored);field.value='';
+  renderHome();
+  status.textContent='復元できたよ。図鑑でも進化状態を確認してね。';
+});
 persist(save);
 window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});
 document.addEventListener('visibilitychange',()=>{
