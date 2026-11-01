@@ -107,7 +107,20 @@ const assert=require('node:assert/strict');
         await page.locator('#save-export').click();
         const active=JSON.parse(await page.locator('#save-import').inputValue());
         assert.equal(active.xpWallet,safe.xpWallet,'Failed import must not replace the in-memory save');
+        // Regression: Safari/private-mode storage failures must be visible
+        // inside the fullscreen dungeon, not only in the home footer.
+        await page.locator('.home-destination:not([hidden]) .home-menu-back').click();
+        await page.locator('[data-feature-dungeon]').click();
+        assert.equal(await page.locator('#save-warning-live').isVisible(),true,
+          'Storage failure must warn the player during an ongoing adventure');
+        assert.match(await page.locator('#save-warning-live').innerText(),/セーブの引き継ぎ/);
+        const warningMetrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+        assert.ok(warningMetrics.scroll<=warningMetrics.width+1,
+          'The storage warning must fit a narrow phone without horizontal scrolling');
         await page.evaluate(()=>{Storage.prototype.setItem=window.__monstersOriginalSetItem;});
+        await page.reload({waitUntil:'networkidle'});
+        assert.equal(await page.locator('#save-warning-live').isVisible(),false,
+          'A working storage write must clear a stale warning');
         const onDisk=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
         assert.equal(onDisk.xpWallet,safe.xpWallet,'Failed import must not overwrite the saved record');
       }
