@@ -215,7 +215,7 @@ function enemy(id){const c=new Pix();const e=(x,y,rx,ry)=>['e',x,y,rx,ry],r=(x,y
  }
  return c.b;
 }
-function atlas(ids,rows,renderer){const out=new Uint8Array(ids.length*W*rows*H*4),stride=ids.length*W;for(let y=0;y<rows;y++)for(let i=0;i<ids.length;i++){const b=renderer(ids[i],!!y);for(let py=0;py<H;py++)out.set(b.subarray(py*W*4,(py+1)*W*4),((y*H+py)*stride+i*W)*4);}return {data:out,info:{width:stride,height:rows*H,channels:4}};}
+function atlas(ids,rows,renderer,cellHeight=H,padY=0){const out=new Uint8Array(ids.length*W*rows*cellHeight*4),stride=ids.length*W;for(let y=0;y<rows;y++)for(let i=0;i<ids.length;i++){const b=renderer(ids[i],!!y);for(let py=0;py<H;py++)out.set(b.subarray(py*W*4,(py+1)*W*4),(((y*cellHeight+padY+py)*stride+i*W)*4));}return {data:out,info:{width:stride,height:rows*cellHeight,channels:4}};}
 const crcTable=Array.from({length:256},(_,i)=>{let c=i;for(let j=0;j<8;j++)c=c&1?0xedb88320^(c>>>1):c>>>1;return c>>>0;});
 function chunk(name,bytes){const tag=Buffer.from(name),b=Buffer.alloc(12+bytes.length);b.writeUInt32BE(bytes.length,0);tag.copy(b,4);Buffer.from(bytes).copy(b,8);let crc=0xffffffff;for(let i=4;i<8+bytes.length;i++)crc=crcTable[(crc^b[i])&255]^(crc>>>8);b.writeUInt32BE((crc^0xffffffff)>>>0,8+bytes.length);return b;}
 function png({data,info:{width,height}}){
@@ -227,6 +227,8 @@ function png({data,info:{width,height}}){
 const target=process.argv[2]||dirname(fileURLToPath(import.meta.url));
 const allies=atlas(ALLY,2,companion);
 writeFileSync(join(target,'pixel-companions.png'),png(allies));
-const foes=atlas(FOES,1,enemy);
+// The battle layout's historical enemy viewport is 48px tall. The hand-drawn
+// 44px character is vertically centered in that viewport, preserving sizing.
+const foes=atlas(FOES,1,enemy,48,2);
 writeFileSync(join(target,'pixel-enemies.png'),png(foes));
 console.log('Hand-authored 48x44 sprites:',ALLY.length*2,'companion forms;',FOES.length,'base enemies');
