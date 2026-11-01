@@ -702,3 +702,13 @@ html.monsters-quiet-motion #play-view.scene-battle .cinematic-combo-flare{opacit
   background:#b85e42;color:#fff8e9;border-color:#f1bd93;
 }
 #play-view.scene-battle #forest-arena-console .ios-webspeech-try[hidden]{display:none!important}
+
+
+/* Safari/WebKit applies a faint native ::placeholder to standalone training.
+   Cover all speaking fields, not only the full-screen dungeon. */
+#play-view textarea.answer-input::placeholder,
+#play-view textarea.answer-input::-webkit-input-placeholder{
+  color:#465d52!important;
+  opacity:1!important;
+  -webkit-text-fill-color:#465d52!important;
+}
