@@ -148,9 +148,13 @@ function persist(next = save) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
     $('#save-note').textContent = '記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）';
+    $('#save-warning-live').hidden = true;
     return true;
   } catch {
     $('#save-note').textContent = '保存できない環境です。このタブを閉じると進捗が消えます';
+    // A home-only message is invisible inside the full-screen dungeon.
+    // Keep the warning readable while playing, until a write succeeds.
+    $('#save-warning-live').hidden = false;
     return false;
   }
 }
