@@ -161,14 +161,23 @@ function persist(next = save) {
 function micView(mode='ready') {
   const button=$('#mic-button'), retry=$('#retry-mic');
   if(button){
-    const native=button.dataset.nativeDictation==='true'&&mode==='ready';
-    button.classList.toggle('active',mode==='listening');
-    button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.innerHTML=mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':`<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${native?'入力を開く':'話す'}</span>`;
-    button.title=mode==='listening'?'録音を停止する':native?'入力欄を開き、iPhoneキーボードのマイクで話す':'マイクで話す';
-    button.setAttribute('aria-label',mode==='listening'?'録音を停止する':native?'入力欄を開いてiPhoneキーボードで音声入力する':'マイクで話す');
+    const native=button.dataset.nativeDictation==='true';
+    button.classList.toggle('active',!native&&mode==='listening');
+    button.setAttribute('aria-pressed',String(!native&&mode==='listening'));
+    button.innerHTML=native
+      ? '<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>キーボードで話す</span>'
+      : mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':'<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span>';
+    button.title=native?'英語キーボードを開く。マイクを押して音声入力':'マイクで話す';
+    button.setAttribute('aria-label',native?'英語キーボードを開き、キーボードのマイクで音声入力する':mode==='listening'?'録音を停止する':'マイクで話す');
     button.hidden=mode==='done';
-    button.disabled=mode==='done';
+    if(native)button.setAttribute('aria-disabled',String(mode==='done'));
+    else button.disabled=mode==='done';
+  }
+  const iosTry=$('#ios-webspeech-try');
+  if(iosTry){
+    iosTry.hidden=mode==='done';
+    iosTry.setAttribute('aria-pressed',String(mode==='listening'));
+    iosTry.textContent=mode==='listening'?'録音を停止して確定':'ブラウザで録音を試す';
   }
   if(retry) retry.hidden=mode!=='captured';
 }
@@ -185,7 +194,7 @@ function openNativeDictation(){
   if(!field||field.disabled)return;
   field.focus({preventScroll:false});
   const helper=$('#speech-helper');
-  if(helper)helper.textContent='英語キーボードのマイクを押して話してね。マイクが出ない場合はiPhoneの設定で「音声入力を有効にする」を確認。文字になった英文を判定できるよ。';
+  if(helper)helper.textContent='入力欄を開いたよ。英語キーボードのマイクをタップして話してね。キーボードが出ない場合は白い入力欄を直接タップ。手入力でも判定できるよ。';
   const help=$('#speech-alternative-help');
   if(help)help.textContent='入力欄を開いたよ。英語キーボードのマイクで話すと、英文が入力されるよ。';
 }
@@ -1194,6 +1203,37 @@ function renderQuestion() {
   // question, not only the last boss phase.
   const nativeIOSSpeech=isIOS&&!quizMode&&prompt.kind==='speak';
   $('#mic-button').dataset.nativeDictation=String(nativeIOSSpeech);
+  // The iOS in-app browser may refuse to open its keyboard from JS .focus().
+  // A real <label for> uses the browser's native focus activation instead.
+  if(nativeIOSSpeech){
+    const oldButton=$('#mic-button');
+    const nativeLabel=document.createElement('label');
+    nativeLabel.id='mic-button';
+    nativeLabel.className=oldButton.className;
+    nativeLabel.htmlFor='spoken-answer';
+    nativeLabel.setAttribute('role','button');
+    nativeLabel.tabIndex=0;
+    nativeLabel.dataset.nativeDictation='true';
+    oldButton.replaceWith(nativeLabel);
+    nativeLabel.addEventListener('keydown',event=>{
+      if(event.key==='Enter'||event.key===' '){
+        event.preventDefault();openNativeDictation();
+      }
+    });
+    $('#spoken-answer').addEventListener('focus',()=>{
+      if(recognition)stopRecognition();
+      $('#speech-helper').textContent='入力欄が選ばれたよ。英語キーボードのマイクを押して話してね。音声入力できないときは手入力でもOK。';
+    });
+    if(window.SpeechRecognition||window.webkitSpeechRecognition){
+      const tryButton=document.createElement('button');
+      tryButton.id='ios-webspeech-try';
+      tryButton.type='button';
+      tryButton.className='ios-webspeech-try';
+      tryButton.textContent='ブラウザで録音を試す';
+      $('#speech-helper').after(tryButton);
+      tryButton.addEventListener('click',()=>startRecognition({preferBrowser:true}));
+    }
+  }
   $('#speech-alternatives').hidden=quizMode||!isIOS||nativeIOSSpeech;
   $('#speech-alternatives').open=play.mode!=='forest';
   if(nativeIOSSpeech){
@@ -1215,7 +1255,7 @@ function renderQuestion() {
   });
   if(!quizMode){
     micView('ready');
-    if(nativeIOSSpeech)$('#speech-helper').textContent='声で答える：①緑の「入力を開く」②英語キーボードのマイクで話す ③英文を確認して「答えを判定する」。マイクが出ないときはiPhoneの音声入力設定を確認。手入力もOK。';
+    if(nativeIOSSpeech)$('#speech-helper').textContent='声で答えるには「キーボードで話す」をタップ → 英語キーボードのマイクを押す → 英文を確認して判定。※Webサイトからキーボードのマイクを直接起動することはできません。';
     else if(isIOS)$('#speech-helper').textContent='iPhoneではキーボードのマイクで英語を入力できるよ。';
     else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
@@ -1335,9 +1375,9 @@ function speakLine(line,onUnavailable,level='easy',promptId=''){
   }
   browserSpeakLine(line,onUnavailable,level);
 }
-function startRecognition() {
+function startRecognition({preferBrowser=false}={}) {
   if(!play || play.revealed)return;
-  if($('#mic-button')?.dataset.nativeDictation==='true'){
+  if($('#mic-button')?.dataset.nativeDictation==='true'&&!preferBrowser){
     openNativeDictation();
     return;
   }
@@ -1373,11 +1413,16 @@ function startRecognition() {
       recognitionNoResultTimer=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
         if(helper)helper.textContent='まだ英文が届いていません。内蔵ブラウザではマイク認識が使えない場合があります。';
-      },7000);
+      },/iPad|iPhone|iPod/i.test(navigator.userAgent)?2500:7000);
       recognitionWatchdog=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping)return;
-        finishRecognition(); // stop() allows WebKit to deliver pending speech.
-      },/iPad|iPhone|iPod/i.test(navigator.userAgent)?10000:14000);
+        // A silent iPhone recognizer must not appear to keep recording forever.
+        if(!$('#spoken-answer')?.value.trim()){
+          recognitionFailures++;
+          stopRecognition();showSpeechFallback();
+          if(helper)helper.textContent='録音に反応がありません。LINE内ブラウザでは制限されることがあります。「キーボードで話す」から音声入力してね。';
+        }else finishRecognition();
+      },/iPad|iPhone|iPod/i.test(navigator.userAgent)?5500:14000);
     };
     instance.onresult=event=>{
       if(recognition!==instance || play!==session || !$('#spoken-answer'))return;
@@ -1435,7 +1480,7 @@ function startRecognition() {
       stopRecognition();
       showSpeechFallback();
       if(helper)helper.textContent='マイクから応答がありません。iPhoneでは下の標準音声入力（キーボードのマイク）か手入力で続けられるよ。';
-    },4500);
+    },/iPad|iPhone|iPod/i.test(navigator.userAgent)?3000:4500);
     instance.start();
     micView('listening');
     if(helper)helper.textContent='音声認識を開始しています。7秒たっても文字にならなければ、標準の音声入力を試してね。';
