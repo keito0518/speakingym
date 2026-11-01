@@ -468,11 +468,15 @@ const assert=require('node:assert/strict');
        ['order-coffee-hard','Could I have a large iced coffee to go?'],
        ['direction-station-hard',"What's the quickest way to the nearest station without using stairs?"],
        ['booking-table-hard','Can I reserve a table for two at seven, not near the entrance?'],
-       ['booking-table-hard','Can I book a table for two?']
+       ['booking-table-hard','Can I book a table for two?'],
+       ['prefer-city','I would go with the train because it is faster.'],
+       ['prefer-city','I would choose the bus instead.'],
+       ['clarify-hotel','Are we supposed to check out by eleven?'],
+       ['clarify-hotel','Are we supposed to check out by ten?']
      ];
      return cases.map(([id,answer])=>gradeLocalResponse(ALL_PROMPTS.find(p=>p.id===id),answer).status);
    });
-   assert.deepEqual(grading,['correct','correct','review','correct','correct','review'],
+   assert.deepEqual(grading,['correct','correct','review','correct','correct','review','correct','review','correct','review'],
      `${engine}: local semantic safety and natural alternatives work in a browser`);
    const dueGrammarIds=await recallPage.evaluate(async()=>{
      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
@@ -631,6 +635,8 @@ const assert=require('node:assert/strict');
    await counterPage.locator('#start-forest-tactics').click();
    await counterPage.locator('#forest-explore-continue').click();
    assert.match(await counterPage.locator('.forest-attack-select').innerText(),/リスニングで攻撃するとダメージアップ！/);
+   assert.equal(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('data-weak'),'true','Enemy weakness must be highlighted on the actionable attack button');
+   assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('aria-label'),/敵の弱点・ダメージアップ/);
    assert.doesNotMatch(await counterPage.locator('.forest-attack-select').innerText(),/選ぶと問題が出るよ/);
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    const weakness=counterPage.locator('#forest-enemy-weakness');
