@@ -652,3 +652,10 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 /* Keep the default, redundant instruction absent without losing microphone
    troubleshooting text when an actual speech problem occurs. */
 .forest-active .answer-helper:empty{display:none}
+
+/* Storage can fail in private browsers or when the quota is exhausted.
+   Keep this readable during a full-screen battle instead of hiding the
+   only warning in the home view. */
+.save-warning-live{max-width:750px;margin:0 auto 8px;padding:9px 12px;border:2px solid #b15a36;border-radius:11px;background:#fff2df;color:#622e1d;font-size:12px;font-weight:800;line-height:1.55;overflow-wrap:anywhere}
+.save-warning-live[hidden]{display:none!important}
+@media(max-width:430px){.save-warning-live{font-size:11px;padding:8px 10px}}
