@@ -25,7 +25,7 @@ export function enemyArt(id){
     id==='marketwarden'?'sepia(.35) saturate(1.4)':
     id==='railkeeper'?'hue-rotate(44deg) saturate(1.12)':
     id==='blizzardking'?'hue-rotate(146deg) saturate(1.35)':'';
-  const sprite=`<svg x="0" y="0" width="148" height="150" viewBox="${index*48} 0 48 48" overflow="hidden" aria-hidden="true"><image href="./pixel-enemies.png" width="${IDS.length*48}" height="48" style="image-rendering:pixelated"/></svg>`;
+  const sprite=`<svg x="0" y="0" width="148" height="150" viewBox="${index*48} 0 48 48" style="overflow:hidden" aria-hidden="true"><image href="./pixel-enemies.png" width="${IDS.length*48}" height="48" style="image-rendering:pixelated"/></svg>`;
   const motif=tint?'<g class="pixel-enemy-motif" aria-hidden="true"><rect x="126" y="11" width="9" height="9" fill="#fff0bc"/><rect x="129" y="5" width="3" height="21" fill="#6d8b67"/><rect x="120" y="14" width="21" height="3" fill="#6d8b67"/></g>':'';
   return `<svg class="forest-enemy-svg pixel-art" data-pixel-foe="${id}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 150" role="img" aria-label="${CITY_IDS.has(id)?'街の敵モンスター':'森の敵モンスター'}のドット絵"><g ${tint?`style="filter:${tint}"`:''}>${sprite}</g>${motif}</svg>`;
 }
