@@ -2116,7 +2116,11 @@ $('#save-import-button').addEventListener('click',()=>{
   }
   field.value='';
   renderHome();
+  // Keep the restore result visible instead of sending the player to the home menu.
+  homeNavigation?.showPage('training');
+  $('#save-transfer').open=true;
   status.textContent='復元できたよ。図鑑でも進化状態を確認してね。';
+  status.scrollIntoView({block:'center',behavior:'instant'});
 });
 persist(save);
 window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});
