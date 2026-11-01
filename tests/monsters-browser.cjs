@@ -388,7 +388,7 @@ const path=require('node:path');
           assert.equal(await levelPage.locator('#spoken-answer').isVisible(),false);
           assert.equal(await levelPage.locator('#next-question').isVisible(),true);
         }else assert.equal(await levelPage.locator('.task-panel').isVisible(),true);
-        assert.equal(await levelPage.locator('#play-card').evaluate(el=>/[ぁ-んァ-ン一-龯]/.test(el.innerText)),false);
+        assert.equal(await levelPage.locator('#play-card h1').first().evaluate(el=>/[ぁ-んァ-ン一-龯]/.test(el.innerText)),false,'Advanced prompts stay in English, while navigation labels remain understandable in Japanese');
         const metrics=await levelPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
         assert.ok(metrics.scroll<=metrics.inner+1,`${engine}/${width} ${difficulty} overflow: ${JSON.stringify(metrics)}`);
         await levelPage.screenshot({path:path.join(shots,`monsters-${engine}-${width}-${difficulty}.png`),fullPage:true});
