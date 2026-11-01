@@ -1933,3 +1933,26 @@ test('save import validation prevents non-finite XP, counters and impossible mon
  assert.equal(getMonsterProgress(valid).evolved,true);
  assert.equal(valid.progress.think.attempts,3);
 });
+
+test('all companion evolutions and dungeon enemies use compact pixel-art atlases',()=>{
+ const path='../prototype/speakingym-monsters/';
+ const companions=readFileSync(new URL(path+'pixel-companions.png',import.meta.url));
+ const enemies=readFileSync(new URL(path+'pixel-enemies.png',import.meta.url));
+ for(const [bytes,width,height] of [[companions,720,88],[enemies,720,48]]){
+  assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+  assert.equal(bytes.readUInt32BE(16),width);
+  assert.equal(bytes.readUInt32BE(20),height);
+  assert.ok(bytes.length<50_000,'the compressed pixel-art atlas stays under 50 KB');
+ }
+ for(const monster of MONSTERS){
+  const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
+  assert.match(young,/class="monster-svg pixel-art /,monster.id);
+  assert.match(young,/href="\.\/pixel-companions.png"/,monster.id);
+  assert.match(grown,/href="\.\/pixel-companions.png"/,monster.id);
+  assert.match(grown,/viewBox="\d+ 44 48 44"/,monster.id);
+  assert.notEqual(young,grown,monster.id);
+ }
+ for(const id of ['mossling','thistlet','spookap','bramblet','mothum','thornking','sunwarden','mistknight','elderroot','signbit','tickety','signalyn','parceloo','lanternet','metroguardian','sunmoss','fogling','rootlet','marketwarden','railkeeper','blizzardking']){
+  assert.match(enemyArt(id),/href="\.\/pixel-enemies.png"/,id);
+ }
+});
