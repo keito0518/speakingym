@@ -121,7 +121,7 @@ export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=
  const burst=action==='skill'&&strong&&ability.type==='burst';
  const repeatPenalty=Boolean(repeated&&!boss);
  const raw=1+(weak?1:0)-(resist?1:0)+(strong?1:0)-(poor?1:0)+(action==='skill'?2:0)-(action==='guard'?1:0)+(evolutionBoost?1:0)+(burst?1:0)-(repeatPenalty?1:0);
- return {damage:boss?1:Math.max(1,Math.min(5,raw)),weak,resist,strong,poor,guard:action==='guard',pierce,burst,repeatPenalty,
+ return {damage:Math.max(action==='skill'?3:1,Math.min(5,raw)),weak,resist,strong,poor,guard:action==='guard',pierce,burst,repeatPenalty,
   evolutionBoost,tag:action==='skill'?'ULTIMATE!':pierce?'PIERCE!':weak?'WEAK!':resist?'RESIST':strong?'ALLY BOOST':'HIT'};
 }
 export function nextEnemyKind(last=null,random=Math.random){
@@ -289,11 +289,26 @@ export function pickBattleSpectacle({chain=0,previousFx='',previousMotion='',ran
  return {tier,fxVariant,strikeMotion,specialFx};
 }
 export function pickBattlePrompt({prompts,kind,difficulty='easy',areaId='entry',usedIds=[],reservedIds=[],
-  dueIds=[],weakIds=[],duePhraseIds=[],recentIds=[],random=Math.random}={}){
+  dueIds=[],weakIds=[],duePhraseIds=[],recentIds=[],allowReviewRepeat=false,random=Math.random}={}){
  if(!BATTLE_KINDS.includes(kind))throw Error('Invalid battle skill');
  const used=new Set([...usedIds,...reservedIds]);
- const candidates=prompts.filter(prompt=>prompt.kind===kind&&(prompt.difficulty||'easy')===difficulty&&
-  !prompt.bossOnly&&!used.has(prompt.id)&&(!prompt.world||prompt.world===areaId));
+ const eligible=prompts.filter(prompt=>prompt.kind===kind&&(prompt.difficulty||'easy')===difficulty&&
+  !prompt.bossOnly&&(!prompt.world||prompt.world===areaId));
+ let candidates=eligible.filter(prompt=>!used.has(prompt.id));
+ if(!candidates.length&&allowReviewRepeat){
+  // A player-selected attack must never become unavailable halfway through a
+  // long encounter. Use an authored question of exactly the chosen type and
+  // difficulty; first reclaim reserved (upcoming) questions, then recycle a
+  // completed one as retrieval practice. Boss gates remain separate.
+  const usedBefore=new Set(usedIds),reserved=new Set(reservedIds);
+  const freshReserved=eligible.filter(prompt=>!usedBefore.has(prompt.id));
+  const replay=eligible.filter(prompt=>!reserved.has(prompt.id));
+  candidates=freshReserved.length?freshReserved:replay.length?replay:eligible;
+  // Avoid displaying the immediately preceding question if another exists.
+  const recentlyUsed=Array.from(usedBefore).slice(-1)[0];
+  const alternatives=candidates.filter(prompt=>prompt.id!==recentlyUsed);
+  if(alternatives.length)candidates=alternatives;
+ }
  if(!candidates.length)return null;
  // Scheduled recall wins over random encounters, even when it is an older
  // expression from another chapter. Never change the difficulty, skill,

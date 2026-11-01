@@ -110,10 +110,10 @@ test('matchups change actual damage while never changing a grading verdict',()=>
  assert.equal(resistance.damage,1);
  assert.equal(advantage.weak,true);
  assert.equal(resistance.resist,true);
- assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',boss:true}).damage,1,'boss phases cannot be skipped');
+ assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',boss:true}).damage,3,'boss affinity still affects hit strength; progression remains three separate seals');
  assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',action:'skill'}).damage,5);
  assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',repeated:true}).damage,2,'repeating one skill is weaker but never turns a correct answer into a failure');
- assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',boss:true,repeated:true}).damage,1,'fixed boss confirmations ignore repeat penalties');
+ assert.equal(strikeFor({kind:'listen',foeId:'mossling',allyId:'katappo',boss:true,repeated:true}).damage,3,'fixed boss confirmations ignore repeat penalties');
  assert.throws(()=>strikeFor({kind:'read'}),/Invalid/);
 });
 test('foe attack cycles through four randomized skills without immediate repetition',()=>{
@@ -384,6 +384,43 @@ test('reactive defense questions reuse authored learning banks without skipping 
  }
  assert.equal(pickBattlePrompt({prompts:ALL_PROMPTS,kind:'listen',reservedIds:ALL_PROMPTS.map(p=>p.id)}),null);
 });
+test('an exhausted player-selected attack gets an authored question of the same kind and difficulty',()=>{
+ const prompts=[
+  {id:'word-a',kind:'vocab',difficulty:'easy'},
+  {id:'word-b',kind:'vocab',difficulty:'easy'},
+  {id:'boss-word',kind:'vocab',difficulty:'easy',bossOnly:true},
+  {id:'city-word',kind:'vocab',difficulty:'easy',world:'city'},
+  {id:'word-hard',kind:'vocab',difficulty:'hard'},
+  {id:'speaking',kind:'speak',difficulty:'easy'}
+ ];
+ const options={prompts,kind:'vocab',difficulty:'easy',areaId:'thicket',random:()=>0};
+ assert.equal(pickBattlePrompt({...options,usedIds:['word-a'],reservedIds:['word-b']}),null,'normal enemy defense retains strict uniqueness');
+ assert.equal(pickBattlePrompt({...options,usedIds:['word-a'],reservedIds:['word-b'],allowReviewRepeat:true}).id,'word-b','player can reclaim a future authored question first');
+ const second=pickBattlePrompt({...options,usedIds:['word-a','word-b'],reservedIds:['word-b'],allowReviewRepeat:true});
+ assert.equal(second.id,'word-a','after full exhaustion, recycle only an authored matching word quiz');
+ assert.equal(pickBattlePrompt({...options,usedIds:['word-a','word-b'],reservedIds:['word-a','word-b'],allowReviewRepeat:true}).id,'word-a');
+ assert.equal(pickBattlePrompt({...options,kind:'listen',allowReviewRepeat:true}),null,'never substitute a different skill silently');
+ for(const kind of BATTLE_KINDS)for(const difficulty of ['easy','normal','hard']){
+  const eligible=ALL_PROMPTS.filter(p=>p.kind===kind&&(p.difficulty||'easy')===difficulty&&!p.bossOnly&&(!p.world||p.world==='thicket'));
+  assert.ok(eligible.length,kind+' '+difficulty+' should have authored questions for the forest');
+  const candidate=pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty,areaId:'thicket',
+   usedIds:eligible.map(p=>p.id),reservedIds:eligible.map(p=>p.id),allowReviewRepeat:true,random:()=>.5});
+  assert.ok(candidate,kind+' '+difficulty+' must remain playable after exhaustion');
+  assert.equal(candidate.kind,kind);
+  assert.equal(candidate.difficulty||'easy',difficulty);
+  assert.ok(!candidate.world||candidate.world==='thicket');
+ }
+});
+test('ultimate damage has a real floor even against resistances or a shell',()=>{
+ for(const kind of BATTLE_KINDS){
+  const ultimate=strikeFor({kind,foeId:'mossling',allyId:'katappo',action:'skill',
+    foeProfile:{weak:'vocab',resist:kind},repeated:true});
+  assert.ok(ultimate.damage>=3,'a full gauge must produce meaningful damage: '+kind);
+  assert.ok(foeStyledStrike({style:{id:'shell'},damage:ultimate.damage,
+    kind,foeId:'mossling',shieldIntact:true}).damage>=2);
+ }
+ assert.ok(strikeFor({kind:'speak',foeId:'mossling',allyId:'medamago',action:'skill',boss:true}).damage>=3);
+});
 test('battle questions retrieve scheduled and weak English before random fillers, without breaking constraints',()=>{
  const prompts=[
   {id:'new',kind:'listen',difficulty:'easy',phraseId:'new-phrase'},
@@ -450,7 +487,7 @@ test('companion specialties have observable effects without bypassing English gr
  const burst=strikeFor({kind:'speak',foeId:'mossling',allyId:'medamago',action:'skill'});
  assert.equal(burst.damage,5);
  assert.equal(burst.burst,true);
- assert.equal(strikeFor({kind:'speak',foeId:'mossling',allyId:'medamago',action:'skill',boss:true}).damage,1,'ultimate must not skip a boss confirmation');
+ assert.equal(strikeFor({kind:'speak',foeId:'mossling',allyId:'medamago',action:'skill',boss:true}).damage,5,'boss ultimates are powerful even though each English confirmation clears just one seal');
  const pierced=strikeFor({kind:'vocab',foeId:'bramblet',allyId:'purupun'});
  assert.equal(pierced.pierce,true);
  assert.equal(pierced.resist,false);

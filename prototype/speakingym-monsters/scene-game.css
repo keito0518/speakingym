@@ -225,6 +225,18 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-arena-console .listening-meaning{margin-top:6px}
 #play-view.scene-battle #forest-arena-console .listening-choices{gap:5px}
 #play-view.scene-battle #forest-arena-console .listening-choice{min-height:46px;padding:9px}
+/* iPhone readability: the listening question sits on a dark arena, while the
+   English reveal is a light card. Keep text contrast tied to each surface. */
+#play-view.scene-battle #forest-arena-console .listening-check-title{
+ color:#f6f5df;font-size:16px;font-weight:850;line-height:1.55;
+}
+#play-view.scene-battle #forest-arena-console .listening-status{
+ color:#e9f6e5;font-size:14px;font-weight:750;line-height:1.65;
+}
+#play-view.scene-battle #forest-arena-console .listening-first .transcript-fallback{
+ color:#23483b;background:#fff8df;border:2px solid #e0bd70;
+ font-size:14px;font-weight:750;line-height:1.65;
+}
 #play-view.scene-battle #forest-arena-console #forest-tactics{
  order:4;margin:3px 0;padding:0;border:0;background:transparent;color:#e6f0e6;
 }

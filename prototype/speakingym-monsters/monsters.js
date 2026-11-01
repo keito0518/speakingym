@@ -555,8 +555,8 @@ function updateEnemyHealth(hit=false) {
   const left=boss?Math.max(0,BOSS_HITS-play.bossHits):(play.tactics?play.tactics.enemyHp:hit?0:1);
   const meter=$('#forest-boss-hp');
   meter.hidden=false;
-  meter.textContent=`HP ${left} / ${max}`;
-  meter.setAttribute('aria-label',boss?'ボスのHP':'敵のHP');
+  meter.textContent=boss?`封印 ${left} / ${max}`:`HP ${left} / ${max}`;
+  meter.setAttribute('aria-label',boss?'ボスの残り封印':'敵のHP');
   meter.setAttribute('aria-valuemax',String(max));
   meter.setAttribute('aria-valuenow',String(left));
   meter.style.setProperty('--boss-health',`${100*left/max}%`);
@@ -684,7 +684,7 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  const strategy=document.createElement('details'),summary=document.createElement('summary');
  strategy.className='forest-tactic-strategy';
  strategy.open=Boolean(t.strategyOpen);
- const ready=t.ultimate>=ULTIMATE_MAX&&(play.index<regularCount()||t.hp<t.maxHp);
+ const ready=t.ultimate>=ULTIMATE_MAX;
  const status=!incoming&&ready?'必殺技が使える！':!incoming&&supportReady?'連携チャンス！':`必殺 ${t.ultimate}/${ULTIMATE_MAX}`;
  const kind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
  summary.innerHTML=`<span>${incoming?'敵の攻撃を確認':`攻撃：${BATTLE_LABELS[kind]} · 確定`}</span><small>${status}</small>`;
@@ -727,13 +727,16 @@ function renderAttackChoice(panel,t){
   const base=play.prompts[play.index];
   const candidate=base.kind===kind&&!t.usedPromptIds.has(base.id)?base:
    pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
-    usedIds:t.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),...tacticalReviewTargets()});
+    usedIds:t.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),
+    allowReviewRepeat:true,...tacticalReviewTargets()});
   if(!candidate){
    $('#forest-battle-log').textContent='この種類の問題が見つからなかったよ。別の攻撃を選んでね。';
    return;
   }
+  const practiceRepeat=t.usedPromptIds.has(candidate.id);
   t.attackPrompt=candidate;t.attackKindChosen=true;t.attackCommitted=true;t.action='attack';
   renderQuestion();
+  if(practiceRepeat)$('#forest-battle-log').textContent='復習問題で攻撃！ 前に解いた英語をもう一度使ってみよう。';
  }));
 }
 function renderTacticalControls(){
@@ -803,12 +806,12 @@ function renderTacticalControls(){
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
   ${mastery?`<p class="forest-tactic-mastery" data-mastery-used="${String(t.masteryUsed)}"><strong>Lv.${MASTERY_LEVEL}技：${escapeHtml(mastery.name)}${t.masteryUsed?' · 使用済み':' · 準備OK'}</strong> ${escapeHtml(mastery.description)}</p>`:''}
   ${incoming?'':`<div class="forest-tactic-actions" role="group" aria-label="行動を選ぶ">${[
-    ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'ボス戦：味方HPを2回復':`高威力 · ${ability.name}`],
+    ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'高威力＋味方HPを2回復 · 封印は1問で1枚':`高威力 · ${ability.name}`],
     ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':supportId?`${monsterFor(supportId).name}が援護 · ${previewEffect}${!supportReady?'（ゲージが満タン）':''}`:'控えの得意技能を選ぶと使える']]:[])
-  ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&(t.ultimate<ULTIMATE_MAX||(boss&&t.hp===t.maxHp))||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
+  ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&t.ultimate<ULTIMATE_MAX||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
   <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss||t.kindRerolled||t.attackCommitted?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
   ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>攻撃タイプを選ぶとき、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
-  ${boss?'<small class="forest-tactic-note">ボスは3問すべて正解で勝利。必殺技も英語の正解が必要。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは問題を見る前に選ぼう。出題後は変更できないよ。</small>'}
+  ${boss?'<small class="forest-tactic-note">ボスは3つの封印を1問ずつ解除。必殺技は高威力でも問題を飛ばさないよ。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは問題を見る前に選ぼう。出題後は変更できないよ。</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">仲間交代 · 残り${1-t.party.swapsUsed}回</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div>`:''}`}`;
  panel.dataset.turn=incoming?'enemy':'player';
  compactBattleNotes(panel,t);
@@ -819,7 +822,7 @@ function renderTacticalControls(){
  }
  $$('[data-tactic-action]',panel).forEach(button=>button.addEventListener('click',()=>{
    if(!play||play.revealed||play.tactics.turn!=='player')return;
-   if(button.dataset.tacticAction==='skill'&&(play.tactics.ultimate<ULTIMATE_MAX||(boss&&play.tactics.hp===play.tactics.maxHp)))return;
+   if(button.dataset.tacticAction==='skill'&&play.tactics.ultimate<ULTIMATE_MAX)return;
    if(button.dataset.tacticAction==='assist'&&!supportReady)return;
    play.tactics.action=button.dataset.tacticAction;
    renderTacticalControls();
@@ -838,7 +841,7 @@ function renderTacticalControls(){
    const candidate=(base.kind===kind&&!play.tactics.usedPromptIds.has(base.id))?base:
      pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
        usedIds:play.tactics.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),
-       ...tacticalReviewTargets()});
+       allowReviewRepeat:true,...tacticalReviewTargets()});
    if(!candidate){$('#forest-battle-log').textContent='この技能の未出題問題が見つからなかったよ。別の技能を選んでね。';return;}
    play.tactics.attackPrompt=candidate;
    play.tactics.kindRerolled=true;
@@ -858,7 +861,7 @@ function startEnemyTurn(){
  t.lastEnemyKind=t.enemyKind;
  t.defensePrompt=pickBattlePrompt({prompts:ALL_PROMPTS,kind:t.enemyKind,difficulty:play.difficulty,
    areaId:play.areaId,usedIds:t.usedPromptIds,reservedIds:play.prompts.map(p=>p.id),
-   ...tacticalReviewTargets()});
+   allowReviewRepeat:true,...tacticalReviewTargets()});
  // All four skill banks are expected to be available at each difficulty.
  if(!t.defensePrompt){
    t.turn='player';
@@ -1792,7 +1795,7 @@ async function gradeAnswer() {
     const counterNote=bossCounter?.activated?`迎撃成功！ 必殺ゲージ＋1・次の敵攻撃−1${bossCounter.heal&&healed?'・進化回復':''}。 `:'';
     const linkNote=bossLink?.activated?`ボス連携「${bossLink.name}」成功！ ${monsterFor(bossLink.partnerId).name}の援護で${bossLink.shield?'次の反撃−1':bossLink.extraCharge?'必殺ゲージ＋1':`味方HP合計＋${linkHealAmount}`}。 `:'';
     $('#forest-battle-log').textContent=t
-      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}`
+      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${boss?`封印を1枚解除（${play.bossHits}/${BOSS_HITS}）。 `:''}${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t)renderTacticalControls();
   }
