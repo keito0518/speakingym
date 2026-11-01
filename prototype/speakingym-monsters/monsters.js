@@ -145,8 +145,14 @@ function loadSave() {
 }
 function persist(next = save) {
   save = next;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(save)); $('#save-note').textContent = '記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）'; }
-  catch { $('#save-note').textContent = '保存できない環境です。このタブを閉じると進捗が消えます'; }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+    $('#save-note').textContent = '記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）';
+    return true;
+  } catch {
+    $('#save-note').textContent = '保存できない環境です。このタブを閉じると進捗が消えます';
+    return false;
+  }
 }
 function micView(mode='ready') {
   const button=$('#mic-button'), retry=$('#retry-mic');
@@ -2095,8 +2101,20 @@ $('#save-import-button').addEventListener('click',()=>{
     restored=validateSave(JSON.parse(field.value));
   }catch{/* invalid content */}
   if(!restored){status.textContent='正しいセーブデータではないよ。コピーした内容を全部貼り付けてね。';return;}
-  if(!window.confirm('今このURLで保存されている記録を、貼り付けたセーブで上書きしますか？'))return;
-  persist(restored);field.value='';
+  const currentAreas=save.forest?.completedAreas?.length||0;
+  const incomingAreas=restored.forest?.completedAreas?.length||0;
+  const message='今のセーブを上書きします。\n\n'
+    +`今：仲間${save.ownedMonsters.length}体・クリア${currentAreas}エリア\n`
+    +`復元後：仲間${restored.ownedMonsters.length}体・クリア${incomingAreas}エリア\n\n`
+    +'今の記録に戻せなくなるため、必要なら先に「今のセーブをコピー」してね。続けますか？';
+  if(!window.confirm(message))return;
+  const previous=save;
+  if(!persist(restored)){
+    save=previous; // Failed writes must never replace the active save in memory.
+    status.textContent='保存領域に書き込めず、復元できなかったよ。今の記録はそのままです。';
+    return;
+  }
+  field.value='';
   renderHome();
   status.textContent='復元できたよ。図鑑でも進化状態を確認してね。';
 });

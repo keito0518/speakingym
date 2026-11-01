@@ -10,6 +10,13 @@ const VALID_RATINGS = ['smooth', 'hint', 'again'];
 export const DIFFICULTIES = Object.freeze(['easy','normal','hard']);
 const clone = value => JSON.parse(JSON.stringify(value));
 const unique = list => [...new Set(list)];
+// Imported backups are user-controlled JSON. Never turn Infinity/NaN or oversized
+// counters into an impossible monster level or a broken progress meter.
+const safeSaveCount = (value,max=1_000_000_000) => {
+  if(typeof value!=='number'&&typeof value!=='string')return 0;
+  const number=Number(value);
+  return Number.isFinite(number)?Math.min(max,Math.floor(Math.max(0,number))):0;
+};
 
 export function createSave() {
   return {
@@ -45,7 +52,7 @@ export function validateSave(value) {
     const entry = value.progress[phrase.id];
     if (!entry || typeof entry !== 'object') continue;
     cleanProgress[phrase.id] = {
-      attempts: Math.max(0, Number(entry.attempts) || 0),
+      attempts: safeSaveCount(entry.attempts),
       smoothContexts: unique((Array.isArray(entry.smoothContexts) ? entry.smoothContexts : []).map(id => ALL_PROMPTS.find(prompt => prompt.id === id)?.baseId || id).filter(id => ALL_PROMPTS.some(prompt => (prompt.baseId||prompt.id) === id && prompt.phraseId === phrase.id))),
       smoothDays: unique((Array.isArray(entry.smoothDays) ? entry.smoothDays : []).filter(key => /^\d{4}-\d{2}-\d{2}$/.test(key))),
       lastDay: typeof entry.lastDay === 'string' ? entry.lastDay : null,
@@ -77,11 +84,11 @@ export function validateSave(value) {
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
     difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
-    monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, Math.max(0, Number(value.monsterXp?.[id]) || 0)])),
+    monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, safeSaveCount(value.monsterXp?.[id])])),
     monsterBonds: Object.fromEntries(ownedMonsters.map(id=>[id,Number.isSafeInteger(value.monsterBonds?.[id])?Math.max(0,Math.min(999,value.monsterBonds[id])):0])),
     // Older prototype saves put XP straight onto companions. Keep that growth,
     // and initialize the new spendable wallet without duplicating historical XP.
-    xpWallet: Number.isSafeInteger(value.xpWallet) && value.xpWallet >= 0 ? value.xpWallet : 0,
+    xpWallet: safeSaveCount(value.xpWallet),
     progress: cleanProgress,
     retention:sanitizeRetention(value.retention),
     reviewPrompts, savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255),
@@ -95,10 +102,10 @@ export function validateSave(value) {
       independent:row.independent,hinted:row.hinted,elapsedSeconds:row.elapsedSeconds})),
     quizProgress,
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
-    completedRuns: Math.max(0, Number(value.completedRuns) || 0),
-    bestSmooth: Math.max(0, Number(value.bestSmooth) || 0),
+    completedRuns: safeSaveCount(value.completedRuns),
+    bestSmooth: safeSaveCount(value.bestSmooth,999),
     bestBattleChain: Number.isSafeInteger(value.bestBattleChain)?Math.max(0,Math.min(999,value.bestBattleChain)):0,
-    totalAnswers: Math.max(0, Number(value.totalAnswers) || 0),
+    totalAnswers: safeSaveCount(value.totalAnswers),
     forest: cleanForest(value.forest)
   };
 }

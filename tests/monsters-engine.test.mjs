@@ -1904,3 +1904,32 @@ test('battle arena is independent artwork and game assets contain no platform pi
     assert.doesNotMatch(await readFile(new URL(file,dir),'utf8'),/\p{Extended_Pictographic}/u,`${file} must not contain platform emoji`);
   }
 });
+
+test('save import validation prevents non-finite XP, counters and impossible monster levels',()=>{
+ const broken={...createSave(),xpWallet:'Infinity',monsterXp:{medamago:'1e309'},
+  completedRuns:Infinity,bestSmooth:'1e309',totalAnswers:'-1e309',
+  progress:{think:{attempts:'1e309',smoothContexts:[],smoothDays:[]}}};
+ const cleaned=validateSave(broken);
+ assert.equal(cleaned.xpWallet,0);
+ assert.equal(cleaned.monsterXp.medamago,0);
+ assert.equal(cleaned.completedRuns,0);
+ assert.equal(cleaned.bestSmooth,0);
+ assert.equal(cleaned.totalAnswers,0);
+ assert.equal(cleaned.progress.think.attempts,0);
+ assert.equal(getMonsterProgress(cleaned).level,1);
+ const huge=validateSave({...createSave(),xpWallet:10**20,monsterXp:{medamago:10**20},
+  completedRuns:10**20,bestSmooth:10**20,totalAnswers:10**20,
+  progress:{think:{attempts:10**20}}});
+ assert.equal(huge.xpWallet,1_000_000_000);
+ assert.equal(huge.monsterXp.medamago,1_000_000_000);
+ assert.equal(huge.completedRuns,1_000_000_000);
+ assert.equal(huge.bestSmooth,999);
+ assert.equal(huge.totalAnswers,1_000_000_000);
+ assert.equal(huge.progress.think.attempts,1_000_000_000);
+ const valid=validateSave({...createSave(),xpWallet:24,monsterXp:{medamago:160},
+  completedRuns:5,totalAnswers:28,progress:{think:{attempts:3}}});
+ assert.equal(valid.xpWallet,24);
+ assert.equal(valid.monsterXp.medamago,160);
+ assert.equal(getMonsterProgress(valid).evolved,true);
+ assert.equal(valid.progress.think.attempts,3);
+});

@@ -77,8 +77,39 @@ const assert=require('node:assert/strict');
         assert.equal(await page.evaluate(()=>window['ga-disable-G-DRH440861Y']),true);
         assert.equal(await page.locator('[data-beta-reaction="fun"]').isDisabled(),true);
       }
+      if(width===390){
+        await page.locator('#home-extra-modes > summary').click();
+        await page.locator('[data-home-page="save"]').click();
+        const original=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+        const broken={...original,xpWallet:'1e309',monsterXp:{...original.monsterXp,medamago:'Infinity'}};
+        await page.locator('#save-import').fill(JSON.stringify(broken));
+        page.once('dialog',dialog=>dialog.accept());
+        await page.locator('#save-import-button').click();
+        const safe=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+        assert.equal(safe.xpWallet,0,'Non-finite imported wallet must be sanitized');
+        assert.equal(safe.monsterXp.medamago,0,'Non-finite imported XP must be sanitized');
+        assert.match(await page.locator('#save-transfer-status').innerText(),/復元できた/);
+        await page.evaluate(()=>{
+          const native=Storage.prototype.setItem;
+          window.__monstersOriginalSetItem=native;
+          Storage.prototype.setItem=function(key,value){
+            if(key==='speakingym-monsters-prototype-v1')throw new DOMException('Storage full','QuotaExceededError');
+            return native.call(this,key,value);
+          };
+        });
+        await page.locator('#save-import').fill(JSON.stringify({...safe,xpWallet:99}));
+        page.once('dialog',dialog=>dialog.accept());
+        await page.locator('#save-import-button').click();
+        assert.match(await page.locator('#save-transfer-status').innerText(),/復元できなかった/);
+        await page.locator('#save-export').click();
+        const active=JSON.parse(await page.locator('#save-import').inputValue());
+        assert.equal(active.xpWallet,safe.xpWallet,'Failed import must not replace the in-memory save');
+        await page.evaluate(()=>{Storage.prototype.setItem=window.__monstersOriginalSetItem;});
+        const onDisk=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+        assert.equal(onDisk.xpWallet,safe.xpWallet,'Failed import must not overwrite the saved record');
+      }
       await context.close();
-      console.log(`${engine} ${width}px beta consent, survey and first chapter start: OK`);
+      console.log(`${engine} ${width}px beta consent, survey, safe import and first chapter: OK`);
     }
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});
