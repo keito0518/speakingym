@@ -317,3 +317,16 @@
  .forest-cinematic-layer,.forest-cinematic-layer *{animation:none!important;transition:none!important}
  .forest-cinematic-layer{display:none!important}
 }
+
+/* Native iPhone dictation primary input */
+.answer-area.native-ios-speech .answer-row .mic-button{flex:0 0 104px;min-width:104px;max-width:104px;white-space:normal;line-height:1.4;padding:10px 7px;font-size:12px}
+.answer-area.native-ios-speech .answer-helper{background:#e9f8ed;color:#214631;border:2px solid #9cd5af;border-radius:10px;padding:10px 12px;margin:9px 0 14px;font-size:13px;font-weight:750;line-height:1.75}
+@media(max-width:400px){.answer-area.native-ios-speech .answer-row .mic-button{flex-basis:96px;min-width:96px;max-width:96px}}
+
+/* Local save backup for preview-domain changes (mobile/LINE friendly). */
+.save-transfer{margin:8px 0 12px;padding:10px 12px;border:1px solid #c8dac8;border-radius:12px;background:#f5faf1;color:#315642;font-size:12px;max-width:440px}
+.save-transfer summary{cursor:pointer;font-weight:800;line-height:1.6}
+.save-transfer p{font-size:11px;line-height:1.75;margin:9px 0}
+.save-transfer label{display:block;font-size:11px;font-weight:800;margin:11px 0 5px}
+.save-transfer textarea{width:100%;box-sizing:border-box;max-width:100%;font-size:12px;line-height:1.5;background:#fff;color:#274c3c;border:1px solid #a8c8b3;border-radius:8px;padding:9px;resize:vertical}
+.save-transfer-button{display:block;width:100%;border:1px solid #3a805e;background:#edf8ef;color:#23593d;border-radius:8px;min-height:41px;margin:8px 0;font-weight:800;font-size:12px}
