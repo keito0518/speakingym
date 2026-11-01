@@ -832,17 +832,21 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/こだま|暗号|トゲ王の問い/);
         if(width===390&&hit===3){
-          // No iPhone speaking stage may launch the hanging WebSpeech recognizer.
+          // A native label uses iOS's own keyboard focus activation; a fake
+          // one-tap microphone button previously did nothing in LINE.
           assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),false);
           assert.equal(await forestPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
-          assert.match(await forestPage.locator('#mic-button').innerText(),/入力を開く/);
+          assert.equal(await forestPage.locator('#mic-button').evaluate(el=>el.tagName),'LABEL');
+          assert.equal(await forestPage.locator('#mic-button').getAttribute('for'),'spoken-answer');
+          assert.match(await forestPage.locator('#mic-button').innerText(),/キーボードで話す/);
           assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイク/);
           await forestPage.locator('#mic-button').click();
           assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true,
-            'Boss tap focuses the iPhone native keyboard dictation field');
+            'Boss native label must focus the iPhone keyboard through real tap activation');
+          assert.match(await forestPage.locator('#speech-helper').innerText(),/入力欄が選ばれた/);
           assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
           assert.equal(await forestPage.evaluate(()=>window.__hungRecognizerStarts||0),0,
-            'Boss speaking must not start a recognizer that can hang indefinitely');
+            'Native keyboard tap must not start a silent recognition session');
         }
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
@@ -1200,13 +1204,38 @@ const path=require('node:path');
     await enterHomePanel(iosPage,'training');
     await iosPage.getByRole('button',{name:/スピーキングを始める/}).click();
     await unlockListening(iosPage);
-    // iPhone LINE, Safari and regular forest speaking use keyboard dictation.
+    // iPhone LINE and Safari always offer a native browser label: no JS-only
+    // focus simulation and no unreadable pale-green helper card.
     assert.equal(await iosPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
     assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),false);
-    assert.match(await iosPage.locator('#speech-helper').innerText(),/入力を開く.*キーボードのマイク/s);
+    assert.equal(await iosPage.locator('#mic-button').evaluate(e=>e.tagName),'LABEL');
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('for'),'spoken-answer');
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/キーボードで話す.*キーボードのマイク/s);
+    const iosContrast=await iosPage.evaluate(()=>{
+      const helper=document.querySelector('#speech-helper');
+      const field=document.querySelector('#spoken-answer');
+      const parse=v=>[...v.matchAll(/[\\d.]+/g)].slice(0,3).map(x=>Number(x[0]));
+      const luminance=rgb=>rgb.map(n=>{const x=n/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;}).reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
+      const ratio=(a,b)=>{const l=[luminance(parse(a)),luminance(parse(b))].sort((x,y)=>y-x);return (l[0]+.05)/(l[1]+.05);};
+      const style=getComputedStyle(helper),placeholder=getComputedStyle(field,'::placeholder');
+      return {helperRatio:ratio(style.color,style.backgroundColor),placeholderRatio:ratio(placeholder.color,getComputedStyle(field).backgroundColor),helperColor:style.color,helperBackground:style.backgroundColor,placeholder:placeholder.color};
+    });
+    assert.ok(iosContrast.helperRatio>=7,`The highlighted iPhone instruction must have strong actual contrast: ${JSON.stringify(iosContrast)}`);
+    assert.ok(iosContrast.placeholderRatio>=4.5,`Input placeholder must be readable without relying on Safari's default opacity: ${JSON.stringify(iosContrast)}`);
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/入力欄が選ばれた/);
     assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
+    // SpeechRecognition is optional and explicitly labeled. A permission error
+    // must stop its UI and leave native dictation available on the same card.
+    assert.equal(await iosPage.locator('#ios-webspeech-try').isVisible(),true);
+    await iosPage.locator('#ios-webspeech-try').click();
+    assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),true);
+    await iosPage.evaluate(()=>window.__silentSpeech.onerror?.({error:'not-allowed'}));
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/許可されていません/);
+    assert.equal(await iosPage.locator('#ios-webspeech-try').getAttribute('aria-pressed'),'false');
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     await iosPage.locator('#spoken-answer').fill('That is fine with me.');
     await leavePlay(iosPage);
     await enterHomePanel(iosPage,'forest');
