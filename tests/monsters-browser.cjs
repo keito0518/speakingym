@@ -7,11 +7,13 @@ const path=require('node:path');
   const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
   const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
   const shots=path.join(process.cwd(),'qa-screenshots');fs.mkdirSync(shots,{recursive:true});
+  const pageErrors=[];
   const base=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
   const boot=async width=>{
     const context=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,isMobile:engine==='webkit',hasTouch:true,reducedMotion:'reduce'});
     const page=await context.newPage();
-    page.on('pageerror',error=>console.error('[monsters-pageerror]',error.message));
+    page.on('pageerror',error=>{pageErrors.push(error.message);console.error('[monsters-pageerror]',error.message);});
+    page.on('crash',()=>pageErrors.push('A mobile browser page crashed'));
     await page.addInitScript(()=>{
       Math.random=()=>.99;
       // Headless voices differ by OS. Verify the intended audio-first path
@@ -1362,6 +1364,7 @@ const path=require('node:path');
     assert.equal(saved.xpWallet,listeningXp); // Skips give zero XP; genuine listening comprehension earns XP.
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-persisted.png`),fullPage:true});
     await context.close();
+    assert.deepEqual(pageErrors,[],`${engine}: gameplay must not throw uncaught JavaScript errors on any tested mobile screen`);
     console.log(`${engine}: 320/375/390/430 responsive, listening fallback, capture, XP banking/allocation, 60-sec flow and persistence passed`);
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
