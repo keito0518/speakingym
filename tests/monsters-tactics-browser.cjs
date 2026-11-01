@@ -630,6 +630,8 @@ const assert=require('node:assert/strict');
    await counterPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
    await counterPage.locator('#start-forest-tactics').click();
    await counterPage.locator('#forest-explore-continue').click();
+   assert.match(await counterPage.locator('.forest-attack-select').innerText(),/リスニングで攻撃するとダメージアップ！/);
+   assert.doesNotMatch(await counterPage.locator('.forest-attack-select').innerText(),/選ぶと問題が出るよ/);
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    const weakness=counterPage.locator('#forest-enemy-weakness');
    assert.equal(await weakness.isVisible(),true,'A foe weakness label is displayed in the battle scene');
