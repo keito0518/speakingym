@@ -154,7 +154,7 @@ test('shape-shifting foes exchange weakness and resistance after the first hit, 
  assert.equal(supportComboFor({...support,foeProfile:before}).extraDamage,1);
  assert.equal(supportComboFor({...support,foeProfile:{weak:'listen',resist:'vocab'}}).extraDamage,2,
   'a changed enemy resistance also changes evolved partner piercing consistently');
- assert.equal(strikeFor({kind:'grammar',foeId:'signbit',allyId:'koge',boss:true,foeProfile:after}).damage,1,
+ assert.equal(strikeFor({kind:'grammar',foeId:'signbit',allyId:'koge',boss:true,foeProfile:after}).damage,3,
   'boss confirmations cannot be skipped by a changed affinity');
 });
 test('shell, hunter and fury change battle strategy without changing independent English grades',()=>{
@@ -249,7 +249,7 @@ test('boss party links restore limited HP or grant shield without free damage or
  assert.equal(bossFormationLinkFor({foeId:'sunwarden',phase:0,activeId:'katappo',
   party:createBattleParty(['katappo','medamago']),independent:true,ultimate:ULTIMATE_MAX,shield:0}).shield,1,
   'a full gauge can use the opening as cover instead');
- assert.equal(strikeFor({kind:'listen',foeId:'mistknight',allyId:'katappo',boss:true}).damage,1,
+ assert.equal(strikeFor({kind:'listen',foeId:'mistknight',allyId:'katappo',boss:true}).damage,2,
   'reserves never skip any of the three authored boss questions');
 });
 test('team-up options depend on living reserves with complementary English strengths',()=>{
@@ -463,7 +463,7 @@ test('evolution improves combat only in a companion strength, never changes lear
  assert.equal(strikeFor({...strike,evolved:true}).damage,3);
  assert.equal(strikeFor({...strike,evolved:true}).evolutionBoost,true);
  assert.equal(strikeFor({...strike,kind:'listen',evolved:true}).evolutionBoost,false);
- assert.equal(strikeFor({...strike,evolved:true,boss:true}).damage,1,'evolution does not skip boss questions');
+ assert.equal(strikeFor({...strike,evolved:true,boss:true}).damage,3,'evolution boosts strength while each boss seal still requires its own question');
  const defense={kind:'speak',allyId:'medamago',result:'incorrect'};
  assert.equal(incomingHit(defense).damage,1);
  assert.equal(incomingHit({...defense,evolved:true}).damage,0);
