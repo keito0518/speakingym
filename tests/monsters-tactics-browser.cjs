@@ -86,7 +86,7 @@ const assert=require('node:assert/strict');
        await page.locator('#open-battle-guide').click();
        await page.locator('#tutorial-try-battle').click();
        assert.equal(await page.locator('#monsters-practice-battle').isVisible(),true);
-       for(const id of ['attack','wait','am','thanks'])await page.locator('[data-practice-action="'+id+'"]').click();
+       for(const id of ['vocab','confirm','am','speak','thanks'])await page.locator('[data-practice-action="'+id+'"]').click();
        assert.match(await page.locator('[data-practice-action="begin"]').innerText(),/戦闘へ戻る/);
        await page.locator('[data-practice-action="begin"]').click();
        assert.equal(await page.locator('#forest-party-hp').isVisible(),true,
