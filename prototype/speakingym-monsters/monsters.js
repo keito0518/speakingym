@@ -2075,7 +2075,11 @@ $('#forest-explore-continue').addEventListener('click',()=>{
 });
 $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
-$('#leave-play').addEventListener('click',()=>{cancelAutoAdvance();clearTimer();stopAudio();play=null;$('#play-view').classList.remove('forest-active','review-only');renderHome();});
+$('#leave-play').addEventListener('click',()=>{
+ if(play&&!window.confirm('今の挑戦を中断してホームへ戻る？\n\n途中の戦闘や問題の進み具合は失われます。すでに獲得したXP・保存した問題は残るよ。'))return;
+ cancelAutoAdvance();clearTimer();stopAudio();play=null;
+ $('#play-view').classList.remove('forest-active','review-only');renderHome();
+});
 $('#result-home').addEventListener('click',renderHome);
 $('#result-collection').addEventListener('click',()=>renderCollection());
 $('#result-feedback').addEventListener('click',()=>{

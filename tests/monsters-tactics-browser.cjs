@@ -279,6 +279,7 @@ const assert=require('node:assert/strict');
      if(width===320){
        // The simple and tactical dungeon share the same full-screen arena;
        // unrelated training modes must still restore the original form.
+       page.once('dialog',dialog=>dialog.accept());
        await page.locator('#leave-play').click();
        await page.locator('[data-feature-worlds]').click();
        await page.locator('#start-forest').click();

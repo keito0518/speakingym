@@ -19,6 +19,7 @@ jobs:
       - name: Parse-check browser entry and learning modules
         run: |
           node --check prototype/speakingym-monsters/monsters.js
+          node --check prototype/speakingym-monsters/home-navigation.js
           node --check prototype/speakingym-monsters/battle-tactics.js
           node --check prototype/speakingym-monsters/forest-quizzes.js
           node --check prototype/speakingym-monsters/forest-quizzes-extra.js
