@@ -14,6 +14,18 @@ test('a new player gets one actionable short lesson, not a fabricated weak area'
  assert.match(mission.detail,/8問|5分/);
 });
 
+test('a cross-scene answer creates a single direct review mission on the due day only',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.id==='prefer-city');
+ const save={...createSave(),reviewPrompts:{[prompt.id]:'2026-11-03'},
+  transferReviews:{[prompt.id]:{due:'2026-11-03',status:'confirmed'}}};
+ assert.equal(nextLearningQuestFor(save,today).kind,'daily');
+ const mission=nextLearningQuestFor(save,'2026-11-03');
+ assert.equal(mission.kind,'transfer');
+ assert.equal(mission.action,'transfer-review');
+ assert.match(mission.detail,/街の移動/);
+ assert.match(mission.button,/1問/);
+});
+
 test('due 1/3/7-day recall has highest priority over XP and new adventures',()=>{
  const base=createSave(),id=first('speak').id;
  const save={...base,xpWallet:EVOLUTION_XP,retention:{[id]:{stage:1,lastDay:'2026-10-31',nextDay:'2026-11-01'}}};

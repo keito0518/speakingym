@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ROLEPLAY_SCENARIOS,roleplayFor} from '../prototype/speakingym-monsters/roleplay-scenarios.js';
-import {roleplayTransferFor,roleplayTransferFeedbackFor} from '../prototype/speakingym-monsters/roleplay-transfer.js';
+import {roleplayTransferFor,roleplayTransferFeedbackFor,scheduleRoleplayTransfer,dueRoleplayTransfers} from '../prototype/speakingym-monsters/roleplay-transfer.js';
+import {createSave,recordAnswer,validateSave,addDays} from '../prototype/speakingym-monsters/monster-engine.js';
+import {dailyTrainingPlan} from '../prototype/speakingym-monsters/daily-training.js';
 
 const completed=(id,difficulty,outcomes=['smooth','smooth','smooth'])=>{
  const roleplay=roleplayFor(id,difficulty);
@@ -53,4 +55,54 @@ test('cannot select a reused task, a different-level task or a mismatched phrase
   {...source,id:'bad-boss',scene:'別の場面',bossOnly:true}
  ];
  assert.equal(roleplayTransferFor(roleplay,invalid),null);
+});
+
+test('a checked transfer only queues a vetted exact task for tomorrow, without earning XP or recording text',()=>{
+ const challenge=roleplayTransferFor(completed('restaurant','easy'));
+ const original=createSave(),today='2026-11-02',tomorrow=addDays(today,1);
+ const scheduled=scheduleRoleplayTransfer(original,challenge,{status:'confirmed',today});
+ assert.deepEqual(original.transferReviews,{});
+ assert.equal(scheduled.transferReviews[challenge.prompt.id].due,tomorrow);
+ assert.equal(scheduled.transferReviews[challenge.prompt.id].status,'confirmed');
+ assert.equal(scheduled.reviewPrompts[challenge.prompt.id],tomorrow);
+ assert.equal(scheduled.xpWallet,0);
+ assert.deepEqual(scheduled.progress,{});
+ assert.deepEqual(scheduled.retention,{});
+ assert.equal(dueRoleplayTransfers(scheduled,today).length,0);
+ assert.deepEqual(dueRoleplayTransfers(scheduled,tomorrow).map(r=>r.prompt.id),[challenge.prompt.id]);
+ assert.ok(dailyTrainingPlan(scheduled,{today:tomorrow}).prompts.some(p=>p.id===challenge.prompt.id),
+  'The previously practiced exact question also becomes due in ordinary daily training');
+ const restored=validateSave(JSON.parse(JSON.stringify(scheduled)));
+ assert.deepEqual(restored.transferReviews,scheduled.transferReviews);
+ assert.ok(!JSON.stringify(scheduled).includes("I'd rather take the train"));
+});
+
+test('tomorrow independent answer clears the transfer task; a hint or skip keeps one more day of review',()=>{
+ const challenge=roleplayTransferFor(completed('hotel','normal'));
+ const today='2026-11-02',tomorrow='2026-11-03';
+ const scheduled=scheduleRoleplayTransfer(createSave(),challenge,{status:'example',today});
+ const verified=recordAnswer(scheduled,challenge.prompt.id,'smooth',tomorrow);
+ assert.deepEqual(verified.save.transferReviews,{});
+ assert.ok(verified.reward.xp>0);
+ assert.equal(verified.save.progress[challenge.prompt.phraseId].attempts,1);
+ const assisted=recordAnswer(scheduled,challenge.prompt.id,'hint',tomorrow);
+ assert.equal(assisted.save.transferReviews[challenge.prompt.id].due,'2026-11-04');
+ assert.equal(assisted.save.transferReviews[challenge.prompt.id].status,'review');
+ assert.equal(assisted.save.reviewPrompts[challenge.prompt.id],'2026-11-04');
+ const skipped=recordAnswer(scheduled,challenge.prompt.id,'again',tomorrow);
+ assert.equal(skipped.reward.xp,0);
+ assert.equal(skipped.save.transferReviews[challenge.prompt.id].due,'2026-11-04');
+});
+
+test('invalid schedules never mutate or import transcript-like transfer payloads',()=>{
+ const source=createSave(),challenge=roleplayTransferFor(completed('market','hard'));
+ assert.equal(scheduleRoleplayTransfer(source,{prompt:{id:'fake-unvetted'}},{status:'confirmed',today:'2026-11-02'}),null);
+ assert.equal(scheduleRoleplayTransfer(source,challenge,{status:'wrong',today:'2026-11-02'}),null);
+ assert.equal(scheduleRoleplayTransfer(source,challenge,{status:'confirmed',today:'untrusted'}),null);
+ const restored=validateSave({...source,transferReviews:{
+  [challenge.prompt.id]:{due:'2026-11-03',status:'review',raw:'my private sentence'},
+  'fake-unknown':{due:'2026-11-03',status:'confirmed'},
+  [roleplayTransferFor(completed('restaurant','easy')).prompt.id]:{due:'tomorrow',status:'confirmed'}
+ }});
+ assert.deepEqual(restored.transferReviews,{[challenge.prompt.id]:{due:'2026-11-03',status:'review'}});
 });

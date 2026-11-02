@@ -32,6 +32,7 @@ export function createSave() {
     xpWallet: 0,
     progress: {},
     reviewPrompts: {},
+    transferReviews: {},
     retention: {},
     savedPromptIds: [],
     dailyHistory: [],
@@ -64,11 +65,18 @@ export function validateSave(value) {
     };
   }
   const validPromptIds=new Set(ALL_PROMPTS.map(prompt=>prompt.id));
+  const validSpeakingIds=new Set(ALL_PROMPTS.filter(prompt=>prompt.kind==='speak'&&!prompt.bossOnly).map(prompt=>prompt.id));
   const reviewPrompts=Object.fromEntries(Object.entries(value.reviewPrompts && typeof value.reviewPrompts==='object' && !Array.isArray(value.reviewPrompts)?value.reviewPrompts:{})
     .filter(([id,due])=>validPromptIds.has(id)&&typeof due==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(due))
     .slice(-156));
   const validQuizIds=new Set(ALL_PROMPTS.filter(prompt=>prompt.kind==='vocab'||prompt.kind==='grammar').map(prompt=>prompt.id));
   const validDay=day=>typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day);
+  // Only a vetted prompt ID, a date and a small status are saved. Never
+  // restore user-entered sentences from a backup into transfer records.
+  const transferReviews=Object.fromEntries(Object.entries(value.transferReviews&&typeof value.transferReviews==='object'&&!Array.isArray(value.transferReviews)?value.transferReviews:{})
+    .filter(([id,entry])=>validSpeakingIds.has(id)&&entry&&typeof entry==='object'&&!Array.isArray(entry)&&
+      validDay(entry.due)&&['confirmed','review','example'].includes(entry.status))
+    .slice(-60).map(([id,entry])=>[id,{due:entry.due,status:entry.status}]));
   const rawQuizzes=value.quizProgress&&typeof value.quizProgress==='object'&&!Array.isArray(value.quizProgress)?value.quizProgress:{};
   const quizProgress=Object.fromEntries(Object.entries(rawQuizzes)
     .filter(([id,entry])=>validQuizIds.has(id)&&entry&&typeof entry==='object'&&!Array.isArray(entry))
@@ -94,7 +102,7 @@ export function validateSave(value) {
     xpWallet: safeSaveCount(value.xpWallet),
     progress: cleanProgress,
     retention:sanitizeRetention(value.retention),
-    reviewPrompts, savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255),
+    reviewPrompts,transferReviews,savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255),
     dailyHistory:(Array.isArray(value.dailyHistory)?value.dailyHistory:[]).filter(row=>
       row&&typeof row==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&DIFFICULTIES.includes(row.difficulty)&&
       Number.isInteger(row.total)&&row.total>=1&&row.total<=12&&
@@ -556,6 +564,15 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
   next.reviewPrompts ||= {};
   if(rating==='again'||Object.hasOwn(next.reviewPrompts,promptId))
     next.reviewPrompts[promptId]=addDays(today,rating==='smooth'?(masteryLevel(entry)===3?7:3):rating==='hint'?3:1);
+  const transferDue=next.transferReviews?.[promptId];
+  if(transferDue&&transferDue.due<=today){
+    if(rating==='smooth')delete next.transferReviews[promptId];
+    else {
+      transferDue.due=addDays(today,1);
+      transferDue.status='review';
+      next.reviewPrompts[promptId]=transferDue.due;
+    }
+  }
   if(prompt.kind==='vocab'||prompt.kind==='grammar'){
     next.quizProgress ||= {};
     const previous=next.quizProgress[promptId] ||

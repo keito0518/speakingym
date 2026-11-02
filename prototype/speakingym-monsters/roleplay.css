@@ -101,6 +101,8 @@
 .roleplay-transfer-verdict>strong{display:block;font-size:13px;color:#285a40}
 .roleplay-transfer-verdict p{margin:7px 0 0;font-size:12px}
 .roleplay-transfer-verdict p strong{color:#45644c}
+.roleplay-transfer-verdict .roleplay-transfer-due{margin-top:10px;padding:9px 10px;border-radius:8px;border:1px solid #aec69e;background:#edfae6;color:#2f5d40;font-weight:700}
+.roleplay-transfer-due strong{display:block;font-size:11px;color:#356248}
 .roleplay-transfer-verdict [lang="en"]{font-weight:800}
 .roleplay-transfer-verdict small{display:block;margin-top:7px;font-size:11px;color:#5b735e}
 .roleplay-recap-heading{font-size:15px;margin:19px 0 7px;color:#27553f}

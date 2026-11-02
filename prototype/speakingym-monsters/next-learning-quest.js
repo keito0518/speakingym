@@ -4,8 +4,15 @@
 import { dayKey, EVOLUTION_XP, SECOND_EVOLUTION_XP, getMonsterProgress, savedReviewQueue } from './monster-engine.js';
 import { dailyTrainingPlan } from './daily-training.js';
 import { retentionOverview } from './retention.js';
+import { dueRoleplayTransfers } from './roleplay-transfer.js';
 
 export function nextLearningQuestFor(save,today=dayKey()){
+ const transfer=dueRoleplayTransfers(save,today)[0];
+ if(transfer)return {
+  kind:'transfer',action:'transfer-review',title:'昨日の応用、今度は自力で！',
+  detail:`${transfer.prompt.scene}で使う表現を1問だけ復習。例文を見ずに言えるか試そう。`,
+  button:'応用の1問を復習'
+ };
  const due=retentionOverview(save,today).due;
  if(due.length)return {
   kind:'retention',action:'retention',title:'今日は忘れかけた英語を取り戻そう',

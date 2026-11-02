@@ -116,19 +116,31 @@ const assert=require('node:assert/strict');
   const beforeTransfer=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
   await page.locator('#roleplay-transfer-check').click();
   assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'empty');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),beforeTransfer,
+    'An empty optional check must not schedule a review or mutate local progress');
   await page.locator('#roleplay-transfer-input').fill('I have no idea.');
   await page.locator('#roleplay-transfer-check').click();
   assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'review');
   assert.equal(await page.locator('.roleplay-transfer-verdict [lang="en"]').count(),0,
     'No complete answer is exposed until the learner asks to reveal it');
+  const uncertainTransfer=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+  assert.equal(uncertainTransfer.transferReviews['prefer-city'].status,'review');
+  assert.equal(uncertainTransfer.reviewPrompts['prefer-city'],uncertainTransfer.transferReviews['prefer-city'].due);
+  assert.match(await page.locator('.roleplay-transfer-verdict').innerText(),/次のミッション/);
   await page.locator('#roleplay-transfer-input').fill("I'd rather take the train.");
   await page.locator('#roleplay-transfer-check').click();
   assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'correct');
   assert.match(await page.locator('.roleplay-transfer-verdict').innerText(),/場面チェンジ成功/);
   await page.locator('#roleplay-transfer-reveal').click();
   assert.match(await page.locator('.roleplay-transfer-verdict').innerText(),/参考表現/);
-  assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),beforeTransfer,
-    'Extra scene practice must not change XP, save or retention state');
+  const afterTransfer=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+  const beforeTransferParsed=JSON.parse(beforeTransfer);
+  assert.equal(afterTransfer.transferReviews['prefer-city'].status,'confirmed',
+    'Revealing an example after a verified answer must not erase independent success');
+  assert.deepEqual(afterTransfer.progress,beforeTransferParsed.progress);
+  assert.deepEqual(afterTransfer.retention,beforeTransferParsed.retention);
+  assert.equal(afterTransfer.xpWallet,beforeTransferParsed.xpWallet,
+    'Today's bonus schedules only a review; XP and mastery stay unchanged');
   const saved=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
   assert.ok(!saved.includes('I have no idea.'),'Roleplay transcripts must not be written to the saved game');
   await page.locator('#replay-run').click();
@@ -206,12 +218,43 @@ const assert=require('node:assert/strict');
    await page.locator('#roleplay-transfer-input').fill(destinationAnswer);
    await page.locator('#roleplay-transfer-check').click();
    assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'correct');
-   assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),transferBefore);
+   const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.equal(after.xpWallet,JSON.parse(transferBefore).xpWallet);
+   assert.deepEqual(after.progress,JSON.parse(transferBefore).progress);
+   assert.equal(Object.values(after.transferReviews).filter(value=>value.status==='confirmed').length>=1,true);
    await page.locator('#result-home').click();
    await page.locator('[data-home-page="roleplay"]').click();
   }
   const expandedBounds=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(expandedBounds.scroll<=expandedBounds.width+1,`Expanded roleplay menu must fit mobile: ${JSON.stringify(expandedBounds)}`);
+  // The next-day mission must open the exact transferred situation as ONE
+  // question, reward only a new independently checked answer, then disappear.
+  const nextDay=await browser.newPage({viewport:{width:375,height:844}});
+  nextDay.on('pageerror',error=>errors.push(error.message));
+  await nextDay.goto(url,{waitUntil:'networkidle'});
+  await nextDay.evaluate(async()=>{
+    const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+    const save=createSave();
+    save.transferReviews['prefer-city']={due:'2020-01-01',status:'confirmed'};
+    save.reviewPrompts['prefer-city']='2020-01-01';
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
+  });
+  await nextDay.reload({waitUntil:'networkidle'});
+  assert.match(await nextDay.locator('#home-next-quest-title').innerText(),/昨日の応用/);
+  await nextDay.locator('#home-next-quest-button').click();
+  assert.match(await nextDay.locator('#play-mode-label').innerText(),/場面チェンジの復習/);
+  assert.equal(await nextDay.locator('#play-card').getAttribute('data-prompt-id'),'prefer-city');
+  await nextDay.locator('#spoken-answer').fill("I'd rather take the train.");
+  await nextDay.locator('#show-answer').click();
+  assert.match(await nextDay.locator('#feedback-panel').innerText(),/\+16 XP/);
+  const afterReview=await nextDay.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+  assert.equal(afterReview.transferReviews['prefer-city'],undefined);
+  assert.ok(afterReview.progress.prefer?.attempts>=1);
+  await nextDay.locator('#next-question').click();
+  assert.match(await nextDay.locator('#result-title').innerText(),/場面チェンジの復習完了/);
+  await nextDay.locator('#replay-run').click();
+  assert.match(await nextDay.locator('#play-mode-label').innerText(),/スピーキング道場/);
+  await nextDay.close();
   assert.deepEqual(errors,[]);
   console.log(`${engine}: four 3-turn situations, recommendation, review safety, branches, recap and mobile layout passed`);
  }finally{await browser.close();}

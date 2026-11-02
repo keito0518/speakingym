@@ -23,7 +23,7 @@ import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
-import { roleplayTransferFor, roleplayTransferFeedbackFor } from './roleplay-transfer.js';
+import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
@@ -158,21 +158,33 @@ function roleplayTransferHtml(challenge){
    <textarea id="roleplay-transfer-input" lang="en" rows="2" maxlength="350" placeholder="英文を入力して確認しよう"></textarea>
    <div class="roleplay-transfer-actions"><button type="button" id="roleplay-transfer-check">英文を確認する</button><button type="button" id="roleplay-transfer-reveal">参考例を見る</button></div>
    <div id="roleplay-transfer-result" role="status" aria-live="polite"></div>
-   <small>この1問は追加練習。XP・復習記録・会話の成績は変わりません。教材の簡易判定なので、発音・流暢さ・自由な英文の意味すべては評価していないよ。</small>
+   <small>この1問ではXP・習得度・会話成績は増えません。確認・例文表示をすると、問題IDと復習予定だけを端末に保存するよ。回答の英文は保存しません。発音・流暢さ・自由な英文の意味すべては評価していないよ。</small>
   </div>
  </details>`;
 }
 function wireRoleplayTransfer(challenge){
  const check=$('#roleplay-transfer-check'),reveal=$('#roleplay-transfer-reveal');
  if(!challenge||!check||!reveal)return;
- let revealed=false;
+ let revealed=false,verifiedBeforeReveal=false;
  const render=()=>{
   const feedback=roleplayTransferFeedbackFor(challenge,$('#roleplay-transfer-input').value,{revealed});
   if(!feedback)return;
+  if(feedback.status==='correct'&&!revealed)verifiedBeforeReveal=true;
+  let scheduleMessage='';
+  if(feedback.status!=='empty'){
+   const status=verifiedBeforeReveal?'confirmed':revealed?'example':'review';
+   const scheduled=scheduleRoleplayTransfer(save,challenge,{status});
+   if(scheduled){
+    const due=scheduled.transferReviews[challenge.prompt.id].due;
+    const dateLabel=due<=dayKey()?'今日':`${Number(due.slice(5,7))}/${Number(due.slice(8,10))}`;
+    scheduleMessage=persist(scheduled)?`<p class="roleplay-transfer-due"><strong>次のミッション</strong> ${dateLabel}に、この場面を例文なしで復習しよう。ホームのおすすめから1問で始められるよ。</p>`:
+     '<p class="roleplay-transfer-due"><strong>保存できなかったよ</strong> 端末の保存設定を確認してね。</p>';
+   }
+  }
   const checked=feedback.checked.length?`<p><strong>確認できた点</strong> ${feedback.checked.map(escapeHtml).join('・')}</p>`:'';
   const missing=feedback.missing.length?`<p><strong>確認したい条件</strong> ${feedback.missing.map(escapeHtml).join('・')}</p>`:'';
   const example=feedback.example?`<p><strong>参考表現（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(feedback.example)}</span></p>`:'';
-  $('#roleplay-transfer-result').innerHTML=`<div class="roleplay-transfer-verdict" data-transfer-status="${escapeHtml(feedback.status)}"><strong>${escapeHtml(feedback.headline)}</strong>${checked}${missing}<p>${escapeHtml(feedback.next)}</p>${example}<small>追加XP 0 · 学習記録への反映なし</small></div>`;
+  $('#roleplay-transfer-result').innerHTML=`<div class="roleplay-transfer-verdict" data-transfer-status="${escapeHtml(feedback.status)}"><strong>${escapeHtml(feedback.headline)}</strong>${checked}${missing}<p>${escapeHtml(feedback.next)}</p>${example}${scheduleMessage}<small>追加XP 0 · 応用問題の復習予定のみ登録</small></div>`;
  };
  check.addEventListener('click',render);
  reveal.addEventListener('click',()=>{revealed=true;reveal.disabled=true;reveal.textContent='参考例を表示中';render();});
@@ -541,7 +553,9 @@ function tacticalReviewTargets(){
 function startMainDungeon(areaId=null){startSession('forest-tactics',areaId,false,true);}
 function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) {
   cancelAutoAdvance();clearTimer(); stopAudio();
-  const difficulty=save.difficulty;
+  const transferPick=mode==='transfer-review'?dueRoleplayTransfers(save)[0]:null;
+  if(mode==='transfer-review'&&!transferPick){renderHome();return;}
+  const difficulty=transferPick?(transferPick.prompt.difficulty||'easy'):save.difficulty;
   const endless=mode==='forest-endless',tactical=mode==='forest-tactics',forestMode=mode==='forest'||endless||tactical;
   if(mode==='saved'&&!savedReviewQueue(save).some(item=>!onlyDue||item.due)){renderHome();return;}
   if(mode==='retention'&&!retentionOverview(save,dayKey()).due.length){renderHome();return;}
@@ -553,7 +567,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
   if(mode==='roleplay'&&!roleplay){renderHome();return;}
   const recallPlan=mode==='retention'?retentionPracticePlan(save,dayKey()):null;
   if(mode==='dungeon-review'&&!lastDungeonReviewIds.length){renderHome();return;}
-  const focused=mode==='retention'?recallPlan.prompts:
+  const focused=mode==='transfer-review'?[transferPick.prompt]:mode==='retention'?recallPlan.prompts:
     mode==='dungeon-review'?lastDungeonReviewIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean):
     (mode==='listening'||mode==='speaking')?ALL_PROMPTS
     .filter(p=>p.kind===(mode==='listening'?'listen':'speak')&&(p.difficulty||'easy')===difficulty&&!p.bossOnly)
@@ -574,7 +588,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='transfer-review'?'場面チェンジの復習':mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -582,7 +596,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
  $('#play-view').classList.toggle('tactical-battle',Boolean(tactical));
   $('#play-view').classList.toggle('scene-battle',forestMode);
   arrangeBattleScene(forestMode);
-  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='roleplay'||mode==='dungeon-review'||mode==='retention');
+  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='roleplay'||mode==='transfer-review'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
@@ -2275,7 +2289,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
   $('#result-view').classList.toggle('boss-clear',forestFinished);
-  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):ended.roleplay?'CONVERSATION COMPLETE':'TRAINING COMPLETE';
+  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):ended.roleplay?'CONVERSATION COMPLETE':ended.mode==='transfer-review'?'TRANSFER REVIEW':'TRAINING COMPLETE';
   if(forestFinished&&!ended.endless)betaTelemetry.track('monsters_beta_chapter_clear',{
     chapter:ended.areaId,difficulty:ended.baseDifficulty
   });
@@ -2283,10 +2297,10 @@ function finishSession(timedOut=false,defeated=false) {
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
-  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
+  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
     (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
-  $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
+  $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='transfer-review'?(ended.smooth?'前の会話から時間を空けて、自力で表現を確認できたね！ 次は別の場面でも試そう。':'今日はヒント・例文で確認した段階。明日また1問で復習できるよ。'):ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
     (defeated?ended.tactics?'味方のHPがなくなったよ。学んだ英語は消えないから、仲間の相性や防御を工夫して再挑戦しよう！':'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
      `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
@@ -2354,8 +2368,8 @@ function finishSession(timedOut=false,defeated=false) {
     ?`${monsterFor(growthId).name}を育てる（使える${save.xpWallet} XP）`
     :'仲間の図鑑・進化を見る';
   $('#replay-run').hidden=canRetry;
-  $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
-  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.roleplay?.id||ended.areaId);
+  $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='transfer-review'?'別の表現も練習する':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
+  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.roleplay?.id||ended.areaId);
   showView('result');
 }
 const {renderCollection,renderTraining} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
