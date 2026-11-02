@@ -145,6 +145,24 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('.forest-ultimate-meter').isVisible(),false,'The large meter is available in details, not the first view');
      await page.locator('.forest-tactic-strategy > summary').click();
      assert.equal(await page.locator('.forest-tactic-kinds').isVisible(),false,'The question cannot be switched after it appears');
+     const disabledContrast=await page.evaluate(()=>{
+       const luminance=hex=>{
+         const rgb=hex.match(/[\d.]+/g).slice(0,3).map(Number);
+         return rgb.map(channel=>{const v=channel/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;})
+           .reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+       };
+       return [...document.querySelectorAll('.forest-tactic-actions button:disabled,.forest-tactic-kinds button:disabled')]
+         .map(button=>{
+           const style=getComputedStyle(button),a=luminance(style.color),b=luminance(style.backgroundColor);
+           const contrast=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+           const small=button.querySelector('small');
+           const smallContrast=small?(()=>{const s=luminance(getComputedStyle(small).color);return (Math.max(s,b)+.05)/(Math.min(s,b)+.05);})():contrast;
+           return {kind:button.dataset.tacticKind||button.dataset.tacticAction,opacity:style.opacity,contrast,smallContrast};
+         });
+     });
+     assert.ok(disabledContrast.length>=2,`Disabled strategy choices should have a visible readable state: ${JSON.stringify(disabledContrast)}`);
+     assert.ok(disabledContrast.every(item=>item.opacity==='1'&&item.contrast>=4.5&&item.smallContrast>=4.5),
+       `${engine}/${width}: disabled controls and descriptions must stay readable: ${JSON.stringify(disabledContrast)}`);
      const extra=page.locator('.forest-tactic-more');
      assert.equal(await extra.count(),1,`${engine}/${width}: verbose strategy notes must be collapsible on mobile`);
      assert.equal(await extra.getAttribute('open'),null,'The long help text starts collapsed');
@@ -276,6 +294,19 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Encounter 2 begins with attack choice, not a preselected question');
      assert.equal(await page.locator('#play-card').isVisible(),false,'The new encounter keeps its question hidden until chosen');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-encounter'),'2');
+     if(width===375){
+       await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
+       const initialHp=Number(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'));
+       await page.locator('.forest-ultimate-shortcut').click();
+       assert.match(await page.locator('.forest-ultimate-shortcut').innerText(),/必殺技をセット中/);
+       await answer(page);
+       const impact=await page.locator('#forest-damage').innerText();
+       const damage=Number(impact.match(/−(\d+) DMG/)?.[1]);
+       assert.ok(damage>=3,`Ultimate must visibly deal at least 3 damage on an ordinary foe: ${impact}`);
+       assert.match(await page.locator('#forest-world-fx').innerText(),new RegExp(`必殺 ${damage} DMG`));
+       assert.equal(Number(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow')),Math.max(0,initialHp-damage));
+       assert.match(await page.locator('#forest-battle-log').innerText(),new RegExp(`${damage}ダメージ`));
+     }
      if(width===320){
        // The simple and tactical dungeon share the same full-screen arena;
        // unrelated training modes must still restore the original form.

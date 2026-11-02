@@ -400,15 +400,23 @@ test('an exhausted player-selected attack gets an authored question of the same 
  assert.equal(second.id,'word-a','after full exhaustion, recycle only an authored matching word quiz');
  assert.equal(pickBattlePrompt({...options,usedIds:['word-a','word-b'],reservedIds:['word-a','word-b'],allowReviewRepeat:true}).id,'word-a');
  assert.equal(pickBattlePrompt({...options,kind:'listen',allowReviewRepeat:true}),null,'never substitute a different skill silently');
- for(const kind of BATTLE_KINDS)for(const difficulty of ['easy','normal','hard']){
-  const eligible=ALL_PROMPTS.filter(p=>p.kind===kind&&(p.difficulty||'easy')===difficulty&&!p.bossOnly&&(!p.world||p.world==='thicket'));
-  assert.ok(eligible.length,kind+' '+difficulty+' should have authored questions for the forest');
-  const candidate=pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty,areaId:'thicket',
-   usedIds:eligible.map(p=>p.id),reservedIds:eligible.map(p=>p.id),allowReviewRepeat:true,random:()=>.5});
-  assert.ok(candidate,kind+' '+difficulty+' must remain playable after exhaustion');
-  assert.equal(candidate.kind,kind);
-  assert.equal(candidate.difficulty||'easy',difficulty);
-  assert.ok(!candidate.world||candidate.world==='thicket');
+ for(const areaId of ['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard']){
+  for(const kind of BATTLE_KINDS)for(const difficulty of ['easy','normal','hard']){
+   const eligible=ALL_PROMPTS.filter(p=>p.kind===kind&&(p.difficulty||'easy')===difficulty&&!p.bossOnly&&(!p.world||p.world===areaId));
+   assert.ok(eligible.length,`${areaId} ${kind} ${difficulty} should have authored questions`);
+   const used=[];
+   // Reproduce a long dungeon where the same skill is chosen repeatedly and
+   // every available authored prompt has already been attempted.
+   for(let round=0;round<Math.max(30,eligible.length*2);round++){
+    const candidate=pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty,areaId,
+     usedIds:used,reservedIds:eligible.map(p=>p.id),allowReviewRepeat:true,random:()=>.5});
+    assert.ok(candidate,`${areaId} ${kind} ${difficulty}: turn ${round} must not end the battle`);
+    assert.equal(candidate.kind,kind);
+    assert.equal(candidate.difficulty||'easy',difficulty);
+    assert.ok(!candidate.world||candidate.world===areaId);
+    used.push(candidate.id);
+   }
+  }
  }
 });
 test('ultimate damage has a real floor even against resistances or a shell',()=>{

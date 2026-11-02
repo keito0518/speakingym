@@ -812,12 +812,12 @@ function renderTacticalControls(){
   <p class="forest-tactic-ability"><strong>固有スキル：${escapeHtml(ability.name)}</strong> ${escapeHtml(ability.description)}</p>
   ${mastery?`<p class="forest-tactic-mastery" data-mastery-used="${String(t.masteryUsed)}"><strong>Lv.${MASTERY_LEVEL}技：${escapeHtml(mastery.name)}${t.masteryUsed?' · 使用済み':' · 準備OK'}</strong> ${escapeHtml(mastery.description)}</p>`:''}
   ${incoming?'':`<div class="forest-tactic-actions" role="group" aria-label="行動を選ぶ">${[
-    ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'高威力＋味方HPを2回復 · 封印は1問で1枚':`高威力 · ${ability.name}`],
+    ['attack','こうげき','何度でも使用可能'],['skill','必殺技',boss?'基本威力3以上＋HPを2回復 · 次の反撃を2軽減（最終撃を除く）':`基本威力3以上 · ${ability.name}`],
     ...(party.length>1?[['assist','仲間と連携',t.comboUsed?'この敵には使用済み':supportId?`${monsterFor(supportId).name}が援護 · ${previewEffect}${!supportReady?'（ゲージが満タン）':''}`:'控えの得意技能を選ぶと使える']]:[])
   ].map(([id,label,desc])=>`<button type="button" data-tactic-action="${id}" aria-pressed="${String(t.action===id)}" ${id==='skill'&&t.ultimate<ULTIMATE_MAX||id==='assist'&&!supportReady?'disabled':''}><strong>${label}</strong><small>${escapeHtml(desc)}</small></button>`).join('')}</div>
   <div class="forest-tactic-kinds" role="group" aria-label="攻撃する英語の種類">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" aria-pressed="${String((currentPrompt().kind==='read'?'speak':currentPrompt().kind)===kind)}" ${boss||t.kindRerolled||t.attackCommitted?'disabled':''}>${BATTLE_LABELS[kind]}</button>`).join('')}</div>
   ${!boss&&recallText?`<p class="forest-tactic-review"><strong>今日の復習候補</strong> ${escapeHtml(recallText)}<small>攻撃タイプを選ぶとき、期限が来た復習・苦手問題を優先するよ。</small></p>`:''}
-  ${boss?'<small class="forest-tactic-note">ボスは3つの封印を1問ずつ解除。必殺技は高威力でも問題を飛ばさないよ。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは問題を見る前に選ぼう。出題後は変更できないよ。</small>'}
+  ${boss?'<small class="forest-tactic-note">ボスの封印は残りHPではなく英語の確認数。高威力でも3問は必要だけど、必殺技は反撃のダメージも2軽減するよ。</small>':t.kindRerolled?'<small class="forest-tactic-note">この敵への攻撃タイプ変更は使い切ったよ。次の敵との戦闘で回復するよ。</small>':t.attackCommitted?'<small class="forest-tactic-note">この攻撃を始めたので変更できないよ。次のターンで選べるよ。</small>':'<small class="forest-tactic-note">攻撃タイプは問題を見る前に選ぼう。出題後は変更できないよ。</small>'}
   ${party.length>1?`<div class="forest-tactic-party-label">仲間交代 · 残り${1-t.party.swapsUsed}回</div><div class="forest-tactic-party" role="group" aria-label="戦う仲間を交代">${party.map(id=>{const growth=getMonsterProgress(save,id),monster=monsterFor(id),affinity=allyAffinity(id),health=fighterHealth(t.party,id),active=id===play.companionId;return `<button type="button" data-tactic-ally="${id}" aria-pressed="${String(active)}" ${!active&&!canTacticalSwap(t.party,play.companionId,id)?'disabled':''} data-fainted="${health.hp===0}"><strong>${escapeHtml(growth.evolved?monster.evolvedName:monster.name)}${active?' · 出撃中':''}</strong><small>HP ${health.hp}/${health.maxHp} · ${health.hp===0?'戦闘不能':`${BATTLE_LABELS[affinity.strong]}が得意`}</small></button>`;}).join('')}</div>`:''}`}`;
  panel.dataset.turn=incoming?'enemy':'player';
  compactBattleNotes(panel,t);
@@ -1732,6 +1732,7 @@ async function gradeAnswer() {
       repeated:t.lastAttackKind===attackKind,foeProfile}):specialStrike({companionId:play.companionId,
       evolved:getMonsterProgress(save,play.companionId).evolved,boss,usedPower:play.usedPower||!play.endless});
     const usedUltimate=Boolean(t&&t.action==='skill');
+    const bossUltimateBarrier=usedUltimate&&boss&&play.index<regularCount()+BOSS_HITS-1;
     const bossCounter=t&&boss&&play.index<regularCount()+BOSS_HITS-1?bossCounterFor({kind:bossAttackFor(foe.id,play.index-regularCount()).kind,
       allyId:play.companionId,independent:rating==='smooth',used:t.bossCounterUsed,
       evolved:getMonsterProgress(save,play.companionId).evolved}):null;
@@ -1773,6 +1774,10 @@ async function gradeAnswer() {
       }
       if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+1);
       else t.enemyHp=Math.max(0,t.enemyHp-special.damage);
+      // A boss seal represents one independently verified English task, not
+      // one HP. Preserve all three tasks while making a high-damage ultimate
+      // genuinely useful against the next counterattack as well as healing.
+      if(bossUltimateBarrier)t.counterShield=Math.max(t.counterShield,2);
       if(foeStyle?.id==='shift'&&!t.foeShifted&&t.enemyHp>0){t.foeShifted=true;foeShiftNow=true;}
       t.pendingAdvance=boss||t.enemyHp<=0;
       awardTacticalCharge(rating,{spent:usedUltimate});
@@ -1811,8 +1816,8 @@ async function gradeAnswer() {
     if(prompt.kind==='vocab')stage.classList.add('forest-weakness-hit');
     if(prompt.kind==='grammar')stage.classList.add('forest-spell-cast');
     $('#forest-world-stage').dataset.attack=play.companionId;
-    $('#forest-damage').textContent=`−${t?special.damage:special.strikes}`;
-    $('#forest-world-fx').textContent=t?special.tag:prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
+    $('#forest-damage').textContent=t&&usedUltimate?`−${special.damage} DMG`:`−${t?special.damage:special.strikes}`;
+    $('#forest-world-fx').textContent=t?(usedUltimate?`必殺 ${special.damage} DMG`:special.tag):prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss?play.bossHits>=BOSS_HITS:Boolean(t&&t.enemyHp<=0);
     // Use the clean answer being resolved *now*, so the third and fifth hits
@@ -1827,7 +1832,7 @@ async function gradeAnswer() {
     const counterNote=bossCounter?.activated?`迎撃成功！ 必殺ゲージ＋1・次の敵攻撃−1${bossCounter.heal&&healed?'・進化回復':''}。 `:'';
     const linkNote=bossLink?.activated?`ボス連携「${bossLink.name}」成功！ ${monsterFor(bossLink.partnerId).name}の援護で${bossLink.shield?'次の反撃−1':bossLink.extraCharge?'必殺ゲージ＋1':`味方HP合計＋${linkHealAmount}`}。 `:'';
     $('#forest-battle-log').textContent=t
-      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${boss?`封印を1枚解除（${play.bossHits}/${BOSS_HITS}）。 `:''}${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}`
+      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${boss?`封印を1枚解除（${play.bossHits}/${BOSS_HITS}、ダメージとは別）。 `:''}${bossUltimateBarrier?'必殺バリア発動！ 次の敵の反撃を2軽減。 ':''}${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t)renderTacticalControls();
   }
