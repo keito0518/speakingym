@@ -92,7 +92,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       if(save.ownedMonsters.includes(id)){
         const growth=getMonsterProgress(save,id);
         if(!growth.ascended)b.querySelector('.catalog-evolution').textContent=growth.evolved
-          ?`第2進化：Lv.7 · あと${ascensionRemaining(growth)} XP`
+          ?`第1進化済み · 次は第2進化：Lv.7 · あと${ascensionRemaining(growth)} XP`
           :`第1進化：${evolutionGoal} · あと${evolutionRemaining(growth)} XP`;
       }
       b.addEventListener('click',()=>renderDetail(id));
