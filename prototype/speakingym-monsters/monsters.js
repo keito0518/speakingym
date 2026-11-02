@@ -2324,7 +2324,8 @@ function finishSession(timedOut=false,defeated=false) {
     const scheduled=ended.retentionDueIds.length;
     const remaining=retentionOverview(save,dayKey()).due.length;
     const milestones=retentionMilestoneSummary(save,dayKey());
-    const next=milestones.nextDate? `次の予定は ${milestones.nextDate}`: '新しい英語に挑戦しよう';
+    const next=remaining? '今日の復習がまだ残っているよ。続けて確認しよう'
+      :milestones.nextDate?`次の予定は ${milestones.nextDate}`:'今日の予定は完了！ 新しい英語にも挑戦してみよう';
     recallResult.textContent=`今回の定着チェック：自力で確認 ${checked}/${scheduled}問（別場面の追加問題は含まない）。翌日 ${milestones.day1}問・3日後 ${milestones.day3}問・7日後 ${milestones.day7}問達成。未確認の復習 ${remaining}問。 ${next}。ヒントや例文だけでは達成にならないよ。`;
   }
   $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
@@ -2366,22 +2367,28 @@ function finishSession(timedOut=false,defeated=false) {
   const nextArea=forestFinished&&!ended.endless?nextDungeonArea(save):null;
   const canContinue=Boolean(nextArea&&nextArea.id!==ended.areaId&&unlockedDungeonAreas(save).some(area=>area.id===nextArea.id));
   const canRetry=ended.mode==='forest'&&defeated;
+  const canResumeReview=ended.mode==='retention'&&retentionOverview(save,dayKey()).due.length>0;
   renderDungeonVictoryRecap(ended,{nextArea,canContinue});
   $('#result-quick-summary').hidden=ended.mode!=='forest'||forestFinished;
   if(ended.mode==='forest')$('#result-quick-summary').textContent=`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体${ended.tactics&&ended.bestCombo>=2?` · 最高 ${ended.bestCombo} CHAIN`:''}`;
   $('#result-detail-panel').open=ended.mode!=='forest';
-  $('#result-next-panel').hidden=!canContinue&&!canRetry;
+  $('#result-next-panel').hidden=!canContinue&&!canRetry&&!canResumeReview;
   if(canContinue){
     $('#result-next-message').textContent='次のエリアが解放されたよ！';
     $('#result-next').textContent=`次へ：${nextArea.name}`;
     $('#result-next').onclick=()=>ended.quickStart?startMainDungeon(nextArea.id):startSession(ended.tactics?'forest-tactics':'forest',nextArea.id);
+  }else if(canResumeReview){
+    const remain=retentionOverview(save,dayKey()).due.length;
+    $('#result-next-message').textContent=`未確認の復習があと${remain}問あるよ`;
+    $('#result-next').textContent='残りの定着チェックを続ける';
+    $('#result-next').onclick=()=>startSession('retention');
   }else if(canRetry){
     $('#result-next-message').textContent='ここまでの経験を生かして、もう一度！';
     $('#result-next').textContent='同じエリアに再挑戦する';
     $('#result-next').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.tactics?'forest-tactics':'forest',ended.areaId);
   }else $('#result-next').onclick=null;
-  $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry);
-  $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry);
+  $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry||canResumeReview);
+  $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry&&!canResumeReview);
   const growthId=save.ownedMonsters.includes(ended.companionId)?ended.companionId:save.selectedMonster;
   const growNow=save.xpWallet>0&&save.ownedMonsters.includes(growthId);
   $('#result-collection').dataset.growthId=growNow?growthId:'';
