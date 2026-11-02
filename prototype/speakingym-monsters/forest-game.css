@@ -291,7 +291,7 @@
 .dungeon-guided-start{margin:18px 0 10px;padding:21px 23px;border:2px solid #a2c8ae;border-radius:20px;background:linear-gradient(145deg,#f5fff4,#edf7e7);box-shadow:0 8px 23px #173c2d16;color:#244d37}
 .dungeon-now-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:#237851;color:#fff;font-size:12px;font-weight:900}
 .dungeon-guided-start h3{margin:12px 0 4px;font-size:clamp(20px,4.3vw,27px);font-weight:900;line-height:1.35;color:#214b34;overflow-wrap:anywhere}
-.dungeon-guided-start>p{margin:5px 0 15px;font-size:13px;line-height:1.6;color:#4b6e56}
+.forest-invite.dungeon-selection .dungeon-guided-start>p{margin:5px 0 15px;font-size:13px;line-height:1.6;color:#355b42!important}
 .dungeon-simple-steps{list-style:none;counter-reset:dungeon-step;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0;margin:14px 0}
 .dungeon-simple-steps li{counter-increment:dungeon-step;min-width:0;padding:9px 9px 9px 11px;border:1px solid #c4d7c3;border-radius:10px;background:#fff;color:#385b43;font-size:12px;font-weight:800;line-height:1.55;overflow-wrap:anywhere}
 .dungeon-simple-steps li:before{content:counter(dungeon-step) ". ";color:#247a52;font-weight:900}

@@ -758,7 +758,7 @@ function renderAttackChoice(panel,t){
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
  panel.dataset.turn='choose';
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
-  <strong>① まず攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
+  <strong>あなたのターン · ① まず攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
   <p class="dungeon-choice-guide">迷ったら「${BATTLE_LABELS[affinity.weak]}」がオススメ。タップすると英語の問題が出るよ。</p>
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>おすすめ</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
