@@ -53,3 +53,40 @@ export function recommendedRoleplay(save,{difficulty=save.difficulty||'easy',tod
  const best=scored[0];
  return {id:best.id,reason:best.dueCount?`復習期日の表現を${best.dueCount}つ含む`:best.learnedCount?'学習済みの表現を別の会話で使う':'最初の3ターン会話におすすめ'};
 }
+
+// A short, evidence-bound conversation report. These turns exist in memory
+// only; the report never infers pronunciation, fluency, or grammar accuracy
+// from a transcript and does not persist the learner's actual answers.
+export function roleplayRecapFor(roleplay){
+ if(!roleplay||!Array.isArray(roleplay.turns)||!Array.isArray(roleplay.history))return null;
+ const rows=roleplay.turns.map((turn,index)=>{
+  const record=roleplay.history[index]||{};
+  const status=['smooth','hint','skipped'].includes(record.outcome)?record.outcome:'skipped';
+  const prompt=turn.prompt||{};
+  const goal=prompt.task||prompt.cue||prompt.scene||turn.npcJa||'相手に用件を伝える';
+  const confirmed=status==='smooth'||status==='hint';
+  const elements=confirmed&&Array.isArray(record.checked)?record.checked.filter(x=>typeof x==='string'&&x.length<140).slice(0,3):[];
+  const alternatives=Array.isArray(prompt.alternatives)?prompt.alternatives:[];
+  const other=alternatives.find(x=>typeof x==='string'&&x.trim()&&x.trim().toLowerCase()!==String(record.answer||'').trim().toLowerCase()&&x.trim().toLowerCase()!==String(prompt.answer||'').trim().toLowerCase());
+  return {status,label:status==='smooth'?'自力で確認':status==='hint'?'ヒントありで確認':'例文で復習',
+   scene:prompt.scene||turn.npcJa||`会話 ${index+1}`,goal,confirmed,elements,
+   answer:status!=='skipped'&&typeof record.answer==='string'?record.answer:'',
+   example:prompt.answer||'',alternative:confirmed?other||null:null,
+   next:status==='smooth'?'同じ用件を例文なしで別の言葉にしてみよう。':
+    status==='hint'?'次はヒントを開く前に、自分の一文で返してみよう。':
+    'まず参考表現の短い部分から、見ずに言えるか練習しよう。',
+   tip:prompt.tip||null};
+ });
+ const independent=rows.filter(row=>row.status==='smooth').length;
+ const hinted=rows.filter(row=>row.status==='hint').length;
+ const skipped=rows.filter(row=>row.status==='skipped').length;
+ const earned=rows.filter(row=>row.confirmed).slice(0,2);
+ const focus=rows.find(row=>row.status==='skipped')||rows.find(row=>row.status==='hint')||rows[0]||null;
+ const headline=independent===rows.length&&rows.length?'3ターンを自力で伝えられた！':
+  independent>=2?'自分の英語で会話をつなげた！':independent>=1?'伝えられた一言がある！':'今日は会話の型を確認できたね。';
+ return {rows,independent,hinted,skipped,earned,focus,headline,
+  summary:earned.length?`教材の基準で確認できた用件：${earned.map(row=>row.goal).join(' ／ ')}`:
+   '今日は参考表現を確認した段階。次回はまず1ターンを自力で伝えてみよう。',
+  next:focus?focus.status==='smooth'?'次はこの会話の最初の返答を、別の自然な言い方でも試そう。':
+   `次は「${focus.scene}」の場面を、${focus.status==='hint'?'ヒントを開かず':'例文を見ず'}に伝えてみよう。`:''};
+}

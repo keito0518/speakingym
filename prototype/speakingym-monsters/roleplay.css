@@ -37,11 +37,28 @@
 .roleplay-result{margin:12px 0;padding:14px;border:1px solid #8eaf9f;border-radius:12px;background:#e8f5e9;color:#234635}
 .roleplay-result h3{margin:3px 0 7px;font-size:17px}
 .roleplay-result p{margin:6px 0;font-size:13px;line-height:1.6}
+.roleplay-recap-track{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}
+.roleplay-recap-track>div{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;min-width:0;padding:9px 5px;border-radius:10px;background:#f7f7ee;border:1px solid #c8d5c5;text-align:center}
+.roleplay-recap-track strong{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#287958;color:white;font-size:13px}
+.roleplay-recap-track span{font-size:11px;font-weight:850;line-height:1.4}
+.roleplay-recap-track [data-recap-status="hint"] strong{background:#aa8132}
+.roleplay-recap-track [data-recap-status="skipped"] strong{background:#718b82}
+.roleplay-coaching-card{margin:12px 0;padding:14px;border:1px solid #8ab6a1;border-left:5px solid #32976d;border-radius:11px;background:#f4fff2;overflow-wrap:anywhere}
+.roleplay-coaching-card>strong{font-size:16px;color:#235e43}
+.roleplay-coaching-card.focus{border-color:#d5b96a;border-left-color:#cc9836;background:#fff8dc}
+.roleplay-coaching-card.focus>strong{color:#7a5428}
+.roleplay-coaching-card [lang="en"]{display:block;margin-top:8px;padding:9px 11px;border-radius:8px;background:#fffefa;color:#264c3b;font-weight:850;font-size:14px;line-height:1.55}
+.roleplay-recap-heading{font-size:15px;margin:19px 0 7px;color:#27553f}
 .roleplay-recap-list{list-style:none;display:grid;gap:10px;margin:14px 0;padding:0}
 .roleplay-recap-turn{padding:12px;border:1px solid #b8cdc1;border-radius:11px;background:#fff;overflow-wrap:anywhere}
+.roleplay-recap-turn[data-recap-status="smooth"]{border-left:4px solid #3d9c73}
+.roleplay-recap-turn[data-recap-status="hint"]{border-left:4px solid #c79b43}
+.roleplay-recap-turn[data-recap-status="skipped"]{border-left:4px solid #849891}
 .roleplay-recap-turn>strong{display:block;font-size:13px;color:#244b39}
 .roleplay-recap-turn>strong span{display:inline-block;margin-left:4px;padding:2px 7px;border-radius:7px;background:#e6f2e8;font-size:11px}
 .roleplay-recap-turn p{margin:7px 0 0}
 .roleplay-recap-turn p strong{display:block;font-size:11px;color:#456d57}
+.roleplay-recap-evidence{padding:9px 11px;background:#eaf7e9;border-radius:8px}
+.roleplay-recap-turn[data-recap-status="skipped"] .roleplay-recap-evidence{background:#f1f2ec}
 .roleplay-recap-turn [lang="en"]{font-weight:800;color:#1d4f37}
 @media(max-width:580px){.roleplay-hub{padding:15px;margin:13px 0}.roleplay-options{grid-template-columns:1fr}.roleplay-conversation{padding:11px}.roleplay-line{font-size:13px}}

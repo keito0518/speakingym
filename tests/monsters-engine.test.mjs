@@ -9,7 +9,7 @@ import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAV
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { gradeDelayMeaning } from '../prototype/speakingym-monsters/speaking-meaning.js';
-import { ROLEPLAY_SCENARIOS, roleplayFor, recommendedRoleplay } from '../prototype/speakingym-monsters/roleplay-scenarios.js';
+import { ROLEPLAY_SCENARIOS, roleplayFor, recommendedRoleplay, roleplayRecapFor } from '../prototype/speakingym-monsters/roleplay-scenarios.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
@@ -1476,6 +1476,33 @@ test('roleplay suggestion prefers actually overdue phrases without an AI call',(
  });
  assert.equal(recommendedRoleplay(save,{difficulty:'hard',today:'2026-11-02'}).id,'restaurant',
   'An easy-level due item should not displace the hard-level curriculum');
+});
+test('conversation recap distinguishes verified speaking, hints and example-only practice',()=>{
+ const scenario=roleplayFor('restaurant','easy');
+ const recap=roleplayRecapFor({...scenario,history:[
+  {outcome:'smooth',answer:scenario.turns[0].prompt.answer,checked:['窓側の席を希望する']},
+  {outcome:'skipped',answer:'',checked:['fabricated']},
+  {outcome:'hint',answer:scenario.turns[2].prompt.answer,checked:[]}
+ ]});
+ assert.equal(recap.independent,1);
+ assert.equal(recap.hinted,1);
+ assert.equal(recap.skipped,1);
+ assert.equal(recap.rows.length,3);
+ assert.deepEqual(recap.rows[0].elements,['窓側の席を希望する']);
+ assert.equal(recap.rows[1].confirmed,false);
+ assert.deepEqual(recap.rows[1].elements,[],'example review is never presented as verified ability');
+ assert.equal(recap.rows[1].answer,'');
+ assert.equal(recap.focus.status,'skipped');
+ assert.match(recap.next,/例文を見ず/);
+ assert.equal(recap.rows[2].confirmed,true);
+ assert.deepEqual(recap.rows[2].elements,[],'fallback grade must not invent itemized feedback');
+ assert.ok(recap.rows.every(row=>row.next.length>10&&row.example.length>10));
+ const perfect=roleplayRecapFor({...scenario,history:scenario.turns.map(turn=>({outcome:'smooth',answer:turn.prompt.answer}))});
+ assert.equal(perfect.independent,3);
+ assert.equal(perfect.skipped,0);
+ assert.match(perfect.headline,/3ターンを自力/);
+ assert.equal(perfect.focus.status,'smooth');
+ assert.equal(roleplayRecapFor(null),null);
 });
 test('common polite English paraphrases count without granting credit for changed destinations or hard-level omissions',()=>{
  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);

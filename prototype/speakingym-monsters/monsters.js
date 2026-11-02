@@ -20,7 +20,7 @@ import { speakingFeedbackFor, conversationFeedbackFor } from './speaking-feedbac
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
-import { roleplayFor, recommendedRoleplay } from './roleplay-scenarios.js';
+import { roleplayFor, recommendedRoleplay, roleplayRecapFor } from './roleplay-scenarios.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
@@ -1769,7 +1769,9 @@ async function gradeAnswer() {
   play.revealed=true;
   if(play.roleplay){
     const turn=play.roleplay.turns[play.index];
-    play.roleplay.history.push({npc:turn.npc,response:turn.response,answer:raw,outcome:rating==='smooth'?'smooth':'hint'});
+    play.roleplay.history.push({npc:turn.npc,response:turn.response,answer:raw,
+      outcome:rating==='smooth'?'smooth':'hint',
+      checked:Array.isArray(grade.checks?.met)?grade.checks.met.slice(0,3):[]});
   }
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
@@ -2143,17 +2145,16 @@ function finishSession(timedOut=false,defeated=false) {
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
   const roleplayResult=ended.roleplay?(()=>{
-    const independent=ended.roleplay.history.filter(turn=>turn.outcome==='smooth').length;
-    const needReview=ended.roleplay.history.map((turn,index)=>turn.outcome==='smooth'?null:ended.roleplay.turns[index]?.prompt).filter(Boolean);
-    const advice=needReview.length?`次は「${escapeHtml(needReview[0].scene)}」で使う表現を復習しよう。`:'3つの場面をすべて自力で確認できたね！ 別の会話でも使ってみよう。';
-    const turns=ended.roleplay.turns.map((turn,index)=>{
-      const history=ended.roleplay.history[index];
-      const label=history?.outcome==='smooth'?'自力で確認':history?.outcome==='hint'?'ヒントありで確認':'例文で復習';
-      const spoken=history?.outcome!=='skipped'&&history?.answer?`<p><strong>あなたの英文</strong> <span lang="en">${escapeHtml(history.answer)}</span></p>`:'';
-      const action=turn.prompt.tip||'相手への用件と条件を確認してもう一度言ってみよう。';
-      return `<li class="roleplay-recap-turn"><strong>${index+1}. ${escapeHtml(turn.prompt.scene)} <span>${label}</span></strong>${spoken}<p><strong>参考表現</strong> <span lang="en">${escapeHtml(turn.prompt.answer)}</span></p><p><strong>次に意識すること</strong> ${escapeHtml(action)}</p></li>`;
+    const recap=roleplayRecapFor(ended.roleplay);
+    if(!recap)return '';
+    const turns=recap.rows.map((row,index)=>{
+      const spoken=row.answer?`<p><strong>あなたの英文</strong> <span lang="en">${escapeHtml(row.answer)}</span></p>`:'';
+      const evidence=row.elements.length?`<p class="roleplay-recap-evidence"><strong>確認できた内容</strong> ${row.elements.map(escapeHtml).join('・')}</p>`:
+        `<p class="roleplay-recap-evidence"><strong>今回の確認</strong> ${row.confirmed?'教材の用件を確認できたよ（細かな項目別採点はなし）。':'例文を見て学習。自力で伝わったかはまだ判定していないよ。'}</p>`;
+      return `<li class="roleplay-recap-turn" data-recap-status="${row.status}"><strong>${index+1}. ${escapeHtml(row.scene)} <span>${row.label}</span></strong>${spoken}${evidence}<p><strong>参考表現（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(row.example)}</span></p>${row.alternative?`<p><strong>別の伝え方</strong> <span lang="en">${escapeHtml(row.alternative)}</span></p>`:''}<p><strong>次に意識すること</strong> ${escapeHtml(row.next)} ${row.tip?escapeHtml(row.tip):''}</p></li>`;
     }).join('');
-    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${independent} / ${ended.roleplay.turns.length}ターンを自力で返答</h3><p>ヒントあり ${ended.roleplay.history.filter(turn=>turn.outcome==='hint').length} · 例文で確認 ${ended.roleplay.history.filter(turn=>turn.outcome==='skipped').length}</p><p>${advice}</p><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>表示している返答はこの画面限りで、セーブデータに保存されないよ。発音評価やAI自由会話の採点ではありません。</small></section>`;
+    const track=recap.rows.map((row,index)=>`<div data-recap-status="${row.status}"><strong>${index+1}</strong><span>${row.label}</span></div>`).join('');
+    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${recap.independent} / ${recap.rows.length}ターンを自力で返答</h3><div class="roleplay-recap-track" aria-label="会話の3ターンの到達状況">${track}</div><p>ヒントあり ${recap.hinted} · 例文で確認 ${recap.skipped}</p><div class="roleplay-coaching-card"><strong>${escapeHtml(recap.headline)}</strong><p>${escapeHtml(recap.summary)}</p></div><div class="roleplay-coaching-card focus"><strong>次回のミッション</strong><p>${escapeHtml(recap.next)}</p>${recap.focus?`<span lang="en">${escapeHtml(recap.focus.example)}</span>`:''}</div><h4 class="roleplay-recap-heading">3ターンをふりかえる</h4><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>表示している返答はこの画面限りで、セーブデータに保存されないよ。発音評価やAI自由会話の採点ではありません。</small></section>`;
   })():'';
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
   renderDungeonLearningReport(ended);
