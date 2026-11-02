@@ -601,7 +601,9 @@ const path=require('node:path');
     assert.match(await recallPage.locator('#retention-transfer-label').innerText(),/1問/);
     await recallPage.locator('#start-retention-review').click();
     assert.equal(await recallPage.locator('#play-card').getAttribute('data-prompt-id'),dueId);
-    assert.match(await recallPage.locator('.daily-question-kind').innerText(),/予定日の記憶チェック/);
+    assert.match(await recallPage.locator('.daily-question-kind').innerText(),/3日後のチェック/);
+    assert.match(await recallPage.locator('#retention-day1-label').innerText(),/1問/);
+    assert.match(await recallPage.locator('#retention-day3-label').innerText(),/0問/);
     assert.equal(await recallPage.locator('#forest-journey').isVisible(),false);
     let answer=await recallPage.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
@@ -624,6 +626,11 @@ const path=require('node:path');
     const recallSaved=await recallPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
     assert.equal(recallSaved.retention[dueId].stage,3);
     assert.equal(recallSaved.retention[transferId].stage,1,'New scene has its own spaced schedule');
+    await recallPage.locator('#next-question').click();
+    assert.match(await recallPage.locator('#result-title').innerText(),/定着チェック完了/);
+    assert.match(await recallPage.locator('#result-retention-summary').innerText(),/自力で確認 1\/1問/);
+    assert.match(await recallPage.locator('#result-retention-summary').innerText(),/3日後 1問/);
+    assert.match(await recallPage.locator('#result-retention-summary').innerText(),/未確認の復習 0問/);
     await recallContext.close();
     }
     // A recognisable speaking word-order mistake gives a reason without
