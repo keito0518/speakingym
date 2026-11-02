@@ -38,7 +38,7 @@ export function createSave() {
     savedPromptIds: [],
     dailyHistory: [],
     quizProgress: {},
-    skillAttempts: {},
+    skillAttempts:sanitizeSkillAttempts(null),
     rewardedDays: [],
     completedRuns: 0,
     bestSmooth: 0,
