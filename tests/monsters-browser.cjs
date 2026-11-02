@@ -118,6 +118,16 @@ const path=require('node:path');
     });
     await quickPage.locator('#spoken-answer').fill(quickAnswer);
     await quickPage.locator('#show-answer').click();
+    const quickPromptId=await quickPage.locator('#play-card').getAttribute('data-prompt-id');
+    assert.match(await quickPage.locator('#feedback-bookmark').innerText(),/この問題を復習に保存/,
+      'Learners can save a question immediately after a successful turn');
+    await quickPage.locator('#feedback-bookmark').click();
+    assert.equal(await quickPage.locator('#feedback-bookmark').getAttribute('aria-pressed'),'true');
+    assert.equal(await quickPage.locator('#bookmark-question').getAttribute('aria-pressed'),'true');
+    assert.ok((await quickPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedPromptIds)).includes(quickPromptId));
+    await quickPage.locator('#feedback-bookmark').click();
+    assert.equal(await quickPage.locator('#bookmark-question').getAttribute('aria-pressed'),'false');
+    assert.ok(!(await quickPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedPromptIds)).includes(quickPromptId));
     const nextLayout=await quickPage.locator('#next-question').evaluate(button=>{
       const rect=button.getBoundingClientRect();
       const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
@@ -623,6 +633,10 @@ const path=require('node:path');
     assert.match(await weakPage.locator('.forest-review-banner').innerText(),/苦手の再挑戦/);
     await weakPage.locator('#spoken-answer').fill('wrong vocabulary word');
     await weakPage.locator('#show-answer').click();
+    assert.equal(await weakPage.locator('#feedback-bookmark').isVisible(),true,
+      'A missed objective question can be saved at the point where feedback is shown');
+    await weakPage.locator('#feedback-bookmark').click();
+    assert.equal(await weakPage.locator('#bookmark-question').getAttribute('aria-pressed'),'true');
     assert.match(await weakPage.locator('.forest-teaching-nudge').innerText(),/考え方のヒント/);
     const afterMiss=await weakPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).quizProgress['forest-vocab-ticket-easy'].misses);
     assert.equal(afterMiss,2);
@@ -1404,6 +1418,11 @@ const path=require('node:path');
     assert.ok((await page.locator('#result-rewards').innerText()).includes('+88 XP ストック'));
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-result.png`),fullPage:true});
     await page.locator('#result-collection').click();
+    assert.equal(await page.locator('#training-view').isVisible(),true,
+      'Battle reward XP should open the active companion training directly, without a catalog detour');
+    assert.equal(await page.locator('#training-wallet').innerText(),trainingEarned+' XP');
+    await page.locator('#training-back').click();
+    await page.locator('#detail-back').click();
     assert.equal(await page.locator('#collection-wallet').innerText(),trainingEarned+' XP');
     assert.equal(await page.locator('#collection-grid [data-feed-monster]').count(),0);
     await page.locator('[data-open-monster="katappo"]').click();

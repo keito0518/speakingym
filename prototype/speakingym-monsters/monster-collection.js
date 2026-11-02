@@ -5,7 +5,7 @@ import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, FOREST_ROUTES, unlockedCityAre
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
 import { BOSS_MEDAL_NAMES } from './boss-mastery.js';
-import { allyAffinity, allySkill, BATTLE_LABELS, evolvedSupportTalent } from './battle-tactics.js';
+import { allyAffinity, allySkill, BATTLE_LABELS, MASTERY_LEVEL, evolvedSupportTalent } from './battle-tactics.js';
 
 const html = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $ = s => document.querySelector(s);
@@ -133,6 +133,17 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     $('#training-content .training-next:last-child').textContent=g.evolved
       ?`進化達成！ 条件：${evolutionGoal}。`
       :`進化条件：${evolutionGoal}。あと${evolutionRemaining(g)} XPで進化！`;
+    const milestones=[
+      {goal:`Lv.${EVOLUTION_LEVEL}の途中・${EVOLUTION_XP} XP`,reward:`${c.evolvedName}に進化`,done:g.evolved},
+      {goal:`Lv.${MASTERY_LEVEL}`,reward:'仲間固有の熟練技を解放',done:g.level>=MASTERY_LEVEL},
+      {goal:'Lv.6',reward:'戦闘HPがさらに＋1',done:g.level>=6},
+      {goal:'Lv.9',reward:'戦闘HPがさらに＋1',done:g.level>=9}
+    ];
+    const upcoming=milestones.find(mark=>!mark.done);
+    const roadmap=document.createElement('details');
+    roadmap.className='growth-roadmap';
+    roadmap.innerHTML=`<summary>${upcoming?`次の成長：${html(upcoming.goal)} · ${html(upcoming.reward)}`:'主な成長目標をすべて達成！'}<span>一覧を見る</span></summary><ol>${milestones.map(mark=>`<li data-achieved="${String(mark.done)}"><span>${html(mark.goal)}</span><strong>${html(mark.reward)}</strong><small>${mark.done?'達成済み':'これから'}</small></li>`).join('')}</ol></details>`;
+    $('#training-content .training-sheet').append(roadmap);
     all('[data-feed-monster]').forEach(b=>b.addEventListener('click',()=>{
       try {
         const amount=b.dataset.feedAmount==='all'?getSave().xpWallet:10;

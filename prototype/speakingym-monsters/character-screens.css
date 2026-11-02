@@ -53,6 +53,15 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .training-feed{display:flex;gap:10px}.training-feed button{flex:1;min-width:0;padding:13px 9px;font-size:14px}
 .training-feed button:disabled{opacity:.4;cursor:default}
 .growth-feedback{min-height:44px;font-size:13px;line-height:1.7;color:#40633e;padding:15px 0}
+.growth-roadmap{margin-top:16px;padding:12px;border:1px solid #d2dbc2;border-radius:13px;background:#f3f7e9;color:#35573b}
+.growth-roadmap>summary{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;font-size:12px;font-weight:850;line-height:1.6;overflow-wrap:anywhere}
+.growth-roadmap>summary::-webkit-details-marker{display:none}
+.growth-roadmap>summary span{flex:0 0 auto;font-size:11px;color:#396e55;white-space:nowrap}
+.growth-roadmap>summary:focus-visible{outline:3px solid #d4a74c;outline-offset:3px}
+.growth-roadmap ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;list-style:none;margin:12px 0 0;padding:0}
+.growth-roadmap li{display:flex;flex-direction:column;gap:3px;min-width:0;padding:10px;border:1px solid #d6dfce;border-radius:9px;background:#fffefa;font-size:11px;line-height:1.5}
+.growth-roadmap li span{color:#63785e;font-weight:750}.growth-roadmap li strong{color:#2f563b;font-size:12px}.growth-roadmap li small{color:#667969}
+.growth-roadmap li[data-achieved="true"]{border-color:#a2cfb0;background:#e8f6e8}.growth-roadmap li[data-achieved="true"] small{color:#236c4b;font-weight:850}
 .training-sheet[data-growth="xp"] .growth-character{animation:grow-xp .8s ease-out}
 .training-sheet[data-growth="level"] .growth-character{animation:grow-level 1.3s ease-out}
 .training-sheet[data-growth="level"] .growth-ring::before,.training-sheet[data-growth="evolution"] .growth-ring::before{content:"";position:absolute;inset:-35px;border-radius:50%;border:4px solid #e5b554;animation:grow-ripple 1.6s ease-out both}
@@ -72,6 +81,7 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 @keyframes evolution-rays{0%{opacity:0;transform:rotate(-25deg) scale(.4)}40%{opacity:1}100%{opacity:0;transform:rotate(30deg) scale(1.4)}}
 @keyframes grow-label{0%{opacity:0;transform:translateY(12px)}25%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-10px)}}
 @media(max-width:690px){.catalog-portrait{height:110px}.catalog-portrait svg{max-height:110px}.catalog-card{padding:12px 8px;gap:6px}.catalog-card strong{font-size:15px}.character-sheet,.training-sheet{padding:20px 16px}.character-portrait{height:215px}.character-portrait svg{height:215px}.growth-stage{height:240px}.growth-character,.growth-before{width:220px;height:220px}.collection-head h1{font-size:29px}.catalog-state{font-size:11px}}
+@media(max-width:380px){.growth-roadmap ol{grid-template-columns:1fr}.growth-roadmap>summary{flex-wrap:wrap}}
 @media(max-width:360px){.character-sheet,.training-sheet{padding:19px 12px}.evolution-path{font-size:11px;gap:7px;padding:12px 8px}.catalog-card strong{font-size:14px}.training-feed{gap:7px}}
 @media(prefers-reduced-motion:reduce){.view,.catalog-card,.character-view *,.character-view *::before{animation:none!important;transition:none!important}.growth-before{display:none}.growth-label{opacity:1}}
 .listen-control .audio-glyph{display:inline-block;vertical-align:middle;margin-right:3px}

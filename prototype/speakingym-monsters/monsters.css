@@ -196,6 +196,9 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .forest-active .answer-row .mic-button{height:auto;min-height:64px;align-self:stretch}
 .bookmark-question{display:inline-flex;align-items:center;gap:6px;margin:9px 0 6px;border:1px solid #9daea0;border-radius:9px;background:#fffaf0;color:#345943;font-size:12px;font-weight:850;min-height:38px;padding:7px 11px;cursor:pointer}
 .bookmark-question[aria-pressed="true"]{background:#f6e3af;border-color:#b99548;color:#65451e}
+.feedback-bookmark{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin:12px 0 2px;padding:9px 12px;border:1px dashed #a7b99b;border-radius:10px;background:#f8fbf0;color:#2d5c44;font-size:12px;font-weight:850;line-height:1.5;cursor:pointer}
+.feedback-bookmark[aria-pressed="true"]{border-style:solid;border-color:#b99548;background:#fff1c7;color:#65451e}
+.feedback-bookmark:focus-visible{outline:3px solid #d4a74c;outline-offset:2px}
 .bookmark-question:focus-visible,.saved-question button:focus-visible{outline:3px solid #d4a74c;outline-offset:2px}
 .saved-review{margin:24px 0;border-radius:18px;padding:19px 20px;background:#f7f4e6;border:1px solid #d8d6b9}
 .saved-review-heading{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}

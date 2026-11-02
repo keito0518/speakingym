@@ -122,6 +122,38 @@ function conversationFeedbackHtml(prompt,learnerAnswer,grade,{hinted=false,revea
   <small>これは教材に登録した英文・条件の確認です。発音や流暢さ、自由会話の意味を完全に評価したものではありません。</small>
  </section>`;
 }
+function questionBookmarkLabel(prompt,saved){
+ const english=(prompt.difficulty||'easy')!=='easy';
+ return english?(saved?'★ Saved':'☆ Save this question'):(saved?'★ 保存済み':'☆ 問題を保存');
+}
+function syncQuestionBookmarks(prompt){
+ const saved=save.savedPromptIds?.includes(prompt.id)||false;
+ const inQuestion=$('#bookmark-question');
+ if(inQuestion&&$('#play-card')?.dataset.promptId===prompt.id){
+  inQuestion.setAttribute('aria-pressed',String(saved));
+  inQuestion.textContent=questionBookmarkLabel(prompt,saved);
+ }
+ const afterFeedback=$('#feedback-bookmark');
+ if(afterFeedback){
+  afterFeedback.setAttribute('aria-pressed',String(saved));
+  afterFeedback.textContent=saved?'★ 復習に保存済み（押すと解除）':'☆ この問題を復習に保存';
+ }
+}
+function attachFeedbackBookmark(prompt){
+ const box=$('#feedback-panel .feedback-box');
+ if(!box||!prompt)return;
+ const button=document.createElement('button');
+ button.type='button';button.id='feedback-bookmark';button.className='feedback-bookmark';
+ button.addEventListener('click',()=>{
+  if(!play||currentPrompt()?.id!==prompt.id)return;
+  const persisted=persist(toggleSavedPrompt(save,prompt.id));
+  syncQuestionBookmarks(prompt);
+  if(!persisted)button.textContent='保存できませんでした。ブラウザの保存設定を確認してね。';
+ });
+ const next=box.querySelector('#show-example,#next-question,#continue-as-practice');
+ if(next)next.before(button);else box.append(button);
+ syncQuestionBookmarks(prompt);
+}
 let save = loadSave() || createSave();
 let lastDungeonReviewIds = [];
 let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
@@ -1162,13 +1194,12 @@ function renderQuestion() {
   const bookmark=document.createElement('button');
   bookmark.type='button';bookmark.id='bookmark-question';bookmark.className='bookmark-question';
   bookmark.setAttribute('aria-pressed',String(saved));
-  const bookmarkText=enabled=>englishMode?(enabled?'★ Saved':'☆ Save this question'):(enabled?'★ 保存済み':'☆ 問題を保存');
+  const bookmarkText=enabled=>questionBookmarkLabel(prompt,enabled);
   bookmark.textContent=bookmarkText(saved);
   bookmark.addEventListener('click',()=>{
-    persist(toggleSavedPrompt(save,prompt.id));
-    const active=save.savedPromptIds.includes(prompt.id);
-    bookmark.setAttribute('aria-pressed',String(active));
-    bookmark.textContent=bookmarkText(active);
+    const persisted=persist(toggleSavedPrompt(save,prompt.id));
+    syncQuestionBookmarks(prompt);
+    if(!persisted)bookmark.textContent='保存できませんでした。';
   });
   $('#play-card').querySelector('.question-top').after(bookmark);
   if(play.mode==='daily'){
@@ -1688,6 +1719,7 @@ async function gradeAnswer() {
     const allowPractice=play.mode==='forest'&&!play.endless&&uncertain&&Boolean(raw)&&!['vocab','grammar'].includes(prompt.kind);
     const practiceButton=allowPractice?'<button type="button" class="grading-skip" id="continue-as-practice">判定できない表現として先へ進む（XPなし） →</button>':'';
     $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'登録された条件と食い違う部分があるよ。必要な情報を確認して言い直してみよう。':incomplete?'必要な情報が一部確認できなかったよ。条件を足してもう一度試そう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${nudge}${grade.reasons.length&&(!speakingNudge||!grade.checks?.missing?.length)?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}${practiceButton}</div>`;
+    if(!empty)attachFeedbackBookmark(prompt);
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     if(allowPractice)$('#continue-as-practice').addEventListener('click',()=>{
       if(!play||play.revealed)return;
@@ -1926,6 +1958,7 @@ async function gradeAnswer() {
   const streakNote=streak?.chain>=2
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${forestSpeakingHeadline}${roleplayReply}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
+  attachFeedbackBookmark(prompt);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
@@ -1958,6 +1991,7 @@ function skipAnswer(){
   const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):
     conversationFeedbackHtml(prompt,learnerAnswer,{status:'review'}, {hinted:true,revealExample:true});
   $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}<button id="next-question" class="grading-next">${defending?'味方のターンへ →':play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
+  attachFeedbackBookmark(prompt);
   $('#next-question').addEventListener('click',()=>{
     if(defending){finishEnemyTurn();return;}
     if(play?.mode==='forest'&&play.endless&&!play.attemptReviewed){
@@ -2136,12 +2170,18 @@ function finishSession(timedOut=false,defeated=false) {
   }else $('#result-next').onclick=null;
   $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry);
   $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry);
+  const growthId=save.ownedMonsters.includes(ended.companionId)?ended.companionId:save.selectedMonster;
+  const growNow=save.xpWallet>0&&save.ownedMonsters.includes(growthId);
+  $('#result-collection').dataset.growthId=growNow?growthId:'';
+  $('#result-collection').textContent=growNow
+    ?`${monsterFor(growthId).name}を育てる（使える${save.xpWallet} XP）`
+    :'仲間の図鑑・進化を見る';
   $('#replay-run').hidden=canRetry;
   $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.roleplay?.id||ended.areaId);
   showView('result');
 }
-const {renderCollection} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
+const {renderCollection,renderTraining} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
@@ -2194,7 +2234,11 @@ $('#leave-play').addEventListener('click',()=>{
  $('#play-view').classList.remove('forest-active','review-only');renderHome();
 });
 $('#result-home').addEventListener('click',renderHome);
-$('#result-collection').addEventListener('click',()=>renderCollection());
+$('#result-collection').addEventListener('click',()=>{
+  const id=$('#result-collection').dataset.growthId;
+  if(id&&save.xpWallet>0&&save.ownedMonsters.includes(id))renderTraining(id);
+  else renderCollection();
+});
 $('#result-feedback').addEventListener('click',()=>{
  $('#beta-feedback-disclosure').open=true;
  $('#beta-feedback').scrollIntoView({behavior:'smooth',block:'start'});
