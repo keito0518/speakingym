@@ -140,7 +140,7 @@ const assert=require('node:assert/strict');
   assert.deepEqual(afterTransfer.progress,beforeTransferParsed.progress);
   assert.deepEqual(afterTransfer.retention,beforeTransferParsed.retention);
   assert.equal(afterTransfer.xpWallet,beforeTransferParsed.xpWallet,
-    'Today's bonus schedules only a review; XP and mastery stay unchanged');
+    'The bonus only schedules a review; XP and mastery stay unchanged');
   const saved=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
   assert.ok(!saved.includes('I have no idea.'),'Roleplay transcripts must not be written to the saved game');
   await page.locator('#replay-run').click();
