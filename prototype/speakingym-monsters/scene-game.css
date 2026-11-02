@@ -689,19 +689,15 @@ html.monsters-quiet-motion #play-view.scene-battle .cinematic-combo-flare{opacit
 #play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech #mic-button:focus-visible{
   outline:3px solid #f6ca73;outline-offset:2px;
 }
-#play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech #mic-button[aria-disabled="true"]{
-  opacity:.55;pointer-events:none;
+#play-view .speech-native-label{
+  display:flex;align-items:center;justify-content:center;min-height:46px;
+  margin:7px 0 10px;padding:9px 12px;border:2px solid #8db6ab;
+  border-radius:10px;background:#205066;color:#fffdf5;
+  font-size:12px;font-weight:850;line-height:1.4;text-align:center;
+  cursor:pointer;touch-action:manipulation;
 }
-#play-view.scene-battle #forest-arena-console .ios-webspeech-try{
-  display:block;width:100%;min-height:44px;margin:5px 0 8px;padding:8px 12px;
-  border:1px solid #93c9b7;border-radius:10px;
-  background:#174a4f;color:#f6fff8;
-  font-size:12px;font-weight:800;text-align:center;
-}
-#play-view.scene-battle #forest-arena-console .ios-webspeech-try[aria-pressed="true"]{
-  background:#b85e42;color:#fff8e9;border-color:#f1bd93;
-}
-#play-view.scene-battle #forest-arena-console .ios-webspeech-try[hidden]{display:none!important}
+#play-view .speech-native-label:focus-visible{outline:3px solid #ffdb8c;outline-offset:2px}
+#play-view .speech-native-label[hidden]{display:none!important}
 
 
 /* Safari/WebKit applies a faint native ::placeholder to standalone training.
@@ -739,16 +735,7 @@ html.monsters-quiet-motion #play-view.scene-battle .cinematic-combo-flare{opacit
 #play-view.scene-battle #forest-arena-console #answer-area.native-ios-speech:focus-within #spoken-answer{
   border-color:#ffda8b;box-shadow:0 0 0 2px #ffda8b77;
 }
-#play-view.scene-battle #forest-arena-console #ios-webspeech-try{
-  display:block;width:100%;min-height:44px;margin:5px 0;
-  color:#fff8e5;background:#205066;border:1px solid #88b3bb;
-  border-radius:9px;font-size:12px;font-weight:850;line-height:1.45;
-  cursor:pointer;touch-action:manipulation;
+#play-view.scene-battle #forest-arena-console .speech-native-label{
+  background:#205066;color:#fffdf5;border-color:#88b3bb;
+  opacity:1;-webkit-text-fill-color:#fffdf5;text-shadow:none;
 }
-#play-view.scene-battle #forest-arena-console #ios-webspeech-try[aria-pressed="true"]{
-  background:#ad6045;border-color:#ffcd95;color:#ffffff;
-}
-#play-view.scene-battle #forest-arena-console #ios-webspeech-try:focus-visible{
-  outline:3px solid #ffdb8c;outline-offset:2px;
-}
-#play-view.scene-battle #forest-arena-console #ios-webspeech-try[hidden]{display:none!important}

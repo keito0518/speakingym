@@ -832,21 +832,24 @@ const path=require('node:path');
         assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-action'),hit===1?'defense':hit===2?'spell':'attack');
         assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/こだま|暗号|トゲ王の問い/);
         if(width===390&&hit===3){
-          // A native label uses iOS's own keyboard focus activation; a fake
-          // one-tap microphone button previously did nothing in LINE.
+          // An iPhone microphone tap must start a recognizer, not merely
+          // focus the text field. Native keyboard dictation is a separate tap.
           assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),false);
-          assert.equal(await forestPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
-          assert.equal(await forestPage.locator('#mic-button').evaluate(el=>el.tagName),'LABEL');
-          assert.equal(await forestPage.locator('#mic-button').getAttribute('for'),'spoken-answer');
-          assert.match(await forestPage.locator('#mic-button').innerText(),/キーボードで話す/);
+          assert.equal(await forestPage.locator('#mic-button').evaluate(el=>el.tagName),'BUTTON');
+          assert.equal(await forestPage.locator('#native-ios-dictation').evaluate(el=>el.tagName),'LABEL');
+          assert.equal(await forestPage.locator('#native-ios-dictation').getAttribute('for'),'spoken-answer');
           assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイク/);
-          await forestPage.locator('#mic-button').click();
+          await forestPage.locator('#native-ios-dictation').click();
           assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true,
-            'Boss native label must focus the iPhone keyboard through real tap activation');
+            'Boss keyboard fallback must focus the iPhone field through native tap activation');
           assert.match(await forestPage.locator('#speech-helper').innerText(),/入力欄が選ばれた/);
           assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
           assert.equal(await forestPage.evaluate(()=>window.__hungRecognizerStarts||0),0,
-            'Native keyboard tap must not start a silent recognition session');
+            'Keyboard fallback must not start a silent recognition session');
+          await forestPage.locator('#mic-button').click();
+          assert.equal(await forestPage.evaluate(()=>window.__hungRecognizerStarts||0),1,
+            'The primary mic must call SpeechRecognition.start() on iPhone');
+          assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
         }
         await answer();
         assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),String(3-hit));
@@ -1204,13 +1207,13 @@ const path=require('node:path');
     await enterHomePanel(iosPage,'training');
     await iosPage.getByRole('button',{name:/スピーキングを始める/}).click();
     await unlockListening(iosPage);
-    // iPhone LINE and Safari always offer a native browser label: no JS-only
-    // focus simulation and no unreadable pale-green helper card.
-    assert.equal(await iosPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
+    // iPhone's real microphone action and the native keyboard fallback are
+    // distinct; neither must masquerade as the other.
+    assert.equal(await iosPage.locator('#mic-button').evaluate(e=>e.tagName),'BUTTON');
     assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),false);
-    assert.equal(await iosPage.locator('#mic-button').evaluate(e=>e.tagName),'LABEL');
-    assert.equal(await iosPage.locator('#mic-button').getAttribute('for'),'spoken-answer');
-    assert.match(await iosPage.locator('#speech-helper').innerText(),/キーボードで話す.*キーボードのマイク/s);
+    assert.equal(await iosPage.locator('#native-ios-dictation').evaluate(e=>e.tagName),'LABEL');
+    assert.equal(await iosPage.locator('#native-ios-dictation').getAttribute('for'),'spoken-answer');
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/「話す」で音声認識を開始/);
     const iosContrast=await iosPage.evaluate(()=>{
       const helper=document.querySelector('#speech-helper');
       const field=document.querySelector('#spoken-answer');
@@ -1222,19 +1225,20 @@ const path=require('node:path');
     });
     assert.ok(iosContrast.helperRatio>=7,`The highlighted iPhone instruction must have strong actual contrast: ${JSON.stringify(iosContrast)}`);
     assert.ok(iosContrast.placeholderRatio>=4.5,`Input placeholder must be readable without relying on Safari's default opacity: ${JSON.stringify(iosContrast)}`);
-    await iosPage.locator('#mic-button').click();
+    await iosPage.locator('#native-ios-dictation').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     assert.match(await iosPage.locator('#speech-helper').innerText(),/入力欄が選ばれた/);
     assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
-    // SpeechRecognition is optional and explicitly labeled. A permission error
-    // must stop its UI and leave native dictation available on the same card.
-    assert.equal(await iosPage.locator('#ios-webspeech-try').isVisible(),true);
-    await iosPage.locator('#ios-webspeech-try').click();
+    // A real primary mic tap starts recognition and permission errors leave
+    // the native keyboard alternative available on the same card.
+    await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),true);
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
     await iosPage.evaluate(()=>window.__silentSpeech.onerror?.({error:'not-allowed'}));
     assert.match(await iosPage.locator('#speech-helper').innerText(),/許可されていません/);
-    assert.equal(await iosPage.locator('#ios-webspeech-try').getAttribute('aria-pressed'),'false');
-    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
+    assert.equal(await iosPage.locator('#native-ios-dictation').isVisible(),true);
+    await iosPage.locator('#native-ios-dictation').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     await iosPage.locator('#spoken-answer').fill('That is fine with me.');
     await leavePlay(iosPage);
@@ -1242,7 +1246,8 @@ const path=require('node:path');
     await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();
     await iosPage.locator('#forest-explore-continue').click();
     await iosPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
-    assert.equal(await iosPage.locator('#mic-button').getAttribute('data-native-dictation'),'true');
+    assert.equal(await iosPage.locator('#mic-button').evaluate(e=>e.tagName),'BUTTON');
+    assert.equal(await iosPage.locator('#native-ios-dictation').isVisible(),true);
     // This is the actual screen from the reported iPhone screenshot, not the
     // lighter standalone speaking-training page.
     const battleContrast=await iosPage.evaluate(()=>{
@@ -1259,10 +1264,30 @@ const path=require('node:path');
       `Real forest battle's pale helper and placeholder must remain legible: ${JSON.stringify(battleContrast)}`);
     await iosPage.evaluate(()=>{window.__lastSilentSpeech=window.__silentSpeech;});
     await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__silentSpeech===window.__lastSilentSpeech),false,
+      'Tapping the dungeon microphone must start a new recognition session');
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+    await iosPage.locator('#native-ios-dictation').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
-    assert.equal(await iosPage.evaluate(()=>window.__silentSpeech===window.__lastSilentSpeech),true,
-      'Tapping native keyboard in the dungeon must not start another browser microphone session');
     await iosContext.close();
+    // If an in-app browser exposes no Web Speech API, do not show a dead mic
+    // button. The labeled keyboard fallback must still take a real tap.
+    const {context:noSpeechContext,page:noSpeechPage}=await boot(390);
+    await noSpeechPage.addInitScript(()=>{
+      Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15'});
+      Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:undefined});
+      Object.defineProperty(window,'webkitSpeechRecognition',{configurable:true,value:undefined});
+    });
+    await noSpeechPage.reload();
+    await enterHomePanel(noSpeechPage,'training');
+    await noSpeechPage.getByRole('button',{name:/スピーキングを始める/}).click();
+    await unlockListening(noSpeechPage);
+    assert.equal(await noSpeechPage.locator('#mic-button').isVisible(),false);
+    assert.equal(await noSpeechPage.locator('#native-ios-dictation').isVisible(),true);
+    assert.match(await noSpeechPage.locator('#speech-helper').innerText(),/自動音声認識に非対応/);
+    await noSpeechPage.locator('#native-ios-dictation').click();
+    assert.equal(await noSpeechPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
+    await noSpeechContext.close();
     // Evolved Yolkie must survive reload and agree in home, collection and battle.
     const {context:evolvedContext,page:evolvedPage}=await boot(390);
     await evolvedPage.evaluate(async()=>{
