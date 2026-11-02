@@ -21,8 +21,11 @@ export function sanitizeSkillAttempts(raw){
  }));
 }
 export function appendSkillAttempt(raw,prompt,rating,day){
- if(!prompt||!SKILL_KINDS.includes(prompt.kind)||!RATINGS.has(rating)||!dayValid(day))throw Error('Invalid skill attempt');
+ if(!prompt||!RATINGS.has(rating)||!dayValid(day))throw Error('Invalid skill attempt');
  const attempts=sanitizeSkillAttempts(raw);
+ // Reading and other authored task kinds remain playable; they are not
+ // falsely counted as one of the four advertised dashboard skills.
+ if(!SKILL_KINDS.includes(prompt.kind))return attempts;
  attempts[prompt.kind]=[...attempts[prompt.kind],{id:prompt.id,day,rating}].slice(-20);
  return attempts;
 }
