@@ -75,3 +75,39 @@ export function skillFocusPrompts(save,kind,{difficulty='easy',today,size=6}={})
  }
  return chosen;
 }
+
+/**
+ * Pick one actionable weak area only when the user's records support it.
+ * Due questions at the selected difficulty outrank a low self-recall rate.
+ * Four independent attempts, spanning at least two authored questions, are
+ * required before describing a skill as weak. No guessed AI proficiency.
+ */
+export function nextSkillFocusFor(save,{difficulty=save.difficulty||'easy',today}={}){
+ if(!['easy','normal','hard'].includes(difficulty)||!dayValid(today))throw Error('Invalid focus options');
+ const due=dueIdSet(save,today),history=sanitizeSkillAttempts(save.skillAttempts);
+ const choices=SKILL_KINDS.map(kind=>{
+  const eligible=ALL_PROMPTS.filter(p=>p.kind===kind&&!p.bossOnly&&(p.difficulty||'easy')===difficulty);
+  const eligibleIds=new Set(eligible.map(p=>p.id));
+  if(!eligible.length)return null;
+  const dueNow=eligible.filter(p=>due.has(p.id)).length;
+  const records=(history[kind]||[]).filter(row=>eligibleIds.has(row.id));
+  const independent=records.filter(row=>row.rating==='smooth').length;
+  const pct=records.length?Math.round(100*independent/records.length):null;
+  const meaningful=records.length>=4&&new Set(records.map(row=>row.id)).size>=2;
+  return {kind,label:SKILL_LABELS[kind],due:dueNow,sample:records.length,percent:pct,
+    evidence:meaningful,hasTasks:eligible.length>0};
+ }).filter(Boolean);
+ const dueChoices=choices.filter(row=>row.due>0).sort((a,b)=>b.due-a.due||a.sample-b.sample||SKILL_KINDS.indexOf(a.kind)-SKILL_KINDS.indexOf(b.kind));
+ if(dueChoices.length){
+  const row=dueChoices[0];
+  return {kind:row.kind,label:row.label,reason:'due',due:row.due,detail:`期限が来た${row.label}の問題が${row.due}問。まず自力で確認しよう。`};
+ }
+ const weak=choices.filter(row=>row.evidence&&row.percent<=65)
+  .sort((a,b)=>a.percent-b.percent||b.sample-a.sample||SKILL_KINDS.indexOf(a.kind)-SKILL_KINDS.indexOf(b.kind));
+ if(weak.length){
+  const row=weak[0];
+  return {kind:row.kind,label:row.label,reason:'needs-practice',due:0,
+    detail:`同じ難易度の直近${row.sample}回答で、自力確認が${row.percent}%。違う問題でも試そう。`};
+ }
+ return null;
+}
