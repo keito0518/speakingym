@@ -25,6 +25,7 @@ const STEPS=Object.freeze([
 export function setupHomeNavigation({home,startMode,showCollection}){
  const sections={
   daily:document.createElement('section'),
+  roleplay:document.createElement('section'),
   training:document.createElement('section'),
   forest:document.createElement('section'),
   review:document.createElement('section'),
@@ -41,6 +42,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  // game, catalogue and review dashboard in one long scrolling page.
  move('.forest-invite','forest');
  move('.daily-gym','daily');
+ move('.roleplay-hub','roleplay');
  move('.saved-review','review');
  move('.retention-hub','review');
  move('.hero-grid','training');
@@ -51,6 +53,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  const buttons=[
   {id:'forest',icon:'02',title:'Englishダンジョン',desc:'次のエリアを攻略して仲間と成長',action:()=>showPage('forest')},
   {id:'daily',icon:'01',title:'今日の5分ジム',desc:'8問でサクッと英語トレーニング',action:()=>showPage('daily')},
+  {id:'roleplay',icon:'11',title:'3ターン実践会話',desc:'お店や駅で相手と英語をやり取り',action:()=>showPage('roleplay')},
   {id:'training',icon:'03',title:'スピーキング道場',desc:'英語で伝える力を鍛えよう',action:()=>showPage('training')},
   {id:'listening',icon:'09',title:'リスニング道場',desc:'聞いて意味を理解する問題だけ',action:()=>startMode('listening')},
   {id:'review',icon:'04',title:'復習する',desc:'保存した問題と苦手を解き直す',action:()=>showPage('review')},
@@ -96,6 +99,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  const iconPaths={
   forest:'<path d="M3 20h18M5 20l4-8 3 5 3-8 5 11M5 9l4-6 4 6-3 0M16 12l3-6 3 6"/><path d="M9 20v-5M19 20v-5"/>',
   daily:'<path d="M12 3l-8 11h7l-1 7 10-12h-7l1-6Z"/>',
+  roleplay:'<path d="M4 5h13a3 3 0 013 3v7a3 3 0 01-3 3H9l-5 3v-6a3 3 0 01-2-3V8a3 3 0 012-3Z"/><path d="M7 10h9M7 14h6"/>',
   training:'<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0012 0M12 17v4M8 21h8"/>',
   listening:'<path d="M4 14v-3a8 8 0 0116 0v3M4 13h3v7H5a2 2 0 01-2-2v-3a2 2 0 012-2Zm13 0h3a2 2 0 012 2v3a2 2 0 01-2 2h-2v-7Z"/>',
   review:'<path d="M12 6a9 9 0 00-9 9v6h17v-6a9 9 0 00-8-9ZM6 6l3-4h6l3 4"/><path d="M8 15h8M8 18h6"/>',
@@ -118,7 +122,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   copy.append(strong,small);
   const arrow=document.createElement('span');arrow.className='home-navigation-arrow';arrow.textContent='›';arrow.setAttribute('aria-hidden','true');
   button.append(icon,copy,arrow);button.addEventListener('click',item.action);
-  (['daily','review','collection'].includes(item.id)?grid:extraGrid).append(button);
+  (['daily','roleplay','review','collection'].includes(item.id)?grid:extraGrid).append(button);
  }
  extra.append(extraGrid,motionToggle);
  menu.append(head,feature,label,grid,extra);home.prepend(menu);

@@ -19,6 +19,8 @@ const assert=require('node:assert/strict');
  };
  try{
   await page.goto(url,{waitUntil:'networkidle'});
+  await page.locator('[data-home-page="roleplay"]').click();
+  assert.equal(await page.locator('.roleplay-hub').isVisible(),true);
   assert.match(await page.locator('#roleplay-recommendation').innerText(),/レストランで伝え切る/);
   assert.equal(await page.locator('[data-roleplay-card="restaurant"]').getAttribute('data-recommended'),'true');
   await page.locator('[data-roleplay="restaurant"]').click();
@@ -62,9 +64,12 @@ const assert=require('node:assert/strict');
    localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
   });
   await page.reload({waitUntil:'networkidle'});
+  await page.locator('[data-home-page="roleplay"]').click();
   assert.equal(await page.locator('[data-roleplay-card="station"]').getAttribute('data-recommended'),'true');
   assert.match(await page.locator('#roleplay-recommendation').innerText(),/駅の困りごとを解決/);
-  await page.locator('[data-difficulty="hard"]').click();
+  await page.locator('[data-roleplay-level="hard"]').click();
+  assert.equal(await page.locator('[data-roleplay-card="restaurant"]').getAttribute('data-recommended'),'true',
+    'An easy-only due phrase must not mislead the hard-level recommendation');
   await page.locator('[data-roleplay="station"]').click();
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'problem-ticket-hard');
   assert.match(await page.locator('.roleplay-conversation').innerText(),/駅員・カイ/);

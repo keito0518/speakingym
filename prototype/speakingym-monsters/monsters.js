@@ -272,7 +272,15 @@ function renderDifficulty() {
     button.classList.toggle('selected', active);
     button.setAttribute('aria-pressed', String(active));
   });
+  $$('[data-roleplay-level]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.roleplayLevel===save.difficulty)));
   $('#difficulty-description').textContent = difficultyCopy[save.difficulty].description;
+  const roleplayPick=recommendedRoleplay(save);
+  $('#roleplay-recommendation').textContent=`今日のおすすめ：${roleplayFor(roleplayPick.id,save.difficulty).title} · ${roleplayPick.reason}`;
+  $$('[data-roleplay-card]').forEach(card=>{
+    const selected=card.dataset.roleplayCard===roleplayPick.id;
+    card.dataset.recommended=String(selected);
+    card.querySelector('.roleplay-badge').hidden=!selected;
+  });
 }
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);
@@ -294,13 +302,6 @@ function renderHome() {
     ?`同じ難易度の7日以上前と比較：${dailyGrowth.changeSevenDays>=0?'+':''}${dailyGrowth.changeSevenDays}ポイント（${dailyGrowth.weekBeforeRate}% → ${dailyGrowth.lastRate}%）`
     :dailyGrowth.sessions?`完了 ${dailyGrowth.sessions}回 · 前回 ${dailyGrowth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
     :'5分ジムを完了すると、ヒントなしで正解した割合を記録するよ。';
-  const roleplayPick=recommendedRoleplay(save);
-  $('#roleplay-recommendation').textContent=`今日のおすすめ：${roleplayFor(roleplayPick.id,save.difficulty).title} · ${roleplayPick.reason}`;
-  $$('[data-roleplay-card]').forEach(card=>{
-    const selected=card.dataset.roleplayCard===roleplayPick.id;
-    card.dataset.recommended=String(selected);
-    card.querySelector('.roleplay-badge').hidden=!selected;
-  });
   const recall=retentionOverview(save,dayKey());
   const recallPlan=retentionPracticePlan(save,dayKey());
   const bond=getMonsterBondProgress(save,save.selectedMonster);
@@ -2126,6 +2127,10 @@ const {renderCollection} = createCollectionViews({getSave:()=>save,persist,showV
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
+  renderDifficulty();
+}));
+$$('[data-roleplay-level]').forEach(button=>button.addEventListener('click',()=>{
+  persist(chooseDifficulty(save,button.dataset.roleplayLevel));
   renderDifficulty();
 }));
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));

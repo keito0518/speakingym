@@ -180,9 +180,9 @@ const path=require('node:path');
     }
     // The home is an actual menu, not eight stacked screens. Tutorial works on mobile.
     const {context:menuContext,page:menuPage}=await boot(390);
-    assert.equal(await menuPage.locator('#home-navigation [data-home-page]').count(),10);
-    assert.equal(await menuPage.locator('.home-main-actions [data-home-page]').count(),3,
-      'Only training, review and companions compete with the main adventure');
+    assert.equal(await menuPage.locator('#home-navigation [data-home-page]').count(),11);
+    assert.equal(await menuPage.locator('.home-main-actions [data-home-page]').count(),4,
+      'Five-minute training, three-turn conversation, review and companions remain the main alternatives to adventure');
     assert.equal(await menuPage.locator('#home-extra-modes').getAttribute('open'),null);
     assert.equal(await menuPage.locator('[data-home-page="forest"]').isVisible(),false);
     await menuPage.locator('#home-extra-modes > summary').click();
