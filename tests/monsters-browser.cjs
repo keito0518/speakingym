@@ -53,6 +53,41 @@ const path=require('node:path');
     await page.locator(`[data-listening-choice="${correct}"]`).click();
   };
   try{
+    // Four distinct skill buttons must really open the matching authored tasks
+    // on a 320px device; only confirmed self-recall can enter the new stats.
+    {
+      const {context:skillContext,page:skillPage}=await boot(320);
+      await enterHomePanel(skillPage,'training');
+      assert.equal(await skillPage.locator('#skill-growth-list .skill-growth-card').count(),4);
+      assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/記録なし/);
+      const screen=await skillPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(screen.scroll<=screen.inner+1,'320px skill progress cards must not overflow');
+      for(const kind of ['speak','listen','vocab','grammar']){
+        await skillPage.locator('[data-skill-start="'+kind+'"]').click();
+        assert.equal(await skillPage.locator('#play-card').isVisible(),true);
+        const actualKind=await skillPage.evaluate(async()=>{
+          const {ALL_PROMPTS}=await import('./monster-data.js');
+          return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)?.kind;
+        });
+        assert.equal(actualKind,kind,'Targeted drill must open the requested skill, not a random mode');
+        if(kind==='speak'){
+          const answer=await skillPage.evaluate(async()=>{
+            const {ALL_PROMPTS}=await import('./monster-data.js');
+            return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+          });
+          await skillPage.locator('#spoken-answer').fill(answer);
+          await skillPage.locator('#show-answer').click();
+          const stats=await skillPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).skillAttempts);
+          assert.equal(stats.speak.length,1);
+          assert.equal(stats.speak[0].rating,'smooth');
+          assert.equal(stats.listen.length+stats.vocab.length+stats.grammar.length,0);
+        }
+        await leavePlay(skillPage);
+        await enterHomePanel(skillPage,'training');
+      }
+      assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/自力で確認 1回/);
+      await skillContext.close();
+    }
     const {context:quickContext,page:quickPage}=await boot(390);
     assert.equal(await quickPage.locator('#home-next-quest').isVisible(),true,
       'Home offers one personal next quest next to the adventure, not another busy menu');
