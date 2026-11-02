@@ -89,6 +89,30 @@ const path=require('node:path');
       assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/自力で確認 1回/);
       await skillContext.close();
     }
+    // With enough task-level evidence, the home quest enters the real
+    // weakness drill without falsely creating due reviews, XP or AI grades.
+    {
+      const {context:focusContext,page:focusPage}=await boot(375);
+      await focusPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const {appendSkillAttempt}=await import('./skill-progress.js');
+        const questions=ALL_PROMPTS.filter(p=>p.kind==='grammar'&&!p.bossOnly&&(p.difficulty||'easy')==='easy');
+        const saved=createSave();
+        for(let n=0;n<6;n++)saved.skillAttempts=appendSkillAttempt(saved.skillAttempts,questions[n%2],'hint','2026-11-01');
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+      });
+      await focusPage.reload();
+      assert.match(await focusPage.locator('#home-next-quest-title').innerText(),/文法/);
+      await focusPage.locator('#home-next-quest-button').click();
+      assert.equal(await focusPage.locator('#play-view').isVisible(),true);
+      const focusKind=await focusPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)?.kind;
+      });
+      assert.equal(focusKind,'grammar');
+      await focusContext.close();
+    }
     const {context:quickContext,page:quickPage}=await boot(390);
     assert.equal(await quickPage.locator('#home-next-quest').isVisible(),true,
       'Home offers one personal next quest next to the adventure, not another busy menu');
