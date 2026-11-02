@@ -1445,7 +1445,7 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
 });
 test('three-turn real-world roleplays use independently graded speaking tasks at every difficulty',()=>{
- assert.equal(ROLEPLAY_SCENARIOS.length,2);
+ assert.equal(ROLEPLAY_SCENARIOS.length,4);
  for(const scenario of ROLEPLAY_SCENARIOS){
   for(const difficulty of ['easy','normal','hard']){
    const play=roleplayFor(scenario.id,difficulty);
@@ -1476,6 +1476,22 @@ test('roleplay suggestion prefers actually overdue phrases without an AI call',(
  });
  assert.equal(recommendedRoleplay(save,{difficulty:'hard',today:'2026-11-02'}).id,'restaurant',
   'An easy-level due item should not displace the hard-level curriculum');
+});
+test('roleplay recommendations rotate into new scenes and return to due speaking without shortening spaced review',()=>{
+ let save=createSave();
+ const restaurant=roleplayFor('restaurant','easy');
+ for(const turn of restaurant.turns)save=recordAnswer(save,turn.prompt.id,'smooth','2026-11-02').save;
+ assert.equal(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}).id,'station',
+  'A completed scene should not remain the default when new expressions are available');
+ const later=recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-05'});
+ assert.equal(later.id,'restaurant');
+ assert.match(later.reason,/復習期日/);
+ let saveAfterSkip=createSave();
+ saveAfterSkip=recordAnswer(saveAfterSkip,'booking-hotel','again','2026-11-02').save;
+ assert.equal(recommendedRoleplay(saveAfterSkip,{difficulty:'easy',today:'2026-11-02'}).id,'restaurant',
+  'An example-only response schedules a future review, not an immediate repeat');
+ assert.equal(recommendedRoleplay(saveAfterSkip,{difficulty:'easy',today:'2026-11-03'}).id,'hotel',
+  'When due, an exact missed speaking prompt becomes the recommended conversation');
 });
 test('conversation recap distinguishes verified speaking, hints and example-only practice',()=>{
  const scenario=roleplayFor('restaurant','easy');

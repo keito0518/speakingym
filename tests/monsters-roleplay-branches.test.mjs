@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {roleplayFor,roleplayReplyFor,roleplayOpeningFor,roleplayRecapFor} from '../prototype/speakingym-monsters/roleplay-scenarios.js';
+import {normalizeEnglish} from '../prototype/speakingym-monsters/monster-engine.js';
 
-for(const scene of ['restaurant','station']){
+for(const scene of ['restaurant','station','hotel','market']){
  for(const difficulty of ['easy','normal','hard']){
   test(`${scene}/${difficulty}: only verified authored alternatives branch`,()=>{
    const roleplay=roleplayFor(scene,difficulty);
@@ -16,8 +17,8 @@ for(const scene of ['restaurant','station']){
     assert.equal(skipped.branch,'supported');
     assert.notEqual(skipped.response,turn.response);
     assert.ok(skipped.responseJa);
-    if(turn.prompt.alternatives?.length){
-     const alternative=turn.prompt.alternatives[0];
+    const alternative=turn.prompt.alternatives?.find(example=>normalizeEnglish(example)!==normalizeEnglish(turn.prompt.answer));
+    if(alternative){
      const alternate=roleplayReplyFor(turn,alternative,{confirmed:true});
      assert.equal(alternate.branch,'alternate');
      assert.notEqual(alternate.response,turn.response);

@@ -34,6 +34,36 @@ export const ROLEPLAY_SCENARIOS=Object.freeze([
     openingBranches:{alternate:{text:'We have a plan for the locker. A departure announcement just played. Did you hear it?',ja:'ロッカーの対応が決まりました。出発案内が流れましたが聞こえましたか？'},supported:{text:'We can return to the locker if needed. An announcement just played. Did you catch it?',ja:'必要ならロッカーに戻れます。今のアナウンスは聞き取れましたか？'}},
     replyBranches:{alternate:{text:'Of course. I will repeat the platform and departure details.',ja:'もちろんです。ホームと出発の案内を繰り返します。'},supported:{text:'No problem. Let us go through the announcement slowly together.',ja:'大丈夫。アナウンスをゆっくり一緒に確認しましょう。'}}})
   ])
+ }),
+ Object.freeze({
+  id:'hotel',title:'ホテルで安心して過ごす',partner:'フロント・エマ',
+  description:'部屋の予約 → 騒音への謝罪 → チェックアウト確認',
+  setting:'予約から滞在中のやり取り、出発前の確認までつなげよう。',
+  turns:Object.freeze([
+   Object.freeze({baseId:'booking-hotel',npc:'Welcome to the hotel! How can I help you today?',npcJa:'ホテルへようこそ。本日はどのようなご用件ですか？',response:'Let me check which rooms are available.',responseJa:'空いているお部屋を確認しますね。',
+    replyBranches:{alternate:{text:'Certainly! I will find a room that suits your plans.',ja:'かしこまりました。ご予定に合うお部屋を探しますね。'},supported:{text:'Take your time. I can explain the room options first.',ja:'ゆっくりで大丈夫です。まずお部屋の選択肢を説明しますね。'}}}),
+   Object.freeze({baseId:'apology-noise',npc:'I received a report of noise from your room. Can we talk about it?',npcJa:'お部屋から音がすると連絡がありました。少しお話しできますか？',response:'Thank you for apologizing. Please keep the noise down tonight.',responseJa:'謝ってくださってありがとうございます。今夜は静かにお願いします。',
+    openingBranches:{alternate:{text:'Your room is ready. Later tonight, I heard about some noise. Can we talk?',ja:'お部屋をご用意しました。今夜の騒音について少しお話しできますか？'},supported:{text:'Let us try another hotel situation. A guest reported noise. How would you respond?',ja:'次のホテルでの場面です。騒音について連絡がありました。どう答えますか？'}},
+    replyBranches:{alternate:{text:'I appreciate you saying that. Thank you for considering the other guests.',ja:'そう言っていただけて助かります。ほかのお客様への配慮をありがとうございます。'},supported:{text:'We can go through how to respond to a noise complaint together.',ja:'騒音の連絡への答え方を一緒に練習しましょう。'}}}),
+   Object.freeze({baseId:'clarify-hotel',npc:'Here are your checkout details. Is there anything you would like to confirm?',npcJa:'こちらがチェックアウトのご案内です。確認したいことはありますか？',response:'Of course. Let me confirm the checkout time for your booking.',responseJa:'もちろんです。ご予約のチェックアウト時刻を確認しますね。',
+    openingBranches:{alternate:{text:'Thanks for helping keep things quiet. Before checkout, is there anything to confirm?',ja:'静かに過ごしていただきありがとうございます。チェックアウト前に確認したいことはありますか？'},supported:{text:'We can review the room situation later. Now, do you have any checkout questions?',ja:'お部屋についてはあとで確認できます。チェックアウトで質問はありますか？'}},
+    replyBranches:{alternate:{text:'Good catch. I will compare the time with your reservation.',ja:'よく気づきましたね。ご予約の時間と照らし合わせます。'},supported:{text:'No problem. Let us look at your reservation details together.',ja:'大丈夫ですよ。ご予約の内容を一緒に確認しましょう。'}}})
+  ])
+ }),
+ Object.freeze({
+  id:'market',title:'マーケットで買い物',partner:'店員・リア',
+  description:'ドリンク注文 → 料金の確認 → 商品トラブル',
+  setting:'マーケットでの注文、会計、買った品物の相談を英語で伝えよう。',
+  turns:Object.freeze([
+   Object.freeze({baseId:'city-market-speak-order',npc:'Hi! What can I get you to drink?',npcJa:'こんにちは。お飲み物は何になさいますか？',response:'Certainly. I will prepare your tea.',responseJa:'かしこまりました。お茶をご用意しますね。',
+    replyBranches:{alternate:{text:'Sounds good! I can make that order for you.',ja:'いいですね！そのご注文でご用意します。'},supported:{text:'No rush. Let us look at the drink menu together.',ja:'急がなくて大丈夫。ドリンクメニューを一緒に見ましょう。'}}}),
+   Object.freeze({baseId:'city-market-speak-bill',npc:'Here is your total. Do you have any questions about the charge?',npcJa:'こちらが合計金額です。料金について質問はありますか？',response:'Let me check the extra charge on your receipt.',responseJa:'レシートの追加料金を確認しますね。',
+    openingBranches:{alternate:{text:'Your drink order is ready. Here is the total. Would you like to check it?',ja:'ご注文のドリンクができました。こちらが合計です。ご確認されますか？'},supported:{text:'We can choose a drink later. Let us practice checking a bill. Any questions?',ja:'ドリンクはあとで選べます。次はお会計の練習です。質問はありますか？'}},
+    replyBranches:{alternate:{text:'Good question. I will show you how the total was calculated.',ja:'いい質問です。合計金額の計算をお見せしますね。'},supported:{text:'We can check each item on the receipt together.',ja:'レシートの項目を一つずつ確認しましょう。'}}}),
+   Object.freeze({baseId:'city-market-speak-return',npc:'Is there a problem with something you bought at the market?',npcJa:'マーケットで買った品物に何か問題がありましたか？',response:'I can check the item and explain your options.',responseJa:'品物を確認して、対応方法を説明しますね。',
+    openingBranches:{alternate:{text:'We have checked the charges. Is there also a problem with an item you bought?',ja:'料金の確認ができました。買った品物にも問題がありますか？'},supported:{text:'We can finish checking the bill later. Do you need help with something you bought?',ja:'お会計はあとで確認できます。買った品物でお困りですか？'}},
+    replyBranches:{alternate:{text:'Thanks for explaining. Let me check whether we can exchange it.',ja:'ご説明ありがとうございます。交換できるか確認しますね。'},supported:{text:'Let us look at the item and the receipt together first.',ja:'まず品物とレシートを一緒に確認しましょう。'}}})
+  ])
  })
 ]);
 
@@ -56,7 +86,8 @@ export function roleplayFor(id,difficulty,prompts=ALL_PROMPTS){
 // answer. Unverified text or example-only progression never triggers it.
 export function roleplayReplyFor(turn,answer,{confirmed=false}={}){
  if(!turn)return null;
- const alternate=confirmed&&Array.isArray(turn.prompt?.alternatives)&&
+ const alternate=confirmed&&normalizeEnglish(answer)!==normalizeEnglish(turn.prompt?.answer)&&
+  Array.isArray(turn.prompt?.alternatives)&&
   turn.prompt.alternatives.some(example=>typeof example==='string'&&normalizeEnglish(example)===normalizeEnglish(answer));
  const branch=!confirmed?'supported':alternate?'alternate':'standard';
  const variant=turn.replyBranches?.[branch];
@@ -73,16 +104,33 @@ export function roleplayOpeningFor(roleplay,index){
 }
 
 export function recommendedRoleplay(save,{difficulty=save.difficulty||'easy',today=dayKey()}={}){
- const due=new Set(Object.entries(save.reviewPrompts||{}).filter(([,day])=>day<=today).map(([id])=>id));
+ // Prioritize review only when it is actually due. An example-only attempt
+ // schedules tomorrow's review; it should not force the same scene again today.
+ const promptsAtLevel=new Map(ALL_PROMPTS.filter(p=>p.kind==='speak'&&(p.difficulty||'easy')===difficulty).map(p=>[p.id,p]));
+ const due=new Set(Object.entries(save.reviewPrompts||{}).filter(([id,day])=>promptsAtLevel.has(id)&&day<=today).map(([id])=>id));
+ for(const [id,record] of Object.entries(save.retention||{})){
+  if(promptsAtLevel.has(id)&&record?.nextDay&&record.nextDay<=today)due.add(id);
+ }
+ const duePhrases=new Set([...due].map(id=>promptsAtLevel.get(id).phraseId));
+ for(const [phraseId,entry] of Object.entries(save.progress||{})){
+  if(entry?.nextReviewDay&&entry.nextReviewDay<=today)duePhrases.add(phraseId);
+ }
+ const firstVisit=ROLEPLAY_SCENARIOS.every(scenario=>roleplayFor(scenario.id,difficulty).turns.every(turn=>
+  !save.progress?.[turn.prompt.phraseId]?.attempts));
  const scored=ROLEPLAY_SCENARIOS.map((scenario,index)=>{
   const {turns}=roleplayFor(scenario.id,difficulty);
-  const dueCount=turns.filter(t=>due.has(t.prompt.id)||
-   Boolean(save.retention?.[t.prompt.id]?.nextDay&&save.retention[t.prompt.id].nextDay<=today)).length;
-  const learnedCount=turns.filter(t=>Boolean(save.progress?.[t.prompt.phraseId]?.attempts)).length;
-  return {id:scenario.id,index,dueCount,learnedCount,score:dueCount*10+learnedCount};
- }).sort((a,b)=>b.score-a.score||a.index-b.index);
+  const dueCount=turns.filter(t=>due.has(t.prompt.id)).length;
+  const transferCount=turns.filter(t=>!due.has(t.prompt.id)&&duePhrases.has(t.prompt.phraseId)).length;
+  const freshCount=turns.filter(t=>!save.progress?.[t.prompt.phraseId]?.attempts).length;
+  const attempts=turns.reduce((total,t)=>total+(save.progress?.[t.prompt.phraseId]?.attempts||0),0);
+  return {id:scenario.id,index,dueCount,transferCount,freshCount,attempts,
+   score:dueCount*100+transferCount*25+freshCount*2};
+ }).sort((a,b)=>b.score-a.score||a.attempts-b.attempts||a.index-b.index);
  const best=scored[0];
- return {id:best.id,reason:best.dueCount?`復習期日の表現を${best.dueCount}つ含む`:best.learnedCount?'学習済みの表現を別の会話で使う':'最初の3ターン会話におすすめ'};
+ return {id:best.id,reason:best.dueCount?`復習期日の表現を${best.dueCount}つ含む`:
+  best.transferCount?`復習期日の表現を${best.transferCount}つ応用できる`:
+  firstVisit?'最初の3ターン会話におすすめ':
+  best.freshCount?`未練習の表現を${best.freshCount}つ試せる`:'学習済みの表現を別の会話で使う'};
 }
 
 // A short, evidence-bound conversation report. These turns exist in memory

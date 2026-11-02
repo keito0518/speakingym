@@ -348,6 +348,10 @@ function renderDifficulty() {
     card.dataset.recommended=String(selected);
     card.querySelector('.roleplay-badge').hidden=!selected;
   });
+  // The recommended scene stays first in both visual and keyboard order,
+  // including when a due speaking expression changes the recommendation.
+  const selectedRoleplayCard=$(`[data-roleplay-card="${roleplayPick.id}"]`);
+  selectedRoleplayCard?.parentElement?.prepend(selectedRoleplayCard);
 }
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);

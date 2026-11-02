@@ -21,8 +21,11 @@ const assert=require('node:assert/strict');
   await page.goto(url,{waitUntil:'networkidle'});
   await page.locator('[data-home-page="roleplay"]').click();
   assert.equal(await page.locator('.roleplay-hub').isVisible(),true);
+  assert.equal(await page.locator('[data-roleplay-card]').count(),4,
+    'Four different situations must be discoverable without hidden navigation');
   assert.match(await page.locator('#roleplay-recommendation').innerText(),/レストランで伝え切る/);
   assert.equal(await page.locator('[data-roleplay-card="restaurant"]').getAttribute('data-recommended'),'true');
+  assert.equal(await page.locator('[data-roleplay-card]').first().getAttribute('data-roleplay-card'),'restaurant');
   await page.locator('[data-roleplay="restaurant"]').click();
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'prefer-window-easy');
   assert.match(await page.locator('.roleplay-conversation').innerText(),/店員・メイ/);
@@ -119,10 +122,13 @@ const assert=require('node:assert/strict');
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-home-page="roleplay"]').click();
   assert.equal(await page.locator('[data-roleplay-card="station"]').getAttribute('data-recommended'),'true');
+  assert.equal(await page.locator('[data-roleplay-card]').first().getAttribute('data-roleplay-card'),'station',
+    'A suggested review should be the first visible scene, not buried below other cards');
   assert.match(await page.locator('#roleplay-recommendation').innerText(),/駅の困りごとを解決/);
   await page.locator('[data-roleplay-level="hard"]').click();
-  assert.equal(await page.locator('[data-roleplay-card="restaurant"]').getAttribute('data-recommended'),'true',
-    'An easy-only due phrase must not mislead the hard-level recommendation');
+  assert.doesNotMatch(await page.locator('#roleplay-recommendation').innerText(),/復習期日の表現/,
+    'An easy-only due prompt must not be misrepresented as a hard-level review');
+  assert.equal(await page.locator('[data-roleplay-card]').first().getAttribute('data-recommended'),'true');
   await page.locator('[data-roleplay="station"]').click();
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'problem-ticket-hard');
   assert.match(await page.locator('.roleplay-conversation').innerText(),/駅員・カイ/);
@@ -137,7 +143,31 @@ const assert=require('node:assert/strict');
     'Opening the NPC translation must not count as unassisted practice');
   const bounds=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(bounds.scroll<=bounds.width+1,`Roleplay must not overflow a mobile screen: ${JSON.stringify(bounds)}`);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#leave-play').click();
+  await page.locator('[data-home-page="roleplay"]').click();
+  await page.locator('[data-roleplay-level="easy"]').click();
+  for(const [scene,ids] of [
+   ['hotel',['booking-hotel','apology-noise','clarify-hotel']],
+   ['market',['city-market-speak-order-hard','city-market-speak-bill-hard','city-market-speak-return-hard']]
+  ]){
+   if(scene==='market')await page.locator('[data-roleplay-level="hard"]').click();
+   await page.locator(`[data-roleplay="${scene}"]`).click();
+   for(const [index,id] of ids.entries()){
+    assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),id);
+    assert.match(await page.locator('.roleplay-progress').innerText(),new RegExp(`会話 ${index+1} \\/ 3`));
+    await answer();
+    assert.equal(await page.locator('.roleplay-reply').getAttribute('data-roleplay-branch'),'standard');
+    await page.locator('#next-question').click();
+   }
+   assert.match(await page.locator('#result-title').innerText(),/会話完了/);
+   assert.equal(await page.locator('.roleplay-recap-turn').count(),3);
+   await page.locator('#result-home').click();
+   await page.locator('[data-home-page="roleplay"]').click();
+  }
+  const expandedBounds=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+  assert.ok(expandedBounds.scroll<=expandedBounds.width+1,`Expanded roleplay menu must fit mobile: ${JSON.stringify(expandedBounds)}`);
   assert.deepEqual(errors,[]);
-  console.log(`${engine}: personalized 3-turn conversation, review safety, recap, replay and mobile layout passed`);
+  console.log(`${engine}: four 3-turn situations, recommendation, review safety, branches, recap and mobile layout passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
