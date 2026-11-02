@@ -25,6 +25,7 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
+import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
@@ -513,6 +514,17 @@ function renderHome() {
     `<div class="review-journal-entry"><strong>${escapeHtml(entry.label)}</strong><span>${entry.dueNow?'今日の復習':'次の復習 '+escapeHtml(entry.due)}</span></div>`).join(''):
     '<p class="review-journal-empty">今日の復習はありません。新しい表現に挑戦してみよう。</p>';
   $('#start-review-practice').textContent=journal.due.length?'今日の復習をする':'英語を練習する';
+  const skillStats=skillProgressFor(save,dayKey());
+  $('#skill-growth-list').innerHTML=skillStats.map(stat=>{
+    const measured=stat.sample>0;
+    const evidence=measured?`直近${stat.sample}回答：自力で確認 ${stat.independent}回（${stat.percent}%）`:'自力での確認率はまだ記録なし';
+    const detail=measured?`ヒントあり ${stat.assisted}回 · ${stat.sample}回答に基づく`:'この更新後の回答から集計するよ';
+    return `<article class="skill-growth-card" data-skill="${stat.kind}"><div class="skill-growth-head"><strong>${escapeHtml(stat.label)}</strong><span>${stat.needsReview?'要復習 '+stat.needsReview+'問':'復習予定なし'}</span></div>
+      <p class="skill-growth-count">${escapeHtml(evidence)}</p>
+      <div class="skill-growth-track" aria-hidden="true"><span style="width:${stat.percent??0}%"></span></div>
+      <p class="skill-growth-detail">${escapeHtml(detail)} · 翌日以降に自力で確認 ${stat.spaced}問</p>
+      <button type="button" data-skill-start="${stat.kind}" class="skill-growth-start">${escapeHtml(stat.label)}を練習する</button></article>`;
+  }).join('');
   $('#stat-monsters').innerHTML = `${save.ownedMonsters.length}<span> / ${MONSTERS.length}</span>`;
   $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
@@ -556,6 +568,8 @@ function tacticalReviewTargets(){
 function startMainDungeon(areaId=null){startSession('forest-tactics',areaId,false,true);}
 function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) {
   cancelAutoAdvance();clearTimer(); stopAudio();
+  const focusKind=mode==='skill-focus'?requestedAreaId:null;
+  if(mode==='skill-focus'&&!SKILL_KINDS.includes(focusKind)){renderHome();return;}
   const transferPick=mode==='transfer-review'?dueRoleplayTransfers(save)[0]:null;
   if(mode==='transfer-review'&&!transferPick){renderHome();return;}
   const difficulty=transferPick?(transferPick.prompt.difficulty||'easy'):save.difficulty;
@@ -570,16 +584,18 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
   if(mode==='roleplay'&&!roleplay){renderHome();return;}
   const recallPlan=mode==='retention'?retentionPracticePlan(save,dayKey()):null;
   if(mode==='dungeon-review'&&!lastDungeonReviewIds.length){renderHome();return;}
-  const focused=mode==='transfer-review'?[transferPick.prompt]:mode==='retention'?recallPlan.prompts:
+  const focused=mode==='skill-focus'?skillFocusPrompts(save,focusKind,{difficulty,today:dayKey()}):
+    mode==='transfer-review'?[transferPick.prompt]:mode==='retention'?recallPlan.prompts:
     mode==='dungeon-review'?lastDungeonReviewIds.map(id=>ALL_PROMPTS.find(p=>p.id===id)).filter(Boolean):
     (mode==='listening'||mode==='speaking')?ALL_PROMPTS
     .filter(p=>p.kind===(mode==='listening'?'listen':'speak')&&(p.difficulty||'easy')===difficulty&&!p.bossOnly)
     .sort((x,y)=>Number(Boolean(save.reviewPrompts?.[y.id]&&save.reviewPrompts[y.id]<=dayKey()))-Number(Boolean(save.reviewPrompts?.[x.id]&&save.reviewPrompts[x.id]<=dayKey())))
     .slice(0,6):null;
   const prompts=forestMode?firstWave.prompts:roleplay?roleplay.turns.map(turn=>turn.prompt):focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
+  if(!prompts.length){renderHome();return;}
   const roster=[save.selectedMonster,...(save.ownedMonsters||[])].filter(id=>(save.ownedMonsters||[]).includes(id));
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
-  play={mode:forestMode?'forest':mode,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
+  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
@@ -591,7 +607,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='transfer-review'?'場面チェンジの復習':mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='transfer-review'?'場面チェンジの復習':mode==='skill-focus'?SKILL_LABELS[focusKind]+'集中練習':mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -599,7 +615,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
  $('#play-view').classList.toggle('tactical-battle',Boolean(tactical));
   $('#play-view').classList.toggle('scene-battle',forestMode);
   arrangeBattleScene(forestMode);
-  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='roleplay'||mode==='transfer-review'||mode==='dungeon-review'||mode==='retention');
+  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='roleplay'||mode==='transfer-review'||mode==='skill-focus'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
@@ -2301,7 +2317,7 @@ function finishSession(timedOut=false,defeated=false) {
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
-  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='retention'?'定着チェック完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
+  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='retention'?'定着チェック完了！':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'の集中練習完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
     (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
   $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='transfer-review'?(ended.smooth?'前の会話から時間を空けて、自力で表現を確認できたね！ 次は別の場面でも試そう。':'今日はヒント・例文で確認した段階。明日また1問で復習できるよ。'):ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
@@ -2396,8 +2412,8 @@ function finishSession(timedOut=false,defeated=false) {
     ?`${monsterFor(growthId).name}を育てる（使える${save.xpWallet} XP）`
     :'仲間の図鑑・進化を見る';
   $('#replay-run').hidden=canRetry;
-  $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='transfer-review'?'別の表現も練習する':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
-  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.roleplay?.id||ended.areaId);
+  $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'をもう一度':ended.mode==='transfer-review'?'別の表現も練習する':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
+  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
   showView('result');
 }
 const {renderCollection,renderTraining} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
@@ -2428,6 +2444,7 @@ $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
+$('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
 homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
 $('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
