@@ -1,6 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 import { cleanForest, FOREST_AREAS, CITY_AREAS } from './forest-engine.js';
 import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
+import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
@@ -37,6 +38,7 @@ export function createSave() {
     savedPromptIds: [],
     dailyHistory: [],
     quizProgress: {},
+    skillAttempts: {},
     rewardedDays: [],
     completedRuns: 0,
     bestSmooth: 0,
@@ -112,6 +114,7 @@ export function validateSave(value) {
     ).slice(-40).map(row=>({date:row.date,difficulty:row.difficulty,total:row.total,
       independent:row.independent,hinted:row.hinted,elapsedSeconds:row.elapsedSeconds})),
     quizProgress,
+    skillAttempts:sanitizeSkillAttempts(value.skillAttempts),
     rewardedDays: unique((Array.isArray(value.rewardedDays) ? value.rewardedDays : []).filter(key => typeof key === 'string')).slice(-250),
     completedRuns: safeSaveCount(value.completedRuns),
     bestSmooth: safeSaveCount(value.bestSmooth,999),
@@ -604,6 +607,7 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
     else if(quiz)next.reviewPrompts[promptId]=quiz.nextReviewDay;
   }
   next.totalAnswers++;
+  next.skillAttempts=appendSkillAttempt(next.skillAttempts,prompt,rating,today);
   const retentionRecord=recordRetention(next,prompt.id,rating,today);
   next.retention=retentionRecord.save.retention;
   // Reward a *verified spaced revisit* with a purely cosmetic bond milestone.
