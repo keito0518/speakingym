@@ -22,7 +22,7 @@ import { conversationPolishFor } from './conversation-polish.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
-import { roleplayFor, recommendedRoleplay, roleplayRecapFor } from './roleplay-scenarios.js';
+import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
@@ -82,10 +82,11 @@ function roleplayIntroMarkup(){
  if(!roleplay)return '';
  const turn=roleplay.turns[play.index];
  if(!turn)return '';
+ const opening=roleplayOpeningFor(roleplay,play.index);
  const history=roleplay.history.map((row,index)=>`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · ${index+1}</strong><span lang="en">${escapeHtml(row.npc)}</span></div><div class="roleplay-line player"><strong>あなた · ${row.outcome==='skipped'?'例文で確認':row.outcome==='hint'?'ヒントあり':'自力'}</strong><span lang="en">${row.outcome==='skipped'?'例文を確認（XPなし）':escapeHtml(row.answer)}</span></div>${row.response?`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · 返事</strong><span lang="en">${escapeHtml(row.response)}</span></div>`:''}`).join('');
- const translation=play.difficulty==='easy'?`<p class="roleplay-gloss">${escapeHtml(turn.npcJa)}</p>`:
-  `<details id="roleplay-translation" class="roleplay-translation"><summary>相手の日本語を確認（ヒント扱い）</summary><p>${escapeHtml(turn.npcJa)}</p></details>`;
- return `<section class="roleplay-conversation" aria-label="3ターンの会話履歴"><div class="roleplay-progress">会話 ${play.index+1} / ${roleplay.turns.length}<span style="--roleplay-progress:${100*play.index/roleplay.turns.length}%"></span></div><h2>${escapeHtml(roleplay.title)}</h2><p class="roleplay-scene">${escapeHtml(roleplay.setting)}</p>${history}<div class="roleplay-line current"><strong>${escapeHtml(roleplay.partner)} · 今のひと言</strong><span lang="en">${escapeHtml(turn.npc)}</span>${translation}</div></section>`;
+ const translation=play.difficulty==='easy'?`<p class="roleplay-gloss">${escapeHtml(opening.npcJa)}</p>`:
+  `<details id="roleplay-translation" class="roleplay-translation"><summary>相手の日本語を確認（ヒント扱い）</summary><p>${escapeHtml(opening.npcJa)}</p></details>`;
+ return `<section class="roleplay-conversation" aria-label="3ターンの会話履歴"><div class="roleplay-progress">会話 ${play.index+1} / ${roleplay.turns.length}<span style="--roleplay-progress:${100*play.index/roleplay.turns.length}%"></span></div><h2>${escapeHtml(roleplay.title)}</h2><p class="roleplay-scene">${escapeHtml(roleplay.setting)}</p>${history}<div class="roleplay-line current"><strong>${escapeHtml(roleplay.partner)} · 今のひと言</strong><span lang="en">${escapeHtml(opening.npc)}</span>${translation}</div></section>`;
 }
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
 const monsterFor = id => MONSTERS.find(monster => monster.id === id);
@@ -1799,7 +1800,9 @@ async function gradeAnswer() {
   play.revealed=true;
   if(play.roleplay){
     const turn=play.roleplay.turns[play.index];
-    play.roleplay.history.push({npc:turn.npc,response:turn.response,answer:raw,
+    const opening=roleplayOpeningFor(play.roleplay,play.index);
+    const reaction=roleplayReplyFor(turn,raw,{confirmed:true});
+    play.roleplay.history.push({npc:opening.npc,...reaction,answer:raw,
       outcome:rating==='smooth'?'smooth':'hint',
       checked:Array.isArray(grade.checks?.met)?grade.checks.met.slice(0,3):[]});
   }
@@ -1989,7 +1992,8 @@ async function gradeAnswer() {
   const learningDetails=autoForest
     ?`<details id="forest-success-explanation" class="forest-success-explanation"><summary>解説・復習のポイントを見る</summary><div class="forest-success-explanation-body">${correctBody}</div></details>`
     :correctBody;
-  const roleplayReply=play.roleplay?`<p class="roleplay-reply"><strong>${escapeHtml(play.roleplay.partner)}：</strong><span lang="en">${escapeHtml(play.roleplay.turns[play.index].response)}</span><small>${escapeHtml(play.roleplay.turns[play.index].responseJa)} · 次の会話へ進もう。</small></p>`:'';
+  const roleplayReaction=play.roleplay?.history[play.index];
+  const roleplayReply=roleplayReaction?`<p class="roleplay-reply" data-roleplay-branch="${roleplayReaction.branch}"><strong>${escapeHtml(play.roleplay.partner)}：${roleplayReaction.branch==='alternate'?'言い換えに反応！':''}</strong><span lang="en">${escapeHtml(roleplayReaction.response)}</span><small>${escapeHtml(roleplayReaction.responseJa)} · 次の会話へ進もう。</small></p>`:'';
   // Keep the payoff where the learner answered; the arena may be off-screen
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=2
@@ -2008,7 +2012,11 @@ function skipAnswer(){
   const learnerAnswer=$('#spoken-answer')?.value||'';
   if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
   play.revealed=true;stopAudio();
-  if(play.roleplay)play.roleplay.history.push({npc:play.roleplay.turns[play.index].npc,answer:'',outcome:'skipped'});
+  if(play.roleplay){
+    const opening=roleplayOpeningFor(play.roleplay,play.index);
+    const reaction=roleplayReplyFor(play.roleplay.turns[play.index],'');
+    play.roleplay.history.push({npc:opening.npc,...reaction,answer:'',outcome:'skipped'});
+  }
   if(play.mode==='forest'){play.combo=0;syncBattleAura();}
   if(defending){
     if(!play.tactics.defenseHitTaken&&['vocab','grammar'].includes(prompt.kind)){
@@ -2028,7 +2036,8 @@ function skipAnswer(){
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
   const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):
     conversationFeedbackHtml(prompt,learnerAnswer,{status:'review'}, {hinted:true,revealExample:true});
-  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}<button id="next-question" class="grading-next">${defending?'味方のターンへ →':play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button>${conversationPolishHtml(prompt)}</div>`;
+  const roleplaySupport=play.roleplay?`<p class="roleplay-reply" data-roleplay-branch="supported"><strong>${escapeHtml(play.roleplay.partner)} · 練習のサポート：</strong><span lang="en">${escapeHtml(play.roleplay.history[play.index].response)}</span><small>${escapeHtml(play.roleplay.history[play.index].responseJa)} · 自分で返答した扱いにはならないよ。</small></p>`:'';
+  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}${roleplaySupport}<button id="next-question" class="grading-next">${defending?'味方のターンへ →':play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button>${conversationPolishHtml(prompt)}</div>`;
   attachFeedbackBookmark(prompt);
   wireConversationPolish(prompt,learnerAnswer);
   $('#next-question').addEventListener('click',()=>{
@@ -2200,10 +2209,10 @@ function finishSession(timedOut=false,defeated=false) {
       const spoken=row.answer?`<p><strong>あなたの英文</strong> <span lang="en">${escapeHtml(row.answer)}</span></p>`:'';
       const evidence=row.elements.length?`<p class="roleplay-recap-evidence"><strong>確認できた内容</strong> ${row.elements.map(escapeHtml).join('・')}</p>`:
         `<p class="roleplay-recap-evidence"><strong>今回の確認</strong> ${row.confirmed?'教材の用件を確認できたよ（細かな項目別採点はなし）。':'例文を見て学習。自力で伝わったかはまだ判定していないよ。'}</p>`;
-      return `<li class="roleplay-recap-turn" data-recap-status="${row.status}"><strong>${index+1}. ${escapeHtml(row.scene)} <span>${row.label}</span></strong>${spoken}${evidence}<p><strong>参考表現（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(row.example)}</span></p>${row.alternative?`<p><strong>別の伝え方</strong> <span lang="en">${escapeHtml(row.alternative)}</span></p>`:''}<p><strong>次に意識すること</strong> ${escapeHtml(row.next)} ${row.tip?escapeHtml(row.tip):''}</p></li>`;
+      return `<li class="roleplay-recap-turn" data-recap-status="${row.status}"><strong>${index+1}. ${escapeHtml(row.scene)} <span>${row.label}</span></strong>${spoken}${evidence}${row.response?`<p class="roleplay-recap-reaction"><strong>${escapeHtml(row.responseLabel)}</strong><span lang="en">${escapeHtml(row.response)}</span></p>`:''}<p><strong>参考表現（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(row.example)}</span></p>${row.alternative?`<p><strong>別の伝え方</strong> <span lang="en">${escapeHtml(row.alternative)}</span></p>`:''}<p><strong>次に意識すること</strong> ${escapeHtml(row.next)} ${row.tip?escapeHtml(row.tip):''}</p></li>`;
     }).join('');
     const track=recap.rows.map((row,index)=>`<div data-recap-status="${row.status}"><strong>${index+1}</strong><span>${row.label}</span></div>`).join('');
-    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${recap.independent} / ${recap.rows.length}ターンを自力で返答</h3><div class="roleplay-recap-track" aria-label="会話の3ターンの到達状況">${track}</div><p>ヒントあり ${recap.hinted} · 例文で確認 ${recap.skipped}</p><div class="roleplay-coaching-card"><strong>${escapeHtml(recap.headline)}</strong><p>${escapeHtml(recap.summary)}</p></div><div class="roleplay-coaching-card focus"><strong>次回のミッション</strong><p>${escapeHtml(recap.next)}</p>${recap.focus?`<span lang="en">${escapeHtml(recap.focus.example)}</span>`:''}</div><h4 class="roleplay-recap-heading">3ターンをふりかえる</h4><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>表示している返答はこの画面限りで、セーブデータに保存されないよ。発音評価やAI自由会話の採点ではありません。</small></section>`;
+    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${recap.independent} / ${recap.rows.length}ターンを自力で返答</h3><div class="roleplay-recap-track" aria-label="会話の3ターンの到達状況">${track}</div><p>ヒントあり ${recap.hinted} · 例文で確認 ${recap.skipped}</p><div class="roleplay-coaching-card"><strong>${escapeHtml(recap.headline)}</strong><p>${escapeHtml(recap.summary)}</p></div><div class="roleplay-coaching-card focus"><strong>次回のミッション</strong><p>${escapeHtml(recap.next)}</p>${recap.focus?`<span lang="en">${escapeHtml(recap.focus.example)}</span>`:''}</div><h4 class="roleplay-recap-heading">3ターンをふりかえる</h4><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>相手の反応は教材で用意した分岐だよ。表示した英文はセーブデータに保存されず、発音評価やAI自由会話の採点ではありません。</small></section>`;
   })():'';
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
   renderDungeonLearningReport(ended);
