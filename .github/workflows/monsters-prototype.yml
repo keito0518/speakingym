@@ -24,6 +24,7 @@ jobs:
           node --check prototype/speakingym-monsters/forest-quizzes.js
           node --check prototype/speakingym-monsters/forest-quizzes-extra.js
           node --check prototype/speakingym-monsters/listening-challenges.js
+          node --check prototype/speakingym-monsters/roleplay-scenarios.js
       - name: Curriculum, mastery and reward tests
         run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs
       - name: Install Playwright
@@ -39,6 +40,11 @@ jobs:
       - name: WebKit animated battle interaction
         timeout-minutes: 2
         run: timeout 90s node tests/monsters-webkit-interaction.cjs
+      - name: Three-turn speaking conversations (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 60s node tests/monsters-roleplay-browser.cjs
+          timeout 60s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-roleplay-browser.cjs
       - name: Turn-based tactics browser QA (Chromium + WebKit)
         timeout-minutes: 4
         run: |

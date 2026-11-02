@@ -1,0 +1,35 @@
+/* Short scripted conversations with the game's existing conservative grader. */
+.roleplay-hub{margin:20px 0;padding:20px;border:2px solid #9fc5b9;border-radius:17px;background:linear-gradient(135deg,#eff8ed,#e6f3f5);color:#203f39}
+.roleplay-hub h2{margin:5px 0;font-size:clamp(21px,4vw,27px);color:#153f39}
+.roleplay-hub-head>p{margin:7px 0;line-height:1.7;font-size:14px;color:#304f47}
+.roleplay-hub .roleplay-recommendation{display:inline-block;margin:10px 0 14px;padding:8px 11px;background:#fff6d5;border:1px solid #b9a064;border-radius:9px;color:#604521;font-size:13px;font-weight:800}
+.roleplay-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.roleplay-option{position:relative;min-width:0;padding:15px;background:#fffef6;border:1px solid #a4bcb2;border-radius:13px}
+.roleplay-option[data-recommended="true"]{border:2px solid #ad822c;background:#fffcf0;padding:14px}
+.roleplay-option strong{display:block;font-size:16px;color:#203f35}
+.roleplay-option p{margin:8px 0 13px;font-size:13px;line-height:1.6;color:#40564a}
+.roleplay-option button{display:block;width:100%;min-height:46px;padding:10px;background:#205e4d;color:#fff9e7;border:2px solid #174836;border-radius:9px;font-size:14px;font-weight:850;cursor:pointer}
+.roleplay-option button:focus-visible{outline:3px solid #a76b1c;outline-offset:3px}
+.roleplay-option .roleplay-badge{display:inline-block;margin-bottom:7px;padding:3px 7px;border-radius:7px;background:#f7e4ad;color:#59401a;font-size:12px;font-weight:850}
+.roleplay-option .roleplay-badge[hidden]{display:none}
+.roleplay-disclaimer{display:block;margin-top:11px;line-height:1.6;font-size:12px;color:#38574d}
+.roleplay-conversation{margin:0 0 15px;padding:13px;border:1px solid #a8c3b6;border-radius:13px;background:#eef6f0;color:#22463b}
+.roleplay-conversation h2{margin:2px 0 5px;font-size:19px;color:#1b453a}
+.roleplay-scene{margin:4px 0 13px;font-size:13px;line-height:1.6;color:#3d5b50}
+.roleplay-progress{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-weight:850;font-size:13px;color:#315b47}
+.roleplay-progress span{display:block;flex:1;height:8px;border-radius:99px;background:#c1d6c7;overflow:hidden}
+.roleplay-progress span::before{content:"";display:block;width:var(--roleplay-progress,0%);height:100%;background:#287656}
+.roleplay-line{margin:8px 0;padding:10px 12px;border-radius:11px;background:#fffef8;border:1px solid #bdcebf;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.roleplay-line strong{display:block;margin-bottom:2px;color:#244a3a;font-size:12px}
+.roleplay-line.player{margin-left:12px;background:#d9ecdf;border-color:#9fbea8}
+.roleplay-line.current{border:2px solid #9b793c;background:#fff5d9}
+.roleplay-gloss{margin:7px 0 0;font-size:12px;color:#634b2f}
+.roleplay-translation{margin-top:8px;padding:6px 8px;border:1px solid #b09a6e;border-radius:7px;background:#fffef6;color:#4a4538;font-size:12px}
+.roleplay-translation summary{min-height:32px;display:flex;align-items:center;cursor:pointer;font-weight:800}
+.roleplay-translation p{margin:4px 0;line-height:1.6}
+.roleplay-reply{margin:9px 0;padding:10px 12px;border:1px solid #88a899;border-left:4px solid #277158;border-radius:9px;background:#e4f1e8;color:#274b3b;font-size:13px;line-height:1.6}
+.roleplay-reply small{display:block;margin-top:4px;font-size:12px;color:#3e5f4f}
+.roleplay-result{margin:12px 0;padding:14px;border:1px solid #8eaf9f;border-radius:12px;background:#e8f5e9;color:#234635}
+.roleplay-result h3{margin:3px 0 7px;font-size:17px}
+.roleplay-result p{margin:6px 0;font-size:13px;line-height:1.6}
+@media(max-width:580px){.roleplay-hub{padding:15px;margin:13px 0}.roleplay-options{grid-template-columns:1fr}.roleplay-conversation{padding:11px}.roleplay-line{font-size:13px}}

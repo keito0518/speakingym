@@ -20,6 +20,7 @@ import { speakingFeedbackFor } from './speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
+import { roleplayFor, recommendedRoleplay } from './roleplay-scenarios.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
@@ -72,6 +73,16 @@ function syncBattleAura(){
   $('#forest-combo').textContent=chain>=1?`${chain} CHAIN`:'';
 }
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+function roleplayIntroMarkup(){
+ const roleplay=play?.roleplay;
+ if(!roleplay)return '';
+ const turn=roleplay.turns[play.index];
+ if(!turn)return '';
+ const history=roleplay.history.map((row,index)=>`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · ${index+1}</strong><span lang="en">${escapeHtml(row.npc)}</span></div><div class="roleplay-line player"><strong>あなた · ${row.outcome==='skipped'?'例文で確認':row.outcome==='hint'?'ヒントあり':'自力'}</strong><span lang="en">${row.outcome==='skipped'?'例文を確認（XPなし）':escapeHtml(row.answer)}</span></div>`).join('');
+ const translation=play.difficulty==='easy'?`<p class="roleplay-gloss">${escapeHtml(turn.npcJa)}</p>`:
+  `<details id="roleplay-translation" class="roleplay-translation"><summary>相手の日本語を確認（ヒント扱い）</summary><p>${escapeHtml(turn.npcJa)}</p></details>`;
+ return `<section class="roleplay-conversation" aria-label="3ターンの会話履歴"><div class="roleplay-progress">会話 ${play.index+1} / ${roleplay.turns.length}<span style="--roleplay-progress:${100*play.index/roleplay.turns.length}%"></span></div><h2>${escapeHtml(roleplay.title)}</h2><p class="roleplay-scene">${escapeHtml(roleplay.setting)}</p>${history}<div class="roleplay-line current"><strong>${escapeHtml(roleplay.partner)} · 今のひと言</strong><span lang="en">${escapeHtml(turn.npc)}</span>${translation}</div></section>`;
+}
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
 const monsterFor = id => MONSTERS.find(monster => monster.id === id);
 function createTrainedBattleParty(ids){
@@ -283,6 +294,13 @@ function renderHome() {
     ?`同じ難易度の7日以上前と比較：${dailyGrowth.changeSevenDays>=0?'+':''}${dailyGrowth.changeSevenDays}ポイント（${dailyGrowth.weekBeforeRate}% → ${dailyGrowth.lastRate}%）`
     :dailyGrowth.sessions?`完了 ${dailyGrowth.sessions}回 · 前回 ${dailyGrowth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
     :'5分ジムを完了すると、ヒントなしで正解した割合を記録するよ。';
+  const roleplayPick=recommendedRoleplay(save);
+  $('#roleplay-recommendation').textContent=`今日のおすすめ：${roleplayFor(roleplayPick.id,save.difficulty).title} · ${roleplayPick.reason}`;
+  $$('[data-roleplay-card]').forEach(card=>{
+    const selected=card.dataset.roleplayCard===roleplayPick.id;
+    card.dataset.recommended=String(selected);
+    card.querySelector('.roleplay-badge').hidden=!selected;
+  });
   const recall=retentionOverview(save,dayKey());
   const recallPlan=retentionPracticePlan(save,dayKey());
   const bond=getMonsterBondProgress(save,save.selectedMonster);
@@ -409,6 +427,8 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
   const promptCount=mode==='challenge'?{easy:6,normal:4,hard:3}[difficulty]:3;
   const firstWave=forestMode?buildForestWave({difficulty,wave:1,areaId:area.id,progression:endless?'endless':'story',previousIds:cleanForest(save.forest).recentPromptIds,reviewPhraseIds:dueForestPhrases(),reviewPromptIds:dueForestPromptIds(),quizWeaknessIds:dueQuizWeaknessIds(),bossConversation:true}):null;
   const gym=mode==='daily'?dailyTrainingPlan(save,{difficulty}):null;
+  const roleplay=mode==='roleplay'?roleplayFor(requestedAreaId,difficulty):null;
+  if(mode==='roleplay'&&!roleplay){renderHome();return;}
   const recallPlan=mode==='retention'?retentionPracticePlan(save,dayKey()):null;
   if(mode==='dungeon-review'&&!lastDungeonReviewIds.length){renderHome();return;}
   const focused=mode==='retention'?recallPlan.prompts:
@@ -417,11 +437,11 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
     .filter(p=>p.kind===(mode==='listening'?'listen':'speak')&&(p.difficulty||'easy')===difficulty&&!p.bossOnly)
     .sort((x,y)=>Number(Boolean(save.reviewPrompts?.[y.id]&&save.reviewPrompts[y.id]<=dayKey()))-Number(Boolean(save.reviewPrompts?.[x.id]&&save.reviewPrompts[x.id]<=dayKey())))
     .slice(0,6):null;
-  const prompts=forestMode?firstWave.prompts:focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
+  const prompts=forestMode?firstWave.prompts:roleplay?roleplay.turns.map(turn=>turn.prompt):focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
   const roster=[save.selectedMonster,...(save.ownedMonsters||[])].filter(id=>(save.ownedMonsters||[]).includes(id));
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   play={mode:forestMode?'forest':mode,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
-    prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],
+    prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
@@ -432,7 +452,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -440,7 +460,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
  $('#play-view').classList.toggle('tactical-battle',Boolean(tactical));
   $('#play-view').classList.toggle('scene-battle',forestMode);
   arrangeBattleScene(forestMode);
-  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='dungeon-review'||mode==='retention');
+  $('#play-view').classList.toggle('review-only',mode==='saved'||mode==='daily'||mode==='listening'||mode==='speaking'||mode==='roleplay'||mode==='dungeon-review'||mode==='retention');
   $('#play-clock').textContent=mode==='daily'?'5分目安 · 時間制限なし':'自分のペースで';
   if(forestMode){
     $('#forest-journey').classList.remove('forest-victory');
@@ -1116,6 +1136,12 @@ function renderQuestion() {
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'&&play.tactics?.turn==='enemy'?'ENEMY TURN':play.mode==='forest'?(play.index>=regularCount()?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=regularCount()?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=regularCount()?BOSS_HITS:regularCount()):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'聞いて選ぶ':play.mode==='forest'&&prompt.kind==='read'?'読んで答える':prompt.kind==='vocab'?'単語を選ぶ':prompt.kind==='grammar'?'文法の問題':englishMode?'英語 → 英語':prompt.kind==='listen'?'リスニング':'日本語 → 英語'}</span></div>${listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'英語を聞いて、意味を選ぼう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div><p id="listening-status" class="listening-status" role="status" aria-live="polite">${englishMode?'Choose what you heard. No microphone needed.':'聞き取れた内容を選ぼう。'}</p></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:`${readingPassage}${questionBody}`}`;
+  if(play.roleplay){
+    $('#play-card').insertAdjacentHTML('afterbegin',roleplayIntroMarkup());
+    $('#roleplay-translation')?.addEventListener('toggle',event=>{
+      if(event.target.open&&play&&!play.revealed)play.hintUsed=true;
+    });
+  }
   if(play.mode==='forest'&&retentionOverview(save,dayKey()).due.some(row=>row.id===prompt.id)){
     const tag=document.createElement('span');tag.className='dungeon-recall-tag';
     tag.textContent='記憶の試練 · 復習問題';
@@ -1694,6 +1720,10 @@ async function gradeAnswer() {
     outcome:rating==='smooth'?'independent':'supported'});
   if(play.tactics)play.tactics.usedPromptIds.add(prompt.id);
   play.revealed=true;
+  if(play.roleplay){
+    const turn=play.roleplay.turns[play.index];
+    play.roleplay.history.push({npc:turn.npc,answer:raw,outcome:rating==='smooth'?'smooth':'hint'});
+  }
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
   if(play.mode==='forest'&&play.tactics?.turn==='enemy'){
@@ -1877,11 +1907,12 @@ async function gradeAnswer() {
   const learningDetails=autoForest
     ?`<details id="forest-success-explanation" class="forest-success-explanation"><summary>解説・復習のポイントを見る</summary><div class="forest-success-explanation-body">${correctBody}</div></details>`
     :correctBody;
+  const roleplayReply=play.roleplay?`<p class="roleplay-reply"><strong>${escapeHtml(play.roleplay.partner)}：</strong><span lang="en">${escapeHtml(play.roleplay.turns[play.index].response)}</span><small>${escapeHtml(play.roleplay.turns[play.index].responseJa)} · 次の会話へ進もう。</small></p>`:'';
   // Keep the payoff where the learner answered; the arena may be off-screen
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=2
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
@@ -1893,6 +1924,7 @@ function skipAnswer(){
   const learnerAnswer=$('#spoken-answer')?.value||'';
   if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
   play.revealed=true;stopAudio();
+  if(play.roleplay)play.roleplay.history.push({npc:play.roleplay.turns[play.index].npc,answer:'',outcome:'skipped'});
   if(play.mode==='forest'){play.combo=0;syncBattleAura();}
   if(defending){
     if(!play.tactics.defenseHitTaken&&['vocab','grammar'].includes(prompt.kind)){
@@ -2033,7 +2065,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
-  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):'TRAINING COMPLETE';
+  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):ended.roleplay?'CONVERSATION COMPLETE':'TRAINING COMPLETE';
   if(forestFinished&&!ended.endless)betaTelemetry.track('monsters_beta_chapter_clear',{
     chapter:ended.areaId,difficulty:ended.baseDifficulty
   });
@@ -2041,10 +2073,10 @@ function finishSession(timedOut=false,defeated=false) {
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
-  $('#result-title').textContent=ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
+  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
     (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
-  $('#result-description').textContent=ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
+  $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
     (defeated?ended.tactics?'味方のHPがなくなったよ。学んだ英語は消えないから、仲間の相性や防御を工夫して再挑戦しよう！':'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
      `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
@@ -2058,7 +2090,13 @@ function finishSession(timedOut=false,defeated=false) {
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
-  $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories;
+  const roleplayResult=ended.roleplay?(()=>{
+    const independent=ended.roleplay.history.filter(turn=>turn.outcome==='smooth').length;
+    const needReview=ended.roleplay.history.map((turn,index)=>turn.outcome==='smooth'?null:ended.roleplay.turns[index]?.prompt).filter(Boolean);
+    const advice=needReview.length?`次は「${escapeHtml(needReview[0].scene)}」で使う表現を復習しよう。`:'3つの場面をすべて自力で確認できたね！ 別の会話でも使ってみよう。';
+    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${independent} / ${ended.roleplay.turns.length}ターンを自力で返答</h3><p>ヒントあり ${ended.roleplay.history.filter(turn=>turn.outcome==='hint').length} · 例文で確認 ${ended.roleplay.history.filter(turn=>turn.outcome==='skipped').length}</p><p>${advice}</p><small>会話の文字起こしはセーブデータに保存されないよ。</small></section>`;
+  })():'';
+  $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
   renderDungeonLearningReport(ended);
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   const nextArea=forestFinished&&!ended.endless?nextDungeonArea(save):null;
@@ -2080,8 +2118,8 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry);
   $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry);
   $('#replay-run').hidden=canRetry;
-  $('#replay-run').textContent=ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
-  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.areaId);
+  $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
+  $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode,ended.roleplay?.id||ended.areaId);
   showView('result');
 }
 const {renderCollection} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
@@ -2091,6 +2129,7 @@ $$('[data-difficulty]').forEach(button => button.addEventListener('click', () =>
   renderDifficulty();
 }));
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
+$$('[data-roleplay]').forEach(button=>button.addEventListener('click',()=>startSession('roleplay',button.dataset.roleplay)));
 $('#start-forest').addEventListener('click',()=>startMainDungeon());
 $('#start-forest-simple').addEventListener('click',()=>startSession('forest'));
 $('#start-forest-tactics').addEventListener('click',()=>startSession('forest-tactics'));

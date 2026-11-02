@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./character-screens.css">
   <link rel="stylesheet" href="./clarity.css">
   <link rel="stylesheet" href="./scene-game.css">
+  <link rel="stylesheet" href="./roleplay.css">
   <script src="../../analytics-config.js"></script>
   <script type="module" src="./monsters.js"></script>
 </head>
@@ -38,6 +39,27 @@
             <strong id="daily-last-rate">―</strong><small>直近の自力正解率</small>
             <p id="daily-growth-note">5分ジムを完了すると、成長を記録できるよ。</p>
           </div>
+        </section>
+        <section class="roleplay-hub" aria-labelledby="roleplay-hub-title">
+          <div class="roleplay-hub-head">
+            <span class="tiny-caps">REAL-LIFE CONVERSATION · 3 TURNS</span>
+            <h2 id="roleplay-hub-title">3ターン実践会話</h2>
+            <p>相手のひと言を聞いて、自分の言葉で返そう。3回のやり取りがつながる練習。今の難易度で挑戦できるよ。</p>
+            <p id="roleplay-recommendation" class="roleplay-recommendation" role="status">今日のおすすめを確認中…</p>
+          </div>
+          <div class="roleplay-options">
+            <article class="roleplay-option" data-roleplay-card="restaurant">
+              <span class="roleplay-badge" hidden>おすすめ</span>
+              <strong>レストランで伝え切る</strong><p>席の希望 → 料理の行き違い → 会計の確認</p>
+              <button type="button" data-roleplay="restaurant">会話を始める →</button>
+            </article>
+            <article class="roleplay-option" data-roleplay-card="station">
+              <span class="roleplay-badge" hidden>おすすめ</span>
+              <strong>駅の困りごとを解決</strong><p>電子チケット → ロッカー → アナウンス</p>
+              <button type="button" data-roleplay="station">会話を始める →</button>
+            </article>
+          </div>
+          <small class="roleplay-disclaimer">教材に沿った会話です。AI自由会話・発音判定ではありません。マイクが使えない場合は入力でも練習できます。</small>
         </section>
         <section class="saved-review" aria-labelledby="saved-review-title">
           <div class="saved-review-heading"><span class="tiny-caps">MY SAVED QUESTIONS</span><h2 id="saved-review-title">保存した問題を復習</h2>

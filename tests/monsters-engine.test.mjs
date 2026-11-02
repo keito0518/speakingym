@@ -9,6 +9,7 @@ import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAV
 import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
 import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
 import { gradeDelayMeaning } from '../prototype/speakingym-monsters/speaking-meaning.js';
+import { ROLEPLAY_SCENARIOS, roleplayFor, recommendedRoleplay } from '../prototype/speakingym-monsters/roleplay-scenarios.js';
 import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
@@ -1362,6 +1363,39 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(gradeLocalResponse(null,'hello').status,'ungraded');
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'No '.repeat(400)).status,'ungraded');
   assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
+});
+test('three-turn real-world roleplays use independently graded speaking tasks at every difficulty',()=>{
+ assert.equal(ROLEPLAY_SCENARIOS.length,2);
+ for(const scenario of ROLEPLAY_SCENARIOS){
+  for(const difficulty of ['easy','normal','hard']){
+   const play=roleplayFor(scenario.id,difficulty);
+   assert.equal(play.turns.length,3);
+   assert.equal(new Set(play.turns.map(turn=>turn.prompt.id)).size,3);
+   for(const turn of play.turns){
+    assert.equal(turn.prompt.kind,'speak');
+    assert.equal(turn.prompt.difficulty||'easy',difficulty);
+    assert.equal(gradeLocalResponse(turn.prompt,turn.prompt.answer).status,'correct');
+    assert.notEqual(gradeLocalResponse(turn.prompt,'I have no idea.').status,'correct',
+      'A random reply cannot clear the roleplay or award XP');
+   }
+  }
+ }
+ assert.equal(roleplayFor('unknown','easy'),null);
+ assert.throws(()=>roleplayFor('restaurant','unsupported'),/difficulty/);
+ assert.throws(()=>roleplayFor('station','easy',[]),/Missing authored roleplay task/);
+});
+test('roleplay suggestion prefers actually overdue phrases without an AI call',()=>{
+ const save=createSave();
+ assert.deepEqual(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}),{
+  id:'restaurant',reason:'最初の3ターン会話におすすめ'
+ });
+ const station=roleplayFor('station','easy');
+ save.reviewPrompts={[station.turns[0].prompt.id]:'2026-11-01'};
+ assert.deepEqual(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}),{
+  id:'station',reason:'復習期日の表現を1つ含む'
+ });
+ assert.equal(recommendedRoleplay(save,{difficulty:'hard',today:'2026-11-02'}).id,'restaurant',
+  'An easy-level due item should not displace the hard-level curriculum');
 });
 test('common polite English paraphrases count without granting credit for changed destinations or hard-level omissions',()=>{
  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
