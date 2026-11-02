@@ -548,6 +548,8 @@ function renderForestHud() {
     $('#forest-player-art').innerHTML=monsterArt(companion.id,progress.stage);
     $('#forest-party').dataset.companion=companion.id;
     $('#forest-party').dataset.formStage=String(progress.stage);
+    // Keep the legacy flag for existing battle UI and save-transfer QA.
+    $('#forest-party').dataset.evolved=String(evolved);
   }
   $('#forest-companion-name').textContent=monsterFormName(companion,progress.stage)+' と戦闘中';
   const world=$('#forest-world-stage');
