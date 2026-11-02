@@ -918,10 +918,16 @@ function renderAttackChoice(panel,t){
   const kind=button.dataset.tacticKind;
   if(!BATTLE_KINDS.includes(kind))return;
   const base=play.prompts[play.index];
-  const candidate=base.kind===kind&&!t.usedPromptIds.has(base.id)?base:
-   pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
+  const targets=tacticalReviewTargets();
+  const selected=pickBattlePrompt({prompts:ALL_PROMPTS,kind,difficulty:play.difficulty,areaId:play.areaId,
     usedIds:t.usedPromptIds,reservedIds:play.prompts.filter(p=>p.id!==base.id).map(p=>p.id),
-    allowReviewRepeat:true,...tacticalReviewTargets()});
+    allowReviewRepeat:true,...targets});
+  const priority=p=>Boolean(p&&(targets.dueIds.includes(p.id)||targets.weakIds.includes(p.id)||
+    targets.duePhraseIds.includes(p.phraseId)));
+  // Keep the authored wave unless the chosen skill has scheduled review.
+  // Otherwise clicking the learning-focus chip could show a random new
+  // question while its genuine due task remains silently skipped.
+  const candidate=base.kind===kind&&!t.usedPromptIds.has(base.id)&&!priority(selected)?base:selected||base;
   if(!candidate){
    $('#forest-battle-log').textContent='この種類の問題が見つからなかったよ。別の攻撃を選んでね。';
    return;
