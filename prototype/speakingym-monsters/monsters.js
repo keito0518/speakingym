@@ -711,7 +711,11 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
    strategy.before(shortcut);
    shortcut.addEventListener('click',()=>{
      if(play?.tactics!==t||play.revealed||t.turn!=='player')return;
+     const keepFocus=document.activeElement===shortcut;
      t.action=t.action==='skill'?'attack':'skill';renderTacticalControls();
+     // Re-rendering the actions otherwise drops keyboard/switch focus. Keep
+     // the same control active without auto-scrolling the mobile battlefield.
+     if(keepFocus)panel.querySelector('.forest-ultimate-shortcut')?.focus({preventScroll:true});
    });
  }
  strategy.addEventListener('toggle',()=>{
@@ -830,8 +834,11 @@ function renderTacticalControls(){
    if(!play||play.revealed||play.tactics.turn!=='player')return;
    if(button.dataset.tacticAction==='skill'&&play.tactics.ultimate<ULTIMATE_MAX)return;
    if(button.dataset.tacticAction==='assist'&&!supportReady)return;
-   play.tactics.action=button.dataset.tacticAction;
+   const keepFocus=document.activeElement===button;
+   const action=button.dataset.tacticAction;
+   play.tactics.action=action;
    renderTacticalControls();
+   if(keepFocus)panel.querySelector(`[data-tactic-action="${action}"]`)?.focus({preventScroll:true});
  }));
  $$('[data-tactic-ally]',panel).forEach(button=>button.addEventListener('click',()=>{
    if(!play||play.revealed||play.tactics.turn!=='player'||!canTacticalSwap(play.tactics.party,play.companionId,button.dataset.tacticAlly))return;

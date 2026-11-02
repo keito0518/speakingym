@@ -297,8 +297,11 @@ const assert=require('node:assert/strict');
      if(width===375){
        await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
        const initialHp=Number(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'));
+       await page.locator('.forest-ultimate-shortcut').focus();
        await page.locator('.forest-ultimate-shortcut').click();
        assert.match(await page.locator('.forest-ultimate-shortcut').innerText(),/必殺技をセット中/);
+       assert.equal(await page.locator('.forest-ultimate-shortcut').evaluate(el=>el===document.activeElement),true,
+         'Choosing an ultimate must preserve keyboard focus through the re-render');
        await answer(page);
        const impact=await page.locator('#forest-damage').innerText();
        const damage=Number(impact.match(/−(\d+) DMG/)?.[1]);

@@ -1363,6 +1363,23 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(gradeLocalResponse(byId('late-bus-hard'),'No '.repeat(400)).status,'ungraded');
   assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
 });
+test('common polite English paraphrases count without granting credit for changed destinations or hard-level omissions',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['help-bag','Would you be able to help me carry this bag?'],
+  ['help-bag','Could you please help me to carry my suitcase?'],
+  ['booking-table','Could we book a table for two, please?'],
+  ['direction-station','Could you tell me how to reach the nearest station?'],
+  ['direction-station','What is the easiest route to the nearest train station?']
+ ])assert.equal(gradeLocalResponse(byId(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['help-bag-hard','Would you be able to help me carry this bag?'],
+  ['booking-table-hard','Could we book a table for two, please?'],
+  ['direction-station-hard','What is the easiest route to the nearest train station?'],
+  ['direction-station','Could you tell me how to reach the bus stop?'],
+  ['help-bag','I do not need help with this bag.']
+ ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','No XP without the requested meaning: '+id+' / '+answer);
+});
 test('forest and city objective questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
