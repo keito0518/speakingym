@@ -1276,7 +1276,7 @@ function renderQuestion() {
     micView('ready');
     if(iosSpeaking)$('#speech-helper').textContent=$('#mic-button').dataset.speechUnavailable==='true'
       ?'このブラウザは自動音声認識に非対応。下のボタンで英語キーボードを開き、キーボードのマイクを押してね。'
-      :'「話す」はブラウザ音声認識。反応しなければ下の「キーボードを開いて音声入力」を使ってね。';
+      :'「話す」はブラウザ音声認識。反応しなければ下の「キーボードを開いて音声入力」を押し、キーボードのマイクで話してね。';
     else if(isIOS)$('#speech-helper').textContent='iPhoneではキーボードのマイクで英語を入力できるよ。';
     else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
