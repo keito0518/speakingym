@@ -675,6 +675,15 @@ const assert=require('node:assert/strict');
    assert.match(await counterPage.locator('.forest-attack-select .dungeon-choice-guide').innerText(),/迷ったら「リスニング」/,
      'The first tactical decision should identify a single recommended action');
    assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"] small').innerText(),/おすすめ/);
+   const attackButtons=await counterPage.locator('.forest-attack-select [data-tactic-kind]').evaluateAll(buttons=>buttons.map(button=>({
+     kind:button.dataset.tacticKind,width:Math.round(button.getBoundingClientRect().width),height:Math.round(button.getBoundingClientRect().height)
+   })));
+   assert.equal(attackButtons.length,4);
+   assert.ok(attackButtons.every(button=>button.width===attackButtons[0].width&&button.height===attackButtons[0].height),
+     `Recommended skill must highlight without enlarging its button or its neighbor: ${JSON.stringify(attackButtons)}`);
+   assert.ok(attackButtons.every(button=>button.height>=48),'Every skill must remain a comfortable touch target');
+   assert.equal(await counterPage.locator('.forest-attack-select [data-weak="true"]').count(),1,
+     'Only the recommended attack receives the highlight');
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    const weakness=counterPage.locator('#forest-enemy-weakness');
    assert.equal(await weakness.isVisible(),true,'A foe weakness label is displayed in the battle scene');

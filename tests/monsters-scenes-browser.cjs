@@ -68,6 +68,7 @@ const path=require('node:path');
       assert.equal(await page.locator('#forest-journal-areas .forest-journal-area').count(),4);
       assert.equal(await page.locator('#forest-journal-events .forest-journal-entry').count(),8);
       assert.equal(await page.locator('#forest-journal-badges .forest-journal-badge').count(),6);
+      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').innerText(),/Lv\.3の途中・累計160 XP · あと160 XP/);
       await noOverflow(page,`${width} catalog`);
       await page.waitForTimeout(300); // Let the entry fade finish before visual QA.
       await page.screenshot({path:path.join(shots,`catalog-${engine}-${width}.png`),fullPage:true});
@@ -75,6 +76,8 @@ const path=require('node:path');
       assert.equal(await page.locator('#collection-view').isVisible(),false);
       assert.match(await page.locator('#detail-content').innerText(),/Yolkie.*メダマゴ/s);
       assert.match(await page.locator('#detail-content').innerText(),/卵の黄身/);
+      assert.match(await page.locator('#detail-content').innerText(),/進化条件：Lv\.3の途中・累計160 XP。あと160 XP/,
+        'The actual mid-level evolution milestone must be visible in the field notes');
       await page.evaluate(()=>{
         window.__spoken=[];
         window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
@@ -88,6 +91,7 @@ const path=require('node:path');
       await page.locator('#open-training').click();
       assert.equal(await page.locator('#detail-view').isVisible(),false);
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle');
+      assert.match(await page.locator('.training-sheet').innerText(),/進化条件：Lv\.3の途中・累計160 XP。あと160 XP/);
       await page.locator('[data-feed-amount="10"]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'xp');
       assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-xp');

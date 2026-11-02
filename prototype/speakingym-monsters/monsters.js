@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, EVOLUTION_XP, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -295,7 +295,7 @@ function renderHome() {
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   const nextHealthTier=[3,6,9].find(level=>level>growth.level);
   const mastery=masterySkillFor(creature.id,growth.level);
-  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'}${growth.evolved?' · 進化援護が使用可能':' · 累計160 XPで進化援護を解放'} · ${mastery?`熟練技「${mastery.name}」解放済み`:`Lv.${MASTERY_LEVEL}で熟練技解放`}`;
+  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${growth.evolved?'進化済み・進化援護が使用可能':`進化はLv.${1+Math.floor(EVOLUTION_XP/XP_PER_LEVEL)}の途中・累計${EVOLUTION_XP} XP（あと${Math.max(0,EVOLUTION_XP-growth.xp)} XP）`} · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'} · ${mastery?`熟練技「${mastery.name}」解放済み`:`Lv.${MASTERY_LEVEL}で熟練技解放`}`;
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);

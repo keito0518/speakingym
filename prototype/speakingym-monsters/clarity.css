@@ -137,11 +137,15 @@
 .forest-active.tactical-battle .forest-attack-select>span{font-size:12px;line-height:1.5;color:#d8f2e9}
 .forest-active.tactical-battle .forest-attack-select .dungeon-choice-guide{margin:0;padding:8px 10px;border-radius:8px;background:#e7f4ed;color:#254f3c;font-size:12px;font-weight:850;line-height:1.6}
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:3px 0 0}
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:72px;align-items:stretch;gap:8px;margin:3px 0 0}
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button{
- min-height:48px;padding:10px 5px;border:2px solid #87b2a7;border-radius:9px;
+ display:flex;position:relative;flex-direction:column;align-items:center;justify-content:center;
+ width:100%;height:72px;min-height:72px;max-height:72px;padding:10px 5px;border:2px solid #87b2a7;border-radius:9px;
  background:#f6f7e9;color:#23473b;font-size:13px;font-weight:900;box-shadow:0 3px 0 #507b75}
-.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button small{display:block;margin-top:2px;font-size:10px;font-weight:850}
+.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button small{
+ position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:block;
+ margin:0;padding:1px 7px;border-radius:99px;background:#805522;color:#fff5d9;
+ font-size:10px;font-weight:850;line-height:1.35;white-space:nowrap}
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button:focus-visible{
  outline:3px solid #ffd37a;outline-offset:2px}
 .forest-active.tactical-battle .forest-tactic-actions button{min-height:43px}
@@ -335,7 +339,7 @@
 
 /* Quick tactical read: the skill that hits this foe's weakness is visible before committing. */
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button[data-weak="true"]{background:#ffecac;color:#513c1c;border-color:#ffc462;box-shadow:0 3px 0 #b67b29}
-.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button[data-weak="true"]::after{content:"弱点";display:inline-block;vertical-align:middle;margin-left:6px;padding:2px 5px;border-radius:6px;background:#805522;color:#fff5d9;font-size:10px;line-height:1.25}
+.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button[data-weak="true"]::after{content:none}
 
 /* Readable, persistent release information without adding clutter to play. */
 .monster-support-links{display:flex;flex-wrap:wrap;gap:7px 14px;align-items:center}

@@ -15,7 +15,7 @@ export const CITY_ROUTES = Object.freeze([
 // A chapter is a full eight-answer expedition, with a distinct mixture of
 // encounters. Clearing one chapter unlocks the next; old saves remain usable.
 export const FOREST_AREAS=Object.freeze([
- {id:'entry',name:'森の入口',english:'WOODLAND GATE',goal:'思いを丁寧に伝え、聞き返す',story:'森の入口で仲間を見つけ、トゲ王の質問に英語で答えよう。',focus:['think','repeat','help','late']},
+ {id:'entry',name:'森の入口',english:'WOODLAND GATE',goal:'思いを丁寧に伝え、聞き返す',story:'森の入口で仲間を見つけ、待ち合わせの英語に挑戦しよう。',focus:['think','repeat','help','late']},
  {id:'glade',name:'木漏れ日の小道',english:'SUNLIT GLADE',goal:'音声を聞き分け、旅の相談を進める',story:'光の道で会話の手がかりを集め、光の番人を突破しよう。',focus:['booking','direction','recommend','prefer']},
  {id:'thicket',name:'迷いの深林',english:'WHISPERING THICKET',goal:'文章を読み、語彙と条件を見落とさない',story:'迷いの霧に隠された文章を読み解き、幻影の騎士に挑もう。',focus:['problem','clarify','change','apology']},
  {id:'sanctuary',name:'古木の聖域',english:'ANCIENT SANCTUARY',goal:'複数の情報を組み合わせて意思を伝える',story:'古木の守護者との最終対話。聞いて、考えて、自分の英語で伝えよう。',focus:['late','agree','prefer','recommend']}

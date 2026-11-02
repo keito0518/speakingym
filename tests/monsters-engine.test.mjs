@@ -79,6 +79,11 @@ test('personal battle chain records survive reload and discard invalid values',(
 test('beginner speaking uses short communicative goals, fill-in hints, and safe natural variants',()=>{
  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
  const easyBoss=byId('boss-delay-apology-easy');
+ assert.match(easyBoss.cue,/バスが遅れている。待っている相手に謝ろう。/);
+ assert.doesNotMatch(easyBoss.cue+easyBoss.scene,/トゲ王|Thorn King/,
+   'Speaking tasks should describe an everyday situation without using the enemy as a conversation partner');
+ assert.ok(bossConversationFor(1,'easy').every(turn=>!/トゲ王|Thorn King/.test(turn.title+turn.context)),
+   'Boss dialogue instructions should focus on the real-world task, not the opponent name');
  assert.ok(easyBoss.answer.split(/\s+/).length<=6,'First boss should not demand a three-part speech in easy mode');
  assert.equal(gradeLocalResponse(easyBoss,'Sorry, my bus is late.').status,'correct');
  assert.equal(gradeLocalResponse(easyBoss,'I am sorry, the bus is delayed.').status,'correct');

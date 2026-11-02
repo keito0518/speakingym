@@ -3,8 +3,8 @@
 // Stage one never displays the heard transcript before the audio gate.
 export const BOSS_RESPONSE_PROMPTS=Object.freeze([
   Object.freeze({id:'boss-delay-apology-easy',baseId:'boss-delay-apology',bossOnly:true,
-    phraseId:'late',kind:'speak',difficulty:'easy',scene:'トゲ王との待ち合わせ',
-    cue:'バスが遅れている。トゲ王に「ごめん、バスが遅れてる」と伝えよう。',
+    phraseId:'late',kind:'speak',difficulty:'easy',scene:'待ち合わせに遅れそう',
+    cue:'バスが遅れている。待っている相手に謝ろう。',
     task:'謝って、バスが遅れていることを短く伝えよう。',
     answer:'Sorry, my bus is late.',
     alternatives:['Sorry, my bus is delayed.','I am sorry, the bus is running late.','Sorry, my bus is delayed. Please wait inside.','I am sorry, the bus is running late. You can wait inside.'],
@@ -32,13 +32,13 @@ export function bossConversationFor(wave,level){
   const suffix=level==='easy'?'':`-${level}`;
   return Object.freeze([
     Object.freeze({id:`late-call${suffix}`,turn:1,
-      title:level==='easy'?'ボスから電話だ！':'The boss is calling.',
-      context:level==='easy'?'トゲ王が何か聞いてきた。まず声を聞いて、意味を考えよう。':'The Thorn King is waiting. Listen to the question before you respond.'}),
+      title:level==='easy'?'待ち合わせ相手から電話だ！':'A friend is calling.',
+      context:level==='easy'?'待ち合わせ相手が何か聞いてきた。まず英語を聞いて、意味を考えよう。':'Your friend is waiting. Listen to the question before you respond.'}),
     Object.freeze({id:`forest-grammar-arrive-${level}`,turn:2,
-      title:level==='easy'?'トゲ王「どれくらい遅れる？」':'The boss asks: How late will you be?',
-      context:level==='easy'?'10分遅れることを、自然な語順で伝えよう。':'Tell the boss you will arrive about ten minutes late. Build a natural sentence.'}),
+      title:level==='easy'?'どれくらい遅れる？':'How late will you be?',
+      context:level==='easy'?'10分遅れることを、自然な語順で伝えよう。':'Tell your friend you will arrive about ten minutes late. Build a natural sentence.'}),
     Object.freeze({id:`boss-delay-apology-${level}`,turn:3,
-      title:level==='easy'?'トゲ王「どうしたの？」':level==='normal'?'The boss asks: What happened to your bus?':'The bus was canceled. Your friend is waiting outside.',
+      title:level==='easy'?'バスが遅れている。謝ろう！':level==='normal'?'What happened to your bus?':'The bus was canceled. Your friend is waiting outside.',
       context:level==='easy'?'謝って、バスが遅れていると短く伝えよう。':level==='normal'?'Apologize and explain that you are running late.':'Your delay has grown to twenty minutes. Explain why and suggest somewhere warm to wait.'})
   ]);
 }
