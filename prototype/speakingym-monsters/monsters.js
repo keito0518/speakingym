@@ -482,7 +482,7 @@ function renderHome() {
   const cityCards=CITY_AREAS.map((area,index)=>areaCard(area,index)).join('');
   $('#forest-area-list').innerHTML=`
     <section class="dungeon-world-card dungeon-world-forest" aria-labelledby="dungeon-world-forest-title">
-      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 01 · FOREST</span><h3 id="dungeon-world-forest-title">はじまりの森</h3><p>聞く・話す・読む力を身につける冒険</p></div><strong class="dungeon-world-badge">${forestCount} / ${FOREST_AREAS.length} エリア攻略</strong></header>
+      <header class="dungeon-world-header"><div class="dungeon-world-heading"><span>WORLD 01 · FOREST</span><h3 id="dungeon-world-forest-title">緑風の森</h3><p>聞く・話す・読む力を身につける冒険</p></div><strong class="dungeon-world-badge">${forestCount} / ${FOREST_AREAS.length} エリア攻略</strong></header>
       <div class="dungeon-world-areas">${forestCards}</div>
     </section>
     <div class="dungeon-world-transition" aria-hidden="true"><span>森をクリアすると次の世界へ ↓</span></div>
@@ -533,7 +533,9 @@ function renderHome() {
   homeNavigation?.updateHero({
     art:monsterArt(creature.id,growth.stage),name:monsterFormName(creature,growth.stage),
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,
-    areasCleared:forestCount,bondRank:bond.rank,cityUnlocked:forestCount===FOREST_AREAS.length,cityCleared:cityClear
+    hasAttempted:save.totalAnswers>0||summary.practiced>0||skillStats.some(stat=>stat.sample>0),
+    areasCleared:forestCount,cityAreasCleared:cityCount,nextAreaName:nextArea.name,
+    bondRank:bond.rank,cityUnlocked:forestCount===FOREST_AREAS.length,cityCleared:cityClear
   });
   homeNavigation?.updateQuest(nextLearningQuestFor(save));
   // Reuse art for already recruited creatures only; never preview locked ones.
@@ -2138,8 +2140,8 @@ async function gradeAnswer() {
   const roleplayReply=roleplayReaction?`<p class="roleplay-reply" data-roleplay-branch="${roleplayReaction.branch}"><strong>${escapeHtml(play.roleplay.partner)}：${roleplayReaction.branch==='alternate'?'言い換えに反応！':''}</strong><span lang="en">${escapeHtml(roleplayReaction.response)}</span><small>${escapeHtml(roleplayReaction.responseJa)} · 次の会話へ進もう。</small></p>`:'';
   // Keep the payoff where the learner answered; the arena may be off-screen
   // on mobile. This is a short-lived result, never another battle control.
-  const streakNote=streak?.chain>=2
-    ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
+  const streakNote=streak?.chain>=1
+    ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}" data-chain-start="${streak.chain===1}"><strong>${streak.chain} CHAIN</strong><span>${streak.chain===1?'コンボ開始！':play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);

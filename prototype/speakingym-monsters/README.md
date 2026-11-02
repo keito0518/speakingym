@@ -1,3 +1,11 @@
+## 2026-11-03 — beginner focus and first-hit feedback
+
+- On a fresh save, the English Dungeon is the only prominent recommended action. The personalized **今日のおすすめ** card becomes visible after genuine learning activity (including migrated learning progress or skill attempts); the underlying recommendation and grading rules are unchanged.
+- The home adventure now names the next unlocked chapter and shows the number of cleared areas across Forest and City. First-time players see the initial goal rather than an unexplained `0 / 4` label.
+- Every independently verified tactical battle success now displays **1 CHAIN** and a short encouraging message beside the answer, even on a narrow phone where the arena effect is above the fold. Assisted, uncertain or skipped responses cannot start a chain or gain XP through this change.
+- The first-world player-facing title is **緑風の森**, replacing the previously rejected **はじまりの森**. Chapter IDs, saves and unlocks are untouched.
+- Browser regression expectations were updated for the first-visit state and the post-attempt recommendation. Node checks passed locally. Chromium/WebKit coverage still requires the pull-request CI runner; a physical iPhone voice test is still outstanding.
+
 ## 2026-11-02 — three-turn practical conversation against competitive gaps
 
 - A **3ターン実践会話** home section adds two connected, authored English conversations: restaurant (seating → wrong meal → bill) and station (ticket → locker → missed announcement). Each of the six turns is an existing vetted speaking prompt at easy, normal or hard, preserving the same conservative meaning checks, distinct difficulty requirements, hints, XP and delayed review; there is no unreviewed AI text or new API call.

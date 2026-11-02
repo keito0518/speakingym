@@ -96,7 +96,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
  const quest=document.createElement('section');quest.className='home-next-quest';quest.id='home-next-quest';quest.setAttribute('aria-labelledby','home-next-quest-title');
  quest.innerHTML='<div class="home-next-quest-copy"><span class="home-next-quest-kicker">YOUR NEXT QUEST · 今日のおすすめ</span><h2 id="home-next-quest-title">今日の英語を練習しよう</h2><p id="home-next-quest-detail">学習記録に合わせて、次の練習を案内するよ。</p></div><button type="button" id="home-next-quest-button">練習を始める</button>';
- let questAction='daily';
+ let questAction='daily',hasPlayed=false;
  quest.querySelector('#home-next-quest-button').addEventListener('click',()=>startMode(questAction));
  const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>ほかにできること</h2><p>冒険以外はここから</p>';
  // Local vector symbols make each destination recognizable on iOS as well
@@ -278,13 +278,18 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  return {showMenu,showPage,openTutorial,startPracticeBattle,updateWalkers,
    updateQuest(next){
      if(!next)return;
+     // The first visit has ONE clear call to action: enter the adventure.
+     // Personal recommendations become useful only after an actual attempt.
+     quest.hidden=!hasPlayed;
      quest.dataset.questKind=next.kind;
      questAction=next.action;
      quest.querySelector('#home-next-quest-title').textContent=next.title;
      quest.querySelector('#home-next-quest-detail').textContent=next.detail;
      quest.querySelector('#home-next-quest-button').textContent=next.button+' →';
    },
-   updateHero({art,name,level,mastered,due,xp,areasCleared=0,bondRank=0,cityUnlocked=false,cityCleared=false}){
+   updateHero({art,name,level,mastered,due,xp,hasAttempted=false,areasCleared=0,cityAreasCleared=0,nextAreaName='森の入口',bondRank=0,cityUnlocked=false,cityCleared=false}){
+     hasPlayed=hasAttempted||areasCleared>0||cityAreasCleared>0;
+     quest.hidden=!hasPlayed;
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
      menu.querySelector('#home-menu-level').textContent='Lv.'+level+' · 絆 Lv.'+bondRank;
@@ -293,7 +298,9 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
      menu.querySelector('[data-feature-dungeon]').firstChild.textContent=cityCleared?'もう一度冒険 ':areasCleared?'つづきから冒険 ':'冒険をはじめる ';
      menu.querySelector('#home-feature-practice').hidden=areasCleared>0;
-     menu.querySelector('#home-feature-progress').textContent=cityCleared?'全エリア攻略！好きな場所で遊ぼう':cityUnlocked?'次は雪灯りの街へ！':'森の攻略 '+areasCleared+' / 4';
+     menu.querySelector('#home-feature-progress').textContent=cityCleared?'全8エリア攻略！好きな場所で遊ぼう':
+       hasPlayed?`${areasCleared+cityAreasCleared}/8 エリア攻略 · 次は「${nextAreaName}」`:
+       `最初の目的地「${nextAreaName}」 · ボス撃破を目指そう`;
    }
  };
 }

@@ -114,10 +114,9 @@ const path=require('node:path');
       await focusContext.close();
     }
     const {context:quickContext,page:quickPage}=await boot(390);
-    assert.equal(await quickPage.locator('#home-next-quest').isVisible(),true,
-      'Home offers one personal next quest next to the adventure, not another busy menu');
-    assert.match(await quickPage.locator('#home-next-quest-title').innerText(),/今日の英語/);
-    assert.match(await quickPage.locator('#home-next-quest-button').innerText(),/5分ジム/);
+    assert.equal(await quickPage.locator('#home-next-quest').isVisible(),false,
+      'A first-time player gets just one prominent adventure choice, not a competing lesson CTA');
+    assert.match(await quickPage.locator('#home-feature-progress').innerText(),/最初の目的地「森の入口」/);
     await quickPage.locator('[data-feature-dungeon]').click();
     assert.equal(await quickPage.locator('#play-view').isVisible(),true,
       'Main CTA enters the actual adventure in one tap, bypassing the area catalogue');
@@ -183,6 +182,8 @@ const path=require('node:path');
     });
     await quickPage.locator('#spoken-answer').fill(quickAnswer);
     await quickPage.locator('#show-answer').click();
+    assert.match(await quickPage.locator('.forest-chain-result').innerText(),/1 CHAIN[\s\S]*コンボ開始！/,
+      'The first independently verified battle answer should feel rewarding beside the answer');
     const quickPromptId=await quickPage.locator('#play-card').getAttribute('data-prompt-id');
     assert.match(await quickPage.locator('#feedback-bookmark').innerText(),/この問題を復習に保存/,
       'Learners can save a question immediately after a successful turn');
@@ -203,6 +204,16 @@ const path=require('node:path');
       `The next-turn action must replace Submit in the visible action dock: ${JSON.stringify(nextLayout)}`);
     await quickContext.close();
     const {context:recommendedContext,page:recommendedPage}=await boot(375);
+    await recommendedPage.evaluate(async()=>{
+      const {createSave,recordAnswer,STORAGE_KEY}=await import('./monster-engine.js');
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      const task=ALL_PROMPTS.find(prompt=>prompt.kind==='speak'&&!prompt.bossOnly);
+      const learned=recordAnswer(createSave(),task.id,'hint');
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(learned.save));
+    });
+    await recommendedPage.reload();
+    assert.equal(await recommendedPage.locator('#home-next-quest').isVisible(),true,
+      'After an actual attempt, the personalized next-lesson CTA becomes available');
     await recommendedPage.locator('#home-next-quest-button').click();
     assert.match(await recommendedPage.locator('#play-mode-label').innerText(),/今日の5分ジム/,
       'The personalized home recommendation starts the named lesson in one tap');
@@ -1087,7 +1098,7 @@ const path=require('node:path');
       await enterHomePanel(cityPage,'forest');
       await cityPage.locator('#dungeon-stage-list > summary').click();
       assert.equal(await cityPage.locator('.dungeon-world-card').count(),2,'Forest and City must be separate, clearly labelled world panels');
-      assert.equal(await cityPage.locator('#dungeon-world-forest-title').innerText(),'はじまりの森');
+      assert.equal(await cityPage.locator('#dungeon-world-forest-title').innerText(),'緑風の森');
       assert.equal(await cityPage.locator('#dungeon-world-city-title').innerText(),'雪灯りの街');
       assert.match(await cityPage.locator('.dungeon-world-city .dungeon-world-heading').innerText(),/4エリア/);
       assert.equal(await cityPage.locator('.dungeon-world-forest [data-enter-forest]').count(),4);
