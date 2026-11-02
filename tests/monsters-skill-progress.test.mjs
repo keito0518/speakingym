@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave,recordAnswer} from '../prototype/speakingym-monsters/monster-engine.js';
-import {SKILL_KINDS,skillProgressFor,skillFocusPrompts,sanitizeSkillAttempts} from '../prototype/speakingym-monsters/skill-progress.js';
+import {SKILL_KINDS,skillProgressFor,skillFocusPrompts,nextSkillFocusFor,appendSkillAttempt,sanitizeSkillAttempts} from '../prototype/speakingym-monsters/skill-progress.js';
 import {ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
 test('four skills use real answers, not a guessed legacy speaking accuracy',()=>{
@@ -58,4 +58,45 @@ test('every skill has authored questions at every level with due priority',()=>{
    assert.equal(next[0].id,picked.id);
   }
  }
+});
+
+test('learning focus never calls a fresh skill weak and respects the selected difficulty',()=>{
+ const save=createSave();
+ assert.equal(nextSkillFocusFor(save,{difficulty:'easy',today:'2026-11-03'}),null);
+ // A single failed question is not enough evidence for a weak skill.
+ const grammar=ALL_PROMPTS.filter(p=>p.kind==='grammar'&&!p.bossOnly&&(p.difficulty||'easy')==='easy');
+ assert.ok(grammar.length>=2);
+ save.skillAttempts=appendSkillAttempt(save.skillAttempts,grammar[0],'hint','2026-11-01');
+ assert.equal(nextSkillFocusFor(save,{difficulty:'easy',today:'2026-11-03'}),null);
+ for(const [prompt,rating] of [[grammar[1],'hint'],[grammar[0],'smooth'],[grammar[1],'hint']]){
+  save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,rating,'2026-11-02');
+ }
+ const focus=nextSkillFocusFor(save,{difficulty:'easy',today:'2026-11-03'});
+ assert.equal(focus.kind,'grammar');
+ assert.equal(focus.reason,'needs-practice');
+ assert.match(focus.detail,/直近4回答/);
+ assert.equal(nextSkillFocusFor(save,{difficulty:'hard',today:'2026-11-03'}),null,
+  'Easy-level attempts cannot become a hard-level weakness score');
+});
+test('due work wins over weak-rate guesses and a daily plan includes the selected skill',async()=>{
+ const {dailyTrainingPlan}=await import('../prototype/speakingym-monsters/daily-training.js');
+ const {nextLearningQuestFor}=await import('../prototype/speakingym-monsters/next-learning-quest.js');
+ const save=createSave(),day='2026-11-03';
+ const grammar=ALL_PROMPTS.filter(p=>p.kind==='grammar'&&!p.bossOnly&&(p.difficulty||'easy')==='easy');
+ for(let i=0;i<6;i++)save.skillAttempts=appendSkillAttempt(save.skillAttempts,grammar[i%2],'hint','2026-11-01');
+ const focus=nextSkillFocusFor(save,{difficulty:'easy',today:day});
+ assert.equal(focus.kind,'grammar');
+ const plan=dailyTrainingPlan(save,{difficulty:'easy',today:day});
+ assert.ok(plan.prompts.some(p=>p.kind==='grammar'),'Daily practice must give the flagged skill a real question');
+ assert.equal(plan.prompts.length,8);
+ assert.equal(plan.focus?.kind,'grammar');
+ const quest=nextLearningQuestFor(save,day);
+ assert.equal(quest.action,'skill-focus:grammar');
+ assert.match(quest.button,/文法/);
+ const due=ALL_PROMPTS.find(p=>p.kind==='listen'&&(p.difficulty||'easy')==='easy'&&!p.bossOnly);
+ save.reviewPrompts[due.id]='2026-11-02';
+ const urgent=nextSkillFocusFor(save,{difficulty:'easy',today:day});
+ assert.equal(urgent.kind,'listen');
+ assert.equal(urgent.reason,'due');
+ assert.ok(skillFocusPrompts(save,'listen',{difficulty:'easy',today:day})[0].id===due.id);
 });
