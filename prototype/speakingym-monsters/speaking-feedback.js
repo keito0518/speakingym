@@ -53,3 +53,42 @@ export function speakingFeedbackFor(prompt,answer){
     detail:prompt.tip||'例文以外にも自然な言い方があるため、簡易判定だけでは正誤を確定できないよ。'
   };
 }
+
+// Shared, conservative feedback for speaking, reading-as-speaking, combat and
+// scripted roleplay. Never infer grammar/fluency/pronunciation from a text
+// transcript. The source of a positive signal is the same vetted checker that
+// awarded XP; otherwise the wording explicitly says "not confirmed".
+export function conversationFeedbackFor(prompt,answer,grade,{hinted=false,revealExample=false}={}){
+ if(!prompt||['vocab','grammar','listen'].includes(prompt.kind))return null;
+ const status=grade?.status||'review';
+ const confirmed=status==='correct';
+ const hasAnswer=Boolean(String(answer||'').trim());
+ const specific=hasAnswer?speakingFeedbackFor(prompt,answer):null;
+ const met=Array.isArray(grade?.checks?.met)?grade.checks.met.filter(item=>typeof item==='string').slice(0,5):[];
+ const missing=Array.isArray(grade?.checks?.missing)?grade.checks.missing.filter(item=>typeof item==='string').slice(0,5):[];
+ const next=confirmed
+   ?'同じ用件を、例文を見ずに別の言葉でも伝えてみよう。'
+   :status==='empty'?'短くても大丈夫。英語の一文を入力・音声入力してから確認しよう。'
+   :status==='incorrect'?'まず状況の条件を見直し、希望・数・時間などを言い直してみよう。'
+   :status==='incomplete'?'伝える条件を一つずつ確認して、足りない情報を加えてみよう。'
+   :'文字起こしを確認してから別の言い方も試そう。自然な英文でも簡易判定では確認できない場合があるよ。';
+ const variants=confirmed?[...(prompt.alternatives||[])].filter(item=>typeof item==='string'&&item.trim()&&
+   normalizeEnglish(item)!==normalizeEnglish(answer)&&normalizeEnglish(item)!==normalizeEnglish(prompt.answer)).slice(0,2):[];
+ return {
+  status,confirmed,hinted:Boolean(hinted),hasAnswer,
+  verdict:confirmed?(hinted?'ヒントを使って内容を確認できた':'教材の基準で内容を確認できた'):
+   status==='empty'?'まだ回答は判定していない':status==='incorrect'?'登録済みの条件と異なる回答':status==='incomplete'?'必要な情報の一部が不足':'内容を確定できないため保留',
+  checked:met,
+  // On a registered-example match the task is known, but there are no
+  // per-component check results. Do not fabricate a detailed breakdown.
+  target:prompt.task||prompt.cue||prompt.scene||'この場面の用件を英語で伝える',
+  missing:confirmed?[]:missing,
+  correction:specific?.specific?specific:null,
+  // A detailed teaching tip is a hint. Keep it for verified results or
+  // explicitly forfeited-XP example review, not an unassisted retry.
+  tip:confirmed||revealExample?prompt.tip||null:null,
+  next,
+  example:(confirmed||revealExample)?prompt.answer:null,
+  variants
+ };
+}

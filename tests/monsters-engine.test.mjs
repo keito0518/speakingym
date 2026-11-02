@@ -21,13 +21,51 @@ import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice,
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
-import { speakingFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
+import { speakingFeedbackFor, conversationFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
 import { monsterArt } from '../prototype/speakingym-monsters/monster-art.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
 import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
 
 const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
+
+test('every speaking turn uses evidence-bound feedback with explicit next steps and no early answer leak',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ const prompt=byId('prefer-city-normal');
+ const partial='I prefer the train.';
+ const review=gradeLocalResponse(prompt,partial);
+ assert.equal(review.status,'review');
+ assert.deepEqual(review.checks.met,['電車を希望する']);
+ assert.deepEqual(review.checks.missing,['理由を伝える']);
+ const note=conversationFeedbackFor(prompt,partial,review);
+ assert.equal(note.confirmed,false);
+ assert.match(note.verdict,/保留/);
+ assert.deepEqual(note.checked,review.checks.met);
+ assert.deepEqual(note.missing,review.checks.missing);
+ assert.equal(note.example,null,'An unverified attempt cannot expose the model before a rewarded retry');
+ assert.ok(note.next.length>10);
+ const reveal=conversationFeedbackFor(prompt,partial,review,{revealExample:true});
+ assert.equal(reveal.example,prompt.answer);
+ const exact=prompt.answer;
+ const correct=conversationFeedbackFor(prompt,exact,gradeLocalResponse(prompt,exact));
+ assert.equal(correct.confirmed,true);
+ assert.equal(correct.example,exact);
+ assert.deepEqual(correct.missing,[]);
+ assert.match(correct.next,/別の言葉/);
+ const incomplete=conversationFeedbackFor(byId('prefer-window-easy'),'I am prefer a window seat.',
+  gradeLocalResponse(byId('prefer-window-easy'),'I am prefer a window seat.'));
+ assert.equal(incomplete.confirmed,false);
+ assert.match(incomplete.correction.label,/be 動詞/);
+ const uncertain=conversationFeedbackFor(prompt,'An unconventional but plausible expression.',{
+  status:'review',reasons:['未登録の表現'],method:'example-review'});
+ assert.deepEqual(uncertain.checked,[],'Unknown paraphrases must not receive fabricated credit');
+ assert.deepEqual(uncertain.missing,[],'Unknown paraphrases must not be declared definitely incomplete');
+ assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),' ',{status:'empty'}).hasAnswer,false);
+ assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),'test',{status:'correct'},{hinted:true}).hinted,true);
+ assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),'text',{status:'correct'},{hinted:true}).verdict.includes('ヒント'),true);
+ assert.equal(conversationFeedbackFor(ALL_PROMPTS.find(p=>p.kind==='vocab'),'foo',{status:'correct'}),null);
+ assert.equal(conversationFeedbackFor(null,'x',{status:'correct'}),null);
+});
 
 test('personal battle chain records survive reload and discard invalid values',()=>{
  const oldSave=createSave();

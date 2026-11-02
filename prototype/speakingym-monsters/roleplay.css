@@ -37,4 +37,11 @@
 .roleplay-result{margin:12px 0;padding:14px;border:1px solid #8eaf9f;border-radius:12px;background:#e8f5e9;color:#234635}
 .roleplay-result h3{margin:3px 0 7px;font-size:17px}
 .roleplay-result p{margin:6px 0;font-size:13px;line-height:1.6}
+.roleplay-recap-list{list-style:none;display:grid;gap:10px;margin:14px 0;padding:0}
+.roleplay-recap-turn{padding:12px;border:1px solid #b8cdc1;border-radius:11px;background:#fff;overflow-wrap:anywhere}
+.roleplay-recap-turn>strong{display:block;font-size:13px;color:#244b39}
+.roleplay-recap-turn>strong span{display:inline-block;margin-left:4px;padding:2px 7px;border-radius:7px;background:#e6f2e8;font-size:11px}
+.roleplay-recap-turn p{margin:7px 0 0}
+.roleplay-recap-turn p strong{display:block;font-size:11px;color:#456d57}
+.roleplay-recap-turn [lang="en"]{font-weight:800;color:#1d4f37}
 @media(max-width:580px){.roleplay-hub{padding:15px;margin:13px 0}.roleplay-options{grid-template-columns:1fr}.roleplay-conversation{padding:11px}.roleplay-line{font-size:13px}}

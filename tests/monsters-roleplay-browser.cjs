@@ -29,19 +29,27 @@ const assert=require('node:assert/strict');
   assert.match(await page.locator('.roleplay-progress').innerText(),/会話 1 \/ 3/);
   assert.equal(await page.locator('.roleplay-line.player').count(),0);
   await answer();
+  assert.equal(await page.locator('.conversation-feedback').getAttribute('data-conversation-verdict'),'correct');
+  assert.match(await page.locator('.conversation-feedback').innerText(),/会話フィードバック|次の一歩/);
   assert.match(await page.locator('.roleplay-reply').innerText(),/Let me check the seating options/);
   await page.locator('#next-question').click();
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'problem-food');
   assert.equal(await page.locator('.roleplay-line.player').count(),1);
+  assert.match(await page.locator('.roleplay-line').nth(2).innerText(),/Let me check the seating options/,
+    'The NPC response should remain visible in conversation history');
   assert.match(await page.locator('.roleplay-progress').innerText(),/会話 2 \/ 3/);
   // A disputed or unrecognized utterance must not clear a turn or earn XP.
   await page.locator('#spoken-answer').fill('I have no idea.');
   await page.locator('#show-answer').click();
   assert.match(await page.locator('#feedback-panel').innerText(),/判定保留/);
+  assert.equal(await page.locator('.conversation-feedback').getAttribute('data-conversation-verdict'),'review');
+  assert.equal(await page.locator('.conversation-feedback-example').count(),0,
+    'Review must not leak the complete sample before the learner opts out of XP');
   assert.equal(await page.locator('#next-question').count(),0);
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'problem-food');
   await page.locator('#show-example').click();
   assert.match(await page.locator('#feedback-panel').innerText(),/0 XP/);
+  assert.match(await page.locator('.conversation-feedback-example').innerText(),/参考例/);
   await page.locator('#next-question').click();
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'clarify-charge-easy');
   assert.equal(await page.locator('.roleplay-line.player').count(),2);
@@ -50,6 +58,9 @@ const assert=require('node:assert/strict');
   await page.locator('#next-question').click();
   assert.match(await page.locator('#result-title').innerText(),/レストランで伝え切る · 会話完了/);
   assert.match(await page.locator('.roleplay-result').innerText(),/2 \/ 3ターンを自力で返答/);
+  assert.equal(await page.locator('.roleplay-recap-turn').count(),3);
+  assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/例文で復習/);
+  assert.match(await page.locator('.roleplay-recap-turn').nth(2).innerText(),/次に意識すること/);
   const saved=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
   assert.ok(!saved.includes('I have no idea.'),'Roleplay transcripts must not be written to the saved game');
   await page.locator('#replay-run').click();
@@ -77,6 +88,7 @@ const assert=require('node:assert/strict');
   await page.locator('#roleplay-translation > summary').click();
   assert.match(await page.locator('#roleplay-translation').innerText(),/チケットについて/);
   await answer();
+  assert.match(await page.locator('.conversation-feedback').innerText(),/ヒントを使って内容を確認できた/);
   assert.match(await page.locator('.roleplay-reply').innerText(),/I will check the payment and ticket details/);
   await page.locator('#next-question').click();
   assert.match(await page.locator('.roleplay-line.player').first().innerText(),/ヒントあり/,

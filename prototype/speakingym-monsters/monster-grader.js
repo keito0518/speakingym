@@ -256,9 +256,14 @@ export function gradeLocalResponse(prompt, raw) {
  if(conflict)return conflict;
  const list=difficulty==='hard'?hard[base]:difficulty==='normal'?(normal[base]||rubric[base]):(easy[base]||rubric[base]);
  if(!list?.length) return {status:'review',reasons:['この場面では、登録済みの例文や言い換えとは異なる表現でした。自然な英語の可能性があるので誤答とは判定しません。'],confidence:'low',method:'example-review'};
- const missing=list.filter(item=>!passes(text,item)).map(item=>item.label);
+ // Expose only which *authored checks* matched. They are not a transcript,
+ // pronunciation analysis, or proof that a human listener understood every
+ // nuance. The same evidence drives the grade and its learner explanation.
+ const matched=list.filter(item=>passes(text,item));
+ const missing=list.filter(item=>!matched.includes(item)).map(item=>item.label);
+ const checks={met:matched.map(item=>item.label),missing};
  if(!missing.length) {
-   return {status:'correct',reasons:[],confidence:'medium',method:'curated-criteria'};
+   return {status:'correct',reasons:[],confidence:'medium',method:'curated-criteria',checks};
  }
- return {status:'review',reasons:missing,confidence:'low',method:'curated-criteria'};
+ return {status:'review',reasons:missing,confidence:'low',method:'curated-criteria',checks};
 }

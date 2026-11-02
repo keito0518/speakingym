@@ -16,7 +16,7 @@ import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
 import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
-import { speakingFeedbackFor } from './speaking-feedback.js';
+import { speakingFeedbackFor, conversationFeedbackFor } from './speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
@@ -78,7 +78,7 @@ function roleplayIntroMarkup(){
  if(!roleplay)return '';
  const turn=roleplay.turns[play.index];
  if(!turn)return '';
- const history=roleplay.history.map((row,index)=>`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · ${index+1}</strong><span lang="en">${escapeHtml(row.npc)}</span></div><div class="roleplay-line player"><strong>あなた · ${row.outcome==='skipped'?'例文で確認':row.outcome==='hint'?'ヒントあり':'自力'}</strong><span lang="en">${row.outcome==='skipped'?'例文を確認（XPなし）':escapeHtml(row.answer)}</span></div>`).join('');
+ const history=roleplay.history.map((row,index)=>`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · ${index+1}</strong><span lang="en">${escapeHtml(row.npc)}</span></div><div class="roleplay-line player"><strong>あなた · ${row.outcome==='skipped'?'例文で確認':row.outcome==='hint'?'ヒントあり':'自力'}</strong><span lang="en">${row.outcome==='skipped'?'例文を確認（XPなし）':escapeHtml(row.answer)}</span></div>${row.response?`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · 返事</strong><span lang="en">${escapeHtml(row.response)}</span></div>`:''}`).join('');
  const translation=play.difficulty==='easy'?`<p class="roleplay-gloss">${escapeHtml(turn.npcJa)}</p>`:
   `<details id="roleplay-translation" class="roleplay-translation"><summary>相手の日本語を確認（ヒント扱い）</summary><p>${escapeHtml(turn.npcJa)}</p></details>`;
  return `<section class="roleplay-conversation" aria-label="3ターンの会話履歴"><div class="roleplay-progress">会話 ${play.index+1} / ${roleplay.turns.length}<span style="--roleplay-progress:${100*play.index/roleplay.turns.length}%"></span></div><h2>${escapeHtml(roleplay.title)}</h2><p class="roleplay-scene">${escapeHtml(roleplay.setting)}</p>${history}<div class="roleplay-line current"><strong>${escapeHtml(roleplay.partner)} · 今のひと言</strong><span lang="en">${escapeHtml(turn.npc)}</span>${translation}</div></section>`;
@@ -101,28 +101,26 @@ function quizTeachingHtml(prompt,learnerAnswer=''){
     ? `<p class="forest-teaching-learner"><strong>今回の回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>`:'';
   return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${contrast}<p>${escapeHtml(note.clue)}</p><p>${escapeHtml(note.detail)}</p><p class="forest-teaching-transfer"><strong>別の場面でも使おう</strong> ${escapeHtml(note.transfer)}</p></section>`;
 }
-function speakingTeachingHtml(prompt,learnerAnswer='',reveal=false){
-  const note=speakingFeedbackFor(prompt,learnerAnswer);
-  if(!note)return '';
-  const response=reveal?`<p class="forest-teaching-learner"><strong>今回の回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>`:'';
-  const details=reveal?`<p>${escapeHtml(note.detail)}</p>`:'';
-  return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${response}<p>${escapeHtml(note.clue)}</p>${details}</section>`;
-}
-// Keep the useful learning point visible after a correct spoken response.
-// The reference is ONE example, never a mandated script.
-function speakingSuccessHtml(prompt,learnerAnswer){
- const alternatives=[...(prompt.alternatives||[])].filter(reply=>reply?.trim()&&
-   reply.trim().toLowerCase()!==learnerAnswer.trim().toLowerCase()&&
-   reply.trim().toLowerCase()!==prompt.answer.trim().toLowerCase()).slice(0,2);
- const task=prompt.task||prompt.cue;
- const takeaway=prompt.tip||phraseFor(prompt.phraseId)?.tip||'同じ意味をほかの表現でも言ってみよう。';
- return `<section class="forest-teaching speaking-success-guide" aria-label="英語を身につけるポイント">
-  <strong class="forest-teaching-title">今回伝えられたこと</strong>
-  <p>${escapeHtml(task)}</p>
-  <p class="forest-teaching-learner"><strong>あなたの回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>
-  <p><strong>覚えておくポイント</strong> ${escapeHtml(takeaway)}</p>
-  ${alternatives.length?`<p class="forest-teaching-transfer"><strong>こんな言い方もできる</strong> <span lang="en">${alternatives.map(escapeHtml).join(' / ')}</span></p>`:''}
-  </section>`;
+// One explanation model serves free speaking, boss battles and roleplay.
+// Before a verified clear, no full example is revealed for rewarded retries.
+function conversationFeedbackHtml(prompt,learnerAnswer,grade,{hinted=false,revealExample=false}={}){
+ const feedback=conversationFeedbackFor(prompt,learnerAnswer,grade,{hinted,revealExample});
+ if(!feedback)return '';
+ const checked=feedback.checked.length?`<div class="conversation-feedback-part"><strong>簡易チェックで見つかった要素</strong><ul>${feedback.checked.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul></div>`:'';
+ const missing=feedback.missing.length?`<div class="conversation-feedback-part"><strong>まだ確認できなかった要素</strong><ul>${feedback.missing.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul></div>`:'';
+ const correction=feedback.correction?`<div class="conversation-feedback-part"><strong>${escapeHtml(feedback.correction.label)}</strong><p>${escapeHtml(feedback.correction.clue)}</p><p>${escapeHtml(feedback.correction.detail)}</p></div>`:'';
+ const sample=feedback.example&&revealExample?`<p class="conversation-feedback-example"><strong>参考例（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(feedback.example)}</span></p>`:'';
+ const variants=feedback.variants.length?`<p class="conversation-feedback-example"><strong>別の伝え方</strong> <span lang="en">${feedback.variants.map(escapeHtml).join(' / ')}</span></p>`:'';
+ const summary=feedback.confirmed?'教材で確認した用件':'この場面で伝えたいこと';
+ const tip=feedback.tip?`<p><strong>表現のコツ</strong> ${escapeHtml(feedback.tip)}</p>`:'';
+ return `<section class="conversation-feedback" aria-label="会話フィードバック" data-conversation-verdict="${escapeHtml(feedback.status)}">
+  <strong class="conversation-feedback-title">会話フィードバック · ${escapeHtml(feedback.verdict)}</strong>
+  <p><strong>${summary}</strong> ${escapeHtml(feedback.target)}</p>
+  ${feedback.hasAnswer?`<p class="conversation-feedback-input"><strong>今回の英文</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>`:''}
+  ${checked}${missing}${correction}${tip}${sample}${variants}
+  <p class="conversation-feedback-next"><strong>次の一歩</strong> ${escapeHtml(feedback.next)}</p>
+  <small>これは教材に登録した英文・条件の確認です。発音や流暢さ、自由会話の意味を完全に評価したものではありません。</small>
+ </section>`;
 }
 let save = loadSave() || createSave();
 let lastDungeonReviewIds = [];
@@ -1578,6 +1576,7 @@ async function gradeAnswer() {
   // transcript. Finish recognition first, then let the learner review it.
   if(recognition){finishRecognition();return;}
   const session=play,prompt=currentPrompt();
+  if(!prompt)return;
   const listeningComplete=prompt.kind==='listen'&&play.listeningState?.understood===true;
   const raw=listeningComplete?'':$('#spoken-answer').value.trim();
   if(play.tactics?.turn==='player'&&(raw||listeningComplete))play.tactics.attackCommitted=true;
@@ -1597,7 +1596,7 @@ async function gradeAnswer() {
     $('#show-answer').disabled=true;
     $('#speech-helper').textContent='意味を確認中…';
     const result=await askSemanticGrader(prompt,raw);
-    if(play!==session)return; // Ignore delayed remote results from a previous question.
+    if(play!==session||currentPrompt()!==prompt||play.revealed)return; // Ignore stale grading responses.
     session.grading=false;
     $('#show-answer').disabled=false;
     if(result.state==='correct')grade={status:'correct',reasons:[],method:'semantic-beta'};
@@ -1668,16 +1667,16 @@ async function gradeAnswer() {
     const speakingLesson=['review','incomplete','incorrect'].includes(grade.status)&&raw?speakingFeedbackFor(prompt,raw):null;
     // A concrete correction is instructional help, so subsequent success
     // cannot quietly earn the same XP as an independent first attempt.
-    if(speakingLesson?.specific)play.hintUsed=true;
+    if(speakingLesson?.specific||grade.checks?.missing?.length)play.hintUsed=true;
     const nudge=teaching?`<p class="forest-teaching-nudge"><strong>考え方のヒント</strong> ${escapeHtml(teaching.clue)}</p>`:'';
-    const speakingNudge=speakingLesson?speakingTeachingHtml(prompt,raw):'';
-    const aidedNote=speakingLesson?.specific?'<p class="forest-checking-note">語順などのヒントを表示したため、次の正答はヒントありXPになります。</p>':'';
+    const speakingNudge=conversationFeedbackHtml(prompt,raw,grade,{hinted:play.hintUsed});
+    const aidedNote=speakingLesson?.specific||grade.checks?.missing?.length?'<p class="forest-checking-note">言い直しのヒントを表示したため、次の正答はヒントありXPになります。</p>':'';
     // A low-confidence browser judgement is not a proven English error.
     // Give story-mode learners an explicit opt-in practice route instead of
     // trapping them in a gate that the offline scorer cannot recognize.
     const allowPractice=play.mode==='forest'&&!play.endless&&uncertain&&Boolean(raw)&&!['vocab','grammar'].includes(prompt.kind);
     const practiceButton=allowPractice?'<button type="button" class="grading-skip" id="continue-as-practice">判定できない表現として先へ進む（XPなし） →</button>':'';
-    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'別の意味だと判断できました。必要な情報を確認して言い直してみよう。':incomplete?'伝わった部分は合っているよ。抜けている情報を付け足してみよう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${nudge}${grade.reasons.length?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}${practiceButton}</div>`;
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'登録された条件と食い違う部分があるよ。必要な情報を確認して言い直してみよう。':incomplete?'必要な情報が一部確認できなかったよ。条件を足してもう一度試そう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${nudge}${grade.reasons.length&&(!speakingNudge||!grade.checks?.missing?.length)?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}${practiceButton}</div>`;
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     if(allowPractice)$('#continue-as-practice').addEventListener('click',()=>{
       if(!play||play.revealed)return;
@@ -1723,7 +1722,7 @@ async function gradeAnswer() {
   play.revealed=true;
   if(play.roleplay){
     const turn=play.roleplay.turns[play.index];
-    play.roleplay.history.push({npc:turn.npc,answer:raw,outcome:rating==='smooth'?'smooth':'hint'});
+    play.roleplay.history.push({npc:turn.npc,response:turn.response,answer:raw,outcome:rating==='smooth'?'smooth':'hint'});
   }
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
@@ -1892,11 +1891,13 @@ async function gradeAnswer() {
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
   const explanationHtml=prompt.kind==='listen'
     ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">聞き取れたポイント</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
-    :objectiveQuiz?quizTeachingHtml(prompt):speakingSuccessHtml(prompt,raw);
+    :objectiveQuiz?quizTeachingHtml(prompt):conversationFeedbackHtml(prompt,raw,grade,{hinted:rating==='hint'});
   const checkingNote=prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
     ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
+  const forestSpeakingHeadline=autoForest&&!objectiveQuiz&&prompt.kind!=='listen'
+    ?`<p class="conversation-feedback-quick"><strong>伝えた用件</strong> ${escapeHtml(prompt.task||prompt.cue||prompt.scene)} <span>言い換え・次の練習は下の「解説」で確認できるよ。</span></p>`:'';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">準備ができたら次へ。詳しい解説は必要なときに開けるよ。</p>`:'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
   const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
@@ -1913,7 +1914,7 @@ async function gradeAnswer() {
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=2
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${forestSpeakingHeadline}${roleplayReply}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
@@ -1943,9 +1944,8 @@ function skipAnswer(){
     $('#forest-battle-log').textContent='この攻撃は練習扱い。正解とは数えず、音声や判定の不調だけで追加ダメージは与えないよ。';
   }
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
-  const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):speakingFeedbackFor(prompt,learnerAnswer)
-    ? speakingTeachingHtml(prompt,learnerAnswer,true)
-    :`<p class="feedback-note">${escapeHtml(prompt.tip || phraseFor(prompt.phraseId).tip)}</p>`;
+  const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):
+    conversationFeedbackHtml(prompt,learnerAnswer,{status:'review'}, {hinted:true,revealExample:true});
   $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}<button id="next-question" class="grading-next">${defending?'味方のターンへ →':play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
   $('#next-question').addEventListener('click',()=>{
     if(defending){finishEnemyTurn();return;}
@@ -2095,7 +2095,14 @@ function finishSession(timedOut=false,defeated=false) {
     const independent=ended.roleplay.history.filter(turn=>turn.outcome==='smooth').length;
     const needReview=ended.roleplay.history.map((turn,index)=>turn.outcome==='smooth'?null:ended.roleplay.turns[index]?.prompt).filter(Boolean);
     const advice=needReview.length?`次は「${escapeHtml(needReview[0].scene)}」で使う表現を復習しよう。`:'3つの場面をすべて自力で確認できたね！ 別の会話でも使ってみよう。';
-    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${independent} / ${ended.roleplay.turns.length}ターンを自力で返答</h3><p>ヒントあり ${ended.roleplay.history.filter(turn=>turn.outcome==='hint').length} · 例文で確認 ${ended.roleplay.history.filter(turn=>turn.outcome==='skipped').length}</p><p>${advice}</p><small>会話の文字起こしはセーブデータに保存されないよ。</small></section>`;
+    const turns=ended.roleplay.turns.map((turn,index)=>{
+      const history=ended.roleplay.history[index];
+      const label=history?.outcome==='smooth'?'自力で確認':history?.outcome==='hint'?'ヒントありで確認':'例文で復習';
+      const spoken=history?.outcome!=='skipped'&&history?.answer?`<p><strong>あなたの英文</strong> <span lang="en">${escapeHtml(history.answer)}</span></p>`:'';
+      const action=turn.prompt.tip||'相手への用件と条件を確認してもう一度言ってみよう。';
+      return `<li class="roleplay-recap-turn"><strong>${index+1}. ${escapeHtml(turn.prompt.scene)} <span>${label}</span></strong>${spoken}<p><strong>参考表現</strong> <span lang="en">${escapeHtml(turn.prompt.answer)}</span></p><p><strong>次に意識すること</strong> ${escapeHtml(action)}</p></li>`;
+    }).join('');
+    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${independent} / ${ended.roleplay.turns.length}ターンを自力で返答</h3><p>ヒントあり ${ended.roleplay.history.filter(turn=>turn.outcome==='hint').length} · 例文で確認 ${ended.roleplay.history.filter(turn=>turn.outcome==='skipped').length}</p><p>${advice}</p><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>表示している返答はこの画面限りで、セーブデータに保存されないよ。発音評価やAI自由会話の採点ではありません。</small></section>`;
   })():'';
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
   renderDungeonLearningReport(ended);

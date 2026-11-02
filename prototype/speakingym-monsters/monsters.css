@@ -659,3 +659,23 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .save-warning-live{max-width:750px;margin:0 auto 8px;padding:9px 12px;border:2px solid #b15a36;border-radius:11px;background:#fff2df;color:#622e1d;font-size:12px;font-weight:800;line-height:1.55;overflow-wrap:anywhere}
 .save-warning-live[hidden]{display:none!important}
 @media(max-width:430px){.save-warning-live{font-size:11px;padding:8px 10px}}
+
+/* Evidence-bound turn feedback for every authored speaking mode. */
+.conversation-feedback{margin:12px 0;padding:14px;border:1px solid #9ebfa8;border-radius:13px;background:#f4faf4;color:#294a39;font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.conversation-feedback-title{display:block;margin:0 0 9px;color:#225e43;font-size:14px}
+.conversation-feedback p{margin:7px 0}
+.conversation-feedback p strong,.conversation-feedback-part>strong{color:#265b45}
+.conversation-feedback-input{padding:9px 10px;border-radius:9px;background:#fff}
+.conversation-feedback-input strong,.conversation-feedback-example strong{display:block;font-size:12px}
+.conversation-feedback [lang="en"]{font-weight:750;color:#183f30;overflow-wrap:anywhere}
+.conversation-feedback-part{margin:9px 0;padding:8px 10px;border-left:3px solid #8cb9a1;background:#fff;border-radius:7px}
+.conversation-feedback-part ul{margin:5px 0 0;padding-left:18px}
+.conversation-feedback-part li{margin:3px 0}
+.conversation-feedback-example{padding:9px 10px;background:#e5f0e9;border-radius:9px}
+.conversation-feedback-next{padding:9px 10px;border-radius:9px;background:#fff1d2}
+.conversation-feedback small{display:block;margin-top:10px;font-size:11px;line-height:1.55;color:#527160}
+.conversation-feedback[data-conversation-verdict="review"]{border-color:#dbc894;background:#fffaf0}
+.conversation-feedback-quick{margin:10px 0;padding:10px 12px;border-left:4px solid #2e8761;background:#edf8ee;color:#28523c;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.conversation-feedback-quick strong{display:block;color:#21553d}
+.conversation-feedback-quick span{display:block;color:#526e5d;font-size:11px}
+@media(max-width:430px){.conversation-feedback{padding:11px;font-size:12px}.conversation-feedback-title{font-size:13px}}
