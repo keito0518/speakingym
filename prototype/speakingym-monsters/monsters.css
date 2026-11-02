@@ -652,9 +652,16 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .forest-success-explanation-body .forest-teaching{margin:0}
 .forest-success-explanation-body .forest-checking-note{margin:0}
 .forest-active #feedback-panel .grading-correct #next-question{display:block;width:100%;min-height:48px;margin:12px 0 0;text-align:center}
+.forest-learning-pulse{margin:11px 0 0;padding:11px 12px;border:1px solid #acd5b6;border-radius:12px;background:linear-gradient(140deg,#e7f6e4,#f5fbed);color:#234a37;text-align:left;overflow-wrap:anywhere}
+.forest-learning-pulse-head{display:flex;flex-wrap:wrap;gap:5px 9px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.forest-learning-pulse-head strong{font-size:13px;font-weight:900;color:#24553b}
+.forest-learning-pulse-head span{padding:3px 7px;border-radius:20px;background:#d1e8d1;color:#355d43;font-size:10px;font-weight:800}
+.forest-learning-pulse p{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;margin:0;padding:7px 0;border-top:1px solid #cee4cc;font-size:12px;line-height:1.55}
+.forest-learning-pulse p strong{color:#3b6d49;font-size:11px;font-weight:850}
+.forest-learning-pulse p span{min-width:0}
 .forest-active #feedback-panel .grading-correct #forest-auto-status{font-size:11px;line-height:1.5;margin:8px 0 0;text-align:center}
 .forest-active #feedback-panel .forest-listen-answer{font-size:clamp(15px,3.8vw,20px);line-height:1.45}
-@media(max-width:540px){.forest-success-explanation>summary{font-size:12px}.forest-success-explanation-body{padding:0 9px 10px}}
+@media(max-width:540px){.forest-success-explanation>summary{font-size:12px}.forest-success-explanation-body{padding:0 9px 10px}.forest-learning-pulse{padding:9px 10px}.forest-learning-pulse p{grid-template-columns:72px minmax(0,1fr);gap:7px;font-size:11px}.forest-learning-pulse p strong{font-size:10px}}
 
 /* Keep the default, redundant instruction absent without losing microphone
    troubleshooting text when an actual speech problem occurs. */

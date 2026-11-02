@@ -17,6 +17,7 @@ import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor, conversationFeedbackFor } from './speaking-feedback.js';
+import { forestLearningPulseFor } from './forest-learning-pulse.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
@@ -121,6 +122,16 @@ function conversationFeedbackHtml(prompt,learnerAnswer,grade,{hinted=false,revea
   ${checked}${missing}${correction}${tip}${sample}${variants}
   <p class="conversation-feedback-next"><strong>次の一歩</strong> ${escapeHtml(feedback.next)}</p>
   <small>これは教材に登録した英文・条件の確認です。発音や流暢さ、自由会話の意味を完全に評価したものではありません。</small>
+ </section>`;
+}
+function forestLearningPulseHtml(prompt,learnerAnswer,grade,{hinted=false}={}){
+ const pulse=forestLearningPulseFor(prompt,grade,{answer:learnerAnswer,hinted});
+ if(!pulse)return '';
+ return `<section class="forest-learning-pulse" aria-label="今回の英語の学び" data-learning-kind="${escapeHtml(pulse.kind)}">
+  <div class="forest-learning-pulse-head"><strong>今回の学びをゲット！</strong><span>${escapeHtml(pulse.badge)}</span></div>
+  <p data-field="achieved"><strong>${escapeHtml(pulse.achievedLabel)}</strong><span>${escapeHtml(pulse.achieved)}</span></p>
+  <p data-field="tip"><strong>表現のコツ</strong><span>${escapeHtml(pulse.tip)}</span></p>
+  <p data-field="next"><strong>次の一歩</strong><span>${escapeHtml(pulse.next)}</span></p>
  </section>`;
 }
 function questionBookmarkLabel(prompt,saved){
@@ -1947,8 +1958,7 @@ async function gradeAnswer() {
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
     ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
-  const forestSpeakingHeadline=autoForest&&!objectiveQuiz&&prompt.kind!=='listen'
-    ?`<p class="conversation-feedback-quick"><strong>伝えた用件</strong> ${escapeHtml(prompt.task||prompt.cue||prompt.scene)} <span>言い換え・次の練習は下の「解説」で確認できるよ。</span></p>`:'';
+  const learningPulse=autoForest?forestLearningPulseHtml(prompt,raw,grade,{hinted:rating==='hint'}):'';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">準備ができたら次へ。詳しい解説は必要なときに開けるよ。</p>`:'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
   const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
@@ -1965,7 +1975,7 @@ async function gradeAnswer() {
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=2
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${forestSpeakingHeadline}${roleplayReply}${autoForest?`${nextButton}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
   attachFeedbackBookmark(prompt);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.

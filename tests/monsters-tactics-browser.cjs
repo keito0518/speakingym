@@ -180,6 +180,24 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('.forest-tactic-kinds').textContent(),/リスニング.*文法/s);
      assert.match(await page.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：文法/,'Enemy forecast remains available in tactical details');
      await answer(page);
+     assert.equal(await page.locator('.forest-learning-pulse').count(),1,
+       `${engine}/${width}: the first verified hit must immediately offer a learning takeaway`);
+     for(const field of ['achieved','tip','next']){
+       assert.ok((await page.locator(`.forest-learning-pulse [data-field="${field}"]`).innerText()).length>10,
+         `${engine}/${width}: ${field} gives specific study guidance`);
+     }
+     assert.equal(await page.locator('#forest-success-explanation').getAttribute('open'),null,
+       'The full explanation should be optional');
+     const takeawayLayout=await page.evaluate(()=>{
+       const next=document.querySelector('#next-question');
+       const takeaway=document.querySelector('.forest-learning-pulse');
+       return {nextFirst:next.compareDocumentPosition(takeaway)&Node.DOCUMENT_POSITION_FOLLOWING,
+         overflow:document.documentElement.scrollWidth-window.innerWidth};
+     });
+     assert.ok(takeawayLayout.nextFirst,
+       `${engine}/${width}: continuing the battle must precede the optional takeaway`);
+     assert.ok(takeawayLayout.overflow<=1,
+       `${engine}/${width}: the takeaway must not cause horizontal scrolling (${takeawayLayout.overflow}px)`);
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'attack',
        'A verified hit should trigger its own impact cut-in');
      assert.match(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),/^(arc|burst|storm)$/,
