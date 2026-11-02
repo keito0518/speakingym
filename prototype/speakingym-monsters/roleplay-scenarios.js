@@ -88,5 +88,5 @@ export function roleplayRecapFor(roleplay){
   summary:earned.length?`教材の基準で確認できた用件：${earned.map(row=>row.goal).join(' ／ ')}`:
    '今日は参考表現を確認した段階。次回はまず1ターンを自力で伝えてみよう。',
   next:focus?focus.status==='smooth'?'次はこの会話の最初の返答を、別の自然な言い方でも試そう。':
-   `次は「${focus.scene}」の場面を、${focus.status==='hint'?'ヒントを開かず':'例文を見ず'}に伝えてみよう。`:''};
+   `次は「${focus.goal}」を、${focus.status==='hint'?'ヒントを開かず':'例文を見ず'}に伝えてみよう。`:''};
 }

@@ -1494,6 +1494,7 @@ test('conversation recap distinguishes verified speaking, hints and example-only
  assert.equal(recap.rows[1].answer,'');
  assert.equal(recap.focus.status,'skipped');
  assert.match(recap.next,/例文を見ず/);
+ assert.match(recap.next,/頼んだ料理と違う/,'the next task must name a specific speaking goal, not only a broad location');
  assert.equal(recap.rows[2].confirmed,true);
  assert.deepEqual(recap.rows[2].elements,[],'fallback grade must not invent itemized feedback');
  assert.ok(recap.rows.every(row=>row.next.length>10&&row.example.length>10));
