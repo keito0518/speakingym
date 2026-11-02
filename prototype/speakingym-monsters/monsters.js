@@ -165,8 +165,8 @@ function micView(mode='ready') {
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
     button.innerHTML=mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':'<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span>';
-    button.title=mode==='listening'?'音声認識を終了する':'マイクで音声認識を開始する';
-    button.setAttribute('aria-label',mode==='listening'?'音声認識を終了する':'マイクで音声認識を開始する');
+    button.title=mode==='listening'?'録音を停止する':'マイクで音声認識を開始する';
+    button.setAttribute('aria-label',mode==='listening'?'録音を停止する':'マイクで音声認識を開始する');
     button.hidden=mode==='done'||unavailable;
     button.disabled=mode==='done'||unavailable;
   }
