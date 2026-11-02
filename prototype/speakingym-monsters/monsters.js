@@ -26,6 +26,7 @@ import { retentionOverview, retentionPracticePlan, retentionTitle } from './rete
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
+import { nextLearningQuestFor } from './next-learning-quest.js';
 import { createBetaTelemetry } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
 
@@ -440,6 +441,7 @@ function renderHome() {
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,
     areasCleared:forestCount,bondRank:bond.rank,cityUnlocked:forestCount===FOREST_AREAS.length,cityCleared:cityClear
   });
+  homeNavigation?.updateQuest(nextLearningQuestFor(save));
   // Reuse art for already recruited creatures only; never preview locked ones.
   // Pick the selected companion first so that the home genuinely reflects
   // the user's own team, and cap moving sprites at three for mobile performance.
@@ -2187,6 +2189,15 @@ function finishSession(timedOut=false,defeated=false) {
   })():'';
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
   renderDungeonLearningReport(ended);
+  let targetedReview=$('#result-targeted-review');
+  if(!targetedReview){
+    targetedReview=document.createElement('button');
+    targetedReview.type='button';targetedReview.id='result-targeted-review';
+    $('#result-detail-panel').before(targetedReview);
+    targetedReview.addEventListener('click',()=>startSession('dungeon-review'));
+  }
+  targetedReview.hidden=ended.mode!=='forest'||lastDungeonReviewIds.length===0;
+  targetedReview.textContent=`今回つまずいた${lastDungeonReviewIds.length}問を復習する →`;
   if(forestFinished&&!ended.forestRelics.length)$('#result-description').textContent+=' 今回は新しい宝物はなかったけど、英語の練習は積み重なった！';
   const nextArea=forestFinished&&!ended.endless?nextDungeonArea(save):null;
   const canContinue=Boolean(nextArea&&nextArea.id!==ended.areaId&&unlockedDungeonAreas(save).some(area=>area.id===nextArea.id));
@@ -2246,7 +2257,7 @@ $('#start-saved-review').addEventListener('click',()=>startSession('saved'));
 $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',null,true));
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode==='forest'?startMainDungeon():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
 $('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
 $('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));

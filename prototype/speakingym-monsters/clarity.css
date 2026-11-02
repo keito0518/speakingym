@@ -349,3 +349,21 @@
 /* Pixel-art atlas: always scale with hard, nearest-neighbor edges on iPhone and desktop. */
 .monster-svg.pixel-art image,.forest-enemy-svg.pixel-art image{image-rendering:crisp-edges;image-rendering:pixelated}
 .monster-svg.pixel-art,.forest-enemy-svg.pixel-art{shape-rendering:crispEdges}
+
+/* One personalized next action, distinct from the main adventure and the
+   four equally sized secondary tiles. The recommendation never grows them. */
+.home-next-quest{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:13px;align-items:center;margin:11px 0 13px;padding:12px 15px;border:1px solid #b7cfaa;border-left:4px solid #d0a54c;border-radius:13px;background:linear-gradient(105deg,#fffbed,#edf7e9);color:#294735;box-shadow:0 3px 12px #294c3010}
+.home-next-quest-copy{min-width:0}
+.home-next-quest-kicker{display:block;margin-bottom:3px;color:#84672e;font-size:9px;font-weight:900;letter-spacing:.06em}
+.home-next-quest h2{margin:0 0 3px;font-size:14px;line-height:1.45;color:#2e5b40;font-weight:900;overflow-wrap:anywhere}
+.home-next-quest p{margin:0;color:#5c7562;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.home-next-quest button{min-height:44px;max-width:210px;padding:9px 13px;border:1px solid #39845c;border-radius:10px;background:#28724b;color:#fffdf3;font-size:12px;font-weight:850;line-height:1.45;cursor:pointer;white-space:normal}
+.home-next-quest button:focus-visible{outline:3px solid #d8aa50;outline-offset:3px}
+.home-next-quest[data-quest-kind="retention"],.home-next-quest[data-quest-kind="review"]{border-left-color:#d6863e;background:linear-gradient(105deg,#fff7e5,#f0f8e9)}
+@media(max-width:540px){.home-next-quest{grid-template-columns:minmax(0,1fr);gap:8px;padding:11px 12px}.home-next-quest button{width:100%;max-width:none;min-height:42px}.home-next-quest h2{font-size:13px}.home-next-quest p{font-size:10px}}
+
+/* Direct revenge for verified weak questions; the detailed report remains
+   available on demand and the main next-area action stays first. */
+#result-targeted-review{display:block;max-width:100%;min-height:44px;margin:10px auto 6px;padding:10px 15px;border:1px solid #8fac9a;border-radius:11px;background:#e6f2e7;color:#28533d;font-size:12px;font-weight:850;line-height:1.5;cursor:pointer}
+#result-targeted-review:focus-visible{outline:3px solid #d3a04e;outline-offset:3px}
+#result-targeted-review[hidden]{display:none!important}

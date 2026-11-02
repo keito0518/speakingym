@@ -93,6 +93,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>startMode('forest'));
  feature.querySelector('[data-feature-worlds]').addEventListener('click',()=>showPage('forest'));
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
+ const quest=document.createElement('section');quest.className='home-next-quest';quest.id='home-next-quest';quest.setAttribute('aria-labelledby','home-next-quest-title');
+ quest.innerHTML='<div class="home-next-quest-copy"><span class="home-next-quest-kicker">YOUR NEXT QUEST · 今日のおすすめ</span><h2 id="home-next-quest-title">今日の英語を練習しよう</h2><p id="home-next-quest-detail">学習記録に合わせて、次の練習を案内するよ。</p></div><button type="button" id="home-next-quest-button">練習を始める</button>';
+ let questAction='daily';
+ quest.querySelector('#home-next-quest-button').addEventListener('click',()=>startMode(questAction));
  const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>ほかにできること</h2><p>冒険以外はここから</p>';
  // Local vector symbols make each destination recognizable on iOS as well
  // as desktop. No fonts, animations or image downloads are required.
@@ -125,7 +129,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   (['daily','roleplay','review','collection'].includes(item.id)?grid:extraGrid).append(button);
  }
  extra.append(extraGrid,motionToggle);
- menu.append(head,feature,label,grid,extra);home.prepend(menu);
+ menu.append(head,feature,quest,label,grid,extra);home.prepend(menu);
  const dialog=document.createElement('div');dialog.className='tutorial-backdrop';dialog.id='monsters-tutorial';dialog.hidden=true;
  dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><button type="button" id="tutorial-try-battle" class="tutorial-try-battle">操作して覚える練習バトル</button><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
  document.body.append(dialog);
@@ -271,6 +275,14 @@ export function setupHomeNavigation({home,startMode,showCollection}){
    });
  }
  return {showMenu,showPage,openTutorial,startPracticeBattle,updateWalkers,
+   updateQuest(next){
+     if(!next)return;
+     quest.dataset.questKind=next.kind;
+     questAction=next.action;
+     quest.querySelector('#home-next-quest-title').textContent=next.title;
+     quest.querySelector('#home-next-quest-detail').textContent=next.detail;
+     quest.querySelector('#home-next-quest-button').textContent=next.button+' →';
+   },
    updateHero({art,name,level,mastered,due,xp,areasCleared=0,bondRank=0,cityUnlocked=false,cityCleared=false}){
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;

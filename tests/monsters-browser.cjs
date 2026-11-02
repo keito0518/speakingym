@@ -53,6 +53,10 @@ const path=require('node:path');
   };
   try{
     const {context:quickContext,page:quickPage}=await boot(390);
+    assert.equal(await quickPage.locator('#home-next-quest').isVisible(),true,
+      'Home offers one personal next quest next to the adventure, not another busy menu');
+    assert.match(await quickPage.locator('#home-next-quest-title').innerText(),/今日の英語/);
+    assert.match(await quickPage.locator('#home-next-quest-button').innerText(),/5分ジム/);
     await quickPage.locator('[data-feature-dungeon]').click();
     assert.equal(await quickPage.locator('#play-view').isVisible(),true,
       'Main CTA enters the actual adventure in one tap, bypassing the area catalogue');
@@ -137,6 +141,11 @@ const path=require('node:path');
     assert.ok(nextLayout.visible&&nextLayout.hitIsButton&&nextLayout.bottom<=680-4&&nextLayout.bottom>=680-50,
       `The next-turn action must replace Submit in the visible action dock: ${JSON.stringify(nextLayout)}`);
     await quickContext.close();
+    const {context:recommendedContext,page:recommendedPage}=await boot(375);
+    await recommendedPage.locator('#home-next-quest-button').click();
+    assert.match(await recommendedPage.locator('#play-mode-label').innerText(),/今日の5分ジム/,
+      'The personalized home recommendation starts the named lesson in one tap');
+    await recommendedContext.close();
     for(const width of [320,375,390,430]){
       const {context,page}=await boot(width);
       assert.equal(await page.getByRole('heading',{name:/英語で戦って/}).isVisible(),true);
@@ -900,6 +909,9 @@ const path=require('node:path');
         'Victory should spotlight two actually verified expressions, not a wall of every answer');
       assert.match(await forestPage.locator('.victory-evolution').innerText(),/進化.*あと\d+ XP/s);
       assert.match(await forestPage.locator('.victory-next-tip').innerText(),/次のおすすめ/);
+      assert.equal(await forestPage.locator('#result-targeted-review').isVisible(),true,
+        'A chapter with supported answers exposes one-tap targeted review without opening the report');
+      assert.match(await forestPage.locator('#result-targeted-review').innerText(),/つまずいた\d+問を復習/);
       assert.equal(await forestPage.locator('.victory-evolution-track').getAttribute('aria-valuemax'),'100');
       const victoryLayout=await forestPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(victoryLayout.scroll<=victoryLayout.width+1,
