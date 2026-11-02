@@ -5,6 +5,7 @@ import { dayKey, EVOLUTION_XP, SECOND_EVOLUTION_XP, getMonsterProgress, savedRev
 import { dailyTrainingPlan } from './daily-training.js';
 import { retentionOverview } from './retention.js';
 import { dueRoleplayTransfers } from './roleplay-transfer.js';
+import { nextSkillFocusFor } from './skill-progress.js';
 
 export function nextLearningQuestFor(save,today=dayKey()){
  const transfer=dueRoleplayTransfers(save,today)[0];
@@ -30,6 +31,11 @@ export function nextLearningQuestFor(save,today=dayKey()){
   kind:'review',action:'daily',title:'苦手を倒して、もう一段強く！',
   detail:`今日の8問には復習 ${plan.counts.review}問入り。新しい問題も一緒に練習できるよ。`,
   button:'今日の8問に挑戦'
+ };
+ const focus=nextSkillFocusFor(save,{difficulty:save.difficulty||'easy',today});
+ if(focus)return {
+  kind:'skill',action:'skill-focus:'+focus.kind,title:focus.label+'の苦手を取り戻そう',
+  detail:focus.detail,button:focus.label+'を集中練習'
  };
  const growth=getMonsterProgress(save,save.selectedMonster);
  const nextEvolution=growth.stage===0?EVOLUTION_XP:growth.stage===1?SECOND_EVOLUTION_XP:null;
