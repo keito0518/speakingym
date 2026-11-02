@@ -82,6 +82,14 @@
 .roleplay-recap-turn p{margin:7px 0 0}
 .roleplay-recap-turn p strong{display:block;font-size:11px;color:#456d57}
 .roleplay-recap-evidence{padding:9px 11px;background:#eaf7e9;border-radius:8px}
+.roleplay-recap-evidence small{display:block;margin-top:5px;font-size:11px;color:#456b50;line-height:1.6}
+.roleplay-recap-coaching{margin-top:9px;padding:9px 11px;border-left:3px solid #b58c35;border-radius:8px;background:#fff8e6}
+.roleplay-recap-coaching p{margin:0 0 8px}
+.roleplay-recap-coaching p:last-child{margin-bottom:0}
+.roleplay-recap-examples{margin-top:10px;border:1px solid #c2d7c7;border-radius:8px;background:#f4faf3;color:#29523d}
+.roleplay-recap-examples summary{display:flex;align-items:center;min-height:44px;padding:8px 11px;cursor:pointer;font-size:12px;font-weight:850}
+.roleplay-recap-examples summary:focus-visible{outline:3px solid #b68b35;outline-offset:2px}
+.roleplay-recap-examples p{padding:0 11px 9px}
 .roleplay-recap-reaction{padding:9px 11px;border:1px solid #c8dbc8;border-radius:8px;background:#f0f9ee}
 .roleplay-recap-reaction [lang="en"]{display:block;margin-top:4px}
 .roleplay-recap-turn[data-recap-status="skipped"] .roleplay-recap-evidence{background:#f1f2ec}

@@ -3,6 +3,7 @@
 // existing vetted speaking task and its difficulty-specific grading rules.
 import { ALL_PROMPTS } from './monster-data.js';
 import { dayKey, normalizeEnglish } from './monster-engine.js';
+import { roleplayCoachingFor } from './roleplay-feedback.js';
 
 export const ROLEPLAY_SCENARIOS=Object.freeze([
  Object.freeze({
@@ -146,16 +147,16 @@ export function roleplayRecapFor(roleplay){
   const confirmed=status==='smooth'||status==='hint';
   const elements=confirmed&&Array.isArray(record.checked)?record.checked.filter(x=>typeof x==='string'&&x.length<140).slice(0,3):[];
   const alternatives=Array.isArray(prompt.alternatives)?prompt.alternatives:[];
-  const other=alternatives.find(x=>typeof x==='string'&&x.trim()&&x.trim().toLowerCase()!==String(record.answer||'').trim().toLowerCase()&&x.trim().toLowerCase()!==String(prompt.answer||'').trim().toLowerCase());
+  const other=alternatives.find(x=>typeof x==='string'&&x.trim()&&normalizeEnglish(x)!==normalizeEnglish(record.answer||'')&&normalizeEnglish(x)!==normalizeEnglish(prompt.answer||''));
+  const coaching=roleplayCoachingFor(turn,{status,branch:record.branch});
   return {status,label:status==='smooth'?'自力で確認':status==='hint'?'ヒントありで確認':'例文で復習',
    scene:prompt.scene||turn.npcJa||`会話 ${index+1}`,goal,confirmed,elements,
+   coaching,
    response:typeof record.response==='string'?record.response:'',
    responseLabel:status==='skipped'?'例文練習へのサポート':record.branch==='alternate'?'言い換えに反応':'相手の返事',
    answer:status!=='skipped'&&typeof record.answer==='string'?record.answer:'',
    example:prompt.answer||'',alternative:confirmed?other||null:null,
-   next:status==='smooth'?'同じ用件を例文なしで別の言葉にしてみよう。':
-    status==='hint'?'次はヒントを開く前に、自分の一文で返してみよう。':
-    'まず参考表現の短い部分から、見ずに言えるか練習しよう。',
+   next:coaching.next,
    tip:prompt.tip||null};
  });
  const independent=rows.filter(row=>row.status==='smooth').length;
@@ -168,6 +169,5 @@ export function roleplayRecapFor(roleplay){
  return {rows,independent,hinted,skipped,earned,focus,headline,
   summary:earned.length?`教材の基準で確認できた用件：${earned.map(row=>row.goal).join(' ／ ')}`:
    '今日は参考表現を確認した段階。次回はまず1ターンを自力で伝えてみよう。',
-  next:focus?focus.status==='smooth'?'次はこの会話の最初の返答を、別の自然な言い方でも試そう。':
-   `次は「${focus.goal}」を、${focus.status==='hint'?'ヒントを開かず':'例文を見ず'}に伝えてみよう。`:''};
+  next:focus?`次は「${focus.goal}」。${focus.next}`:''};
 }

@@ -95,6 +95,15 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.roleplay-recap-turn').count(),3);
   assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/例文で復習/);
   assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/自力で伝わったかはまだ判定していない/);
+  assert.equal(await page.locator('.roleplay-recap-coaching').count(),3,
+    'Each turn should give its own actionable learning feedback');
+  assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/注文と違う点|I ordered/);
+  assert.match(await page.locator('.roleplay-coaching-card.focus').innerText(),/I ordered/);
+  assert.equal(await page.locator('.roleplay-recap-examples').count(),2,
+    'Confirmed turns can hide long example text behind an optional disclosure');
+  assert.equal(await page.locator('.roleplay-recap-examples').first().getAttribute('open'),null);
+  await page.locator('.roleplay-recap-examples > summary').first().click();
+  assert.match(await page.locator('.roleplay-recap-examples').first().innerText(),/参考表現|別の伝え方/);
   assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/例文練習へのサポート/);
   assert.equal(await page.locator('.roleplay-recap-turn').nth(1).locator('.roleplay-recap-evidence').count(),1);
   assert.match(await page.locator('.roleplay-recap-turn').nth(2).innerText(),/次に意識すること/);
