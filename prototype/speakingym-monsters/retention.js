@@ -95,3 +95,23 @@ export function retentionPracticePlan(save,today,{limit=12,maxTransfers=3}={}){
 export function retentionTitle(stage){
  return ['もう一度確認','初回練習完了','翌日チェック達成','3日後チェック達成','7日後チェック達成'][Math.max(0,Math.min(4,stage))];
 }
+
+/** Checkpoint counts describe independently retained expressions, not lifetime attempts.
+ * A hinted expression in recovery is excluded until it is checked again. */
+export function retentionMilestoneSummary(save,today){
+ const overview=retentionOverview(save,today);
+ const all=[...overview.due,...overview.upcoming];
+ const current=all.filter(row=>!row.recovering);
+ return {
+  day1:current.filter(row=>row.stage>=2).length,
+  day3:current.filter(row=>row.stage>=3).length,
+  day7:current.filter(row=>row.stage>=4).length,
+  recovering:all.length-current.length,
+  due:overview.due.length,
+  nextDate:overview.upcoming[0]?.nextDay||null
+ };
+}
+export function retentionCheckpointLabel(stage,recovering=false){
+ if(recovering)return '再確認（ヒントを使った表現）';
+ return ['再挑戦','翌日のチェック','3日後のチェック','7日後のチェック','定着維持のチェック'][Math.max(0,Math.min(4,Number(stage)||0))];
+}

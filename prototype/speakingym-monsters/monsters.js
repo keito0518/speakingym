@@ -24,7 +24,7 @@ import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
-import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
+import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
@@ -441,6 +441,9 @@ function renderHome() {
   $('#retention-bond-meter').setAttribute('aria-valuenow',String(bondRatio));
   $('#retention-bond-fill').style.width=`${bondRatio}%`;
   $('#retention-due-label').textContent=`今日のチェック ${recall.due.length}問`;
+  const milestones=retentionMilestoneSummary(save,dayKey());
+  $('#retention-day1-label').textContent=`翌日達成 ${milestones.day1}問`;
+  $('#retention-day3-label').textContent=`3日後達成 ${milestones.day3}問`;
   $('#retention-stable-label').textContent=`7日後チェック達成 ${recall.stable.length}問`;
   $('#retention-transfer-label').textContent=`別の場面で応用 ${recallPlan.transferIds.length}問`;
   $('#start-retention-review').disabled=!recall.due.length;
@@ -578,7 +581,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   play={mode:forestMode?'forest':mode,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
     // did not change grading or outcomes and interrupted every battle.
@@ -1313,7 +1316,7 @@ function renderQuestion() {
   if(play.mode==='retention'){
     const isTransfer=play.retentionTransferIds.includes(prompt.id);
     const stage=document.createElement('p');stage.className='daily-question-kind';
-    stage.textContent=isTransfer?'別の場面で応用 · この問題は新しい復習予定に入るよ':'予定日の記憶チェック · ヒントなしで思い出そう';
+    stage.textContent=isTransfer?'別の場面で応用 · この問題は新しい復習予定に入るよ':`${retentionCheckpointLabel(save.retention?.[prompt.id]?.stage,Boolean(save.retention?.[prompt.id]?.recoveryPhase))} · ヒントなしで思い出そう`;
     bookmark.after(stage);
   }
   if(play.mode==='forest'&&quizMode&&quizWeaknessOverview(save).due.some(item=>item.id===prompt.id||item.baseId===(prompt.baseId||prompt.id))){
@@ -1905,6 +1908,7 @@ async function gradeAnswer() {
   play.captured.push(...reward.captured);
   if(rating==='smooth')play.smooth++;
   else if(rating==='hint')play.hintedCount++;
+  if(play.mode==='retention'&&rating==='smooth'&&play.retentionDueIds.includes(prompt.id))play.retentionPassedIds.push(prompt.id);
   if(transcriptPractice)play.assistedGates=(play.assistedGates||0)+1;
   if(play.mode==='forest')play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,
     outcome:transcriptPractice?'review':rating==='smooth'?'independent':'supported'});
@@ -2297,7 +2301,7 @@ function finishSession(timedOut=false,defeated=false) {
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
-  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
+  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='retention'?'定着チェック完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
     (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
   $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='transfer-review'?(ended.smooth?'前の会話から時間を空けて、自力で表現を確認できたね！ 次は別の場面でも試そう。':'今日はヒント・例文で確認した段階。明日また1問で復習できるよ。'):ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
@@ -2306,6 +2310,23 @@ function finishSession(timedOut=false,defeated=false) {
      `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
     timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
+  let recallResult=$('#result-retention-summary');
+  if(!recallResult){
+    recallResult=document.createElement('section');
+    recallResult.id='result-retention-summary';
+    recallResult.className='retention-result';
+    recallResult.setAttribute('aria-label','定着チェックの振り返り');
+    $('#result-detail-panel').before(recallResult);
+  }
+  recallResult.hidden=ended.mode!=='retention';
+  if(ended.mode==='retention'){
+    const checked=new Set(ended.retentionPassedIds).size;
+    const scheduled=ended.retentionDueIds.length;
+    const remaining=retentionOverview(save,dayKey()).due.length;
+    const milestones=retentionMilestoneSummary(save,dayKey());
+    const next=milestones.nextDate? `次の予定は ${milestones.nextDate}`: '新しい英語に挑戦しよう';
+    recallResult.textContent=`今回の定着チェック：自力で確認 ${checked}/${scheduled}問（別場面の追加問題は含まない）。翌日 ${milestones.day1}問・3日後 ${milestones.day3}問・7日後 ${milestones.day7}問達成。未確認の復習 ${remaining}問。 ${next}。ヒントや例文だけでは達成にならないよ。`;
+  }
   $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
   const medal=ended.bossMedal;
   if(medal?.bonusXp)$('#result-rewards').insertAdjacentHTML('beforeend',`<span class="reward-pill boss-bonus-pill">ボス勲章 初回・昇格報酬 ＋${medal.bonusXp} XP</span>`);
