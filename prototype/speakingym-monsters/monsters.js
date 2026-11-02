@@ -18,6 +18,7 @@ import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
 import { speakingFeedbackFor, conversationFeedbackFor } from './speaking-feedback.js';
 import { forestLearningPulseFor } from './forest-learning-pulse.js';
+import { conversationPolishFor } from './conversation-polish.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
@@ -125,6 +126,21 @@ function conversationFeedbackHtml(prompt,learnerAnswer,grade,{hinted=false,revea
   <p class="conversation-feedback-next"><strong>次の一歩</strong> ${escapeHtml(feedback.next)}</p>
   <small>これは教材に登録した英文・条件の確認です。発音や流暢さ、自由会話の意味を完全に評価したものではありません。</small>
  </section>`;
+}
+function conversationPolishHtml(prompt){
+ if(play?.mode==='forest'||!['speak','read'].includes(prompt.kind))return '';
+ return `<details id="conversation-polish" class="conversation-polish"><summary>別の言い方を試す（追加XPなし）</summary><div class="conversation-polish-body"><p id="conversation-polish-guide">今の意味を保ったまま、別の英文にしてみよう。ここでの練習は会話の返答・XP・成績を変えないよ。</p><label for="conversation-polish-input">言い換えた英文</label><textarea id="conversation-polish-input" lang="en" rows="2" maxlength="350" placeholder="例文を参考に、別の英語で伝えてみよう" aria-describedby="conversation-polish-guide"></textarea><button id="conversation-polish-check" type="button">言い換えを確認する</button><div id="conversation-polish-result" role="status" aria-live="polite"></div><small>教材の簡易チェックです。自由な英文のすべてや発音・流暢さは判定していません。</small></div></details>`;
+}
+function wireConversationPolish(prompt,originalAnswer=''){
+ const button=$('#conversation-polish-check');
+ if(!button)return;
+ button.addEventListener('click',()=>{
+  const result=conversationPolishFor(prompt,$('#conversation-polish-input').value,{originalAnswer});
+  if(!result)return;
+  const checked=result.checked.length?`<p><strong>教材で確認した内容</strong> ${result.checked.map(escapeHtml).join('・')}</p>`:'';
+  const model=result.status==='empty'||result.status==='same'?'':`<p><strong>参考表現（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(prompt.answer)}</span></p>`;
+  $('#conversation-polish-result').innerHTML=`<div class="conversation-polish-verdict" data-polish-status="${escapeHtml(result.status)}"><strong>${escapeHtml(result.headline)} · 追加XP 0</strong>${checked}<p><strong>次のヒント</strong> ${escapeHtml(result.tip)}</p>${model}</div>`;
+ });
 }
 function forestLearningPulseHtml(prompt,learnerAnswer,grade,{hinted=false}={}){
  const pulse=forestLearningPulseFor(prompt,grade,{answer:learnerAnswer,hinted});
@@ -1978,8 +1994,9 @@ async function gradeAnswer() {
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=2
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
+  if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
   // Deliberately no auto-advance: explanations must remain until tapped.
 }
@@ -2011,8 +2028,9 @@ function skipAnswer(){
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
   const explanation=quizTeachingFor(prompt)?quizTeachingHtml(prompt,learnerAnswer):
     conversationFeedbackHtml(prompt,learnerAnswer,{status:'review'}, {hinted:true,revealExample:true});
-  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}<button id="next-question" class="grading-next">${defending?'味方のターンへ →':play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button></div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box" role="status"><div class="feedback-head">${['vocab','grammar'].includes(prompt.kind)?'正解と理由を確認しよう':'例文を確認しよう'} · 0 XP</div><div class="feedback-answer">${escapeHtml(prompt.answer)}</div>${explanation}<button id="next-question" class="grading-next">${defending?'味方のターンへ →':play.mode==='forest'?'同じ関門にもう一度挑戦 →':'次の問題へ →'}</button>${conversationPolishHtml(prompt)}</div>`;
   attachFeedbackBookmark(prompt);
+  wireConversationPolish(prompt,learnerAnswer);
   $('#next-question').addEventListener('click',()=>{
     if(defending){finishEnemyTurn();return;}
     if(play?.mode==='forest'&&play.endless&&!play.attemptReviewed){

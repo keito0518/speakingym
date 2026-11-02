@@ -32,9 +32,32 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.conversation-feedback').getAttribute('data-conversation-verdict'),'correct');
   assert.match(await page.locator('.conversation-feedback').innerText(),/会話フィードバック|次の一歩/);
   assert.match(await page.locator('.roleplay-reply').innerText(),/Let me check the seating options/);
+  assert.equal(await page.locator('#conversation-polish').count(),1,
+    'A verified conversation turn offers optional paraphrase practice');
+  assert.equal(await page.locator('#conversation-polish').getAttribute('open'),null,
+    'Extra practice starts collapsed to keep the next-turn action obvious');
+  await page.locator('#conversation-polish > summary').click();
+  assert.equal(await page.locator('#next-question').isVisible(),true,
+    'Paraphrase practice must never block the next conversation turn');
+  const saveBeforePolish=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
+  await page.locator('#conversation-polish-input').fill("I'd prefer a window seat.");
+  await page.locator('#conversation-polish-check').click();
+  assert.equal(await page.locator('.conversation-polish-verdict').getAttribute('data-polish-status'),'same');
+  await page.locator('#conversation-polish-input').fill("I'd rather sit by the window.");
+  await page.locator('#conversation-polish-check').click();
+  assert.equal(await page.locator('.conversation-polish-verdict').getAttribute('data-polish-status'),'correct');
+  assert.match(await page.locator('.conversation-polish-verdict').innerText(),/追加XP 0/);
+  await page.locator('#conversation-polish-input').fill('I have no idea.');
+  await page.locator('#conversation-polish-check').click();
+  assert.equal(await page.locator('.conversation-polish-verdict').getAttribute('data-polish-status'),'review');
+  assert.match(await page.locator('.conversation-polish-verdict').innerText(),/簡易判定では確認できない/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),saveBeforePolish,
+    'Optional paraphrases must never grant extra XP or change saved progress');
   await page.locator('#next-question').click();
   assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id'),'problem-food');
   assert.equal(await page.locator('.roleplay-line.player').count(),1);
+  assert.match(await page.locator('.roleplay-line.player').first().innerText(),/prefer a window seat/,
+    'The original verified reply stays in conversation history, not the extra practice');
   assert.match(await page.locator('.roleplay-line').nth(2).innerText(),/Let me check the seating options/,
     'The NPC response should remain visible in conversation history');
   assert.match(await page.locator('.roleplay-progress').innerText(),/会話 2 \/ 3/);
