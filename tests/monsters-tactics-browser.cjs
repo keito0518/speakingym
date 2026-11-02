@@ -672,7 +672,9 @@ const assert=require('node:assert/strict');
    assert.match(await counterPage.locator('.forest-attack-select').innerText(),/リスニングで攻撃するとダメージアップ！/);
    assert.equal(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('data-weak'),'true','Enemy weakness must be highlighted on the actionable attack button');
    assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('aria-label'),/敵の弱点・ダメージアップ/);
-   assert.doesNotMatch(await counterPage.locator('.forest-attack-select').innerText(),/選ぶと問題が出るよ/);
+   assert.match(await counterPage.locator('.forest-attack-select .dungeon-choice-guide').innerText(),/迷ったら「リスニング」/,
+     'The first tactical decision should identify a single recommended action');
+   assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"] small').innerText(),/おすすめ/);
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    const weakness=counterPage.locator('#forest-enemy-weakness');
    assert.equal(await weakness.isVisible(),true,'A foe weakness label is displayed in the battle scene');

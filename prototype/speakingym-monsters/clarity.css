@@ -135,11 +135,13 @@
  background:linear-gradient(155deg,#153f51,#0b2f40);color:#f8f1d8}
 .forest-active.tactical-battle .forest-attack-select>strong{font-size:17px;line-height:1.4;color:#fff5cd}
 .forest-active.tactical-battle .forest-attack-select>span{font-size:12px;line-height:1.5;color:#d8f2e9}
+.forest-active.tactical-battle .forest-attack-select .dungeon-choice-guide{margin:0;padding:8px 10px;border-radius:8px;background:#e7f4ed;color:#254f3c;font-size:12px;font-weight:850;line-height:1.6}
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds{
  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:3px 0 0}
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button{
  min-height:48px;padding:10px 5px;border:2px solid #87b2a7;border-radius:9px;
  background:#f6f7e9;color:#23473b;font-size:13px;font-weight:900;box-shadow:0 3px 0 #507b75}
+.forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button small{display:block;margin-top:2px;font-size:10px;font-weight:850}
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button:focus-visible{
  outline:3px solid #ffd37a;outline-offset:2px}
 .forest-active.tactical-battle .forest-tactic-actions button{min-height:43px}

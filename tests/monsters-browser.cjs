@@ -279,6 +279,10 @@ const path=require('node:path');
     await menuPage.locator('[data-feature-worlds]').click();
     assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
     assert.equal(await menuPage.locator('#forest-invite-title').textContent(),'Englishダンジョン');
+    assert.equal(await menuPage.locator('.dungeon-now-badge').isVisible(),true);
+    assert.match(await menuPage.locator('#dungeon-next-area').innerText(),/次の目的地/);
+    assert.equal(await menuPage.locator('.dungeon-simple-steps li').count(),3,
+      'The main dungeon route should be explained in three short steps');
     assert.equal(await menuPage.locator('#dungeon-other-modes').getAttribute('open'),null,'Optional modes start collapsed');
     assert.equal(await menuPage.locator('#start-forest-tactics').isVisible(),false,'Beginner sees only the main start action');
     assert.equal(await menuPage.locator('#start-forest').isVisible(),true,'Main adventure is immediately available');
@@ -286,6 +290,13 @@ const path=require('node:path');
     await menuPage.locator('#dungeon-stage-list > summary').click();
     const startBeforeWorlds=await menuPage.evaluate(()=>document.querySelector('#start-forest').getBoundingClientRect().top < document.querySelector('#forest-area-list').getBoundingClientRect().top);
     assert.equal(startBeforeWorlds,true,'New players can start before reading eight area cards');
+    await menuPage.locator('#dungeon-other-modes > summary').click();
+    await menuPage.locator('[data-dungeon-level="normal"]').click();
+    assert.equal(await menuPage.locator('[data-dungeon-level="normal"]').getAttribute('aria-pressed'),'true');
+    assert.match(await menuPage.locator('#dungeon-next-goal').innerText(),/ふつうモード/);
+    await menuPage.locator('[data-dungeon-level="easy"]').click();
+    assert.equal(await menuPage.locator('[data-dungeon-level="easy"]').getAttribute('aria-pressed'),'true');
+    assert.equal(await menuPage.locator('#start-forest').isVisible(),true);
     await menuPage.locator('#open-dungeon-tutorial').click();
     assert.match(await menuPage.locator('#tutorial-heading').innerText(),/Englishダンジョン/);
     await menuPage.locator('#tutorial-close').click();
@@ -842,7 +853,7 @@ const path=require('node:path');
           await forestPage.locator('#native-ios-dictation').click();
           assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true,
             'Boss keyboard fallback must focus the iPhone field through native tap activation');
-          assert.match(await forestPage.locator('#speech-helper').innerText(),/入力欄が選ばれた/);
+          assert.match(await forestPage.locator('#speech-helper').innerText(),/入力欄(が選ばれた|を開いた)/);
           assert.equal(await forestPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
           assert.equal(await forestPage.evaluate(()=>window.__hungRecognizerStarts||0),0,
             'Keyboard fallback must not start a silent recognition session');
@@ -1231,7 +1242,7 @@ const path=require('node:path');
     assert.ok(iosContrast.placeholderRatio>=4.5,`Input placeholder must be readable without relying on Safari's default opacity: ${JSON.stringify(iosContrast)}`);
     await iosPage.locator('#native-ios-dictation').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
-    assert.match(await iosPage.locator('#speech-helper').innerText(),/入力欄が選ばれた/);
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/入力欄(が選ばれた|を開いた)/);
     assert.equal(await iosPage.evaluate(()=>Boolean(window.__silentSpeech)),false);
     // A real primary mic tap starts recognition and permission errors leave
     // the native keyboard alternative available on the same card.

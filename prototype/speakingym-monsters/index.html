@@ -109,25 +109,35 @@
                 <div class="dungeon-selection-banner-content">
                   <div class="dungeon-selection-banner-copy">
                     <h2 id="forest-invite-title">English<span>ダンジョン</span></h2>
-                    <p>英語を使って、ふたつの世界を冒険しよう。</p>
+                    <p>迷ったら「つづきから冒険」だけでOK！ 森から街へ、順番に進もう。</p>
                   </div>
-                  <div class="dungeon-selection-counter" aria-label="2つのワールド"><strong>02</strong><span>WORLDS</span></div>
+                  <div class="dungeon-selection-counter" aria-label="全8エリアを順番に攻略"><strong>8</strong><span>エリアを攻略</span></div>
                 </div>
               </header>
-              <div class="forest-invite-action dungeon-quick-actions">
-                <button type="button" id="start-forest" class="forest-primary">次のエリアへ進む</button>
+              <section class="dungeon-guided-start" aria-label="今やること">
+                <span class="dungeon-now-badge">おすすめ · まずはここから</span>
+                <h3 id="dungeon-next-area">はじまりの森</h3>
+                <p id="dungeon-next-goal">ここで使う英語を練習してボスを倒そう。</p>
+                <ol class="dungeon-simple-steps" aria-label="冒険の進め方">
+                  <li>英語の問題に答える</li><li>敵を倒して進む</li><li>ボスを倒してクリア</li>
+                </ol>
+                <div class="forest-invite-action dungeon-quick-actions">
+                  <button type="button" id="start-forest" class="forest-primary">つづきから冒険する</button>
+                  <span id="forest-home-progress">まだ未踏の森</span>
+                </div>
+              </section>
+              <p class="dungeon-first-tip">操作が不安なら <button type="button" id="start-practice-battle" class="dungeon-practice-link">1分で操作を練習</button> · <button type="button" id="open-dungeon-tutorial" class="dungeon-guide-link">遊び方ガイド</button></p>
+              <div class="dungeon-optional-area"><strong>慣れてきたら（任意）</strong>
                 <details id="dungeon-other-modes" class="dungeon-other-modes"><summary>ほかの遊び方を見る</summary><div class="dungeon-other-modes-actions">
                   <button type="button" id="start-forest-tactics" class="forest-tactics-start">仲間を編成して挑戦</button>
                   <button type="button" id="start-forest-simple" class="forest-endless-button">ライトバトル（敵の反撃なし）</button>
                   <button type="button" id="start-forest-endless" class="forest-endless-button">エンドレスに挑戦</button>
-                </div></details>
-                <span id="forest-home-progress">まだ未踏の森</span>
+                </div><div class="dungeon-level-choice"><span>問題の難しさ <small id="dungeon-current-level">現在：やさしい</small></span><div role="group" aria-label="ダンジョンの難易度"><button type="button" data-dungeon-level="easy" aria-pressed="true">やさしい</button><button type="button" data-dungeon-level="normal" aria-pressed="false">ふつう</button><button type="button" data-dungeon-level="hard" aria-pressed="false">むずかしい</button></div><small>難易度はほかの練習モードとも共通だよ。</small></div></details>
+                <details class="dungeon-stage-list" id="dungeon-stage-list"><summary>クリア済みエリアから遊ぶ・エリア一覧</summary>
+                  <div class="dungeon-selection-label"><strong>エリア一覧</strong><span>未解放の場所は冒険を進めると開くよ</span></div>
+                  <div id="forest-area-list" class="forest-area-list" aria-label="ダンジョンのエリア選択"></div>
+                </details>
               </div>
-              <p class="dungeon-first-tip">初めてなら <button type="button" id="start-practice-battle" class="dungeon-practice-link">操作を練習</button> <button type="button" id="open-dungeon-tutorial" class="dungeon-guide-link">遊び方を見る</button></p>
-              <details class="dungeon-stage-list" id="dungeon-stage-list"><summary>エリア一覧から選ぶ</summary>
-                <div class="dungeon-selection-label"><strong>行きたいエリアを選ぼう</strong><span>未解放の場所は冒険を進めると開くよ</span></div>
-                <div id="forest-area-list" class="forest-area-list" aria-label="ダンジョンのエリア選択"></div>
-              </details>
               <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
             </section>
             <span id="save-note" class="save-note">記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）</span>

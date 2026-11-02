@@ -285,3 +285,26 @@
  .forest-invite.dungeon-selection .dungeon-quick-actions{padding:14px 11px}
  .forest-invite.dungeon-selection .dungeon-quick-actions button{min-height:44px}
 }
+
+/* One recommended dungeon route; optional modes and previously cleared
+   chapters are visually secondary and never compete with the main CTA. */
+.dungeon-guided-start{margin:18px 0 10px;padding:21px 23px;border:2px solid #a2c8ae;border-radius:20px;background:linear-gradient(145deg,#f5fff4,#edf7e7);box-shadow:0 8px 23px #173c2d16;color:#244d37}
+.dungeon-now-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:#237851;color:#fff;font-size:12px;font-weight:900}
+.dungeon-guided-start h3{margin:12px 0 4px;font-size:clamp(20px,4.3vw,27px);font-weight:900;line-height:1.35;color:#214b34;overflow-wrap:anywhere}
+.dungeon-guided-start>p{margin:5px 0 15px;font-size:13px;line-height:1.6;color:#4b6e56}
+.dungeon-simple-steps{list-style:none;counter-reset:dungeon-step;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0;margin:14px 0}
+.dungeon-simple-steps li{counter-increment:dungeon-step;min-width:0;padding:9px 9px 9px 11px;border:1px solid #c4d7c3;border-radius:10px;background:#fff;color:#385b43;font-size:12px;font-weight:800;line-height:1.55;overflow-wrap:anywhere}
+.dungeon-simple-steps li:before{content:counter(dungeon-step) ". ";color:#247a52;font-weight:900}
+.forest-invite.dungeon-selection .dungeon-guided-start .dungeon-quick-actions{margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+.dungeon-optional-area{margin-top:19px;padding:12px 15px 5px;border-top:1px solid #d5dfd2;color:#536f5a}
+.dungeon-optional-area>strong{display:block;margin:0 0 8px;font-size:12px;font-weight:850}
+.dungeon-optional-area .dungeon-other-modes>summary,.dungeon-optional-area .dungeon-stage-list>summary{min-height:46px;font-size:12px;background:#f2f6f1;border-color:#d2ddd1;color:#315641}
+.dungeon-optional-area .dungeon-stage-list{margin:8px 0 12px;background:#f8fbf5;border-color:#d2ddd1}
+.dungeon-level-choice{margin:12px 0 5px;padding:13px;border:1px solid #bed1c0;border-radius:12px;background:#fff}
+.dungeon-level-choice>span{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;font-size:12px;font-weight:850;color:#305a40}
+.dungeon-level-choice small{font-size:11px;font-weight:650;color:#607b65}
+.dungeon-level-choice>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:9px 0}
+.dungeon-level-choice button{min-height:44px;padding:7px 3px;border:1px solid #b9cbb8;border-radius:9px;background:#f4f8f2;color:#28513b;font-size:12px;font-weight:850}
+.dungeon-level-choice button[aria-pressed="true"]{border-color:#205e45;background:#276c4e;color:#fff}
+.dungeon-level-choice button:focus-visible{outline:3px solid #e4b257;outline-offset:2px}
+@media(max-width:540px){.dungeon-guided-start{margin:13px 0 9px;padding:16px 12px;border-radius:16px}.dungeon-guided-start h3{font-size:20px}.dungeon-simple-steps{grid-template-columns:minmax(0,1fr);gap:5px;margin:11px 0}.dungeon-simple-steps li{padding:6px 10px;font-size:11px}.dungeon-optional-area{padding:10px 4px}.dungeon-level-choice{padding:10px}}

@@ -275,6 +275,8 @@ function renderDifficulty() {
     button.setAttribute('aria-pressed', String(active));
   });
   $$('[data-roleplay-level]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.roleplayLevel===save.difficulty)));
+  $$('[data-dungeon-level]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.dungeonLevel===save.difficulty)));
+  $('#dungeon-current-level').textContent=`現在：${difficultyCopy[save.difficulty].label}`;
   $('#difficulty-description').textContent = difficultyCopy[save.difficulty].description;
   const roleplayPick=recommendedRoleplay(save);
   $('#roleplay-recommendation').textContent=`今日のおすすめ：${roleplayFor(roleplayPick.id,save.difficulty).title} · ${roleplayPick.reason}`;
@@ -360,7 +362,12 @@ function renderHome() {
       <div class="dungeon-world-areas">${cityCards}</div>
     </section>`;
   $$('[data-enter-forest]').forEach(button=>button.addEventListener('click',()=>startMainDungeon(button.dataset.enterForest)));
-  $('#start-forest').textContent=cityClear?'雪灯りの街をもう一度冒険':`次へ：${nextDungeonArea(save).name}`;
+  const nextArea=nextDungeonArea(save);
+  $('#dungeon-next-area').textContent=cityClear?'全エリア攻略！ 次は好きな場所へ':`次の目的地：${nextArea.name}`;
+  $('#dungeon-next-goal').textContent=cityClear
+    ?'好きなエリアを再挑戦して、使える英語をさらに増やそう。'
+    :`${nextArea.goal} · ${difficultyCopy[save.difficulty].label}モード`;
+  $('#start-forest').textContent=cityClear?'雪灯りの街をもう一度冒険する':`${nextArea.name}の冒険を始める →`;
   const weak=quizWeaknessOverview(save);
   const weakSummary=$('#forest-weakness-summary');
   weakSummary.hidden=weak.due.length===0&&weak.upcoming.length===0;
@@ -751,8 +758,9 @@ function renderAttackChoice(panel,t){
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
  panel.dataset.turn='choose';
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
-  <strong>あなたのターン · 攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
-  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}</button>`).join('')}</div></div>`;
+  <strong>① まず攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
+  <p class="dungeon-choice-guide">迷ったら「${BATTLE_LABELS[affinity.weak]}」がオススメ。タップすると英語の問題が出るよ。</p>
+  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>おすすめ</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
@@ -1023,7 +1031,7 @@ function showForestExplore() {
   $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
   $('#forest-explore-description').textContent=formation?'この編成で出発できるよ。':
     isBoss?'ボスが待っている！':
-    play.index===0?'出発して最初の問題に挑もう。':
+    play.index===0?(play.quickStart?'次は「おすすめの攻撃」を選んで、英語の問題に答えよう。':'出発して最初の問題に挑もう。'):
     '次の戦闘へ進もう。';
   const eventPanel=$('#forest-explore-event');
   $('#forest-explore-screen').classList.remove('has-story-event');
@@ -2142,6 +2150,13 @@ $$('[data-difficulty]').forEach(button => button.addEventListener('click', () =>
 $$('[data-roleplay-level]').forEach(button=>button.addEventListener('click',()=>{
   persist(chooseDifficulty(save,button.dataset.roleplayLevel));
   renderDifficulty();
+}));
+$$('[data-dungeon-level]').forEach(button=>button.addEventListener('click',()=>{
+  persist(chooseDifficulty(save,button.dataset.dungeonLevel));
+  renderDifficulty();
+  renderHome();
+  homeNavigation?.showPage('forest');
+  $('#dungeon-other-modes').open=true;
 }));
 $$('[data-start]').forEach(button=>button.addEventListener('click',()=>startSession(button.dataset.start)));
 $$('[data-roleplay]').forEach(button=>button.addEventListener('click',()=>startSession('roleplay',button.dataset.roleplay)));
