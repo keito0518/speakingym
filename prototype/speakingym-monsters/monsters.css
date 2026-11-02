@@ -696,3 +696,21 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .conversation-feedback-quick strong{display:block;color:#21553d}
 .conversation-feedback-quick span{display:block;color:#526e5d;font-size:11px}
 @media(max-width:430px){.conversation-feedback{padding:11px;font-size:12px}.conversation-feedback-title{font-size:13px}}
+
+/* Evidence-based four-skill dashboard. Short cards on 320px screens. */
+.skill-growth{margin:20px 0 24px;padding:21px;border-radius:20px;border:1px solid #d6e5d6;background:#f8fbf4;color:#2a4938}
+.skill-growth-intro h2{font-size:clamp(19px,3vw,25px);line-height:1.3;margin:5px 0 7px;color:#294a39}
+.skill-growth-intro p,.skill-growth-caveat{font-size:12px;line-height:1.65;color:#556c5d;margin:0}
+.skill-growth-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:16px 0 12px}
+.skill-growth-card{padding:15px;border:1px solid #d9e4d7;border-radius:14px;background:#fffefa;min-width:0;display:flex;flex-direction:column;gap:8px}
+.skill-growth-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px}
+.skill-growth-head strong{font-size:15px;color:#285f45;line-height:1.45;word-break:keep-all}
+.skill-growth-head span{background:#ecf4e8;border:1px solid #d1e2d2;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:750;color:#41644e}
+.skill-growth-count{font-size:13px;font-weight:800;color:#31513f;line-height:1.5;overflow-wrap:anywhere;margin:0}
+.skill-growth-track{background:#e1ebdd;border-radius:99px;height:9px;overflow:hidden}
+.skill-growth-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#337e58,#bf9a4f);transition:width .2s}
+.skill-growth-detail{font-size:11px;line-height:1.65;color:#617265;overflow-wrap:anywhere;margin:0}
+.skill-growth-start{border-radius:10px;min-height:44px;padding:9px 12px;border:1px solid #2c6c4f;background:#286f50;color:white;font-size:12px;font-weight:800;margin-top:auto;cursor:pointer}
+.skill-growth-start:focus-visible{outline:3px solid #dbb058;outline-offset:2px}
+@media(max-width:430px){.skill-growth{padding:15px 12px;margin:14px 0}.skill-growth-list{grid-template-columns:1fr;gap:8px}.skill-growth-card{padding:12px 13px}.skill-growth-start{width:100%}}
+@media(prefers-reduced-motion:reduce){.skill-growth-track span{transition:none}}
