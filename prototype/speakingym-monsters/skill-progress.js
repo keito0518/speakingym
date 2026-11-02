@@ -11,7 +11,7 @@ const dayValid=day=>typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&Numb
 const PROMPTS_BY_ID=new Map(ALL_PROMPTS.map(prompt=>[prompt.id,prompt]));
 
 export function sanitizeSkillAttempts(raw){
- if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))raw={};
  return Object.fromEntries(SKILL_KINDS.map(kind=>{
   const source=Array.isArray(raw[kind])?raw[kind]:[];
   const items=source.filter(row=>row&&typeof row==='object'&&!Array.isArray(row)&&
