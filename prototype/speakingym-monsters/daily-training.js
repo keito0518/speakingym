@@ -3,6 +3,7 @@
 // Select new, due review, and transfer tasks at the chosen difficulty.
 import { ALL_PROMPTS } from './monster-data.js';
 import { dayKey, quizWeaknessOverview } from './monster-engine.js';
+import { nextSkillFocusFor } from './skill-progress.js';
 
 const QUIZ_KINDS=new Set(['vocab','grammar']);
 const eligible=(p,level)=>!p.bossOnly&&(p.difficulty||'easy')===level&&Boolean(p.answer)&&
@@ -22,6 +23,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
  if(!['easy','normal','hard'].includes(difficulty)||!/^\d{4}-\d{2}-\d{2}$/.test(today)||size<1||size>12||!Number.isInteger(size))
    throw Error('Invalid daily training options');
  const pool=ALL_PROMPTS.filter(p=>eligible(p,difficulty)).sort((a,b)=>a.id.localeCompare(b.id));
+ const focus=nextSkillFocusFor(save,{difficulty,today});
  const weak=new Set(quizWeaknessOverview(save,today).due.map(q=>q.id));
  const review=new Set(Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id));
  const hasPracticed=p=>Boolean(save.progress?.[p.phraseId]?.attempts);
@@ -38,6 +40,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
     const score=p=>(
      (bases.has(baseId(p))?16:0)+
      (kinds.has(p.kind)?4:0)+
+     (focus&&p.kind===focus.kind&&selections.filter(chosen=>chosen.kind===focus.kind).length<2?-12:0)+
      (category==='review'?(weak.has(p.id)?-8:0):practicedToday(p)?35:0)+
      ((save.savedPromptIds||[]).includes(p.id)?-1:0)
     );
@@ -58,7 +61,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
  put('mixed',size-selections.length,p=>!hasPracticed(p));
  put('mixed',size-selections.length,p=>due(p));
  put('mixed',size-selections.length,()=>true);
- return {prompts:selections,phases,counts:{
+ return {prompts:selections,phases,focus:focus&&selections.some(p=>p.kind===focus.kind)?focus:null,counts:{
   new:phases.filter(p=>p==='new').length,
   review:phases.filter(p=>p==='review').length,
   transfer:phases.filter(p=>p==='transfer').length,
