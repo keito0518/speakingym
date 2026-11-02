@@ -57,8 +57,9 @@ const path=require('node:path');
     // on a 320px device; only confirmed self-recall can enter the new stats.
     {
       const {context:skillContext,page:skillPage}=await boot(320);
-      await enterHomePanel(skillPage,'training');
+      await enterHomePanel(skillPage,'progress');
       assert.equal(await skillPage.locator('#skill-growth-list .skill-growth-card').count(),4);
+      assert.equal(await skillPage.locator('#skill-growth-list').isVisible(),true,'Skill dashboard belongs in Learning Records, not under the menu');
       assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/記録なし/);
       const screen=await skillPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(screen.scroll<=screen.inner+1,'320px skill progress cards must not overflow');
@@ -83,7 +84,7 @@ const path=require('node:path');
           assert.equal(stats.listen.length+stats.vocab.length+stats.grammar.length,0);
         }
         await leavePlay(skillPage);
-        await enterHomePanel(skillPage,'training');
+        await enterHomePanel(skillPage,'progress');
       }
       assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/自力で確認 1回/);
       await skillContext.close();
