@@ -44,6 +44,7 @@ const path=require('node:path');
   const unlockListening=async page=>{
     if(!await page.locator('#play-audio').count())return;
     await page.locator('#play-audio').click();
+    await page.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
     const correct=await page.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
       const {listeningChallengeFor}=await import('./listening-challenges.js');
@@ -485,6 +486,9 @@ const path=require('node:path');
     {timeout:15000});
     await listenPage.locator('#play-audio').click();
     await realAudio;
+    await listenPage.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
+    assert.match(await listenPage.locator('#listening-status').innerText(),/再生できた/,
+      'Audio loading alone must not unlock listening without playback starting');
     assert.equal(await listenPage.locator('[data-listening-choice]').count(),3);
     const listened=await listenPage.evaluate(async()=>{
       const {listeningChallengeFor}=await import('./listening-challenges.js');
@@ -503,6 +507,34 @@ const path=require('node:path');
     assert.match(await listenPage.locator('#feedback-panel').innerText(),/\+8 XP/);
     assert.equal(await listenPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),8);
     await listenContext.close();
+    // A tap with blocked media must never be recorded as successful listening.
+    const {context:blockedContext,page:blockedPage}=await boot(375);
+    await blockedPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();seeded.reviewPrompts['late-call']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await blockedPage.reload();
+    await enterHomePanel(blockedPage,'listening');
+    assert.equal(await blockedPage.locator('#listening-native-audio').getAttribute('controls'),'');
+    assert.equal(await blockedPage.locator('#listening-meaning').isVisible(),false);
+    await blockedPage.evaluate(()=>{
+      HTMLMediaElement.prototype.play=()=>Promise.reject(new Error('Playback blocked'));
+      Object.defineProperty(window,'speechSynthesis',{configurable:true,value:null});
+    });
+    await blockedPage.locator('#play-audio').click();
+    await blockedPage.locator('#transcript').waitFor({state:'visible',timeout:8000});
+    assert.match(await blockedPage.locator('#listening-status').innerText(),/再生できなかった/);
+    assert.equal(await blockedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
+    const blockedCorrect=await blockedPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      const {listeningChallengeFor}=await import('./listening-challenges.js');
+      return listeningChallengeFor(ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)).correctIndex;
+    });
+    await blockedPage.locator(`[data-listening-choice="${blockedCorrect}"]`).click();
+    assert.equal(await blockedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0,
+      'Subtitled fallback is practice only; no listening XP without audio');
+    await blockedContext.close();
     // Previously uncertain answers are surfaced again in a later practice run.
     const {context:reviewContext,page:reviewPage}=await boot(390);
     await reviewPage.evaluate(async()=>{

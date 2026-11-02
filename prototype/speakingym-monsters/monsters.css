@@ -170,6 +170,9 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .listening-first .listening-heading{margin:13px 0 8px;font-size:clamp(19px,2.7vw,27px);line-height:1.55;overflow-wrap:break-word;line-break:strict}
 .listening-first .listening-play{display:flex;width:100%;min-height:55px;justify-content:center;gap:12px;font-size:clamp(13px,2vw,16px);border:1px solid #a8cbb8;box-shadow:0 3px 0 #c7ded0;cursor:pointer}
 .listening-first .listening-play:focus-visible,.listening-choice:focus-visible,.listening-fallback:focus-visible{outline:3px solid #f0b958;outline-offset:3px}
+.listening-native{margin-top:11px;padding:10px 11px;border:1px solid #bed8c8;border-radius:11px;background:#f3fbf5}
+.listening-native label{display:block;margin-bottom:6px;font-size:11px;font-weight:800;line-height:1.55;color:#37614a}
+.listening-native audio{display:block;width:100%;max-width:100%;height:42px}
 .listening-meaning{margin-top:18px}
 .listening-check-title{font-size:clamp(15px,2vw,18px);font-weight:800;color:#264b36;line-height:1.65;margin:0 0 11px;overflow-wrap:break-word}
 .listening-choices{display:grid;grid-template-columns:1fr;gap:9px}

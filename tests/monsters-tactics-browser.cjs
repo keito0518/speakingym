@@ -14,6 +14,7 @@ const assert=require('node:assert/strict');
    });
    if(await page.locator('#play-audio').count()){
      await page.locator('#play-audio').click();
+     await page.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
      const correct=await page.evaluate(async()=>{
        const {ALL_PROMPTS}=await import('./monster-data.js');
        const {listeningChallengeFor}=await import('./listening-challenges.js');
@@ -768,6 +769,7 @@ const assert=require('node:assert/strict');
    await listenPage.locator('.forest-tactic-strategy > summary').click();
    assert.equal(await listenPage.locator('#play-audio').count(),1,'Listening attack uses choice assessment');
    await listenPage.locator('#play-audio').click();
+   await listenPage.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
    assert.equal(await listenPage.locator('[data-tactic-kind="speak"]').isEnabled(),false,
      'A started listening attack cannot be swapped out after seeing its choices');
    const correctChoice=await listenPage.evaluate(async()=>{
@@ -811,6 +813,7 @@ const assert=require('node:assert/strict');
    assert.equal(await defensePage.locator('#forest-tactics').getAttribute('data-turn'),'enemy');
    assert.equal(await defensePage.locator('#play-audio').count(),1,'The forced enemy listening defense uses audio choices');
    await defensePage.locator('#play-audio').click();
+   await defensePage.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
    const defenseCorrect=await defensePage.evaluate(async()=>{
      const {ALL_PROMPTS}=await import('./monster-data.js');
      const {listeningChallengeFor}=await import('./listening-challenges.js');

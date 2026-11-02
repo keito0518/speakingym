@@ -23,6 +23,7 @@ import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
 import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
+import { roleplayTransferFor, roleplayTransferFeedbackFor } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
@@ -143,6 +144,39 @@ function wireConversationPolish(prompt,originalAnswer=''){
   $('#conversation-polish-result').innerHTML=`<div class="conversation-polish-verdict" data-polish-status="${escapeHtml(result.status)}"><strong>${escapeHtml(result.headline)} · 追加XP 0</strong>${checked}<p><strong>次のヒント</strong> ${escapeHtml(result.tip)}</p>${model}</div>`;
  });
 }
+function roleplayTransferHtml(challenge){
+ if(!challenge)return '';
+ const before=challenge.sourceOutcome==='smooth'?'自力で確認した表現':
+  challenge.sourceOutcome==='hint'?'ヒントを使って確認した表現':'例文で見た表現';
+ return `<details id="roleplay-transfer" class="roleplay-transfer">
+  <summary><span class="roleplay-transfer-tag">NEW MISSION</span><strong>別の場面で1問チャレンジ</strong><small>任意 · 追加XP 0</small></summary>
+  <div class="roleplay-transfer-body">
+   <p class="roleplay-transfer-lead">${before}を、今度は違う状況で使ってみよう。</p>
+   <div class="roleplay-transfer-scenes"><span>${escapeHtml(challenge.sourceScene)}</span><b aria-label="次の場面">→</b><span>${escapeHtml(challenge.destinationScene)}</span></div>
+   <p class="roleplay-transfer-prompt">${escapeHtml(challenge.prompt.cue)}</p>
+   <label for="roleplay-transfer-input">あなたなら英語でどう言う？</label>
+   <textarea id="roleplay-transfer-input" lang="en" rows="2" maxlength="350" placeholder="英文を入力して確認しよう"></textarea>
+   <div class="roleplay-transfer-actions"><button type="button" id="roleplay-transfer-check">英文を確認する</button><button type="button" id="roleplay-transfer-reveal">参考例を見る</button></div>
+   <div id="roleplay-transfer-result" role="status" aria-live="polite"></div>
+   <small>この1問は追加練習。XP・復習記録・会話の成績は変わりません。教材の簡易判定なので、発音・流暢さ・自由な英文の意味すべては評価していないよ。</small>
+  </div>
+ </details>`;
+}
+function wireRoleplayTransfer(challenge){
+ const check=$('#roleplay-transfer-check'),reveal=$('#roleplay-transfer-reveal');
+ if(!challenge||!check||!reveal)return;
+ let revealed=false;
+ const render=()=>{
+  const feedback=roleplayTransferFeedbackFor(challenge,$('#roleplay-transfer-input').value,{revealed});
+  if(!feedback)return;
+  const checked=feedback.checked.length?`<p><strong>確認できた点</strong> ${feedback.checked.map(escapeHtml).join('・')}</p>`:'';
+  const missing=feedback.missing.length?`<p><strong>確認したい条件</strong> ${feedback.missing.map(escapeHtml).join('・')}</p>`:'';
+  const example=feedback.example?`<p><strong>参考表現（唯一の正解ではないよ）</strong> <span lang="en">${escapeHtml(feedback.example)}</span></p>`:'';
+  $('#roleplay-transfer-result').innerHTML=`<div class="roleplay-transfer-verdict" data-transfer-status="${escapeHtml(feedback.status)}"><strong>${escapeHtml(feedback.headline)}</strong>${checked}${missing}<p>${escapeHtml(feedback.next)}</p>${example}<small>追加XP 0 · 学習記録への反映なし</small></div>`;
+ };
+ check.addEventListener('click',render);
+ reveal.addEventListener('click',()=>{revealed=true;reveal.disabled=true;reveal.textContent='参考例を表示中';render();});
+}
 function forestLearningPulseHtml(prompt,learnerAnswer,grade,{hinted=false}={}){
  const pulse=forestLearningPulseFor(prompt,grade,{answer:learnerAnswer,hinted});
  if(!pulse)return '';
@@ -187,7 +221,7 @@ function attachFeedbackBookmark(prompt){
 }
 let save = loadSave() || createSave();
 let lastDungeonReviewIds = [];
-let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, homeNavigation = null;
+let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, playbackGeneration = 0, homeNavigation = null;
 const betaTelemetry=createBetaTelemetry();
 setupBetaFeedback(betaTelemetry);
 
@@ -312,12 +346,22 @@ function stopAudio() {
   stopListeningPlayback();
 }
 function stopListeningPlayback(){
+  playbackGeneration++;
   const previous=spokenAudio;
   spokenAudio=null;
+  const native=$('#listening-native-audio');
+  if(native&&native!==previous){try{native.pause();}catch{}}
   if(previous){
     previous.onerror=null;
     previous.onended=null;
-    try{previous.pause();previous.removeAttribute('src');previous.load();}catch{}
+    previous.onplaying=null;
+    try{
+      previous.pause();
+      // The visible iPhone media player must retain its source for direct
+      // replay, while short-lived Audio objects can release their session.
+      if(previous.id==='listening-native-audio')previous.currentTime=0;
+      else {previous.removeAttribute('src');previous.load();}
+    }catch{}
   }
   try { window.speechSynthesis?.cancel(); } catch {}
 }
@@ -1209,6 +1253,7 @@ function renderQuestion() {
   const quizMode=prompt.kind==='vocab'||prompt.kind==='grammar';
   const listenMode=prompt.kind==='listen';
   const comprehension=listenMode?listeningChallengeFor(prompt):null;
+  const listenClip=listenMode&&LISTENING_AUDIO[prompt.id]?.text===comprehension.audio?LISTENING_AUDIO[prompt.id]:null;
   play.listeningState=listenMode?{played:false,understood:false,misses:0,usedTranscript:false}:null;
   const questionBody = quizMode
     ? `<p class="scenario-label">${prompt.kind==='vocab'?'単語の問題':'文法の問題'}</p><h1 class="forest-quiz-question" lang="${englishMode?'en':'ja'}">${escapeHtml(prompt.cue)}</h1>${englishMode?`<div class="task-panel"><strong>YOUR TASK</strong><p lang="en">${escapeHtml(prompt.task)}</p></div>`:''}<p class="question-caption" ${englishMode?'lang="en"':''}>${escapeHtml(prompt.scene)} · ${englishMode?(prompt.kind==='vocab'?'Choose the word that fits.':'Put the words in order.'):(prompt.kind==='vocab'?'文の空欄に合う単語を選ぼう':'正しい語順で魔法を完成させよう')}</p>`
@@ -1217,7 +1262,9 @@ function renderQuestion() {
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)} · 正解の形は1つじゃない。まず声に出そう。</p>`;
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
-  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'&&play.tactics?.turn==='enemy'?'ENEMY TURN':play.mode==='forest'?(play.index>=regularCount()?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=regularCount()?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=regularCount()?BOSS_HITS:regularCount()):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'聞いて選ぶ':play.mode==='forest'&&prompt.kind==='read'?'読んで答える':prompt.kind==='vocab'?'単語を選ぶ':prompt.kind==='grammar'?'文法の問題':englishMode?'英語 → 英語':prompt.kind==='listen'?'リスニング':'日本語 → 英語'}</span></div>${listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'英語を聞いて、意味を選ぼう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div><p id="listening-status" class="listening-status" role="status" aria-live="polite">${englishMode?'Choose what you heard. No microphone needed.':'聞き取れた内容を選ぼう。'}</p></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:`${readingPassage}${questionBody}`}`;
+  const nativeAudio=listenClip?`<div class="listening-native"><label for="listening-native-audio">${englishMode?'No sound? Play the audio directly below.':'音が聞こえない？ 下のプレーヤーからも再生できるよ。'}</label><audio id="listening-native-audio" controls preload="none" playsinline src="${escapeHtml(listenClip.src)}" aria-label="リスニング音声を直接再生"></audio></div>`:'';
+  const listeningBody=listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'英語を聞いて、意味を選ぼう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button>${nativeAudio}<p id="listening-status" class="listening-status" role="status" aria-live="polite">音声の再生を確認してから意味を選ぼう。</p><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:'';
+  $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'&&play.tactics?.turn==='enemy'?'ENEMY TURN':play.mode==='forest'?(play.index>=regularCount()?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=regularCount()?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=regularCount()?BOSS_HITS:regularCount()):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'聞いて選ぶ':play.mode==='forest'&&prompt.kind==='read'?'読んで答える':prompt.kind==='vocab'?'単語を選ぶ':prompt.kind==='grammar'?'文法の問題':englishMode?'英語 → 英語':prompt.kind==='listen'?'リスニング':'日本語 → 英語'}</span></div>${listenMode?listeningBody:`${readingPassage}${questionBody}`}`;
   if(play.roleplay){
     $('#play-card').insertAdjacentHTML('afterbegin',roleplayIntroMarkup());
     $('#roleplay-translation')?.addEventListener('toggle',event=>{
@@ -1363,6 +1410,20 @@ function renderQuestion() {
     $('#answer-area').hidden=true;
     const state=play.listeningState;
     const showChoices=()=>{$('#listening-meaning').hidden=false;};
+    const markAudioReady=()=>{
+      if(!play||play.listeningState!==state||state.understood)return;
+      state.played=true;
+      showChoices();
+      $('#listening-status').textContent='音声を再生できたよ。聞こえた意味を選ぼう。';
+    };
+    const native=$('#listening-native-audio');
+    // Direct iPhone playback is a first-class way to start this question.
+    // A button press alone is not evidence that any audio actually played.
+    native?.addEventListener('playing',markAudioReady);
+    native?.addEventListener('error',()=>{
+      if(play?.listeningState===state&&!state.played)
+        $('#listening-status').textContent='音源を読み込めませんでした。上の再生ボタンを試すか、字幕で練習してね。';
+    });
     const revealTranscript=()=>{
       if(!play||play.listeningState!==state||state.understood)return;
       state.usedTranscript=true;
@@ -1376,11 +1437,14 @@ function renderQuestion() {
     };
     $('#play-audio').addEventListener('click',()=>{
       if(state.understood)return;
-      state.played=true;
       if(play.tactics?.turn==='player')play.tactics.attackCommitted=true;
       if(play.tactics?.turn==='player')renderTacticalControls();
-      showChoices();
-      speakLine(comprehension.audio,revealTranscript,comprehension.level,prompt.id);
+      $('#listening-status').textContent='音声を準備中… 音が出たら選択肢が開くよ。';
+      speakLine(comprehension.audio,()=>{
+        if(play?.listeningState!==state)return;
+        revealTranscript();
+        $('#listening-status').textContent='この環境では音声を再生できなかったよ。字幕を使って続けられるよ（ヒント扱い）。';
+      },comprehension.level,prompt.id,markAudioReady);
     });
     $('#reveal-transcript').addEventListener('click',revealTranscript);
     $$('[data-listening-choice]').forEach(button=>button.addEventListener('click',()=>{
@@ -1427,7 +1491,7 @@ function renderQuestion() {
   if(play.mode==='forest')$('#forest-arena-console').scrollTop=0;
   keepMobileQuestionInView();
 }
-function browserSpeakLine(line,onUnavailable,level='easy') {
+function browserSpeakLine(line,onUnavailable,level='easy',onStart=()=>{},generation=playbackGeneration) {
   try {
     if(!window.speechSynthesis || !window.SpeechSynthesisUtterance) throw new Error('no speech');
     window.speechSynthesis.cancel();
@@ -1437,42 +1501,66 @@ function browserSpeakLine(line,onUnavailable,level='easy') {
     const voice=english.find(item=>/natural|premium|enhanced/i.test(item.name))||
       english.find(item=>/^en[-_]us/i.test(item.lang))||english[0];
     if(voice)utterance.voice=voice;
-    utterance.onerror=()=>onUnavailable?.();
+    let started=false,finished=false;
+    const watchdog=setTimeout(()=>{
+      if(finished||started||generation!==playbackGeneration)return;
+      finished=true;
+      try{window.speechSynthesis.cancel();}catch{}
+      onUnavailable?.();
+    },4500);
+    utterance.onstart=()=>{
+      if(generation!==playbackGeneration||finished)return;
+      started=true;clearTimeout(watchdog);onStart();
+    };
+    utterance.onend=()=>{finished=true;clearTimeout(watchdog);};
+    utterance.onerror=()=>{
+      if(generation!==playbackGeneration||finished)return;
+      finished=true;clearTimeout(watchdog);
+      if(!started)onUnavailable?.();
+    };
     window.speechSynthesis.speak(utterance);
-  } catch { onUnavailable?.(); }
+  } catch { if(generation===playbackGeneration)onUnavailable?.(); }
 }
-function speakLine(line,onUnavailable,level='easy',promptId=''){
+function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{}){
   stopListeningPlayback();
+  const generation=playbackGeneration;
   const clip=LISTENING_AUDIO[promptId];
-  // Use generated speech only if its transcript is still an exact curriculum
-  // match. On network/codec failure, keep the original browser voice fallback.
+  // Keep a real <audio controls> element in the DOM: iPhone's native player is
+  // an independent direct-play route if the custom button cannot start sound.
   if(clip?.text===line){
     try{
-      const audio=new Audio(clip.src);
+      const audio=$('#listening-native-audio')||new Audio(clip.src);
       spokenAudio=audio;
-      let fallen=false;
+      let fallen=false,started=false;
+      const watchdog=setTimeout(()=>fallback(),6500);
       const fallback=()=>{
-        if(fallen||spokenAudio!==audio)return;
-        fallen=true;
+        if(fallen||spokenAudio!==audio||generation!==playbackGeneration)return;
+        fallen=true;clearTimeout(watchdog);
         spokenAudio=null;
-        audio.onerror=null;
+        audio.onerror=null;audio.onplaying=null;audio.onended=null;
         try{audio.pause();}catch{}
-        browserSpeakLine(line,onUnavailable,level);
+        browserSpeakLine(line,onUnavailable,level,onStart,generation);
       };
       audio.onerror=fallback;
+      audio.onplaying=()=>{
+        if(generation!==playbackGeneration||fallen||started)return;
+        started=true;clearTimeout(watchdog);onStart();
+      };
       audio.onended=()=>{
+        clearTimeout(watchdog);
         if(spokenAudio===audio)spokenAudio=null;
-        // On iOS a retained HTMLAudioElement can hold on to the audio session
-        // and suppress the following WebSpeech onresult callback.
-        audio.onerror=null;
-        try{audio.pause();audio.removeAttribute('src');audio.load();}catch{}
+        audio.onerror=null;audio.onplaying=null;
+        // Retain the visible native player's source so its replay button
+        // continues to work, even after the custom button has finished.
+        if(audio.id!=='listening-native-audio')
+          try{audio.pause();audio.removeAttribute('src');audio.load();}catch{}
       };
       const pending=audio.play();
       if(pending?.catch)pending.catch(fallback);
       return;
     }catch{/* Fall through to the browser's own voice. */}
   }
-  browserSpeakLine(line,onUnavailable,level);
+  browserSpeakLine(line,onUnavailable,level,onStart,generation);
 }
 function startRecognition() {
   if(!play || play.revealed)return;
@@ -2206,6 +2294,7 @@ function finishSession(timedOut=false,defeated=false) {
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
+  const transfer=ended.roleplay?roleplayTransferFor(ended.roleplay):null;
   const roleplayResult=ended.roleplay?(()=>{
     const recap=roleplayRecapFor(ended.roleplay);
     if(!recap)return '';
@@ -2218,9 +2307,10 @@ function finishSession(timedOut=false,defeated=false) {
       return `<li class="roleplay-recap-turn" data-recap-status="${row.status}"><strong>${index+1}. ${escapeHtml(row.scene)} <span>${row.label}</span></strong>${spoken}${evidence}<div class="roleplay-recap-coaching"><p><strong>この場面のコツ</strong>${escapeHtml(row.coaching.why)}</p><p><strong>次に試すこと</strong>${escapeHtml(row.next)}</p></div>${row.response?`<p class="roleplay-recap-reaction"><strong>${escapeHtml(row.responseLabel)}</strong><span lang="en">${escapeHtml(row.response)}</span></p>`:''}${examplePanel}</li>`;
     }).join('');
     const track=recap.rows.map((row,index)=>`<div data-recap-status="${row.status}"><strong>${index+1}</strong><span>${row.label}</span></div>`).join('');
-    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${recap.independent} / ${recap.rows.length}ターンを自力で返答</h3><div class="roleplay-recap-track" aria-label="会話の3ターンの到達状況">${track}</div><p>ヒントあり ${recap.hinted} · 例文で確認 ${recap.skipped}</p><div class="roleplay-coaching-card"><strong>${escapeHtml(recap.headline)}</strong><p>${escapeHtml(recap.summary)}</p></div><div class="roleplay-coaching-card focus"><strong>次回のミッション</strong><p>${escapeHtml(recap.next)}</p>${recap.focus?`<span lang="en">${escapeHtml(recap.focus.example)}</span>`:''}</div><h4 class="roleplay-recap-heading">3ターンをふりかえる</h4><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>相手の反応は教材で用意した分岐だよ。表示した英文はセーブデータに保存されず、発音評価やAI自由会話の採点ではありません。</small></section>`;
+    return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${recap.independent} / ${recap.rows.length}ターンを自力で返答</h3><div class="roleplay-recap-track" aria-label="会話の3ターンの到達状況">${track}</div><p>ヒントあり ${recap.hinted} · 例文で確認 ${recap.skipped}</p><div class="roleplay-coaching-card"><strong>${escapeHtml(recap.headline)}</strong><p>${escapeHtml(recap.summary)}</p></div>${roleplayTransferHtml(transfer)}<div class="roleplay-coaching-card focus"><strong>次回のミッション</strong><p>${escapeHtml(recap.next)}</p>${recap.focus?`<span lang="en">${escapeHtml(recap.focus.example)}</span>`:''}</div><h4 class="roleplay-recap-heading">3ターンをふりかえる</h4><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>相手の反応は教材で用意した分岐だよ。表示した英文はセーブデータに保存されず、発音評価やAI自由会話の採点ではありません。</small></section>`;
   })():'';
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
+  wireRoleplayTransfer(transfer);
   renderDungeonLearningReport(ended);
   let targetedReview=$('#result-targeted-review');
   if(!targetedReview){

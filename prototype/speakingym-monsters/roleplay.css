@@ -71,6 +71,38 @@
 .roleplay-coaching-card.focus{border-color:#d5b96a;border-left-color:#cc9836;background:#fff8dc}
 .roleplay-coaching-card.focus>strong{color:#7a5428}
 .roleplay-coaching-card [lang="en"]{display:block;margin-top:8px;padding:9px 11px;border-radius:8px;background:#fffefa;color:#264c3b;font-weight:850;font-size:14px;line-height:1.55}
+/* Optional cross-scene transfer unlock after a scripted conversation. */
+.roleplay-transfer{margin:14px 0;border:2px solid #ae893c;border-radius:13px;background:linear-gradient(135deg,#fff5d6,#f1f8e9);color:#294938;overflow:hidden}
+.roleplay-transfer>summary{display:flex;flex-wrap:wrap;align-items:center;gap:7px;min-height:55px;padding:12px;cursor:pointer;list-style:none}
+.roleplay-transfer>summary::-webkit-details-marker{display:none}
+.roleplay-transfer>summary:focus-visible{outline:3px solid #23795a;outline-offset:-4px}
+.roleplay-transfer-tag{padding:4px 7px;border-radius:6px;background:#855828;color:#fff5d5;font:900 10px/1.3 system-ui,sans-serif;letter-spacing:.07em}
+.roleplay-transfer>summary strong{font-size:15px;color:#284d38}
+.roleplay-transfer>summary small{margin-left:auto;color:#735529;font-size:11px;font-weight:800}
+.roleplay-transfer>summary::after{content:'＋';font-size:19px;font-weight:900;color:#875d2a}
+.roleplay-transfer[open]>summary::after{content:'−'}
+.roleplay-transfer-body{display:grid;gap:9px;padding:0 13px 15px}
+.roleplay-transfer-body .roleplay-transfer-lead{margin:0;color:#47634d;font-size:12px}
+.roleplay-transfer-scenes{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.roleplay-transfer-scenes span{padding:6px 9px;border:1px solid #acbfa2;border-radius:8px;background:#fffef6;font-size:12px;font-weight:850}
+.roleplay-transfer-scenes b{color:#916629;font-size:17px}
+.roleplay-transfer-body .roleplay-transfer-prompt{margin:1px 0;padding:11px 12px;border-left:4px solid #36976f;border-radius:8px;background:#fffefa;font-size:14px;font-weight:800;line-height:1.6}
+.roleplay-transfer-body label{font-size:12px;font-weight:850;color:#2f5945}
+.roleplay-transfer-body textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:73px;padding:10px 11px;border:1px solid #8aa895;border-radius:9px;background:#fff;color:#1f4031;font:inherit;font-size:15px;line-height:1.5;resize:vertical}
+.roleplay-transfer-body textarea:focus-visible,.roleplay-transfer-actions button:focus-visible{outline:3px solid #ad833c;outline-offset:2px}
+.roleplay-transfer-actions{display:flex;flex-wrap:wrap;gap:8px}
+.roleplay-transfer-actions button{flex:1 1 140px;min-height:44px;padding:9px;border:1px solid #1d664a;border-radius:9px;background:#256d52;color:#fff;font-size:13px;font-weight:850;cursor:pointer}
+.roleplay-transfer-actions button+button{border-color:#9c8552;background:#fffcf0;color:#664d29}
+.roleplay-transfer-actions button:disabled{opacity:.6;cursor:default}
+.roleplay-transfer-body>small{font-size:11px;line-height:1.65;color:#556d5d}
+.roleplay-transfer-verdict{padding:11px;border:1px solid #c8d9bf;border-radius:9px;background:#fffef6;overflow-wrap:anywhere}
+.roleplay-transfer-verdict[data-transfer-status="correct"]{border-color:#6dad82;background:#e5f8df}
+.roleplay-transfer-verdict[data-transfer-status="review"]{border-color:#d1ab6b;background:#fff6e5}
+.roleplay-transfer-verdict>strong{display:block;font-size:13px;color:#285a40}
+.roleplay-transfer-verdict p{margin:7px 0 0;font-size:12px}
+.roleplay-transfer-verdict p strong{color:#45644c}
+.roleplay-transfer-verdict [lang="en"]{font-weight:800}
+.roleplay-transfer-verdict small{display:block;margin-top:7px;font-size:11px;color:#5b735e}
 .roleplay-recap-heading{font-size:15px;margin:19px 0 7px;color:#27553f}
 .roleplay-recap-list{list-style:none;display:grid;gap:10px;margin:14px 0;padding:0}
 .roleplay-recap-turn{padding:12px;border:1px solid #b8cdc1;border-radius:11px;background:#fff;overflow-wrap:anywhere}
@@ -94,4 +126,4 @@
 .roleplay-recap-reaction [lang="en"]{display:block;margin-top:4px}
 .roleplay-recap-turn[data-recap-status="skipped"] .roleplay-recap-evidence{background:#f1f2ec}
 .roleplay-recap-turn [lang="en"]{font-weight:800;color:#1d4f37}
-@media(max-width:580px){.roleplay-hub{padding:15px;margin:13px 0}.roleplay-options{grid-template-columns:1fr}.roleplay-conversation{padding:11px}.roleplay-line{font-size:13px}}
+@media(max-width:580px){.roleplay-hub{padding:15px;margin:13px 0}.roleplay-options{grid-template-columns:1fr}.roleplay-conversation{padding:11px}.roleplay-line{font-size:13px}.roleplay-transfer>summary small{margin-left:0}.roleplay-transfer>summary::after{margin-left:auto}}

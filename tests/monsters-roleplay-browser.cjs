@@ -107,6 +107,28 @@ const assert=require('node:assert/strict');
   assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/例文練習へのサポート/);
   assert.equal(await page.locator('.roleplay-recap-turn').nth(1).locator('.roleplay-recap-evidence').count(),1);
   assert.match(await page.locator('.roleplay-recap-turn').nth(2).innerText(),/次に試すこと/);
+  assert.equal(await page.locator('#roleplay-transfer').count(),1);
+  assert.equal(await page.locator('#roleplay-transfer').getAttribute('open'),null,
+    'Scene-changing bonus starts collapsed to keep the recap scannable');
+  await page.locator('#roleplay-transfer > summary').click();
+  assert.match(await page.locator('.roleplay-transfer-scenes').innerText(),/レストランの席.*街の移動/s);
+  assert.match(await page.locator('.roleplay-transfer-prompt').innerText(),/電車/);
+  const beforeTransfer=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
+  await page.locator('#roleplay-transfer-check').click();
+  assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'empty');
+  await page.locator('#roleplay-transfer-input').fill('I have no idea.');
+  await page.locator('#roleplay-transfer-check').click();
+  assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'review');
+  assert.equal(await page.locator('.roleplay-transfer-verdict [lang="en"]').count(),0,
+    'No complete answer is exposed until the learner asks to reveal it');
+  await page.locator('#roleplay-transfer-input').fill("I'd rather take the train.");
+  await page.locator('#roleplay-transfer-check').click();
+  assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'correct');
+  assert.match(await page.locator('.roleplay-transfer-verdict').innerText(),/場面チェンジ成功/);
+  await page.locator('#roleplay-transfer-reveal').click();
+  assert.match(await page.locator('.roleplay-transfer-verdict').innerText(),/参考表現/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),beforeTransfer,
+    'Extra scene practice must not change XP, save or retention state');
   const saved=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
   assert.ok(!saved.includes('I have no idea.'),'Roleplay transcripts must not be written to the saved game');
   await page.locator('#replay-run').click();
@@ -171,6 +193,20 @@ const assert=require('node:assert/strict');
    }
    assert.match(await page.locator('#result-title').innerText(),/会話完了/);
    assert.equal(await page.locator('.roleplay-recap-turn').count(),3);
+   await page.locator('#roleplay-transfer > summary').click();
+   assert.match(await page.locator('.roleplay-transfer-scenes').innerText(),
+     scene==='hotel'?/宿泊予約.*美容室/s:/crowded stall.*pizza restaurant/s);
+   const transferBefore=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
+   const destinationAnswer=await page.evaluate(async sceneArg=>{
+    const {roleplayFor}=await import('./roleplay-scenarios.js');
+    const {roleplayTransferFor}=await import('./roleplay-transfer.js');
+    const rp=roleplayFor(sceneArg,sceneArg==='market'?'hard':'easy');
+    return roleplayTransferFor({...rp,history:rp.turns.map(()=>({outcome:'smooth'}))}).prompt.answer;
+   },scene);
+   await page.locator('#roleplay-transfer-input').fill(destinationAnswer);
+   await page.locator('#roleplay-transfer-check').click();
+   assert.equal(await page.locator('.roleplay-transfer-verdict').getAttribute('data-transfer-status'),'correct');
+   assert.equal(await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),transferBefore);
    await page.locator('#result-home').click();
    await page.locator('[data-home-page="roleplay"]').click();
   }

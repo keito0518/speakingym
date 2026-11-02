@@ -15,6 +15,7 @@ const assert=require('node:assert/strict');
   });
   if(await page.locator('#play-audio').count()){
    await page.locator('#play-audio').click();
+   await page.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
    const correct=await page.evaluate(async()=>{
     const {listeningChallengeFor}=await import('./listening-challenges.js');
     const {ALL_PROMPTS}=await import('./monster-data.js');
