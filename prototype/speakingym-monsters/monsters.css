@@ -714,3 +714,11 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .skill-growth-start:focus-visible{outline:3px solid #dbb058;outline-offset:2px}
 @media(max-width:430px){.skill-growth{padding:15px 12px;margin:14px 0}.skill-growth-list{grid-template-columns:1fr;gap:8px}.skill-growth-card{padding:12px 13px}.skill-growth-start{width:100%}}
 @media(prefers-reduced-motion:reduce){.skill-growth-track span{transition:none}}
+
+/* Clearly distinguish game-weakness advice from actual learner review needs. */
+.forest-learning-focus{margin:9px 0 10px;padding:10px 12px;border-radius:10px;border:1px solid #c9dfca;background:#f2f9eb;color:#274f39;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
+.forest-learning-focus strong{color:#195e43}
+.forest-attack-select [data-learning-focus="true"]{outline:2px solid #2a916b;outline-offset:1px}
+.forest-attack-select [data-learning-focus="true"] small{font-size:10px}
+.skill-growth-card[data-learning-priority="true"]{border-color:#80ad8b;box-shadow:inset 3px 0 #4d956c}
+@media(max-width:430px){.forest-learning-focus{font-size:11px;line-height:1.6;padding:9px 10px}}
