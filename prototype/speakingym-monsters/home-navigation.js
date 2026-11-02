@@ -49,6 +49,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  move('.review-journal','review');
  move('.section-head','progress');
  move('.stat-grid','progress');
+ move('.skill-growth','progress');
  move('.notice-card','progress');
  const buttons=[
   {id:'forest',icon:'02',title:'Englishダンジョン',desc:'次のエリアを攻略して仲間と成長',action:()=>showPage('forest')},
