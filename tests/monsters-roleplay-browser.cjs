@@ -106,7 +106,7 @@ const assert=require('node:assert/strict');
   assert.match(await page.locator('.roleplay-recap-examples').first().innerText(),/参考表現|別の伝え方/);
   assert.match(await page.locator('.roleplay-recap-turn').nth(1).innerText(),/例文練習へのサポート/);
   assert.equal(await page.locator('.roleplay-recap-turn').nth(1).locator('.roleplay-recap-evidence').count(),1);
-  assert.match(await page.locator('.roleplay-recap-turn').nth(2).innerText(),/次に意識すること/);
+  assert.match(await page.locator('.roleplay-recap-turn').nth(2).innerText(),/次に試すこと/);
   const saved=await page.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
   assert.ok(!saved.includes('I have no idea.'),'Roleplay transcripts must not be written to the saved game');
   await page.locator('#replay-run').click();
