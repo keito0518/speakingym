@@ -25,6 +25,7 @@ import { roleplayFor, recommendedRoleplay, roleplayRecapFor } from './roleplay-s
 import { retentionOverview, retentionPracticePlan, retentionTitle } from './retention.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
+import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { createBetaTelemetry } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
 
@@ -2114,6 +2115,23 @@ function renderDungeonLearningReport(ended){
  region.innerHTML=`<div class="dungeon-report-top"><span class="tiny-caps">YOUR ENGLISH GROWTH</span><h2 id="dungeon-report-title">${escapeHtml(report.areaName)} · 学習レポート</h2><p>${escapeHtml(report.focus)}</p><span class="dungeon-report-status">${badge}</span></div><div class="dungeon-report-stats"><div><strong>${report.independent}</strong><small>自力で確認できた問題</small></div><div><strong>${report.supported}</strong><small>ヒントありで確認</small></div><div><strong>${report.review}</strong><small>判定保留・練習ルート</small></div></div><div class="dungeon-report-skills">${groups}</div>${advice}<p class="dungeon-report-practice">${label} 数値は今回の教材内での結果で、発音力や総合英語力の認定ではないよ。</p><button id="dungeon-retry-weak" type="button" class="dungeon-report-retry" ${lastDungeonReviewIds.length?'':'disabled'}>${lastDungeonReviewIds.length?`つまずいた${lastDungeonReviewIds.length}問を復習する →`:'今すぐ復習が必要な問題はありません'}</button>`;
  region.querySelector('#dungeon-retry-weak').addEventListener('click',()=>startSession('dungeon-review'));
 }
+function renderDungeonVictoryRecap(ended,{nextArea=null,canContinue=false}={}){
+ const region=$('#dungeon-victory-recap');
+ const creature=monsterFor(save.ownedMonsters.includes(ended.companionId)?ended.companionId:save.selectedMonster);
+ const recap=dungeonVictoryRecapFor(ended,save,{nextArea,canContinue,monsterName:creature.name});
+ region.hidden=!recap;
+ if(!recap){region.replaceChildren();return;}
+ const phrases=recap.expressions.length?`<ul class="victory-english-list">${recap.expressions.map(item=>`<li><span>${escapeHtml(item.label)} · ${item.independent?'自力で確認':'ヒントありで確認'}</span><strong lang="en">${escapeHtml(item.english)}</strong></li>`).join('')}</ul>`
+  :'<p class="victory-english-empty">今回は教材で確認できた英文はまだないよ。次の冒険で1つ増やそう。</p>';
+ const evolution=recap.evolution;
+ const growthDetail=evolution.goal===null
+  ?`累計 ${evolution.xp} XP · 第2進化達成済み。これからもレベルを上げられるよ。`
+  :`育成済み ${evolution.xp} / ${evolution.goal} XP · あと${evolution.remaining} XPで${evolution.label}${evolution.canEvolve?' · 手持ちXPで進化できる！':''}`;
+ region.innerHTML=`<div class="victory-loot-top"><span class="victory-loot-kicker">BOSS CLEAR · ENGLISH LOOT</span><div class="victory-loot-total"><small>今回の獲得</small><strong>+${recap.xp.total} <span>XP</span></strong></div><p>問題 +${recap.xp.answers} XP${recap.xp.medal?` · 勲章 +${recap.xp.medal} XP`:''} · 育成に使える ${recap.xp.wallet} XP</p></div>
+  <div class="victory-loot-grid"><section class="victory-english" aria-label="今回確認した英語"><h2>今回確認した英語 <span>${recap.expressions.length}つ</span></h2>${phrases}</section>
+  <section class="victory-evolution" aria-label="仲間の進化までの距離"><h2>${escapeHtml(evolution.monsterName)} の成長 <span>Lv.${evolution.level}</span></h2><strong>${escapeHtml(evolution.label)}</strong><div class="victory-evolution-track" role="progressbar" aria-label="${escapeHtml(evolution.monsterName)}の進化ゲージ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${evolution.percent}"><span style="width:${evolution.percent}%"></span></div><p>${escapeHtml(growthDetail)}</p><small>獲得XPは自動で仲間に入らないよ。下の「仲間を育てる」で使ってね。</small></section></div>
+  <p class="victory-next-tip"><strong>次のおすすめ</strong><span>${escapeHtml(recap.recommendation)}</span></p>`;
+}
 function finishSession(timedOut=false,defeated=false) {
   if(!play)return;
   cancelAutoAdvance();
@@ -2129,6 +2147,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
+  $('#result-view').classList.toggle('boss-clear',forestFinished);
   $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):ended.roleplay?'CONVERSATION COMPLETE':'TRAINING COMPLETE';
   if(forestFinished&&!ended.endless)betaTelemetry.track('monsters_beta_chapter_clear',{
     chapter:ended.areaId,difficulty:ended.baseDifficulty
@@ -2172,7 +2191,8 @@ function finishSession(timedOut=false,defeated=false) {
   const nextArea=forestFinished&&!ended.endless?nextDungeonArea(save):null;
   const canContinue=Boolean(nextArea&&nextArea.id!==ended.areaId&&unlockedDungeonAreas(save).some(area=>area.id===nextArea.id));
   const canRetry=ended.mode==='forest'&&defeated;
-  $('#result-quick-summary').hidden=ended.mode!=='forest';
+  renderDungeonVictoryRecap(ended,{nextArea,canContinue});
+  $('#result-quick-summary').hidden=ended.mode!=='forest'||forestFinished;
   if(ended.mode==='forest')$('#result-quick-summary').textContent=`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体${ended.tactics&&ended.bestCombo>=2?` · 最高 ${ended.bestCombo} CHAIN`:''}`;
   $('#result-detail-panel').open=ended.mode!=='forest';
   $('#result-next-panel').hidden=!canContinue&&!canRetry;

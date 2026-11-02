@@ -893,11 +893,23 @@ const path=require('node:path');
       }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
+      assert.equal(await forestPage.locator('#dungeon-victory-recap').isVisible(),true,
+        `${engine}/${width}: a boss clear immediately shows its English and evolution rewards`);
+      assert.match(await forestPage.locator('.victory-loot-total').innerText(),/XP/);
+      assert.equal(await forestPage.locator('.victory-english-list li').count(),2,
+        'Victory should spotlight two actually verified expressions, not a wall of every answer');
+      assert.match(await forestPage.locator('.victory-evolution').innerText(),/進化.*あと\d+ XP/s);
+      assert.match(await forestPage.locator('.victory-next-tip').innerText(),/次のおすすめ/);
+      assert.equal(await forestPage.locator('.victory-evolution-track').getAttribute('aria-valuemax'),'100');
+      const victoryLayout=await forestPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(victoryLayout.scroll<=victoryLayout.width+1,
+        `${engine}/${width}: the new loot card must fit the phone width (${JSON.stringify(victoryLayout)})`);
     assert.equal(await forestPage.locator('#result-next-panel').isVisible(),true,'Cleared chapter should offer a direct next action');
     assert.match(await forestPage.locator('#result-next').innerText(),/次へ/);
       assert.equal(await forestPage.locator('#result-detail-panel').getAttribute('open'),null,
         'Detailed medals and learning report should begin collapsed for clarity');
-      assert.match(await forestPage.locator('#result-quick-summary').innerText(),/XP/);
+      assert.equal(await forestPage.locator('#result-quick-summary').isVisible(),false,
+        'The old one-line XP summary should not duplicate the boss loot card');
       await forestPage.locator('#result-detail-panel > summary').click();
       assert.equal(await forestPage.locator('.boss-medal-result').getAttribute('data-medal-rank'),'2',
         'Seven independently verified chapter gates and all three boss checks earn silver, not gold');
@@ -1137,6 +1149,8 @@ const path=require('node:path');
     assert.match(await endlessPage.locator('#feedback-panel').innerText(),/挑戦回数を使い切った/);
     await endlessPage.locator('#forest-exit').click();
     assert.match(await endlessPage.locator('#result-title').innerText(),/挑戦終了/);
+    assert.equal(await endlessPage.locator('#dungeon-victory-recap').isVisible(),false,
+      'An exhausted run cannot show a boss-defeat trophy');
     const endedSave=await endlessPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
     assert.equal(endedSave.xpWallet,xpBeforeWrong,'An incorrect quiz answer cannot grant XP');
     assert.equal(endedSave.forest.clears,0);
