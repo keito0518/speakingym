@@ -25,7 +25,7 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
-import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts } from './skill-progress.js';
+import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
@@ -423,7 +423,9 @@ function renderHome() {
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);
+  const skillFocus=nextSkillFocusFor(save,{difficulty:save.difficulty,today:dayKey()});
   $('#daily-plan-status').textContent=`今日の8問：復習 ${gym.counts.review} · 応用 ${gym.counts.transfer} · 新しい問題 ${gym.counts.new}${gym.counts.mixed?' · その他 '+gym.counts.mixed:''}`;
+  if(gym.focus)$('#daily-plan-status').textContent+=` · 今日の強化：${gym.focus.label}`;
   $('#start-daily-gym').disabled=!gym.prompts.length;
   $('#daily-last-rate').textContent=dailyGrowth.lastRate===null?'―':`${dailyGrowth.lastRate}%`;
   $('#daily-growth-note').textContent=dailyGrowth.changeSevenDays!==null
@@ -518,8 +520,8 @@ function renderHome() {
   $('#skill-growth-list').innerHTML=skillStats.map(stat=>{
     const measured=stat.sample>0;
     const evidence=measured?`直近${stat.sample}回答：自力で確認 ${stat.independent}回（${stat.percent}%）`:'自力での確認率はまだ記録なし';
-    const detail=measured?`ヒントあり ${stat.assisted}回 · ${stat.sample}回答に基づく`:'この更新後の回答から集計するよ';
-    return `<article class="skill-growth-card" data-skill="${stat.kind}"><div class="skill-growth-head"><strong>${escapeHtml(stat.label)}</strong><span>${stat.needsReview?'要復習 '+stat.needsReview+'問':'復習予定なし'}</span></div>
+    const detail=measured?`ヒントあり ${stat.assisted}回 · ${stat.sample}回答に基づく${stat.sample<4?'（少数のため参考値）':''}`:'この更新後の回答から集計するよ';
+    return `<article class="skill-growth-card" data-skill="${stat.kind}" data-learning-priority="${String(skillFocus?.kind===stat.kind)}"><div class="skill-growth-head"><strong>${escapeHtml(stat.label)}${skillFocus?.kind===stat.kind?' · 今日の重点':''}</strong><span>${stat.needsReview?'要復習 '+stat.needsReview+'問':'復習予定なし'}</span></div>
       <p class="skill-growth-count">${escapeHtml(evidence)}</p>
       <div class="skill-growth-track" aria-hidden="true"><span style="width:${stat.percent??0}%"></span></div>
       <p class="skill-growth-detail">${escapeHtml(detail)} · 翌日以降に自力で確認 ${stat.spaced}問</p>
@@ -904,11 +906,13 @@ function renderAttackChoice(panel,t){
  const foe=opponentFor(play.index,play.wave,play.areaId);
  const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:false});
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
+ const focus=nextSkillFocusFor(save,{difficulty:play.difficulty,today:dayKey()});
  panel.dataset.turn='choose';
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
   <strong>あなたのターン · ① まず攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
   <p class="dungeon-choice-guide">迷ったら「${BATTLE_LABELS[affinity.weak]}」がオススメ。タップすると英語の問題が出るよ。</p>
-  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>おすすめ</small>':''}</button>`).join('')}</div></div>`;
+  ${focus?`<p class="forest-learning-focus"><strong>英語の復習候補：${escapeHtml(focus.label)}</strong> ${escapeHtml(focus.detail)} 敵の弱点を狙うか、苦手を練習するか自由に選べるよ。</p>`:''}
+  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>おすすめ</small>':''}${focus?.kind===kind?'<small>復習候補</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
@@ -2445,7 +2449,7 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
 $('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
 $('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));
