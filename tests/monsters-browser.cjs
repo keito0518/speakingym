@@ -834,10 +834,10 @@ const path=require('node:path');
         if(width===390&&hit===3){
           // An iPhone microphone tap must start a recognizer, not merely
           // focus the text field. Native keyboard dictation is a separate tap.
-          assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),false);
+          assert.equal(await forestPage.locator('#speech-alternatives').isVisible(),true);
           assert.equal(await forestPage.locator('#mic-button').evaluate(el=>el.tagName),'BUTTON');
-          assert.equal(await forestPage.locator('#native-ios-dictation').evaluate(el=>el.tagName),'LABEL');
-          assert.equal(await forestPage.locator('#native-ios-dictation').getAttribute('for'),'spoken-answer');
+          assert.equal(await forestPage.locator('#native-ios-dictation').evaluate(el=>el.tagName),'BUTTON');
+          assert.equal(await forestPage.locator('#native-ios-dictation').getAttribute('type'),'button');
           assert.match(await forestPage.locator('#speech-helper').innerText(),/キーボードのマイク/);
           await forestPage.locator('#native-ios-dictation').click();
           assert.equal(await forestPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true,
@@ -1171,6 +1171,9 @@ const path=require('node:path');
     await micPage.evaluate(()=>window.__activeMic.onerror?.({error:'not-allowed'}));
     assert.equal(await micButton.getAttribute('aria-pressed'),'false');
     assert.match(await micPage.locator('#speech-helper').innerText(),/許可されていません/);
+    assert.equal(await micPage.locator('#speech-alternatives').isVisible(),true,
+      'A failed non-iOS recognizer must reveal the keyboard fallback');
+    assert.equal(await micPage.locator('#speech-alternatives').evaluate(el=>el.open),true);
     await micPage.locator('#spoken-answer').fill('Let me think about it.');
     await micPage.locator('#show-answer').click();
     assert.equal(await micButton.isVisible(),false);
@@ -1210,10 +1213,11 @@ const path=require('node:path');
     // iPhone's real microphone action and the native keyboard fallback are
     // distinct; neither must masquerade as the other.
     assert.equal(await iosPage.locator('#mic-button').evaluate(e=>e.tagName),'BUTTON');
-    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),false);
-    assert.equal(await iosPage.locator('#native-ios-dictation').evaluate(e=>e.tagName),'LABEL');
-    assert.equal(await iosPage.locator('#native-ios-dictation').getAttribute('for'),'spoken-answer');
-    assert.match(await iosPage.locator('#speech-helper').innerText(),/「話す」で音声認識を開始/);
+    assert.equal(await iosPage.locator('#speech-alternatives').isVisible(),true,
+      'iPhone fallback must be present before a browser recognition failure');
+    assert.equal(await iosPage.locator('#native-ios-dictation').evaluate(e=>e.tagName),'BUTTON');
+    assert.equal(await iosPage.locator('#native-ios-dictation').getAttribute('type'),'button');
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/「話す」はブラウザ音声認識/);
     const iosContrast=await iosPage.evaluate(()=>{
       const helper=document.querySelector('#speech-helper');
       const field=document.querySelector('#spoken-answer');
@@ -1238,6 +1242,7 @@ const path=require('node:path');
     assert.match(await iosPage.locator('#speech-helper').innerText(),/許可されていません/);
     assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
     assert.equal(await iosPage.locator('#native-ios-dictation').isVisible(),true);
+    assert.equal(await iosPage.locator('#speech-alternatives').evaluate(el=>el.open),true);
     await iosPage.locator('#native-ios-dictation').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     await iosPage.locator('#spoken-answer').fill('That is fine with me.');
@@ -1284,6 +1289,7 @@ const path=require('node:path');
     await unlockListening(noSpeechPage);
     assert.equal(await noSpeechPage.locator('#mic-button').isVisible(),false);
     assert.equal(await noSpeechPage.locator('#native-ios-dictation').isVisible(),true);
+    assert.equal(await noSpeechPage.locator('#speech-alternatives').isVisible(),true);
     assert.match(await noSpeechPage.locator('#speech-helper').innerText(),/自動音声認識に非対応/);
     await noSpeechPage.locator('#native-ios-dictation').click();
     assert.equal(await noSpeechPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);

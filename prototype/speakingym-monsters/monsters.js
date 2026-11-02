@@ -185,7 +185,11 @@ function micView(mode='ready') {
 }
 function showSpeechFallback(){
  const alternatives=$('#speech-alternatives');
- if(alternatives&&!alternatives.hidden)alternatives.open=true;
+ if(alternatives){
+   alternatives.hidden=false;
+   alternatives.open=true;
+   alternatives.classList.add('speech-alternatives-priority');
+ }
 }
 function openNativeDictation(){
   // iOS does not allow websites to press the keyboard's microphone button.
@@ -196,9 +200,9 @@ function openNativeDictation(){
   if(!field||field.disabled)return;
   field.focus({preventScroll:false});
   const helper=$('#speech-helper');
-  if(helper)helper.textContent='入力欄を開いたよ。キーボードのマイクで英語を話すか、直接入力してね。';
+  if(helper)helper.textContent='入力欄を開いたよ。英語キーボードに切り替え、キーボードのマイクを押して話してね。';
   const help=$('#speech-alternative-help');
-  if(help)help.textContent='入力欄を開いたよ。英語キーボードのマイクで話すと、英文が入力されるよ。';
+  if(help)help.textContent='英語キーボードに切り替え、キーボード上のマイクをタップ。英文が入力欄に出たら「答えを判定する」を押してね。Webページから標準のマイクを自動起動することはできません。';
 }
 function stopRecognition(mode='ready') {
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
@@ -1200,11 +1204,11 @@ function renderQuestion() {
   const guidedCloze=beginnerClozeFor(prompt);
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}${beginnerTip}
     <label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え（手入力もOK）':'英語で答えよう · 話すか入力'}</label>
-    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" inputmode="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="ここに英語を入力（マイクもOK）"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
+    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" lang="en" inputmode="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="ここに英語を入力（マイクもOK）"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
     <p id="speech-helper" class="answer-helper" role="status" aria-live="polite">マイクが使えないときは英文を入力して判定できます。</p>
     <div class="answer-quick-help"><div><strong>${guidedCloze?'空欄だけの練習から始められるよ':'困ったらヒントを使おう'}</strong><small>${guidedCloze?'1単語だけ言ったら確認。そのあとで全文に挑戦しよう。':'考え方 → 英語の書き出し。ヒント後の正解も練習として記録するよ。'}</small></div><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">${guidedCloze?'穴埋めヒントを見る':'ヒントを見る'}</button></div>
     <div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div>
-    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないときの入力方法</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">iPhone標準の音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">アプリ内ブラウザでは音声認識が止まることがあります。入力欄を開き、キーボードのマイクを押して話してね。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
+    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><details id="speech-alternatives" class="speech-alternatives" hidden><summary>音声が文字にならないときの入力方法</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">キーボードの音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">ブラウザの「話す」が動かない場合も、キーボードのマイクから入力できます。英語キーボードに切り替えてマイクを押してね（Webページから自動では押せません）。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答えを判定する →</button></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -1230,29 +1234,27 @@ function renderQuestion() {
   if(iosSpeaking){
     // iOS does not permit a webpage to press the native keyboard's dictation
     // key. Keep that honest, reliable fallback separate from the real mic.
-    const keyboardLabel=document.createElement('label');
-    keyboardLabel.id='native-ios-dictation';
-    keyboardLabel.className='speech-native-label';
-    keyboardLabel.htmlFor='spoken-answer';
-    keyboardLabel.setAttribute('role','button');
-    keyboardLabel.tabIndex=0;
-    keyboardLabel.textContent='キーボードのマイクで入力';
-    $('#speech-helper').after(keyboardLabel);
-    keyboardLabel.addEventListener('keydown',event=>{
-      if(event.key==='Enter'||event.key===' '){
-        event.preventDefault();openNativeDictation();
-      }
-    });
+    const keyboardButton=document.createElement('button');
+    keyboardButton.id='native-ios-dictation';
+    keyboardButton.type='button';
+    keyboardButton.className='speech-native-label';
+    keyboardButton.textContent='キーボードを開いて音声入力（iPhone）';
+    $('#speech-helper').after(keyboardButton);
+    keyboardButton.addEventListener('click',openNativeDictation);
     $('#spoken-answer').addEventListener('focus',()=>{
       if(recognition)stopRecognition();
-      $('#speech-helper').textContent='入力欄が選ばれたよ。キーボードのマイクで話すか、直接入力してね。';
+      $('#speech-helper').textContent='入力欄が選ばれたよ。英語キーボードに切り替えて、キーボードのマイクを押してね。';
     });
     if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
       $('#mic-button').dataset.speechUnavailable='true';
     }
   }
-  $('#speech-alternatives').hidden=quizMode||!isIOS||iosSpeaking;
-  $('#speech-alternatives').open=play.mode!=='forest';
+  // This was accidentally hidden for iPhone speaking, even after a silent
+  // recognizer failed. Keep a usable path in the same question on all iOS
+  // tasks; reveal it on demand on other devices when Web Speech fails.
+  $('#speech-alternatives').hidden=quizMode||(!isIOS&&Boolean(window.SpeechRecognition||window.webkitSpeechRecognition));
+  $('#speech-alternatives').open=isIOS&&play.mode!=='forest';
+  if(iosSpeaking)$('#native-dictation').hidden=true; // The prominent button above opens the keyboard.
   if(iosSpeaking){
     $('#spoken-answer').placeholder='英語キーボードのマイクで話すか、直接入力';
     $('#answer-area').classList.add('native-ios-speech');
@@ -1273,8 +1275,8 @@ function renderQuestion() {
   if(!quizMode){
     micView('ready');
     if(iosSpeaking)$('#speech-helper').textContent=$('#mic-button').dataset.speechUnavailable==='true'
-      ?'このブラウザは自動音声認識に非対応です。下のボタンで入力欄を開き、キーボードのマイクを押してね。'
-      :'「話す」で音声認識を開始。反応しないときは下からキーボードのマイクを使ってね。';
+      ?'このブラウザは自動音声認識に非対応。下のボタンで英語キーボードを開き、キーボードのマイクを押してね。'
+      :'「話す」はブラウザ音声認識。反応しなければ下の「キーボードを開いて音声入力」を使ってね。';
     else if(isIOS)$('#speech-helper').textContent='iPhoneではキーボードのマイクで英語を入力できるよ。';
     else if(play.mode==='forest')$('#speech-helper').textContent='';
   }
@@ -1428,6 +1430,7 @@ function startRecognition() {
       recognitionNoResultTimer=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
         if(helper)helper.textContent='まだ英文が届いていません。内蔵ブラウザではマイク認識が使えない場合があります。';
+        showSpeechFallback();
       },/iPad|iPhone|iPod/i.test(navigator.userAgent)?2500:7000);
       recognitionWatchdog=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping)return;
