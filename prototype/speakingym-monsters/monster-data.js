@@ -296,6 +296,16 @@ export const ALL_PROMPTS = Object.freeze([
   };})
 ]);
 
+const SECOND_FORM_NAMES=Object.freeze({
+  medamago:'Solaryolk',katappo:'Pairaverse',purupun:'Cremperor',
+  koge:'Toastinferno',cone:'Conavoy Prime',nororo:'Noriwhirl',
+  keshipon:'Eraserion',donako:'Nibbuniverse',amekurage:'Tempestella',
+  fuwari:'Nimburst',kompass:'Polariscope',pikap:'Glimmora',
+  mokuryu:'Elderwyrm',yukibell:'Bellstice',railfox:'Railstice'
+});
+export function monsterFormName(creature,stage=0){
+ return stage>=2?creature.ascendedName:stage>=1?creature.evolvedName:creature.name;
+}
 export const MONSTERS = Object.freeze([
   { id: 'medamago', name: 'Yolkie', japaneseName: 'メダマゴ', evolvedName: 'Sunnyolk', roots: [{"word":"yolk","meaning":"卵の黄身"},{"word":"sunny-side up","meaning":"片面焼きの目玉焼き"}], skill: { name: 'Slow-Mo', description: '英文の音声をゆっくり聞き直す' }, kind: 'めだまやきモンスター', color: '#f5b545', unlock: 0, note: '黄身の目でじっと見つめてくる。朝が苦手。' },
   { id: 'katappo', name: 'Soxie', japaneseName: 'カタッポ', evolvedName: 'Pairadox', roots: [{"word":"sock","meaning":"靴下"},{"word":"pair","meaning":"一組・ペア"}], skill: { name: 'Pair-Up', description: '同じ意味の別表現とセットで覚える' }, kind: '片方だけの靴下', color: '#9585d9', unlock: 4, note: '相方を探して毎日走り回っている。' },
@@ -312,4 +322,4 @@ export const MONSTERS = Object.freeze([
   { id: 'mokuryu', name: 'Barklit', japaneseName: 'モクリュウ', evolvedName: 'Eldrake', roots:[{word:'bark',meaning:'木の皮'},{word:'dragon',meaning:'ドラゴン'}],skill:{name:'Old Wisdom',description:'学んだ表現の復習を促す、学習用の演出'},kind:'古木の小竜',color:'#8fa57d',masteryUnlock:5,forestAreas:4,retentionStage:4,retentionUnlock:3,rarity:'legend',note:'年輪の模様が背中にある。四つの森を歩いた者の言葉にだけ耳を傾ける。' },
   { id: 'yukibell', name: 'Bellumi', japaneseName: 'ユキベル', evolvedName: 'Aurabell', roots:[{word:'bell',meaning:'鈴・ベル'},{word:'illuminate',meaning:'照らす'}],skill:{name:'Gentle Chime',description:'復習の予定を静かに思い出させる、学習用の演出'},kind:'雪灯りの鈴',color:'#9bcee8',masteryUnlock:6,cityAreas:2,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'雪の商店街に灯る鈴。翌日も覚えている言葉を聞くと、小さく鳴る。'},
   { id: 'railfox', name: 'Railfox', japaneseName: 'レールギツネ', evolvedName: 'Aurorail', roots:[{word:'rail',meaning:'鉄道・レール'},{word:'fox',meaning:'キツネ'}],skill:{name:'Connection',description:'別の場面で使える英語の結びつきを示す、学習用の演出'},kind:'北の駅のきつね',color:'#bdd5e8',masteryUnlock:8,cityAreas:4,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'吹雪の夜に北駅へ戻ってくる。忘れずに使えた言葉だけを道しるべにする。'}
-]);
+].map(creature=>Object.freeze({...creature,ascendedName:SECOND_FORM_NAMES[creature.id]})));

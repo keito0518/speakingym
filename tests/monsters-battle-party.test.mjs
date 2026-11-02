@@ -41,6 +41,14 @@ test('battle progression uses actual 70 XP levels and 160 XP evolution, not assu
  assert.equal(party.health.medamago.maxHp,9,'two-member Lv2 HP baseline');
  assert.equal(party.health.katappo.maxHp,11,'Lv3 HP +1 and 160 XP evolution +1');
 });
+test('second evolution adds exactly one more HP without changing ordinary or first-form party balance',()=>{
+ const before=createBattleParty(['medamago','katappo'],{evolvedIds:['katappo'],levels:{medamago:7,katappo:7}});
+ const after=createBattleParty(['medamago','katappo'],{evolvedIds:['katappo'],ascendedIds:['katappo'],levels:{medamago:7,katappo:7}});
+ assert.equal(after.health.medamago.maxHp,before.health.medamago.maxHp);
+ assert.equal(after.health.katappo.maxHp,before.health.katappo.maxHp+1);
+ assert.equal(after.health.katappo.hp,after.health.katappo.maxHp);
+ assert.equal(before.health.katappo.maxHp,12);
+});
 test('formation swaps its last reserve, and changes leader without editing the collection',()=>{
  const owned=['medamago','katappo','purupun','koge'];
  const original=['medamago','katappo','purupun'];

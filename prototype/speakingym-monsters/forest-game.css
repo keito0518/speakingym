@@ -55,6 +55,10 @@
 .forest-player-art{position:relative;z-index:2;width:100%;height:100%;animation:forest-breath 2.2s ease-in-out infinite}
 .forest-player-art svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%}
 .forest-player-art svg.monster-svg{animation:none}
+.forest-world-stage[data-ascended="true"] .forest-player-art svg.monster-ascended{filter:drop-shadow(0 0 7px #ffe8a9) drop-shadow(0 0 10px #6af2ce)}
+.forest-world-stage[data-ascended="true"][data-cinematic="attack"] .forest-player-art svg.monster-ascended{animation:forest-ascended-strike .65s ease-out both}
+@keyframes forest-ascended-strike{0%,100%{transform:scale(1);filter:drop-shadow(0 0 8px #ffe8a9)}38%{transform:scale(1.19) translateY(-5px);filter:drop-shadow(0 0 15px #75ffe0) drop-shadow(0 0 15px #ffd96e)}}
+@media(prefers-reduced-motion:reduce){.forest-world-stage[data-ascended="true"][data-cinematic="attack"] .forest-player-art svg.monster-ascended{animation:none!important}}
 .forest-player-shadow{position:absolute;z-index:1;bottom:5%;left:18%;width:64%;height:9px;transform:translateY(9px);
  background:#07190f88;filter:blur(6px);border-radius:50%}
 .forest-world-fx{position:absolute;z-index:5;inset:28% 10% auto;display:grid;place-items:center;pointer-events:none;opacity:0;

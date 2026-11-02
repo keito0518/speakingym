@@ -76,7 +76,7 @@ const path=require('node:path');
       assert.equal(await page.locator('#collection-view').isVisible(),false);
       assert.match(await page.locator('#detail-content').innerText(),/Yolkie.*メダマゴ/s);
       assert.match(await page.locator('#detail-content').innerText(),/卵の黄身/);
-      assert.match(await page.locator('#detail-content').innerText(),/進化条件：Lv\.3の途中・累計160 XP。あと160 XP/,
+      assert.match(await page.locator('#detail-content').innerText(),/第1進化：Lv\.3の途中・累計160 XP。あと160 XP/,
         'The actual mid-level evolution milestone must be visible in the field notes');
       await page.evaluate(()=>{
         window.__spoken=[];
@@ -91,12 +91,13 @@ const path=require('node:path');
       await page.locator('#open-training').click();
       assert.equal(await page.locator('#detail-view').isVisible(),false);
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle');
-      assert.match(await page.locator('.training-sheet').innerText(),/進化条件：Lv\.3の途中・累計160 XP。あと160 XP/);
+      assert.match(await page.locator('.training-sheet').innerText(),/第1進化：Lv\.3の途中・累計160 XP。あと160 XP/);
       assert.match(await page.locator('.growth-roadmap > summary').innerText(),/次の成長：Lv\.3の途中・160 XP/);
       await page.locator('.growth-roadmap > summary').click();
-      assert.equal(await page.locator('.growth-roadmap li').count(),4);
+      assert.equal(await page.locator('.growth-roadmap li').count(),5);
       assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.4.*熟練技/s);
       assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.6.*戦闘HP/s);
+      assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.7.*第2進化/s);
       await page.locator('[data-feed-amount="10"]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'xp');
       assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-xp');
@@ -129,6 +130,32 @@ const path=require('node:path');
       assert.match(await page.locator('#hero-monster-name').innerText(),/Sunnyolk/);
       const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.deepEqual(after,before);
+      await context.close();
+    }
+    // A 419-XP ally should transform into its third 48×44 pixel form when fed
+    // one more XP. The stage and save must agree on iPhone widths after reload.
+    for(const width of [320,390]){
+      const {context,page}=await boot(width,'no-preference');
+      await seed(page,{monsterXp:{medamago:419},xpWallet:10});
+      assert.match(await page.locator('#hero-monster-name').innerText(),/Sunnyolk/);
+      assert.match(await page.locator('#hero-next-level').innerText(),/Lv\.7.*あと1 XP/);
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      assert.match(await page.locator('#detail-content').innerText(),/第2進化：Lv\.7・累計420 XP。あと1 XP/);
+      await page.locator('#open-training').click();
+      await page.locator('[data-feed-amount="10"]').click();
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'ascension');
+      assert.match(await page.locator('.training-sheet h1').innerText(),/Solaryolk/);
+      assert.match(await page.locator('#growth-feedback').innerText(),/第2進化/);
+      assert.equal(await page.locator('.growth-character svg').getAttribute('data-stage'),'2');
+      assert.equal(await page.locator('.growth-before svg').getAttribute('data-stage'),'1');
+      assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'ascension-arrive');
+      await noOverflow(page,`${width} second evolution`);
+      await page.screenshot({path:path.join(shots,`training-${engine}-${width}-ascension.png`),fullPage:true});
+      await page.reload();
+      assert.equal(await page.locator('#hero-monster-art svg').getAttribute('data-stage'),'2');
+      assert.match(await page.locator('#hero-monster-name').innerText(),/Solaryolk/);
+      assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).monsterXp.medamago),429);
       await context.close();
     }
     // Every owned character uses a distinct actual CSS attack with motion enabled.

@@ -79,10 +79,47 @@ const P={
  bell:{base:'#95cfe0',outline:'#526a91',light:'#d6f5f1',shade:'#639fc2'},
  fox:{base:'#e9a06c',outline:'#784b49',light:'#ffd390',shade:'#bf704e'}
 };
-function companion(id,evo){const c=new Pix(),v=evo?1:0;const e=(x,y,rx,ry)=>['e',x,y,rx,ry],r=(x,y,w,h)=>['r',x,y,w,h],p=(...a)=>['p',a];
+// Second evolution is a third hand-painted atlas row. Each species receives
+// a new silhouette (wings, rays, crowns, tails or armor), not just a tint.
+function ascendedBack(c,id){
+ const p=(...a)=>['p',a],e=(x,y,rx,ry)=>['e',x,y,rx,ry];
+ const s=(parts,base,outline,light,shade)=>c.shape(parts,{base,outline,light,shade,shadeY:30});
+ switch(id){
+ case 'medamago':s([p([21,11],[24,1],[28,11]),p([12,17],[3,8],[17,13]),p([33,13],[45,7],[37,21]),p([8,28],[1,32],[14,34]),p([37,28],[46,33],[35,35])],'#f4c556','#a66b33','#fff2a2','#d49a3f');break;
+ case 'katappo':s([e(9,25,7,14),e(39,25,7,14)],'#cd9bdc','#62517c','#f5cce9','#a174bd');c.r(6,12,7,3,'#fce8f7');c.r(35,12,7,3,'#fce8f7');break;
+ case 'purupun':s([p([8,29],[4,16],[15,20],[20,8],[24,18],[31,7],[34,20],[44,16],[39,30])],'#f4d27a','#8e5a43','#fff3aa','#d69b55');break;
+ case 'koge':s([p([12,32],[3,29],[9,19],[3,17],[15,4],[17,21]),p([36,32],[45,29],[39,19],[45,17],[33,4],[31,21])],'#f28556','#9f493c','#ffe49a','#d15b45');break;
+ case 'cone':s([p([12,30],[3,18],[15,12],[18,30]),p([36,30],[45,18],[33,12],[30,30]),p([19,15],[24,1],[29,15])],'#f4aa70','#8e584a','#fff2ba','#d98457');break;
+ case 'nororo':s([p([16,28],[4,14],[3,29],[11,37]),p([33,27],[44,12],[45,29],[37,38])],'#79b8a1','#365c54','#c8e6bd','#4e957c');break;
+ case 'keshipon':s([p([12,32],[3,12],[17,20]),p([36,32],[45,12],[31,20])],'#b7deee','#567e98','#e4f9f0','#84b7d4');c.r(3,11,3,11,'#f9cf80');c.r(42,11,3,11,'#f9cf80');break;
+ case 'donako':s([e(8,23,7,11),e(40,23,7,11)],'#ffbad2','#955e86','#ffe5df','#e692b4');break;
+ case 'amekurage':s([p([14,27],[5,9],[17,14]),p([34,27],[43,9],[31,14]),p([19,16],[24,2],[29,16])],'#b6e6f5','#507d9b','#e6fdf8','#83b9da');break;
+ case 'fuwari':s([e(8,23,8,11),e(40,23,8,11),e(24,11,11,9)],'#dceeff','#728da8','#fffefb','#acd0e8');break;
+ case 'kompass':s([p([24,1],[29,17],[24,12],[19,17]),p([3,22],[18,18],[15,24],[18,29]),p([45,22],[30,18],[33,24],[30,29]),p([24,42],[29,30],[24,34],[19,30])],'#f5d38a','#8a7655','#fff5c5','#d5a965');break;
+ case 'pikap':s([e(11,22,12,13),e(37,22,12,13)],'#e0f3ef','#5e99a5','#fffefa','#a3d8e3');break;
+ case 'mokuryu':s([p([18,30],[2,6],[10,12],[13,1],[23,20]),p([30,30],[46,6],[38,12],[35,1],[25,20])],'#add99b','#4b856b','#e6f0bf','#7eb78b');break;
+ case 'yukibell':s([p([12,30],[4,9],[17,18]),p([36,30],[44,9],[31,18]),p([20,17],[24,1],[28,17])],'#ccebf7','#638eac','#fbfff8','#98c9df');break;
+ case 'railfox':s([e(8,30,9,9),e(40,30,9,9),p([13,19],[5,4],[22,17]),p([35,19],[43,4],[26,17])],'#f3bc82','#936154','#ffebaa','#d99568');break;
+ }
+}
+function ascendedFront(c,id){
+ const crest=id==='medamago'?'#fff1a4':id==='katappo'?'#f5d6ff':id==='mokuryu'?'#e7f6b9':id==='railfox'?'#ffdda0':'#fff5cb';
+ // Species-specific silhouettes are on the back layer; the top gem and
+ // two bright pixels provide a readable crown/glint at miniature sizes.
+ if(id==='purupun'||id==='koge'||id==='cone'||id==='kompass'||id==='yukibell'){
+  c.r(22,4,4,4,crest);c.r(23,2,2,2,'#fffef2');
+ }else if(id==='medamago'||id==='pikap'||id==='fuwari'||id==='amekurage'){
+  c.r(22,5,4,3,crest);c.r(23,3,2,2,'#fffefa');
+ }else if(id==='katappo'||id==='nororo'||id==='keshipon'||id==='donako'||id==='mokuryu'||id==='railfox'){
+  c.r(22,6,4,3,crest);c.r(23,4,2,2,'#fffefa');
+ }
+ c.star(5,8,'#ffefb3');c.star(42,35,'#fff2bd');
+}
+function companion(id,evo){const c=new Pix(),v=evo?1:0,ascended=evo>=2;const e=(x,y,rx,ry)=>['e',x,y,rx,ry],r=(x,y,w,h)=>['r',x,y,w,h],p=(...a)=>['p',a];
  const shape=(parts,pal,opts={})=>c.shape(parts,{...pal,...opts});
  const feet=(color,y=37)=>c.feet(color,y),face=(x=24,y=24,ink='#3b3640',blush='#ed9990',mode='smile')=>c.face(x,y,ink,blush,mode);
  c.shadow();
+ if(ascended)ascendedBack(c,id);
  switch(id){
  case 'medamago':{
   feet('#946946');c.arms('#755e4b');
@@ -190,6 +227,7 @@ function companion(id,evo){const c=new Pix(),v=evo?1:0;const e=(x,y,rx,ry)=>['e'
   if(v){c.r(14,7,20,4,'#547283');c.r(18,4,12,5,'#709cab');c.r(24,5,3,3,'#f9dc92');}
   face(24,24,'#583f3e','#ed9d8c');break;}
  }
+ if(ascended)ascendedFront(c,id);
  return c.b;
 }
 const ALLY=['medamago','katappo','purupun','koge','cone','nororo','keshipon','donako','amekurage','fuwari','kompass','pikap','mokuryu','yukibell','railfox'];
@@ -215,7 +253,7 @@ function enemy(id){const c=new Pix();const e=(x,y,rx,ry)=>['e',x,y,rx,ry],r=(x,y
  }
  return c.b;
 }
-function atlas(ids,rows,renderer,cellHeight=H,padY=0){const out=new Uint8Array(ids.length*W*rows*cellHeight*4),stride=ids.length*W;for(let y=0;y<rows;y++)for(let i=0;i<ids.length;i++){const b=renderer(ids[i],!!y);for(let py=0;py<H;py++)out.set(b.subarray(py*W*4,(py+1)*W*4),(((y*cellHeight+padY+py)*stride+i*W)*4));}return {data:out,info:{width:stride,height:rows*cellHeight,channels:4}};}
+function atlas(ids,rows,renderer,cellHeight=H,padY=0){const out=new Uint8Array(ids.length*W*rows*cellHeight*4),stride=ids.length*W;for(let y=0;y<rows;y++)for(let i=0;i<ids.length;i++){const b=renderer(ids[i],y);for(let py=0;py<H;py++)out.set(b.subarray(py*W*4,(py+1)*W*4),(((y*cellHeight+padY+py)*stride+i*W)*4));}return {data:out,info:{width:stride,height:rows*cellHeight,channels:4}};}
 const crcTable=Array.from({length:256},(_,i)=>{let c=i;for(let j=0;j<8;j++)c=c&1?0xedb88320^(c>>>1):c>>>1;return c>>>0;});
 function chunk(name,bytes){const tag=Buffer.from(name),b=Buffer.alloc(12+bytes.length);b.writeUInt32BE(bytes.length,0);tag.copy(b,4);Buffer.from(bytes).copy(b,8);let crc=0xffffffff;for(let i=4;i<8+bytes.length;i++)crc=crcTable[(crc^b[i])&255]^(crc>>>8);b.writeUInt32BE((crc^0xffffffff)>>>0,8+bytes.length);return b;}
 function png({data,info:{width,height}}){
@@ -225,10 +263,10 @@ function png({data,info:{width,height}}){
  return Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',ihdr),chunk('IDAT',deflateSync(raw,{level:9})),chunk('IEND',Buffer.alloc(0))]);
 }
 const target=process.argv[2]||dirname(fileURLToPath(import.meta.url));
-const allies=atlas(ALLY,2,companion);
+const allies=atlas(ALLY,3,companion);
 writeFileSync(join(target,'pixel-companions.png'),png(allies));
 // The battle layout's historical enemy viewport is 48px tall. The hand-drawn
 // 44px character is vertically centered in that viewport, preserving sizing.
 const foes=atlas(FOES,1,enemy,48,2);
 writeFileSync(join(target,'pixel-enemies.png'),png(foes));
-console.log('Hand-authored 48x44 sprites:',ALLY.length*2,'companion forms;',FOES.length,'base enemies');
+console.log('Hand-authored 48x44 sprites:',ALLY.length*3,'companion forms;',FOES.length,'base enemies');

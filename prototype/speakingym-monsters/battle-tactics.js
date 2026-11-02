@@ -111,18 +111,19 @@ export function supportComboFor({kind,activeId,party,selected=false,independent=
   extraCharge:activated&&boss?1+(awakening?.extraCharge||0):activated?(awakening?.extraCharge||0):0,
   extraHeal:awakening?.extraHeal||0,awakened:awakening?.name||null};
 }
-export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false,repeated=false,foeProfile=null}={}){
+export function strikeFor({kind,foeId,allyId,action='attack',boss=false,evolved=false,ascended=false,repeated=false,foeProfile=null}={}){
  if(!BATTLE_KINDS.includes(kind)||!['attack','guard','skill'].includes(action))throw Error('Invalid battle action');
  const foe=foeProfile&&BATTLE_KINDS.includes(foeProfile.weak)&&BATTLE_KINDS.includes(foeProfile.resist)?foeProfile:foeAffinity(foeId),ally=allyAffinity(allyId);
  const ability=allySkill(allyId),strong=ally.strong===kind;
  const pierce=strong&&ability.type==='pierce'&&foe.resist===kind;
  const weak=foe.weak===kind,resist=foe.resist===kind&&!pierce,poor=ally.weak===kind;
  const evolutionBoost=Boolean(evolved&&strong&&action!=='guard');
+ const ascensionBoost=Boolean(ascended&&strong&&action!=='guard');
  const burst=action==='skill'&&strong&&ability.type==='burst';
  const repeatPenalty=Boolean(repeated&&!boss);
- const raw=1+(weak?1:0)-(resist?1:0)+(strong?1:0)-(poor?1:0)+(action==='skill'?2:0)-(action==='guard'?1:0)+(evolutionBoost?1:0)+(burst?1:0)-(repeatPenalty?1:0);
+ const raw=1+(weak?1:0)-(resist?1:0)+(strong?1:0)-(poor?1:0)+(action==='skill'?2:0)-(action==='guard'?1:0)+(evolutionBoost?1:0)+(ascensionBoost?1:0)+(burst?1:0)-(repeatPenalty?1:0);
  return {damage:Math.max(action==='skill'?3:1,Math.min(5,raw)),weak,resist,strong,poor,guard:action==='guard',pierce,burst,repeatPenalty,
-  evolutionBoost,tag:action==='skill'?'ULTIMATE!':pierce?'PIERCE!':weak?'WEAK!':resist?'RESIST':strong?'ALLY BOOST':'HIT'};
+  evolutionBoost,ascensionBoost,tag:action==='skill'?'ULTIMATE!':ascensionBoost?'ASCENDED!':pierce?'PIERCE!':weak?'WEAK!':resist?'RESIST':strong?'ALLY BOOST':'HIT'};
 }
 export function nextEnemyKind(last=null,random=Math.random){
  const pool=BATTLE_KINDS.filter(kind=>kind!==last);

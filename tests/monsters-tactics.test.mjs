@@ -478,6 +478,19 @@ test('evolution improves combat only in a companion strength, never changes lear
  assert.equal(incomingHit({...defense,kind:'listen',evolved:true}).damage,3,'evolution does not erase weakness');
  assert.equal(incomingHit({...defense,evolved:true,result:'review'}).uncertain,true);
 });
+test('second evolution grants a bounded strong-skill strike, not a free answer or boss seal',()=>{
+ const strike={kind:'speak',foeId:'mossling',allyId:'medamago',action:'attack'};
+ const stageOne=strikeFor({...strike,evolved:true});
+ const stageTwo=strikeFor({...strike,evolved:true,ascended:true});
+ assert.equal(stageTwo.damage,stageOne.damage+1);
+ assert.equal(stageTwo.ascensionBoost,true);
+ assert.equal(strikeFor({...strike,evolved:true,ascended:true,kind:'listen'}).ascensionBoost,false);
+ assert.equal(strikeFor({...strike,evolved:true,ascended:true,action:'guard'}).ascensionBoost,false);
+ assert.equal(strikeFor({...strike,evolved:true,ascended:true,action:'skill'}).damage,5,'damage stays capped');
+ assert.equal(strikeFor({...strike,evolved:true,ascended:true,boss:true}).damage,stageOne.damage+1,
+  'boss damage can increase while the three independently checked tasks are still required');
+ assert.equal(incomingHit({kind:'listen',allyId:'medamago',result:'review',evolved:true}).uncertain,true);
+});
 test('ultimate gauge rewards independent correct answers and cannot be farmed by hints or retries',()=>{
  assert.equal(ULTIMATE_MAX,3);
  assert.equal(advanceUltimate(0,{independent:true}),1);

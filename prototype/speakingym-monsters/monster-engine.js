@@ -5,6 +5,9 @@ import { recordRetention, retentionOverview, sanitizeRetention } from './retenti
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
 export const EVOLUTION_XP = 160;
+// The second form unlocks exactly at Lv.7 (6 × 70 XP), so players can
+// predict it from the level number. Existing saves derive form from XP.
+export const SECOND_EVOLUTION_XP = 420;
 export const XP_PER_LEVEL = 70;
 const VALID_RATINGS = ['smooth', 'hint', 'again'];
 export const DIFFICULTIES = Object.freeze(['easy','normal','hard']);
@@ -252,7 +255,9 @@ export function getMonsterBondProgress(save,id=save.selectedMonster){
 }
 export function getMonsterProgress(save, id = save.selectedMonster) {
   const xp = save.monsterXp[id] || 0;
-  return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), evolved: xp >= EVOLUTION_XP, toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
+  const stage=xp>=SECOND_EVOLUTION_XP?2:xp>=EVOLUTION_XP?1:0;
+  return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), stage, evolved: stage>=1, ascended: stage>=2,
+    toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
 }
 
 export function selectMonster(save, id) {
@@ -269,7 +274,8 @@ export function feedMonster(save, id, amount) {
   next.xpWallet -= amount;
   next.monsterXp[id] = (next.monsterXp[id] || 0) + amount;
   const after = getMonsterProgress(next,id);
-  return { save: next, reward: { xp: amount, monsterId: id, before, after, leveledUp: after.level > before.level, evolved: !before.evolved && after.evolved } };
+  return { save: next, reward: { xp: amount, monsterId: id, before, after, leveledUp: after.level > before.level,
+    evolved: !before.evolved && after.evolved, ascended: !before.ascended && after.ascended } };
 }
 
 export function chooseDifficulty(save, difficulty) {

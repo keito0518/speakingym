@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
+import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from '../prototype/speakingym-monsters/monster-data.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, DUNGEON_AREAS, unlockedForestAreas, unlockedCityAreas, unlockedDungeonAreas, nextForestArea, nextDungeonArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
 import { BOSS_MEDAL_NAMES, bossTrainingBonus, cleanBossMedals, evaluateBossMedal } from '../prototype/speakingym-monsters/boss-mastery.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
@@ -19,7 +19,7 @@ import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '.
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 import { speakingFeedbackFor, conversationFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
@@ -174,6 +174,43 @@ test('all evolved creatures have distinct physical forms, beyond a glow or name 
   assert.match(grown,/monster-evolution-morph monster-evolution-front/);
   assert.ok(grown.length-young.length>180,`${monster.id} evolution needs visually significant features`);
  }
+});
+
+test('all 15 companions have a genuine third pixel form and a unique second-evolution name',()=>{
+ assert.equal(SECOND_EVOLUTION_XP,420,'Lv.7 unlock begins precisely at six 70-XP levels');
+ assert.equal(new Set(MONSTERS.map(monster=>monster.ascendedName)).size,15);
+ for(const monster of MONSTERS){
+  const first=monsterArt(monster.id,1),second=monsterArt(monster.id,2);
+  assert.equal(monsterFormName(monster,0),monster.name);
+  assert.equal(monsterFormName(monster,1),monster.evolvedName);
+  assert.equal(monsterFormName(monster,2),monster.ascendedName);
+  assert.notEqual(first,second);
+  assert.match(first,/data-stage="1"/);
+  assert.match(second,/data-stage="2"/);
+  assert.match(second,/y="-88"/);
+  assert.match(second,/monster-ascended/);
+ }
+});
+
+test('second evolution rewards the exact XP threshold and survives old-format save reload',()=>{
+ const save={...createSave(),xpWallet:2,monsterXp:{medamago:419}};
+ const before=getMonsterProgress(save);
+ assert.equal(before.level,6);
+ assert.equal(before.stage,1);
+ assert.equal(before.ascended,false);
+ const first=feedMonster(save,'medamago',1);
+ assert.equal(first.reward.ascended,true);
+ assert.equal(first.reward.evolved,false);
+ assert.equal(first.reward.before.stage,1);
+ assert.equal(first.reward.after.stage,2);
+ assert.equal(first.reward.after.level,7);
+ assert.equal(first.save.xpWallet,1);
+ const next=feedMonster(first.save,'medamago',1);
+ assert.equal(next.reward.ascended,false,'the reveal happens once, even on later XP feeds');
+ const loaded=validateSave(JSON.parse(JSON.stringify(next.save)));
+ assert.ok(loaded);
+ assert.equal(loaded.version,save.version);
+ assert.equal(getMonsterProgress(loaded).stage,2,'no save migration necessary');
 });
 
 test('dungeon reports verified learning honestly and never count assisted route as success',()=>{
@@ -2032,7 +2069,7 @@ test('all companion evolutions and dungeon enemies use compact pixel-art atlases
  const path='../prototype/speakingym-monsters/';
  const companions=readFileSync(new URL(path+'pixel-companions.png',import.meta.url));
  const enemies=readFileSync(new URL(path+'pixel-enemies.png',import.meta.url));
- for(const [bytes,width,height] of [[companions,720,88],[enemies,720,48]]){
+ for(const [bytes,width,height] of [[companions,720,132],[enemies,720,48]]){
   assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
   assert.equal(bytes.readUInt32BE(16),width);
   assert.equal(bytes.readUInt32BE(20),height);
