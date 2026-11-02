@@ -526,14 +526,18 @@ const path=require('node:path');
     await blockedPage.locator('#transcript').waitFor({state:'visible',timeout:8000});
     assert.match(await blockedPage.locator('#listening-status').innerText(),/再生できなかった/);
     assert.equal(await blockedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
+    const beforeSubtitled=await blockedPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1'));
     const blockedCorrect=await blockedPage.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
       const {listeningChallengeFor}=await import('./listening-challenges.js');
       return listeningChallengeFor(ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId)).correctIndex;
     });
     await blockedPage.locator(`[data-listening-choice="${blockedCorrect}"]`).click();
+    assert.match(await blockedPage.locator('#feedback-panel').innerText(),/字幕で意味を復習したよ！ \+0 XP/);
     assert.equal(await blockedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0,
       'Subtitled fallback is practice only; no listening XP without audio');
+    assert.equal(await blockedPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),beforeSubtitled,
+      'Reading a transcript cannot change spaced recall or earned progress');
     await blockedContext.close();
     // Previously uncertain answers are surfaced again in a later practice run.
     const {context:reviewContext,page:reviewPage}=await boot(390);

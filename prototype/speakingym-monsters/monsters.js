@@ -1474,7 +1474,8 @@ function renderQuestion() {
       state.understood=true;
       stopListeningPlayback();
       button.classList.add('is-correct');
-      $('#listening-status').textContent=englishMode?'Correct! Listening complete.':'正解！聞き取れたね。スピーキングは別の問題で練習できるよ。';
+      $('#listening-status').textContent=state.usedTranscript?'字幕で意味を確認できたね。聞き取り成績はつけず、0 XPの復習として進むよ。':
+        englishMode?'Correct! Listening complete.':'正解！聞き取れたね。スピーキングは別の問題で練習できるよ。';
       $('#play-audio').disabled=true;
       $$('[data-listening-choice]').forEach(choice=>choice.disabled=true);
       $('#reveal-transcript').hidden=true;
@@ -1747,6 +1748,7 @@ async function gradeAnswer() {
   const session=play,prompt=currentPrompt();
   if(!prompt)return;
   const listeningComplete=prompt.kind==='listen'&&play.listeningState?.understood===true;
+  const transcriptPractice=Boolean(listeningComplete&&play.listeningState?.usedTranscript);
   const raw=listeningComplete?'':$('#spoken-answer').value.trim();
   if(play.tactics?.turn==='player'&&(raw||listeningComplete))play.tactics.attackCommitted=true;
   // One-word cloze practice is a non-scored stepping stone. It cannot mint
@@ -1878,16 +1880,20 @@ async function gradeAnswer() {
     if(!['vocab','grammar'].includes(prompt.kind))micView('ready');
     return;
   }
-  const rating=play.hintUsed?'hint':'smooth';
+  // Text-assisted comprehension is useful practice, but not evidence that
+  // audio was heard. It must not mint XP, advance spaced recall, or earn a
+  // verified boss seal when media playback was unavailable.
+  const rating=transcriptPractice?'practice':play.hintUsed?'hint':'smooth';
   const wasQuizResolved=save.quizProgress?.[prompt.id]?.resolved===true;
-  const {save:next,reward}=recordAnswer(save,prompt.id,rating);
-  persist(next);
+  const {save:next,reward}=transcriptPractice?{save:save,reward:{xp:0,captured:[]}}:recordAnswer(save,prompt.id,rating);
+  if(!transcriptPractice)persist(next);
   play.earnedXp+=reward.xp;
   play.captured.push(...reward.captured);
   if(rating==='smooth')play.smooth++;
   else if(rating==='hint')play.hintedCount++;
+  if(transcriptPractice)play.assistedGates=(play.assistedGates||0)+1;
   if(play.mode==='forest')play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,
-    outcome:rating==='smooth'?'independent':'supported'});
+    outcome:transcriptPractice?'review':rating==='smooth'?'independent':'supported'});
   if(play.tactics)play.tactics.usedPromptIds.add(prompt.id);
   play.revealed=true;
   if(play.roleplay){
@@ -1904,7 +1910,7 @@ async function gradeAnswer() {
     const t=play.tactics;
     const hit=t.defenseHitTaken?{damage:0,blocked:false}:
       incomingHit({kind:t.enemyKind,allyId:play.companionId,evolved:getMonsterProgress(save,play.companionId).evolved,
-        action:t.actionAtAttack,result:'correct',hinted:rating==='hint',pressure:t.enemyPressure,
+        action:t.actionAtAttack,result:'correct',hinted:rating!=='smooth',pressure:t.enemyPressure,
         counterShield:t.counterShield});
     let rescue=null;
     if(!t.defenseHitTaken){rescue=absorbIncomingBossHit(hit.damage);t.lastHitDamage=rescue.activeDamage;}
@@ -2066,13 +2072,13 @@ async function gradeAnswer() {
     reward.nextRetentionDay?`<p class="retention-result">${reward.recovering?'定着を再確認中 · ':'次の定着チェック：'}${reward.nextRetentionDay}（ヒントあり・同じ日の再挑戦では段階は進みません）</p>`:'';
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
   const explanationHtml=prompt.kind==='listen'
-    ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">聞き取れたポイント</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
+    ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">${transcriptPractice?'字幕で確認した意味':'聞き取れたポイント'}</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
     :objectiveQuiz?quizTeachingHtml(prompt):conversationFeedbackHtml(prompt,raw,grade,{hinted:rating==='hint'});
-  const checkingNote=prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
+  const checkingNote=transcriptPractice?'音声の再生を確認できなかったため、字幕を読んで意味を練習したよ。聞き取りの実績・XP・定着記録には含めていません。':prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
     ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
-  const learningPulse=autoForest?forestLearningPulseHtml(prompt,raw,grade,{hinted:rating==='hint'}):'';
+  const learningPulse=autoForest&&!transcriptPractice?forestLearningPulseHtml(prompt,raw,grade,{hinted:rating==='hint'}):'';
   const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">準備ができたら次へ。詳しい解説は必要なときに開けるよ。</p>`:'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
   const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
@@ -2090,7 +2096,7 @@ async function gradeAnswer() {
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=2
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}"><strong>${streak.chain} CHAIN</strong><span>${play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
