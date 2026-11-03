@@ -533,7 +533,11 @@ function renderHome() {
   homeNavigation?.updateHero({
     art:monsterArt(creature.id,growth.stage),name:monsterFormName(creature,growth.stage),
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,
-    hasAttempted:save.totalAnswers>0||summary.practiced>0||skillStats.some(stat=>stat.sample>0),
+    // Keep imported/legacy review queues reachable even when their older save
+    // has no modern answer counter. Only a truly empty save gets the single CTA.
+    hasAttempted:save.totalAnswers>0||summary.practiced>0||skillStats.some(stat=>stat.sample>0)||
+      Object.keys(save.reviewPrompts||{}).length>0||Object.keys(save.transferReviews||{}).length>0||
+      (save.savedPromptIds||[]).length>0,
     areasCleared:forestCount,cityAreasCleared:cityCount,nextAreaName:nextArea.name,
     bondRank:bond.rank,cityUnlocked:forestCount===FOREST_AREAS.length,cityCleared:cityClear
   });
