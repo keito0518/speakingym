@@ -248,17 +248,17 @@ const path=require('node:path');
       await page.locator('#dungeon-stage-list > summary').click();
       const dungeonLayout=await page.evaluate(()=>{
         const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
-        return {banner:rect('.dungeon-selection-banner'),forest:rect('.dungeon-world-forest'),city:rect('.dungeon-world-city'),
+        return {banner:rect('.dungeon-selection-banner'),forest:rect('.dungeon-world-forest'),city:rect('.dungeon-world-city'),ruins:rect('.dungeon-world-ruins'),
           background:getComputedStyle(document.querySelector('.dungeon-selection')).backgroundColor,
           title:document.querySelector('#forest-invite-title').textContent,
           overflow:document.documentElement.scrollWidth>innerWidth+1};
       });
       assert.equal(dungeonLayout.title,'Englishダンジョン');
       assert.equal(dungeonLayout.background,'rgba(0, 0, 0, 0)','Dungeon does not wrap both worlds in another green card');
-      assert.ok(dungeonLayout.banner.bottom<dungeonLayout.forest.top&&dungeonLayout.forest.bottom<dungeonLayout.city.top,
+      assert.ok(dungeonLayout.banner.bottom<dungeonLayout.forest.top&&dungeonLayout.forest.bottom<dungeonLayout.city.top&&dungeonLayout.city.bottom<dungeonLayout.ruins.top,
         `${engine}/${width} standalone dungeon hero and world cards: ${JSON.stringify(dungeonLayout)}`);
       assert.equal(dungeonLayout.overflow,false,`${engine}/${width} dungeon world selection overflows horizontally`);
-      assert.equal(await page.locator('.dungeon-world-card').count(),2);
+      assert.equal(await page.locator('.dungeon-world-card').count(),3);
       assert.equal(await page.locator('.dungeon-selection-banner .dungeon-world-card').count(),0);
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-world-select.png`),fullPage:true});
       await page.locator('#home-destination-forest .home-menu-back').click();
@@ -1102,9 +1102,10 @@ const path=require('node:path');
       const {context:cityContext,page:cityPage}=await boot(width);
       await enterHomePanel(cityPage,'forest');
       await cityPage.locator('#dungeon-stage-list > summary').click();
-      assert.equal(await cityPage.locator('.dungeon-world-card').count(),2,'Forest and City must be separate, clearly labelled world panels');
+      assert.equal(await cityPage.locator('.dungeon-world-card').count(),3,'Forest, City and Ruins must be separate, clearly labelled world panels');
       assert.equal(await cityPage.locator('#dungeon-world-forest-title').innerText(),'緑風の森');
       assert.equal(await cityPage.locator('#dungeon-world-city-title').innerText(),'雪灯りの街');
+      assert.equal(await cityPage.locator('#dungeon-world-ruins-title').innerText(),'星影の遺跡');
       assert.match(await cityPage.locator('.dungeon-world-city .dungeon-world-heading').innerText(),/4エリア/);
       assert.equal(await cityPage.locator('.dungeon-world-forest [data-enter-forest]').count(),4);
       assert.equal(await cityPage.locator('.dungeon-world-city [data-enter-forest]').count(),4);
@@ -1113,6 +1114,7 @@ const path=require('node:path');
       assert.ok(worldColors.scroll<=worldColors.inner+1,`${engine}/${width} world-select overflow: ${JSON.stringify(worldColors)}`);
       const cityCard=cityPage.locator('[data-enter-forest="city"]');
       assert.equal(await cityCard.isEnabled(),false,'City is locked on fresh saves');
+      assert.equal(await cityPage.locator('[data-enter-forest="ruins-gate"]').isEnabled(),false,'Ruins is locked until the City is cleared');
       assert.match(await cityCard.innerText(),/森の4エリアを攻略で解放/);
       assert.match(await cityPage.locator('[data-enter-forest="glade"]').innerText(),/前のエリアを攻略で解放/);
       await cityPage.evaluate(async()=>{
