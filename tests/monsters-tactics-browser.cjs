@@ -276,7 +276,8 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('.forest-tactic-strategy > summary').innerText(),/攻撃：リスニング.*確定/);
      await answer(page);
      if(width===390){
-       assert.equal(await page.locator('.forest-chain-result').count(),0,'A defensive miss resets momentum for the next attack');
+       assert.match(await page.locator('.forest-chain-result').innerText(),/1 CHAIN[\s\S]*コンボ開始！/,
+         'A defensive miss resets the previous chain, so the next clean attack starts again at one');
      }else{
        assert.match(await page.locator('.forest-chain-result').innerText(),/3 CHAIN/);
        assert.equal(await page.locator('.forest-chain-milestone').count(),1,'A third independent answer should feel like a milestone');
