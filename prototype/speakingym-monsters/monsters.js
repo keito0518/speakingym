@@ -1,5 +1,6 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { loadProtectedSave, unreadableSaveForDownload } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -232,6 +233,7 @@ function attachFeedbackBookmark(prompt){
  if(next)next.before(button);else box.append(button);
  syncQuestionBookmarks(prompt);
 }
+let unreadableSaveStatus=null;
 let save = loadSave() || createSave();
 let lastDungeonReviewIds = [];
 let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, playbackGeneration = 0, homeNavigation = null;
@@ -259,21 +261,46 @@ function queueForestEncounter(){
 }
 
 function loadSave() {
-  try { return validateSave(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')); }
-  catch { return null; }
+  const loaded=loadProtectedSave(localStorage,validateSave);
+  unreadableSaveStatus=loaded.status==='protected'||loaded.status==='blocked'?loaded.status:null;
+  return loaded.save;
 }
-function persist(next = save) {
+function syncUnreadableSaveUI(){
+  const notice=$('#save-recovery-notice'),warning=$('#save-note');
+  if(!notice||!warning)return;
+  notice.hidden=!unreadableSaveStatus;
+  $('#save-recovery-reset').hidden=unreadableSaveStatus!=='blocked';
+  const live=$('#save-warning-live');
+  live.textContent='このブラウザに進捗を保存できません。ページを閉じる前に、ホームの「セーブの引き継ぎ」からデータをコピーして保管してください。';
+  if(unreadableSaveStatus==='protected'){
+    warning.textContent='古いセーブを読み込めなかったため保護しました。引き継ぎ欄から保存してね。';
+    $('#save-recovery-description').textContent='前の記録を読み込めなかったので、上書きする前に元データを別の領域へ保護しました。新しい記録とは別に保存できます。元のセーブは自動復元されません。';
+  }else if(unreadableSaveStatus==='blocked'){
+    warning.textContent='以前のセーブを保護できず、自動上書きを止めています。引き継ぎ欄から元データを保存してね。';
+    $('#save-recovery-description').textContent='以前の記録を読み込めません。バックアップ場所の空きがないか、別の古い記録が残っているため、自動上書きを停止しました。まず元データをファイルに保存してね。';
+    live.textContent='前のセーブを読み込めず、自動上書きを停止しています。ホームの「セーブのバックアップ・引き継ぎ」で元データを保存してね。';
+    live.hidden=false;
+  }
+}
+function persist(next = save,{replaceUnreadable=false}={}) {
   save = next;
+  if(unreadableSaveStatus==='blocked'&&!replaceUnreadable){
+    syncUnreadableSaveUI();
+    return false;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
     $('#save-note').textContent = '記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）';
     $('#save-warning-live').hidden = true;
+    if(replaceUnreadable)unreadableSaveStatus=null;
+    syncUnreadableSaveUI();
     return true;
   } catch {
     $('#save-note').textContent = '保存できない環境です。このタブを閉じると進捗が消えます';
     // A home-only message is invisible inside the full-screen dungeon.
     // Keep the warning readable while playing, until a write succeeds.
     $('#save-warning-live').hidden = false;
+    syncUnreadableSaveUI();
     return false;
   }
 }
@@ -2532,6 +2559,30 @@ $('#result-feedback').addEventListener('click',()=>{
 $('#collection-home').addEventListener('click',renderHome);
 // Keep progression portable between Cloudflare preview URLs and iOS browsers.
 // Imported saves are strictly validated before anything replaces the current one.
+$('#save-recovery-download').addEventListener('click',()=>{
+  const status=$('#save-transfer-status');
+  const raw=unreadableSaveForDownload(localStorage,unreadableSaveStatus);
+  if(!raw){status.textContent='元のセーブを取り出せませんでした。ブラウザの保存設定を確認してね。';return;}
+  try{
+    const url=URL.createObjectURL(new Blob([raw],{type:'application/json;charset=utf-8'}));
+    const link=document.createElement('a');link.href=url;
+    link.download=`speakingym-monsters-recovery-${dayKey()}.json`;
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    status.textContent='元データを書き出したよ。読み込めない形式のため、このファイルを今すぐ復元することはできません。大切に保管してね。';
+  }catch{status.textContent='ファイルに保存できませんでした。別のブラウザで試すか、ブラウザの保存設定を確認してね。';}
+});
+$('#save-recovery-reset').addEventListener('click',()=>{
+  if(unreadableSaveStatus!=='blocked')return;
+  if(!window.confirm('読み込めなかった元のセーブを上書きします。元データを先にファイルへ保存したことを確認してください。最初からやり直しますか？'))return;
+  const previous=save;
+  if(!persist(createSave(),{replaceUnreadable:true})){
+    save=previous;
+    $('#save-transfer-status').textContent='保存できず、元のセーブは上書きしていません。';return;
+  }
+  renderHome();$('#save-transfer').open=true;
+  $('#save-transfer-status').textContent='新しい記録で始められるよ。';
+});
 $('#save-download').addEventListener('click',()=>{
   const status=$('#save-transfer-status');
   try{
@@ -2595,7 +2646,7 @@ $('#save-import-button').addEventListener('click',()=>{
     +'今の記録に戻せなくなるため、必要なら先に「今のセーブをコピー」してね。続けますか？';
   if(!window.confirm(message))return;
   const previous=save;
-  if(!persist(restored)){
+  if(!persist(restored,{replaceUnreadable:true})){
     save=previous; // Failed writes must never replace the active save in memory.
     status.textContent='保存領域に書き込めず、復元できなかったよ。今の記録はそのままです。';
     return;
@@ -2610,6 +2661,7 @@ $('#save-import-button').addEventListener('click',()=>{
   status.scrollIntoView({block:'center',behavior:'instant'});
 });
 persist(save);
+if(unreadableSaveStatus)$('#save-transfer').open=true;
 window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){

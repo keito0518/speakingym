@@ -53,6 +53,54 @@ const path=require('node:path');
     await page.locator(`[data-listening-choice="${correct}"]`).click();
   };
   try{
+    // A future-version / damaged local save must not silently disappear when
+    // the prototype opens. Preserve its exact bytes, offer a file download,
+    // and keep recovery available after a second reload.
+    {
+      const {context:recoveryContext,page:recoveryPage}=await boot(390);
+      const oldRaw=await recoveryPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const data={...createSave(),version:2,xpWallet:980};
+        const raw=JSON.stringify(data);
+        localStorage.setItem(STORAGE_KEY,raw);
+        return raw;
+      });
+      await recoveryPage.reload();
+      assert.equal(await recoveryPage.locator('#save-recovery-notice').isVisible(),true);
+      assert.match(await recoveryPage.locator('#save-note').innerText(),/保護しました/);
+      const archived=await recoveryPage.evaluate(()=>({
+        current:localStorage.getItem('speakingym-monsters-prototype-v1'),
+        saved:localStorage.getItem('speakingym-monsters-prototype-v1-unreadable-backup')
+      }));
+      assert.equal(archived.saved,oldRaw);
+      assert.equal(JSON.parse(archived.current).version,1);
+      const oldDownload=recoveryPage.waitForEvent('download');
+      await recoveryPage.locator('#save-recovery-download').click();
+      const recoveryFile=await oldDownload;
+      assert.match(recoveryFile.suggestedFilename(),/speakingym-monsters-recovery-.*\.json/);
+      assert.equal(fs.readFileSync(await recoveryFile.path(),'utf8'),oldRaw,
+        'The recovery file must contain the exact incompatible original, not a fresh save');
+      await recoveryPage.reload();
+      assert.equal(await recoveryPage.locator('#save-recovery-notice').isVisible(),true,
+        'A reload must not make the protected original unreachable');
+      await recoveryPage.evaluate(async()=>{
+        const {STORAGE_KEY}=await import('./monster-engine.js');
+        localStorage.setItem(STORAGE_KEY,'{"version":3,"xpWallet":543}');
+      });
+      await recoveryPage.reload();
+      assert.equal(await recoveryPage.locator('#save-recovery-reset').isVisible(),true);
+      assert.match(await recoveryPage.locator('#save-note').innerText(),/自動上書きを止めています/);
+      assert.equal(await recoveryPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),
+        '{"version":3,"xpWallet":543}','Another old save cannot be overwritten without consent');
+      recoveryPage.once('dialog',dialog=>dialog.dismiss());
+      await recoveryPage.locator('#save-recovery-reset').click();
+      assert.equal(await recoveryPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),
+        '{"version":3,"xpWallet":543}','Dismissing reset must preserve the original');
+      recoveryPage.once('dialog',dialog=>dialog.accept());
+      await recoveryPage.locator('#save-recovery-reset').click();
+      assert.equal(await recoveryPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).version),1);
+      await recoveryContext.close();
+    }
     // Four distinct skill buttons must really open the matching authored tasks
     // on a 320px device; only confirmed self-recall can enter the new stats.
     {
