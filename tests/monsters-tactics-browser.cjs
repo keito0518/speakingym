@@ -227,7 +227,8 @@ const assert=require('node:assert/strict');
        assert.match(impactScene.spriteAnimation,/scene-hero-/,'The companion performs its own extra attack motion');
      }
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
-     assert.equal(await page.locator('.forest-chain-result').count(),0,'A first answer should not add another badge to the UI');
+     assert.equal(await page.locator('.forest-chain-result').count(),1,'First independent success has one compact chain badge beside the answer');
+     assert.match(await page.locator('.forest-chain-result').innerText(),/1 CHAIN[\s\S]*コンボ開始！/);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-tactics'),'true');
      assert.equal(await page.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-defeated')),false,'A living enemy must not be flagged defeated');
