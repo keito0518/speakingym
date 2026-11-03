@@ -1465,6 +1465,23 @@ const path=require('node:path');
     assert.match(await noSpeechPage.locator('#speech-helper').innerText(),/自動音声認識に非対応/);
     await noSpeechPage.locator('#native-ios-dictation').click();
     assert.equal(await noSpeechPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
+    // Completing a one-word hint must not pop open the native keyboard again.
+    // Only the explicit dictation button is allowed to focus the iPhone input.
+    const iosCloze=await noSpeechPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      const {beginnerClozeFor}=await import('./speaking-guidance.js');
+      const prompt=ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId);
+      return beginnerClozeFor(prompt);
+    });
+    assert.ok(iosCloze?.word,'The first beginner speaking prompt needs a one-word hint');
+    await noSpeechPage.locator('#show-hint').click();
+    await noSpeechPage.locator('#spoken-answer').fill(iosCloze.word);
+    await noSpeechPage.locator('#show-answer').click();
+    assert.match(await noSpeechPage.locator('#cloze-practice-status').innerText(),/空欄は正解/);
+    assert.equal(await noSpeechPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),false,
+      'A correct cloze must not unexpectedly open the iPhone keyboard');
+    assert.equal(await noSpeechPage.locator('#native-ios-dictation').isVisible(),true,
+      'The learner can still intentionally open the native keyboard');
     await noSpeechContext.close();
     // An evolved companion from an older save must retain its earned form
     // across migration, reload, collection, battle and portable backup.
