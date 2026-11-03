@@ -2498,6 +2498,23 @@ $('#result-feedback').addEventListener('click',()=>{
 $('#collection-home').addEventListener('click',renderHome);
 // Keep progression portable between Cloudflare preview URLs and iOS browsers.
 // Imported saves are strictly validated before anything replaces the current one.
+$('#save-download').addEventListener('click',()=>{
+  const status=$('#save-transfer-status');
+  try{
+    const blob=new Blob([JSON.stringify(save,null,2)],{type:'application/json;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;
+    link.download=`speakingym-monsters-save-${dayKey()}.json`;
+    document.body.append(link);
+    link.click();link.remove();
+    // Give iPhone Safari time to hand the download to its Files interface.
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    status.textContent='セーブファイルを保存したよ。iPhoneなら「ファイル」のダウンロード先を確認してね。移動先でこのファイルを選んで復元できるよ。';
+  }catch{
+    status.textContent='ファイル保存が使えないブラウザです。下の「今のセーブをコピー」を試してね。';
+  }
+});
 $('#save-export').addEventListener('click',async()=>{
   const backup=JSON.stringify(save),field=$('#save-import'),status=$('#save-transfer-status');
   field.value=backup;
@@ -2507,6 +2524,25 @@ $('#save-export').addEventListener('click',async()=>{
   }catch{
     field.focus();field.select();
     status.textContent='データを欄に表示したよ。選択された文字を「コピー」して保管してね。';
+  }
+});
+$('#save-import-file').addEventListener('change',async event=>{
+  const file=event.target.files?.[0],field=$('#save-import'),status=$('#save-transfer-status');
+  if(!file)return;
+  field.value='';
+  if(file.size>300000||!file.name.toLowerCase().endsWith('.json')){
+    status.textContent='300KB以下のセーブ用 .json ファイルを選んでね。今の記録は変更していません。';
+    return;
+  }
+  try{
+    const contents=await file.text();
+    if(!validateSave(JSON.parse(contents)))throw Error('invalid save');
+    // Import is staged only. The existing confirmation and safe persistence
+    // path below is the sole way to overwrite a user's current progress.
+    field.value=contents;
+    status.textContent='セーブファイルを読み込んだよ。まだ復元していません。下の「復元」を押すと内容を確認できるよ。';
+  }catch{
+    status.textContent='セーブを読み込めませんでした。Speakingym Monstersの正しい保存ファイルか確認してね。';
   }
 });
 $('#save-import-button').addEventListener('click',()=>{
@@ -2531,6 +2567,7 @@ $('#save-import-button').addEventListener('click',()=>{
     return;
   }
   field.value='';
+  $('#save-import-file').value='';
   renderHome();
   // Keep the restore result visible instead of sending the player to the home menu.
   homeNavigation?.showPage('training');

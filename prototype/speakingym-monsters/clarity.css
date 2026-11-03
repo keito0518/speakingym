@@ -336,7 +336,10 @@
 .save-transfer p{font-size:11px;line-height:1.75;margin:9px 0}
 .save-transfer label{display:block;font-size:11px;font-weight:800;margin:11px 0 5px}
 .save-transfer textarea{width:100%;box-sizing:border-box;max-width:100%;font-size:12px;line-height:1.5;background:#fff;color:#274c3c;border:1px solid #a8c8b3;border-radius:8px;padding:9px;resize:vertical}
+.save-transfer input[type=file]{display:block;width:100%;max-width:100%;box-sizing:border-box;border:1px solid #a8c8b3;border-radius:8px;padding:9px;background:#fff;color:#274c3c;font-size:12px;min-height:44px}
+.save-transfer input[type=file]::file-selector-button{border:1px solid #3a805e;border-radius:6px;background:#edf8ef;color:#23593d;padding:6px 10px;font-weight:800;margin-right:8px}
 .save-transfer-button{display:block;width:100%;border:1px solid #3a805e;background:#edf8ef;color:#23593d;border-radius:8px;min-height:41px;margin:8px 0;font-weight:800;font-size:12px}
+.save-download-button{background:#237956;color:#fff;min-height:46px}
 
 /* Quick tactical read: the skill that hits this foe's weakness is visible before committing. */
 .forest-active.tactical-battle .forest-attack-select .forest-tactic-kinds button[data-weak="true"]{background:#ffecac;color:#513c1c;border-color:#ffc462;box-shadow:0 3px 0 #b67b29}

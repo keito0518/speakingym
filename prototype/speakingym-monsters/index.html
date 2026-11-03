@@ -154,12 +154,15 @@
             </section>
             <span id="save-note" class="save-note">記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）</span>
             <details class="save-transfer" id="save-transfer"><summary>セーブのバックアップ・引き継ぎ</summary>
-              <p>別のURLやブラウザへ移ると記録は自動で移りません。移動前に「コピー」で保存し、移動先の同じ欄へ貼り付けて復元できます。</p>
+              <p>別のURL・Safari・LINE内ブラウザへ進捗は自動で移りません。移動前にファイルを保存し、移動先で読み込んで復元してね。コピー・貼り付けも使えます。</p>
+              <button type="button" id="save-download" class="save-transfer-button save-download-button">セーブをファイルに保存（おすすめ）</button>
               <button type="button" id="save-export" class="save-transfer-button">今のセーブをコピー</button>
+              <label for="save-import-file">保存したセーブファイルを選ぶ（.json）</label>
+              <input id="save-import-file" type="file" accept=".json,application/json">
               <label for="save-import">セーブデータ（コピー・貼り付け用）</label>
               <textarea id="save-import" rows="3" spellcheck="false" autocapitalize="off" placeholder="ここにセーブデータを貼り付け"></textarea>
-              <p>復元すると今の記録を上書きします。必要なら先に「今のセーブをコピー」でバックアップしてね。</p>
-              <button type="button" id="save-import-button" class="save-transfer-button">貼り付けたセーブを復元</button>
+              <p>ファイル選択だけでは復元されません。内容を確認してから下のボタンを押してね。復元すると今の記録を上書きするので、必要なら先にバックアップしよう。</p>
+              <button type="button" id="save-import-button" class="save-transfer-button">選んだ・貼り付けたセーブを復元</button>
               <p id="save-transfer-status" role="status" aria-live="polite">セーブ内容には学習記録が入るので、他人には送らないでね。</p>
             </details>
           </div>
