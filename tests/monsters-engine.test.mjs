@@ -209,7 +209,7 @@ test('all evolved creatures have distinct physical forms, beyond a glow or name 
  }
 });
 
-test('all 27 companions have a genuine third pixel form and a unique second-evolution name',()=>{
+test('every companion has a genuine third pixel form and a unique second-evolution name',()=>{
  assert.equal(SECOND_EVOLUTION_XP,630,'Lv.10 is the second evolution level gate');
  assert.equal(new Set(MONSTERS.map(monster=>monster.ascendedName)).size,MONSTERS.length);
  for(const monster of MONSTERS){
@@ -224,6 +224,31 @@ test('all 27 companions have a genuine third pixel form and a unique second-evol
   else assert.match(second,/scale\(1\.08\)/);
   assert.match(second,/monster-ascended/);
  }
+});
+
+test('full companion collection keeps each evolution, boss trial and bond across a portable save',()=>{
+ const ids=MONSTERS.map(monster=>monster.id);
+ assert.ok(ids.length>=31,'The expanded companion catalog must not shrink');
+ const base=createSave();
+ const progress={...base,ownedMonsters:ids,selectedMonster:ids.at(-1),xpWallet:937,
+  monsterXp:Object.fromEntries(ids.map((id,index)=>[id,index%2===0?630:280])),
+  monsterEvolution:Object.fromEntries(ids.map((id,index)=>[id,index%2===0?2:1])),
+  monsterTrials:Object.fromEntries(ids.map(id=>[id,['entry','glade','thicket']])),
+  monsterBonds:Object.fromEntries(ids.map((id,index)=>[id,index%11]))};
+ const restored=validateSave(JSON.parse(JSON.stringify(progress)));
+ assert.ok(restored);
+ assert.equal(restored.ownedMonsters.length,ids.length);
+ assert.equal(restored.selectedMonster,ids.at(-1));
+ assert.equal(restored.xpWallet,937);
+ for(const id of ids){
+  assert.deepEqual(restored.monsterTrials[id],['entry','glade','thicket']);
+  assert.equal(restored.monsterEvolution[id],progress.monsterEvolution[id]);
+  assert.equal(restored.monsterXp[id],progress.monsterXp[id]);
+  assert.equal(restored.monsterBonds[id],progress.monsterBonds[id]);
+  assert.equal(getMonsterProgress(restored,id).stage,progress.monsterEvolution[id]);
+ }
+ assert.deepEqual(validateSave(JSON.parse(JSON.stringify(restored))),restored,
+  'Repeated export/import must not silently reset high-level companions');
 });
 
 test('second evolution needs Lv.10, three distinct boss trials and a deliberate evolve action',()=>{

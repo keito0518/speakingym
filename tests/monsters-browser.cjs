@@ -83,6 +83,8 @@ const path=require('node:path');
       await recoveryPage.reload();
       assert.equal(await recoveryPage.locator('#save-recovery-notice').isVisible(),true,
         'A reload must not make the protected original unreachable');
+      assert.equal(await recoveryPage.locator('#save-recovery-archive-download').isVisible(),false,
+        'One protected save needs only its original recovery button');
       await recoveryPage.evaluate(async()=>{
         const {STORAGE_KEY}=await import('./monster-engine.js');
         localStorage.setItem(STORAGE_KEY,'{"version":3,"xpWallet":543}');
@@ -90,6 +92,17 @@ const path=require('node:path');
       await recoveryPage.reload();
       assert.equal(await recoveryPage.locator('#save-recovery-reset').isVisible(),true);
       assert.match(await recoveryPage.locator('#save-note').innerText(),/自動上書きを止めています/);
+      assert.match(await recoveryPage.locator('#save-recovery-description').innerText(),/2つのファイルを両方保存/);
+      assert.match(await recoveryPage.locator('#save-download').innerText(),/このタブの新しい記録/);
+      const currentBackup=recoveryPage.waitForEvent('download');
+      await recoveryPage.locator('#save-recovery-download').click();
+      assert.equal(fs.readFileSync(await (await currentBackup).path(),'utf8'),'{"version":3,"xpWallet":543}');
+      const earlierBackup=recoveryPage.waitForEvent('download');
+      await recoveryPage.locator('#save-recovery-archive-download').click();
+      const earlierFile=await earlierBackup;
+      assert.match(earlierFile.suggestedFilename(),/speakingym-monsters-earlier-recovery-.*\.json/);
+      assert.equal(fs.readFileSync(await earlierFile.path(),'utf8'),oldRaw,
+        'A conflicting earlier archive must stay independently downloadable');
       assert.equal(await recoveryPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),
         '{"version":3,"xpWallet":543}','Another old save cannot be overwritten without consent');
       recoveryPage.once('dialog',dialog=>dialog.dismiss());
@@ -99,6 +112,7 @@ const path=require('node:path');
       recoveryPage.once('dialog',dialog=>dialog.accept());
       await recoveryPage.locator('#save-recovery-reset').click();
       assert.equal(await recoveryPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).version),1);
+      assert.match(await recoveryPage.locator('#save-download').innerText(),/セーブをファイルに保存/);
       await recoveryContext.close();
     }
     // Four distinct skill buttons must really open the matching authored tasks

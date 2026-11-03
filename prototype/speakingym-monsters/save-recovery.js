@@ -37,3 +37,14 @@ export function unreadableSaveForDownload(storage,status){
   try{return storage.getItem(status==='protected'?UNREADABLE_BACKUP_KEY:STORAGE_KEY);}
   catch{return null;}
 }
+
+// If two incompatible saves conflict, the original key and the earlier
+// recovery sidecar can contain different player progress. Offer both files.
+export function conflictingArchiveForDownload(storage,status){
+  if(status!=='blocked')return null;
+  try{
+    const archived=storage.getItem(UNREADABLE_BACKUP_KEY);
+    const current=storage.getItem(STORAGE_KEY);
+    return archived!==null&&archived!==current?archived:null;
+  }catch{return null;}
+}

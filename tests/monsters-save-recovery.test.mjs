@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSave, validateSave, STORAGE_KEY } from '../prototype/speakingym-monsters/monster-engine.js';
-import { loadProtectedSave, unreadableSaveForDownload, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
 
 function fakeStorage(initial={}){
   const data=new Map(Object.entries(initial));
@@ -48,6 +48,8 @@ test('a second incompatible save cannot overwrite a different prior recovery',()
   assert.equal(store.getItem(STORAGE_KEY),now);
   assert.equal(store.getItem(UNREADABLE_BACKUP_KEY),old);
   assert.equal(unreadableSaveForDownload(store,'blocked'),now);
+  assert.equal(conflictingArchiveForDownload(store,'blocked'),old,'The prior archive must be separately exportable');
+  assert.equal(conflictingArchiveForDownload(store,'protected'),null,'A normal recovery shows only one download');
 });
 
 test('quota failures never authorize automatic replacement of unreadable progress',()=>{
@@ -57,4 +59,14 @@ test('quota failures never authorize automatic replacement of unreadable progres
   assert.equal(loadProtectedSave(store,validateSave).status,'blocked');
   assert.equal(store.getItem(STORAGE_KEY),raw);
   assert.equal(unreadableSaveForDownload(store,'blocked'),raw);
+  assert.equal(conflictingArchiveForDownload(store,'blocked'),null,'Quota failures do not imply a previous archive exists');
+});
+
+test('a zero-byte damaged original and a prior archive can both be downloaded without altering storage',()=>{
+  const old='{"version":9,"xpWallet":500}';
+  const store=fakeStorage({[STORAGE_KEY]:'',[UNREADABLE_BACKUP_KEY]:old});
+  assert.equal(loadProtectedSave(store,validateSave).status,'blocked');
+  assert.equal(unreadableSaveForDownload(store,'blocked'),'');
+  assert.equal(conflictingArchiveForDownload(store,'blocked'),old);
+  assert.equal(store.getItem(STORAGE_KEY),'');
 });

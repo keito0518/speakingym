@@ -1,6 +1,6 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
-import { loadProtectedSave, unreadableSaveForDownload } from './save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -272,6 +272,13 @@ function syncUnreadableSaveUI(){
   if(!notice||!warning)return;
   notice.hidden=!unreadableSaveStatus;
   $('#save-recovery-reset').hidden=unreadableSaveStatus!=='blocked';
+  let hasConflictingArchive=false;
+  try{hasConflictingArchive=conflictingArchiveForDownload(localStorage,unreadableSaveStatus)!==null;}catch{}
+  $('#save-recovery-archive-download').hidden=!hasConflictingArchive;
+  $('#save-download').textContent=unreadableSaveStatus==='blocked'
+    ?'このタブの新しい記録を保存（元のセーブとは別）':'セーブをファイルに保存（おすすめ）';
+  $('#save-export').textContent=unreadableSaveStatus==='blocked'
+    ?'このタブの新しい記録をコピー':'今のセーブをコピー';
   const live=$('#save-warning-live');
   live.textContent='このブラウザに進捗を保存できません。ページを閉じる前に、ホームの「セーブの引き継ぎ」からデータをコピーして保管してください。';
   if(unreadableSaveStatus==='protected'){
@@ -279,7 +286,9 @@ function syncUnreadableSaveUI(){
     $('#save-recovery-description').textContent='前の記録を読み込めなかったので、上書きする前に元データを別の領域へ保護しました。新しい記録とは別に保存できます。元のセーブは自動復元されません。';
   }else if(unreadableSaveStatus==='blocked'){
     warning.textContent='以前のセーブを保護できず、自動上書きを止めています。引き継ぎ欄から元データを保存してね。';
-    $('#save-recovery-description').textContent='以前の記録を読み込めません。バックアップ場所の空きがないか、別の古い記録が残っているため、自動上書きを停止しました。まず元データをファイルに保存してね。';
+    $('#save-recovery-description').textContent=hasConflictingArchive
+      ?'読み込めないセーブが2つ残っています。自動上書きを停止しました。下の2つのファイルを両方保存してね。通常の保存・コピーは、このタブで新しく遊んだ記録だけが対象です。'
+      :'以前の記録を読み込めません。保存領域の空きがないなどの理由で、自動上書きを停止しました。まず元データをファイルに保存してね。通常の保存・コピーは、このタブの新しい記録だけが対象です。';
     live.textContent='前のセーブを読み込めず、自動上書きを停止しています。ホームの「セーブのバックアップ・引き継ぎ」で元データを保存してね。';
     live.hidden=false;
   }
@@ -2561,19 +2570,27 @@ $('#result-feedback').addEventListener('click',()=>{
 $('#collection-home').addEventListener('click',renderHome);
 // Keep progression portable between Cloudflare preview URLs and iOS browsers.
 // Imported saves are strictly validated before anything replaces the current one.
-$('#save-recovery-download').addEventListener('click',()=>{
+function downloadUnreadableSave(raw,suffix){
   const status=$('#save-transfer-status');
-  let raw=null;
-  try{raw=unreadableSaveForDownload(localStorage,unreadableSaveStatus);}catch{}
-  if(!raw){status.textContent='元のセーブを取り出せませんでした。ブラウザの保存設定を確認してね。';return;}
+  if(raw===null){status.textContent='元のセーブを取り出せませんでした。ブラウザの保存設定を確認してね。';return;}
   try{
     const url=URL.createObjectURL(new Blob([raw],{type:'application/json;charset=utf-8'}));
     const link=document.createElement('a');link.href=url;
-    link.download=`speakingym-monsters-recovery-${dayKey()}.json`;
+    link.download=`speakingym-monsters-${suffix}-${dayKey()}.json`;
     document.body.append(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
-    status.textContent='元データを書き出したよ。読み込めない形式のため、このファイルを今すぐ復元することはできません。大切に保管してね。';
+    status.textContent='元データを書き出したよ。読み込めない形式のため、今すぐ復元することはできません。大切に保管してね。';
   }catch{status.textContent='ファイルに保存できませんでした。別のブラウザで試すか、ブラウザの保存設定を確認してね。';}
+}
+$('#save-recovery-download').addEventListener('click',()=>{
+  let raw=null;
+  try{raw=unreadableSaveForDownload(localStorage,unreadableSaveStatus);}catch{}
+  downloadUnreadableSave(raw,'recovery');
+});
+$('#save-recovery-archive-download').addEventListener('click',()=>{
+  let raw=null;
+  try{raw=conflictingArchiveForDownload(localStorage,unreadableSaveStatus);}catch{}
+  downloadUnreadableSave(raw,'earlier-recovery');
 });
 $('#save-recovery-reset').addEventListener('click',()=>{
   if(unreadableSaveStatus!=='blocked')return;
