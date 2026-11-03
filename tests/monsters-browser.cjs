@@ -1473,7 +1473,8 @@ const path=require('node:path');
     await evolvedPage.reload();
     assert.match(await evolvedPage.locator('#hero-monster-name').innerText(),/Sunnyolk.*進化済み/);
     await enterHomePanel(evolvedPage,'collection');
-    assert.match(await evolvedPage.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*進化済み/s);
+    assert.match(await evolvedPage.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv\.3.*第2進化：Lv\.10/s,
+      'The collection must retain the old evolved form while showing its new next trial');
     await evolvedPage.locator('[data-open-monster="medamago"]').click();
     assert.match(await evolvedPage.locator('#detail-content h1').innerText(),/Sunnyolk/);
     assert.match(await evolvedPage.locator('.character-badge').innerText(),/Lv\.3.*進化済み/);
