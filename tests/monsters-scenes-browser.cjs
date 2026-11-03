@@ -130,7 +130,7 @@ const path=require('node:path');
       assert.match(await page.locator('#detail-content').innerText(),/進化後、控えからの連携で「覚醒・追撃」/,
         'Evolved companion notes should describe the real tactical combo instead of the old placeholder');
       await page.locator('#detail-back').click();
-      assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.3.*進化済み/s);
+      assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.5.*進化済み/s);
       await page.reload();
       assert.equal(await page.locator('#home-wallet').innerText(),'0');
       assert.match(await page.locator('#hero-monster-name').innerText(),/Sunnyolk/);
