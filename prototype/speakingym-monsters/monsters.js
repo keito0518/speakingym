@@ -261,9 +261,11 @@ function queueForestEncounter(){
 }
 
 function loadSave() {
-  const loaded=loadProtectedSave(localStorage,validateSave);
-  unreadableSaveStatus=loaded.status==='protected'||loaded.status==='blocked'?loaded.status:null;
-  return loaded.save;
+  try{
+    const loaded=loadProtectedSave(localStorage,validateSave);
+    unreadableSaveStatus=loaded.status==='protected'||loaded.status==='blocked'?loaded.status:null;
+    return loaded.save;
+  }catch{return null;} // Accessing localStorage itself can throw in private browsers.
 }
 function syncUnreadableSaveUI(){
   const notice=$('#save-recovery-notice'),warning=$('#save-note');
@@ -2561,7 +2563,8 @@ $('#collection-home').addEventListener('click',renderHome);
 // Imported saves are strictly validated before anything replaces the current one.
 $('#save-recovery-download').addEventListener('click',()=>{
   const status=$('#save-transfer-status');
-  const raw=unreadableSaveForDownload(localStorage,unreadableSaveStatus);
+  let raw=null;
+  try{raw=unreadableSaveForDownload(localStorage,unreadableSaveStatus);}catch{}
   if(!raw){status.textContent='元のセーブを取り出せませんでした。ブラウザの保存設定を確認してね。';return;}
   try{
     const url=URL.createObjectURL(new Blob([raw],{type:'application/json;charset=utf-8'}));
