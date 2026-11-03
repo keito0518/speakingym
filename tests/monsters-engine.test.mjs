@@ -44,6 +44,8 @@ test('every speaking turn uses evidence-bound feedback with explicit next steps 
  assert.deepEqual(note.missing,review.checks.missing);
  assert.equal(note.example,null,'An unverified attempt cannot expose the model before a rewarded retry');
  assert.ok(note.next.length>10);
+ assert.match(note.next,/理由を伝える/,'The first unconfirmed authored condition should drive the retry');
+ assert.match(note.next,/誤答とは断定していない/,'A local keyword miss cannot be described as proven wrong English');
  const reveal=conversationFeedbackFor(prompt,partial,review,{revealExample:true});
  assert.equal(reveal.example,prompt.answer);
  const exact=prompt.answer;
@@ -65,6 +67,31 @@ test('every speaking turn uses evidence-bound feedback with explicit next steps 
  assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),'text',{status:'correct'},{hinted:true}).verdict.includes('ヒント'),true);
  assert.equal(conversationFeedbackFor(ALL_PROMPTS.find(p=>p.kind==='vocab'),'foo',{status:'correct'}),null);
  assert.equal(conversationFeedbackFor(null,'x',{status:'correct'}),null);
+});
+
+test('uncertain speaking feedback prioritizes missing authored conditions without inventing a diagnosis',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer,firstMissing,remaining] of [
+  ['prefer-city-normal','I prefer the train.','理由を伝える',0],
+  ['help-bag-hard','Could you carry both suitcases?','エレベーターが使えない理由',0],
+  ['help-bag-hard','Please carry my bag.','2個の荷物の手伝いを頼む',2]
+ ]){
+  const prompt=byId(id),grade=gradeLocalResponse(prompt,answer);
+  assert.equal(grade.status,'review',id);
+  assert.equal(grade.method,'curated-criteria',id);
+  const feedback=conversationFeedbackFor(prompt,answer,grade);
+  assert.equal(feedback.confirmed,false);
+  assert.match(feedback.next,new RegExp(firstMissing),id);
+  assert.match(feedback.next,/教材の照合で見つからなかっただけ/,id);
+  if(remaining)assert.match(feedback.next,new RegExp(`ほかの${remaining}項目`));
+  assert.equal(feedback.example,null,'Do not leak a model answer during an XP-eligible retry');
+ }
+ const prompt=byId('order-extra-normal');
+ const unclear=gradeLocalResponse(prompt,'Would you assist me, please?');
+ assert.equal(unclear.method,'example-review');
+ const feedback=conversationFeedbackFor(prompt,'Would you assist me, please?',unclear);
+ assert.deepEqual(feedback.missing,[],'No source of per-condition evidence means no fabricated missing items');
+ assert.doesNotMatch(feedback.next,/ほかの\d+項目|教材の照合で見つからなかっただけ/);
 });
 
 test('personal battle chain records survive reload and discard invalid values',()=>{

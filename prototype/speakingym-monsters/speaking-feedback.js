@@ -66,10 +66,17 @@ export function conversationFeedbackFor(prompt,answer,grade,{hinted=false,reveal
  const specific=hasAnswer?speakingFeedbackFor(prompt,answer):null;
  const met=Array.isArray(grade?.checks?.met)?grade.checks.met.filter(item=>typeof item==='string').slice(0,5):[];
  const missing=Array.isArray(grade?.checks?.missing)?grade.checks.missing.filter(item=>typeof item==='string').slice(0,5):[];
+ // The authored criteria can identify what the *local rubric* did not find,
+ // not prove that a natural paraphrase is actually missing that information.
+ // Lead with one actionable item instead of repeating a generic retry hint.
+ const rubricFocus=!confirmed&&['review','incomplete'].includes(status)&&grade?.method==='curated-criteria'&&missing.length
+   ?`まず「${missing[0].slice(0,80)}」が伝わるように言い直してみよう。${missing.length>1?`ほかの${missing.length-1}項目も下で確認してね。`:''}教材の照合で見つからなかっただけで、誤答とは断定していないよ。`
+   :null;
  const next=confirmed
    ?'同じ用件を、例文を見ずに別の言葉でも伝えてみよう。'
    :status==='empty'?'短くても大丈夫。英語の一文を入力・音声入力してから確認しよう。'
    :status==='incorrect'?'まず状況の条件を見直し、希望・数・時間などを言い直してみよう。'
+   :rubricFocus?rubricFocus
    :status==='incomplete'?'伝える条件を一つずつ確認して、足りない情報を加えてみよう。'
    :'文字起こしを確認してから別の言い方も試そう。自然な英文でも簡易判定では確認できない場合があるよ。';
  const variants=confirmed?[...(prompt.alternatives||[])].filter(item=>typeof item==='string'&&item.trim()&&
