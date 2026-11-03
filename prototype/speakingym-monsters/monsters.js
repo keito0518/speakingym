@@ -301,6 +301,10 @@ function showSpeechFallback(){
    alternatives.classList.add('speech-alternatives-priority');
  }
 }
+function isIOSDevice(){
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent)||
+    (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+}
 function openNativeDictation(){
   // iOS does not allow websites to press the keyboard's microphone button.
   // Focus must happen inside a real user tap; describe the remaining tap
@@ -1408,8 +1412,7 @@ function renderQuestion() {
   if(play.hintStep)renderHintPanel(speakingHintSteps(prompt,phraseFor(prompt.phraseId)),play.hintStep);
   $('#show-answer').addEventListener('click',gradeAnswer);
   $('#spoken-answer').addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();gradeAnswer();}});
-  const isIOS=/iPad|iPhone|iPod/i.test(navigator.userAgent)||
-    (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const isIOS=isIOSDevice();
   // A microphone button must actually start recognition. The previous iOS
   // primary control was only a <label> focusing the text field, misleading
   // learners who expected recording to begin from their tap.
@@ -1816,7 +1819,14 @@ async function gradeAnswer() {
     const matched=normalizeEnglishNumbers(raw)===normalizeEnglishNumbers(cloze.word);
     const helper=$('#cloze-practice-status');
     if(helper)helper.textContent=matched?'空欄は正解！ よくできたね。次は英文全体を声に出してみよう。':'空欄の単語をもう一度考えてみよう。全文の判定にはまだ進んでいないよ。';
-    if(matched){$('#spoken-answer').value='';$('#spoken-answer').focus();}
+    if(matched){
+      $('#spoken-answer').value='';
+      // The hint is completed by pressing the grading button. Focusing an
+      // input from that click opens iPhone's keyboard without asking and
+      // covers the next instruction. Keep focus on the button on iOS; the
+      // dedicated dictation button still opens the keyboard on an actual tap.
+      if(!isIOSDevice())$('#spoken-answer').focus({preventScroll:true});
+    }
     return;
   }
   let grade=listeningComplete?{status:'correct',reasons:[],method:'listening-check'}:gradeLocalResponse(prompt,raw);
