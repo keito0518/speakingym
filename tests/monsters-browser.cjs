@@ -1498,8 +1498,10 @@ const path=require('node:path');
     await restorePage.locator('#home-extra-modes > summary').click();
     await restorePage.locator('[data-home-page="save"]').click();
     await restorePage.locator('#save-import-file').setInputFiles({name:'unrelated.json',mimeType:'application/json',buffer:Buffer.from('{"not":"a save"}')});
+    await restorePage.waitForFunction(()=>document.querySelector('#save-transfer-status')?.textContent?.includes('読み込めませんでした'));
     assert.match(await restorePage.locator('#save-transfer-status').innerText(),/読み込めませんでした/);
     await restorePage.locator('#save-import-file').setInputFiles({name:backupDownload.suggestedFilename(),mimeType:'application/json',buffer:Buffer.from(portableFile)});
+    await restorePage.waitForFunction(()=>document.querySelector('#save-transfer-status')?.textContent?.includes('まだ復元していません'));
     assert.match(await restorePage.locator('#save-transfer-status').innerText(),/まだ復元していません/);
     assert.equal(JSON.parse(await restorePage.locator('#save-import').inputValue()).monsterXp.medamago,160);
     assert.equal((await restorePage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')))).monsterXp.medamago,0,
