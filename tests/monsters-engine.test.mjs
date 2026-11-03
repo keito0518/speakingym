@@ -1540,6 +1540,22 @@ test('common polite English paraphrases count without granting credit for change
   ['help-bag','I do not need help with this bag.']
  ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','No XP without the requested meaning: '+id+' / '+answer);
 });
+test('positive no-worries agreements and suits-me phrasing retain timing safeguards',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['agree-friend','No worries, that suits me perfectly.'],
+  ['agree-work-normal','No problem, Friday suits me fine.'],
+  ['agree-work-hard','No worries, Friday at nine works for me. Could you send the agenda beforehand?'],
+  ['agree-work-normal','I am happy with Friday.']
+ ])assert.equal(gradeLocalResponse(byId(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['agree-work-normal','No problem, Friday does not work for me.'],
+  ['agree-work-normal','No worries, Thursday suits me fine.'],
+  ['agree-friend','No worries.'],
+  ['agree-work-hard','No problem, Friday at nine suits me fine.'],
+  ['agree-work-hard','No worries, Friday at nine is fine but I cannot attend. Could you send the agenda?']
+ ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','Do not reward missing or opposite intent: '+id+' / '+answer);
+});
 test('forest and city objective questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));

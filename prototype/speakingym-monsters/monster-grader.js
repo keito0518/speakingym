@@ -13,7 +13,9 @@ const intent = {
    'i (?:need|would like) (?:a little|a bit|some) more time (?:to (?:decide|think))?'),
  repeat: OR('(could|can|would) you (please )?(repeat|say|go over)','say (that|it) again','didn.t (catch|hear)','come again',
    'would you mind (?:repeating|saying|going over) (?:that|it|the .+|what you said)'),
- agree: OR('(works|is fine|is good) for me','sounds (great|good|fine)','(that|friday|saturday|lunch|three|nine) (is|would be) (fine|good|great|ok|okay)','i can (make|do) (it|that|friday)'),
+ agree: OR('(works|is fine|is good) for me','sounds (great|good|fine)','(that|friday|saturday|lunch|three|nine) (is|would be) (fine|good|great|ok|okay)','i can (make|do) (it|that|friday)',
+   '(?:that|it|friday|saturday) suits me(?: (?:fine|perfectly|well))?',
+   'i.m (?:happy|fine|good) with (?:that|friday|saturday)'),
  late: OR('(running|be|arriv(e|ing)|get(ting)?) (about |a little |some |a bit |roughly |around |approximately )?([a-z0-9 ]+ )?late','won.t (be|get|make it) (there |on )?time','(delay|delayed)','behind schedule'),
  clarify: OR('just to (make sure|confirm|check)','(could|can) (i|you) (confirm|check)','(is|are|does|do|should) .+ (right|correct|okay)','which (time|deadline)'),
  prefer: OR('(i.d|i would|i) rather','(i.d|i would|i) prefer','(let.s|we should) take the train','train (is|would be) (better|faster|cheaper)',
@@ -237,6 +239,11 @@ export function gradeLocalResponse(prompt, raw) {
  // these specific tasks, not a negation of the learner's chosen action.
  // Redact ONLY those narrow spans; any other negation still stops scoring.
  let polarityText=text;
+ // "No worries / No problem" are positive acknowledgements *only when an
+ // actual agreement is also stated*. Strip the idiom, not other negations;
+ // "No worries, Friday doesn't work" must still abstain.
+ if(base==='agree-friend'||base==='agree-work')
+   polarityText=polarityText.replace(/\bno (?:worries|problem)\b/g,'');
  if(difficulty==='hard'){
    if(base==='order-coffee')polarityText=polarityText.replace(/\bno (?:added )?sugar\b/g,'');
    if(base==='direction-station')polarityText=polarityText.replace(/\bno stairs\b/g,'');
