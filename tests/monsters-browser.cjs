@@ -1021,7 +1021,8 @@ const path=require('node:path');
       assert.match(await forestPage.locator('.victory-loot-total').innerText(),/XP/);
       assert.equal(await forestPage.locator('.victory-english-list li').count(),2,
         'Victory should spotlight two actually verified expressions, not a wall of every answer');
-      assert.match(await forestPage.locator('.victory-evolution').innerText(),/進化.*あと\d+ XP/s);
+      assert.match(await forestPage.locator('.victory-evolution').innerText(),/進化.*ボス攻略 \d+\/\d+エリア.*残り\d+ XP/s,
+        'The boss reward must show both the companion trial marks and remaining training XP');
       assert.match(await forestPage.locator('.victory-next-tip').innerText(),/次のおすすめ/);
       assert.equal(await forestPage.locator('#result-targeted-review').isVisible(),true,
         'A chapter with supported answers exposes one-tap targeted review without opening the report');
