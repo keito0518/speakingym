@@ -2661,7 +2661,6 @@ $('#save-import-button').addEventListener('click',()=>{
   status.scrollIntoView({block:'center',behavior:'instant'});
 });
 persist(save);
-if(unreadableSaveStatus)$('#save-transfer').open=true;
 window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
@@ -2671,3 +2670,9 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 renderHome();
+if(unreadableSaveStatus){
+  // The save panel lives in the Training section after home navigation moves
+  // it. Opening <details> alone leaves it invisible behind the main menu.
+  homeNavigation?.showPage('training');
+  $('#save-transfer').open=true;
+}
