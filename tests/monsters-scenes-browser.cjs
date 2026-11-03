@@ -53,7 +53,7 @@ const path=require('node:path');
   }
   try{
     for(const width of [320,375,390,430]){
-      const {context,page}=await boot(width,'no-preference');await seed(page);
+      const {context,page}=await boot(width,'no-preference');await seed(page,{xpWallet:300,monsterTrials:{medamago:['entry']}});
       assert.equal(await page.locator('#home-navigation .home-walker').count(),3,'Three recruited friends decorate the menu, no more');
       assert.equal(await page.locator('[data-home-page="forest"] .home-walker').count(),0,'Hidden extra menu does not carry a walker');
       assert.equal(await page.locator('[data-home-page="collection"] .home-walker svg').count(),1);
@@ -69,7 +69,7 @@ const path=require('node:path');
       assert.equal(await page.locator('#forest-journal-areas .forest-journal-area').count(),4);
       assert.equal(await page.locator('#forest-journal-events .forest-journal-entry').count(),8);
       assert.equal(await page.locator('#forest-journal-badges .forest-journal-badge').count(),6);
-      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').innerText(),/Lv\.3の途中・累計160 XP · あと160 XP/);
+      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').innerText(),/Lv\.5 · ボス 1\/1 · あと280 XP/);
       await noOverflow(page,`${width} catalog`);
       await page.waitForTimeout(300); // Let the entry fade finish before visual QA.
       await page.screenshot({path:path.join(shots,`catalog-${engine}-${width}.png`),fullPage:true});
@@ -77,8 +77,8 @@ const path=require('node:path');
       assert.equal(await page.locator('#collection-view').isVisible(),false);
       assert.match(await page.locator('#detail-content').innerText(),/Yolkie.*メダマゴ/s);
       assert.match(await page.locator('#detail-content').innerText(),/卵の黄身/);
-      assert.match(await page.locator('#detail-content').innerText(),/第1進化：Lv\.3の途中・累計160 XP。あと160 XP/,
-        'The actual mid-level evolution milestone must be visible in the field notes');
+      assert.match(await page.locator('#detail-content').innerText(),/第1進化：Lv\.5（累計280 XP）＋ボス攻略 1\/1エリア。残り280 XP/,
+        'The level and boss-clear prerequisites must be visible in the field notes');
       await page.evaluate(()=>{
         window.__spoken=[];
         window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
@@ -92,17 +92,18 @@ const path=require('node:path');
       await page.locator('#open-training').click();
       assert.equal(await page.locator('#detail-view').isVisible(),false);
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle');
-      assert.match(await page.locator('.training-sheet').innerText(),/第1進化：Lv\.3の途中・累計160 XP。あと160 XP/);
-      assert.match(await page.locator('.growth-roadmap > summary').innerText(),/次の成長：Lv\.3の途中・160 XP/);
+      assert.match(await page.locator('.training-sheet').innerText(),/第1進化：Lv\.5（累計280 XP）＋ボス攻略 1\/1エリア。残り280 XP/);
+      assert.match(await page.locator('.growth-roadmap > summary').innerText(),/次の成長：Lv\.4/);
+      assert.equal(await page.locator('[data-evolve-monster]').isDisabled(),true);
       await page.locator('.growth-roadmap > summary').click();
       assert.equal(await page.locator('.growth-roadmap li').count(),5);
       assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.4.*熟練技/s);
       assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.6.*戦闘HP/s);
-      assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.7.*第2進化/s);
+      assert.match(await page.locator('.growth-roadmap').innerText(),/Lv\.10.*第2進化/s);
       await page.locator('[data-feed-amount="10"]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'xp');
       assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-xp');
-      assert.equal(await page.locator('#training-wallet').innerText(),'190 XP');
+      assert.equal(await page.locator('#training-wallet').innerText(),'290 XP');
       for(let i=0;i<6;i++) await page.locator('[data-feed-amount="10"]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'level');
       assert.match(await page.locator('.training-level').innerText(),/Lv.2/);
@@ -111,16 +112,20 @@ const path=require('node:path');
       await noOverflow(page,`${width} training`);
       await page.screenshot({path:path.join(shots,`training-${engine}-${width}-level.png`),fullPage:true});
       await page.locator('[data-feed-amount="all"]').click();
+      assert.equal(await page.locator('[data-evolve-monster]').isEnabled(),true);
+      assert.equal(await page.locator('.training-sheet h1').innerText(),'Yolkie','feeding only raises the level');
+      await page.locator('[data-evolve-monster]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'evolution');
       assert.equal(await page.locator('.growth-character').evaluate(e=>getComputedStyle(e).animationName),'grow-evolution');
       assert.match(await page.locator('.training-sheet h1').innerText(),/Sunnyolk/);
-      assert.match(await page.locator('#growth-feedback').innerText(),/進化した/);
+      assert.match(await page.locator('#growth-feedback').innerText(),/進化/);
       assert.equal(await page.locator('#training-wallet').innerText(),'0 XP');
       assert.equal(await page.locator('[data-feed-amount="all"]').isDisabled(),true);
       await page.waitForTimeout(1400);
       await page.screenshot({path:path.join(shots,`training-${engine}-${width}-evolution.png`),fullPage:true});
       const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-      assert.equal(before.monsterXp.medamago,200);assert.equal(before.ownedMonsters.length,15);
+      assert.equal(before.monsterXp.medamago,300);assert.equal(before.ownedMonsters.length,15);
+      assert.equal(before.monsterEvolution.medamago,1);
       await page.locator('#training-back').click();
       assert.match(await page.locator('#detail-content').innerText(),/進化後、控えからの連携で「覚醒・追撃」/,
         'Evolved companion notes should describe the real tactical combo instead of the old placeholder');
@@ -133,18 +138,21 @@ const path=require('node:path');
       assert.deepEqual(after,before);
       await context.close();
     }
-    // A 419-XP ally should transform into its third 48×44 pixel form when fed
-    // one more XP. The stage and save must agree on iPhone widths after reload.
+    // The second evolution needs three distinct boss marks and Lv.10; merely
+    // feeding across the threshold must never skip the deliberate ceremony.
     for(const width of [320,390]){
       const {context,page}=await boot(width,'no-preference');
-      await seed(page,{monsterXp:{medamago:419},xpWallet:10});
+      await seed(page,{monsterXp:{medamago:629},monsterEvolution:{medamago:1},
+        monsterTrials:{medamago:['entry','glade','thicket']},xpWallet:10});
       assert.match(await page.locator('#hero-monster-name').innerText(),/Sunnyolk/);
-      assert.match(await page.locator('#hero-next-level').innerText(),/Lv\.7.*あと1 XP/);
+      assert.match(await page.locator('#hero-next-level').innerText(),/Lv\.10.*ボス 3\/3/);
       await page.locator('[data-home-page="collection"]').click();
       await page.locator('[data-open-monster="medamago"]').click();
-      assert.match(await page.locator('#detail-content').innerText(),/第2進化：Lv\.7・累計420 XP。あと1 XP/);
+      assert.match(await page.locator('#detail-content').innerText(),/第2進化：Lv\.10（累計630 XP）＋異なるボス攻略 3\/3エリア。残り1 XP/);
       await page.locator('#open-training').click();
       await page.locator('[data-feed-amount="10"]').click();
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'level');
+      await page.locator('[data-evolve-monster]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'ascension');
       assert.match(await page.locator('.training-sheet h1').innerText(),/Solaryolk/);
       assert.match(await page.locator('#growth-feedback').innerText(),/第2進化/);
@@ -156,7 +164,7 @@ const path=require('node:path');
       await page.reload();
       assert.equal(await page.locator('#hero-monster-art svg').getAttribute('data-stage'),'2');
       assert.match(await page.locator('#hero-monster-name').innerText(),/Solaryolk/);
-      assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).monsterXp.medamago),429);
+      assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).monsterXp.medamago),639);
       await context.close();
     }
     // Every owned character uses a distinct actual CSS attack with motion enabled.
@@ -199,7 +207,8 @@ const path=require('node:path');
     // Evolved versions preserve per-character motions and gain an independent aura.
     for(const id of ['medamago','katappo']){
       const {context,page}=await boot(390,'no-preference');
-      await seed(page,{selectedMonster:id,monsterXp:{medamago:160,katappo:160}});
+      await seed(page,{selectedMonster:id,monsterXp:{medamago:160,katappo:160},
+        monsterEvolution:{medamago:1,katappo:1}});
       console.log(`${engine}: testing evolved ${id} attack`);
       await page.locator('[data-feature-worlds]').click();await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await page.locator('#start-forest-simple').click();await page.locator('#forest-explore-continue').click();
       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-evolved'),'true');

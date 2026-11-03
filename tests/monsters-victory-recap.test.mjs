@@ -21,7 +21,8 @@ const scenario=()=>({
 
 test('victory loot includes only verified English, with honest independent/hinted labels',()=>{
  const base=createSave();
- const save={...base,monsterXp:{...base.monsterXp,medamago:150},xpWallet:30};
+ const save={...base,monsterXp:{...base.monsterXp,medamago:280},
+  monsterTrials:{medamago:['entry']},xpWallet:30};
  const recap=dungeonVictoryRecapFor(scenario(),save,{monsterName:'Yolkie',nextArea:{name:'次の森'},canContinue:true});
  assert.equal(recap.xp.answers,70);
  assert.equal(recap.xp.medal,20);
@@ -33,31 +34,42 @@ test('victory loot includes only verified English, with honest independent/hinte
  assert.ok(recap.expressions.some(item=>item.independent));
  assert.ok(recap.expressions.some(item=>!item.independent),'Supported practice is labelled separately');
  assert.equal(recap.evolution.goal,EVOLUTION_XP);
- assert.equal(recap.evolution.remaining,10);
- assert.equal(recap.evolution.percent,94);
+ assert.equal(recap.evolution.remaining,0);
+ assert.equal(recap.evolution.percent,100);
  assert.equal(recap.evolution.canEvolve,true);
- assert.match(recap.recommendation,/進化できるXP/);
- assert.equal(save.monsterXp.medamago,150,'Rendering does not spend earned XP');
+ assert.match(recap.recommendation,/試練達成/);
+ assert.equal(save.monsterXp.medamago,280,'Rendering does not spend earned XP');
 });
 
 test('the recommendation points to the next area when the wallet cannot yet evolve the ally',()=>{
  const base=createSave();
- const save={...base,monsterXp:{...base.monsterXp,medamago:180},xpWallet:8};
+ const save={...base,monsterXp:{...base.monsterXp,medamago:500},
+  monsterEvolution:{medamago:1},monsterTrials:{medamago:['entry']},xpWallet:8};
  const recap=dungeonVictoryRecapFor(scenario(),save,{nextArea:{name:'草原のエリア'},canContinue:true,monsterName:'Yolkie'});
  assert.equal(recap.evolution.stage,1);
  assert.equal(recap.evolution.goal,SECOND_EVOLUTION_XP);
- assert.equal(recap.evolution.remaining,240);
- assert.match(recap.evolution.label,/Lv\.7/);
+ assert.equal(recap.evolution.remaining,130);
+ assert.match(recap.evolution.label,/Lv\.10/);
  assert.match(recap.recommendation,/草原のエリア/);
 });
 
 test('fully evolved allies receive a completed gauge, not an invented third form',()=>{
  const base=createSave();
- const save={...base,monsterXp:{...base.monsterXp,medamago:450}};
+ const save={...base,monsterXp:{...base.monsterXp,medamago:630},monsterEvolution:{medamago:2}};
  const recap=dungeonVictoryRecapFor(scenario(),save);
  assert.equal(recap.evolution.goal,null);
  assert.equal(recap.evolution.percent,100);
  assert.match(recap.evolution.label,/第2進化達成/);
+});
+
+test('boss victory recommends a new chapter when XP is enough but trial marks are missing',()=>{
+ const base=createSave();
+ const save={...base,monsterXp:{medamago:280},xpWallet:200};
+ const recap=dungeonVictoryRecapFor(scenario(),save,{monsterName:'Yolkie'});
+ assert.equal(recap.evolution.canEvolve,false);
+ assert.equal(recap.evolution.trialCount,0);
+ assert.equal(recap.evolution.requiredTrials,1);
+ assert.match(recap.recommendation,/違うボス/);
 });
 
 test('defeats, endless results and ordinary training cannot show boss victory loot',()=>{

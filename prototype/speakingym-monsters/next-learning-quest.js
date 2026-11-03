@@ -1,7 +1,7 @@
 // One honest, actionable next step based on the learner's *local* records.
 // Unlike a proficiency prediction, these decisions only use scheduled review,
 // XP already earned and the authored daily lesson plan.
-import { dayKey, EVOLUTION_XP, SECOND_EVOLUTION_XP, getMonsterProgress, savedReviewQueue } from './monster-engine.js';
+import { dayKey, getMonsterProgress, savedReviewQueue } from './monster-engine.js';
 import { dailyTrainingPlan } from './daily-training.js';
 import { retentionOverview } from './retention.js';
 import { dueRoleplayTransfers } from './roleplay-transfer.js';
@@ -38,11 +38,21 @@ export function nextLearningQuestFor(save,today=dayKey()){
   detail:focus.detail,button:focus.label+'を集中練習'
  };
  const growth=getMonsterProgress(save,save.selectedMonster);
- const nextEvolution=growth.stage===0?EVOLUTION_XP:growth.stage===1?SECOND_EVOLUTION_XP:null;
- const needed=nextEvolution===null?0:nextEvolution-growth.xp;
+ const nextEvolution=growth.nextEvolutionXp;
+ const needed=nextEvolution===null?0:Math.max(0,nextEvolution-growth.xp);
+ if(growth.canEvolve)return {
+  kind:'growth',action:'growth',title:'進化の試練クリア！',
+  detail:`Lv.${growth.level}、ボス攻略${growth.trialCount}エリア。進化するボタンを押そう！`,
+  button:'仲間を進化させる'
+ };
+ if(nextEvolution!==null&&needed<=(save.xpWallet||0)&&growth.trialCount<growth.requiredTrials)return {
+  kind:'forest',action:'forest',title:'進化の試練：違うボスを倒そう',
+  detail:`${growth.requiredTrials-growth.trialCount}エリアのボス攻略で進化の条件がそろうよ。仲間を連れて冒険へ！`,
+  button:'ダンジョンへ'
+ };
  if(nextEvolution!==null&&needed>0&&(save.xpWallet||0)>=needed)return {
   kind:'growth',action:'growth',title:'仲間の進化チャンス！',
-  detail:`あと${needed} XPを仲間にあげれば${growth.stage===0?'第1進化':'Lv.7の第2進化'}。手持ちXPで届くよ。`,
+  detail:`あと${needed} XPを仲間にあげればレベル条件を達成！ ボス試練 ${growth.trialCount}/${growth.requiredTrials}エリア。`,
   button:'仲間を育てに行く'
  };
  const finishedToday=(save.dailyHistory||[]).some(row=>row.date===today&&row.difficulty===(save.difficulty||'easy'));

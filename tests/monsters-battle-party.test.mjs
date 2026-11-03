@@ -31,15 +31,16 @@ test('training at Lv3/6/9 adds capped HP without altering persistent save or sol
  });
  assert.deepEqual(Object.keys(team).sort(),['health','roster','swapsUsed'],'level is not added to the save format');
 });
-test('battle progression uses actual 70 XP levels and 160 XP evolution, not assumed thresholds',()=>{
- const saved={...createSave(),ownedMonsters:['medamago','katappo'],monsterXp:{medamago:84,katappo:160}};
+test('battle progression uses explicit earned evolution, not XP alone',()=>{
+ const saved={...createSave(),ownedMonsters:['medamago','katappo'],monsterXp:{medamago:84,katappo:280},
+  monsterEvolution:{medamago:0,katappo:1},monsterTrials:{medamago:[],katappo:['entry']}};
  const levels=Object.fromEntries(saved.ownedMonsters.map(id=>[id,getMonsterProgress(saved,id).level]));
  const evolvedIds=saved.ownedMonsters.filter(id=>getMonsterProgress(saved,id).evolved);
- assert.deepEqual(levels,{medamago:2,katappo:3});
+ assert.deepEqual(levels,{medamago:2,katappo:5});
  assert.deepEqual(evolvedIds,['katappo']);
  const party=createBattleParty(saved.ownedMonsters,{levels,evolvedIds});
  assert.equal(party.health.medamago.maxHp,9,'two-member Lv2 HP baseline');
- assert.equal(party.health.katappo.maxHp,11,'Lv3 HP +1 and 160 XP evolution +1');
+ assert.equal(party.health.katappo.maxHp,11,'Lv5 HP +1 and earned evolution +1');
 });
 test('second evolution adds exactly one more HP without changing ordinary or first-form party balance',()=>{
  const before=createBattleParty(['medamago','katappo'],{evolvedIds:['katappo'],levels:{medamago:7,katappo:7}});

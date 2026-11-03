@@ -5,11 +5,16 @@ import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
-export const EVOLUTION_XP = 160;
-// The second form unlocks exactly at Lv.7 (6 × 70 XP), so players can
-// predict it from the level number. Existing saves derive form from XP.
-export const SECOND_EVOLUTION_XP = 420;
+// Evolution is earned in two ways: growing a companion and defeating distinct
+// chapter bosses with that companion. Feeding XP alone never changes form.
+export const EVOLUTION_XP = 280; // Lv.5
+export const SECOND_EVOLUTION_XP = 630; // Lv.10
+export const EVOLUTION_TRIAL_AREAS = Object.freeze([1,3]);
 export const XP_PER_LEVEL = 70;
+// Pre-trial saves already earned their form at these thresholds. Grandfather
+// the result during migration instead of taking a companion away.
+const LEGACY_EVOLUTION_XP = 160;
+const LEGACY_SECOND_EVOLUTION_XP = 420;
 const VALID_RATINGS = ['smooth', 'hint', 'again'];
 export const DIFFICULTIES = Object.freeze(['easy','normal','hard']);
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -29,6 +34,8 @@ export function createSave() {
     difficulty: 'easy',
     ownedMonsters: ['medamago'],
     monsterXp: { medamago: 0 },
+    monsterEvolution: { medamago: 0 },
+    monsterTrials: { medamago: [] },
     monsterBonds: { medamago: 0 },
     xpWallet: 0,
     progress: {},
@@ -52,6 +59,8 @@ export function validateSave(value) {
   if (!value || value.version !== SAVE_VERSION || !Array.isArray(value.ownedMonsters) || !value.ownedMonsters.includes('medamago') || !value.progress || typeof value.progress !== 'object') return null;
   const ids = new Set(MONSTERS.map(monster => monster.id));
   const ownedMonsters = unique(value.ownedMonsters.filter(id => ids.has(id)));
+  const areaIds = new Set([...FOREST_AREAS,...CITY_AREAS].map(area=>area.id));
+  const hasEvolutionLedger=value.monsterEvolution&&typeof value.monsterEvolution==='object'&&!Array.isArray(value.monsterEvolution);
   const selectedMonster = ownedMonsters.includes(value.selectedMonster) ? value.selectedMonster : 'medamago';
   const cleanProgress = {};
   for (const phrase of PHRASES) {
@@ -98,6 +107,13 @@ export function validateSave(value) {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
     difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
     monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, safeSaveCount(value.monsterXp?.[id])])),
+    monsterEvolution:Object.fromEntries(ownedMonsters.map(id=>[id,hasEvolutionLedger
+      ?safeSaveCount(value.monsterEvolution[id],2)
+      :safeSaveCount(value.monsterXp?.[id])>=LEGACY_SECOND_EVOLUTION_XP?2
+        :safeSaveCount(value.monsterXp?.[id])>=LEGACY_EVOLUTION_XP?1:0])),
+    monsterTrials:Object.fromEntries(ownedMonsters.map(id=>[id,
+      unique((Array.isArray(value.monsterTrials?.[id])?value.monsterTrials[id]:[])
+        .filter(area=>areaIds.has(area))).slice(0,areaIds.size)])),
     monsterBonds: Object.fromEntries(ownedMonsters.map(id=>[id,Number.isSafeInteger(value.monsterBonds?.[id])?Math.max(0,Math.min(999,value.monsterBonds[id])):0])),
     // Older prototype saves put XP straight onto companions. Keep that growth,
     // and initialize the new spendable wallet without duplicating historical XP.
@@ -249,6 +265,10 @@ export function captureEligibleMonsters(save,today=dayKey()){
     if(!companionUnlockProgress(next,creature,today).ready)continue;
     next.ownedMonsters.push(creature.id);
     next.monsterXp[creature.id]=0;
+    next.monsterEvolution ||= {};
+    next.monsterEvolution[creature.id]=0;
+    next.monsterTrials ||= {};
+    next.monsterTrials[creature.id]=[];
     next.monsterBonds ||= {};
     next.monsterBonds[creature.id]=0;
     captured.push(creature.id);
@@ -265,10 +285,29 @@ export function getMonsterBondProgress(save,id=save.selectedMonster){
    maxed:rank===thresholds.length-1};
 }
 export function getMonsterProgress(save, id = save.selectedMonster) {
-  const xp = save.monsterXp[id] || 0;
-  const stage=xp>=SECOND_EVOLUTION_XP?2:xp>=EVOLUTION_XP?1:0;
+  const xp = save.monsterXp?.[id] || 0;
+  const stage = Math.min(2,Math.max(0,save.monsterEvolution?.[id]||0));
+  const trialAreas=[...new Set((save.monsterTrials?.[id]||[]).filter(area=>
+    [...FOREST_AREAS,...CITY_AREAS].some(chapter=>chapter.id===area)))];
+  const nextEvolutionXp=stage===0?EVOLUTION_XP:stage===1?SECOND_EVOLUTION_XP:null;
+  const requiredTrials=stage===2?0:EVOLUTION_TRIAL_AREAS[stage];
+  const canEvolve=nextEvolutionXp!==null&&xp>=nextEvolutionXp&&trialAreas.length>=requiredTrials;
   return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), stage, evolved: stage>=1, ascended: stage>=2,
-    toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
+    toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL),trialAreas,trialCount:trialAreas.length,
+    requiredTrials,nextEvolutionXp,canEvolve };
+}
+
+export function evolveMonster(save,id){
+ if(!save.ownedMonsters.includes(id))throw new Error('そのモンスターはまだ仲間ではありません。');
+ const before=getMonsterProgress(save,id);
+ if(before.stage===2)throw new Error('すでに第2進化しています。');
+ if(!before.canEvolve)throw new Error('進化には必要なレベルとボス攻略の試練が必要です。');
+ const next=clone(save);
+ next.monsterEvolution ||= {};
+ next.monsterEvolution[id]=before.stage+1;
+ const after=getMonsterProgress(next,id);
+ return {save:next,reward:{xp:0,monsterId:id,before,after,leveledUp:false,
+  evolved:before.stage===0,ascended:before.stage===1}};
 }
 
 export function selectMonster(save, id) {
@@ -286,7 +325,7 @@ export function feedMonster(save, id, amount) {
   next.monsterXp[id] = (next.monsterXp[id] || 0) + amount;
   const after = getMonsterProgress(next,id);
   return { save: next, reward: { xp: amount, monsterId: id, before, after, leveledUp: after.level > before.level,
-    evolved: !before.evolved && after.evolved, ascended: !before.ascended && after.ascended } };
+    evolved:false,ascended:false,readyEvolution:!before.canEvolve&&after.canEvolve } };
 }
 
 export function chooseDifficulty(save, difficulty) {

@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, EVOLUTION_XP, SECOND_EVOLUTION_XP, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -419,7 +419,8 @@ function renderHome() {
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   const nextHealthTier=[3,6,9].find(level=>level>growth.level);
   const mastery=masterySkillFor(creature.id,growth.level);
-  $('#hero-next-level').textContent = `あと${growth.toNextLevel} XPでレベルアップ · ${growth.ascended?'第2進化達成！ 得意攻撃＋1・戦闘HP＋1':growth.evolved?`次はLv.7・累計${SECOND_EVOLUTION_XP} XPで第2進化（あと${Math.max(0,SECOND_EVOLUTION_XP-growth.xp)} XP）`:`第1進化はLv.${1+Math.floor(EVOLUTION_XP/XP_PER_LEVEL)}の途中・累計${EVOLUTION_XP} XP（あと${Math.max(0,EVOLUTION_XP-growth.xp)} XP）`} · ${nextHealthTier?`Lv.${nextHealthTier}で戦闘HP＋1`:'HP成長は最大＋3'} · ${mastery?`熟練技「${mastery.name}」解放済み`:`Lv.${MASTERY_LEVEL}で熟練技解放`}`;
+  const evolutionBrief=growth.ascended?'第2進化達成！':growth.canEvolve?'進化条件達成！ 図鑑で「進化する」を押そう':`次の進化：Lv.${growth.evolved?10:5}＋ボス ${growth.trialCount}/${growth.requiredTrials}エリア`;
+  $('#hero-next-level').textContent = `次のLv.まで ${growth.toNextLevel} XP · ${evolutionBrief}${nextHealthTier?` · Lv.${nextHealthTier}でHP＋1`:''}${!mastery?` · Lv.${MASTERY_LEVEL}で熟練技`:''}`;
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);
@@ -1130,7 +1131,7 @@ function renderPartyFormation(){
    const label=leader?'先頭で出撃中':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
    return `<div class="forest-formation-card" data-formation-card="${escapeHtml(id)}" data-formation-selected="${selected}" data-formation-leader="${leader}">
     <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.stage)}</div>
-    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.ascended?' ★★':progress.evolved?' ★':''}</strong><span>Lv.${progress.level} · 得意 ${BATTLE_LABELS[affinity.strong]}</span><details class="forest-formation-monster-more"><summary>能力を見る</summary><span>${escapeHtml(monsterFormName(monster,progress.stage))} · HP成長＋${levelHpBonus(progress.level)+progress.stage} · 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.ascended?' · 第2進化：得意攻撃＋1':progress.evolved?' · Lv.7で第2進化':''}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></details></div>
+   <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.ascended?' ★★':progress.evolved?' ★':''}</strong><span>Lv.${progress.level} · 得意 ${BATTLE_LABELS[affinity.strong]}</span><details class="forest-formation-monster-more"><summary>能力を見る</summary><span>${escapeHtml(monsterFormName(monster,progress.stage))} · HP成長＋${levelHpBonus(progress.level)+progress.stage} · 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.ascended?' · 第2進化：得意攻撃＋1':progress.evolved?' · 次の進化はLv.10＋ボス3エリア':''}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></details></div>
     <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}">${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
    </div>`;
  }).join('')}</div><p class="forest-formation-status" role="status" aria-live="polite" id="forest-formation-status">${escapeHtml(t.formationMessage||guide)}</p>`;
@@ -2303,7 +2304,7 @@ function renderDungeonVictoryRecap(ended,{nextArea=null,canContinue=false}={}){
  const evolution=recap.evolution;
  const growthDetail=evolution.goal===null
   ?`累計 ${evolution.xp} XP · 第2進化達成済み。これからもレベルを上げられるよ。`
-  :`育成済み ${evolution.xp} / ${evolution.goal} XP · あと${evolution.remaining} XPで${evolution.label}${evolution.canEvolve?' · 手持ちXPで進化できる！':''}`;
+  :`育成済み ${evolution.xp} / ${evolution.goal} XP · ボス攻略 ${evolution.trialCount}/${evolution.requiredTrials}エリア · 残り${evolution.remaining} XP${evolution.canEvolve?' · 進化するボタンを押せる！':evolution.canReachWithWallet?' · 手持ちXPでレベル条件に届くよ！':''}`;
  region.innerHTML=`<div class="victory-loot-top"><span class="victory-loot-kicker">BOSS CLEAR · ENGLISH LOOT</span><div class="victory-loot-total"><small>今回の獲得</small><strong>+${recap.xp.total} <span>XP</span></strong></div><p>問題 +${recap.xp.answers} XP${recap.xp.medal?` · 勲章 +${recap.xp.medal} XP`:''} · 育成に使える ${recap.xp.wallet} XP</p></div>
   <div class="victory-loot-grid"><section class="victory-english" aria-label="今回確認した英語"><h2>今回確認した英語 <span>${recap.expressions.length}つ</span></h2>${phrases}</section>
   <section class="victory-evolution" aria-label="仲間の進化までの距離"><h2>${escapeHtml(evolution.monsterName)} の成長 <span>Lv.${evolution.level}</span></h2><strong>${escapeHtml(evolution.label)}</strong><div class="victory-evolution-track" role="progressbar" aria-label="${escapeHtml(evolution.monsterName)}の進化ゲージ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${evolution.percent}"><span style="width:${evolution.percent}%"></span></div><p>${escapeHtml(growthDetail)}</p><small>獲得XPは自動で仲間に入らないよ。下の「仲間を育てる」で使ってね。</small></section></div>

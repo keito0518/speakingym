@@ -36,7 +36,7 @@ const assert=require('node:assert/strict');
    const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
    const save=createSave();
    save.ownedMonsters=['medamago','purupun'];save.selectedMonster='medamago';
-   save.monsterXp={medamago:0,purupun:160};save.xpWallet=67;
+   save.monsterXp={medamago:0,purupun:160};save.monsterEvolution={medamago:0,purupun:1};save.xpWallet=67;
    localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
   });
   await page.reload({waitUntil:'networkidle'});

@@ -157,7 +157,7 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
  const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn',city:'city-pass','city-market':'market-bell','city-terminal':'terminal-ticket','city-blizzard':'snow-crystal'}[areaId];
  if(areaTreasure&&recordAreaClear)earned.push(areaTreasure);
  // A narrow, purely cosmetic exploration perk tied to evolved companions.
- const evolved=(save.monsterXp?.[companionId]||0)>=160;
+ const evolved=(save.monsterEvolution?.[companionId]||0)>=1;
  if(!isCity&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
  if(!isCity&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
  const discovered=earned.filter(id=>!fresh.has(id));
@@ -171,6 +171,10 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
  const next={
   ...save,
   xpWallet:(save.xpWallet||0)+trainingXp,
+  // A boss clear counts once per distinct chapter for the companion who
+  // finished the battle. Endless waves do not award evolution trial marks.
+  monsterTrials:recordAreaClear?{...(save.monsterTrials||{}),
+   [companionId]:[...new Set([...(save.monsterTrials?.[companionId]||[]),areaId])]}:save.monsterTrials,
   forest:{
    clears:before.clears+1,
    bestWave:before.bestWave,

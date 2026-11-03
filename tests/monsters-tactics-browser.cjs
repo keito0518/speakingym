@@ -472,7 +472,7 @@ const assert=require('node:assert/strict');
    await evolutionPage.evaluate(async()=>{
      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
      const seeded={...createSave(),ownedMonsters:['medamago','katappo'],selectedMonster:'medamago',
-       xpWallet:17,monsterXp:{medamago:0,katappo:160}};
+       xpWallet:17,monsterXp:{medamago:0,katappo:160},monsterEvolution:{medamago:0,katappo:1}};
      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
    });
    await evolutionPage.reload({waitUntil:'networkidle'});
@@ -572,7 +572,8 @@ const assert=require('node:assert/strict');
    await advancedPage.evaluate(async()=>{
      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
      const saved=createSave();
-     saved.forest.completedAreas=['entry'];saved.monsterXp.medamago=160;saved.xpWallet=27;
+     saved.forest.completedAreas=['entry'];saved.monsterXp.medamago=160;
+     saved.monsterEvolution.medamago=1;saved.xpWallet=27;
      localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
    });
    await advancedPage.reload({waitUntil:'networkidle'});

@@ -19,7 +19,7 @@ import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '.
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 import { speakingFeedbackFor, conversationFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
@@ -204,7 +204,7 @@ test('all evolved creatures have distinct physical forms, beyond a glow or name 
 });
 
 test('all 15 companions have a genuine third pixel form and a unique second-evolution name',()=>{
- assert.equal(SECOND_EVOLUTION_XP,420,'Lv.7 unlock begins precisely at six 70-XP levels');
+ assert.equal(SECOND_EVOLUTION_XP,630,'Lv.10 is the second evolution level gate');
  assert.equal(new Set(MONSTERS.map(monster=>monster.ascendedName)).size,15);
  for(const monster of MONSTERS){
   const first=monsterArt(monster.id,1),second=monsterArt(monster.id,2);
@@ -219,25 +219,62 @@ test('all 15 companions have a genuine third pixel form and a unique second-evol
  }
 });
 
-test('second evolution rewards the exact XP threshold and survives old-format save reload',()=>{
- const save={...createSave(),xpWallet:2,monsterXp:{medamago:419}};
+test('second evolution needs Lv.10, three distinct boss trials and a deliberate evolve action',()=>{
+ const save={...createSave(),xpWallet:2,monsterXp:{medamago:629},
+  monsterEvolution:{medamago:1},monsterTrials:{medamago:['entry','glade','thicket']}};
  const before=getMonsterProgress(save);
- assert.equal(before.level,6);
+ assert.equal(before.level,9);
  assert.equal(before.stage,1);
  assert.equal(before.ascended,false);
  const first=feedMonster(save,'medamago',1);
- assert.equal(first.reward.ascended,true);
+ assert.equal(first.reward.ascended,false,'XP itself must not trigger evolution');
  assert.equal(first.reward.evolved,false);
  assert.equal(first.reward.before.stage,1);
- assert.equal(first.reward.after.stage,2);
- assert.equal(first.reward.after.level,7);
+ assert.equal(first.reward.after.stage,1);
+ assert.equal(first.reward.after.level,10);
+ assert.equal(first.reward.after.canEvolve,true);
  assert.equal(first.save.xpWallet,1);
- const next=feedMonster(first.save,'medamago',1);
- assert.equal(next.reward.ascended,false,'the reveal happens once, even on later XP feeds');
- const loaded=validateSave(JSON.parse(JSON.stringify(next.save)));
+ const evolved=evolveMonster(first.save,'medamago');
+ assert.equal(evolved.reward.ascended,true);
+ assert.equal(evolved.reward.before.stage,1);
+ assert.equal(evolved.reward.after.stage,2);
+ assert.equal(evolved.save.xpWallet,1,'evolution ceremony never spends extra XP');
+ assert.throws(()=>evolveMonster(evolved.save,'medamago'),/すでに第2進化/);
+ const loaded=validateSave(JSON.parse(JSON.stringify(evolved.save)));
  assert.ok(loaded);
  assert.equal(loaded.version,save.version);
- assert.equal(getMonsterProgress(loaded).stage,2,'no save migration necessary');
+ assert.equal(getMonsterProgress(loaded).stage,2,'the earned form persists after save reload');
+});
+
+test('boss trials require distinct chapters, never endless waves or XP alone; legacy forms stay earned',()=>{
+ const start={...createSave(),monsterXp:{medamago:EVOLUTION_XP}};
+ assert.equal(getMonsterProgress(start).canEvolve,false);
+ assert.throws(()=>evolveMonster(start,'medamago'),/進化には/);
+ const first=finishForest(start,'sunlit','medamago','entry').save;
+ assert.deepEqual(getMonsterProgress(first).trialAreas,['entry']);
+ assert.equal(getMonsterProgress(first).canEvolve,true);
+ const repeated=finishForest(first,'moss','medamago','entry').save;
+ assert.equal(getMonsterProgress(repeated).trialCount,1,'repeating the easiest boss cannot inflate the trial count');
+ const endless=finishForest(repeated,'sunlit','medamago','glade',[],false).save;
+ assert.equal(getMonsterProgress(endless).trialCount,1,'endless never mints chapter trial credit');
+ const firstEvolution=evolveMonster(endless,'medamago').save;
+ assert.equal(getMonsterProgress(firstEvolution).stage,1);
+ const rich={...firstEvolution,monsterXp:{medamago:SECOND_EVOLUTION_XP}};
+ assert.equal(getMonsterProgress(rich).canEvolve,false,'second form still needs two more distinct chapters');
+ const second=finishForest(rich,'sunlit','medamago','glade').save;
+ assert.equal(getMonsterProgress(second).canEvolve,false);
+ const third=finishForest(second,'sunlit','medamago','thicket').save;
+ assert.equal(getMonsterProgress(third).canEvolve,true);
+ assert.equal(evolveMonster(third,'medamago').reward.ascended,true);
+
+ const legacy={...createSave(),monsterXp:{medamago:420}};
+ delete legacy.monsterEvolution;delete legacy.monsterTrials;
+ const migrated=validateSave(legacy);
+ assert.equal(getMonsterProgress(migrated).stage,2,'old second forms must never be rolled back');
+ assert.equal(getMonsterProgress(validateSave({...legacy,monsterXp:{medamago:160}})).stage,1);
+ const tampered=validateSave({...third,monsterTrials:{medamago:['entry','entry','not-real','glade','thicket']},monsterEvolution:{medamago:99}});
+ assert.deepEqual(tampered.monsterTrials.medamago,['entry','glade','thicket']);
+ assert.equal(tampered.monsterEvolution.medamago,2);
 });
 
 test('dungeon reports verified learning honestly and never count assisted route as success',()=>{
@@ -729,11 +766,11 @@ test('Forest stamp unlocks only on full route completion; evolved companions fin
   assert.deepEqual(two.save.forest.routes,['sunlit','moss']);
   assert.deepEqual(two.discovered,['moss-lantern']);
   assert.equal(two.save.xpWallet,0);
-  const evolved={...two.save,monsterXp:{...two.save.monsterXp,medamago:160}};
+  const evolved={...two.save,monsterEvolution:{...two.save.monsterEvolution,medamago:1}};
   const secret=finishForest(evolved,'sunlit','medamago');
   assert.deepEqual(secret.discovered,['golden-yolk']);
   assert.equal(secret.save.forest.relics.length,3);
-  const soxie={...initial,ownedMonsters:['medamago','katappo'],monsterXp:{medamago:0,katappo:160}};
+  const soxie={...initial,ownedMonsters:['medamago','katappo'],monsterEvolution:{medamago:0,katappo:1}};
   assert.deepEqual(finishForest(soxie,'moss','katappo').discovered,['moss-lantern','lost-button']);
   assert.equal(FOREST_RELICS['lost-button'].name,'Lost Button');
 });
@@ -2060,7 +2097,7 @@ test('mastery needs independent speaking in another context on another day', () 
   assert.equal(learningSummary(save,'2026-11-03').reviewCount,1);
 });
 
-test('monsters unlock through skill growth; evolution occurs when banked XP is spent', () => {
+test('monsters unlock through skill growth; feeding XP needs a boss trial and explicit evolution', () => {
   let save=createSave();
   const dayOne=PROMPTS.filter((p,index)=>index%2===0);
   for(const prompt of dayOne)save=rate(save,prompt.id).save;
@@ -2078,9 +2115,14 @@ test('monsters unlock through skill growth; evolution occurs when banked XP is s
   assert.ok(save.xpWallet>=EVOLUTION_XP);
   assert.equal(getMonsterProgress(save).evolved,false);
   const given=feedMonster(save,'purupun',EVOLUTION_XP);
-  assert.equal(given.reward.evolved,true);
+  assert.equal(given.reward.evolved,false);
   assert.equal(given.reward.leveledUp,true);
-  assert.equal(getMonsterProgress(given.save,'purupun').evolved,true);
+  assert.equal(getMonsterProgress(given.save,'purupun').evolved,false);
+  const trial=finishForest(given.save,'sunlit','purupun').save;
+  assert.equal(getMonsterProgress(trial,'purupun').canEvolve,true);
+  const evolved=evolveMonster(trial,'purupun');
+  assert.equal(evolved.reward.evolved,true);
+  assert.equal(getMonsterProgress(evolved.save,'purupun').evolved,true);
   assert.equal(getMonsterProgress(given.save,'medamago').evolved,false);
 });
 
@@ -2146,8 +2188,10 @@ test('save import validation prevents non-finite XP, counters and impossible mon
  assert.equal(huge.bestSmooth,999);
  assert.equal(huge.totalAnswers,1_000_000_000);
  assert.equal(huge.progress.think.attempts,1_000_000_000);
- const valid=validateSave({...createSave(),xpWallet:24,monsterXp:{medamago:160},
-  completedRuns:5,totalAnswers:28,progress:{think:{attempts:3}}});
+ const legacy={...createSave(),xpWallet:24,monsterXp:{medamago:160},
+  completedRuns:5,totalAnswers:28,progress:{think:{attempts:3}}};
+ delete legacy.monsterEvolution;
+ const valid=validateSave(legacy);
  assert.equal(valid.xpWallet,24);
  assert.equal(valid.monsterXp.medamago,160);
  assert.equal(getMonsterProgress(valid).evolved,true);

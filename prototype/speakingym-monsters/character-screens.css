@@ -55,6 +55,14 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .training-feed{display:flex;gap:10px}.training-feed button{flex:1;min-width:0;padding:13px 9px;font-size:14px}
 .training-feed button:disabled{opacity:.4;cursor:default}
 .growth-feedback{min-height:44px;font-size:13px;line-height:1.7;color:#40633e;padding:15px 0}
+.evolution-trial{display:grid;gap:10px;text-align:left;margin:16px 0;padding:16px;border:2px solid #c9bb89;border-radius:15px;background:linear-gradient(145deg,#fff8dd,#f0f5e5);color:#3b5038}
+.evolution-trial>strong{font-size:16px;color:#4a4c2a}
+.evolution-trial>p{margin:0;font-size:12px;line-height:1.75;overflow-wrap:anywhere}
+.evolution-trial-marks{display:flex;gap:7px;flex-wrap:wrap}
+.evolution-trial-marks span{flex:1 1 68px;text-align:center;padding:9px 5px;border:1px dashed #aaa991;border-radius:9px;background:#faf8e9;color:#716c58;font-size:11px;font-weight:800}
+.evolution-trial-marks span[data-cleared="true"]{border-style:solid;border-color:#7caf82;background:#dbf2d8;color:#245d38}
+.evolution-trigger{min-height:46px;font-size:14px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}
+.evolution-trigger:disabled{opacity:.67;cursor:default;filter:grayscale(.45)}
 .growth-roadmap{margin-top:16px;padding:12px;border:1px solid #d2dbc2;border-radius:13px;background:#f3f7e9;color:#35573b}
 .growth-roadmap>summary{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;font-size:12px;font-weight:850;line-height:1.6;overflow-wrap:anywhere}
 .growth-roadmap>summary::-webkit-details-marker{display:none}
@@ -80,7 +88,7 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .training-sheet[data-growth="ascension"] .growth-before{animation:grow-away 1.1s ease-in both}
 .training-sheet[data-growth="ascension"] .growth-ring{border-color:#d6b55f;box-shadow:0 0 0 14px #ffe7a73d,0 0 46px 12px #57e4ba78}
 .training-sheet[data-growth="ascension"] .growth-stage::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:repeating-conic-gradient(from 20deg,transparent 0deg 17deg,#6cfad64f 18deg 20deg,transparent 21deg 35deg);border-radius:50%;animation:evolution-rays 2s ease-out both}
-.training-sheet[data-growth="ascension"] .growth-stage::after{content:"✦　✧　✦　✧　✦";position:absolute;inset:9% 0 auto;z-index:3;color:#bc8431;letter-spacing:1.1em;pointer-events:none;font-size:17px;text-shadow:0 2px #fff7c4;animation:ascension-stars 2.3s ease-out both}
+.training-sheet[data-growth="ascension"] .growth-stage::after{content:"";position:absolute;inset:9% 10% auto;height:55px;z-index:3;pointer-events:none;background:linear-gradient(#d5a33c,#d5a33c) 10% 15%/9px 9px no-repeat,linear-gradient(#5dd9ac,#5dd9ac) 90% 40%/8px 8px no-repeat,linear-gradient(#edc860,#edc860) 50% 5%/11px 11px no-repeat;animation:ascension-stars 2.3s ease-out both}
 .training-sheet[data-growth="ascension"] .growth-label{font-size:clamp(16px,5.3vw,24px);color:#1c856c;text-shadow:0 2px #fffbe5,0 0 14px #edb858;animation-delay:1.05s}
 .training-sheet[data-growth="ascension"] .monster-ascension-sparks{animation:ascension-spark 1.6s steps(6) 2}
 @keyframes ascension-arrive{0%,34%{opacity:0;transform:scale(.35) translateY(25px);filter:brightness(3)}58%{opacity:1;transform:scale(1.26) translateY(-18px);filter:brightness(1.65)}79%{transform:scale(.94) translateY(6px);filter:brightness(1.08)}100%{opacity:1;transform:scale(1);filter:none}}

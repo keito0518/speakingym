@@ -53,13 +53,19 @@ test('truly due quiz weakness appears in the authored 8-question plan',()=>{
  assert.match(mission.detail,/復習 \d+問/);
 });
 
-test('a wallet-ready ally can evolve without automatically spending XP',()=>{
+test('a wallet-ready ally is guided to the missing boss trial instead of a fake free evolution',()=>{
  const base=createSave(),save={...base,xpWallet:EVOLUTION_XP};
- const mission=nextLearningQuestFor(save,today);
+ const trialMission=nextLearningQuestFor(save,today);
+ assert.equal(trialMission.kind,'forest');
+ assert.match(trialMission.detail,/ボス攻略/);
+ const withTrial={...save,monsterTrials:{medamago:['entry']}};
+ const mission=nextLearningQuestFor(withTrial,today);
  assert.equal(mission.kind,'growth');
  assert.equal(mission.action,'growth');
- assert.match(mission.detail,/第1進化/);
+ assert.match(mission.detail,/ボス試練 1\/1/);
  assert.equal(save.monsterXp[save.selectedMonster]||0,0);
+ const ready={...withTrial,monsterXp:{medamago:EVOLUTION_XP}};
+ assert.match(nextLearningQuestFor(ready,today).title,/試練クリア/);
 });
 
 test('completed daily training leads back to adventure when no review is due',()=>{

@@ -1,5 +1,5 @@
 import { MONSTERS, monsterFormName } from './monster-data.js';
-import { getMonsterProgress, learningSummary, feedMonster, selectMonster, XP_PER_LEVEL, EVOLUTION_XP, SECOND_EVOLUTION_XP, companionUnlockProgress, getMonsterBondProgress } from './monster-engine.js';
+import { getMonsterProgress, learningSummary, feedMonster, evolveMonster, selectMonster, XP_PER_LEVEL, EVOLUTION_XP, SECOND_EVOLUTION_XP, companionUnlockProgress, getMonsterBondProgress } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, FOREST_ROUTES, unlockedCityAreas, cleanForest } from './forest-engine.js';
 import { FOREST_EVENTS } from './forest-events.js';
@@ -12,17 +12,16 @@ const $ = s => document.querySelector(s);
 const all = s => [...document.querySelectorAll(s)];
 const creatureFor = id => MONSTERS.find(c => c.id === id);
 const displayName = (c, g) => monsterFormName(c,g.stage);
-// Lv.3 starts at 140 XP, but evolution actually triggers at 160 XP.
-// Show both conditions so players do not mistake a level-up for evolution.
 const EVOLUTION_LEVEL = 1 + Math.floor(EVOLUTION_XP / XP_PER_LEVEL);
-const evolutionGoal = `Lv.${EVOLUTION_LEVEL}の途中・累計${EVOLUTION_XP} XP`;
+const ASCENSION_LEVEL = 1 + Math.floor(SECOND_EVOLUTION_XP / XP_PER_LEVEL);
+const evolutionGoal = `Lv.${EVOLUTION_LEVEL}・累計${EVOLUTION_XP} XP＋ボス攻略1エリア`;
 const evolutionRemaining = g => Math.max(0,EVOLUTION_XP-g.xp);
 const ascensionRemaining = g => Math.max(0,SECOND_EVOLUTION_XP-g.xp);
 const growthStatus = g => g.ascended?'第2進化済み':g.evolved?'第1進化済み':'未進化';
-const growthGoal = g => g.ascended?'Lv.7の第2進化を達成！ 得意攻撃＋1・戦闘HP＋1':g.evolved
-  ?`第2進化：Lv.7・累計${SECOND_EVOLUTION_XP} XP。あと${ascensionRemaining(g)} XP！`
-  :`第1進化：${evolutionGoal}。あと${evolutionRemaining(g)} XP！`;
-const evolutionPath = c => `<div class="evolution-path"><span lang="en">${html(c.name)}<small>通常</small></span><span aria-hidden="true">→</span><span lang="en">${html(c.evolvedName)}<small>160 XP</small></span><span aria-hidden="true">→</span><span lang="en">${html(c.ascendedName)}<small>Lv.7</small></span></div>`;
+const growthGoal = g => g.ascended?'第2進化達成！ 得意攻撃＋1・戦闘HP＋1':g.stage===1
+  ?`第2進化：Lv.${ASCENSION_LEVEL}（累計${SECOND_EVOLUTION_XP} XP）＋異なるボス攻略 ${g.trialCount}/3エリア。残り${ascensionRemaining(g)} XP${g.canEvolve?' · 進化できる！':''}`
+  :`第1進化：Lv.${EVOLUTION_LEVEL}（累計${EVOLUTION_XP} XP）＋ボス攻略 ${g.trialCount}/1エリア。残り${evolutionRemaining(g)} XP${g.canEvolve?' · 進化できる！':''}`;
+const evolutionPath = c => `<div class="evolution-path"><span lang="en">${html(c.name)}<small>通常</small></span><span aria-hidden="true">→</span><span lang="en">${html(c.evolvedName)}<small>Lv.${EVOLUTION_LEVEL}＋ボス1</small></span><span aria-hidden="true">→</span><span lang="en">${html(c.ascendedName)}<small>Lv.${ASCENSION_LEVEL}＋ボス3</small></span></div>`;
 function unlockText(c,save){
  const p=companionUnlockProgress(save,c);
  const language=`${p.skillLabel} ${p.currentSkill}/${p.requiredSkill}`;
@@ -92,8 +91,8 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       if(save.ownedMonsters.includes(id)){
         const growth=getMonsterProgress(save,id);
         if(!growth.ascended)b.querySelector('.catalog-evolution').textContent=growth.evolved
-          ?`第1進化済み · 次は第2進化：Lv.7 · あと${ascensionRemaining(growth)} XP`
-          :`第1進化：${evolutionGoal} · あと${evolutionRemaining(growth)} XP`;
+          ?`第2進化：Lv.${ASCENSION_LEVEL} · ボス ${growth.trialCount}/3 · あと${ascensionRemaining(growth)} XP`
+          :`第1進化：Lv.${EVOLUTION_LEVEL} · ボス ${growth.trialCount}/1 · あと${evolutionRemaining(growth)} XP`;
       }
       b.addEventListener('click',()=>renderDetail(id));
     });
@@ -141,7 +140,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     currentId=id; stopAudio();
     const bond=getMonsterBondProgress(save,id);
     const g=getMonsterProgress(save,id),effect=reward?(reward.ascended?'ascension':reward.evolved?'evolution':reward.leveledUp?'level':'xp'):'idle';
-    const message=reward?`${c.name}に${reward.xp} XP！${reward.ascended?` ${c.ascendedName}に第2進化！ 得意攻撃＋1・戦闘HP＋1！`:reward.evolved?` ${c.evolvedName}に進化した！`:reward.leveledUp?` Lv.${g.level}になった！`:''}`:'';
+    const message=reward?(reward.ascended?`${c.ascendedName}へ第2進化！ 得意攻撃＋1・戦闘HP＋1！`:reward.evolved?`${c.evolvedName}へ進化！ 新しい能力が使えるよ！`:`${c.name}に${reward.xp} XP！${reward.leveledUp?` Lv.${g.level}になった！`:''}${reward.readyEvolution?' 進化条件を達成！ 下のボタンから進化しよう。':''}`):'';
     const beforeForm=reward?.before?.stage??0;
     $('#training-content').innerHTML = `<div class="training-sheet" data-growth="${effect}" data-monster="${id}">
       <span class="tiny-caps">COMPANION GROWTH</span><h1 lang="en">${html(displayName(c,g))}</h1>
@@ -158,15 +157,15 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       <div class="training-feed"><button type="button" class="button button-primary" data-feed-monster="${id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>10 XPあげる</button><button type="button" class="button button-ghost" data-feed-monster="${id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>
       <p id="growth-feedback" class="growth-feedback" role="status" aria-live="polite">${html(message||'問題でためたXPを、この仲間にあげられます。')}</p>
       ${evolutionPath(c)}
+      ${g.stage<2?`<section class="evolution-trial" aria-label="次の進化の試練"><strong>進化の試練 · ${g.stage===0?'第1進化':'第2進化'}</strong><p>${growthGoal(g)}</p><div class="evolution-trial-marks" aria-label="異なるボス攻略 ${Math.min(g.trialCount,g.requiredTrials)} / ${g.requiredTrials}エリア">${Array.from({length:g.requiredTrials},(_,index)=>`<span data-cleared="${index<g.trialCount}">${index<g.trialCount?'討伐済み':`試練 ${index+1}`}</span>`).join('')}</div><button type="button" class="button button-primary evolution-trigger" data-evolve-monster="${id}" ${g.canEvolve?'':'disabled'}>${g.canEvolve?'進化する！':'レベルと試練を達成すると進化できる'}</button></section>`:'<p class="training-next">すべての進化試練を達成したよ！</p>'}
       <p class="training-next">絆 Lv.${bond.rank} · ${bond.points}ポイント。${bond.maxed?'絆の称号達成！':`あと${bond.next}ポイントで絆ランクUP！`}</p>
-      <p class="training-next">${growthGoal(g)}</p>
     </div>`;
     const milestones=[
-      {goal:`Lv.${EVOLUTION_LEVEL}の途中・${EVOLUTION_XP} XP`,reward:`${c.evolvedName}に進化`,done:g.evolved},
       {goal:`Lv.${MASTERY_LEVEL}`,reward:'仲間固有の熟練技を解放',done:g.level>=MASTERY_LEVEL},
+      {goal:`Lv.${EVOLUTION_LEVEL}＋ボス攻略1エリア`,reward:`${c.evolvedName}に第1進化`,done:g.evolved},
       {goal:'Lv.6',reward:'戦闘HPがさらに＋1',done:g.level>=6},
-      {goal:`Lv.7・${SECOND_EVOLUTION_XP} XP`,reward:`${c.ascendedName}に第2進化 · 得意攻撃＋1・戦闘HP＋1`,done:g.ascended},
-      {goal:'Lv.9',reward:'戦闘HPがさらに＋1',done:g.level>=9}
+      {goal:'Lv.9',reward:'戦闘HPがさらに＋1',done:g.level>=9},
+      {goal:`Lv.${ASCENSION_LEVEL}＋異なるボス攻略3エリア`,reward:`${c.ascendedName}に第2進化 · 得意攻撃＋1・戦闘HP＋1`,done:g.ascended}
     ];
     const upcoming=milestones.find(mark=>!mark.done);
     const roadmap=document.createElement('details');
@@ -180,6 +179,10 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
         persist(result.save);renderTraining(id,result.reward);
       } catch(error) { $('#growth-feedback').textContent=error.message; }
     }));
+    $('[data-evolve-monster]')?.addEventListener('click',()=>{
+      try {const result=evolveMonster(getSave(),id);persist(result.save);renderTraining(id,result.reward);}
+      catch(error){$('#growth-feedback').textContent=error.message;}
+    });
     // Feeding refreshes only this sheet; keep the viewport on the character.
     if($('#training-view').hidden) showView('training');
   }
