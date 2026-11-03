@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { cleanForest, FOREST_AREAS, CITY_AREAS } from './forest-engine.js';
+import { cleanForest, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas } from './forest-engine.js';
 import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
 import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 
@@ -295,6 +295,20 @@ export function getMonsterProgress(save, id = save.selectedMonster) {
   return { xp, level: 1 + Math.floor(xp / XP_PER_LEVEL), stage, evolved: stage>=1, ascended: stage>=2,
     toNextLevel: XP_PER_LEVEL - (xp % XP_PER_LEVEL),trialAreas,trialCount:trialAreas.length,
     requiredTrials,nextEvolutionXp,canEvolve };
+}
+
+// A companion's boss marks are a quest, not just a counter. Only areas that
+// this exact companion cleared count, and we suggest a currently accessible
+// different chapter rather than sending players to a locked boss.
+export function getEvolutionTrialGuide(save,id=save.selectedMonster){
+ const progress=getMonsterProgress(save,id);
+ const areas=[...FOREST_AREAS,...CITY_AREAS];
+ const earned=progress.trialAreas.map(areaId=>areas.find(area=>area.id===areaId))
+   .filter(Boolean).map(area=>({id:area.id,name:area.name}));
+ const remaining=Math.max(0,progress.requiredTrials-earned.length);
+ const target=remaining?unlockedDungeonAreas(save).find(area=>!progress.trialAreas.includes(area.id)):null;
+ return {earned:earned.slice(0,progress.requiredTrials),remaining,
+   target:target?{id:target.id,name:target.name}:null};
 }
 
 export function evolveMonster(save,id){

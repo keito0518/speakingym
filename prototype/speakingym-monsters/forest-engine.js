@@ -151,6 +151,7 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
  if(!save.ownedMonsters?.includes(companionId))throw new Error('Companion is not owned');
  if(!DUNGEON_AREAS.some(area=>area.id===areaId))throw new Error('Invalid forest area');
  if(recordAreaClear&&!unlockedDungeonAreas(save).some(area=>area.id===areaId))throw new Error('Forest area is locked');
+ const trialEarned=recordAreaClear&&!(save.monsterTrials?.[companionId]||[]).includes(areaId);
  const before=cleanForest(save.forest);
  const fresh=new Set(before.relics);
  const earned=[isCity?(routeId==='market'?'market-stamp':'station-stamp'):(routeId==='sunlit'?'sunlit-leaf':'moss-lantern')];
@@ -186,6 +187,6 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
    journal:before.journal
   }
  };
- return {save:next,discovered,route:routePool.find(r=>r.id===routeId),
+ return {save:next,discovered,trialEarned,route:routePool.find(r=>r.id===routeId),
    medal:validMedal?{difficulty,rank:requestedRank,best:rank,upgraded:rank>priorRank,bonusXp:trainingXp}:null};
 }

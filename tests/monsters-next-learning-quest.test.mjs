@@ -58,6 +58,7 @@ test('a wallet-ready ally is guided to the missing boss trial instead of a fake 
  const trialMission=nextLearningQuestFor(save,today);
  assert.equal(trialMission.kind,'forest');
  assert.match(trialMission.detail,/ボス攻略/);
+ assert.match(trialMission.detail,/森の入口/,'the suggested boss is actually unlocked');
  const withTrial={...save,monsterTrials:{medamago:['entry']}};
  const mission=nextLearningQuestFor(withTrial,today);
  assert.equal(mission.kind,'growth');

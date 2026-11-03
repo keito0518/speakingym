@@ -61,6 +61,8 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .evolution-trial-marks{display:flex;gap:7px;flex-wrap:wrap}
 .evolution-trial-marks span{flex:1 1 68px;text-align:center;padding:9px 5px;border:1px dashed #aaa991;border-radius:9px;background:#faf8e9;color:#716c58;font-size:11px;font-weight:800}
 .evolution-trial-marks span[data-cleared="true"]{border-style:solid;border-color:#7caf82;background:#dbf2d8;color:#245d38}
+.evolution-trial-marks span small{display:block;margin-top:2px;font-size:9px;line-height:1.3;font-weight:750;color:#346748}
+.evolution-trial .evolution-next-boss,.character-section .evolution-next-boss{padding:8px 10px;border-left:3px solid #ba9352;border-radius:0 7px 7px 0;background:#fff9e7;color:#68512a;font-weight:800;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
 .evolution-trigger{min-height:46px;font-size:14px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}
 .evolution-trigger:disabled{opacity:.67;cursor:default;filter:grayscale(.45)}
 .growth-roadmap{margin-top:16px;padding:12px;border:1px solid #d2dbc2;border-radius:13px;background:#f3f7e9;color:#35573b}

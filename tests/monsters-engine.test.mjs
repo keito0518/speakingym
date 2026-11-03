@@ -19,7 +19,7 @@ import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '.
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, getEvolutionTrialGuide, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 import { speakingFeedbackFor, conversationFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
@@ -248,23 +248,36 @@ test('second evolution needs Lv.10, three distinct boss trials and a deliberate 
 
 test('boss trials require distinct chapters, never endless waves or XP alone; legacy forms stay earned',()=>{
  const start={...createSave(),monsterXp:{medamago:EVOLUTION_XP}};
+ assert.deepEqual(getEvolutionTrialGuide(start),{earned:[],remaining:1,target:{id:'entry',name:'森の入口'}});
  assert.equal(getMonsterProgress(start).canEvolve,false);
  assert.throws(()=>evolveMonster(start,'medamago'),/進化には/);
- const first=finishForest(start,'sunlit','medamago','entry').save;
+ const firstReward=finishForest(start,'sunlit','medamago','entry');
+ assert.equal(firstReward.trialEarned,true,'first chapter boss grants a visible new trial seal');
+ const first=firstReward.save;
+ assert.deepEqual(getEvolutionTrialGuide(first).earned,[{id:'entry',name:'森の入口'}]);
+ assert.equal(getEvolutionTrialGuide(first).remaining,0);
  assert.deepEqual(getMonsterProgress(first).trialAreas,['entry']);
  assert.equal(getMonsterProgress(first).canEvolve,true);
- const repeated=finishForest(first,'moss','medamago','entry').save;
+ const repeatedReward=finishForest(first,'moss','medamago','entry');
+ assert.equal(repeatedReward.trialEarned,false,'farming one boss never grants a second seal');
+ const repeated=repeatedReward.save;
  assert.equal(getMonsterProgress(repeated).trialCount,1,'repeating the easiest boss cannot inflate the trial count');
- const endless=finishForest(repeated,'sunlit','medamago','glade',[],false).save;
+ const endlessReward=finishForest(repeated,'sunlit','medamago','glade',[],false);
+ assert.equal(endlessReward.trialEarned,false,'endless waves never issue chapter seals');
+ const endless=endlessReward.save;
  assert.equal(getMonsterProgress(endless).trialCount,1,'endless never mints chapter trial credit');
  const firstEvolution=evolveMonster(endless,'medamago').save;
  assert.equal(getMonsterProgress(firstEvolution).stage,1);
+ assert.deepEqual(getEvolutionTrialGuide(firstEvolution).target,{id:'glade',name:'木漏れ日の小道'});
+ const newCompanion={...firstEvolution,ownedMonsters:['medamago','katappo'],monsterXp:{...firstEvolution.monsterXp,katappo:0},monsterEvolution:{...firstEvolution.monsterEvolution,katappo:0}};
+ assert.deepEqual(getEvolutionTrialGuide(newCompanion,'katappo').target,{id:'entry',name:'森の入口'},'each companion has their own unearned boss marks');
  const rich={...firstEvolution,monsterXp:{medamago:SECOND_EVOLUTION_XP}};
  assert.equal(getMonsterProgress(rich).canEvolve,false,'second form still needs two more distinct chapters');
  const second=finishForest(rich,'sunlit','medamago','glade').save;
  assert.equal(getMonsterProgress(second).canEvolve,false);
  const third=finishForest(second,'sunlit','medamago','thicket').save;
  assert.equal(getMonsterProgress(third).canEvolve,true);
+ assert.equal(getEvolutionTrialGuide(third).remaining,0);
  assert.equal(evolveMonster(third,'medamago').reward.ascended,true);
 
  const legacy={...createSave(),monsterXp:{medamago:420}};

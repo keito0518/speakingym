@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -606,7 +606,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,bossTrialNewArea:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
     // did not change grading or outcomes and interrupted every battle.
@@ -2236,6 +2236,7 @@ function advanceQuestion(){
       // Endless replay does not unlock new story chapters.
       const awarded=captureEligibleMonsters(reward.save);
       persist(awarded.save);
+      if(reward.trialEarned)play.bossTrialNewArea=play.areaId;
       play.captured.push(...awarded.captured);
       play.forestRelics.push(...reward.discovered);
       if(medalResult)play.bossMedal={...reward.medal,...medalResult};
@@ -2366,6 +2367,11 @@ function finishSession(timedOut=false,defeated=false) {
   if(medal?.bonusXp)$('#result-rewards').insertAdjacentHTML('beforeend',`<span class="reward-pill boss-bonus-pill">ボス勲章 初回・昇格報酬 ＋${medal.bonusXp} XP</span>`);
   const medalDisplay=medal?`<section class="boss-medal-result" data-medal-rank="${medal.rank}"><span class="boss-medal-symbol" aria-hidden="true"></span><div><span class="tiny-caps">BOSS MASTERY · ${escapeHtml(difficultyCopy[medal.difficulty].label)}</span><h2>${medal.rank?`${BOSS_MEDAL_NAMES[medal.rank]}ランク${medal.upgraded?'獲得！':'でクリア！'}`:'練習クリア · 勲章は次の挑戦で'}</h2><p>章の問題 ${medal.independent}/${medal.total}問を自力で確認 · ボス ${medal.verifiedBoss}/3問を確認。${medal.rank===3?'全問自力でクリア！':medal.rank===2?'全問自力で金ランクを目指そう。':medal.rank===1?'75%以上を自力で確認し、ボスも2問以上自力で銀ランクへ。':'ボス3問をヒントありでも確認すると銅ランクを獲得できるよ。'}</p>${medal.best>medal.rank?`<small>この難易度の最高記録は${BOSS_MEDAL_NAMES[medal.best]}ランクのまま保存したよ。</small>`:''}</div></section>`:'';
   const newMonsters=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
+  const newTrial=ended.mode==='forest'&&ended.bossTrialNewArea?dungeonAreaFor(ended.bossTrialNewArea):null;
+  const evolutionTrial= newTrial&&getMonsterProgress(save,ended.companionId).stage<2 ?(()=>{
+    const guide=getEvolutionTrialGuide(save,ended.companionId),growth=getMonsterProgress(save,ended.companionId);
+    return `<section class="victory-trial-award" aria-label="進化の試練・新しいボスの印"><span class="victory-trial-seal" aria-hidden="true"><span>NEW</span></span><div><small>EVOLUTION TRIAL · BOSS MARK</small><strong>${escapeHtml(newTrial.name)}の印を獲得！</strong><p>進化に必要な討伐の印 ${Math.min(growth.trialCount,growth.requiredTrials)} / ${growth.requiredTrials}エリア。${growth.canEvolve?'進化の条件達成！ 図鑑で進化させよう。':guide.remaining?(guide.target?`次は${escapeHtml(guide.target.name)}のボスへ！`:'次のボスエリアを解放しよう。'):'ボスの印がそろった！ XPを育成に使おう。'}</p></div></section>`;
+  })():'';
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
@@ -2384,6 +2390,15 @@ function finishSession(timedOut=false,defeated=false) {
     const track=recap.rows.map((row,index)=>`<div data-recap-status="${row.status}"><strong>${index+1}</strong><span>${row.label}</span></div>`).join('');
     return `<section class="roleplay-result"><span class="tiny-caps">CONVERSATION RECAP</span><h3>${recap.independent} / ${recap.rows.length}ターンを自力で返答</h3><div class="roleplay-recap-track" aria-label="会話の3ターンの到達状況">${track}</div><p>ヒントあり ${recap.hinted} · 例文で確認 ${recap.skipped}</p><div class="roleplay-coaching-card"><strong>${escapeHtml(recap.headline)}</strong><p>${escapeHtml(recap.summary)}</p></div>${roleplayTransferHtml(transfer)}<div class="roleplay-coaching-card focus"><strong>次回のミッション</strong><p>${escapeHtml(recap.next)}</p>${recap.focus?`<span lang="en">${escapeHtml(recap.focus.example)}</span>`:''}</div><h4 class="roleplay-recap-heading">3ターンをふりかえる</h4><ol class="roleplay-recap-list" aria-label="会話3ターンの振り返り">${turns}</ol><small>相手の反応は教材で用意した分岐だよ。表示した英文はセーブデータに保存されず、発音評価やAI自由会話の採点ではありません。</small></section>`;
   })():'';
+  // The fresh seal is a headline reward: do not bury it in the collapsed
+  // detailed medal report, where mobile players never see it.
+  let trialAwardRegion=$('#result-trial-award');
+  if(!trialAwardRegion){
+    trialAwardRegion=document.createElement('div');trialAwardRegion.id='result-trial-award';
+    $('#result-detail-panel').before(trialAwardRegion);
+  }
+  trialAwardRegion.hidden=!evolutionTrial;
+  trialAwardRegion.innerHTML=evolutionTrial;
   $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
   wireRoleplayTransfer(transfer);
   renderDungeonLearningReport(ended);
