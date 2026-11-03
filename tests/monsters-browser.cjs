@@ -1460,12 +1460,15 @@ const path=require('node:path');
     await noSpeechPage.locator('#native-ios-dictation').click();
     assert.equal(await noSpeechPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     await noSpeechContext.close();
-    // Evolved Yolkie must survive reload and agree in home, collection and battle.
+    // An evolved companion from an older save must retain its earned form
+    // across migration, reload, collection, battle and portable backup.
     const {context:evolvedContext,page:evolvedPage}=await boot(390);
     await evolvedPage.evaluate(async()=>{
       const {createSave,feedMonster,STORAGE_KEY}=await import('./monster-engine.js');
       const start=createSave();start.xpWallet=160;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(feedMonster(start,'medamago',160).save));
+      const legacy=feedMonster(start,'medamago',160).save;
+      delete legacy.monsterEvolution;delete legacy.monsterTrials;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(legacy));
     });
     await evolvedPage.reload();
     assert.match(await evolvedPage.locator('#hero-monster-name').innerText(),/Sunnyolk.*進化済み/);
