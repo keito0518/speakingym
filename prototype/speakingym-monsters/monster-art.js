@@ -1,3 +1,5 @@
+import { newPixelCompanionArt } from './monster-new-sprites.js';
+
 // Original pixel sprites, made from the 15 existing companion designs at a
 // deliberate 48x44 native resolution. All three forms live in one cached atlas.
 // The SVG wrapper preserves battle animations, layout and accessible labels;
@@ -11,13 +13,17 @@ const CELL_WIDTH=48,CELL_HEIGHT=44,ATLAS_WIDTH=IDS.length*CELL_WIDTH;
 let nextClip=0;
 
 export function monsterArt(id,form=false){
+  // Keep the established 15-character atlas intact; new residents have their
+  // own authored, crisp-edged silhouettes at the same native pixel scale.
+  const stage=typeof form==='number'?Math.max(0,Math.min(2,Math.floor(form))):form?1:0;
+  const expansionArt=newPixelCompanionArt(id,stage);
+  if(expansionArt)return expansionArt;
   const index=IDS.indexOf(id);
   if(index<0){
     // Unknown catalog entries stay undiscovered rather than reusing Yolkie.
     return '<svg viewBox="0 0 180 164" class="monster-svg pixel-art" role="img" aria-label="未発見のモンスター" xmlns="http://www.w3.org/2000/svg"><rect x="39" y="28" width="102" height="108" fill="#a1afa4"/><rect x="49" y="38" width="82" height="88" fill="#dce5db"/><path d="M75 67h30v12H93v15H81V79h-6Z" fill="#758b7a"/><rect x="81" y="103" width="12" height="12" fill="#758b7a"/></svg>';
   }
   // Accept the historical boolean API while letting all screens show stage 2.
-  const stage=typeof form==='number'?Math.max(0,Math.min(2,Math.floor(form))):form?1:0;
   const evolved=stage>=1,ascended=stage===2;
   const row=stage*CELL_HEIGHT;
   // A clipPath on the one root SVG prevents home-walker/global CSS from

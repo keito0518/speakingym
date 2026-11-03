@@ -690,6 +690,33 @@
 @keyframes firefly-flash{0%,100%{transform:translate(-50%,9%) scale(1)}24%{transform:translate(-10%,-80%) scale(.6)}48%{transform:translate(110%,-40%) scale(1.55)}68%{transform:translate(145%,8%) scale(.75)}}
 @keyframes dragon-leap{0%,100%{transform:translate(-50%,9%)}23%{transform:translate(-65%,19%) scale(1.12,.8)}49%{transform:translate(135%,-35%) rotate(-22deg) scale(1.2)}70%{transform:translate(45%,-12%) rotate(15deg)}}
 
+/* Twelve new companions: each attack has a recognizable, sprite-safe motion.
+   Keep this on the party wrapper so its pixel-art face stays crisp. */
+.forest-active .forest-world-stage.forest-attack[data-attack="tsubomi"] .forest-party{animation-name:bud-spring}
+.forest-active .forest-world-stage.forest-attack[data-attack="kinokko"] .forest-party{animation-name:spore-spin}
+.forest-active .forest-world-stage.forest-attack[data-attack="shizurin"] .forest-party{animation-name:drizzle-arc}
+.forest-active .forest-world-stage.forest-attack[data-attack="hoshiri"] .forest-party{animation-name:star-flare}
+.forest-active .forest-world-stage.forest-attack[data-attack="pipino"] .forest-party{animation-name:chirp-swoop}
+.forest-active .forest-world-stage.forest-attack[data-attack="hiokko"] .forest-party{animation-name:ember-hop}
+.forest-active .forest-world-stage.forest-attack[data-attack="kippu"] .forest-party{animation-name:ticket-slice}
+.forest-active .forest-world-stage.forest-attack[data-attack="kofuu"] .forest-party{animation-name:steam-spiral}
+.forest-active .forest-world-stage.forest-attack[data-attack="mafura"] .forest-party{animation-name:scarf-whip}
+.forest-active .forest-world-stage.forest-attack[data-attack="yukidama"] .forest-party{animation-name:snow-roll}
+.forest-active .forest-world-stage.forest-attack[data-attack="tegami"] .forest-party{animation-name:post-dash}
+.forest-active .forest-world-stage.forest-attack[data-attack="tokirin"] .forest-party{animation-name:clock-pulse}
+@keyframes bud-spring{0%,100%{transform:translate(-50%,9%)}20%{transform:translate(-54%,23%) scale(1.15,.78)}48%{transform:translate(112%,-53%) rotate(-20deg) scale(.88,1.25)}70%{transform:translate(145%,0) scale(1.1,.9)}}
+@keyframes spore-spin{0%,100%{transform:translate(-50%,9%) rotate(0)}25%{transform:translate(-65%,-22%) rotate(-85deg)}53%{transform:translate(122%,-34%) rotate(440deg) scale(1.18)}77%{transform:translate(12%,-8%) rotate(720deg)}}
+@keyframes drizzle-arc{0%,100%{transform:translate(-50%,9%)}22%{transform:translate(-40%,-62%) scale(.77,1.24)}49%{transform:translate(110%,-74%) rotate(15deg)}67%{transform:translate(142%,15%) scale(1.26,.66)}}
+@keyframes star-flare{0%,100%{transform:translate(-50%,9%) scale(1)}24%{transform:translate(-50%,-34%) rotate(-12deg) scale(.7)}48%{transform:translate(128%,-27%) rotate(140deg) scale(1.5)}73%{transform:translate(20%,-12%) rotate(360deg)}}
+@keyframes chirp-swoop{0%,100%{transform:translate(-50%,9%)}25%{transform:translate(-28%,-81%) rotate(17deg) scale(.85)}50%{transform:translate(127%,-47%) rotate(-25deg) scale(1.12)}75%{transform:translate(15%,-19%) rotate(7deg)}}
+@keyframes ember-hop{0%,100%{transform:translate(-50%,9%)}20%{transform:translate(-63%,25%) scale(1.13,.75)}46%{transform:translate(110%,-69%) rotate(15deg) scale(.85,1.32)}64%{transform:translate(142%,2%) scale(1.25,.8)}}
+@keyframes ticket-slice{0%,100%{transform:translate(-50%,9%)}24%{transform:translate(-67%,5%) rotate(-17deg)}50%{transform:translate(137%,-14%) rotate(18deg) scale(1.3,.75)}69%{transform:translate(60%,-33%) rotate(-28deg)}}
+@keyframes steam-spiral{0%,100%{transform:translate(-50%,9%) rotate(0)}20%{transform:translate(-42%,-38%) rotate(-15deg)}51%{transform:translate(122%,-65%) rotate(340deg) scale(.87,1.3)}75%{transform:translate(15%,-13%) rotate(390deg)}}
+@keyframes scarf-whip{0%,100%{transform:translate(-50%,9%)}23%{transform:translate(-74%,11%) rotate(-27deg)}47%{transform:translate(131%,-36%) rotate(83deg) scale(.83,1.19)}68%{transform:translate(130%,6%) rotate(-37deg)}}
+@keyframes snow-roll{0%,100%{transform:translate(-50%,9%) rotate(0)}26%{transform:translate(-60%,11%) rotate(-90deg) scale(.9)}52%{transform:translate(142%,-13%) rotate(540deg) scale(1.23)}79%{transform:translate(10%,-8%) rotate(720deg)}}
+@keyframes post-dash{0%,100%{transform:translate(-50%,9%)}19%{transform:translate(-76%,-11%) scale(1.16,.85)}39%{transform:translate(49%,-43%) rotate(-14deg)}58%{transform:translate(145%,-11%) rotate(19deg) scale(1.27,.85)}77%{transform:translate(5%,-30%) rotate(-8deg)}}
+@keyframes clock-pulse{0%,100%{transform:translate(-50%,9%) scale(1) rotate(0)}25%{transform:translate(-50%,-26%) scale(.74) rotate(-45deg)}48%{transform:translate(117%,-19%) scale(1.52) rotate(85deg)}69%{transform:translate(45%,-20%) scale(.9) rotate(360deg)}}
+
 /* Mobile combat: the question and answer are the primary task. Battle details
    are still available on demand, but must not push the input off the screen. */
 @media(max-width:690px){

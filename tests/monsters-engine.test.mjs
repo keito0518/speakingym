@@ -196,16 +196,22 @@ test('all evolved creatures have distinct physical forms, beyond a glow or name 
  for(const monster of MONSTERS){
   const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
   assert.notEqual(young,grown,monster.id);
-  assert.doesNotMatch(young,/monster-evolution-morph/);
-  assert.match(grown,/monster-evolution-morph monster-evolution-back/);
-  assert.match(grown,/monster-evolution-morph monster-evolution-front/);
-  assert.ok(grown.length-young.length>180,`${monster.id} evolution needs visually significant features`);
+  if(young.includes('pixel-companions.png')){
+   assert.doesNotMatch(young,/monster-evolution-morph/);
+   assert.match(grown,/monster-evolution-morph monster-evolution-back/);
+   assert.match(grown,/monster-evolution-morph monster-evolution-front/);
+   assert.ok(grown.length-young.length>180,`${monster.id} evolution needs visually significant features`);
+  }else{
+   assert.match(young,/shape-rendering="crispEdges"/,monster.id);
+   assert.match(grown,/data-evolved="true"/,monster.id);
+   assert.match(grown,/scale\(1\.035\)/,`${monster.id} trained silhouette must expand`);
+  }
  }
 });
 
-test('all 15 companions have a genuine third pixel form and a unique second-evolution name',()=>{
+test('all 27 companions have a genuine third pixel form and a unique second-evolution name',()=>{
  assert.equal(SECOND_EVOLUTION_XP,630,'Lv.10 is the second evolution level gate');
- assert.equal(new Set(MONSTERS.map(monster=>monster.ascendedName)).size,15);
+ assert.equal(new Set(MONSTERS.map(monster=>monster.ascendedName)).size,MONSTERS.length);
  for(const monster of MONSTERS){
   const first=monsterArt(monster.id,1),second=monsterArt(monster.id,2);
   assert.equal(monsterFormName(monster,0),monster.name);
@@ -214,7 +220,8 @@ test('all 15 companions have a genuine third pixel form and a unique second-evol
   assert.notEqual(first,second);
   assert.match(first,/data-stage="1"/);
   assert.match(second,/data-stage="2"/);
-  assert.match(second,/y="-88"/);
+  if(first.includes('pixel-companions.png'))assert.match(second,/y="-88"/);
+  else assert.match(second,/scale\(1\.08\)/);
   assert.match(second,/monster-ascended/);
  }
 });
@@ -575,7 +582,7 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
 });
 
 test('curriculum includes 4 Snowlit City chapters with authored local quizzes and speaking tasks', () => {
-  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,15);
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,27);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
   assert.equal(ALL_PROMPTS.length,342);
   for(const difficulty of ['normal','hard']) {
@@ -1948,7 +1955,7 @@ test('user-selected review stores exact questions without breaking older saves',
  assert.throws(()=>toggleSavedPrompt(marked,'nonsense'),/Unknown prompt/);
 });
 test('rare forest recruits need language, real spaced recall and cleared chapters',()=>{
-  const rare=MONSTERS.filter(c=>c.forestAreas);
+  const rare=MONSTERS.filter(c=>['fuwari','kompass','pikap','mokuryu'].includes(c.id));
   assert.deepEqual(rare.map(c=>c.forestAreas),[1,2,3,4]);
   assert.equal(new Set(rare.map(c=>c.id)).size,4);
   let save=createSave();
@@ -1959,7 +1966,8 @@ test('rare forest recruits need language, real spaced recall and cleared chapter
   assert.equal(learningSummary(save).independent,16);
   assert.equal(rare.filter(c=>save.ownedMonsters.includes(c.id)).length,0,'Language alone cannot unlock forest rares');
   save=finishForest(save,'sunlit','medamago','entry',[],true).save;
-  assert.equal(captureEligibleMonsters(save).captured.length,0,'A Forest clear and one-day cramming are not enough');
+  assert.equal(captureEligibleMonsters(save).captured.filter(id=>rare.some(c=>c.id===id)).length,0,
+    'A Forest clear and one-day cramming are not enough for the original rare recruits');
   assert.equal(companionUnlockProgress(save,rare[0]).currentRecall,0);
   save=rate(save,'think-cafe','smooth','2026-10-27').save;
   assert.ok(save.ownedMonsters.includes('fuwari'));
@@ -1981,6 +1989,29 @@ test('rare forest recruits need language, real spaced recall and cleared chapter
   assert.ok(legacy.ownedMonsters.includes('kompass'));
   assert.equal(companionUnlockProgress(createSave(),rare[0]).ready,false);
   assert.equal(companionUnlockProgress(save,rare[1]).ready,false,'New capture would wait for independent recovery');
+});
+test('the twelve new companions have earned, location-specific recruitment and unique art at every stage',()=>{
+ const forestIds=['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko'];
+ const cityIds=['kippu','kofuu','mafura','yukidama','tegami','tokirin'];
+ const expansion=MONSTERS.filter(c=>[...forestIds,...cityIds].includes(c.id));
+ assert.equal(expansion.length,12);
+ assert.equal(new Set(expansion.map(c=>c.ascendedName)).size,12);
+ for(const monster of expansion){
+  assert.equal(Boolean(monster.cityAreas),cityIds.includes(monster.id),monster.id);
+  assert.equal(Boolean(monster.forestAreas),forestIds.includes(monster.id),monster.id);
+  assert.equal(companionUnlockProgress(createSave(),monster).ready,false,`${monster.id} starts locked`);
+  const states=[0,1,2].map(stage=>monsterArt(monster.id,stage));
+  assert.equal(new Set(states).size,3,`${monster.id} has distinct pixel evolution states`);
+  for(const [stage,art] of states.entries()){
+   assert.match(art,new RegExp(`data-pixel-sprite="${monster.id}"`));
+   assert.match(art,new RegExp(`data-stage="${stage}"`));
+   assert.match(art,/shape-rendering="crispEdges"/);
+  }
+ }
+ for(const id of ['hoshiri','hiokko','yukidama','tegami','tokirin']){
+  const monster=expansion.find(c=>c.id===id);
+  assert.ok(monster.retentionStage>=3&&monster.retentionUnlock>=2,`${id} must earn rare recruitment over multiple days`);
+ }
 });
 test('Snowlit City recruits require real chapter clears and spaced retention, not XP shortcuts',()=>{
  const bell=MONSTERS.find(creature=>creature.id==='yukibell');
@@ -2211,7 +2242,7 @@ test('save import validation prevents non-finite XP, counters and impossible mon
  assert.equal(valid.progress.think.attempts,3);
 });
 
-test('all companion evolutions and dungeon enemies use compact pixel-art atlases',()=>{
+test('original companions use the pixel atlas and expanded companions have original pixel SVG art',()=>{
  const path='../prototype/speakingym-monsters/';
  const companions=readFileSync(new URL(path+'pixel-companions.png',import.meta.url));
  const enemies=readFileSync(new URL(path+'pixel-enemies.png',import.meta.url));
@@ -2224,10 +2255,16 @@ test('all companion evolutions and dungeon enemies use compact pixel-art atlases
  for(const monster of MONSTERS){
   const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
   assert.match(young,/class="monster-svg pixel-art /,monster.id);
-  assert.match(young,/href="\.\/pixel-companions.png"/,monster.id);
-  assert.match(grown,/href="\.\/pixel-companions.png"/,monster.id);
-  assert.match(grown,/y="-44"/,monster.id);
-  assert.match(grown,/<clipPath /,monster.id);
+  if(['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko','kippu','kofuu','mafura','yukidama','tegami','tokirin'].includes(monster.id)){
+   assert.match(young,/shape-rendering="crispEdges"/,monster.id);
+   assert.match(grown,/data-stage="1"/,monster.id);
+   assert.doesNotMatch(young,/pixel-companions.png/,monster.id);
+  }else{
+   assert.match(young,/href="\.\/pixel-companions.png"/,monster.id);
+   assert.match(grown,/href="\.\/pixel-companions.png"/,monster.id);
+   assert.match(grown,/y="-44"/,monster.id);
+   assert.match(grown,/<clipPath /,monster.id);
+  }
   assert.notEqual(young,grown,monster.id);
  }
  for(const id of ['mossling','thistlet','spookap','bramblet','mothum','thornking','sunwarden','mistknight','elderroot','signbit','tickety','signalyn','parceloo','lanternet','metroguardian','sunmoss','fogling','rootlet','marketwarden','railkeeper','blizzardking']){

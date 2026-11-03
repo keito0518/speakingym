@@ -257,6 +257,15 @@
 
       <section id="collection-view" class="view" hidden>
         <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、仲間をタップして、育成画面であげられます。</small></div></div>
+        <div class="collection-sortbar" aria-label="仲間図鑑の絞り込み">
+          <p id="collection-progress" aria-live="polite">仲間 0 / 27体</p>
+          <div class="collection-filters" role="group" aria-label="表示する仲間">
+            <button type="button" data-catalog-filter="all" aria-pressed="true">すべて</button>
+            <button type="button" data-catalog-filter="owned" aria-pressed="false">仲間</button>
+            <button type="button" data-catalog-filter="undiscovered" aria-pressed="false">未所持</button>
+            <button type="button" data-catalog-filter="rare" aria-pressed="false">レア</button>
+          </div>
+        </div>
         <div id="collection-grid" class="collection-grid"></div>
         <section class="forest-treasures" aria-labelledby="forest-treasures-title">
           <div class="forest-treasures-heading"><span class="tiny-caps">FOREST EXPEDITION</span><h2 id="forest-treasures-title">森で見つけた宝物</h2><p id="forest-collection-count">まだ見つけていないよ。</p></div>

@@ -65,7 +65,7 @@ test('all four English skills have names and every companion has a useful streng
   assert.ok(skill.name&&skill.description&&['burst','charge','pierce','ward'].includes(skill.type),`${monster.id} needs a unique combat ability`);
  }
 });
-test('all 15 companions unlock a unique trained technique only at level four',()=>{
+test('all 27 companions unlock a unique trained technique only at level four',()=>{
  assert.equal(MASTERY_LEVEL,4);
  const names=new Set();
  for(const monster of MONSTERS){

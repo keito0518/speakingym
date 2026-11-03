@@ -46,6 +46,7 @@ function powerFor(id) {
 }
 export function createCollectionViews({getSave, persist, showView, stopAudio}) {
   let currentId = null;
+  let catalogFilter = 'all';
   function renderCollection() {
     stopAudio();
     const save = getSave(), summary = learningSummary(save), forest = cleanForest(save.forest);
@@ -80,7 +81,14 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     })).join('');
     $('#forest-journal-badges').innerHTML=chapterMarks.map(mark=>
       `<article class="forest-journal-badge ${mark.condition(forest)?'earned':'locked'}"><strong>${html(mark.name)}</strong><span>${html(mark.goal)}</span><small>${mark.condition(forest)?'獲得済み':'未達成'}</small></article>`).join('');
-    $('#collection-grid').innerHTML = MONSTERS.map(c => {
+    const ownedCount=MONSTERS.filter(c=>save.ownedMonsters.includes(c.id)).length;
+    const catalogVisible=MONSTERS.filter(c=>catalogFilter==='all'||
+      (catalogFilter==='owned'&&save.ownedMonsters.includes(c.id))||
+      (catalogFilter==='undiscovered'&&!save.ownedMonsters.includes(c.id))||
+      (catalogFilter==='rare'&&Boolean(c.rarity)));
+    $('#collection-progress').textContent=`仲間 ${ownedCount} / ${MONSTERS.length}体 · 表示 ${catalogVisible.length}体`;
+    all('[data-catalog-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.catalogFilter===catalogFilter)));
+    $('#collection-grid').innerHTML = catalogVisible.map(c => {
       const owned = save.ownedMonsters.includes(c.id), g = getMonsterProgress(save,c.id);
       const p=companionUnlockProgress(save,c);
       const bond=getMonsterBondProgress(save,c.id);
@@ -188,6 +196,9 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     if($('#training-view').hidden) showView('training');
   }
   $('#detail-back').addEventListener('click',renderCollection);
+  all('[data-catalog-filter]').forEach(button=>button.addEventListener('click',()=>{
+    catalogFilter=button.dataset.catalogFilter;renderCollection();
+  }));
   $('#training-back').addEventListener('click',()=>renderDetail(currentId));
   return {renderCollection,renderDetail,renderTraining};
 }

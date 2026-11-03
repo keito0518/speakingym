@@ -64,7 +64,12 @@ const path=require('node:path');
       await noOverflow(page,`${width} colorful home and companion walkers`);
       await page.screenshot({path:path.join(shots,`home-runners-${engine}-${width}.png`),fullPage:true});
       await page.locator('[data-home-page="collection"]').click();
-      assert.equal(await page.locator('[data-open-monster]').count(),15);
+      assert.equal(await page.locator('[data-open-monster]').count(),27);
+      assert.match(await page.locator('#collection-progress').innerText(),/仲間 27 \/ 27体/);
+      await page.locator('[data-catalog-filter="rare"]').click();
+      assert.ok(await page.locator('[data-open-monster]').count()>=10,'rare filter shows hard-to-recruit characters');
+      await page.locator('[data-catalog-filter="all"]').click();
+      assert.equal(await page.locator('[data-open-monster]').count(),27);
       assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
       assert.equal(await page.locator('#forest-journal-areas .forest-journal-area').count(),4);
       assert.equal(await page.locator('#forest-journal-events .forest-journal-entry').count(),8);
@@ -124,7 +129,7 @@ const path=require('node:path');
       await page.waitForTimeout(1400);
       await page.screenshot({path:path.join(shots,`training-${engine}-${width}-evolution.png`),fullPage:true});
       const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-      assert.equal(before.monsterXp.medamago,300);assert.equal(before.ownedMonsters.length,15);
+      assert.equal(before.monsterXp.medamago,300);assert.equal(before.ownedMonsters.length,27);
       assert.equal(before.monsterEvolution.medamago,1);
       await page.locator('#training-back').click();
       assert.match(await page.locator('#detail-content').innerText(),/進化後、控えからの連携で「覚醒・追撃」/,
@@ -204,6 +209,28 @@ const path=require('node:path');
       // Closing the isolated context avoids waiting on an offscreen navigation control in mobile WebKit.
       await context.close();
     }
+    // The expansion stays inexpensive to verify: test all twelve new sprite
+    // identities and attack CSS in one mounted arena, without 12 extra runs.
+    const expansionMotions={tsubomi:'bud-spring',kinokko:'spore-spin',shizurin:'drizzle-arc',
+      hoshiri:'star-flare',pipino:'chirp-swoop',hiokko:'ember-hop',kippu:'ticket-slice',
+      kofuu:'steam-spiral',mafura:'scarf-whip',yukidama:'snow-roll',tegami:'post-dash',tokirin:'clock-pulse'};
+    const expanded=await boot(390,'no-preference');await seed(expanded.page);
+    await expanded.page.locator('[data-feature-worlds]').click();
+    await expanded.page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+    await expanded.page.locator('#start-forest-simple').click();
+    await expanded.page.locator('#forest-explore-continue').click();
+    for(const [id,motion] of Object.entries(expansionMotions)){
+      const result=await expanded.page.evaluate(async id=>{
+        const {monsterArt}=await import('./monster-art.js');
+        const stage=document.querySelector('#forest-world-stage');
+        stage.dataset.attack=id;stage.classList.add('forest-attack');
+        return {art:monsterArt(id,2),animation:getComputedStyle(document.querySelector('#forest-party')).animationName};
+      },id);
+      assert.match(result.art,new RegExp(`data-pixel-sprite="${id}"`));
+      assert.match(result.art,/data-stage="2"/);
+      assert.equal(result.animation,motion,`${id} must not use a generic combat motion`);
+    }
+    await expanded.context.close();
     // Evolved versions preserve per-character motions and gain an independent aura.
     for(const id of ['medamago','katappo']){
       const {context,page}=await boot(390,'no-preference');
@@ -231,6 +258,6 @@ const path=require('node:path');
     assert.match(await locked.page.locator('#pronounce-feedback').innerText(),/利用できません/);
     await locked.context.close();
     assert.deepEqual(errors,[]);
-    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 15 unique attacks, idle/evolved FX, guard/empty-answer, map isolation passed`);
+    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 25 distinct attacks and 27 pixel companions, idle/evolved FX, guard/empty-answer, map isolation passed`);
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

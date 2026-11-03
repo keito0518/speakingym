@@ -17,7 +17,13 @@ const ALLY_TYPES=Object.freeze({
  amekurage:{strong:'listen',weak:'speak'},fuwari:{strong:'listen',weak:'grammar'},
  kompass:{strong:'grammar',weak:'vocab'},pikap:{strong:'speak',weak:'grammar'},
  mokuryu:{strong:'vocab',weak:'speak'},yukibell:{strong:'listen',weak:'vocab'},
- railfox:{strong:'grammar',weak:'listen'}
+ railfox:{strong:'grammar',weak:'listen'},
+ tsubomi:{strong:'vocab',weak:'grammar'},kinokko:{strong:'grammar',weak:'speak'},
+ shizurin:{strong:'listen',weak:'vocab'},hoshiri:{strong:'speak',weak:'listen'},
+ pipino:{strong:'listen',weak:'grammar'},hiokko:{strong:'speak',weak:'vocab'},
+ kippu:{strong:'vocab',weak:'listen'},kofuu:{strong:'listen',weak:'speak'},
+ mafura:{strong:'grammar',weak:'listen'},yukidama:{strong:'vocab',weak:'speak'},
+ tegami:{strong:'grammar',weak:'vocab'},tokirin:{strong:'listen',weak:'grammar'}
 });
 // All companions have a named combat trait. A few share an archetype, but its
 // trigger is always their *own* strength: English answers are still graded by
@@ -30,7 +36,13 @@ const ALLY_SKILLS=Object.freeze({
  amekurage:{name:'雨音のひらめき',type:'charge'},fuwari:{name:'音のクッション',type:'ward'},
  kompass:{name:'文法コンパス',type:'pierce'},pikap:{name:'ひらめきラッシュ',type:'burst'},
  mokuryu:{name:'言葉の貫通弾',type:'pierce'},yukibell:{name:'雪音チャージ',type:'charge'},
- railfox:{name:'鉄路の守り',type:'ward'}
+ railfox:{name:'鉄路の守り',type:'ward'},
+ tsubomi:{name:'芽吹きの追撃',type:'burst'},kinokko:{name:'胞子の結界',type:'ward'},
+ shizurin:{name:'雨粒の共鳴',type:'charge'},hoshiri:{name:'星明かりの一閃',type:'burst'},
+ pipino:{name:'さえずりの集中',type:'charge'},hiokko:{name:'火の粉ラッシュ',type:'burst'},
+ kippu:{name:'切符の貫通線',type:'pierce'},kofuu:{name:'湯気の守り',type:'ward'},
+ mafura:{name:'結び目バリア',type:'ward'},yukidama:{name:'氷結ブレイク',type:'pierce'},
+ tegami:{name:'手紙の突破口',type:'pierce'},tokirin:{name:'時の共鳴',type:'charge'}
 });
 const SKILL_DESCRIPTIONS=Object.freeze({
  burst:'得意技能で必殺技を使うとダメージ＋1',
@@ -49,7 +61,11 @@ const MASTERY_NAMES=Object.freeze({
  medamago:'黄身の二連撃',katappo:'こだまの集中',purupun:'ぷるぷる吸収',koge:'焦げ目の結界',
  cone:'反響の共鳴',nororo:'のんびり追撃',keshipon:'消しゴムの守護',donako:'ドーナツの回復',
  amekurage:'雨雲の共鳴',fuwari:'風の守護',kompass:'方位の回復',pikap:'ひらめきの一撃',
- mokuryu:'樹海の吸収',yukibell:'雪音の集中',railfox:'鉄路の守護'
+ mokuryu:'樹海の吸収',yukibell:'雪音の集中',railfox:'鉄路の守護',
+ tsubomi:'新芽の連鎖',kinokko:'菌糸の守護',shizurin:'雨音の集中',
+ hoshiri:'流星の追撃',pipino:'翼音の調律',hiokko:'炎耳の二連撃',
+ kippu:'快速の回復',kofuu:'喫茶の結界',mafura:'温もりの守護',
+ yukidama:'氷晶の吸収',tegami:'飛脚の回復',tokirin:'秒針の集中'
 });
 const MASTERY_EFFECTS=Object.freeze({
  burst:'得意技能の自力正解で追撃＋1。ボスでは必殺ゲージ＋1',

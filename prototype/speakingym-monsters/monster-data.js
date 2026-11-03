@@ -301,7 +301,11 @@ const SECOND_FORM_NAMES=Object.freeze({
   koge:'Toastinferno',cone:'Conavoy Prime',nororo:'Noriwhirl',
   keshipon:'Eraserion',donako:'Nibbuniverse',amekurage:'Tempestella',
   fuwari:'Nimburst',kompass:'Polariscope',pikap:'Glimmora',
-  mokuryu:'Elderwyrm',yukibell:'Bellstice',railfox:'Railstice'
+  mokuryu:'Elderwyrm',yukibell:'Bellstice',railfox:'Railstice',
+  tsubomi:'Floravolt',kinokko:'Sporelord',shizurin:'Monsoonix',
+  hoshiri:'Astralion',pipino:'Cantavir',hiokko:'Solferno',
+  kippu:'Metropass',kofuu:'Brewgeist',mafura:'Warmantle',
+  yukidama:'Glaciara',tegami:'Mailarch',tokirin:'Chronolith'
 });
 export function monsterFormName(creature,stage=0){
  return stage>=2?creature.ascendedName:stage>=1?creature.evolvedName:creature.name;
@@ -321,5 +325,20 @@ export const MONSTERS = Object.freeze([
   { id: 'pikap', name: 'Glimli', japaneseName: 'ピカプ', evolvedName: 'Auroraglim', roots:[{word:'glimmer',meaning:'かすかな光'},{word:'firefly',meaning:'ホタル'}],skill:{name:'Quiet Glow',description:'聞き取れた言葉を光に変える、学習用の演出'},kind:'ランタンホタル',color:'#e6c87b',masteryUnlock:3,forestAreas:3,retentionStage:3,retentionUnlock:2,rarity:'epic',note:'急いでいると消えてしまう。じっくり学ぶ旅人のそばでだけ光る。' },
   { id: 'mokuryu', name: 'Barklit', japaneseName: 'モクリュウ', evolvedName: 'Eldrake', roots:[{word:'bark',meaning:'木の皮'},{word:'dragon',meaning:'ドラゴン'}],skill:{name:'Old Wisdom',description:'学んだ表現の復習を促す、学習用の演出'},kind:'古木の小竜',color:'#8fa57d',masteryUnlock:5,forestAreas:4,retentionStage:4,retentionUnlock:3,rarity:'legend',note:'年輪の模様が背中にある。四つの森を歩いた者の言葉にだけ耳を傾ける。' },
   { id: 'yukibell', name: 'Bellumi', japaneseName: 'ユキベル', evolvedName: 'Aurabell', roots:[{word:'bell',meaning:'鈴・ベル'},{word:'illuminate',meaning:'照らす'}],skill:{name:'Gentle Chime',description:'復習の予定を静かに思い出させる、学習用の演出'},kind:'雪灯りの鈴',color:'#9bcee8',masteryUnlock:6,cityAreas:2,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'雪の商店街に灯る鈴。翌日も覚えている言葉を聞くと、小さく鳴る。'},
-  { id: 'railfox', name: 'Railfox', japaneseName: 'レールギツネ', evolvedName: 'Aurorail', roots:[{word:'rail',meaning:'鉄道・レール'},{word:'fox',meaning:'キツネ'}],skill:{name:'Connection',description:'別の場面で使える英語の結びつきを示す、学習用の演出'},kind:'北の駅のきつね',color:'#bdd5e8',masteryUnlock:8,cityAreas:4,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'吹雪の夜に北駅へ戻ってくる。忘れずに使えた言葉だけを道しるべにする。'}
+  { id: 'railfox', name: 'Railfox', japaneseName: 'レールギツネ', evolvedName: 'Aurorail', roots:[{word:'rail',meaning:'鉄道・レール'},{word:'fox',meaning:'キツネ'}],skill:{name:'Connection',description:'別の場面で使える英語の結びつきを示す、学習用の演出'},kind:'北の駅のきつね',color:'#bdd5e8',masteryUnlock:8,cityAreas:4,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'吹雪の夜に北駅へ戻ってくる。忘れずに使えた言葉だけを道しるべにする。'},
+  // New forest companions. Their release depends on real chapter progress;
+  // rares also require spaced English recall, never one-session XP farming.
+  {id:'tsubomi',name:'Budkin',japaneseName:'ツボミン',evolvedName:'Bloomback',roots:[{word:'bud',meaning:'つぼみ'},{word:'bloom',meaning:'花が咲く'}],skill:{name:'Bud Burst',description:'覚えた言葉を花のように広げる'},kind:'芽吹く小さな木の精',color:'#83c98a',unlock:3,forestAreas:1,note:'春を待つのが苦手。誰かが新しい言葉を話すと、葉っぱが一枚増える。'},
+  {id:'kinokko',name:'Sporbit',japaneseName:'キノッコ',evolvedName:'Myceloom',roots:[{word:'spore',meaning:'胞子'},{word:'mushroom',meaning:'キノコ'}],skill:{name:'Spore Shield',description:'言葉の組み合わせをじっくり守る'},kind:'歩くランプキノコ',color:'#c684a2',unlock:6,forestAreas:2,note:'傘の模様は夜になると光る。道に迷った冒険者をこっそり照らす。'},
+  {id:'shizurin',name:'Drizzlet',japaneseName:'シズリン',evolvedName:'Rainvail',roots:[{word:'drizzle',meaning:'霧雨'},{word:'droplet',meaning:'しずく'}],skill:{name:'Rain Echo',description:'聞き取った音を雨粒に閉じ込める'},kind:'しずくの旅人',color:'#79b8db',unlock:7,forestAreas:2,retentionStage:2,retentionUnlock:1,rarity:'rare',note:'雨上がりの葉の裏に住む。昨日の会話を覚えている人が好き。'},
+  {id:'hoshiri',name:'Starmite',japaneseName:'ホシリ',evolvedName:'Luminova',roots:[{word:'star',meaning:'星'},{word:'luminous',meaning:'光る'}],skill:{name:'Star Spark',description:'別の場面でも言葉を光らせる'},kind:'落ちてきた星のかけら',color:'#e0b96e',masteryUnlock:5,forestAreas:3,retentionStage:3,retentionUnlock:2,rarity:'epic',note:'眠ると空に戻りそうになる。日を空けて覚えた英語を聞くと目が覚める。'},
+  {id:'pipino',name:'Chirplet',japaneseName:'ピピノ',evolvedName:'Songwing',roots:[{word:'chirp',meaning:'小鳥が鳴く'},{word:'wing',meaning:'翼'}],skill:{name:'Song Dash',description:'短い言葉で一気に飛び出す'},kind:'ちいさな歌う鳥',color:'#e3a18c',unlock:8,forestAreas:3,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'英語のイントネーションが気になると、首をかしげる。'},
+  {id:'hiokko',name:'Emberbun',japaneseName:'ヒオッコ',evolvedName:'Flamehop',roots:[{word:'ember',meaning:'燃えさし'},{word:'flame',meaning:'炎'}],skill:{name:'Ember Rush',description:'得意な一言で流れを変える'},kind:'火種のうさぎ',color:'#e89561',masteryUnlock:6,forestAreas:4,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'怒ると耳が赤く燃える。優しい声をかけるとすぐ落ち着く。'},
+  // The city keeps its own catchable species, including two late-game finds.
+  {id:'kippu',name:'Ticketa',japaneseName:'キップン',evolvedName:'Passwing',roots:[{word:'ticket',meaning:'切符'},{word:'pass',meaning:'通行証'}],skill:{name:'Quick Pass',description:'次へ進むための合図を出す'},kind:'飛びはねる切符',color:'#d2b17f',unlock:6,cityAreas:1,note:'行き先が決まっていない切符。新しい街を見ると大喜びする。'},
+  {id:'kofuu',name:'Brewisp',japaneseName:'コフー',evolvedName:'Cafantom',roots:[{word:'brew',meaning:'コーヒーをいれる'},{word:'steam',meaning:'湯気'}],skill:{name:'Steam Guard',description:'焦らず一息ついて答える'},kind:'マグカップの精',color:'#bd9880',unlock:7,cityAreas:2,note:'雪の日は湯気がよく見える。旅人が休むときにそっと現れる。'},
+  {id:'mafura',name:'Scarfluff',japaneseName:'マフリン',evolvedName:'Knotwing',roots:[{word:'scarf',meaning:'マフラー'},{word:'knot',meaning:'結び目'}],skill:{name:'Warm Wrap',description:'苦手な言葉をほどいてつなぎ直す'},kind:'長いマフラーの妖精',color:'#b19bcd',unlock:8,cityAreas:2,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'風の強い日は誰かの首に巻きついてしまう。ほどくとお礼を言う。'},
+  {id:'yukidama',name:'Snoworb',japaneseName:'ユキダマ',evolvedName:'Frostelle',roots:[{word:'snow',meaning:'雪'},{word:'frost',meaning:'霜・氷結'}],skill:{name:'Ice Pierce',description:'難しい条件を一つずつ確かめる'},kind:'氷の結晶の子',color:'#9bcde2',masteryUnlock:6,cityAreas:3,retentionStage:3,retentionUnlock:2,rarity:'epic',note:'人の手で作られた雪玉が、夜の冷気で目を覚ました。'},
+  {id:'tegami',name:'Postling',japaneseName:'テガミン',evolvedName:'Couriale',roots:[{word:'post',meaning:'郵便'},{word:'message',meaning:'伝言'}],skill:{name:'Message Burst',description:'大事なことを短く伝える'},kind:'空飛ぶ封筒',color:'#d9b27d',masteryUnlock:7,cityAreas:3,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'届け先のない手紙を探している。ありがとうの言葉が一番好き。'},
+  {id:'tokirin',name:'Clockling',japaneseName:'トキリン',evolvedName:'Chronokey',roots:[{word:'clock',meaning:'時計'},{word:'chronology',meaning:'時系列'}],skill:{name:'Time Ward',description:'時を戻すように学んだ言葉を確かめる'},kind:'古い時計の守護者',color:'#c8ab68',masteryUnlock:10,cityAreas:4,retentionStage:4,retentionUnlock:4,rarity:'legend',note:'時計塔で百年間眠っていた。何日も覚えていた言葉にだけ針が動く。'}
 ].map(creature=>Object.freeze({...creature,ascendedName:SECOND_FORM_NAMES[creature.id]})));
