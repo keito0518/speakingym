@@ -1076,7 +1076,7 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#forest-home-progress').innerText(),/森 1\/4/);
       assert.match(await forestPage.locator('[data-enter-forest="entry"] .forest-area-status').innerText(),/銀勲章/);
       await forestPage.locator('[data-home-page="collection"]').click();
-      assert.equal(await forestPage.locator('.boss-medal-collection-area').count(),8);
+      assert.equal(await forestPage.locator('.boss-medal-collection-area').count(),10);
       assert.equal(await forestPage.locator('.boss-medal-slot').count(),30);
       assert.equal(await forestPage.locator('.boss-medal-collection-area').first().locator('[data-medal-rank="2"]').count(),1,
         'Silver trophy must also appear in the companion collection');
