@@ -59,9 +59,21 @@ const LEVEL_CUES=Object.freeze({
   'forest-grammar-wifi-hard':'Although は逆接、restarted は過去の操作、is still unstable は現在の状態を示す。'
 });
 
+// World 03 has its own chapter-specific lessons. Explain why the expression
+// works, then show how it transfers outside the fantasy ruins.
+const RUINS_TEACHING=Object.freeze({
+ 'ruins-gate-inscription':['inscription は石や金属に刻まれた文字。普通の印刷された看板とは区別しよう。','In a museum, you can ask: What does the inscription on this monument mean?'],
+ 'ruins-gate-direction':['arrow は矢印、passage は通路。周囲の状況を読んで選び分けよう。','At a station, follow the arrow to the exit, then take the passage on the left.'],
+ 'ruins-gate-sign':['Does の後は動詞の原形。whether や which の後の語順も丁寧に見分けよう。','When asking for directions, say: Could you tell me whether this road leads to the station?'],
+ 'ruins-gate-repeat':['Could you の後は動詞の原形。聞き取れない部分を具体的に指定すると伝わりやすい。','At a busy airport, you can say: Could you repeat the gate number, please?'],
+ 'ruins-core-sequence':['sequence は手順の順番。deadline は作業を終えなければならない期限のこと。','At work, check the sequence of tasks and confirm the deadline before you begin.'],
+ 'ruins-core-mechanism':['gear は歯車、jammed は部品が詰まって動かない状態を表す英語。','When a machine stops, explain: The gear is jammed. Could you take a look?'],
+ 'ruins-core-condition':['If の後は現在形で未来の条件を示す。unless は「もし〜でなければ」を表す。','If the train is delayed, I will call you. Unless it is delayed, I will be on time.'],
+ 'ruins-core-request':['Could you help me + 動詞の原形で依頼。until と before で順序も正確に伝えよう。','At work, ask: Could you hold this while I check the connection? Please wait until I finish.']
+});
 export function quizTeachingFor(prompt){
   if(!prompt||!['vocab','grammar'].includes(prompt.kind))return null;
-  const base=LESSONS[prompt.baseId||prompt.id];
+  const base=LESSONS[prompt.baseId||prompt.id]||RUINS_TEACHING[prompt.baseId||prompt.id];
   if(!base)throw Error(`Missing authored quiz explanation for ${prompt.id}`);
   return {
     label:prompt.kind==='grammar'?'なぜこの語順になる？':'なぜこの単語を使う？',

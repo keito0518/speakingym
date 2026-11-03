@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
-import { cleanForest, FOREST_AREAS, CITY_AREAS, unlockedDungeonAreas } from './forest-engine.js';
+import { cleanForest, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, unlockedDungeonAreas } from './forest-engine.js';
 import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
 import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 
@@ -59,7 +59,7 @@ export function validateSave(value) {
   if (!value || value.version !== SAVE_VERSION || !Array.isArray(value.ownedMonsters) || !value.ownedMonsters.includes('medamago') || !value.progress || typeof value.progress !== 'object') return null;
   const ids = new Set(MONSTERS.map(monster => monster.id));
   const ownedMonsters = unique(value.ownedMonsters.filter(id => ids.has(id)));
-  const areaIds = new Set([...FOREST_AREAS,...CITY_AREAS].map(area=>area.id));
+  const areaIds = new Set([...FOREST_AREAS,...CITY_AREAS,...RUINS_AREAS].map(area=>area.id));
   const hasEvolutionLedger=value.monsterEvolution&&typeof value.monsterEvolution==='object'&&!Array.isArray(value.monsterEvolution);
   const selectedMonster = ownedMonsters.includes(value.selectedMonster) ? value.selectedMonster : 'medamago';
   const cleanProgress = {};
@@ -242,11 +242,13 @@ export function companionUnlockProgress(save, monster, today=dayKey()){
   const completed=new Set(cleanForest(save.forest).completedAreas);
   const areaCount=FOREST_AREAS.filter(area=>completed.has(area.id)).length;
   const cityCount=CITY_AREAS.filter(area=>completed.has(area.id)).length;
+  const ruinsCount=RUINS_AREAS.filter(area=>completed.has(area.id)).length;
   const useMastery=monster.masteryUnlock!==undefined;
   const requiredSkill=useMastery?monster.masteryUnlock:monster.unlock||0;
   const currentSkill=useMastery?learned.mastered:learned.independent;
   const requiredAreas=monster.forestAreas||0;
   const requiredCityAreas=monster.cityAreas||0;
+  const requiredRuinsAreas=monster.ruinsAreas||0;
   const requiredRecall=monster.retentionUnlock||0;
   const recallStage=monster.retentionStage||0;
   const currentRecall=requiredRecall?new Set(
@@ -255,8 +257,8 @@ export function companionUnlockProgress(save, monster, today=dayKey()){
       .map(([id])=>ALL_PROMPTS.find(prompt=>prompt.id===id)?.phraseId).filter(Boolean)
   ).size:0;
   return {skillLabel:useMastery?'定着した表現':'自力で理解・練習した表現',
-    currentSkill,requiredSkill,areaCount,requiredAreas,cityCount,requiredCityAreas,currentRecall,requiredRecall,recallStage,
-    ready:currentSkill>=requiredSkill&&areaCount>=requiredAreas&&cityCount>=requiredCityAreas&&currentRecall>=requiredRecall};
+    currentSkill,requiredSkill,areaCount,requiredAreas,cityCount,requiredCityAreas,ruinsCount,requiredRuinsAreas,currentRecall,requiredRecall,recallStage,
+    ready:currentSkill>=requiredSkill&&areaCount>=requiredAreas&&cityCount>=requiredCityAreas&&ruinsCount>=requiredRuinsAreas&&currentRecall>=requiredRecall};
 }
 export function captureEligibleMonsters(save,today=dayKey()){
   const next=clone(save),captured=[];
@@ -288,7 +290,7 @@ export function getMonsterProgress(save, id = save.selectedMonster) {
   const xp = save.monsterXp?.[id] || 0;
   const stage = Math.min(2,Math.max(0,save.monsterEvolution?.[id]||0));
   const trialAreas=[...new Set((save.monsterTrials?.[id]||[]).filter(area=>
-    [...FOREST_AREAS,...CITY_AREAS].some(chapter=>chapter.id===area)))];
+    [...FOREST_AREAS,...CITY_AREAS,...RUINS_AREAS].some(chapter=>chapter.id===area)))];
   const nextEvolutionXp=stage===0?EVOLUTION_XP:stage===1?SECOND_EVOLUTION_XP:null;
   const requiredTrials=stage===2?0:EVOLUTION_TRIAL_AREAS[stage];
   const canEvolve=nextEvolutionXp!==null&&xp>=nextEvolutionXp&&trialAreas.length>=requiredTrials;
@@ -302,7 +304,7 @@ export function getMonsterProgress(save, id = save.selectedMonster) {
 // different chapter rather than sending players to a locked boss.
 export function getEvolutionTrialGuide(save,id=save.selectedMonster){
  const progress=getMonsterProgress(save,id);
- const areas=[...FOREST_AREAS,...CITY_AREAS];
+ const areas=[...FOREST_AREAS,...CITY_AREAS,...RUINS_AREAS];
  const earned=progress.trialAreas.map(areaId=>areas.find(area=>area.id===areaId))
    .filter(Boolean).map(area=>({id:area.id,name:area.name}));
  const remaining=Math.max(0,progress.requiredTrials-earned.length);

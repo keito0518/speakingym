@@ -58,7 +58,7 @@ export function restorePartyForNextWave(party,amount=4){
  }));
  return {...party,health,swapsUsed:0};
 }
-const AREA_TIERS=Object.freeze({entry:0,glade:0,thicket:1,sanctuary:1,city:1,'city-market':1,'city-terminal':2,'city-blizzard':2});
+const AREA_TIERS=Object.freeze({entry:0,glade:0,thicket:1,sanctuary:1,city:1,'city-market':1,'city-terminal':2,'city-blizzard':2,'ruins-gate':2,'ruins-core':3});
 export function encounterVitality(areaId,index,{boss=false}={}){
  if(boss)return 3;
  return (index===0?3:2)+(AREA_TIERS[areaId]||0);

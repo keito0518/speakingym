@@ -12,6 +12,10 @@ export const CITY_ROUTES = Object.freeze([
  {id:'market',name:'雪のマーケット通り',tag:'WINTER MARKET',detail:'雪灯りの屋台で、お店の英語を確かめながら進もう。'},
  {id:'station',name:'雪の駅前通り',tag:'SNOW STATION',detail:'雪の駅前で交通案内を確かめ、待ち合わせ場所へ向かおう。'}
 ]);
+export const RUINS_ROUTES=Object.freeze([
+ {id:'starlight',name:'星明かりの回廊',tag:'STARLIT PATH',detail:'壁の星座を読んで、光る扉の順番を見つけよう。'},
+ {id:'clockwork',name:'歯車の隠し道',tag:'CLOCKWORK PATH',detail:'止まった歯車を調べて、古代の仕掛けを動かそう。'}
+]);
 // A chapter is a full eight-answer expedition, with a distinct mixture of
 // encounters. Clearing one chapter unlocks the next; old saves remain usable.
 export const FOREST_AREAS=Object.freeze([
@@ -40,7 +44,19 @@ export const CITY_AREAS=Object.freeze([
   story:'吹雪で予定が変わった。状況を整理し、助けを求め、現実的な代案を英語で伝えよう。',
   focus:['problem','apology','clarify','prefer','change','help']}
 ]);
-export const DUNGEON_AREAS=Object.freeze([...FOREST_AREAS,...CITY_AREAS]);
+// Post-City bonus world: harder transfer questions and distinct boss trials.
+// It adds to the save's area IDs without invalidating prior eight-chapter clears.
+export const RUINS_AREAS=Object.freeze([
+ {id:'ruins-gate',name:'星屑の回廊',english:'STARDUST PASSAGE',world:'ruins',
+  goal:'古代の案内を読み、手がかりを聞いて道順を確かめる',
+  story:'雪の街の先に眠る遺跡。星座の案内と歯車の合図を読み解き、封印の門を開こう。',
+  focus:['direction','clarify','repeat','think','prefer']},
+ {id:'ruins-core',name:'時の祭壇',english:'ALTAR OF TIME',world:'ruins',
+  goal:'複数の条件を照合し、丁寧に変更と協力を申し出る',
+  story:'遺跡の最深部。時の守護者と話し、期限と条件を間違えずに祭壇を目覚めさせよう。',
+  focus:['change','late','help','clarify','agree']}
+]);
+export const DUNGEON_AREAS=Object.freeze([...FOREST_AREAS,...CITY_AREAS,...RUINS_AREAS]);
 export const dungeonAreaFor=id=>DUNGEON_AREAS.find(area=>area.id===id)||null;
 export function unlockedCityAreas(save){
  const cleared=new Set(cleanForest(save?.forest).completedAreas);
@@ -49,7 +65,13 @@ export function unlockedCityAreas(save){
  const firstUncleared=CITY_AREAS.findIndex(area=>!cleared.has(area.id));
  return CITY_AREAS.slice(0,firstUncleared<0?CITY_AREAS.length:firstUncleared+1);
 }
-export function unlockedDungeonAreas(save){return [...unlockedForestAreas(save),...unlockedCityAreas(save)];}
+export function unlockedRuinsAreas(save){
+ const cleared=new Set(cleanForest(save?.forest).completedAreas);
+ if(!CITY_AREAS.every(area=>cleared.has(area.id)))return [];
+ const firstUncleared=RUINS_AREAS.findIndex(area=>!cleared.has(area.id));
+ return RUINS_AREAS.slice(0,firstUncleared<0?RUINS_AREAS.length:firstUncleared+1);
+}
+export function unlockedDungeonAreas(save){return [...unlockedForestAreas(save),...unlockedCityAreas(save),...unlockedRuinsAreas(save)];}
 export function unlockedForestAreas(save){
  const cleared=new Set(cleanForest(save?.forest).completedAreas);
  const unlocked=Math.min(FOREST_AREAS.length,FOREST_AREAS.filter(area=>cleared.has(area.id)).length+1);
@@ -62,7 +84,8 @@ export function nextForestArea(save){
 export function nextDungeonArea(save){
  const forest=cleanForest(save?.forest);
  const missingForest=FOREST_AREAS.find(area=>!forest.completedAreas.includes(area.id));
- return missingForest||CITY_AREAS.find(area=>!forest.completedAreas.includes(area.id))||CITY_AREAS.at(-1);
+ return missingForest||CITY_AREAS.find(area=>!forest.completedAreas.includes(area.id))||
+  RUINS_AREAS.find(area=>!forest.completedAreas.includes(area.id))||RUINS_AREAS.at(-1);
 }
 export const FOREST_STAGES = Object.freeze([
   { id:'wooden-gate', name:'森の入り口', chapter:'GATE 1', detail:'森の番人に、考える時間が欲しいことを英語で伝えよう。' },
@@ -100,6 +123,10 @@ export const FOREST_RELICS=Object.freeze({
  ,'market-bell':{name:'Winter Bell',meaning:'商店街の小さな鈴',description:'雪の商店街で、お店の人ときちんと意思を交わせた証。'}
  ,'terminal-ticket':{name:'North Ticket',meaning:'北行きの切符',description:'接続と乗り換えを英語で乗り越えた記念。'}
  ,'snow-crystal':{name:'Snow Crystal',meaning:'吹雪の結晶',description:'吹雪の中でも冷静に問題を説明できた証。'}
+ ,'star-rune':{name:'Starrune',meaning:'星屑の文字',description:'遺跡の星明かりを読むと浮かぶ古い文字。'}
+ ,'rusted-gear':{name:'Ancient Gear',meaning:'古代の歯車',description:'止まった時の中で今も回る小さな歯車。'}
+ ,'rune-seal':{name:'Rune Seal',meaning:'回廊の封印',description:'星屑の回廊の番人が託した封印。'}
+ ,'time-key':{name:'Time Key',meaning:'時の鍵',description:'祭壇の守護者を倒して手に入れた光る鍵。'}
 });
 export function cleanForest(input){
  const source=input&&typeof input==='object'?input:{};
@@ -111,7 +138,7 @@ export function cleanForest(input){
  return {
   clears:Number.isSafeInteger(source.clears)&&source.clears>=0?Math.min(source.clears,100000):0,
   bestWave:Number.isSafeInteger(source.bestWave)&&source.bestWave>=0?Math.min(source.bestWave,100000):0,
-  routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>[...FOREST_ROUTES,...CITY_ROUTES].some(r=>r.id===x)))],
+  routes:[...new Set((Array.isArray(source.routes)?source.routes:[]).filter(x=>[...FOREST_ROUTES,...CITY_ROUTES,...RUINS_ROUTES].some(r=>r.id===x)))],
   relics:[...new Set((Array.isArray(source.relics)?source.relics:[]).filter(x=>ids.includes(x)))],
   completedAreas:[...new Set(completed.filter(x=>allowed.includes(x)))],
   medals:cleanBossMedals(source.medals,allowed),
@@ -145,8 +172,9 @@ export function getForestPrompts(save,difficulty=save.difficulty||'easy'){
  return prompts;
 }
 export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[],recordAreaClear=true,medalResult=null){
- const isCity=dungeonAreaFor(areaId)?.world==='city';
- const routePool=isCity?CITY_ROUTES:FOREST_ROUTES;
+ const world=dungeonAreaFor(areaId)?.world||'forest';
+ const isCity=world==='city',isRuins=world==='ruins';
+ const routePool=isRuins?RUINS_ROUTES:isCity?CITY_ROUTES:FOREST_ROUTES;
  if(!routePool.some(r=>r.id===routeId))throw new Error('Invalid forest route');
  if(!save.ownedMonsters?.includes(companionId))throw new Error('Companion is not owned');
  if(!DUNGEON_AREAS.some(area=>area.id===areaId))throw new Error('Invalid forest area');
@@ -154,13 +182,13 @@ export function finishForest(save,routeId,companionId,areaId='entry',promptIds=[
  const trialEarned=recordAreaClear&&!(save.monsterTrials?.[companionId]||[]).includes(areaId);
  const before=cleanForest(save.forest);
  const fresh=new Set(before.relics);
- const earned=[isCity?(routeId==='market'?'market-stamp':'station-stamp'):(routeId==='sunlit'?'sunlit-leaf':'moss-lantern')];
- const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn',city:'city-pass','city-market':'market-bell','city-terminal':'terminal-ticket','city-blizzard':'snow-crystal'}[areaId];
+ const earned=[isRuins?(routeId==='starlight'?'star-rune':'rusted-gear'):isCity?(routeId==='market'?'market-stamp':'station-stamp'):(routeId==='sunlit'?'sunlit-leaf':'moss-lantern')];
+ const areaTreasure={glade:'sunbeam',thicket:'mist-seal',sanctuary:'ancient-acorn',city:'city-pass','city-market':'market-bell','city-terminal':'terminal-ticket','city-blizzard':'snow-crystal','ruins-gate':'rune-seal','ruins-core':'time-key'}[areaId];
  if(areaTreasure&&recordAreaClear)earned.push(areaTreasure);
  // A narrow, purely cosmetic exploration perk tied to evolved companions.
  const evolved=(save.monsterEvolution?.[companionId]||0)>=1;
- if(!isCity&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
- if(!isCity&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
+ if(world==='forest'&&evolved && companionId==='medamago'&&routeId==='sunlit')earned.push('golden-yolk');
+ if(world==='forest'&&evolved && companionId==='katappo'&&routeId==='moss')earned.push('lost-button');
  const discovered=earned.filter(id=>!fresh.has(id));
  const difficulty=medalResult?.difficulty;
  const requestedRank=medalResult?.rank;

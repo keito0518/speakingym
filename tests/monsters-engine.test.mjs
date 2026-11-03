@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from '../prototype/speakingym-monsters/monster-data.js';
-import { cleanForest, FOREST_ROUTES, CITY_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, DUNGEON_AREAS, unlockedForestAreas, unlockedCityAreas, unlockedDungeonAreas, nextForestArea, nextDungeonArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
+import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, DUNGEON_AREAS, unlockedForestAreas, unlockedCityAreas, unlockedRuinsAreas, unlockedDungeonAreas, nextForestArea, nextDungeonArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
 import { BOSS_MEDAL_NAMES, bossTrainingBonus, cleanBossMedals, evaluateBossMedal } from '../prototype/speakingym-monsters/boss-mastery.js';
 import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
 import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, regularEncountersFor, forestWaveLengthFor, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
@@ -321,8 +321,8 @@ test('dungeon reports verified learning honestly and never count assisted route 
  assert.throws(()=>summarizeDungeonAttempt('unverified',[]),/Unknown/);
  assert.throws(()=>summarizeDungeonAttempt('entry',null),/Invalid/);
 });
-test('eight dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
- assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,8);
+test('all ten dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
+ assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,10);
  for(const area of DUNGEON_AREAS){
    const expected=['listen','vocab','speak'];
    assert.ok(DUNGEON_CHAPTER_SKILLS[area.id].headline.length>=8);
@@ -337,7 +337,7 @@ test('eight dungeon bosses have three grounded learning objectives, not new mand
    const wave=buildForestWave({areaId:area.id,difficulty:'easy',progression:'story',random:()=>.53,bossConversation:true});
    const regular=regularEncountersFor(area.id);
    assert.deepEqual(wave.prompts.slice(regular).map(p=>p.kind),[
-     'listen',['thicket','entry','city','city-market','city-blizzard'].includes(area.id)?'grammar':'vocab','speak'
+     'listen',['thicket','entry','city','city-market','city-blizzard','ruins-core'].includes(area.id)?'grammar':'vocab','speak'
    ]);
    if(area.id!=='entry'){
      const last=wave.prompts.at(-1);
@@ -582,16 +582,16 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
 });
 
 test('curriculum includes 4 Snowlit City chapters with authored local quizzes and speaking tasks', () => {
-  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,27);
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,31);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,342);
+  assert.equal(ALL_PROMPTS.length,384);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,114);
-    assert.equal(new Set(level.map(p=>p.id)).size,114);
+    assert.equal(level.length,128);
+    assert.equal(new Set(level.map(p=>p.id)).size,128);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
-    assert.equal(level.filter(p=>p.kind==='vocab').length,24);
-    assert.equal(level.filter(p=>p.kind==='grammar').length,20);
+    assert.equal(level.filter(p=>p.kind==='vocab').length,28);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,24);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
@@ -913,7 +913,7 @@ test('four Forest areas unlock one at a time, preserve earlier progress and avoi
 test('City is a fully gated second world, with its own routes, art and save-compatible rewards',async()=>{
  assert.equal(FOREST_AREAS.length,4);
  assert.equal(CITY_AREAS.length,4);
- assert.equal(DUNGEON_AREAS.length,8);
+ assert.equal(DUNGEON_AREAS.length,10);
  assert.deepEqual(CITY_ROUTES.map(route=>route.id),['market','station']);
  let save=createSave();
  assert.deepEqual(unlockedCityAreas(save),[]);
@@ -949,7 +949,7 @@ test('City is a fully gated second world, with its own routes, art and save-comp
    citySave=validateSave(finished.save);
  }
  assert.equal(unlockedCityAreas(citySave).length,4);
- assert.equal(nextDungeonArea(citySave).id,'city-blizzard','Completed City stays replayable');
+ assert.equal(nextDungeonArea(citySave).id,'ruins-gate','Completed City opens the Starlit Ruins');
  assert.equal(unlockedForestAreas(resumed).length,4,'City clears do not create a fifth Forest chapter');
  const rare=MONSTERS.find(monster=>monster.forestAreas===4);
  assert.ok(rare);
@@ -1640,12 +1640,12 @@ test('positive no-worries agreements and suits-me phrasing retain timing safegua
   ['agree-work-hard','No worries, Friday at nine is fine but I cannot attend. Could you send the agenda?']
  ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','Do not reward missing or opposite intent: '+id+' / '+answer);
 });
-test('forest and city objective questions grade deterministically and never reward incorrect taps',()=>{
+test('forest, city and ruins objective questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
-    assert.equal(quizzes.length,44);
-    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,24);
-    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,20);
+    assert.equal(quizzes.length,52);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,28);
+    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,24);
     assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
     for(const p of quizzes){
       assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
@@ -1740,9 +1740,9 @@ test('an overdue word or grammar point takes priority in a later forest encounte
   assert.equal(harder.prompts[2].difficulty,'normal');
   assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
 });
-test('all 132 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
+test('all 156 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
   const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
-  assert.equal(quizzes.length,132);
+  assert.equal(quizzes.length,156);
   for(const prompt of quizzes){
     const lesson=quizTeachingFor(prompt);
     assert.ok(lesson?.label&&lesson.clue.length>=22,`Missing explanatory clue: ${prompt.id}`);
@@ -1799,7 +1799,7 @@ test('every chapter and route has a meaningful but grade-neutral choice event',(
  assert.equal(forestEventChoice(null,'inspect'),null);
  assert.equal(forestNpcDialogueFor(null),null);
 });
-test('all eight chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
+test('all ten chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
   assert.deepEqual(Object.keys(FOREST_BOSS_CHAPTERS),DUNGEON_AREAS.map(a=>a.id));
   assert.deepEqual(Object.keys(FOREST_BOSS_SIGNATURES),DUNGEON_AREAS.map(a=>a.id));
   for(const area of DUNGEON_AREAS){
@@ -1809,7 +1809,7 @@ test('all eight chapter bosses stage listening, language puzzle and speaking wit
       const phases=wave.prompts.slice(start).map((prompt,i)=>forestBossPhase({areaId:area.id,index:i+start,wave:1,level,prompt}));
       assert.equal(phases.length,3);
       assert.deepEqual(phases.map(p=>p.turn),[1,2,3]);
-      assert.deepEqual(phases.map(p=>p.kind),['listen',['entry','thicket','city','city-market','city-blizzard'].includes(area.id)?'grammar':'vocab','speak']);
+      assert.deepEqual(phases.map(p=>p.kind),['listen',['entry','thicket','city','city-market','city-blizzard','ruins-core'].includes(area.id)?'grammar':'vocab','speak']);
       assert.ok(phases.every(p=>p.areaId===area.id&&p.title&&p.context&&p.chapter));
       assert.equal(new Set(phases.map(p=>p.signature.id)).size,3,'Boss moves change with each phase');
       assert.ok(phases.every(p=>p.signature.name&&p.signature.tell&&p.signature.guard));
@@ -1867,10 +1867,10 @@ test('first-wave boss conversation joins listening, word order and speaking with
 });
 test('expanded dungeon quizzes change targets across levels and explain the language point',()=>{
   const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
-  assert.equal(quizzes.length,132);
-  assert.equal(new Set(quizzes.map(p=>p.id)).size,132);
+  assert.equal(quizzes.length,156);
+  assert.equal(new Set(quizzes.map(p=>p.id)).size,156);
   const baseIds=new Set(quizzes.map(p=>p.baseId));
-  assert.equal(baseIds.size,44);
+  assert.equal(baseIds.size,52);
   for(const baseId of baseIds){
     const variants=quizzes.filter(p=>p.baseId===baseId);
     assert.deepEqual(variants.map(p=>p.difficulty),['easy','normal','hard']);
@@ -2255,7 +2255,7 @@ test('original companions use the pixel atlas and expanded companions have origi
  for(const monster of MONSTERS){
   const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
   assert.match(young,/class="monster-svg pixel-art /,monster.id);
-  if(['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko','kippu','kofuu','mafura','yukidama','tegami','tokirin'].includes(monster.id)){
+  if(['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko','kippu','kofuu','mafura','yukidama','tegami','tokirin','runerun','gearbat','shardling','astrowisp'].includes(monster.id)){
    assert.match(young,/shape-rendering="crispEdges"/,monster.id);
    assert.match(grown,/data-stage="1"/,monster.id);
    assert.doesNotMatch(young,/pixel-companions.png/,monster.id);

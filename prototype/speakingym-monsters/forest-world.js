@@ -39,7 +39,22 @@ function cityWorldArt(route,areaId='city'){
  <g class="forest-landmark" transform="translate(644 134)"><circle r="21" fill="#173d50" stroke="#d6e6d4" stroke-width="3"/><path d="M-10 7L0-12L10 7Z" fill="#ffd798" stroke="#fff7df" stroke-width="2"/></g>
  </svg>`;
 }
+function ruinsWorldArt(route,areaId){
+ const deep=areaId==='ruins-core',gear=route==='clockwork';
+ const columns=[60,158,552,651].map((x,i)=>`<g transform="translate(${x} ${i%2?24:12})"><path d="M-19 222V60H19V222" fill="#3d4469" stroke="#9c98a9" stroke-width="3"/><path d="M-25 55H25V71H-25Z" fill="#77738f" stroke="#c5b6bf" stroke-width="3"/><path d="M-22 221H22V232H-22Z" fill="#3b3f5c" stroke="#aaa0b2" stroke-width="3"/><path d="M-7 77V209M7 77V209" stroke="#b0a3bd" opacity=".45" stroke-width="3"/></g>`).join('');
+ const stars=Array.from({length:37},(_,i)=>`<circle cx="${(i*73+23)%720}" cy="${(i*47+13)%139}" r="${i%5===0?2.1:1.1}" fill="${i%3===0?'#d9e1ff':'#fbe3a4'}" opacity="${i%4===0?'.9':'.55'}"/>`).join('');
+ const wheels=deep?`<g transform="translate(355 129)" stroke="#d0b486" fill="none"><circle r="73" stroke-width="13" opacity=".7"/><circle r="47" stroke-width="7"/><circle r="10" fill="#ecd8af"/><path d="M0 -73V-45M0 45V73M-73 0H-45M45 0H73M-52 -52L-33 -33M52 -52L33 -33M-52 52L-33 33M52 52L33 33" stroke-width="10"/><path d="M0 0V-32L22 -16" stroke-width="6" stroke-linecap="round"/></g>`:`<g transform="translate(350 120)"><path d="M0 -65L57 35H-57Z" fill="#3f436c" stroke="#c5ad82" stroke-width="6"/><circle cy="0" r="24" fill="#829fbc" stroke="#edd6a0" stroke-width="4"/><path d="M0 -16L14 8H-14Z" fill="#fff0bb"/></g>`;
+ return `<svg class="forest-world-svg ruins-world-svg" data-ruins-chapter="${areaId}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 270" role="img" aria-label="${deep?'時の祭壇に巨大な歯車が輝く':'星屑の回廊に古代の石碑が並ぶ'}、星影の遺跡の3つの関門">
+ <defs><linearGradient id="ruinsSky" x2="0" y2="1"><stop stop-color="${gear?'#15172e':'#222345'}"/><stop offset=".76" stop-color="#514b76"/><stop offset="1" stop-color="#817a91"/></linearGradient><linearGradient id="ruinsPath" x2="0" y2="1"><stop stop-color="#bbadbb"/><stop offset="1" stop-color="#5f6683"/></linearGradient></defs>
+ <rect width="720" height="270" fill="url(#ruinsSky)"/>${stars}<path d="M0 115L53 97L107 127L168 94L244 112L319 89L407 122L494 88L588 119L664 83L720 107V270H0Z" fill="#2f3459" opacity=".8"/>
+ ${columns}<path d="M0 218Q175 202 355 215T720 204V270H0Z" fill="#302e4d"/><path d="M77 256Q151 208 238 216T420 201T658 153" fill="none" stroke="#333755" stroke-width="56" stroke-linecap="round"/><path d="M77 256Q151 208 238 216T420 201T658 153" fill="none" stroke="url(#ruinsPath)" stroke-width="42" stroke-linecap="round"/><path d="M77 256Q151 208 238 216T420 201T658 153" fill="none" stroke="#f0d99b" stroke-width="3" stroke-dasharray="7 15"/>
+ ${wheels}<g fill="#e9cea0" opacity=".85"><path d="M209 191L223 177L238 191L223 205Z"/><path d="M481 163L494 150L507 163L494 176Z"/></g>
+ <g class="forest-landmark" transform="translate(126 226)"><circle r="21" fill="#242741" stroke="#e7cfa3" stroke-width="3"/><path d="M-9 8L0 -12L9 8Z" fill="#b2d9ef"/></g>
+ <g class="forest-landmark" transform="translate(364 185)"><circle r="21" fill="#242741" stroke="#e7cfa3" stroke-width="3"/><path d="M-11 -7H11V7H-11ZM-4 -15V15M4 -15V15" stroke="#c0d9f0" stroke-width="3" fill="none"/></g>
+ <g class="forest-landmark" transform="translate(640 143)"><circle r="21" fill="#242741" stroke="#e7cfa3" stroke-width="3"/><path d="M0 -14L12 9H-12Z" fill="#fbe1a5"/></g></svg>`;
+}
 export function forestWorldArt(route=null,areaId='entry'){
+ if(areaId.startsWith('ruins-'))return ruinsWorldArt(route,areaId);
  if(areaId==='city'||areaId.startsWith('city-'))return cityWorldArt(route,areaId);
  const moss=route==='moss',sunlit=route==='sunlit';
  const mode=moss?'moss':sunlit?'sunlit':'wild';

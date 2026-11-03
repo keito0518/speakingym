@@ -1,3 +1,10 @@
+## 2026-11-03 — World 03, 星影の遺跡, and 31 collectible companions
+
+- A **third world** unlocks only after all four Forest and four Snow City chapters are cleared. **星屑の回廊** and **時の祭壇** each contain ten ordinary encounters and a three-phase chapter boss, with their own runes/clockwork enemies, distinct exploration and battle artwork, and new collectible relics. Both chapters remain replayable, including their medals and companion boss-trial records.
+- Added **42 original offline learning tasks**: 24 level-specific vocabulary/grammar questions and 18 authored speaking situations across easy, normal, hard. The ruin bosses test comprehension, inscriptions/conditions, and practical requests. No additional AI usage, login or billing is needed; older chapters' authored content and listening audio stay intact.
+- The roster grows from **27 to 31 companions**, introducing Runelet, Cogbat, Shardlet and Nebulaim with distinct three-form pixel art, English-word origins and battle traits. Recruitment requires genuine **Ruins chapter clears plus language growth**; higher-rarity creatures additionally require spaced 1/3/7-day recall. Stored companions and earned evolutions are never reset.
+- Updated home dungeon selection, journal, medal total and collection lock descriptions to include the new world. Both additions are tested with save restoration, sequential unlocking, boss attack patterns, unique curriculum, pixel art and non-bypassable recruit prerequisites. Draft PR only; no changes to production, `main`, D1, Stripe, payment or Cloudflare Worker.
+
 ## 2026-11-03 — beginner focus and first-hit feedback
 
 - On a truly empty save, the English Dungeon is the only prominent recommended action. The personalized **今日のおすすめ** card becomes visible after genuine learning activity; migrated learning progress, skill attempts, bookmarks, and legacy due-review queues also keep their next action reachable. The underlying recommendation and grading rules are unchanged.

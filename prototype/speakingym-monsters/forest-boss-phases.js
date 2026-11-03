@@ -59,6 +59,20 @@ const CHAPTER_BEATS=Object.freeze({
   titlesEn:['STORM UPDATE','SAFE ALTERNATIVE','YOUR FINAL REQUEST'],
   contexts:['悪天候の連絡から状況を正確に理解しよう。','安全な代案を英語で組み立てよう。','必要な助けと代案を、自分の英語で具体的に伝えよう。'],
   contextsEn:['Listen to the weather-related service update.','Arrange a clear and safe alternative.','Explain the problem and ask for a workable next step.']
+ }),
+ 'ruins-gate':Object.freeze({
+  name:'星の石像の三重封印',english:'ASTER GOLEM TRIAL',
+  titles:['石碑のささやき','星座の記号','古代の門への問い'],
+  titlesEn:['WHISPER OF STONE','CONSTELLATION CIPHER','ASK THE GATE'],
+  contexts:['石像の声を聞いて、進むための手がかりをつかもう。','壁に刻まれた言葉から、正しい手がかりを選ぼう。','門の仕組みについて、英語で丁寧に尋ねよう。'],
+  contextsEn:['Listen to the ancient gate and identify the important detail.','Read the inscription and select the word that fits.','Ask a clear question about the path and its conditions.']
+ }),
+ 'ruins-core':Object.freeze({
+  name:'時の神託者の試練',english:'CLOCK ORACLE TRIAL',
+  titles:['時の警告','歯車の条件','祭壇への最終回答'],
+  titlesEn:['WARNING FROM TIME','CLOCKWORK CONDITION','FINAL REQUEST'],
+  contexts:['鐘の合図を聞いて、時間と順番を確かめよう。','仕掛けを動かす条件を自然な語順で示そう。','安全な順番と必要な助けを英語で伝えよう。'],
+  contextsEn:['Listen for the timing and the required sequence.','Put the condition for opening the mechanism into English.','Describe the safe sequence and ask for the assistance you need.']
  })
 });
 export const FOREST_BOSS_CHAPTERS=CHAPTER_BEATS;
@@ -104,6 +118,16 @@ export const FOREST_BOSS_SIGNATURES=Object.freeze({
   Object.freeze({id:'stormcall',name:'吹雪の放送',tell:'悪天候の連絡を聞こう。',guard:'風に声がかき消された。'}),
   Object.freeze({id:'stormplan',name:'代案の語順',tell:'安全な提案を組み立てよう。',guard:'雪が行く手をふさいでいる。'}),
   Object.freeze({id:'stormreply',name:'最後の相談',tell:'困りごとと代案を伝えよう。',guard:'吹雪の壁が残っている。'})
+ ]),
+ 'ruins-gate':Object.freeze([
+  Object.freeze({id:'runevoice',name:'石碑の声',tell:'古い回廊に声が響く。指示を聞こう。',guard:'星の封印が音をさえぎった。'}),
+  Object.freeze({id:'runecode',name:'星座の解読',tell:'刻印に合う語を選ぼう。',guard:'星座の暗号はまだ解けていない。'}),
+  Object.freeze({id:'runereply',name:'石像への対話',tell:'道順を自分の英語で確認しよう。',guard:'石像はまだ扉を開かない。'})
+ ]),
+ 'ruins-core':Object.freeze([
+  Object.freeze({id:'clockvoice',name:'時の鐘声',tell:'鐘の合図を聞いて、条件を確かめよう。',guard:'時間の流れが攻撃を巻き戻した。'}),
+  Object.freeze({id:'clockcode',name:'歯車の語順',tell:'仕掛けの条件を正しく並べよう。',guard:'歯車はまだ動かない。'}),
+  Object.freeze({id:'clockreply',name:'時の神託',tell:'必要な協力を英語で伝えよう。',guard:'祭壇の扉はまだ閉じている。'})
  ])
 });
 

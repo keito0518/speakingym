@@ -18,7 +18,9 @@ export const DUNGEON_CHAPTER_SKILLS=Object.freeze({
  city:Object.freeze({headline:'街の問い合わせ・予定変更・困りごとへの対応',boss:['案内の要点を聞き取る','状況に合う英文を組み立てる','問い合わせや希望を英語で伝える']}),
  'city-market':Object.freeze({headline:'屋台の注文・返品・料金の質問',boss:['お店の説明を聞き取る','条件に合う語順を作る','具体的に注文や料金を尋ねる']}),
  'city-terminal':Object.freeze({headline:'乗り換え・運休・予約の変更',boss:['発車・運休の情報を聞く','状況に合う語を選ぶ','代わりの経路を尋ねる']}),
- 'city-blizzard':Object.freeze({headline:'悪天候の説明と安全な代替案',boss:['状況説明の要点を聞く','丁寧な提案を組み立てる','必要な支援・代案を伝える']})
+ 'city-blizzard':Object.freeze({headline:'悪天候の説明と安全な代替案',boss:['状況説明の要点を聞く','丁寧な提案を組み立てる','必要な支援・代案を伝える']}),
+ 'ruins-gate':Object.freeze({headline:'星座の案内・道順・古い文字を読む',boss:['遺跡の案内を聞き取る','星座の手がかりを選ぶ','間違えずに道を尋ねる']}),
+ 'ruins-core':Object.freeze({headline:'時間・順番・条件を正確に伝える',boss:['時間の条件を聞く','変更条件を組み立てる','誤解を防いで頼みごとをする']})
 });
 export const DUNGEON_OUTCOME_VALUES=Object.freeze(['independent','supported','review']);
 export function summarizeDungeonAttempt(areaId,encounters=[]){

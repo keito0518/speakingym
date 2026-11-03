@@ -19,7 +19,9 @@ export const AREA_BOSSES=Object.freeze({
  city:Object.freeze({id:'metroguardian',name:'Metro Guardian',japanese:'街の守護機',hp:3}),
  'city-market':Object.freeze({id:'marketwarden',name:'Market Warden',japanese:'雪市の番人',hp:3}),
  'city-terminal':Object.freeze({id:'railkeeper',name:'Rail Keeper',japanese:'北駅の守護者',hp:3}),
- 'city-blizzard':Object.freeze({id:'blizzardking',name:'Blizzard King',japanese:'吹雪の王',hp:3})
+ 'city-blizzard':Object.freeze({id:'blizzardking',name:'Blizzard King',japanese:'吹雪の王',hp:3}),
+ 'ruins-gate':Object.freeze({id:'astergolem',name:'Aster Golem',japanese:'星の石像',hp:3}),
+ 'ruins-core':Object.freeze({id:'clockoracle',name:'Clock Oracle',japanese:'時の神託者',hp:3})
 });
 const CITY_MOBS=['Signbit','Tickety','Signalyn','Parceloo','Lanternet'].map((name,i)=>({id:['signbit','tickety','signalyn','parceloo','lanternet'][i],name,japanese:['路地の標識','チケットの番人','信号の精','荷物のいたずらっ子','街灯の精'][i]}));
 const AREA_MOBS=Object.freeze({
@@ -30,7 +32,9 @@ const AREA_MOBS=Object.freeze({
  city:CITY_MOBS,
  'city-market':CITY_MOBS.map((foe,i)=>({...foe,japanese:['値札の精','注文の番人','夜市の信号','包みのいたずらっ子','屋台のランタン'][i]})),
  'city-terminal':CITY_MOBS.map((foe,i)=>({...foe,japanese:['案内標識','乗車券の番人','発車ベルの精','荷物番','ホームの灯り'][i]})),
- 'city-blizzard':CITY_MOBS.map((foe,i)=>({...foe,japanese:['雪に埋もれた標識','凍える切符','吹雪の信号','雪だるまの荷物','氷の街灯'][i]}))
+ 'city-blizzard':CITY_MOBS.map((foe,i)=>({...foe,japanese:['雪に埋もれた標識','凍える切符','吹雪の信号','雪だるまの荷物','氷の街灯'][i]})),
+ 'ruins-gate':['Rune Sprite','Cogling','Glass Moth','Orbitbat','Glyphcap'].map((name,i)=>({id:['runewisp','coglet','glasshade','orbitbat','glyphcap'][i],name,japanese:['古い文字の精','歯車の子','ガラスの蛾','星を回るコウモリ','碑文のキノコ'][i]})),
+ 'ruins-core':['Time Wisp','Cogling','Glass Moth','Orbitbat','Glyphcap'].map((name,i)=>({id:['runewisp','coglet','glasshade','orbitbat','glyphcap'][i],name,japanese:['時のささやき','精密な歯車','幻のガラス','時計塔の羽','最後の碑文'][i]}))
 });
 const AREA_SKILLS=Object.freeze({
  entry:['speak','listen','vocab','grammar','speak'],
@@ -40,7 +44,9 @@ const AREA_SKILLS=Object.freeze({
  city:['listen','vocab','speak','read','grammar'],
  'city-market':['vocab','speak','listen','grammar','read'],
  'city-terminal':['listen','read','grammar','speak','vocab'],
- 'city-blizzard':['read','listen','speak','grammar','vocab']
+ 'city-blizzard':['read','listen','speak','grammar','vocab'],
+ 'ruins-gate':['read','vocab','listen','grammar','speak'],
+ 'ruins-core':['grammar','speak','read','listen','vocab']
 });
 // Foes telegraph their own defensive stance. These patterns are cosmetic:
 // neither verdicts nor the XP ledger depend on enemy type.
@@ -57,14 +63,14 @@ export function enemyTacticFor(index,wave=1,areaId='entry'){
  if(FOREST_TACTICS[foe.id])return FOREST_TACTICS[foe.id];
  const original=index>=REGULAR_ENCOUNTERS?FOREST_TACTICS.thornking:
    FOREST_TACTICS[FOREST_MOBS[(index+wave-1)%FOREST_MOBS.length].id];
- const theme={glade:'光',thicket:'霧',sanctuary:'古木',city:'街','city-market':'市場','city-terminal':'駅','city-blizzard':'吹雪'}[areaId];
+ const theme={glade:'光',thicket:'霧',sanctuary:'古木',city:'街','city-market':'市場','city-terminal':'駅','city-blizzard':'吹雪','ruins-gate':'星','ruins-core':'時'}[areaId];
  return {preferredKind:AREA_SKILLS[areaId][index%AREA_SKILLS[areaId].length]||'mixed',name:`${theme}の${original.name}`,
    tell:`${theme}の力をまとっている。${original.tell}`,guard:`${theme}の力で防御した`};
 }
 export const REGULAR_ENCOUNTERS=5;
 export const BOSS_HITS=3;
 export const FOREST_WAVE_LENGTH=REGULAR_ENCOUNTERS+BOSS_HITS;
-export const REGULAR_BY_AREA=Object.freeze({entry:5,glade:7,thicket:10,sanctuary:10,city:10,'city-market':10,'city-terminal':10,'city-blizzard':10});
+export const REGULAR_BY_AREA=Object.freeze({entry:5,glade:7,thicket:10,sanctuary:10,city:10,'city-market':10,'city-terminal':10,'city-blizzard':10,'ruins-gate':10,'ruins-core':10});
 export function regularEncountersFor(areaId='entry'){return REGULAR_BY_AREA[areaId]||REGULAR_ENCOUNTERS;}
 export function forestWaveLengthFor(areaId='entry'){return regularEncountersFor(areaId)+BOSS_HITS;}
 export const DIFFICULTY_TRIES=Object.freeze({easy:3,normal:2,hard:1});
@@ -85,7 +91,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
  if(!AREA_SKILLS[areaId])throw Error('Unknown forest area');
  const level=progression==='story'?difficulty:forestLevel(difficulty,wave);
  if(!DIFFICULTY_TRIES[level])throw Error('Invalid forest difficulty');
- const cityChapter=DUNGEON_AREAS.find(area=>area.id===areaId)?.world==='city';
+ const localChapter=['city','ruins'].includes(DUNGEON_AREAS.find(area=>area.id===areaId)?.world);
  // City-authored situations do not leak into the Forest; already-learned
  // Forest expressions remain available for transfer in the new world.
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level&&(!p.world||p.world===areaId));
@@ -110,7 +116,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
  // listening -> grammar/vocabulary -> speaking boss gauntlet.
  const kinds=Array.from({length:regular},(_,index)=>areaId==='entry'?enemyTacticFor(index,wave,areaId).preferredKind:AREA_SKILLS[areaId][index%AREA_SKILLS[areaId].length]);
  const bossMiddle=areaId==='entry'?(wave%2===1?'grammar':'vocab'):
-   ['glade','sanctuary','city-terminal'].includes(areaId)?'vocab':'grammar';
+   ['glade','sanctuary','city-terminal','ruins-gate'].includes(areaId)?'vocab':'grammar';
  kinds.push('listen',bossMiddle,'speak');
  for(let slot=0;slot<kinds.length;slot++){
    const kind=kinds[slot];
@@ -175,7 +181,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
        // situations. Keep due weaknesses above this rule and prefer a fresh
        // expression when possible, but do not let global Forest exercises
        // crowd out the entire chapter-specific bank.
-       if(cityChapter&&slot<regular){
+       if(localChapter&&slot<regular){
          const localFresh=newPhrase.filter(p=>p.world===areaId);
          const local=candidates.filter(p=>p.world===areaId);
          if(localFresh.length)candidates=localFresh;
@@ -196,7 +202,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    const needsChapterFocus=areaId!=='entry'&&slot<regular&&chapterFocusCount<2;
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
-     cityChapter&&p.world===areaId?0:1,
+     localChapter&&p.world===areaId?0:1,
      // Keep a boss's chapter theme intact, even if that theme was practiced
      // earlier. First teach two chapter-linked encounters before allowing
      // regular foes to branch into a broader transfer vocabulary.

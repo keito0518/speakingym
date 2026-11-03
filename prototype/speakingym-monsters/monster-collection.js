@@ -1,7 +1,7 @@
 import { MONSTERS, monsterFormName } from './monster-data.js';
 import { getMonsterProgress, getEvolutionTrialGuide, learningSummary, feedMonster, evolveMonster, selectMonster, XP_PER_LEVEL, EVOLUTION_XP, SECOND_EVOLUTION_XP, companionUnlockProgress, getMonsterBondProgress } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
-import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, FOREST_ROUTES, unlockedCityAreas, cleanForest } from './forest-engine.js';
+import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, FOREST_ROUTES, unlockedCityAreas, unlockedRuinsAreas, cleanForest } from './forest-engine.js';
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
 import { BOSS_MEDAL_NAMES } from './boss-mastery.js';
@@ -27,6 +27,7 @@ function unlockText(c,save){
  const language=`${p.skillLabel} ${p.currentSkill}/${p.requiredSkill}`;
  const recallLabel={2:'翌日',3:'3日後',4:'7日後'}[p.recallStage]||'復習';
  const recall=p.requiredRecall?` · ${recallLabel}の定着チェック ${p.currentRecall}/${p.requiredRecall}表現`:'';
+ if(c.ruinsAreas)return `${language} · 星影の遺跡 ${p.ruinsCount}/${p.requiredRuinsAreas}エリア${recall}。すべて達成で仲間になるよ。`;
  if(c.cityAreas)return `${language} · 雪灯りの街 ${p.cityCount}/${p.requiredCityAreas}エリア${recall}。すべて達成で仲間になるよ。`;
  return c.forestAreas?`${language} · 森の攻略 ${p.areaCount}/${p.requiredAreas}エリア${recall}。すべて達成で仲間になるよ。`:`${language} で出会えるよ。`;
 }
@@ -54,8 +55,8 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     $('#forest-collection-count').textContent = `踏破 ${forest.clears}回 · 宝物 ${forest.relics.length}/${Object.keys(FOREST_RELICS).length}`;
     $('#forest-collection-relics').innerHTML = forest.relics.length ? forest.relics.map(id => `<article class="forest-relic">${relicArt(id)}<div><strong lang="en">${html(FOREST_RELICS[id].name)}</strong><small>${html(FOREST_RELICS[id].meaning)}</small></div></article>`).join('') : '<p class="forest-empty">仲間と森を探検して、宝物を見つけよう。</p>';
     const awardedMedals=Object.values(forest.medals).reduce((sum,levels)=>sum+Object.keys(levels).length,0);
-    $('#boss-medal-collection-progress').textContent=`勲章 ${awardedMedals}/24 · 一度獲得した最高ランクは下がらないよ`;
-    $('#boss-medal-collection-grid').innerHTML=[...FOREST_AREAS,...CITY_AREAS].map(area=>{
+    $('#boss-medal-collection-progress').textContent=`勲章 ${awardedMedals}/${(FOREST_AREAS.length+CITY_AREAS.length+RUINS_AREAS.length)*3} · 一度獲得した最高ランクは下がらないよ`;
+    $('#boss-medal-collection-grid').innerHTML=[...FOREST_AREAS,...CITY_AREAS,...RUINS_AREAS].map(area=>{
       const earned=forest.medals[area.id]||{};
       const levels=[['easy','やさしい'],['normal','標準'],['hard','応用']].map(([key,label])=>{
         const rank=earned[key]||0;
@@ -67,12 +68,16 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     const earnedBadges=chapterMarks.filter(mark=>mark.condition(forest));
     const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
     const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
+    const ruinsCount=RUINS_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
     const cityOpen=new Set(unlockedCityAreas(save).map(area=>area.id));
-    $('#forest-journal-summary').textContent=`森 ${forestCount}/4 · 街 ${cityCount}/4エリア · イベント ${seenEvents.size}/8種類 · 称号 ${earnedBadges.length}/6`;
+    const ruinsOpen=new Set(unlockedRuinsAreas(save).map(area=>area.id));
+    $('#forest-journal-summary').textContent=`森 ${forestCount}/4 · 街 ${cityCount}/4 · 遺跡 ${ruinsCount}/2エリア · イベント ${seenEvents.size}/8種類 · 称号 ${earnedBadges.length}/6`;
     $('#forest-journal-areas').innerHTML=FOREST_AREAS.map((area,index)=>
       `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">CHAPTER ${index+1}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':index<=forest.completedAreas.length?'未攻略':'未解放'}</span></article>`).join('');
     $('#city-journal-areas').innerHTML=CITY_AREAS.map((area,index)=>
       `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">CITY ${String(index+1).padStart(2,'0')}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':cityOpen.has(area.id)?'挑戦可能':'未解放'}</span></article>`).join('');
+    $('#ruins-journal-areas').innerHTML=RUINS_AREAS.map((area,index)=>
+      `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">RUINS ${String(index+1).padStart(2,'0')}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':ruinsOpen.has(area.id)?'挑戦可能':'未解放'}</span></article>`).join('');
     $('#forest-journal-events').innerHTML=FOREST_AREAS.flatMap(area=>FOREST_ROUTES.map(route=>{
       const event=FOREST_EVENTS[area.id][route.id], choices=forest.journal.filter(x=>x.eventId===event.id);
       const title=seenEvents.has(event.id)?event.title:'未発見の物語';
@@ -92,7 +97,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       const owned = save.ownedMonsters.includes(c.id), g = getMonsterProgress(save,c.id);
       const p=companionUnlockProgress(save,c);
       const bond=getMonsterBondProgress(save,c.id);
-      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned?g.stage:0)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned?`${growthStatus(g)} · 絆 Lv.${bond.rank}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
+      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned?g.stage:0)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned?`${growthStatus(g)} · 絆 Lv.${bond.rank}`:c.ruinsAreas?`遺跡 ${p.ruinsCount}/${p.requiredRuinsAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
     }).join('');
     all('[data-open-monster]').forEach(b => {
       const id=b.dataset.openMonster;

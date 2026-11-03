@@ -26,7 +26,7 @@ jobs:
           node --check prototype/speakingym-monsters/listening-challenges.js
           node --check prototype/speakingym-monsters/roleplay-scenarios.js
       - name: Curriculum, mastery and reward tests
-        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs
+        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs
       - name: Install Playwright
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - uses: actions/cache@v4

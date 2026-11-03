@@ -3,6 +3,7 @@ import { FOREST_QUIZZES } from './forest-quizzes.js';
 import { BOSS_RESPONSE_PROMPTS } from './forest-boss-story.js';
 import { SPEAKING_ADVENTURES } from './speaking-adventures.js';
 import { SNOW_CITY_QUIZZES, SNOW_CITY_SPEAKING } from './snow-city-curriculum.js';
+import { STAR_RUINS_QUIZZES, STAR_RUINS_SPEAKING } from './star-ruins-curriculum.js';
 // A compact, curated speaking curriculum: one useful expression, two situations.
 // The prototype does not claim that speech recognition can grade arbitrary English.
 export const PHRASES = Object.freeze([
@@ -281,6 +282,8 @@ export const ALL_PROMPTS = Object.freeze([
   ...FOREST_QUIZZES,
   ...SNOW_CITY_QUIZZES,
   ...SNOW_CITY_SPEAKING,
+  ...STAR_RUINS_QUIZZES,
+  ...STAR_RUINS_SPEAKING,
   ...BOSS_RESPONSE_PROMPTS,
   ...SPEAKING_ADVENTURES,
   ...ADVANCED_TASKS.map(([baseId,difficulty,scene,cue,task,answer,hint,tip]) => {
@@ -305,7 +308,8 @@ const SECOND_FORM_NAMES=Object.freeze({
   tsubomi:'Floravolt',kinokko:'Sporelord',shizurin:'Monsoonix',
   hoshiri:'Astralion',pipino:'Cantavir',hiokko:'Solferno',
   kippu:'Metropass',kofuu:'Brewgeist',mafura:'Warmantle',
-  yukidama:'Glaciara',tegami:'Mailarch',tokirin:'Chronolith'
+  yukidama:'Glaciara',tegami:'Mailarch',tokirin:'Chronolith',
+  runerun:'Runearch',gearbat:'Chronobat',shardling:'Astracryst',astrowisp:'Stelloracle'
 });
 export function monsterFormName(creature,stage=0){
  return stage>=2?creature.ascendedName:stage>=1?creature.evolvedName:creature.name;
@@ -340,5 +344,9 @@ export const MONSTERS = Object.freeze([
   {id:'mafura',name:'Scarfluff',japaneseName:'マフリン',evolvedName:'Knotwing',roots:[{word:'scarf',meaning:'マフラー'},{word:'knot',meaning:'結び目'}],skill:{name:'Warm Wrap',description:'苦手な言葉をほどいてつなぎ直す'},kind:'長いマフラーの妖精',color:'#b19bcd',unlock:8,cityAreas:2,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'風の強い日は誰かの首に巻きついてしまう。ほどくとお礼を言う。'},
   {id:'yukidama',name:'Snoworb',japaneseName:'ユキダマ',evolvedName:'Frostelle',roots:[{word:'snow',meaning:'雪'},{word:'frost',meaning:'霜・氷結'}],skill:{name:'Ice Pierce',description:'難しい条件を一つずつ確かめる'},kind:'氷の結晶の子',color:'#9bcde2',masteryUnlock:6,cityAreas:3,retentionStage:3,retentionUnlock:2,rarity:'epic',note:'人の手で作られた雪玉が、夜の冷気で目を覚ました。'},
   {id:'tegami',name:'Postling',japaneseName:'テガミン',evolvedName:'Couriale',roots:[{word:'post',meaning:'郵便'},{word:'message',meaning:'伝言'}],skill:{name:'Message Burst',description:'大事なことを短く伝える'},kind:'空飛ぶ封筒',color:'#d9b27d',masteryUnlock:7,cityAreas:3,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'届け先のない手紙を探している。ありがとうの言葉が一番好き。'},
-  {id:'tokirin',name:'Clockling',japaneseName:'トキリン',evolvedName:'Chronokey',roots:[{word:'clock',meaning:'時計'},{word:'chronology',meaning:'時系列'}],skill:{name:'Time Ward',description:'時を戻すように学んだ言葉を確かめる'},kind:'古い時計の守護者',color:'#c8ab68',masteryUnlock:10,cityAreas:4,retentionStage:4,retentionUnlock:4,rarity:'legend',note:'時計塔で百年間眠っていた。何日も覚えていた言葉にだけ針が動く。'}
+  {id:'tokirin',name:'Clockling',japaneseName:'トキリン',evolvedName:'Chronokey',roots:[{word:'clock',meaning:'時計'},{word:'chronology',meaning:'時系列'}],skill:{name:'Time Ward',description:'時を戻すように学んだ言葉を確かめる'},kind:'古い時計の守護者',color:'#c8ab68',masteryUnlock:10,cityAreas:4,retentionStage:4,retentionUnlock:4,rarity:'legend',note:'時計塔で百年間眠っていた。何日も覚えていた言葉にだけ針が動く。'},
+  {id:'runerun',name:'Runelet',japaneseName:'ルンルン',evolvedName:'Runebloom',roots:[{word:'rune',meaning:'古代文字・ルーン'},{word:'symbol',meaning:'記号'}],skill:{name:'Rune Pulse',description:'古代文字の光を集中攻撃に変える'},kind:'古代文字を背負う小さな精霊',color:'#9bb9de',unlock:8,ruinsAreas:1,note:'読めない石碑にも一生懸命あいさつする。遺跡の入口で初めて出会える。'},
+  {id:'gearbat',name:'Cogbat',japaneseName:'ギアバット',evolvedName:'Gearwing',roots:[{word:'cog',meaning:'歯車の歯'},{word:'bat',meaning:'コウモリ'}],skill:{name:'Gear Spin',description:'回転する翼で相手の防御を揺さぶる'},kind:'歯車の翼を持つコウモリ',color:'#d4ad7d',masteryUnlock:8,ruinsAreas:1,retentionStage:2,retentionUnlock:2,rarity:'rare',note:'機械の音に合わせて飛ぶ。翌日も覚えていた言葉が好き。'},
+  {id:'shardling',name:'Shardlet',japaneseName:'シャルド',evolvedName:'Prismancer',roots:[{word:'shard',meaning:'破片'},{word:'prism',meaning:'光を分けるプリズム'}],skill:{name:'Prism Lance',description:'光の屈折で相手の弱点を狙う'},kind:'星の水晶の守り手',color:'#8bc5d5',masteryUnlock:8,ruinsAreas:2,retentionStage:3,retentionUnlock:3,rarity:'epic',note:'壊れた星の欠片を拾っている。何度も使った言葉の響きで輝く。'},
+  {id:'astrowisp',name:'Nebulaim',japaneseName:'ネブラ',evolvedName:'Astralume',roots:[{word:'nebula',meaning:'星雲'},{word:'astral',meaning:'星の・天体の'}],skill:{name:'Starfall',description:'星明かりを束ねて強烈な一撃を放つ'},kind:'祭壇に眠る星霧の精霊',color:'#be9dde',masteryUnlock:10,ruinsAreas:2,retentionStage:4,retentionUnlock:4,rarity:'legend',note:'時の祭壇の奥で眠り続けている。七日後も残る言葉で目を覚ます。'}
 ].map(creature=>Object.freeze({...creature,ascendedName:SECOND_FORM_NAMES[creature.id]})));

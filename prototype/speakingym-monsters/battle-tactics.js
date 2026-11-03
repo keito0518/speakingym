@@ -23,7 +23,9 @@ const ALLY_TYPES=Object.freeze({
  pipino:{strong:'listen',weak:'grammar'},hiokko:{strong:'speak',weak:'vocab'},
  kippu:{strong:'vocab',weak:'listen'},kofuu:{strong:'listen',weak:'speak'},
  mafura:{strong:'grammar',weak:'listen'},yukidama:{strong:'vocab',weak:'speak'},
- tegami:{strong:'grammar',weak:'vocab'},tokirin:{strong:'listen',weak:'grammar'}
+ tegami:{strong:'grammar',weak:'vocab'},tokirin:{strong:'listen',weak:'grammar'},
+ runerun:{strong:'vocab',weak:'listen'},gearbat:{strong:'listen',weak:'grammar'},
+ shardling:{strong:'grammar',weak:'speak'},astrowisp:{strong:'speak',weak:'vocab'}
 });
 // All companions have a named combat trait. A few share an archetype, but its
 // trigger is always their *own* strength: English answers are still graded by
@@ -42,7 +44,9 @@ const ALLY_SKILLS=Object.freeze({
  pipino:{name:'さえずりの集中',type:'charge'},hiokko:{name:'火の粉ラッシュ',type:'burst'},
  kippu:{name:'切符の貫通線',type:'pierce'},kofuu:{name:'湯気の守り',type:'ward'},
  mafura:{name:'結び目バリア',type:'ward'},yukidama:{name:'氷結ブレイク',type:'pierce'},
- tegami:{name:'手紙の突破口',type:'pierce'},tokirin:{name:'時の共鳴',type:'charge'}
+ tegami:{name:'手紙の突破口',type:'pierce'},tokirin:{name:'時の共鳴',type:'charge'},
+ runerun:{name:'ルーンの貫通波',type:'pierce'},gearbat:{name:'歯車の共鳴',type:'charge'},
+ shardling:{name:'水晶の守護陣',type:'ward'},astrowisp:{name:'星雲の連撃',type:'burst'}
 });
 const SKILL_DESCRIPTIONS=Object.freeze({
  burst:'得意技能で必殺技を使うとダメージ＋1',
@@ -65,7 +69,8 @@ const MASTERY_NAMES=Object.freeze({
  tsubomi:'新芽の連鎖',kinokko:'菌糸の守護',shizurin:'雨音の集中',
  hoshiri:'流星の追撃',pipino:'翼音の調律',hiokko:'炎耳の二連撃',
  kippu:'快速の回復',kofuu:'喫茶の結界',mafura:'温もりの守護',
- yukidama:'氷晶の吸収',tegami:'飛脚の回復',tokirin:'秒針の集中'
+ yukidama:'氷晶の吸収',tegami:'飛脚の回復',tokirin:'秒針の集中',
+ runerun:'刻印の吸収',gearbat:'歯車の蓄力',shardling:'プリズムの結界',astrowisp:'星霧の追撃'
 });
 const MASTERY_EFFECTS=Object.freeze({
  burst:'得意技能の自力正解で追撃＋1。ボスでは必殺ゲージ＋1',
@@ -154,7 +159,7 @@ const FOE_STYLES=Object.freeze([
  Object.freeze({id:'fury',name:'猛攻',tip:'防御失敗時のダメージ＋1。自力正解なら無傷！'}),
  Object.freeze({id:'shift',name:'属性変化',tip:'最初の一撃後、弱点と耐性が入れ替わる。技能を変えて追撃しよう！'})
 ]);
-const ADVANCED_AREAS=['glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard'];
+const ADVANCED_AREAS=['glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core'];
 export function foeStyleFor({areaId='entry',index=0,wave=1,boss=false}={}){
  const area=ADVANCED_AREAS.indexOf(areaId);
  if(boss||area<0||!Number.isInteger(index)||index<0)return null;
@@ -186,7 +191,9 @@ const BOSS_ATTACKS=Object.freeze({
  metroguardian:[['grammar','信号の規則',0],['listen','駅のアナウンス',0],['speak','守護機の質問',1]],
  marketwarden:[['vocab','値札の暗号',0],['speak','市場の交渉',1],['grammar','取引の規則',0]],
  railkeeper:[['listen','発車の合図',1],['grammar','時刻の規則',0],['vocab','切符の暗号',0]],
- blizzardking:[['listen','吹雪の音',0],['vocab','氷の言葉',1],['speak','吹雪の最後通告',1]]
+ blizzardking:[['listen','吹雪の音',0],['vocab','氷の言葉',1],['speak','吹雪の最後通告',1]],
+ astergolem:[['listen','星のささやき',1],['vocab','星座の暗号',0],['speak','石像の問い',1]],
+ clockoracle:[['listen','時の鐘の響き',1],['grammar','刻の法則',1],['speak','最後の選択',1]]
 });
 export function bossAttackFor(foeId,phase=0){
  const pattern=BOSS_ATTACKS[foeId]||BOSS_ATTACKS.thornking;
@@ -204,7 +211,9 @@ const BOSS_FORMATION_LINKS=Object.freeze({
  metroguardian:{name:'信号の同期',phase:0,kind:'grammar',effect:'shield'},
  marketwarden:{name:'交渉の追い風',phase:1,kind:'listen',effect:'charge'},
  railkeeper:{name:'時刻表の先読み',phase:0,kind:'grammar',effect:'shield'},
- blizzardking:{name:'吹雪の共鳴',phase:1,kind:'speak',effect:'rally'}
+ blizzardking:{name:'吹雪の共鳴',phase:1,kind:'speak',effect:'rally'},
+ astergolem:{name:'星図の解読',phase:0,kind:'vocab',effect:'charge'},
+ clockoracle:{name:'時の逆転',phase:1,kind:'grammar',effect:'heal'}
 });
 const BOSS_LINK_EFFECTS=Object.freeze({
  shield:'次の敵攻撃を1軽減',charge:'必殺ゲージ＋1',

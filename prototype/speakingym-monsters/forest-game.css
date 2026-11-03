@@ -238,12 +238,27 @@
 .dungeon-world-city .dungeon-world-badge{border-color:#a2d5e888;background:#102e50b3;color:#e8f5ff}
 .dungeon-world-areas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
 .dungeon-world-city .dungeon-world-areas{grid-template-columns:minmax(0,1fr)}
+.dungeon-world-ruins{border-color:#d5b8e9;background:radial-gradient(circle at 88% 14%,#f8e2b62e,transparent 38%),linear-gradient(130deg,#252347 0%,#453b70 58%,#78617a 100%)}
+.dungeon-world-ruins .dungeon-world-heading>span{color:#f4d6a5}
+.dungeon-world-ruins .dungeon-world-heading h3{color:#fff0cf}
+.dungeon-world-ruins .dungeon-world-heading p{color:#e6dafa!important}
+.dungeon-world-ruins .dungeon-world-badge{border-color:#eccfa477;background:#252448b3;color:#ffe2b0}
+.dungeon-world-ruins .dungeon-world-areas{grid-template-columns:minmax(0,1fr)}
 .forest-area-card{min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;column-gap:10px;row-gap:7px;text-align:left;border:1px solid #90b598a6;border-radius:12px;padding:12px 11px;background:#123c2dd9;color:#fff4cc;cursor:pointer;box-shadow:inset 0 1px #d2eac225;transition:background .15s,transform .15s}
 .forest-area-card:enabled:hover,.forest-area-card:enabled:focus-visible{background:#326a4e;transform:translateY(-1px);outline:2px solid #f5dfa7;outline-offset:2px}
 .forest-area-card:disabled{cursor:not-allowed;opacity:.65;filter:grayscale(.28)}
 .forest-area-card.city-area-card{background:#173852d9;border-color:#8fbdd5;color:#fff7d8}
 .forest-area-card.city-area-card:enabled:hover,.forest-area-card.city-area-card:enabled:focus-visible{background:#345f7a}
 .forest-area-card.city-area-card:disabled{filter:none;opacity:.75}
+.forest-area-card.ruins-area-card{background:#322d57e8;border-color:#b9a8d8;color:#fff0ce}
+.forest-area-card.ruins-area-card:enabled:hover,.forest-area-card.ruins-area-card:enabled:focus-visible{background:#59477a}
+.forest-area-card.ruins-area-card:disabled{filter:none;opacity:.76}
+.ruins-area-card .forest-area-number,.ruins-area-card .forest-area-count{color:#ffe0a4}
+.ruins-area-card .forest-area-copy small{color:#e8dff5}
+.ruins-area-card .forest-area-status{background:#c9b1e52b;color:#f7d5fd}
+.ruins-area-card .forest-area-status[data-medal-rank="1"]{background:#b89567;color:#241b0f}
+.ruins-area-card .forest-area-status[data-medal-rank="2"]{background:#cfe1e9;color:#1e3542}
+.ruins-area-card .forest-area-status[data-medal-rank="3"]{background:#ffdb82;color:#442b02}
 .forest-area-number{font-family:Georgia,serif;color:#f4d58a;font-size:20px;font-weight:900;line-height:1.35}
 .city-area-card .forest-area-number{font:900 13px/1.5 system-ui,sans-serif;letter-spacing:.07em;color:#ffdb9e}
 .forest-area-copy{display:flex;flex-direction:column;gap:4px;min-width:0}

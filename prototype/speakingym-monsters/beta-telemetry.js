@@ -7,8 +7,8 @@ const LAST_VISIT_KEY = 'speakingym-monsters-beta-visit-day-v1';
 const SESSION_VISIT_KEY = 'speakingym-monsters-beta-visit-session-v1';
 const EVENT_FIELDS = Object.freeze({
   monsters_beta_visit: {returning:['yes','no']},
-  monsters_beta_start: {mode:['forest','forest-endless','daily','speaking','listening','challenge','practice','saved','retention','dungeon-review'],difficulty:['easy','normal','hard','mixed'],chapter:['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','other']},
-  monsters_beta_chapter_clear: {chapter:['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard'],difficulty:['easy','normal','hard']},
+  monsters_beta_start: {mode:['forest','forest-endless','daily','speaking','listening','challenge','practice','saved','retention','dungeon-review'],difficulty:['easy','normal','hard','mixed'],chapter:['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core','other']},
+  monsters_beta_chapter_clear: {chapter:['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core'],difficulty:['easy','normal','hard']},
   monsters_beta_feedback: {reaction:['fun','hard','grading','usability','audio']}
 });
 
