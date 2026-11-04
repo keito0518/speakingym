@@ -775,8 +775,20 @@ const assert=require('node:assert/strict');
    await listenPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
    await listenPage.locator('.forest-tactic-strategy > summary').click();
    assert.equal(await listenPage.locator('#play-audio').count(),1,'Listening attack uses choice assessment');
+   assert.equal(await listenPage.locator('#play-slow-audio').isVisible(),false,
+     'Slow assisted playback stays hidden until the first genuine listening attempt');
    await listenPage.locator('#play-audio').click();
    await listenPage.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
+   assert.equal(await listenPage.locator('#play-slow-audio').isVisible(),true,
+     'A learner can request slower audio after hearing the original speed');
+   await listenPage.locator('#play-slow-audio').click();
+   assert.equal(await listenPage.locator('#listening-native-audio').evaluate(audio=>audio.playbackRate),.8,
+     'Slower replay must change the real audio playback speed, not merely the label');
+   assert.match(await listenPage.locator('#listening-status').innerText(),/ヒントあり/,
+     'Slower replay is clearly marked as supported, hint-assisted listening');
+   await listenPage.locator('#play-audio').click();
+   assert.equal(await listenPage.locator('#listening-native-audio').evaluate(audio=>audio.playbackRate),1,
+     'The ordinary replay must restore the original speed');
    assert.equal(await listenPage.locator('[data-tactic-kind="speak"]').isEnabled(),false,
      'A started listening attack cannot be swapped out after seeing its choices');
    const correctChoice=await listenPage.evaluate(async()=>{

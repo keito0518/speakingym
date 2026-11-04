@@ -1372,7 +1372,7 @@ function renderQuestion() {
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
   const nativeAudio=listenClip?`<div class="listening-native"><label for="listening-native-audio">${englishMode?'No sound? Play the audio directly below.':'音が聞こえない？ 下のプレーヤーからも再生できるよ。'}</label><audio id="listening-native-audio" controls preload="none" playsinline src="${escapeHtml(listenClip.src)}" aria-label="リスニング音声を直接再生"></audio></div>`:'';
-  const listeningBody=listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'英語を聞いて、意味を選ぼう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button>${nativeAudio}<p id="listening-status" class="listening-status" role="status" aria-live="polite">音声の再生を確認してから意味を選ぼう。</p><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:'';
+  const listeningBody=listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><p class="scenario-label">AUDIO FIRST · ${comprehension.level.toUpperCase()}</p><h1 class="listening-heading">${englishMode?'Listen first. Decide what you heard.':'英語を聞いて、意味を選ぼう。'}</h1><p class="question-caption">${englishMode?'Listen carefully before choosing. The English transcript is hidden.':'英語の文章は隠れています。音声を聞いてから意味を選んでね。'}</p><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play / replay audio':'英語を聞く・もう一度聞く'}</button><button type="button" class="listen-control listening-slow" id="play-slow-audio" hidden>${englishMode?'Slower replay (0.8× · hint)':'ゆっくり聞き直す（0.8倍・ヒント扱い）'}</button>${nativeAudio}<p id="listening-status" class="listening-status" role="status" aria-live="polite">音声の再生を確認してから意味を選ぼう。</p><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div></div><button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Audio unavailable? Show transcript (hint)':'音が出ない場合は英文を表示（ヒント扱い）'}</button><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:'';
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'&&play.tactics?.turn==='enemy'?'ENEMY TURN':play.mode==='forest'?(play.index>=regularCount()?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=regularCount()?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=regularCount()?BOSS_HITS:regularCount()):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'聞いて選ぶ':play.mode==='forest'&&prompt.kind==='read'?'読んで答える':prompt.kind==='vocab'?'単語を選ぶ':prompt.kind==='grammar'?'文法の問題':englishMode?'英語 → 英語':prompt.kind==='listen'?'リスニング':'日本語 → 英語'}</span></div>${listenMode?listeningBody:`${readingPassage}${questionBody}`}`;
   if(play.roleplay){
     $('#play-card').insertAdjacentHTML('afterbegin',roleplayIntroMarkup());
@@ -1521,8 +1521,9 @@ function renderQuestion() {
     const markAudioReady=()=>{
       if(!play||play.listeningState!==state||state.understood)return;
       state.played=true;
+      $('#play-slow-audio').hidden=false;
       showChoices();
-      $('#listening-status').textContent='音声を再生できたよ。聞こえた意味を選ぼう。';
+      $('#listening-status').textContent=state.usedSlowAudio?'ゆっくり再生で練習中。ヒントありとして記録するよ。':'音声を再生できたよ。聞こえた意味を選ぼう。';
     };
     const native=$('#listening-native-audio');
     // Direct iPhone playback is a first-class way to start this question.
@@ -1554,6 +1555,19 @@ function renderQuestion() {
         $('#listening-status').textContent='この環境では音声を再生できなかったよ。字幕を使って続けられるよ（ヒント扱い）。';
       },comprehension.level,prompt.id,markAudioReady);
     });
+    $('#play-slow-audio').addEventListener('click',()=>{
+      if(state.understood||!state.played)return;
+      state.usedSlowAudio=true;
+      play.hintUsed=true;
+      if(play.mode==='forest')play.encounterHelp=true;
+      if(play.tactics?.turn==='player'){play.tactics.attackCommitted=true;renderTacticalControls();}
+      $('#listening-status').textContent='0.8倍で聞き直しているよ。ヒントありとして記録するね。';
+      speakLine(comprehension.audio,()=>{
+        if(play?.listeningState!==state)return;
+        revealTranscript();
+        $('#listening-status').textContent='再生できなかったため字幕で練習しよう（ヒント扱い）。';
+      },comprehension.level,prompt.id,markAudioReady,.8);
+    });
     $('#reveal-transcript').addEventListener('click',revealTranscript);
     $$('[data-listening-choice]').forEach(button=>button.addEventListener('click',()=>{
       if(!play||play.listeningState!==state||state.understood||(!state.played&&!state.usedTranscript))return;
@@ -1583,8 +1597,10 @@ function renderQuestion() {
       stopListeningPlayback();
       button.classList.add('is-correct');
       $('#listening-status').textContent=state.usedTranscript?'字幕で意味を確認できたね。聞き取り成績はつけず、0 XPの復習として進むよ。':
+        state.usedSlowAudio?'ゆっくり再生で意味を確認できたね。今回はヒントありの記録だよ。':
         englishMode?'Correct! Listening complete.':'正解！聞き取れたね。スピーキングは別の問題で練習できるよ。';
       $('#play-audio').disabled=true;
+      $('#play-slow-audio').disabled=true;
       $$('[data-listening-choice]').forEach(choice=>choice.disabled=true);
       $('#reveal-transcript').hidden=true;
       $('#transcript').hidden=false;
@@ -1600,11 +1616,11 @@ function renderQuestion() {
   if(play.mode==='forest')$('#forest-arena-console').scrollTop=0;
   keepMobileQuestionInView();
 }
-function browserSpeakLine(line,onUnavailable,level='easy',onStart=()=>{},generation=playbackGeneration) {
+function browserSpeakLine(line,onUnavailable,level='easy',onStart=()=>{},generation=playbackGeneration,rateMultiplier=1) {
   try {
     if(!window.speechSynthesis || !window.SpeechSynthesisUtterance) throw new Error('no speech');
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(line);utterance.lang='en-US';utterance.rate=level==='easy'?.88:level==='normal'?.95:1;
+    const utterance=new SpeechSynthesisUtterance(line);utterance.lang='en-US';utterance.rate=(level==='easy'?.88:level==='normal'?.95:1)*rateMultiplier;
     const voices=window.speechSynthesis.getVoices?.()||[];
     const english=voices.filter(voice=>/^en[-_]/i.test(voice.lang));
     const voice=english.find(item=>/natural|premium|enhanced/i.test(item.name))||
@@ -1630,7 +1646,7 @@ function browserSpeakLine(line,onUnavailable,level='easy',onStart=()=>{},generat
     window.speechSynthesis.speak(utterance);
   } catch { if(generation===playbackGeneration)onUnavailable?.(); }
 }
-function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{}){
+function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{},rateMultiplier=1){
   stopListeningPlayback();
   const generation=playbackGeneration;
   const clip=LISTENING_AUDIO[promptId];
@@ -1640,6 +1656,7 @@ function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{}){
     try{
       const audio=$('#listening-native-audio')||new Audio(clip.src);
       spokenAudio=audio;
+      audio.playbackRate=rateMultiplier;
       let fallen=false,started=false;
       const watchdog=setTimeout(()=>fallback(),6500);
       const fallback=()=>{
@@ -1648,7 +1665,7 @@ function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{}){
         spokenAudio=null;
         audio.onerror=null;audio.onplaying=null;audio.onended=null;
         try{audio.pause();}catch{}
-        browserSpeakLine(line,onUnavailable,level,onStart,generation);
+        browserSpeakLine(line,onUnavailable,level,onStart,generation,rateMultiplier);
       };
       audio.onerror=fallback;
       audio.onplaying=()=>{
@@ -1669,7 +1686,7 @@ function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{}){
       return;
     }catch{/* Fall through to the browser's own voice. */}
   }
-  browserSpeakLine(line,onUnavailable,level,onStart,generation);
+  browserSpeakLine(line,onUnavailable,level,onStart,generation,rateMultiplier);
 }
 function startRecognition() {
   if(!play || play.revealed)return;

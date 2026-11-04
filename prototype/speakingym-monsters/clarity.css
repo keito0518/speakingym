@@ -239,6 +239,9 @@
 .forest-active.tactical-battle .forest-arena-console .task-panel{
  color:#1c403e;background:#e4f2e8;border-color:#82aea4}
 .forest-active.tactical-battle .forest-arena-console .listen-control{background:#e5f4e9}
+.listening-first .listening-slow{display:block;width:100%;min-height:42px;margin:9px 0 0;padding:8px 11px;border:1px solid #c6af7c;background:#fff6de;color:#664b1e;text-align:center;font-size:12px;font-weight:850;cursor:pointer}
+.listening-first .listening-slow[hidden]{display:none!important}
+.listening-first .listening-slow:focus-visible{outline:3px solid #f0b958;outline-offset:3px}
 .forest-active.tactical-battle .forest-arena-console .transcript-fallback{color:#d6eeee}
 .forest-active.tactical-battle .forest-arena-console #forest-tactics{
  order:4;margin:0;padding:0;background:transparent;border:0;color:#e7f2e6}
