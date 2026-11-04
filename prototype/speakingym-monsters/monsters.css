@@ -683,6 +683,10 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .saved-review-result .button{width:100%;min-height:48px;margin:5px 0 9px;white-space:normal;line-height:1.5}
 .saved-review-result small{display:block;color:#557263;font-size:11px;line-height:1.55}
 .saved-review-result .saved-review-next{font-weight:750;color:#276144}
+.saved-review-trend{margin:13px 0;padding:11px 12px;border:1px solid #c4dfc8;border-radius:12px;background:#fff;text-align:left}
+.saved-review-trend strong{display:block;font-size:12px;line-height:1.6}
+.saved-review-trend p{margin:4px 0;font-size:12px;font-weight:650;color:#2b6546}
+.saved-review-trend small{margin-top:6px}
 @media(prefers-reduced-motion:reduce){.saved-review-meter span{transition:none}}
 
 /* After a correct forest answer, a single next action stays above optional

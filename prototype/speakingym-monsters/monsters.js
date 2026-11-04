@@ -33,7 +33,7 @@ import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { nextLearningQuestFor } from './next-learning-quest.js';
-import { savedReviewRecap } from './saved-review-coach.js';
+import { savedReviewRecap, savedReviewTrend, rememberSavedReview } from './saved-review-coach.js';
 import { createBetaTelemetry } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
 
@@ -2482,7 +2482,13 @@ function finishSession(timedOut=false,defeated=false) {
   savedResult.hidden=ended.mode!=='saved';
   if(ended.mode==='saved'){
     const recap=savedReviewRecap(ended.prompts,ended.reviewOutcomes);
-    savedResult.innerHTML=`<span class="tiny-caps">YOUR ENGLISH RECALL</span><h2>${recap.independent===recap.total?'全問、自力で確認！':'自力で確認 '+recap.independent+' / '+recap.total+'問'}</h2><div class="saved-review-meter" role="meter" aria-label="今回の自力確認率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${recap.percentage}"><span style="width:${recap.percentage}%"></span></div><p>ヒントあり ${recap.supported}問 · 例文・字幕で確認 ${recap.review}問${recap.pending?' · 未回答 '+recap.pending+'問':''}</p>${recap.retryIds.length?`<button type="button" id="retry-saved-weak" class="button button-primary">自力で再挑戦する（${recap.retryIds.length}問）</button>`:'<p class="saved-review-next">よくできたね！ 次は日を空けてもう一度、自力で思い出してみよう。</p>'}<small>今回の教材内での確認結果だよ。ヒント・字幕・例文だけでは自力正解に含めません。</small>`;
+    const today=dayKey();
+    const trend=savedReviewTrend(ended.prompts,ended.reviewOutcomes,save.savedReviewHistory,today);
+    persist(rememberSavedReview(save,ended.prompts,ended.reviewOutcomes,today));
+    const trendNote=trend.compared
+      ?`<div class="saved-review-trend" aria-label="同じ問題の前回との比較"><strong>前回の復習からの変化（同じ問題 ${trend.compared}問）</strong>${trend.improvedLater?`<p>日を空けて、自力でできるようになった ${trend.improvedLater}問</p>`:''}${trend.improvedToday?`<p>今日の再挑戦で、自力でできるようになった ${trend.improvedToday}問</p>`:''}${trend.maintained?`<p>今回も自力で確認 ${trend.maintained}問</p>`:''}${trend.needsPractice?`<p>前回は自力・今回は要復習 ${trend.needsPractice}問</p>`:''}<small>前回の同じ問題と比較した練習記録。語学力の評価や1・3・7日の定着実績とは別だよ。</small></div>`
+      :'<p class="saved-review-next">次に同じ問題を復習すると、前回からの変化もここに表示されるよ。</p>';
+    savedResult.innerHTML=`<span class="tiny-caps">YOUR ENGLISH RECALL</span><h2>${recap.independent===recap.total?'全問、自力で確認！':'自力で確認 '+recap.independent+' / '+recap.total+'問'}</h2><div class="saved-review-meter" role="meter" aria-label="今回の自力確認率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${recap.percentage}"><span style="width:${recap.percentage}%"></span></div><p>ヒントあり ${recap.supported}問 · 例文・字幕で確認 ${recap.review}問${recap.pending?' · 未回答 '+recap.pending+'問':''}</p>${trendNote}${recap.retryIds.length?`<button type="button" id="retry-saved-weak" class="button button-primary">自力で再挑戦する（${recap.retryIds.length}問）</button>`:'<p class="saved-review-next">よくできたね！ 次は日を空けてもう一度、自力で思い出してみよう。</p>'}<small>今回の教材内での確認結果だよ。ヒント・字幕・例文だけでは自力正解に含めません。</small>`;
     savedResult.querySelector('#retry-saved-weak')?.addEventListener('click',()=>startSession('saved',null,false,false,[...recap.retryIds]));
   }
   $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;

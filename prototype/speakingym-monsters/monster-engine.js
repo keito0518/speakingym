@@ -2,6 +2,7 @@ import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS } from './monster-data.js';
 import { cleanForest, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, unlockedDungeonAreas } from './forest-engine.js';
 import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
 import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
+import { sanitizeSavedReviewHistory } from './saved-review-coach.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
@@ -43,6 +44,7 @@ export function createSave() {
     transferReviews: {},
     retention: {},
     savedPromptIds: [],
+    savedReviewHistory: {},
     dailyHistory: [],
     quizProgress: {},
     skillAttempts:sanitizeSkillAttempts(null),
@@ -121,6 +123,7 @@ export function validateSave(value) {
     progress: cleanProgress,
     retention:sanitizeRetention(value.retention),
     reviewPrompts,transferReviews,savedPromptIds:unique((Array.isArray(value.savedPromptIds)?value.savedPromptIds:[]).filter(id=>validPromptIds.has(id))).slice(0,255),
+    savedReviewHistory:sanitizeSavedReviewHistory(value.savedReviewHistory,validPromptIds),
     dailyHistory:(Array.isArray(value.dailyHistory)?value.dailyHistory:[]).filter(row=>
       row&&typeof row==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&DIFFICULTIES.includes(row.difficulty)&&
       Number.isInteger(row.total)&&row.total>=1&&row.total<=12&&

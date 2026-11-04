@@ -926,6 +926,7 @@ const path=require('node:path');
       assert.match(await savedPage.locator('#result-title').innerText(),/保存した英語を復習/);
       assert.match(await savedPage.locator('#result-saved-review').innerText(),/自力で確認 1 \/ 2問/);
       assert.match(await savedPage.locator('#result-saved-review').innerText(),/例文・字幕で確認 1問/);
+      assert.match(await savedPage.locator('#result-saved-review').innerText(),/次に同じ問題を復習すると/);
       assert.match(await savedPage.locator('#retry-saved-weak').innerText(),/1問/);
       const ratio=await savedPage.locator('.saved-review-meter').getAttribute('aria-valuenow');
       assert.equal(ratio,'50');
@@ -942,7 +943,14 @@ const path=require('node:path');
       await savedPage.locator('#show-answer').click();
       await savedPage.locator('#next-question').click();
       assert.match(await savedPage.locator('#result-saved-review').innerText(),/全問、自力で確認/);
+      assert.match(await savedPage.locator('#result-saved-review').innerText(),/今日の再挑戦で、自力でできるようになった 1問/);
       assert.equal(await savedPage.locator('#retry-saved-weak').count(),0);
+      const savedHistory=await savedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedReviewHistory);
+      assert.equal(savedHistory[skippedId].outcome,'independent');
+      assert.equal(savedHistory[firstId].outcome,'independent');
+      assert.equal(JSON.stringify(savedHistory).includes(firstAnswer),false,'Do not save learner English or examples in recall history');
+      await savedPage.reload();
+      assert.deepEqual(await savedPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedReviewHistory),savedHistory);
       await savedContext.close();
     }
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
