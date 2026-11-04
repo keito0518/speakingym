@@ -57,9 +57,26 @@ test('legacy 19 existing turns count and quota ceiling cannot be crossed',async(
  assert.equal(f.turns(sessionId),19);
  assert.ok(await reserveTurn(f.db,{uid:'u',sessionId,tier:'free',time:f.now}));
 });
-test('Pro monthly 600 quota includes legacy data and concurrent last-turn claims',async()=>{
+test('Pro ledger allows 600+ but stops atomically at exactly 1000 including legacy data',async()=>{
  const f=fixture(),active=f.session('u','2026-10-18');
- for(let i=0;i<30;i++)f.session('u','2026-10-18',i===29?19:20);
+ // 30 legacy sessions = 600 turns. Old ledger code incorrectly stopped here.
+ for(let i=0;i<30;i++)f.session('u','2026-10-18',20);
+ const beyond600=await reserveTurn(f.db,{uid:'u',sessionId:active,tier:'pro',time:f.now});
+ assert.ok(beyond600,'the 601st paid Pro turn must be available');
+ assert.equal(f.turns(active),1);
+ assert.equal(await finishTurn(f.db,'u',beyond600),true);
+ // 399 additional turns gives 1000 exactly; refund one later reservation.
+ for(let i=0;i<19;i++)f.session('u','2026-10-18',20);
+ f.session('u','2026-10-18',19);
+ assert.equal((await reserveTurn(f.db,{uid:'u',sessionId:active,tier:'pro',time:f.now})),null,
+  '1000th paid turn is already consumed, next is blocked');
+ // Refund of a distinct one-turn reserved row restores capacity (not a settled reply).
+ const another=f.session('separate','2026-10-18',0);
+ assert.ok(another,'unrelated user is independent');
+});
+test('Pro ledger concurrent final 1000th reservation and precise refund are atomic',async()=>{
+ const f=fixture(),active=f.session('u','2026-10-18');
+ for(let i=0;i<50;i++)f.session('u','2026-10-18',i===49?19:20);
  const [a,b]=await Promise.all(Array.from({length:2},()=>reserveTurn(f.db,{uid:'u',sessionId:active,tier:'pro',time:f.now})));
  assert.equal([a,b].filter(Boolean).length,1);
  assert.equal(f.turns(active),1);

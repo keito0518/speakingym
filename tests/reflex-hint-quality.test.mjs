@@ -30,7 +30,7 @@ test('sprint optionally reveals one contextual hint, hides it again for each new
  assert.match(html,/<p id="hintText"/);
  assert.match(script,/\$\("hintText"\)\.textContent=current\.hint/);
  assert.match(script,/\$\("hintPanel"\)\.open=false/);
- assert.match(html,/例文は終了後の講評で公開/);
+ assert.match(html,/短い一文でも意図が伝わればOK。例文は終了後に公開/);
  assert.doesNotMatch(html,/<p id="hintText"[^>]*>[^<]+<\/p>/,'do not leak model answers into static HTML');
 });
 

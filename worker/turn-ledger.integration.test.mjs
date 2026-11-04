@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import worker from './ai-worker.js';
+import {PLAN_LIMITS,tokyoDay,consumeSessionTurn,refundSessionTurn,getEntitlement} from './plan-limits.js';
+import {PRO_MONTHLY_TURN_LIMIT} from './turn-ledger.js';
 
 const ORIGIN='https://speakingym.pages.dev';
 const ROOT='https://worker.example/';
@@ -77,4 +79,34 @@ test('ledger migration installs both atomic counter triggers and its rollback ta
  const names=sqlite.prepare("SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name").all().map(row=>row.name);
  assert.deepEqual(names,['ai_turn_reservation_count_insert','ai_turn_reservation_count_refund']);
  assert.ok(sqlite.prepare("SELECT name FROM sqlite_master WHERE name='ai_turn_reservations'").get());
+});
+
+test('Pro worker ledger honours 1000-turn offer past the obsolete 600 boundary and refunds exact reservation',async()=>{
+ const {sqlite,d1}=database();
+ const uid='pro-limit-fixture',day=tokyoDay();
+ const now=time(),activeId=crypto.randomUUID();
+ sqlite.prepare('INSERT INTO account_plans (uid,tier,updated_at) VALUES (?,?,?)').run(uid,'pro',now);
+ const addSession=(turns)=>{
+  const id=crypto.randomUUID();
+  sqlite.prepare('INSERT INTO ai_sessions(id,uid,day,started_at,expires_at,turns) VALUES (?,?,?,?,?,?)')
+   .run(id,uid,day,now,now+420,turns);
+  return id;
+ };
+ sqlite.prepare('INSERT INTO ai_sessions(id,uid,day,started_at,expires_at,turns) VALUES (?,?,?,?,?,0)')
+  .run(activeId,uid,day,now,now+420);
+ assert.equal(PLAN_LIMITS.pro.monthlyTurns,PRO_MONTHLY_TURN_LIMIT);
+ for(let i=0;i<30;i++)addSession(20); // Old 600-turn quota.
+ const env={ENFORCE_PLANS:'true',TURN_LEDGER_MODE:'enabled',PLAN_DB:d1};
+ const extra=await consumeSessionTurn(d1,uid,activeId,env);
+ assert.ok(extra?.ledger,'turn 601 must succeed even when ledger mode is enabled');
+ assert.equal((await getEntitlement(d1,uid,env)).used.monthlyTurns,601);
+ for(let i=0;i<19;i++)addSession(20);
+ addSession(19);
+ assert.equal((await getEntitlement(d1,uid,env)).used.monthlyTurns,1000);
+ assert.equal(await consumeSessionTurn(d1,uid,activeId,env),null,'turn 1001 must be blocked');
+ assert.equal(await refundSessionTurn(d1,uid,extra),true);
+ assert.equal((await getEntitlement(d1,uid,env)).used.monthlyTurns,999);
+ const last=await consumeSessionTurn(d1,uid,activeId,env);
+ assert.ok(last?.ledger,'refunding exact in-flight turn makes the final slot available again');
+ assert.equal(await consumeSessionTurn(d1,uid,activeId,env),null);
 });

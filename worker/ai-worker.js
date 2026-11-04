@@ -1,8 +1,10 @@
 import {freeSessionMode,freeSessionSchemaReady} from "./free-session-reservations.js";
+import {stagingBillingSchemaReady} from "./staging-billing-schema.js";
 import {MODEL,logGeminiUsage,logAiOutcome} from "./cost-telemetry.js";
+import {budgetGuardRequested,budgetGuardConfig,budgetSchemaReady,reserveAIBudget} from "./ai-cost-budget.js";
 import {ledgerMode,ledgerSchemaReady} from "./turn-ledger.js";
 import {replayMode,receiptSchemaReady,replayBridgeReady,validReceiptKey,claimReceipt,linkReceiptTurn,completeReceipt,failReceipt,purgeReceipts} from "./request-receipts.js";
-import {handleBilling,billingConfigured,refreshBillingIfNeeded} from "./billing.js";
+import {handleBilling,billingMode,refreshBillingIfNeeded} from "./billing.js";
 import {planEnabled,verifyFirebaseIdToken,getEntitlement,getPlan,startSession,consumeSessionTurn,completeSessionTurn,refundSessionTurn,consumeTeacher,refundTeacher} from "./plan-limits.js";
 /**
  * Speakingym SURVIVAL AI backend for Cloudflare Workers Free.
@@ -166,6 +168,7 @@ function scenarioInstruction(scene, level) {
   "Situation: "+task.situation,
   "This is a spoken English practice role-play. React to the MEANING of the latest user statement, and to earlier dialogue, not to keywords.",
   "Never ignore an unexpected but reasonable comment, and never repeat the same question verbatim.",
+  "If the learner ends the conversation, declines an offer or changes their mind, acknowledge that choice naturally rather than restarting the exercise or asking for the same information.",
   "Remember choices and corrections already stated in recent dialogue. Do not contradict them, reset the situation, or ask again for information already provided.",
   "The latest user utterance is supplied separately from recentDialogue. Treat it as ONE conversational turn, not two, and answer its real question or request before checking remaining goals.",
   "Follow the learner\u0027s latest intent first, including changes of mind and relevant side questions. Goals are checkpoints, not a fixed script or mandatory question order.",
@@ -213,6 +216,8 @@ const REFLEX_TEACHER_SYSTEM = [
  "why: explain in Japanese (about 2 concise sentences) why the revision works and when to use it, with a grammar or pragmatic teaching point as relevant.",
  "practice: a short follow-up English mini-challenge that makes the learner reuse the target expression; do not provide the answer.",
  "If a sentence is already natural and clear, explicitly recognize that and suggest an optional more nuanced alternative; do NOT invent a grammar error.",
+ "For an already-correct answer, the improvement field must label the change as OPTIONAL style or nuance, and the why field must explain that the original was acceptable. Never say a correct utterance was wrong just to fill a field.",
+ "If the user asks a question, the improved sentence must remain a question; preserve negation, tense, names, numbers, and uncertainty. If a transcript is ambiguous, do not silently rewrite its meaning.",
  "If transcription looks broken or ambiguous, say it MAY be a speech recognition problem and give a conditional suggestion; do not assert the learner said a different sentence.",
  "Do not evaluate actual pronunciation, tone, accent or fluency, because only speech-to-text is available.",
  "Be encouraging, but specific and intellectually honest. Never repeat an identical boilerplate across items.",
@@ -231,7 +236,7 @@ function validateReflexCoaching(input) {
  }
  return items;
 }
-function sanitizeTeacherResult(input,size) {
+function sanitizeTeacherResult(input,size,attempts) {
  if (!input || !Array.isArray(input.feedback) || input.feedback.length!==size) return null;
  const normalized=[];
  for(let i=0;i<size;i++){
@@ -245,6 +250,14 @@ function sanitizeTeacherResult(input,size) {
    why:raw.why.trim().slice(0,440),
    practice:raw.practice.trim().slice(0,260)
   });
+ }
+ // Distinct learner sentences must not all receive the SAME generic
+ // report. Fail with a refundable teacher error instead of selling identical
+ // boilerplate as individualized feedback.
+ if(size>1 && new Set(attempts.map(x=>x.text.trim().toLowerCase())).size>1){
+  const fingerprint=entry=>[entry.praise,entry.improvement,entry.improved,entry.why,entry.practice]
+   .map(x=>x.normalize("NFKC").toLowerCase().replace(/\s+/g,"")).join("|");
+  if(new Set(normalized.map(fingerprint)).size===1)return null;
  }
  return normalized;
 }
@@ -276,7 +289,7 @@ async function runReflexCoaching(body,env,origin,plan){
   const raw=result?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
   let parsed;
   try{parsed=JSON.parse(raw)}catch{return reply({error:"gemini_invalid_json"},502,origin)}
-  const feedback=sanitizeTeacherResult(parsed,attempts.length);
+  const feedback=sanitizeTeacherResult(parsed,attempts.length,attempts);
   if(!feedback)return reply({error:"invalid_ai_response"},502,origin);
   return reply({feedback},200,origin);
  }catch{return reply({error:"ai_timeout"},504,origin)}
@@ -298,10 +311,27 @@ function reply(body, status, origin) {
 }
 function validHistory(input) {
   if (!Array.isArray(input)) return [];
-  return input.slice(-10).map((entry) => ({
-    role: entry?.role === "user" ? "user" : "assistant",
-    content: typeof entry?.content === "string" ? entry.content.slice(0, 450) : ""
-  })).filter((x) => x.content);
+  // Never reinterpret unknown roles (including a forged "system" instruction)
+  // as an assistant's prior dialogue. Keep the last ten valid turns only.
+  return input.filter(entry=>entry && (entry.role==="user" || entry.role==="assistant")
+    && typeof entry.content==="string" && entry.content.trim())
+   .slice(-10).map(entry=>({
+    role:entry.role,
+    content:entry.content.slice(0,450)
+   }));
+}
+// Do not count an exact recycled AI line as a completed user turn.
+// Do not silently call Gemini a second time: the existing failure path
+// refunds a reserved attempt and lets the learner decide to retry.
+function repeatsLastAssistantReply(reply,history){
+ const norm=value=>String(value||"").normalize("NFKC").toLowerCase()
+  .replace(/[\p{P}\p{S}\s]/gu,"").trim();
+ const normalized=norm(reply);
+ // Detect two-turn loops as well as immediate repeats. A minimum length
+ // avoids rejecting short, ordinary role-play acknowledgements.
+ if(normalized.length<12)return false;
+ return history.filter(entry=>entry.role==="assistant").slice(-3)
+  .some(entry=>normalized===norm(entry.content));
 }
 function normalizeFacts(input) {
   const raw = input && typeof input === "object" ? input : {};
@@ -317,17 +347,37 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") {
+      // Only the isolated Stripe TEST QA page may read health cross-origin.
+      // The normal public health endpoint and every production deployment retain
+      // the original production-site CORS policy.
+      const healthOrigin=origin==="http://localhost:8765" &&
+        env.STAGING_BILLING_ONLY==="true" && billingMode(env)==="test"
+        ? origin : PRIMARY_ORIGIN;
       const turnLedgerSchemaReady=await ledgerSchemaReady(env.PLAN_DB);
       const aiReplaySchemaReady=turnLedgerSchemaReady && await replayBridgeReady(env.PLAN_DB);
-      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-600-100-v2", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, billingMode: billingConfigured(env)?"test":"disabled" }, 200, PRIMARY_ORIGIN);
+      const stageBillingReady=(env.STAGING_HEALTH_ONLY==="true"||env.STAGING_BILLING_ONLY==="true")
+        ? await stagingBillingSchemaReady(env.PLAN_DB) : null;
+      return reply({ status: "ok", model: MODEL, aiConfigured: !!env.GEMINI_API_KEY && env.ALLOW_AI === "true", aiEnabled: env.ALLOW_AI === "true", keyConfigured: !!env.GEMINI_API_KEY, sceneIds: Object.keys(EXTRA_SCENES), reflexCoachSupported: true, plansEnabled: planEnabled(env), plansReady: !!env.PLAN_DB, quotaVersion: "pro-monthly-1000-150-v3", stagingHealthOnly: env.STAGING_HEALTH_ONLY==="true", stagingBillingOnly: env.STAGING_BILLING_ONLY==="true", stagingBillingSchemaReady: stageBillingReady, freeSessionRequested: env.FREE_SESSION_MODE==="enabled", freeSessionEnabled: freeSessionMode(env), freeSessionSchemaReady: await freeSessionSchemaReady(env.PLAN_DB), turnLedgerEnabled: ledgerMode(env), turnLedgerSchemaReady, aiReplayRequested: env.AI_REPLAY_MODE==="enabled", aiReplayEnabled: replayMode(env), aiReplaySchemaReady, aiBudgetRequested: budgetGuardRequested(env), aiBudgetReady: budgetGuardRequested(env) && !!budgetGuardConfig(env) && await ledgerSchemaReady(env.PLAN_DB) && await budgetSchemaReady(env.PLAN_DB), billingMode: billingMode(env) }, 200, healthOrigin);
     }
     // An isolated staging Worker starts in inspection-only mode. No quota/session/AI
     // writes or billing/webhook handling, even with a valid Firebase token.
     if(env.STAGING_HEALTH_ONLY==="true")return reply({error:"staging_health_only"},503,PRIMARY_ORIGIN);
+    // On isolated Stripe staging, block unrelated AI/session endpoints outright.
+    // Unlike the health-only first deployment, this stage permits signed billing
+    // callbacks and authorized subscription/status inspection but never AI calls.
+    if(env.STAGING_BILLING_ONLY==="true" && ![
+      "/billing/webhook","/billing/checkout","/billing/status",
+      "/billing/portal","/entitlement"
+    ].includes(path))return reply({error:"staging_billing_only"},503,PRIMARY_ORIGIN);
     // Stripe server callbacks have no browser Origin; signature verification is mandatory.
     if(path === "/billing/webhook")return handleBilling(request,env,reply,PRIMARY_ORIGIN);
+    // Permit exactly one local QA origin ONLY when isolated staging test
+    // billing is active. Firebase signature + staging UID allowlist still gate
+    // every authenticated action. Production never accepts localhost.
+    const stageQaOrigin=origin==="http://localhost:8765" &&
+      env.STAGING_BILLING_ONLY==="true" && billingMode(env)==="test";
     // Origin checks only restrict browser use. They are not authentication.
-    if (!ALLOWED_ORIGINS.has(origin)) {
+    if (!ALLOWED_ORIGINS.has(origin) && !stageQaOrigin) {
       return new Response("Origin not allowed", { status: 403 });
     }
     if (request.method === "OPTIONS") {
@@ -412,6 +462,13 @@ export default {
       const sceneId=typeof body?.sceneId==="string"?body.sceneId:"";
       if(sceneId&&!Object.hasOwn(EXTRA_SCENES,sceneId))return reply({error:"unknown_scene"},400,origin);
     }
+    // Explicit cost-guard opt-in must FAIL CLOSED before any quota reservation
+    // or provider call if configuration/schema is incomplete. Normal production
+    // defaults remain unchanged until separate activation approval.
+    if(budgetGuardRequested(env) && (!budgetGuardConfig(env) ||
+       !await ledgerSchemaReady(env.PLAN_DB) ||
+       !await budgetSchemaReady(env.PLAN_DB)))
+      return reply({error:"ai_budget_not_ready"},503,origin);
     // The authenticated D1 guard is the actual subscription/usage boundary.
     // Per-IP throttles above remain as a separate abuse and free-quota safety layer.
     const requestStartedAt=Date.now();
@@ -478,6 +535,33 @@ export default {
         }
       }catch{return reply({error:"plans_unavailable"},503,origin)}
     }
+    // Atomically reserve a conservative per-call budget BEFORE Gemini, not
+    // from client inputs or after uncertain provider billing. Reservation stays
+    // spent on provider errors/timeouts to avoid a retry loophole. The existing
+    // Free/Pro functional quota is refunded if this guard denies admission.
+    if(budgetGuardRequested(env)){
+      let admission;
+      try{
+        admission=await reserveAIBudget(env.PLAN_DB,{
+          uid:planUid,
+          tier:body?.action==="reflex_coach"?teacherReservation?.plan:turnReservation?.plan,
+          kind:body?.action==="reflex_coach"?"teacher":"conversation",env
+        });
+      }catch{admission={ok:false,reason:"budget_not_ready"}}
+      if(!admission?.ok){
+        if(teacherReservation){
+          try{await refundTeacher(env.PLAN_DB,planUid,teacherReservation.id)}catch{}
+        }
+        if(turnReservation){
+          try{await refundSessionTurn(env.PLAN_DB,planUid,turnReservation)}catch{}
+        }
+        if(receiptClaim){
+          try{await failReceipt(env.PLAN_DB,{...receiptClaim,status:admission.reason==="budget_limit"?429:503})}catch{}
+        }
+        return reply({error:admission?.reason==="budget_limit"?
+          "ai_budget_exhausted":"ai_budget_not_ready"},admission?.reason==="budget_limit"?429:503,origin);
+      }
+    }
     if(body?.action === "reflex_coach"){
       const result=await runReflexCoaching(body,env,origin,teacherReservation?.plan);
       if(result.status!==200&&teacherReservation){
@@ -503,7 +587,8 @@ export default {
     // The browser already appends the current utterance to history before sending.
     // Keep the request unchanged for replay/ledger consistency, but do not present
     // its final user entry twice to Gemini (recentDialogue + latestUserText).
-    if(history.at(-1)?.role === "user" && history.at(-1).content.trim() === text) history.pop();
+    if(history.at(-1)?.role === "user" &&
+      history.at(-1).content.trim().replace(/\s+/g," ") === text.replace(/\s+/g," ")) history.pop();
     const context = scene ? {
       scene: requestedId,
       difficulty: level,
@@ -575,6 +660,8 @@ export default {
       if (typeof data?.reply !== "string" || !data.reply.trim() || data.reply.length > 850) {
         return aiFailure({ error: "invalid_ai_response" }, 502);
       }
+      if(repeatsLastAssistantReply(data.reply,history))
+        return aiFailure({error:"ai_repeated_reply"},502);
       if (scene) {
         // A scene uses general-purpose goal signals. The original cafe mission is unchanged.
         if (!data.progress || typeof data.progress !== "object") {

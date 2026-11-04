@@ -30,7 +30,8 @@ export function assertSafeStagingHealth(data) {
 }
 export async function checkStagingHealth(input, request=fetch) {
   const url=stagingHealthUrl(input);
-  const response=await request(url,{method:'GET',signal:AbortSignal.timeout(20000)});
+  const response=await request(url,{method:'GET',cache:'no-store',redirect:'error',
+    signal:AbortSignal.timeout(20000)});
   if (!response.ok)throw Error('Staging /health returned HTTP '+response.status);
   const data=await response.json();
   assertSafeStagingHealth(data);

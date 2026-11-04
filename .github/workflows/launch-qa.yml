@@ -20,6 +20,8 @@ jobs:
           python3 -m http.server 8765 >/tmp/server.log 2>&1 &
           node tests/browser-qa.cjs
           SPEAKINGYM_BROWSER_ENGINE=webkit node tests/browser-qa.cjs
+          node tests/stripe-staging-browser-qa.cjs
+          SPEAKINGYM_BROWSER_ENGINE=webkit node tests/stripe-staging-browser-qa.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -22,7 +22,9 @@ jobs:
       - name: Staging safety checks without any credentials
         run: node --test tests/staging-d1-qa.test.mjs worker/free-session-reservations.test.mjs worker/turn-ledger.test.mjs
   real-staging-d1:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    # Manual selection only. Permit this exact isolated review branch to test the fix
+    # without merging any draft billing code into production main.
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/integration/pro680-latest-main-review-20261020')
     needs: offline-guards
     runs-on: ubuntu-latest
     environment: staging-d1

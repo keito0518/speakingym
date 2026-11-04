@@ -20,6 +20,8 @@ test('fail closed without a token or when staging identity is wrong', async()=>{
 
 test('never allow deletion of real users or arbitrary test IDs',()=>{
   assert.equal(assertSafeFixtureUid(fixtureUid),fixtureUid);
+  assert.doesNotThrow(()=>assertSafeFixtureUid('sgqa-5d42072b-2564-46d0-935e-e4111f116dd6-prolimits'));
+  assert.throws(()=>assertSafeFixtureUid('sgqa-5d42072b-2564-46d0-935e-e4111f116dd6-production'),/Refusing/);
   for(const uid of ['user@example.com','staging-test-user','sgqa-x-failure','other','']) {
     assert.throws(()=>assertSafeFixtureUid(uid),/Refusing/);
   }
@@ -109,6 +111,49 @@ test('account-owned token gets its own documented verification endpoint before s
   assert.ok(calls[2].includes(STAGING_DATABASE_ID));
 });
 
+test('account-scoped token HTTP 401/code 1000 uses account verify before any D1 access',async()=>{
+ const requests=[];
+ const mock=async (url,init)=>{
+  requests.push({url,method:init.method});
+  if(url.endsWith('/user/tokens/verify'))
+   return {ok:false,status:401,json:async()=>({errors:[{code:1000,message:'do not log'}]})};
+  if(url.endsWith('/accounts/324c7361cbbaecd8240688b8bd588ef3/tokens/verify'))
+   return {ok:true,json:async()=>({success:true,result:{status:'active'}})};
+  if(url.endsWith('/database/c608774e-3bc5-4527-be8d-f640e386f504'))
+   return {ok:true,json:async()=>({success:true,result:{name:STAGING_NAME,uuid:STAGING_DATABASE_ID}})};
+  return {ok:true,json:async()=>({success:true,result:[{success:true,results:objects}]})};
+ };
+ const db=new StagingD1('account-only-test-token',mock);
+ await db.verify();
+ assert.equal(db.verified,true);
+ assert.equal(requests.length,4);
+ assert.deepEqual(requests.slice(0,2).map(x=>x.method),['GET','GET']);
+ assert.equal(requests[1].url,'https://api.cloudflare.com/client/v4/accounts/324c7361cbbaecd8240688b8bd588ef3/tokens/verify');
+ assert.ok(requests[2].url.includes(STAGING_DATABASE_ID));
+});
+test('both endpoints HTTP 401 never authorize D1 writes',async()=>{
+ const urls=[];
+ const db=new StagingD1('redacted-test-token',async(url)=>{
+  urls.push(url);
+  return {ok:false,status:401,json:async()=>({errors:[{code:1000,message:'redacted-test-token'}]})};
+ });
+ await assert.rejects(db.verify(),error=>
+  /HTTP 401 \(codes 1000\)/.test(error.message)&&
+  !error.message.includes('redacted-test-token'));
+ assert.equal(db.verified,false);
+ assert.equal(urls.length,2);
+ assert.ok(urls.every(x=>x.endsWith('/tokens/verify')));
+});
+test('other 401 errors do not get extra fallback requests',async()=>{
+ const urls=[];
+ const db=new StagingD1('unknown-test-token',async(url)=>{
+  urls.push(url);
+  return {ok:false,status:401,json:async()=>({errors:[{code:1010}]})};
+ });
+ await assert.rejects(db.verify(),/HTTP 401/);
+ assert.equal(urls.length,1);
+ assert.equal(db.verified,false);
+});
 test('both verification endpoints reject: report only numeric codes and never touch D1', async()=>{
   const calls=[];
   const db=new StagingD1('mock-secret-unprinted',async url=>{
@@ -151,9 +196,12 @@ test('complete staging QA runner verifies invariants and removes only its fake u
     await db.verify();
     const log=[];
     await runRemoteStagingQA(db,message=>log.push(message));
-    assert.equal(log.filter(x=>x.startsWith('PASS')).length,4);
+    assert.equal(log.filter(x=>x.startsWith('PASS')).length,6);
+    assert.ok(log.some(x=>x.includes('Pro monthly 999→1000')));
+    assert.ok(log.some(x=>x.includes('Pro teacher 149→150')));
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM ai_sessions WHERE uid LIKE 'sgqa-%'").get().n,0);
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM ai_turn_reservations WHERE uid LIKE 'sgqa-%'").get().n,0);
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM free_session_reservations WHERE uid LIKE 'sgqa-%'").get().n,0);
+    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM teacher_uses WHERE uid LIKE 'sgqa-%'").get().n,0);
   } finally {sqlite.close();}
 });

@@ -22,6 +22,8 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 .response-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}.response-head label{font-size:12px;font-weight:850}textarea{resize:vertical;min-height:90px;font-size:15px;line-height:1.6}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions .btn{flex:1}.actions .btn.primary{flex:1.4}#status{font-size:12px;color:#52735b;min-height:21px;font-weight:750}#error{margin-top:12px;background:#fff6ef;border:1px solid #edccb5;border-radius:12px;padding:13px;color:#8d4834;font-size:12px;line-height:1.8}.hidden{display:none!important}
 #result{background:#ecf8ee;border:1px solid #cbe6cf;border-radius:12px;padding:14px;margin-top:13px;font-size:13px}.coach-report{background:#fff;border:2px solid #d5e8d7;border-radius:16px;padding:18px;margin:14px 0}.coach-report h3{margin:0 0 7px;font-size:20px}.coach-report .subline{font-size:12px;color:#6b796d;margin:0 0 11px}.coach-point{padding:12px 0;border-top:1px solid #e5ede4}.coach-label{display:block;font-size:11px;letter-spacing:.2px;color:#647b69;font-weight:850;margin-bottom:5px}.coach-original{font-size:13px;color:#566358;overflow-wrap:anywhere}.coach-natural{font-size:15px;color:#1b5c40;font-weight:850;overflow-wrap:anywhere}.coach-tip{font-size:12px;color:#526958;line-height:1.75}.coach-summary{font-size:12px;background:#eef6ee;border-radius:10px;padding:11px 12px;line-height:1.8}.coach-report h4{font-size:15px;margin:17px 0 4px}.coach-praise{font-size:12px;font-weight:750;color:#365842;margin-top:6px}.review-saved{margin:14px 0;border:1px solid #dce7db;border-radius:12px;padding:11px}.review-saved summary{cursor:pointer;font-size:13px;font-weight:850}.review-saved li{font-size:12px;margin:8px 0;overflow-wrap:anywhere}#result strong{font-size:17px}.muted{font-size:11px;color:#748476;line-height:1.7;margin-top:10px}.pill{display:inline-block;border-radius:99px;background:#eaf0e9;font-size:11px;padding:5px 10px;color:#4b6653;font-weight:750}
 @media(max-width:750px){.scenes{grid-template-columns:1fr}.scene{min-height:0;display:grid;grid-template-columns:36px 1fr;column-gap:12px;row-gap:0}.scene .emoji{grid-row:1/4}.scene .tag{padding:0}.settings{grid-template-columns:1fr}main{padding:20px 15px 45px}.card{padding:15px}.actions .btn{flex:1 1 calc(50% - 8px)}.actions .btn.primary{flex-basis:100%}}
+@media(max-width:750px){.btn,.scene{min-height:44px}.response-head{align-items:flex-start}#error{scroll-margin-top:12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 <script src="./analytics-config.js"></script><script src="./analytics-loader.js"></script></head>
 <body>
@@ -49,10 +51,12 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 </section>
 <section class="card" id="setup">
 <div class="settings"><div><label class="field" for="level">英語の難易度</label><select id="level"><option value="easy">基礎｜短くゆっくり</option><option value="standard" selected>標準｜自然な会話</option><option value="challenge">応用｜実戦的な表現</option></select></div><div><label class="field" for="speed">相手の話す速さ</label><select id="speed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速め</option></select></div></div>
+<p class="notice" id="proReviewTargetSetup" role="note" hidden></p>
+<p class="notice" id="freezeRevengeSetup" role="status" hidden></p>
 <div class="assignment" id="setupAssignment" aria-live="polite"></div><div class="goals" id="setupGoals" aria-live="polite"></div>
 <div class="muted" id="scenesQuota" data-sg-quota role="status" aria-live="polite">本日の残り回数を確認中…</div>
 <div class="notice" data-sg-quota-exhausted="sessions" hidden role="status">今日はAI英会話を5セッション使い切ったよ。日本時間の午前0時に回復するよ！ その間も <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
-<div class="notice" data-sg-pro-exhausted="sessions" hidden role="status">今月のProのAI英会話枠600往復を使い切ったよ。次の日本時間1日に回復するよ！ その間は <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
+<div class="notice" data-sg-pro-exhausted="sessions" hidden role="status">今月のProのAI英会話枠1,000ターンを使い切ったよ。次の日本時間1日に回復するよ！ その間は <a href="./reflex.html" style="text-decoration:underline;font-weight:850">無料の60秒チャレンジ</a> で練習できるよ。</div>
 <div class="notice hidden" id="loginPrompt" role="status" aria-live="polite">
  <strong>AI英会話にはGoogleログインが必要です。</strong> このシーンを離れずに無料ログインできます。
  <div class="actions"><button class="btn primary" id="inlineGoogleLogin" type="button">Googleで無料ログインする →</button></div>
@@ -60,17 +64,26 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
  <a href="./account.html" style="text-decoration:underline;font-weight:850">ログインできない場合はマイページへ →</a>
 </div>
 <div class="actions"><button class="btn primary wide" type="button" id="start">▶ このシーンを始める（3分）</button></div>
+<p class="muted"><a class="btn" href="./freeze-breaker.html" target="_blank" rel="noopener noreferrer">💬 言葉が出なくなる瞬間の切り返しを練習 ↗</a> <span style="font-size:12px">別タブで開きます。無料・AI回数の消費なし。</span></p>
 <details class="review-saved"><summary>📚 保存した言い換えを復習</summary><a href="./phrasebook.html">すべての保存表現を共通フレーズ帳で復習 →</a><div id="savedReview"></div><button class="btn" id="clearReview" type="button">保存した表現を全消し</button></details>
 
 </section>
 <section class="card hidden" id="practice">
 <div class="row" style="justify-content:space-between"><div><span class="eyebrow" id="sceneLabel">AI CONVERSATION</span><h2 id="sceneTitle" style="margin:2px 0;font-size:20px">シーン練習</h2></div><span class="pill" id="timer">03:00</span></div>
+<p class="notice" id="proReviewTargetPractice" role="note" hidden></p>
+<p class="notice" id="freezeRevengePractice" role="status" hidden></p>
 <div class="assignment assignment-in-game" id="practiceAssignment"></div><div class="goals" id="progress"></div>
 <div id="chat" role="log" aria-live="polite" aria-label="英語での会話"></div>
 <p id="status" role="status">相手の話を聞こう。</p>
 <div class="response-head"><label for="reply">英語で答える</label><button class="btn" id="clear" type="button">🗑️ 全消し</button></div>
 <textarea id="reply" placeholder="英語を入力するか、マイクを押して話そう。" maxlength="450" autocapitalize="sentences" spellcheck="false"></textarea>
 <div class="actions"><button class="btn subtle" type="button" id="mic">🎙 話して入力</button><button class="btn hidden" type="button" id="stopMic">⏹ 認識停止</button><button class="btn" type="button" id="repeat">🔊 聞き直す</button><button class="btn primary" type="button" id="send">返答する →</button></div>
+<div class="notice" role="group" aria-label="AI英会話で詰まったときの練習">
+ <strong>言葉が出ないときが、次の練習チャンス。</strong>
+ <p>直前のAIのひと言だけを、このタブで最大10分間引き継いでフリーズジムへ（追加AI回数なし）。今の会話はここで終了し、再挑戦は新しいAIセッションになります。個人情報が含まれる発言は持ち込まないでください。</p>
+ <button class="btn primary" id="takeFreezeMoment" type="button">⚡ 今の質問で詰まった → 克服ジムへ</button>
+ <p class="muted" id="takeFreezeStatus" role="status" aria-live="polite"></p>
+</div>
 <div class="muted" id="recognitionHelp">言葉に詰まっても大丈夫。認識中は待機し、終わったら「⏹ 認識停止」を押して確認しよう。音声認識が自動停止した場合は再開を試みるよ。</div><div class="actions"><button class="btn hidden" type="button" id="resumeMic">🎙 続きを話す</button></div>
 <div id="error" class="hidden" role="alert"><strong>AIとの通信ができませんでした。</strong><div id="errorReason"></div><div class="actions"><button class="btn" id="retry" type="button">↻ 同じ発言を再送</button></div></div>
 <div id="result" class="hidden" role="status"></div>
@@ -81,6 +94,7 @@ main{max-width:1060px;padding:27px 20px 60px;margin:auto}.eyebrow{font-size:11px
 </main>
 <script src="./speech-settings.js"></script>
 <script src="./phrasebook.js"></script>
+<script src="./freeze-bridge.js"></script>
 <script src="./analytics-events.js"></script>
 <script>
 (()=>{
@@ -205,7 +219,7 @@ function turnLimit(){return $("level").value==="challenge"?12:$("level").value==
 const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 const synth=window.speechSynthesis||null;
 let sceneId="hotel",running=false,processing=false,recognition=null,turn=0,history=[],progress={step1:false,step2:false,step3:false},lastReply="",pendingText="",timer=null,remaining=180,runToken=0,requestController=null,lastSpoken="",speechToken=0,activeSpeech=null;
-let serverSessionId="",plansActive=null,pendingRequestId="";
+let serverSessionId="",plansActive=null,pendingRequestId="",safeReplay=false,retryBlocked=false;
 let micWanted=false,micBase="",micCycleFinal="",micCycleInterim="",micSilentStops=0,micRestartTimer=null;
 let coachingHistory=[];
 const REVIEW_KEY="speakingym-saved-coaching-v1",SCENE_STATS_KEY="speakingym-scenes-stats-v1";
@@ -221,6 +235,75 @@ function saveSceneOutcome(success){
  }catch(e){}
 }
 function status(message){$("status").textContent=message}
+const PRO_SCENE_TARGET_KEY='speakingym-pro-scene-target-v1';
+function hideProReviewTarget(){
+ for(const key of ['proReviewTargetSetup','proReviewTargetPractice']){
+  const el=$(key);el.hidden=true;el.textContent='';
+ }
+}
+function renderProReviewTarget(){
+ hideProReviewTarget();
+ let payload;
+ try{payload=JSON.parse(sessionStorage.getItem(PRO_SCENE_TARGET_KEY)||'null')}catch{return}
+ if(!payload||typeof payload!=='object')return;
+ const uid=window.speakingymAccount?.getUid?.();
+ if(typeof uid!=='string'||!uid)return;
+ if(payload.uid!==uid||!Number.isFinite(payload.expires)||payload.expires<=Date.now()||
+  typeof payload.phrase!=='string'||!payload.phrase.trim()||payload.phrase.length>260){
+  try{sessionStorage.removeItem(PRO_SCENE_TARGET_KEY)}catch{}
+  return;
+ }
+ for(const key of ['proReviewTargetSetup','proReviewTargetPractice']){
+  const el=$(key);el.textContent='今日のPro復習チャレンジ：会話の流れに合うときに「'+payload.phrase+'」を使ってみよう。';
+  el.hidden=false;
+ }
+}
+let activeFreezeRevenge=null;
+function hideFreezeRevenge(){
+ for(const id of ['freezeRevengeSetup','freezeRevengePractice']){
+  $(id).hidden=true;$(id).textContent='';
+ }
+}
+function renderFreezeRevenge(){
+ hideFreezeRevenge();
+ if(!activeFreezeRevenge)return;
+ const names={misunderstood:'聞き返す',words:'言い換える',surprise:'落ち着いて切り返す',unsure:'選択肢を聞く'};
+ const caption='リベンジ実践：さっき詰まった '+(names[activeFreezeRevenge.reason]||'切り返し')+
+  ' を意識して、もう一度この場面に挑戦しよう。前の会話を自動再生するのではなく、新しいAI会話での練習です。';
+ for(const id of ['freezeRevengeSetup','freezeRevengePractice']){
+  $(id).textContent=caption;$(id).hidden=false;
+ }
+}
+function receiveFreezeRevenge(){
+ if(activeFreezeRevenge)return;
+ const result=window.speakingymFreezeBridge?.consumeReturn();
+ if(!result)return;
+ if(!Object.hasOwn(SCENES,result.sceneId))return;
+ activeFreezeRevenge=result;
+ select(result.sceneId);
+ $('level').value=result.level;
+ renderAssignment();
+ renderFreezeRevenge();
+}
+function takeFreezeMoment(){
+ if(!running||processing||pendingText){
+  $('takeFreezeStatus').textContent='AIの応答が終わってから、もう一度押してね。';return;
+ }
+ const question=String(lastReply||task().intro||'').trim();
+ if(!question){
+  $('takeFreezeStatus').textContent='引き継げるAIの質問がありません。';return;
+ }
+ const success=window.speakingymFreezeBridge?.stageChallenge({
+  sceneId,level:$('level').value,question
+ });
+ if(!success){
+  $('takeFreezeStatus').textContent='アカウントかブラウザの一時保存を確認できません。通常のフリーズジムは利用できます。';return;
+ }
+ // Deliberate same-tab transition. AI text is never placed into the URL.
+ window.speakingymAnalytics?.track('sg_freeze_from_ai');
+ leave();
+ window.location.assign('./freeze-breaker.html?from=ai');
+}
 function goals(container,done){container.replaceChildren();container.setAttribute("lang",missionLanguage());task().goals.forEach((label,i)=>{const pill=document.createElement("span");pill.className="goal"+(done&&progress["step"+(i+1)]?" done":"");pill.textContent=(done&&progress["step"+(i+1)]?"✓ ":""+(i+1)+". ")+label;container.append(pill)})}
 function select(id){if(!SCENES[id]||running)return;sceneId=id;document.querySelectorAll("[data-scene]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.scene===id)));renderAssignment()}
 function addMessage(who,text){const bubble=document.createElement("div");bubble.className="bubble"+(who==="You"?" me":"");const label=document.createElement("strong");label.textContent=who;const body=document.createElement("span");body.textContent=text;bubble.append(label,body);if(who!=="You"&&window.speakingymPhrases)bubble.append(window.speakingymPhrases.button({text,source:"AI英会話の表現",sceneId,level:$("level").value,hint:task().headline}));$("chat").append(bubble);$("chat").scrollTop=$("chat").scrollHeight}
@@ -264,7 +347,7 @@ function stopRecognition(){
 function updateControls(){
  const locked=!running||processing||!!pendingText;
  for(const id of ["reply","send","mic","clear","resumeMic"]){$(id).disabled=locked}
- $("stopMic").disabled=locked;$("repeat").disabled=!running;$("retry").disabled=processing;
+ $("stopMic").disabled=locked;$("repeat").disabled=!running;$("retry").disabled=processing||!running||!pendingText||retryBlocked;
 }
 function showTime(){$("timer").textContent=String(Math.floor(remaining/60)).padStart(2,"0")+":"+String(remaining%60).padStart(2,"0")}
 function stopClock(){if(timer){clearInterval(timer);timer=null}}
@@ -390,7 +473,14 @@ function startRecognitionCycle(){
    const text=$("reply").value;
    stopRecognition();
    $("resumeMic").classList.remove("hidden");
-   status("音声認識が停止しました（"+code+"）。文章は保存したよ。続けるなら「続きを話す」を押してね。");
+   const guidance=(code==="not-allowed"||code==="service-not-allowed")?
+    "マイクが許可されていません。サイトのマイク権限を確認するか、英文を手入力してね。":
+    code==="audio-capture"?
+    "マイクに接続できません。端末のマイクを確認するか、英文を手入力してね。":
+    code==="network"?
+    "音声認識の通信が途切れました。文章を残したので、通信を確認して続きを話してね。":
+    "音声認識が停止しました。文章を残したので、続きを話すか手入力で修正してね。";
+   status(guidance);
    $("reply").value=text;
   };
   rec.onend=()=>{
@@ -447,18 +537,21 @@ function stopMicrophone(){
  $("resumeMic").classList.remove("hidden");
  status("録音完了。文章を確認して「返答する」を押してね。続きがあれば「続きを話す」で追加できるよ。");
 }
-function leave(){runToken++;running=false;processing=false;pendingText="";pendingRequestId="";stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("coachReport").classList.add("hidden");$("saveReview").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
+function leave(){runToken++;running=false;processing=false;pendingText="";pendingRequestId="";retryBlocked=false;stopClock();stopRecognition();cancelSpeech();if(requestController){requestController.abort();requestController=null}$("practice").classList.add("hidden");$("setup").classList.remove("hidden");$("scenes").classList.remove("hidden");$("result").classList.add("hidden");$("coachReport").classList.add("hidden");$("saveReview").classList.add("hidden");$("error").classList.add("hidden");updateControls()}
 async function start(){
+ // Auth changes during token lookup invalidate this start attempt.
+ const authEpoch=runToken;
  const startButton=$("start");
  startButton.disabled=true;
  try{
   const token=await window.speakingymAccount?.getIdToken?.();
+  if(authEpoch!==runToken)return;
   if(!token){$("loginPrompt").classList.remove("hidden");$("loginPrompt").scrollIntoView?.({behavior:"smooth",block:"nearest"});return}
   $("loginPrompt").classList.add("hidden");
  }catch{$("loginPrompt").classList.remove("hidden");return}
  finally{startButton.disabled=false}
- serverSessionId="";plansActive=null;leave();running=true;window.speakingymAnalytics?.track("sg_ai_scene_start");pendingRequestId="";turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};coachingHistory=[];lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText||micWanted)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"練習時間が終了しました。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
-function errorMessage(code){const known={login_required:"AI会話を使うにはGoogleログインが必要です。マイページからログインしてね。",daily_session_limit:"本日の無料枠は使用済み、または別の練習で処理中です。処理中の場合は少し待って再試行してください。使用済みの枠は明日回復します。",monthly_turn_limit:"今月のProのAI英会話600往復を使い切りました。日本時間の来月1日に回復します。",session_not_active:"この練習は処理中、期限切れ、または利用上限に達しています。送信中の回答を待ち、改善しない場合は新しい練習を始めてください。",free_sessions_not_ready:"利用回数の保護機能を確認中です。しばらく待って再試行してください。",plans_not_ready:"利用回数制限の初期設定中です。",plans_unavailable:"利用回数を確認できませんでした。あとで試してね。",server_unavailable:"AIサーバーに接続できませんでした。通信環境を確認して、少し待ってから再送してください。",gemini_quota:"AI提供元の利用上限に達しました。契約の残り回数とは別の制限です。時間をおいて再試行してください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。混雑している可能性があります。少し待って再送してください。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が途中で切れたか、形式が崩れました。再送を試してください。",gemini_output_truncated:"AIの返答データが長すぎて途中で切れました。再送を試してください。",invalid_ai_response:"AIの返答内容を読み取れませんでした。",request_pending:"同じ送信のAI回答を処理中です。数秒後に「再送」を押すと結果を確認できます。",request_uncertain:"前の送信結果を確認できません。二重利用を避けるため、この送信は再実行できません。新しい練習を始めるか、後で確認してください。",request_result_expired:"前の回答の保存期間が終了しました。二重消費を防ぐため、この送信を再実行できません。",request_id_conflict:"送信内容が前回と異なります。新しい練習を開始してください。",request_failed:"前の送信は失敗しています。もう一度送信を試してください。",replay_not_ready:"安全な再送機能の準備ができていません。しばらく待ってください。",replay_link_failed:"利用回数の確認ができませんでした。少し待って再試行してください。",invalid_request_id:"送信の識別情報を作成できませんでした。ページを更新してください。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
+ serverSessionId="";plansActive=null;safeReplay=false;leave();running=true;window.speakingymAnalytics?.track("sg_ai_scene_start");pendingRequestId="";turn=0;remaining=sessionSeconds();history=[];progress={step1:false,step2:false,step3:false};coachingHistory=[];lastReply="";pendingText="";$("reply").value="";$("chat").replaceChildren();$("error").classList.add("hidden");$("result").classList.add("hidden");$("setup").classList.add("hidden");$("scenes").classList.add("hidden");$("practice").classList.remove("hidden");renderAssignment();showTime();updateControls();const intro=task().intro;lastReply=intro;addMessage(SCENES[sceneId].speaker,intro);history.push({role:"assistant",content:intro});say(intro);status("英語で返してみよう！");timer=setInterval(()=>{if(!running||processing||pendingText||micWanted)return;remaining=Math.max(0,remaining-1);showTime();if(!remaining)finish(false,"練習時間が終了しました。ここまでの会話を振り返って、また挑戦しよう。")},1000);$("practice").scrollIntoView?.({behavior:"smooth",block:"start"})}
+function errorMessage(code){const known={login_required:"AI会話を使うにはGoogleログインが必要です。マイページからログインしてね。",daily_session_limit:"本日の無料枠は使用済み、または別の練習で処理中です。処理中の場合は少し待って再試行してください。使用済みの枠は明日回復します。",monthly_turn_limit:"今月のProのAI英会話1,000ターンを使い切りました。日本時間の来月1日に回復します。",session_not_active:"この練習は処理中、期限切れ、または利用上限に達しています。送信中の回答を待ち、改善しない場合は新しい練習を始めてください。",free_sessions_not_ready:"利用回数の保護機能を確認中です。しばらく待って再試行してください。",plans_not_ready:"利用回数制限の初期設定中です。",plans_unavailable:"利用回数を確認できませんでした。あとで試してね。",server_unavailable:"AIサーバーに接続できませんでした。通信環境を確認して、少し待ってから再送してください。",gemini_quota:"AI提供元の利用上限に達しました。契約の残り回数とは別の制限です。時間をおいて再試行してください。",rate_limited:"短時間にアクセスが集中しています。1分程度待ってください。",ai_disabled:"AIが一時停止しています。",ai_key_missing:"サーバーのAPIキー設定が必要です。",ai_timeout:"AIの返答が時間内に届きませんでした。混雑している可能性があります。少し待って再送してください。",gemini_auth:"AIの認証設定に問題があります。",gemini_model:"AIモデルの設定に問題があります。",gemini_invalid_json:"AIの返答が途中で切れたか、形式が崩れました。再送を試してください。",gemini_output_truncated:"AIの返答データが長すぎて途中で切れました。再送を試してください。",invalid_ai_response:"AIの返答内容を読み取れませんでした。",ai_repeated_reply:"AIが前と同じ内容を繰り返したので、回答として数えず停止しました。もう一度試してください。",request_pending:"同じ送信のAI回答を処理中です。数秒後に「再送」を押すと結果を確認できます。",request_uncertain:"前の送信結果を確認できません。二重利用を避けるため、この送信は再実行できません。新しい練習を始めるか、後で確認してください。",request_result_expired:"前の回答の保存期間が終了しました。二重消費を防ぐため、この送信を再実行できません。",request_id_conflict:"送信内容が前回と異なります。新しい練習を開始してください。",request_failed:"前の送信は失敗しています。もう一度送信を試してください。",replay_not_ready:"安全な再送機能の準備ができていません。しばらく待ってください。",replay_link_failed:"利用回数の確認ができませんでした。少し待って再試行してください。",invalid_request_id:"送信の識別情報を作成できませんでした。ページを更新してください。"};return (known[code]||"AIに接続できませんでした。")+" （"+code+"）"}
 // A cancelled/previous practice must never create a session or send a turn for a later practice.
 // Check after *every* async boundary; token retrieval and mocked browser APIs may ignore abort.
 function ensureCurrentAIRequest(requestToken,signal){
@@ -474,6 +567,10 @@ async function prepareAIRequest(requestToken,signal){
   const info=await healthResponse.json();
   ensureCurrentAIRequest(requestToken,signal);
   plansActive=info.plansEnabled===true;
+  // Replay must be active and its backing ledgers healthy; otherwise a
+  // timed-out POST might already have used the learner's AI allowance.
+  safeReplay=plansActive&&info.aiReplayEnabled===true&&info.aiReplaySchemaReady===true&&
+   info.turnLedgerEnabled===true&&info.turnLedgerSchemaReady===true;
  }
  if(!plansActive)return{headers:{"Content-Type":"application/json"},sessionId:null};
  const token=await window.speakingymAccount?.getIdToken?.();
@@ -493,7 +590,9 @@ async function prepareAIRequest(requestToken,signal){
 }
 async function answer(text){if(!pendingRequestId)pendingRequestId=globalThis.crypto?.randomUUID?.()||"";const requestToken=runToken;const requestStartedAt=Date.now();processing=true;updateControls();status("AIが返答を考えています…（混雑時は15〜20秒ほどかかる場合があります）");$("error").classList.add("hidden");
  const controller=new AbortController();requestController=controller;const safety=setTimeout(()=>controller.abort(),30000);
- try{const access=await prepareAIRequest(requestToken,controller.signal);ensureCurrentAIRequest(requestToken,controller.signal);const response=await fetch(API,{method:"POST",headers:access.headers,body:JSON.stringify({sceneId,level:$("level").value,userText:text,history:history.slice(-10),progress,sessionId:access.sessionId,requestId:pendingRequestId||undefined}),signal:controller.signal});
+ let aiPostStarted=false,aiResponseReceived=false;
+ try{const access=await prepareAIRequest(requestToken,controller.signal);ensureCurrentAIRequest(requestToken,controller.signal);aiPostStarted=true;const response=await fetch(API,{method:"POST",headers:access.headers,body:JSON.stringify({sceneId,level:$("level").value,userText:text,history:history.slice(-10),progress,sessionId:access.sessionId,requestId:pendingRequestId||undefined}),signal:controller.signal});
+ aiResponseReceived=true;
  const data=await response.json().catch(()=>({error:"invalid_json"}));
  ensureCurrentAIRequest(requestToken,controller.signal);
  if(!response.ok){if(!["request_pending","request_uncertain","request_result_expired"].includes(data.error))pendingRequestId="";if(data.error==="monthly_turn_limit")void window.speakingymQuota?.refresh();throw Error(typeof data.error==="string"?(data.error==="gemini_invalid_json"&&data.reason==="output_truncated"?"gemini_output_truncated":data.error):"http_"+response.status);}
@@ -502,9 +601,19 @@ async function answer(text){if(!pendingRequestId)pendingRequestId=globalThis.cry
  if(turn===1)window.speakingymAnalytics?.track("sg_ai_first_reply");
  progress={step1:progress.step1||data.progress.step1===true,step2:progress.step2||data.progress.step2===true,step3:progress.step3||data.progress.step3===true};
  recordCoaching(text,data.coaching);const spoken=data.reply.trim();lastReply=spoken;history.push({role:"assistant",content:spoken});addMessage(SCENES[sceneId].speaker,spoken);say(spoken);goals($("progress"),true);
- pendingText="";pendingRequestId="";processing=false;updateControls();
+ pendingText="";pendingRequestId="";retryBlocked=false;processing=false;updateControls();
  if(Object.values(progress).every(Boolean)){finish(true,"3つの目標をクリア！言いたいことを英語で伝えられたよ。")}else if(turn>=turnLimit()){finish(false,"今回の発言回数に達したよ！別の言い方でも挑戦してみよう。")}else status("いい感じ！会話を続けよう。（応答 "+((Date.now()-requestStartedAt)/1000).toFixed(1)+"秒）");
- }catch(e){if(!running||requestToken!==runToken)return;processing=false;const code=(e?.name==="AbortError"?"ai_timeout":String(e?.message||"network_error")).slice(0,60);$("errorReason").textContent=errorMessage(code)+" 応答待ち："+((Date.now()-requestStartedAt)/1000).toFixed(1)+"秒";$("error").classList.remove("hidden");$("error").scrollIntoView?.({block:"nearest",behavior:"smooth"});status("返答に失敗したため、会話を一時停止しています。");void window.speakingymQuota?.refresh();updateControls();
+ }catch(e){if(!running||requestToken!==runToken)return;processing=false;const code=(e?.name==="AbortError"?"ai_timeout":String(e?.message||"network_error")).slice(0,60);
+ // Never offer an infinite retry loop for permanently uncertain/expired
+ // receipts. If replay is not confirmed, a dropped response after POST is
+ // ambiguous: resending could spend another turn. Keep the draft visible.
+ retryBlocked=["request_uncertain","request_result_expired","request_id_conflict","invalid_request_id","invalid_ai_response"].includes(code)||
+  (aiPostStarted&&!aiResponseReceived&&!safeReplay);
+ $("errorReason").textContent=errorMessage(code)+" 応答待ち："+((Date.now()-requestStartedAt)/1000).toFixed(1)+"秒"+
+  (retryBlocked?" 送信結果が不明なため、この発言の再送を停止しました。二重消費を避けるため、新しい練習を始めてください。":"");
+ $("error").classList.remove("hidden");$("error").scrollIntoView?.({block:"nearest",behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches?"auto":"smooth"});
+ status(retryBlocked?"再送を停止しました。契約の残り回数を確認し、新しい練習から再開してください。":"返答に失敗したため、会話を一時停止しています。");
+ void window.speakingymQuota?.refresh();updateControls();
  }finally{clearTimeout(safety);if(requestController===controller)requestController=null}}
 function send(){if(!running||processing||pendingText)return;const text=$("reply").value.trim();if(!text){status("英語で何か話してみてね。");return}if(text.length>450){status("450文字以内で入力してね。");return}
  stopRecognition();cancelSpeech();$("reply").value="";pendingText=text;pendingRequestId=globalThis.crypto?.randomUUID?.()||"";turn++;addMessage("You",text);history.push({role:"user",content:text});updateControls();answer(text)}
@@ -530,19 +639,45 @@ $("inlineGoogleLogin").addEventListener("click",()=>{
  $("inlineLoginHelp").textContent="ログインを準備中です。少し待ってからもう一度押すか、マイページからログインしてね。";
 });
 window.addEventListener("speakingym:account-ready",()=>{
+ renderProReviewTarget();
+ receiveFreezeRevenge();
  if(!window.speakingymAccount?.isLoggedIn?.()||$("loginPrompt").classList.contains("hidden"))return;
  $("loginPrompt").classList.add("hidden");
  status("ログイン完了！「このシーンを始める」を押してね。");
  $("start").focus();
 });
 $("start").addEventListener("click",start);$("back").addEventListener("click",leave);$("again").addEventListener("click",start);
+// Abort in-flight AI and clear old-account practice when the login changes.
+window.addEventListener("speakingym:account-changing",()=>{
+ activeFreezeRevenge=null;hideFreezeRevenge();
+ hideProReviewTarget();leave();serverSessionId="";plansActive=null;safeReplay=false;
+ history=[];coachingHistory=[];lastReply="";lastSpoken="";
+ $("reply").value="";$("chat").replaceChildren();$("result").replaceChildren();
+ $("coachReport").replaceChildren();
+ status("アカウントが切り替わったため練習を終了しました。ログイン後に新しく開始してください。");
+});
+
 $("send").addEventListener("click",send);$("clear").addEventListener("click",clear);$("mic").addEventListener("click",microphone);$("stopMic").addEventListener("click",stopMicrophone);$("resumeMic").addEventListener("click",resumeMicrophone);
 $("repeat").addEventListener("click",()=>{if(lastReply||lastSpoken)say(lastReply||lastSpoken)});
-$("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running)answer(pendingText)});
+$("retry").addEventListener("click",()=>{if(pendingText&&!processing&&running&&!retryBlocked)answer(pendingText)});
 $("saveReview").addEventListener("click",saveCoachReview);
+$("takeFreezeMoment").addEventListener("click",takeFreezeMoment);
 $("clearReview").addEventListener("click",()=>{
  try{localStorage.setItem(REVIEW_KEY,"[]");window.dispatchEvent?.(new CustomEvent("speakingym:changed",{detail:{key:REVIEW_KEY}}))}catch(e){}
  showSavedReview();
+});
+// The user may fix speech-to-text mistakes while the browser is still listening.
+// Manual input wins; aborting also stops a delayed Web Speech onend from
+// replacing the user's typed corrections with an older transcript.
+$("reply").addEventListener("input",()=>{
+ if(!micWanted&&!recognition)return;
+ const edited=$("reply").value;
+ stopRecognition();
+ $("reply").value=edited;
+ micBase=edited.trim().slice(0,450);
+ micCycleFinal="";micCycleInterim="";
+ $("resumeMic").classList.remove("hidden");
+ status("手入力した文章を優先して音声認識を止めました。必要なら『続きを話す』で追加できるよ。");
 });
 $("reply").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
 window.addEventListener("speakingym:before-speech",()=>{stopRecognition();cancelSpeech()});

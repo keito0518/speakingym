@@ -1,3 +1,7 @@
+# LEGACY ONLY — ¥680 HISTORICAL SANDBOX NOTES
+
+> **STOP:** This file describes the previous ¥680 sandbox configuration, including the **production** D1 and Worker. It is NOT the setup procedure for the new ¥1,480 Pro draft. Never follow sections 2–4 for the new staging validation, and never point a staging webhook at the production Worker. For the current plan, use [STRIPE_SANDBOX_SETUP_1480_STAGE_ONLY.md](./STRIPE_SANDBOX_SETUP_1480_STAGE_ONLY.md). No live charge or production change is authorized.
+
 # Speakingym Stripe sandbox setup — 2026-10-17
 
 This implementation deliberately CANNOT use live Stripe keys. Real billing has not been authorized.

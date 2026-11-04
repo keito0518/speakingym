@@ -1,0 +1,21 @@
+name: Stripe staging health-only readiness (NO secrets / NO writes)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline stage safety assertions
+        run: node --test tests/staging-stripe-readiness.test.mjs
+      - name: Query exact staging Worker GET health only
+        run: node scripts/staging-stripe-readiness.mjs

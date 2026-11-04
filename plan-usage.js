@@ -55,7 +55,7 @@
         }
         const remaining = { sessions: Math.max(0,maxTurns-usedTurns), teacher: Math.max(0,maxTeacher-usedTeacher) };
         show("Pro · 今月の残り：AI英会話 " + remaining.sessions + "/" + maxTurns +
-          " 往復 · AI先生 " + remaining.teacher + "/" + maxTeacher +
+          " ターン · AI先生 " + remaining.teacher + "/" + maxTeacher +
           " 回（日本時間・毎月1日更新）");
         showExhaustion(remaining, "pro");
         return;
@@ -87,6 +87,13 @@
   }
 
   window.speakingymQuota = { refresh };
+  // An owner change begins before Firebase/Firestore synchronization ends.
+  // Invalidate any old account's in-flight response and its visible quota now.
+  window.addEventListener("speakingym:account-changing", () => {
+    requestSequence++;
+    showExhaustion(null);
+    show("アカウントを確認中…");
+  });
   window.addEventListener("speakingym:account-ready", refresh);
   // Resuming an open tab after midnight or using a second device should refresh
   // the server-provided counts. This never changes the server's quota rules.

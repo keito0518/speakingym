@@ -87,3 +87,11 @@ test("six scene cards have matching practice configuration and all three levels"
  }
  for(const level of ["easy","standard","challenge"])assert.match(html,new RegExp('value="'+level+'"'));
 });
+
+test("mobile AI roleplay has accessible touch targets and honors reduced motion",()=>{
+ assert.match(html,/@media\(max-width:750px\)\{\.btn,\.scene\{min-height:44px\}/);
+ assert.match(html,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(source,/window\.matchMedia\?\.\("\(prefers-reduced-motion: reduce\)"\)/);
+ assert.match(html,/id="error" class="hidden" role="alert"/);
+ assert.match(html,/id="chat" role="log" aria-live="polite"/);
+});

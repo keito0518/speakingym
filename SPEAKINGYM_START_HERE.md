@@ -1,84 +1,256 @@
-# Speakingym — 新しいチャットはここから（2026-10-20 JST）
+# Speakingym — 2026-10-23 現行開発方針・引き継ぎ
 
-> **最初にこのファイル、`WORK_HANDOFF.md` の最後のチェックポイント、現在の GitHub main/PR/Actions を実際に再確認すること。** ここは永続的な引き継ぎの入口であり、GitHub/Cloudflare/Stripe のライブ状態を保証するものではない。内容が古い可能性があるため、日付と一次証拠を照合してから作業する。
+> **2026-10-24 最新開発（Draft PR #62 のみ）:** ①端末内の自己評価から翌日・3日後・7日後の応用チェック復習を提案、②手作り応用教材は30組/60場面、③マイページに復習件数・試した組・自己評価の変化を追加、④Free/Proの新方針と月980円の**仮定を明記した採算設計**を策定（販売/権利/枠は未変更）、⑤自動検証＋公開NO-GO確認資料を追加。新機能は端末内のみ、実機マイク・実Stripe TEST異常系・Gemini原価は未確認。詳細は [リリース判定](SPEAKINGYM_RELEASE_READINESS_2026-10-24.md) と [980円採算設計](SPEAKINGYM_PRO_980_REDESIGN_2026-10-24.md)。**プレビュー≠本番。main・prod・Stripe Live・旧¥680を変更しない。**
 
-## 新しいChatGPTへ最短の依頼文
-**「Speakingymの続きをお願い。GitHub `keito0518/speakingym` の `SPEAKINGYM_START_HERE.md` と `WORK_HANDOFF.md`、最新mainとオープンPRを確認して、安全にできる開発を自律的に進めて。」**
-
-- リポジトリ: https://github.com/keito0518/speakingym
-- 本番Pages: https://speakingym.pages.dev/
-- 現在の開発目標: **2026-10-31 に月額680円のPro実課金を含む正式公開**。これは目標であり、課金の許可・公開GOサインではない。
-- 運営形態: 個人の副業（法人設立を前提としない）。**本人の希望は、法令の要件を満たす場合に自宅住所/電話をサイトに公開せず、購入検討者からの請求時に正式な事業者情報を遅滞なく開示する方式**。運用体制が整っていない間は法的準備完了とは扱わない。氏名/住所/電話をチャット、GitHub、CIに載せない。
-
-## 最終確認済みの技術状態（2026-10-20）
-- **main の最終確認コミット:** `54c61c57641218e528b976df539d9a68fe4880c7`（PR #59を含む）。この資料のマージ後は必ず新しいmain SHAを取得する。
-- PR [#59](https://github.com/keito0518/speakingym/pull/59) mainへマージ済み。独立staging Worker初回は `STAGING_HEALTH_ONLY=true` により `GET /health` のみ許可。実際のstaging Workerデプロイはまだ確認できていない。
-- **Pro決済の本命統合版:** [PR #62](https://github.com/keito0518/speakingym/pull/62) は **DRAFT・main未マージ**。最新mainに基づき、Stripe Live gated実装、GA4明示同意、staging保護を両立。**PR #62 head `4dffc97780c4f4f1fc140a993fd8ff98682677e8` に対して Launch QA 296/296、AI Worker安全性とアカウント安全性、Chromium/WebKit browser QAが成功**。新コミットではテストを改めて確認。
-- [PR #43](https://github.com/keito0518/speakingym/pull/43) は旧mainを基点にした **DRAFT・未マージ**。子PR [#60](https://github.com/keito0518/speakingym/pull/60) / [#61](https://github.com/keito0518/speakingym/pull/61) の安全策は #43 の開発ブランチに反映されているが、**本番mainにマージされていない**。最新mainへの統合は #62を基準とする。
-- #62上で `tokusho.html` の**販売前・noindex草案**、`contact.html` の専用mailto開示請求リンク、`tests/operator-disclosure-request.test.mjs`、`worker/INDIVIDUAL_OPERATOR_TOKUSHO_PLAN_2026-10-20.md` が整備済み。メールの実受信/返信および法的適合は未検証。
-- 本番 `TURN_LEDGER_MODE=enabled` は2026-10-19のGET `/health` で確認した直近記録。本番 `FREE_SESSION_MODE` はOFF、production D1 migration 0005未適用、AI replay OFF。最新のCloudflare反映/稼働状態を新たに観測したわけではない。staging D1の0002+0005 SQL QAは成功、staging Worker実デプロイは未検証。
-- GA4測定ID `G-DRH440861Y` のコード反映と同意後ロードはテスト済み。**GA4イベントの実受信は未確認**。
-- **月680円の実採算は未確定**。実GeminiのCloudflareログ、Google請求データ、free-tier負担、有料API品質は未照合。コード上のシミュレーション値は実原価ではない。
-
-## 不変の安全ゲート
-1. Stripeの**本番課金・実クレジットカード決済、liveキー/Secretsの設定、公開切替、Cloudflare本番へのデプロイ変更、D1本番 migration、Gemini有料枠の有効化は、未検証事項の解消と運営者の個別の明示承認が必要**。2026-10-31という目標設定は承認に代わらない。
-2. Stripeは現在sandboxのみ。本物のStripe test-modeで Checkout→署名Webhook→初回Pro→更新成功/失敗→重複→Portal解約→期限終了を通す。Node mockテストをE2E完了扱いしない。
-3. **商用NO-GOフラグ:** `LIVE_LEGAL_READY=verified`, `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified`, `LIVE_UNIT_ECONOMICS_REVIEWED=verified` は客観的証拠が揃うまで設定しない。招待制実課金パイロットを通しても、公開範囲は別途 `LIVE_PUBLIC_RELEASE_APPROVED=approved` が必要。いずれも現在は未承認。
-4. ユーザーのプラン数値を勝手に変更しない: Free AI 5セッション/日、講評3回/日、Pro AI 600ターン/月、講評100回/月、月680円。**Freeの最大利用量がProと逆転し得る**問題は商品判断が必要。
-5. staging用の独立Worker／D1を本番と混ぜない。本番D1へmigrationを一括実行しない。既存の本番ledgerを無効化しない。Stripe本番顧客/決済データは絶対にテスト環境に流さない。
-
-## 現実的な次の順番
-1. #62と最新mainの差分・GitHub CIを再チェックし、マージ前レビュー／追加回帰テストを進める。ただし#62は法的表示・料金・Stripe実試験のGOまでDRAFTのまま維持。
-2. **個人情報を秘密にした請求時開示の実運用**：メール窓口の受信・返信テスト、購入前に遅滞なく正式な情報を提供する体制、解約/返金など契約条件と最終確認ページを確定。架空の事業者情報で埋めない。
-3. Cloudflareの分離staging Workerの初回ヘルス確認、本物のStripe sandbox E2E、Firebase/iPhone Safari実機QA、Gemini使用量・原価/容量の確認。権限と本人操作が必要な部分だけ運営者へ依頼。
-4. 本番変更は必要なバックアップ/復元検証を行った後、個別の安全なリリース計画とオーナーの明示承認で進める。
-
-## 引き継ぎ運用ルール
-- **チャット内容はGitHubへ常時自動転送されない**。次回から開発マイルストーンごとにこのファイルまたは `WORK_HANDOFF.md` に、検証済み事実・PR/Actionsへのリンク・未完了点をコミットして引き継ぐ。
-- 新しいチャットでは上記の**一文だけ**でも始められるようにする。ただしGitHub連携が無効なら利用者による再接続が必要。過去チャットの完全な自動共有やバックグラウンド実行を約束しない。
-- `WORK_HANDOFF.md` には時系列の詳細がある。古い記載は後続のdated checkpointで上書きされるため、「最新」のセクションとGitHubの実状態を優先する。
-
-## 最新の作業追記：2026-10-20 Pro決済表示と公開前スモーク
-
-- **現在のmain（本追記前）:** `a888e3fbde46f20e32cb2e33d4fc58f3b77e6ed1`。これが最新とは限らないため、次の担当者は必ずGitHubへ再確認する。
-- **PR [#62](https://github.com/keito0518/speakingym/pull/62)** は引き続き **DRAFT / main未マージ / 未デプロイ**。現在確認できたhead: `a79ffb90059f56e10b038447bea0de0c7f7f00a3`。
-- **[PR #64](https://github.com/keito0518/speakingym/pull/64)**（Pro受付表示の古いLive認証情報が通信失敗/ログアウト/アカウント切替後に残らないようにする）と **[PR #65](https://github.com/keito0518/speakingym/pull/65)**（`scripts/pro-paid-readonly-smoke.mjs`：公開Pages5ページ＋Worker healthのGETのみで商用準備状況をfail-closed確認）を **#62のドラフトブランチにマージ済み**。最終 #65 の CI では **303/303 Nodeテスト、Chromium/WebKitブラウザQA、Worker安全性テスト成功**。
-- 新しい有料公開スモークは読み取り専用。**現在の本番では特商法と利用規約が未確定・Stripe Live無効のため失敗するのが正しい**。テスト合格だけで法律対応・Stripe sandbox E2E・実請求・一般公開を承認できない。実決済/バックアップ/D1/AI原価/公開許可は依然NO-GO。
-- 実装済みの検査はユーザー本人の手動操作を代替しない。独立staging Worker実デプロイ、実Stripe sandbox Checkout→Webhook→更新/失敗/解約、Gemini請求原価、請求時開示メールの実受信返信、法令適合、ユーザーの段階別承認が残る。
-
-## 2026-10-20 追加：Stripe sandbox 実API設定プリフライト
-
-- **最新の決済開発:** [PR #67](https://github.com/keito0518/speakingym/pull/67) はテスト成功後に **DRAFT PR #62のブランチへマージ済み**（#62のhead確認値 `4cb7f19330d351c8b3ff11fa3bc9355c6a3a1801`）。**main未マージ・Cloudflare未デプロイ・Stripe Live未実施。**
-- `scripts/stripe-sandbox-preflight.mjs` は **実StripeテストモードAPIでの読み取り専用GET 3回**（Price・Webhook endpoints・Customer Portal configs）を行う。sk_test_しか受け付けず、本番Worker宛Webhookを拒否。価格¥680税込月次、必要Webhookイベント、Portalの期間末解約・支払方法変更をfail-closed検査する。秘密情報を出力しない。実行用ガイド `worker/STRIPE_TEST_API_PREFLIGHT_2026-10-20.md`。
-- **検証された事実:** #67のGitHub CIで Node **309/309成功**、Chromium/WebKit成功、AI Worker安全性テスト成功。**これはStripe APIに実接続した証拠ではない**。この実行環境にはStripeアカウント接続も独立staging Workerの実デプロイ証拠もなかったため、本物のStripe sandbox Checkout→署名Webhook→Pro権限→更新成功/失敗→Portal解約→期限満了は全て未検証。
-- **次の本当の作業:** StripeテストアカウントとCloudflareの独立staging Worker/D1の安全な認証済み接続を用意し、まずGET-onlyプリフライトを実行。次にモックでないStripe sandbox E2Eを実施。キー・UID・決済情報を会話、GitHub、CIログに投稿しない。実sandbox E2Eまでは `LIVE_STRIPE_SANDBOX_E2E_PASSED=verified` を絶対に設定しない。
-- 本番課金、D1 migration、Gemini有料化、Proプラン価格・利用枠、一般公開の承認は一切変更なし。正式公開目標は10/31のままだが、法令・原価・Stripe実E2E・運営者承認のNO-GO条件を優先する。
-
-## 2026-10-20追加：月680円Pro採算・Freeとの差別化
-
-- 決済の実操作は**利用者帰宅後まで保留**。GitHubで実装・検証できる採算・販売説明の安全改善を先行した。
-- [PR #69](https://github.com/keito0518/speakingym/pull/69) を **DRAFT PR #62の統合ブランチにマージ済み**（確認head `6760a665c07fa45b7888de3c439ef14a90e69726`）。**main未マージ・本番未デプロイ、価格/Free/Pro枠/D1/Stripe Live未変更**。
-- `scripts/pro680-economics.mjs` と `tests/pro680-economics.test.mjs` に Gemini 3.5 Flash-Lite Standard公式価格、Stripe日本の標準決済3.6%+Billing0.7%、為替・AIリトライ・Freeユーザー数/利用量・ホスティング・税の仮定を明示した原価モデル追加。モデルの **実Gemini原価/実会員数/実請求データは入手できていない**。`worker/PRO_VALUE_MARGIN_REVIEW_2026-10-20.md` を参照。
-- 例示だけ：$1=¥160、Pro毎月600会話+100講評を使い切ると標準トークン仮定でAI約138.56円/Pro、重いトークン仮定で約644.80円/Pro。Stripe仮29.24円で残り512.20円対5.96円（税・Free・Hosting除外）。**利益保証ではない**。Freeの使用分も有償になると赤字リスク。
-- Free 5セッション/日×最大20ターン×30日＝理論最大3000ターン、Pro600ターン/月。Free講評3回/日×30日＝90回、Pro100回/月。**Proは必ずFreeよりたくさん話せるわけではない**。現時点の強みは日次セッション枠なしで週末等に集中できる柔軟性。`plans.html`に正直な比較FAQを追加したが、それだけで支払い意欲が高まった事実はない。
-- #69のCI: **318/318 Node tests成功、Worker・アカウント安全性CI、Chromium/WebKitブラウザQA成功**。Firebase JWT署名改ざんテスト末尾の非正準base64url書換えで偶発的に同じバイト列となるテスト不具合も、重要な署名先頭を改変するよう修正。認証実装は未変更。
-- **公開NO-GO**：Cloudflareの匿名化Gemini実ログ・Google実請求・Free負担・Stripe手数料・Pro利用価値の確認を行うまでは `LIVE_UNIT_ECONOMICS_REVIEWED=verified` 禁止。Stripe sandbox E2E、法令/返金条件、Cloudflare staging・D1、本人の別途明示承認も必要。
+> **2026-10-23 新方針・Draft限定：** Speakingymは「AI自由会話中心」から「60秒の瞬発力 → フリーズ原因の自己記録 → 苦手別の反復 → 保存履歴で別場面を試す」へ転換。個別3ステップメニューとトップページの優先導線をDraft PR #62で実装。AI実践英会話は任意の4番目の機能として保持し、既存の学習記録は削除しない。詳しくは [新方針と実装](SPEAKINGYM_PIVOT_INSTANT_RESPONSE_2026-10-23.md) を参照。**main、本番Pages/Worker/D1、Stripe Live、旧¥680商品・契約、旧¥1,480 TEST商品、AI利用限度を変更していない。月額¥980（税込）の新Pro枠は未確定。**
 
 
-## 2026-10-20 追加：Proの利用枠拡充と売価の選定案（まだ未決定）
+> **最新決定：将来のPro正式価格は月額980円（税込）で固定。** 対象は未マージの [Draft PR #62](https://github.com/keito0518/speakingym/pull/62) のみ。旧1,480円のStripe TEST商品と月1,000ターン・講評150回の草案は**テスト用の歴史的状態であり、980円プランの最終提供枠ではない**。AI利用枠は採算・実品質の検証後に決める。旧680円契約、Stripe Live、本番Worker/D1/Pages、mainは変更していない。**承認なしにマージ・本番反映しない。**
 
-- オーナーは「Pro利用者にもっとたくさん使えるようにしたい。いくらがラインか」を相談。**正式な価格変更の承認はまだない**。Stripe・D1・料金ページ・Free/Pro上限は変更しない。
-- 公式AI/Stripeレートと競合価格を再調査。提案比較表は `worker/PRO_PRICING_OPTIONS_2026-10-20.md`（mainにある提案資料、料金決定ではない）。
-- **暫定本命：月額¥1,480・月1,000会話ターン＋150 AI講評**。もう少し安価にするなら¥1,280・900ターン＋120講評。¥980・700ターン＋100講評ではProのメリットを増やしにくい。いずれも未採用。
-- 予測の原価はトークンの標準/高負荷**仮定**であって実Gemini請求ではない。高負荷1,480/1000/150でAI推定¥1,056.80、Stripe仮手数料¥63.64、残¥359.56（税・Free・hosting・失敗/再試行・返金前）。仮に税込額の10/110を税相当留保すると残¥225.01。値上げすれば必ず黒字になるという証拠ではない。
-- Free30日理論最大3,000会話ターンに対して1,000Proでも少ない。Proの集中利用・追加の講評価値・学習継続機能等を訴求する必要。未実装機能は宣伝しない。
-- **実際に価格・上限を変える前に**、オーナー選択、Cloudflare/Googleの実原価とFree費用、Stripe sandbox、本番法的表示・決済フォーム更新・旧契約の扱い、個別承認が必要。Stripe実操作は帰宅後に保留中。
+> **機能整理（2026-10-23）**：トップ・マイページは「60秒チャレンジ／フリーズ克服ジム／AI実践英会話／マイ復習帳」の4つに統一。フレーズ・復習の入口は `phrasebook.html`、Pro向け間隔復習（プレビュー）はそこから案内。旧 `classic.html`／`mission.html`／`live.html`／`home-preview.html` は削除せず、現行メニューから外して試作品であることを明示。AI先生は60秒チャレンジ後の任意の追加講評。**AI利用回数、D1台帳、Stripe、実際のデータはこの整理で変更しない。** 詳細：`SPEAKINGYM_CORE_FOUR_WORKOUTS_2026-10-23.md`。次の検討：Freeが理論上Proより会話回数を多く使える不均衡。
 
-## 2026-10-20 最新：ユーザーがPro 1,480円を選択。機能を拡充した（未公開）
+## 2026-10-21：実際のStripe TEST購入〜失効を確認（過去の「未実施」情報に優先）
 
-- **最新のユーザー判断**：「1,480円にしてみる。その代わり、Proの機能ももっと充実させたい」。従来の680円案は**旧案**。過去の「価格未決定」「680円を維持」の説明はこの日付の決定で上書きされる。ただし**実Stripe価格や本番D1/Workerへの適用許可ではない**。帰宅後のCloudflare/Stripe操作は引き続き保留。
-- [PR #72](https://github.com/keito0518/speakingym/pull/72) を [DRAFT #62](https://github.com/keito0518/speakingym/pull/62) の**開発ブランチにマージ済み**。`pro-study.html`・`pro-study.js`・`pro-study-data.mjs` を追加：Worker `GET /entitlement` が署名済みログインユーザーをProと確認した場合のみ、保存講評/フレーズから日次復習カード最大5枚（回答表示、端末音声、表示中のみチェック）、保存履歴から自己記録の学習レポート。追加Geminiリクエストなし。Proページは**noindex・未公開プレビュー**。実ブラウザでログイン後E2Eは未確認。
-- [PR #73](https://github.com/keito0518/speakingym/pull/73) も DRAFT #62ブランチにマージ済み。**次期Proドラフト仕様は税込月1,480円・月1,000会話ターン・月150 AI講評**、Freeは従来5セッション/日・講評3回/日で変更なし。Stripe Checkoutは厳格に**1,480円**のPriceを要求し、旧680円のStripe Price IDを指定したままなら拒否。ドラフト料金ページ・法定表示草案・プランWorker・テスト/スモークを更新。価格変更だけで旧会員のStripe契約を移行しない。
-- **PR #62最新head確認値：`82c23e596e498c7057d10384ea8affc8bb57a25f`**。依然**DRAFT・main未マージ・Cloudflare未デプロイ**。子PR #73の最後のCIは **326/326 Node tests成功**、Worker・アカウント安全性・NEXT/mission・Chromium/WebKitも成功。次回変更時はGitHubの実状態を必ず再確認。
-- `worker/PRO1480_DRAFT_RELEASE_GATE_2026-10-20.md` に販売を止める条件を記載。新価格・利用枠で**実AI原価は未測定**。高負荷仮定ではProが月1,000+150を使い切るとAI約1,056.80円、Stripe仮4.3%で63.64円、残359.56円（**税・無料ユーザー原価・Cloudflare・リトライ前**）。`scripts/pro1480-economics.mjs` は仮定用。旧 `scripts/pro680-economics.mjs` は比較用の歴史的資料であり、次期販売価格ではない。
-- **次の作業**：本人の帰宅後Workで独立stage Worker/stage D1、実Stripe sandboxで新¥1,480 test Price・Checkout→署名Webhook→Pro→更新成功/失敗→Portal解約→期間満了を検証。匿名化したCloudflare GeminiログとGoogle請求を実測確認。法的な請求時開示/解約返金・利用規約を1,480円に合わせて確定。ステージングの学習画面・マイク・Pro学習スタジオの実ログイン検証。**本番のStripe Live、D1 migration、Gemini有料化、一般公開は独立した運営者の明示承認まで実施しない**。
+利用者自身のCloudflare/Stripe画面と実ブラウザ操作により確認。APIキー・実UID・customer ID等は記録しない。
+
+| 項目 | 現時点の事実 |
+| --- | --- |
+| Stripe sandbox Price | ¥1,480 / 月のテスト商品は存在。実Stripeレスポンスで `tax_behavior=inclusive` を確認したとのWork報告。Price IDは変更不要。旧¥680は触らない |
+| TEST Portal | 支払方法更新と期間末解約ON、プラン/数量変更OFFとのWork報告。実Portalから期間末解約を操作できた |
+| staging Worker | `speakingym-survival-ai-staging` に `worker/wrangler.staging-billing.toml` を所有者がWranglerで実デプロイ。AI・Free・リプレイ無効、`BILLING_MODE=test`、`STAGING_BILLING_ONLY=true`。ローカルQA画面の実GET /healthが安全ゲートPASS |
+| staging D1 | `speakingym-plans-staging` UUID `c608774e-3bc5-4527-be8d-f640e386f504` に実WranglerリモートSELECTを実行し、基礎5テーブル＋ `billing_accounts` と `billing_events` の計7テーブルが存在すると確認 |
+| staging Secrets | 所有者が `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID` / テストFirebaseユーザー `BILLING_TEST_UIDS` をstagingのSecretとして登録。値はGitHubに保存しない |
+| staging Webhook | `Speakingym Staging Billing 1480` の宛先に実際のTEST Checkout / invoice / subscription更新イベントを配信。初期2件は `409 billing_busy`、Stripeによる再送後は `200 OK`。最新契約状態を照合する実装と矛盾なし。初期409の頻度改善は継続検討 |
+| 実Checkout | **TESTカードのみ**で契約を購入し、専用Firebaseテスターのlocalhost QAで `Stripe状態 active` / `Pro（テスト権限あり）` を実確認 |
+| 期間末解約 | 実Stripe Customer Portalで解約予約。QAで `active・期間末で解約予定`、Pro継続を実確認 |
+| 契約満了 | TESTのシミュレーションを2026-11-22に進めた後、Stripe管理画面で解約済み、QAで**Free復帰**を実確認 |
+| ローカルQAのCORS問題 | `/health` が localhost に許可ヘッダーを出さない不具合をドラフトPRで修正。回帰テスト4 PASSを所有者のPCで確認後、上記stagingに再デプロイ済み。本番は変更なし |
+
+**重要：実際のStripe TESTで「初回購入→Pro→期間末解約→失効→Free」は成功。ただし「更新成功」「支払失敗→復旧」「重複/順序逆の実配信」「実利用枠1,000/150消費」は実Stripe/stagingで未実施。** 単体テストの成功をこの未実施項目に読み替えない。
+
+## 自動テストの進め方（人間の追加操作は最小限）
+
+- [Stripe staging automated safety gate](.github/workflows/stripe-staging-automatic-release-gate.yml) をドラフトブランチに追加。GitHub Actionsで**模擬**更新・支払失敗/復旧・期限失効・409再送/冪等性・月1,000ターン/講評150回の制御・staging専用安全条件を実行し、**実staging /healthのみ読取GET**。Secretsの送信、Stripe POST、Workerデプロイ、D1書込、本番課金はしない。
+- 409 `billing_busy` が同時Webhookで発生しても**同じイベントを後で再送**したら1回だけ処理しProを反映する回帰テストを `worker/billing.test.mjs` に追加。
+- 新規workflowの実行結果はGitHub Actionsで確認すること。**現時点では新設後の実行結果は未確認**。既存の417件PASSは以前のコードに対するもの。
+- 本物のStripe TEST更新・失敗復旧はアカウント操作が必要。Stripe API認証が利用できないセッションで「実行した」と主張せず未実施として扱う。所有者に同じ購入・キャンセル手順を繰り返させない。
+
+## 次の残作業（優先順）
+
+1. **新規GitHub Actionsを確認**：模擬課金・月次枠・staging GETの成功/失敗を記録。409時の正常再送はユーザーの実配信画面でも観測済み。
+2. **本物のStripe TESTでの未完了異常系**：隔離した新テスト顧客/Stripeテストクロックの準備、安全な課金更新と失敗→復旧（既存の期間末解約済み契約を無理に再利用しない）。Webhookの末端応答とUID権限を比較。自動化にはテスト専用認証と適切な実行環境が必要。本番や旧¥680には一切触れない。
+3. **アプリ公開品質**：iPhone/Androidの音声認識・AI会話・保存・ログイン・速度、GA4実イベント、1,000/150の実カウント・プロバイダ実コストを確認。
+4. **Live本番公開条件**：`tokusho.html` の販売事業者情報、解約・返金条件、個人情報、税込表記と契約UIを最終化し、**ユーザーの別途明示承認**を得る。mainマージ・Stripe Live・本番Worker/D1・実請求はこの前に実施しない。
+
+## 安全上の禁止事項
+
+- **Stripe Live、main、`speakingym-survival-ai`、`speakingym-plans`、既存¥680商品・契約は変更禁止。**
+- Sandboxイベントが本番名Worker宛に送られる旧Webhookが別途存在。正常性・影響は未立証。重複Webhookを作らず、旧送信先を安易に編集/削除しない。
+- 秘密鍵・署名鍵・Firebase UID・個人/顧客IDをチャット、GitHub、CIログに書かない。
+- 模擬テストだけで実Stripeや正式公開の検証を完了したことにしない。
+
+## 詳細資料
+
+- [Stripe sandbox詳細ランブック](worker/STRIPE_SANDBOX_SETUP_1480_STAGE_ONLY.md)（2026-10-21の実操作以前の未実施記述には注意）
+- [安全な staging BILLING_ONLY 設定](worker/wrangler.staging-billing.toml)
+- [Stripe専用 localhost QA](stripe-staging-qa.html)
+- [読取専用 staging readiness](scripts/staging-stripe-readiness.mjs)
+- [過去の引き継ぎ](STRIPE_NEXT_SESSION_2026-10-20.md)
+
+## 2026-10-21 15:47 JST — 次セッションに最優先で引き継ぐ内容
+
+**ユーザーからの最新希望：PCが使えない。細かな操作依頼・手動テストの繰り返しを避け、可能なことはGitHub連携と自動処理で完了させること。** 必須の外部アカウント操作が不可能なら、その点だけ具体的に短く報告し、勝手に「実テスト成功」としない。
+
+- 最新PR #62 headは `f4ac494eba8d03310cbe8943ac993b2bb23552c0`（確認時点）。Draft/unmerged、mainや本番は変更しない。
+- `worker/billing.test.mjs` に「同時署名Webhookで409 billing_busy → 同じイベントを再送して200 → Proは一回だけ付与」の回帰テストを追加（コミット `7737dc1`）。これは**まだ新HEADで自動テスト合格が未確認**。
+- `.github/workflows/stripe-staging-automatic-release-gate.yml` を新設（コミット `dff9878`）し、PR #62向け `pull_request` トリガーも追加（`f4ac494`）。模擬更新/未払い/復旧/409/枠制御/安全制御と、実staging GET /healthのみを自動照合する設計。**新HEADに紐づくActions workflow runsはGitHub連携から取得できず、走ったかどうか未確認。PASSと主張しない。**
+- 次の担当はまずGitHub Actionsの実行状況/失敗原因を調べ、テスト環境の権限で可能なら自律的に修正・検証する。GitHub Connectorにはこの時点で新規 workflow_dispatch アクションが見当たらない。連携操作できないときにユーザーへPCを要求しない。
+- 2026-10-21本人実施の**Stripe TEST購入→Pro付与→解約予約→契約満了→Free復帰は成功**。これを繰り返さず、未実施のStripe TEST更新/支払い失敗/復旧、実利用枠の検証のみに注力。
+- この新自動テストは**模擬ケース**であり、Stripe実決済E2Eを代替しない。Stripe/Cloudflareの直接操作権限がない状態ではTESTイベントを生成したと主張しない。秘密鍵の共有を要求しない。
+- 絶対変更禁止：Stripe Live・旧¥680商品/契約・本番Worker `speakingym-survival-ai`・本番D1 `speakingym-plans`・本番Pages・main。PR #62をマージ/本番デプロイしない。
+
+## 2026-10-21 — 自動テストの実行結果をGitHub APIで再確認
+
+- **Stripe staging automated safety gate 実行成功**：GitHub Actions run [39554153439](https://github.com/keito0518/speakingym/actions/runs/39554153439)、commit `f4ac494e`、2026-10-21 15:13 JST開始。ジョブ `verify` の模擬Stripe更新/失敗/復旧・409再送、月次1,000/150制限、staging安全/CORS、**実stagingに対する読み取り専用GET /health** の各ステップがsuccess。ヘルス実ログは `environment=isolated-staging`, `stripeMode=test`, `schemaReady=true`, `aiDisabled=true`, `passed=true`。実Stripeの更新/失敗/復旧は含まれない。
+- **総合CI 実行成功**：run [39557777409](https://github.com/keito0518/speakingym/actions/runs/39557777409)、commit `8db58ab1`、419件テスト PASS、0 FAIL。ChromiumとWebKitの模擬ブラウザQAがPASS。実iPhone実機の音声認識・マイク権限は未検証。
+- `f4ac494e` と `8db58ab1` の差分は `SPEAKINGYM_START_HERE.md` のドキュメントのみ。したがって前者のStripe gate結果は後者の課金コードにも対応する。
+- 有料販売の法定表示、返金方針、実Stripe TEST更新・支払失敗/復旧、実D1上限消費・原価、実機QAは未完了。**本番/Live/mainには触れず、Ownerの明示承認までNO-GO。**
+
+## 2026-10-21 — mainの最新ドキュメントをドラフトへ安全に統合
+
+- main (`bd17136a`) の更新は `SPEAKINGYM_START_HERE.md`、`WORK_HANDOFF.md`、`worker/PRO_PRICING_OPTIONS_2026-10-20.md` の3文書のみ。両ブランチで追加された `SPEAKINGYM_START_HERE.md` の競合は**こちらの10/21最新ステージング実証版を優先**して解消。mainから旧提案・過去履歴ドキュメントは保持。
+- main側の2026-10-20時点の680円案や「Stripe実テスト未実施」は旧記録。10月21日にオーナーが確認した**1,480円Stripe TEST購入→Pro→期限末解約→Free**の実証、および同日確認したGitHub Actionsの最新結果を優先。
+- これは**main→Draftの取り込みのみ**。main側へのマージ、本番反映、Stripe Live設定変更、旧商品・既存契約の変更は行っていない。
+
+## 2026-10-21 — マージ競合解消・ブラウザ音声QAの追加（次担当へ）
+
+- **Draft PR #62 最新検証ブランチ:** `integration/pro680-latest-main-review-20261020`。mainは `bd17136a`、10月21日にmainの資料更新（3文書）をこのDraftへ**取り込むだけ**のマージコミット `77766b2` を作成。元のconflictは両側で追加された `SPEAKINGYM_START_HERE.md` のみ。現在GitHub判定は `mergeable=true`, `mergeable_state=clean`。**mainへのマージは実行していない**。
+- **携帯UI・音声処理の追加検証:** `tests/browser-qa.cjs` の `ffb1788` に、**擬似SpeechRecognition**による「途中発話→認識停止で文章保持→再開して追記」を追加。ChromiumとiPhone viewport相当のWebKitでブラウザQA成功（[Actions #39562125745](https://github.com/keito0518/speakingym/actions/runs/39562125745)）。その実行で Node `420/420 PASS`, `0 FAIL`。実iPhoneの物理マイク・OS権限・実音声認識精度を確認したわけではない。
+- [Stripe staging安全ゲート #39562132683](https://github.com/keito0518/speakingym/actions/runs/39562132683) は再度成功。模擬課金ロジック・409再送・1,000/150枠・staging安全性がPASS。実stagingへの読み取り専用 `GET /health` もPASS（実Stripe決済・D1利用枠消費の検証とは区別する）。
+- 10月21日のHEAD `ffb1788` に紐づくAI Worker安全性・アカウント安全性・NEXT/missionの各GitHub Actions、Cloudflare previewビルドも成功。これらを本番の動作検証とはしない。
+- **継続NO-GO:** 本物のStripe TEST更新・失敗/復旧と署名Webhook確認、月次枠の実D1反映・原価、iPhone実機、運営者の事業者情報の開示実運用・返金条件・法定表示の確定、公開者の個別明示承認は未完了。接続済みGmailアカウントはサイトに記載された問い合わせ先と別のため、問い合わせメールの実際の受信と返信は未検証。機密メールやIDをGitHubに記載しない。
+- **禁止変更を維持:** Stripe Live、旧680円商品・契約、本番Worker、本番D1、本番Pages、mainへのマージ。Draftブランチのコード・テスト・文書だけ変更した。 
+
+## 2026-10-21 追加：アカウント切替時の旧Pro表示・支払導線を即時遮断
+
+- Draft PR #62の2026-10-21最新修正は `account-sync.js`、`plan-usage.js`、`pro-study.js`、`billing-ui.js`。Firebaseのauth owner切替時に `speakingym:account-changing` を発火し、**前のアカウントのPro復習履歴・利用枠表示・決済ボタンを即時無効化**する。Firestoreの同期完了は待たない。
+- 前のアカウントのサーバー応答が遅れても、マイページ利用枠表示では認証epochとリクエスト世代を確認して新しい利用枠を上書きしない。Pro復習はPro確認レスポンス後にも当該ログインのトークンを再確認してから端末内の保存履歴を読む。決済画面では未完了のCheckout POSTレスポンスを破棄し、旧ログインのStripe URLへ遷移しない。
+- 新規 `tests/account-quota-switch.test.mjs`、`tests/pro-study-account-switch.test.mjs` と追加 `tests/plan-usage.test.mjs` / `tests/billing-ui.test.mjs` でアカウント切替・ログアウト・遅延レスポンス・表示即時遮断のモック回帰テストを追加。実Firebaseアカウント・本番D1・Stripe APIを操作しない。
+- 強化済み決済UIのキャッシュ更新用に `plans.html` の `billing-ui.js` バージョンを `20261021-account-switch-safety-5` へ更新し、`tests/billing-cache.test.mjs` も同期。
+- 今回変更は **Draftブランチのみ**。本番main・Stripe Live・旧680円商品/契約・Cloudflare本番Worker/D1/Pagesへの操作は一切なし。実Stripe TEST契約更新・支払い失敗/復旧、実staging D1枠消費、実iPhone SafariマイクQA、法的開示/返金・原価、運営者の明示承認は**未完了のGO阻害事項**。
+- コード変更末尾の検証SHA `b6b94342`。最新のCI状態は必ずGitHub Actionsで改めて確認する（ローカルのユニットテストとGitHubの実ブラウザテストを混同しない）。
+
+## 2026-10-21（夕方）：Live手動Proバイパス防止・マイページ利用枠の不正表示対策
+
+- **Draft上のコード修正**: `worker/plan-limits.js` の `getPlan` は、明示承認された `billingMode(env)==='live'` の場合、過去の `account_plans.tier='pro'`（手動付与）からProを推測しなくなった。Live対象外ならFree、Live対象でも `billing_live_accounts` にサーバー検証済みの有効な有料資格がない限りFree。**billing disabled / Stripe TESTの旧ベータ権限ロジックは変更せず、旧記録や旧¥680契約テーブルへの書き込みも行わない**。Stripe Liveは未有効化。
+- `worker/billing.test.mjs` に手動Pro付与とLive請求の混在・Live招待範囲外・未払い更新後の再付与禁止テストを追加。今後のLive公開前に、**旧手動Pro・¥680等の既存有料利用者をどの権利で継続させるか、対象者と移行ポリシーを運営者が確定する必要がある**。勝手に自動移行・一律失効・課金はしない。
+- `account-sync.js` の契約利用枠表示で、欠損・不正な `limits` / `used` を0とみなして「残1,000ターン」等の誤表示をしないよう変更。Pro/Freeとも数値の完全性を検証し、未検証なら「利用回数を読み込めませんでした」とする。`tests/account-quota-switch.test.mjs` に欠損・不正値・正常値テストを追加。
+- **実Stripe TEST更新／失敗請求・回復、実D1枠消費、iPhone実機の音声、実測AI原価、特商法・返金条件の確定は未完了**。ステージング安全ゲートの成功や模擬Node/ブラウザテストはこれらを代替しない。引き続き一般課金GOは禁止。PR #62はDraftのまま、main・本番環境・Stripe Live・旧¥680契約は変更しない。
+
+## 2026-10-21：品質改善12分野・ドラフト引き継ぎ（未公開）
+
+**詳細:** [RELEASE_QA_AND_ROLLBACK_2026-10-21.md](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。開発・公開安全ゲートの12分野別に「コード改善」「模擬CI」「実環境の未確認」を分けて記録した。
+
+- AI同一返答を受理せず、APIエラーで途中回答にしない（`ai_repeated_reply`）。モデルを勝手に再呼出しせず、既存の利用回数失敗処理へ戻す。異なる発言に**同一の定型AI講評**が並ぶ結果も拒否する。
+- 60秒チャレンジは最近の保存履歴で出題した問題を後方へ送り、新しい問題を優先。Pro復習スタジオは保存した講評・会話・Sprint表現を混ぜて出題。いずれも既存データのみ、追加のAPI課金なし。
+- AI実践シーンの携帯向け44pxタップ領域と低モーション配慮、マイページの再表示時の残り回数照合、Free/有料負担の`scripts/pro1480-risk-matrix.mjs`（**仮定であり実原価の証明ではない**）を追加。
+- 実Stripe TESTでの更新成功／失敗→復旧、staging D1の利用枠全件、実iPhone/Androidマイク、実Gemini原価、運営者の法定情報・返金条件、現行680円権利の取扱いは引き続き未確定。**Draft #62のみ、main/本番/Liveを触らない。**
+- **CI証拠（コード最新の前段階）:** [Launch QA #39582799532](https://github.com/keito0518/speakingym/actions/runs/39582799532) は **484/484単体テスト・失敗0件、ChromiumとWebKitの模擬ブラウザQA成功**。後続の文書更新コミットについてはGitHub Actionsで最後のSHAを再確認すること。
+
+## 2026-10-21：Proの月1,000ターンと台帳600ターンの食い違いを修正（Draftのみ）
+
+コードレビューで、`worker/turn-ledger.js` の原子的なProターン予約SQLに**旧600ターン上限**がハードコードされ、新案の月1,000ターンと一致していないことを発見。Draftで共有定数 `PRO_MONTHLY_TURN_LIMIT=1000` とSQLバインドへ修正し、`worker/plan-limits.js` も同一定数を参照するよう変更した。セッション20ターン・講評月150回・Free枠は変更なし。
+
+検証は `worker/turn-ledger.test.mjs` / `worker/turn-ledger.integration.test.mjs` に追加。旧上限を超える**601ターン目**、**1,000ターンの原子的上限**、同時予約、失敗分返却を模擬D1で再現。**実Cloudflare staging D1を1,000回消費したという意味ではない**。今回の修正は本番運用中のPro権限には反映しておらず、PR #62をマージ/Stripe Liveを有効化してはいけない。
+
+詳しくは [12分野QA・復旧手順](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。最新CIの成功・失敗は**修正後SHA**で確認すること。
+
+## 2026-10-21：D1利用回数の読取異常とJST日付切替の安全性（Draftのみ）
+
+- **D1利用回数の不正データ**（欠損・負数・小数・文字列・安全な整数でない値）をサーバーで0回と誤認しないよう `worker/plan-limits.js` を修正。署名付き `/entitlement` は不正値で `plans_unavailable` (503) として失敗させ、Proの利用回数を誇張しない。実DBの `COUNT`/`SUM` の正常な0は表示可能。
+- **JST月初・午前0時の境界**を1リクエストごとの基準時刻で一貫して扱う。`getEntitlement`、`usage`、`publicLimits`、新規セッション、AI講評、台帳ターン予約の日時を揃えた。DB応答中に月が替わっても、前月の回数を新月扱いしない。
+- `worker/plan-limits.test.mjs` に欠損・異常回数、23:59:59 JST→00:00:00 JSTへのデータベース応答遅延、次月1,000ターン/150講評を既に消費している場合の月末セッション・講評予約の正常性をテスト。
+- 今回の修正は [PR #62](https://github.com/keito0518/speakingym/pull/62) のDraftのみ。実ステージングD1の使い切りや実Stripe TEST更新・支払失敗/回復は未検証のまま。本番・main・Stripe Live・旧¥680契約変更禁止。詳細は [QA・復旧手順](RELEASE_QA_AND_ROLLBACK_2026-10-21.md)。
+
+## 2026-10-21：実Cloudflare staging D1検証成功（Owner操作・再試行）
+
+- GitHub Actions [実staging D1実行 #39607027253](https://github.com/keito0518/speakingym/actions/runs/39607027253) は **初回、認証401/code1000でSTOP**。mainでの旧検証 #39606164686 も同じ401で停止。初回はいずれもDBへの書込み無し。
+- Draft PR #62でユーザートークンの認証先が401/code1000を返した場合に、**Cloudflareアカウント用トークンの認証先をGETで試す**安全な分岐を追加（両方拒否なら必ずSTOP）。認証用のテストとDraft専用手動実行を追加。本番main・本番Worker/D1・Stripeへの変更無し。
+- 運営者が**GitHubのstaging-d1環境Secretのみ**有効な検証トークンへ更新後、同じ実行 #39607027253 の**失敗したジョブだけをGitHub Actionsで再実行**し、`real-staging-d1` が成功。ログで以下6件を確認：
+  1. staging D1の識別子・0002/0005の必須スキーマ確認 **PASS**
+  2. 初回AI失敗の原子的返却・Freeセッション枠返却・再試行・成功 **PASS**
+  3. 20ターン最終枠への同時アクセス防止・他ユーザーからの予約拒否 **PASS**
+  4. 6回同時セッション開始時のFree上限5回 **PASS**
+  5. 仮の`sgqa-...`ユーザーと紐づく検証データの削除 **PASS**
+  6. **STAGING D1 QA COMPLETE**。実D1で処理した証拠だが、**デプロイ済みstaging Worker経由ではなく、ステージングD1 SQLを直接実行する専用QA**。
+- この成功により **実staging D1のFree枠・基本カウンタ・返却・排他・削除の確認は完了**。一方、**実stagingでPro月1,000ターン/150講評の限界、Stripe TESTの実更新→未払い→回復、実機音声、原価、法定情報** は引き続き未確認。新料金Liveの公開GOではない。
+
+## 2026-10-21：Pro月次1,000ターン・講評150回の実staging D1検証 PASS
+
+**新しい確定証跡**：[GitHub Actions手動実行 #39609280781](https://github.com/keito0518/speakingym/actions/runs/39609280781)（Draftブランチ `f2cc36a3`、`workflow_dispatch`）。`offline-guards` と `real-staging-d1` がともに **SUCCESS**。検証前にstaging DB名/UUIDと必要な0002/0005スキーマが一致することを確認。
+
+- **Pro英会話 月1,000ターン**：専用の仮のUIDに既存使用999ターン相当を作成。同時予約は最後の1枠のみ成功し、1,001ターン目は**別セッションからも拒否**。予約失敗扱いで999に戻り、枠を再取得できること、成功確定後は再度超過できないことを実staging D1で確認。
+- **Pro講評 月150回**：仮の同一UIDに149回を作成。同時予約の片方だけが150回目を取得し、151回目は拒否。実staging D1で確認。
+- **安全性**：検証は `sgqa-...-prolimits` 等の一時ユーザーのみで実施し、Gemini API呼び出しやStripe課金・本番Worker/D1変更なし。全検証用セッション・予約・講評データのクリーンアップも **PASS**。
+- **証拠の限界**：`scripts/staging-d1-qa.mjs` で実staging D1へ**検証用SQLを直接発行**した結果。実Firebaseログイン・デプロイ済みstaging Worker・Gemini通信・Stripe TEST課金の全体E2Eではない。**本番公開はまだNO-GO**。
+- **未完了**：実Stripe TESTの更新成功・未払い→回復、実機iPhoneのマイク/音声認識、実Gemini/Stripe費用、正式な法定情報・解約/返金・連絡体制、公開の明示承認。旧680円契約・main・本番/Stripe Liveの変更禁止を維持。
+
+
+## 2026-10-22 引き継ぎ：隔離Stripe更新テストの現在地（本人操作は夜に再開）
+
+> 2026-10-22現在の優先記録。この文書の上部にある「自動ゲート未実施」「テスト時計未デプロイ」など過去時点の未実施記述より、直近の実証・CI結果を優先する。ドラフトPR #62の範囲だけ。**main、Live、¥680既存契約、本番Worker/D1/Pagesには触れない。**
+
+### 2026-10-21 本人操作で確認した事実
+
+- **隔離Workerにテスト時計対応コードを実デプロイした。** Windows CMDから `worker/wrangler.staging-billing.toml` で `speakingym-survival-ai-staging` に反映。実デプロイ出力ではstaging D1、`BILLING_MODE=test`、`ALLOW_AI=false` 等の安全な対象であると確認。
+- 実際のlocalhost QA画面が staging `GET /health` の安全チェックでPASS。GitHub ActionsのリモートGETもPASS。**ヘルスチェックは設定された `STRIPE_TEST_CLOCK_ID` の値や実Stripe顧客紐付けまでは検証しない。**
+- Stripe SANDBOXに**新しい別シミュレーション `Speakingym 1480 Renewal Test`** を作成。既存の古い時計は触らない。Cloudflare staging Workerの変数 `STRIPE_TEST_CLOCK_ID` にこの新時計のIDを設定したとオーナーが報告。**実Stripe GETによる時計IDの照合や新規顧客の時計紐付けは未実施。**
+- Googleアカウントが自動的に前のGoogle IDでログインする事象を受け、**Draftコードのlocalhost QA限定**で `GoogleAuthProvider.setCustomParameters({prompt:'select_account'})` を追加。ログイン後、メールアドレスを画面で確認できるよう修正。本人は修正版画面で「ログインかんりょう」と報告したが、そのアカウントが新テスターか、staging許可リスト登録済みか、契約statusが `none` かは**まだ確認できていない**。ユーザーのメール/UIDはGitHubやチャットへ貼らない。
+- Google修正後のDraft HEAD `078536786f6218cb2567e68211a344545ee084af`、[CI #39618982244](https://github.com/keito0518/speakingym/actions/runs/39618982244) **Node 496/496、Chromium/WebKit模擬QAともPASS**。本物のGoogleアカウント選択の成否はユーザー報告でありCIは実ログインを代替しない。
+- **Odenアカウントは以前の購入→Pro→解約→Free試験に使用済み**。今回の新時計に再利用しない。前の時計・顧客・契約・¥680既存契約も操作しない。
+
+### 夜に本人が必要な操作の最短経路
+
+1. localhost QAで今ログイン中のアカウントがOdenと**異なる新テスター**であることを、ブラウザ画面内だけで確認。 `3. Stripeテスト契約` の表示（`Free`/`テスト対象アカウントが許可リストにありません` 等）だけ報告してもらう。ログイン済みなら再ログインさせない。
+2. 新テスターのFirebase UIDをFirebase Consoleで**本人がローカル確認**、Cloudflare **staging Workerのみ** `BILLING_TEST_UIDS` に既存Odenテスターを保全しつつ追加する。**暗号化済みsecretはダッシュボードから再表示できない場合がある**ので、元の値を知らずに上書きしてOdenを失効させない。チャット/CI/GitHubにUIDや鍵を貼らない。追加前に実操作内容を確認。
+3. localhost QAで新テスターが `Free` / `status none` と確認でき、ステージングへの招待も通ることを確認。**まだCheckoutを押さない**。次に公開画面のStripe CHECKOUTに行く前に時計ID・TEST価格/税込/Webhook/安全変数を最終点検。
+4. 明示的に安全条件が整った新テスト顧客だけで **Stripe TEST購入→更新成功→支払い失敗→回復** を一連で検証。シミュレーションはこの新時計だけ進める。Webhook実配信とstaging Entitlement/Free移行を比較し、成功した項目だけ記録。既存の契約・時計やStripe Liveは一切触らない。
+5. 実iPhoneマイク・SafariおよびGA4同意後イベント、販売事業者情報・返金条件・旧¥680継続方針・実Gemini/Stripe費用は別の本番公開GOゲート。本人の最終明示承認まで本番リリースしない。
+
+### 開発者が本人不在でもできる作業
+
+- DraftだけでWebhook/idempotency/同時実行/アカウント切替/課金上限・講評制限・モバイルUIのコードレビューと模擬CI回帰試験、ログサニタイズ、復旧手順の整備。
+- 実staging `GET /health` の**読取専用**再検証。既に実staging D1への合成UIDのSQL QAで1,000ターン・150講評限界はPASS済み。今夜に同じ手動テストを再実施させない。
+- コスト試算と販売法定表示の**下書き**は可能だが、実請求書の確認と運営者自身の住所・事業情報・返金規約の承認は代替できない。
+- **重要：`wrangler.staging-billing.toml` には `keep_vars=false` と `[vars]` があり、ダッシュボードで後から追加した `STRIPE_TEST_CLOCK_ID` が将来のWrangler再デプロイで消える可能性がある。**そのため今夜のQA前に安易に再デプロイしない。追加された時計設定をCloudflare画面で確認し、再デプロイ時は専用設定・secretを安全に保全する計画を先に作成。
+
+
+## 2026-10-22 GitHub側だけで実施：TEST時計の実在確認・Windows QA更新（ステージング未デプロイ）
+
+- 実Stripe API仕様：顧客作成時だけ `test_clock` を付与でき、テスト時計には `id`・`livemode`・`status`（ready/advancing/internal_failure）・`deletes_after` がある。テスト時計が関連づいたSubscriptionは、`GET /v1/subscriptions?customer=<id>` で取得対象になる。公式資料: https://docs.stripe.com/api/test_clocks/object ・ https://docs.stripe.com/api/subscriptions/list 。**これは公開API仕様の調査であり、このStripeアカウントへ接続して時計を確認した事実ではない。**
+- `worker/billing.js` は、明示的に `STRIPE_TEST_CLOCK_ID` を設定した隔離stagingのCheckout時、`GET /v1/test_helpers/test_clocks/<clock>` を **読取専用で一度実行**。時計のID・型・testモード・有効期限が一致せず、または時計が `ready` 以外なら、**Customer POSTの前に停止**する。既存の時計が未指定なら従来通りで、Live/旧¥680には手を加えない。
+- `worker/billing.test.mjs` に mock時計の正しいGET、advance中・内部障害・誤ID・Live・期限切れ・期限欠損などの遮断、明示設定のないときは時計GETを実施しないテストを追加。
+- `stripe-staging-qa.js` に時計準備中の分かりやすいメッセージ。`scripts/Windows_Start_Stripe_Staging_QA.cmd` の固定zipコミットを `e0446d7...` に更新し、既存のGoogleアカウント選択強制・ログイン中メール表示・新時計準備エラー対応済みのQA画面を起動できるようにした。ユーザーがすでに開いた古いQAサーバーへは自動反映されない。
+- **変更範囲はDraft PR #62だけ。** 今夜の独立staging Workerは `c9100b58` コードに再デプロイしていないため、実Stripe時計GETの新チェックは**本番・staging実機では未反映**。将来stagingにWrangler再デプロイすると、dashboardに後から入力した `STRIPE_TEST_CLOCK_ID` が `keep_vars=false` の影響で消える可能性がある。**今回のテスト時計を確実に保持する手順を決める前にWranglerを再実行しないこと。**
+- Stripe TESTの新規顧客作成／月額更新／支払失敗→復旧は**未実施**。実験用Googleアカウントの新staging招待も未確認。本番公開はNO-GO、main/Live/¥680契約無変更。GitHub Actionsの最新HEAD結果は実行ログ参照（合格確認前に完了扱いしない）。
+
+## 2026-10-22：Stripe契約の所有者照合を強化（Draftのみ）
+
+- `worker/billing.js` でStripeから作成されたCustomerの `cus_*` ID・Customer型・TEST/LIVEモード・`metadata.firebase_uid` を、D1へ顧客IDを保存する**前に**照合。新時計付きの既存Customer再利用時もFirebase所有者を再照合し、不一致ならCheckoutを発行しない。
+- 定期購入一覧を照合する際、各SubscriptionのID・型・顧客IDと、展開済み／個別取得した最新Invoiceの顧客・型・モードが現在のD1マッピングと一致しなければ処理を停止。異なる顧客の支払いをPro付与に流用しない。署名付きWebhookのイベント重複記録は検証完了まで確定させない。
+- 悪意ある／壊れたStripeレスポンスを再現する回帰試験15ケースを追加し、`node --test tests/*.test.mjs worker/*.test.mjs` で**520件成功・失敗0**（ローカル、2026-10-22）。これはStripe APIをモックしたコード試験であり、実Stripe更新決済の実証ではない。GitHub Actionsの新HEAD CI・Chromium/WebKitはコミット後に改めて確認する。
+- Cloudflare `keep_vars=false` の現行設定を**変更もデプロイもしていない**。Cloudflare公式資料上、Wranglerはダッシュボード追加の通常変数を再デプロイ時に上書き／消去し得るが、暗号化secretは保持される。現在の `STRIPE_TEST_CLOCK_ID` が通常変数かsecretか、値を保全できたかは未確認。**確認までstagingのWrangler再デプロイ禁止**。
+- 新テスターのFirebase UID確認・staging許可リスト、新TEST時計のStripe実照合、新顧客紐付け・更新・失敗→復旧・Webhook実配信は引き続き**未実施**。Odenの完了済みテストを繰り返さない。
+- 原価試算は既存 `scripts/pro1480-risk-matrix.mjs` を再実行。100人のPro会員／500人のFree利用者、満額利用、為替160円の仮定では、標準利用シナリオで月116,800円の限界利益、重い利用と1.5倍再試行では月-34,344円の赤字。**実Gemini請求書・Stripe契約料・税金・ホスティング費が未計測なので、いずれも利益予測ではない**。
+- 公開判定は依然**NO-GO**。`tokusho.html` の事業者開示・返金・更新／解約締切の確定、実原価、実端末ブラウザ音声、旧680円加入者の扱い、別途本人の承認が必須。main・本番Pages/Worker/D1・Stripe Live・旧680円商品／契約は変更なし。
+
+## 2026-10-23：980円コンセプト・AI追加費用ゼロのPro学習価値を強化（Draft限定）
+
+- **現行販売価格を変更した事実はない。** 980円／月・会話400ターン・AI講評40回は採算検証前の提案。月1,480円／1,000ターン／150講評のDraftを含め、Stripe Product/Price、旧680円契約、Live、本番環境、mainは一切変更しない。
+- `pro-study-data.mjs`：日本時間（JST）基準の間隔反復（覚えたら1・3・7・14・30日後、まだ苦手なら翌日）、期限優先の5枚、7日間の自己記録、1日5分メニュー。実AI呼出しは増えない。
+- `pro-study.js` / `pro-study.html`：実Pro権限確認後のみ表示。アカウント別の端末内レビュー記録、直前の誤操作取り消し。現時点は**他端末への復習完了状態の同期なし**。アカウント切替・ログアウト時に前の記録とUndoの表示を解除。
+- `pro-demo.html` / `pro-demo.js`：ログイン・支払い不要の架空データ体験版。カード回答表示、「言えた／まだ苦手」、Undo、翌日シミュレーション、5分メニューをその場で操作可能。記録は永続保存しない。Draftの`plans.html`からリンク。
+- `scenes.html`：Proが復習した表現を短命な同一タブの手掛かりとしてAI会話画面に表示。URLへ学習者の文を埋め込まない。ログイン切替で表示を隠す。
+- `scripts/pro980-risk-review.mjs`：Gemini3.5と3.1の仮トークン単価、980/1280/1480円案とFree負担を比較。**実トークン料金・品質・実請求ではない**。モデル自動切替やFree枠の本番変更は実施しない。
+- NodeとChromium/WebKitの回帰試験を追加。WebKitの初期Pro→scene試験失敗は、遷移先DOM表示前に検証していたテストのタイミング不具合として修正し、直後の実行 #39883348648 と #39883343553 が**成功**した。その後のUndo・デモ変更については必ず最新HEADのActions合否を再確認する。
+- 継続NO-GO：Stripe実TEST更新・決済失敗からの回復、Gemini実原価とモデル品質、Free/Pro枠の販売案、実iPhoneマイク、運営者の法定表示・返金と既存680円利用者権利の取扱い、オーナーの明示的な本番リリース承認。
+
+最新の980円案の開発状況・リリース阻害事項：`PRO980_DRAFT_RELEASE_PLAN_2026-10-23.md` を参照。
+
+## 2026-10-23：980円案の原価ガード・Gemini品質比較環境をDraftに追加
+
+- **本番を変更していない**。この変更はドラフトPR #62のコード・テスト・手順書だけ。main、Cloudflare本番Worker/D1/Pages、Stripe Live、旧680円契約、既存の月1,480円Draft商品、実AIモデル、Free/Pro利用枠は未変更。
+- `worker/ai-cost-budget.js` / `worker/migrations/0007-ai-cost-budget.sql`：新しい明示的フラグ `AI_COST_GUARD_MODE=enabled` のときだけ、署名済FirebaseアカウントごとのFree月間AI呼び出し上限と、Free/Pro共通の月間推定費用上限をD1の単一原子的INSERTで確保する。実際のGoogle請求額ではなく、控えめではなく**高めの入力・出力トークンを仮定した予約額**でブロックする。取得できない設定・スキーマならAI実行前に拒否。
+- `worker/ai-worker.js`：明示的に有効化した場合のみ、Geminiへ送る前に予算予約し、予算不足ならGeminiを呼ばずに既存のAIターン／講評予約を返却。失敗・タイムアウトで予約した費用枠は保守的に消費されたままにする（料金を過少見積もりしないため）。/healthには有効化要求と準備状況のみ表示。
+- `worker/ai-cost-budget.test.mjs` / `worker/ai-budget-worker.integration.test.mjs`：D1相当の隔離SQLiteと偽Gemini返答だけで、予算の同時更新、Free月間上限、月初リセット、D1設定不足、実providerへの追加呼び出しが止まること、元のFree回数を返却することを検証。
+- `scripts/gemini-quality-benchmark.mjs` と `tests/gemini-quality-benchmark.test.mjs`：両モデルへ同じ18の匿名サンプル問題を投げた**結果を後から公平に比較する基盤**。実API呼び出しゼロ。架空の空テンプレートをモデルの測定結果と混同せず、最終の品質評価は必ず人間が行う。
+- 安全なstaging導入の手順：`worker/AI_COST_GUARD_STAGING_RUNBOOK_2026-10-23.md`。モデル比較手順：`GEMINI_QUALITY_AB_STAGING_2026-10-23.md`。
+- **未完了・リリース禁止**：実staging D1への0007適用、サンドボックス認証とAIの費用実測、Gemini3.1の実回答比較、月980円にした場合の販売条件とFree枠の最終決定、Stripe TEST実更新／失敗からの復旧、実iPhoneマイク、法定表示、公開承認。見積原価だけで「赤字が絶対出ない」とは宣言しない。
+
+
+## 2026-10-23：正式Pro価格980円に固定・Freeze Breaker実装（Draft限定）
+
+- **価格決定：一般向けProは月額税込980円で固定。** 値上げ候補の提示は不要。過去の1480円/1000ターン/150講評は旧TESTの比較・回帰検証としてのみ維持。最終のAI利用上限は未決定で、課金して十分練習できることを優先する。完全なAI無制限の保証はしない。
+- `freeze-breaker.html`, `freeze-breaker.js`, `freeze-breaker-data.mjs`：6つの予想外の英会話場面で、詰まりの原因選択→切り返し→別の返事→自己評価→JST間隔復習を練習。AI呼び出しは**ゼロ**、音声・回答テキストは保存しない、進捗は端末内のゲスト／ログイン本人で分離。HPと料金ページからアクセスできる。AI自動採点や発音評価を偽装しない。
+- `worker/ai-cost-budget.js`：原価予約ガードに**Free専用の月額予算 `AI_FREE_BUDGET_YEN` とPro確保額 `AI_PRO_RESERVED_YEN`**を追加。共通上限だけでFreeが予算を使い切りProを止める問題を緩和。既存の正確な回数台帳が前提。**コードはオプトイン・本番未有効**、0007 D1は本番未適用。
+- `worker/billing.js`：将来の**Stripe Live**の商品価格・Checkout支払額・明細が980円（税込）であることを確認しなければ決済URLを返さない。**Stripe TEST**は既存1480円データを維持。 `/billing/status` でサーバー側の金額を返し、`billing-ui.js` はLiveの980円額を照合できない場合にCheckoutを停止。現在の本番/Liveには一切デプロイしていない。
+- `plans.html` は980円決定、一般向け課金準備中、TESTの1480円との区別を明示。既存の古い1480円法定表記・規約は**980円販売開始前に全面確認・改訂必須**。
+- `scripts/pro980-operating-model.mjs` は税込980円を固定し、実測未取得の利用頻度／AIトークン／利用者比率／運営費の仮説を変え、黒字成立条件を検討するシミュレータ。結果は未測定・保証なし。
+- 新しい唯一の現在方針：`SPEAKINGYM_FIXED980_PRODUCT_AND_PROFIT_PLAN_2026-10-23.md`。必ずここから確認し、古い1480円のDraft指示で本番販売を始めないこと。
+- 注意：Freezer（Freeze Breaker）と原価ガードはまだDraft・CIモック確認段階。実iPhone、実Gemini品質・原価、Stripe TEST更新/失敗復旧、法律・返金、正式AI利用枠、オーナー別途公開承認が必要。main/本番Worker/D1/Pages/Stripe Live/旧680円契約は変更禁止。
+
+## 2026-10-23：AI実戦英会話からフリーズジムへの循環導線（Draft限定）
+
+**狙い：** 実践英会話＝自由なAI実戦、Freeze Breaker＝詰まった原因を自己申告し、会話修復を集中的に訓練。機能の重複ではなく、**「実戦で詰まる→詰まった発言から切り返しを練習→同じシーン・難易度で新しいAI会話にリベンジ」**をコア体験にする。独占性・売上・学習効果は未検証。
+
+- `freeze-bridge.js`：ログイン中本人UIDと `OWNER_KEY` の一致を確かめて、**本人がボタンを押したときだけ**直近のAI回答を同一タブのsessionStorageへ一時保存。10分期限・1回読み出し・16シーン対応・アカウント不一致時削除。AI回答本文をURL、端末の長期履歴、Firestore、D1、Analyticsに保存しない。トランスクリプト、Firebaseトークン、全会話履歴は引き継がない。相手のAI回答に個人情報が含まれる場合は利用しないよう明記。
+- `scenes.html`：進行中のAI実践英会話で「今の質問で詰まった」を選べる。安全に一時保存できた場合だけ今のセッションを閉じ、同じタブで `freeze-breaker.html?from=ai` へ遷移。AI応答中・送信中は引き継ぎ不可。元に戻ると**過去セッションの再生・継続ではなく、新しいAIセッション**として再練習し、既存の正規AI回数制限を使う。
+- `freeze-breaker.html` / `freeze-breaker.js`：有効な本人の質問を一度だけ取り出し、最初の練習に使用する。自分が詰まった理由→切り返しの表現→別シナリオの応用課題→自己申告を練習。6専門場面にない16シーンは7番目の「どこでも切り返し」へ案内。AIの直前発言は端末に永続保存せず、任意の英文メモも保存しない。追加のAI費用なし。
+- ジムの訓練が完了したら「元のAI場面でリベンジ」でシーン・難易度・自己申告の苦手カテゴリだけを短期一時保存し、AI実践画面に案内を表示。元のAI発言や個人情報は戻さない。アカウント切替時には前のユーザーの案内を直ちに消す。
+- `freeze-breaker-data.mjs`：各場面で自己申告した「聞き取れない／単語不足／予想外／自然な返し方が不明」を回数集計し、よく選ばれる原因と次の切り返しを**AI追加費用なし**で提案。自己申告であり客観的な発音・言語能力の採点ではない。
+- `analytics-events.js` に同意時のみ匿名のファネル `sg_freeze_from_ai` → `sg_freeze_self_report` → `sg_freeze_revenge` を追加。カテゴリ値のみ許可し、氏名・UID・会話・実際に入力された文章・URLは送らない。
+- `tests/freeze-bridge.test.mjs`：転送期限、アカウントを変えた場合、1度限り、個人情報を逆送しないこと、全16シーン・汎用フォールバックを検証。
+- `tests/browser-qa.cjs`：本物のGeminiは呼ばず、**擬似認証＋模擬Gemini返答**で、AI会話の発言→フリーズ訓練→同じ場面・難易度へ戻る一連のChromium/WebKit操作と非保存・隔離を確認。
+- **価格は税込月額980円で固定**。Stripe TESTの1480円、旧680円契約、Stripe Live、本番Worker/D1/Pages、mainは変更しない。PR #62はDraftのまま。
+
+**未解決のリリース阻害項目**：実Firebase/実iPhoneマイクと同じタブ認証遷移の検証、実Gemini 3.1/3.5応答品質・原価、Free/Proの納得できる正式AI枠、隔離staging D1、980円Stripe TESTサブスク更新・失敗回復、法定表示と返金条件、ユーザー・オーナーによる正式公開承認。成功確率や競合にはない独占機能だという客観的証拠はまだない。
