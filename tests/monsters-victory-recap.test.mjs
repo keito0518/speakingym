@@ -55,12 +55,36 @@ test('the recommendation points to the next area when the wallet cannot yet evol
  assert.match(recap.recommendation,/草原のエリア/);
 });
 
+test('unspent XP previews attainable growth without spending or bypassing boss trials',()=>{
+ const base=createSave();
+ const save={...base,monsterXp:{medamago:70},xpWallet:140};
+ const recap=dungeonVictoryRecapFor(scenario(),save,{monsterName:'Yolkie'});
+ assert.equal(recap.evolution.percent,25,'The actual gauge reflects only allocated XP');
+ assert.equal(recap.evolution.potentialXp,140);
+ assert.equal(recap.evolution.potentialPercent,75);
+ assert.equal(recap.evolution.canEvolve,false,'The preview does not complete an unearned boss trial');
+ assert.equal(save.monsterXp.medamago,70);
+ assert.equal(save.xpWallet,140,'Rendering must not spend banked XP');
+ const enough={...save,xpWallet:500};
+ const capped=dungeonVictoryRecapFor(scenario(),enough).evolution;
+ assert.equal(capped.potentialXp,210,'The preview stops at the next evolution threshold');
+ assert.equal(capped.potentialPercent,100);
+ assert.equal(capped.canEvolve,false);
+ const evolved={...base,monsterXp:{medamago:420},monsterEvolution:{medamago:1},xpWallet:100};
+ const second=dungeonVictoryRecapFor(scenario(),evolved).evolution;
+ assert.equal(second.percent,40);
+ assert.equal(second.potentialPercent,69,'The second form previews progress on its own XP range');
+ assert.equal(second.potentialXp,100);
+});
+
 test('fully evolved allies receive a completed gauge, not an invented third form',()=>{
  const base=createSave();
  const save={...base,monsterXp:{...base.monsterXp,medamago:630},monsterEvolution:{medamago:2}};
  const recap=dungeonVictoryRecapFor(scenario(),save);
  assert.equal(recap.evolution.goal,null);
  assert.equal(recap.evolution.percent,100);
+ assert.equal(recap.evolution.potentialPercent,100);
+ assert.equal(recap.evolution.potentialXp,0,'Max form never invents a further evolution target');
  assert.match(recap.evolution.label,/第2進化達成/);
 });
 

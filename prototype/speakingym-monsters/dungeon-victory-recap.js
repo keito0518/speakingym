@@ -56,6 +56,11 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
  const remaining=goal===null?0:Math.max(0,goal-growth.xp);
  const percent=goal===null?100:Math.min(100,Math.max(0,Math.round(100*(growth.xp-floor)/(goal-floor))));
  const wallet=safeAmount(save.xpWallet);
+ // Earned but unallocated XP is potential growth, not a new level or an
+ // automatic evolution. Preview only the next form's XP threshold.
+ const potentialXp=goal===null?0:Math.min(remaining,wallet);
+ const potentialPercent=goal===null?100:Math.min(100,Math.max(percent,
+  Math.round(100*(growth.xp+potentialXp-floor)/(goal-floor))));
  const answerXp=safeAmount(ended.earnedXp);
  const medalXp=safeAmount(ended.bossMedal?.bonusXp);
  const report=summarizeDungeonAttempt(ended.areaId,outcomes);
@@ -78,7 +83,8 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
   medalGoal,
   evolution:{monsterId:growthId,monsterName,level:growth.level,xp:growth.xp,stage:growth.stage,
    label:goal===null?'第2進化達成！':growth.stage===0?'第1進化（Lv.5＋ボス1エリア）':'第2進化（Lv.10＋ボス3エリア）',
-   goal,remaining,percent,trialCount:growth.trialCount,requiredTrials:growth.requiredTrials,
+   goal,remaining,percent,potentialXp,potentialPercent,
+   trialCount:growth.trialCount,requiredTrials:growth.requiredTrials,
    canEvolve:growth.canEvolve,canReachWithWallet:goal!==null&&remaining<=wallet&&growth.trialCount>=growth.requiredTrials},
   recommendation
  };

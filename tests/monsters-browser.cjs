@@ -1293,6 +1293,16 @@ const path=require('node:path');
         'A chapter with supported answers exposes one-tap targeted review without opening the report');
       assert.match(await forestPage.locator('#result-targeted-review').innerText(),/つまずいた\d+問を復習/);
       assert.equal(await forestPage.locator('.victory-evolution-track').getAttribute('aria-valuemax'),'100');
+      const growthGauge=await forestPage.locator('.victory-evolution-track').evaluate(track=>({
+        allocated:Number(track.getAttribute('aria-valuenow')),
+        projection:parseFloat(track.querySelector('.victory-evolution-potential').style.width),
+        spent:parseFloat(track.querySelector('.victory-evolution-earned').style.width)
+      }));
+      assert.equal(growthGauge.spent,growthGauge.allocated,
+        'The solid gauge must only show XP actually allocated to this companion');
+      assert.ok(growthGauge.projection>=growthGauge.allocated&&growthGauge.projection<=100,
+        'The lighter portion may preview banked XP but cannot exceed the next evolution');
+      if(growthGauge.projection>growthGauge.allocated)assert.match(await forestPage.locator('.victory-evolution-preview').innerText(),/まだXPは使っていない/);
       const victoryLayout=await forestPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(victoryLayout.scroll<=victoryLayout.width+1,
         `${engine}/${width}: the new loot card must fit the phone width (${JSON.stringify(victoryLayout)})`);
