@@ -239,7 +239,7 @@ const assert=require('node:assert/strict');
      const livingEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));
      assert.ok(livingEnemyOpacity>.85,`${engine}/${width}: enemy at 1 HP disappeared after the first hit (${livingEnemyOpacity})`);
      await page.locator('#next-question').click();
-     assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
+     assert.match(await page.locator('#forest-tactics').innerText(),/敵の反撃を防ごう.*文法/s);
      assert.match(await page.locator('.forest-turn-task > strong').innerText(),/③ 敵の反撃を防ごう/);
      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id')!==null,true);
      await page.waitForTimeout(100);
