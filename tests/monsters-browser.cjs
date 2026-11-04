@@ -1120,6 +1120,15 @@ const path=require('node:path');
       assert.match(await forestPage.locator('.victory-loot-total').innerText(),/XP/);
       assert.equal(await forestPage.locator('.victory-english-list li').count(),2,
         'Victory should spotlight two actually verified expressions, not a wall of every answer');
+      assert.equal(await forestPage.locator('#victory-save-english').isEnabled(),true,
+        'Verified English loot should be collectible for later exact-prompt review');
+      await forestPage.locator('#victory-save-english').click();
+      assert.equal(await forestPage.locator('#victory-save-english').getAttribute('data-saved'),'true');
+      assert.equal(await forestPage.locator('#victory-save-english').isDisabled(),true);
+      assert.match(await forestPage.locator('#victory-save-english').innerText(),/保存.*復習/);
+      const lootIds=await forestPage.locator('[data-victory-prompt]').evaluateAll(nodes=>nodes.map(node=>node.dataset.victoryPrompt));
+      const lootSaved=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedPromptIds);
+      assert.deepEqual([...lootSaved].sort(),lootIds.sort(),'Save only the exact two verified victory questions');
       assert.match(await forestPage.locator('.victory-evolution').innerText(),/進化.*ボス攻略 \d+\/\d+エリア.*残り\d+ XP/s,
         'The boss reward must show both the companion trial marks and remaining training XP');
       assert.match(await forestPage.locator('.victory-trial-award').innerText(),/森の入口の印を獲得！/,
@@ -1191,6 +1200,7 @@ const path=require('node:path');
       assert.equal(saved.forest.clears,1);
       assert.deepEqual(saved.forest.medals,{entry:{easy:2}},'Boss medal must survive a full WebKit/Chromium reload');
       assert.deepEqual(saved.forest.relics,['sunlit-leaf']);
+      assert.deepEqual(saved.savedPromptIds,lootSaved,'Victory English loot must survive a full page reload');
       assert.equal(saved.forest.journal.length,0,'The linear dungeon does not create arbitrary story choices');
       assert.equal(saved.xpWallet,xp+20,'first silver trophy adds a one-time, spendable training bonus');
       await forestContext.close();

@@ -29,6 +29,8 @@ test('victory loot includes only verified English, with honest independent/hinte
  assert.equal(recap.xp.total,90,'A first-time medal bonus counts in displayed loot but does not award twice');
  assert.equal(recap.xp.wallet,30);
  assert.equal(recap.expressions.length,2,'Two recent verified pieces are enough for a compact victory card');
+ assert.ok(recap.expressions.every(item=>ALL_PROMPTS.some(prompt=>prompt.id===item.promptId)),
+  'Every English loot item retains its original prompt ID for exact saved review');
  assert.ok(recap.expressions.every(item=>item.english.length>0));
  assert.ok(recap.expressions.every(item=>item.kind!=='vocab'),'Review-only vocabulary must not be claimed as confirmed');
  assert.ok(recap.expressions.some(item=>item.independent));

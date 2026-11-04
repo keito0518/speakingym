@@ -2386,16 +2386,37 @@ function renderDungeonVictoryRecap(ended,{nextArea=null,canContinue=false}={}){
  const recap=dungeonVictoryRecapFor(ended,save,{nextArea,canContinue,monsterName:creature.name});
  region.hidden=!recap;
  if(!recap){region.replaceChildren();return;}
- const phrases=recap.expressions.length?`<ul class="victory-english-list">${recap.expressions.map(item=>`<li><span>${escapeHtml(item.label)} · ${item.independent?'自力で確認':'ヒントありで確認'}</span><strong lang="en">${escapeHtml(item.english)}</strong></li>`).join('')}</ul>`
+ const phrases=recap.expressions.length?`<ul class="victory-english-list">${recap.expressions.map(item=>`<li data-victory-prompt="${escapeHtml(item.promptId)}"><span>${escapeHtml(item.label)} · ${item.independent?'自力で確認':'ヒントありで確認'}</span><strong lang="en">${escapeHtml(item.english)}</strong></li>`).join('')}</ul>`
   :'<p class="victory-english-empty">今回は教材で確認できた英文はまだないよ。次の冒険で1つ増やそう。</p>';
+ const unsavedLoot=recap.expressions.filter(item=>!save.savedPromptIds?.includes(item.promptId));
+ const saveLootButton=recap.expressions.length?`<button id="victory-save-english" class="victory-save-english" type="button" data-saved="${String(!unsavedLoot.length)}" ${unsavedLoot.length?'':'disabled'}>${unsavedLoot.length?`今回の英文${unsavedLoot.length}つを復習に保存`:'今回の英文は復習に保存済み'}</button>`:'';
  const evolution=recap.evolution;
  const growthDetail=evolution.goal===null
   ?`累計 ${evolution.xp} XP · 第2進化達成済み。これからもレベルを上げられるよ。`
   :`育成済み ${evolution.xp} / ${evolution.goal} XP · ボス攻略 ${evolution.trialCount}/${evolution.requiredTrials}エリア · 残り${evolution.remaining} XP${evolution.canEvolve?' · 進化するボタンを押せる！':evolution.canReachWithWallet?' · 手持ちXPでレベル条件に届くよ！':''}`;
  region.innerHTML=`<div class="victory-loot-top"><span class="victory-loot-kicker">BOSS CLEAR · ENGLISH LOOT</span><div class="victory-loot-total"><small>今回の獲得</small><strong>+${recap.xp.total} <span>XP</span></strong></div><p>問題 +${recap.xp.answers} XP${recap.xp.medal?` · 勲章 +${recap.xp.medal} XP`:''} · 育成に使える ${recap.xp.wallet} XP</p></div>
-  <div class="victory-loot-grid"><section class="victory-english" aria-label="今回確認した英語"><h2>今回確認した英語 <span>${recap.expressions.length}つ</span></h2>${phrases}</section>
+  <div class="victory-loot-grid"><section class="victory-english" aria-label="今回確認した英語"><h2>今回確認した英語 <span>${recap.expressions.length}つ</span></h2>${phrases}${saveLootButton}</section>
   <section class="victory-evolution" aria-label="仲間の進化までの距離"><h2>${escapeHtml(evolution.monsterName)} の成長 <span>Lv.${evolution.level}</span></h2><strong>${escapeHtml(evolution.label)}</strong><div class="victory-evolution-track" role="progressbar" aria-label="${escapeHtml(evolution.monsterName)}の進化ゲージ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${evolution.percent}"><span style="width:${evolution.percent}%"></span></div><p>${escapeHtml(growthDetail)}</p><small>獲得XPは自動で仲間に入らないよ。下の「仲間を育てる」で使ってね。</small></section></div>
   <p class="victory-next-tip"><strong>次のおすすめ</strong><span>${escapeHtml(recap.recommendation)}</span></p>`;
+ region.querySelector('#victory-save-english')?.addEventListener('click',event=>{
+   const button=event.currentTarget;
+   const pending=recap.expressions.filter(item=>!save.savedPromptIds?.includes(item.promptId));
+   if(!pending.length)return;
+   let next=save;
+   for(const item of pending)next=toggleSavedPrompt(next,item.promptId);
+   if(!pending.every(item=>next.savedPromptIds.includes(item.promptId))){
+     button.textContent='保存上限の255問です。ホームで保存済みの問題を整理してね。';
+     return;
+   }
+   const before=save;
+   if(!persist(next)){
+     save=before;
+     button.textContent='保存できませんでした。ブラウザの保存設定を確認してね。';
+     return;
+   }
+   button.disabled=true;button.dataset.saved='true';
+   button.textContent=`英文${pending.length}つを保存！ ホームの「保存した問題」から復習できるよ。`;
+ });
 }
 function finishSession(timedOut=false,defeated=false) {
   if(!play)return;

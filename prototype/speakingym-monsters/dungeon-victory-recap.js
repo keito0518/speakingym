@@ -20,7 +20,7 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
   const english=prompt.kind==='listen'?listeningChallengeFor(prompt).audio:prompt.answer;
   if(typeof english!=='string'||!english.trim())return [];
   distinct.add(item.promptId);
-  return [{kind:prompt.kind,label:DUNGEON_SKILLS[prompt.kind]?.label||'英語',
+  return [{promptId:prompt.id,kind:prompt.kind,label:DUNGEON_SKILLS[prompt.kind]?.label||'英語',
    english,independent:item.outcome==='independent'}];
  });
  // One recent verified result plus a different skill if available. The boss
