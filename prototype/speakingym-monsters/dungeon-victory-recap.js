@@ -4,9 +4,30 @@ import { ALL_PROMPTS } from './monster-data.js';
 import { EVOLUTION_XP, getMonsterProgress } from './monster-engine.js';
 import { DUNGEON_SKILLS, summarizeDungeonAttempt } from './dungeon-learning.js';
 import { listeningChallengeFor } from './listening-challenges.js';
+import { BOSS_MEDAL_NAMES, bossTrainingBonus } from './boss-mastery.js';
 
 const verified=new Set(['independent','supported']);
 const safeAmount=value=>Number.isSafeInteger(value)&&value>0?value:0;
+
+// A repeatable, evidence-based goal for the *next* medal. Use the best
+// previously earned rank for XP so a worse replay cannot promise a reward.
+export function nextBossMedalGoal(medal){
+ if(!medal||!['easy','normal','hard'].includes(medal.difficulty)||
+   !Number.isInteger(medal.best)||medal.best<0||medal.best>3||
+   !Number.isInteger(medal.total)||medal.total<=3)return null;
+ if(medal.best===3)return null;
+ const nextRank=medal.best+1;
+ const total=medal.total;
+ const independent=Math.min(total,Math.max(0,Number(medal.independent)||0));
+ const independentBoss=Math.min(3,Math.max(0,Number(medal.independentBoss)||0));
+ const verifiedBoss=Math.min(3,Math.max(0,Number(medal.verifiedBoss)||0));
+ const goal=nextRank===1
+  ?`ボス3問を確認（今回 ${verifiedBoss}/3問）。ヒントありの確認はOK。例文を見ただけ・判定保留では勲章に数えないよ。`
+  :nextRank===2
+  ?`全${total}問を確認し、うち${Math.ceil(total*.75)}問以上を自力で。ボスも2/3問を自力で答えよう（今回 全体${independent}問・ボス${independentBoss}問）。`
+  :`全${total}問とボス3問をヒントなしで答えよう（今回 全体${independent}問・ボス${independentBoss}問）。`;
+ return {nextRank,label:BOSS_MEDAL_NAMES[nextRank],bonusXp:bossTrainingBonus(medal.difficulty,medal.best,nextRank),goal};
+}
 
 export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=false,monsterName='仲間'}={}){
  if(ended?.mode!=='forest'||!ended.completedForest||ended.endless)return null;
@@ -38,6 +59,7 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
  const answerXp=safeAmount(ended.earnedXp);
  const medalXp=safeAmount(ended.bossMedal?.bonusXp);
  const report=summarizeDungeonAttempt(ended.areaId,outcomes);
+ const medalGoal=nextBossMedalGoal(ended.bossMedal);
  const needsReview=report.groups.find(group=>group.supported+group.review>0);
  const recommendation=growth.canEvolve
   ?`${monsterName}の試練達成！「仲間を育てる」から進化させよう。`
@@ -53,6 +75,7 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
  return {
   xp:{answers:answerXp,medal:medalXp,total:answerXp+medalXp,wallet},
   expressions:highlights,
+  medalGoal,
   evolution:{monsterId:growthId,monsterName,level:growth.level,xp:growth.xp,stage:growth.stage,
    label:goal===null?'第2進化達成！':growth.stage===0?'第1進化（Lv.5＋ボス1エリア）':'第2進化（Lv.10＋ボス3エリア）',
    goal,remaining,percent,trialCount:growth.trialCount,requiredTrials:growth.requiredTrials,

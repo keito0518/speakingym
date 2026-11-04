@@ -153,9 +153,16 @@
 .victory-next-tip{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:start;margin:0 12px 12px;padding:10px 11px;border:1px solid #b9d6ad;border-radius:10px;background:#eaf6e6;color:#31533d;font-size:11px;line-height:1.55}
 .victory-next-tip strong{white-space:nowrap;color:#356b44;font-size:11px}
 .victory-next-tip span{min-width:0;overflow-wrap:anywhere}
+.victory-medal-chase{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0 12px 10px;padding:11px 12px;border:1px solid #d4b86e;border-radius:11px;background:linear-gradient(120deg,#fff8dd,#fffdf2);color:#5b4824}
+.victory-medal-chase>div{flex:1 1 220px;min-width:0}
+.victory-medal-chase .tiny-caps{display:block;color:#8c6426;font-size:9px;letter-spacing:.07em}
+.victory-medal-chase strong{display:block;margin:3px 0 4px;font-size:13px;line-height:1.45}
+.victory-medal-chase p{margin:0;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.victory-medal-chase button{flex:0 1 170px;min-width:0;min-height:44px;padding:8px 10px;border:1px solid #996c2f;border-radius:9px;background:#7e5b29;color:#fffdf1;font-size:11px;font-weight:900;line-height:1.45;cursor:pointer;white-space:normal}
+.victory-medal-chase button:focus-visible{outline:3px solid #dc9e45;outline-offset:3px}
 @keyframes victory-loot-arrive{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes victory-gauge-reveal{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@media(max-width:600px){#result-view.boss-clear .result-surface{padding:22px 13px 25px;margin:14px auto 37px}#result-view.boss-clear #result-title{font-size:clamp(22px,6vw,28px)}.dungeon-victory-recap{margin:13px auto 8px}.victory-loot-grid{grid-template-columns:minmax(0,1fr);gap:7px;padding:8px}.victory-english,.victory-evolution{padding:9px 10px}.victory-english-list{gap:5px}.victory-english-list li{padding:5px 7px}.victory-next-tip{grid-template-columns:minmax(0,1fr);gap:3px;margin:0 8px 9px;padding:8px 10px}}
+@media(max-width:600px){#result-view.boss-clear .result-surface{padding:22px 13px 25px;margin:14px auto 37px}#result-view.boss-clear #result-title{font-size:clamp(22px,6vw,28px)}.dungeon-victory-recap{margin:13px auto 8px}.victory-loot-grid{grid-template-columns:minmax(0,1fr);gap:7px;padding:8px}.victory-english,.victory-evolution{padding:9px 10px}.victory-english-list{gap:5px}.victory-english-list li{padding:5px 7px}.victory-medal-chase{margin:0 8px 9px;padding:9px 10px}.victory-medal-chase button{flex-basis:100%}.victory-next-tip{grid-template-columns:minmax(0,1fr);gap:3px;margin:0 8px 9px;padding:8px 10px}}
 @media(prefers-reduced-motion:reduce){.dungeon-victory-recap,.victory-evolution-track>span{animation:none!important}}
 .victory-trial-award{display:flex;align-items:center;gap:13px;max-width:510px;min-width:0;margin:15px auto;padding:15px 13px;border:2px solid #ca9a43;border-radius:17px;background:linear-gradient(125deg,#fff5cb,#eaf4e5 74%);color:#38533b;text-align:left;box-shadow:0 8px 20px #a37d3224;animation:trial-award-reveal .55s cubic-bezier(.2,.8,.25,1) both}
 .victory-trial-award>div{min-width:0;flex:1}.victory-trial-award small{display:block;color:#805e30;letter-spacing:.05em;font-size:9px;font-weight:900}.victory-trial-award strong{display:block;margin:4px 0;font-size:clamp(14px,3.5vw,18px);line-height:1.4;color:#4b512b;overflow-wrap:anywhere}.victory-trial-award p{margin:0;font-size:11px;font-weight:750;line-height:1.7;overflow-wrap:anywhere}

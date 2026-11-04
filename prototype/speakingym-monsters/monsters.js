@@ -2397,10 +2397,13 @@ function renderDungeonVictoryRecap(ended,{nextArea=null,canContinue=false}={}){
  const growthDetail=evolution.goal===null
   ?`累計 ${evolution.xp} XP · 第2進化達成済み。これからもレベルを上げられるよ。`
   :`育成済み ${evolution.xp} / ${evolution.goal} XP · ボス攻略 ${evolution.trialCount}/${evolution.requiredTrials}エリア · 残り${evolution.remaining} XP${evolution.canEvolve?' · 進化するボタンを押せる！':evolution.canReachWithWallet?' · 手持ちXPでレベル条件に届くよ！':''}`;
+ const medalGoal=recap.medalGoal;
+ const medalChase=medalGoal?`<section class="victory-medal-chase" aria-label="次のボス勲章の目標"><div><span class="tiny-caps">NEXT MEDAL · BOSS MASTERY</span><strong>次は${medalGoal.label}勲章！ 昇格で +${medalGoal.bonusXp} XP</strong><p>${escapeHtml(medalGoal.goal)}</p></div><button type="button" id="victory-medal-retry">この章で${medalGoal.label}を目指す</button></section>`:'';
  region.innerHTML=`<div class="victory-loot-top"><span class="victory-loot-kicker">BOSS CLEAR · ENGLISH LOOT</span><div class="victory-loot-total"><small>今回の獲得</small><strong>+${recap.xp.total} <span>XP</span></strong></div><p>問題 +${recap.xp.answers} XP${recap.xp.medal?` · 勲章 +${recap.xp.medal} XP`:''} · 育成に使える ${recap.xp.wallet} XP</p></div>
   <div class="victory-loot-grid"><section class="victory-english" aria-label="今回確認した英語"><h2>今回確認した英語 <span>${recap.expressions.length}つ</span></h2>${phrases}${saveLootButton}</section>
   <section class="victory-evolution" aria-label="仲間の進化までの距離"><h2>${escapeHtml(evolution.monsterName)} の成長 <span>Lv.${evolution.level}</span></h2><strong>${escapeHtml(evolution.label)}</strong><div class="victory-evolution-track" role="progressbar" aria-label="${escapeHtml(evolution.monsterName)}の進化ゲージ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${evolution.percent}"><span style="width:${evolution.percent}%"></span></div><p>${escapeHtml(growthDetail)}</p><small>獲得XPは自動で仲間に入らないよ。下の「仲間を育てる」で使ってね。</small></section></div>
-  <p class="victory-next-tip"><strong>次のおすすめ</strong><span>${escapeHtml(recap.recommendation)}</span></p>`;
+  ${medalChase}<p class="victory-next-tip"><strong>次のおすすめ</strong><span>${escapeHtml(recap.recommendation)}</span></p>`;
+ region.querySelector('#victory-medal-retry')?.addEventListener('click',()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.tactics?'forest-tactics':'forest',ended.areaId));
  region.querySelector('#victory-save-english')?.addEventListener('click',event=>{
    const button=event.currentTarget;
    const pending=recap.expressions.filter(item=>!save.savedPromptIds?.includes(item.promptId));
@@ -2573,7 +2576,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-collection').textContent=growNow
     ?`${monsterFor(growthId).name}を育てる（使える${save.xpWallet} XP）`
     :'仲間の図鑑・進化を見る';
-  $('#replay-run').hidden=canRetry;
+  $('#replay-run').hidden=canRetry||Boolean($('#victory-medal-retry'));
   $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'をもう一度':ended.mode==='transfer-review'?'別の表現も練習する':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='ruins'?'星影の遺跡へもう一度挑戦':dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
   showView('result');

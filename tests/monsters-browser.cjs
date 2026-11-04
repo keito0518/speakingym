@@ -1193,6 +1193,12 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('.victory-trial-award').isVisible(),true,
         'The new boss seal must be celebrated above the collapsed detail panel');
       assert.match(await forestPage.locator('.victory-next-tip').innerText(),/次のおすすめ/);
+      assert.equal(await forestPage.locator('#victory-medal-retry').isVisible(),true,
+        'A silver clear should give a direct, modest goal to return for gold');
+      assert.match(await forestPage.locator('.victory-medal-chase').innerText(),/次は金勲章！ 昇格で \+16 XP/);
+      assert.match(await forestPage.locator('.victory-medal-chase').innerText(),/全8問とボス3問をヒントなし/);
+      assert.equal(await forestPage.locator('#replay-run').isVisible(),false,
+        'Do not duplicate the same retry action below the visible medal goal');
       assert.equal(await forestPage.locator('#result-targeted-review').isVisible(),true,
         'A chapter with supported answers exposes one-tap targeted review without opening the report');
       assert.match(await forestPage.locator('#result-targeted-review').innerText(),/つまずいた\d+問を復習/);
@@ -1230,6 +1236,16 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-journey').isVisible(),false);
       assert.equal(await forestPage.locator('#play-view').evaluate(el=>el.classList.contains('review-only')),true);
       assert.ok(await forestPage.locator('#play-card').getAttribute('data-prompt-id'),'Review must replay original question');
+      await leavePlay(forestPage);
+      const beforeMedalRetryXp=await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet);
+      // The previous result is off-screen after leaving targeted review, but
+      // its medal rematch handler must still start the original chapter.
+      await forestPage.evaluate(()=>document.querySelector('#victory-medal-retry').click());
+      assert.equal(await forestPage.locator('#play-view').isVisible(),true,
+        'The medal chase button must actually open a playable rematch');
+      assert.match(await forestPage.locator('#play-mode-label').innerText(),/森の入口/);
+      assert.equal(await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),beforeMedalRetryXp,
+        'Opening a medal rematch must not award extra XP');
       await leavePlay(forestPage);
       await forestPage.locator('[data-home-page="collection"]').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Sunleaf/);
