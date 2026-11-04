@@ -228,7 +228,7 @@ test('every companion has a genuine third pixel form and a unique second-evoluti
 
 test('full companion collection keeps each evolution, boss trial and bond across a portable save',()=>{
  const ids=MONSTERS.map(monster=>monster.id);
- assert.ok(ids.length>=31,'The expanded companion catalog must not shrink');
+ assert.ok(ids.length>=35,'The expanded companion catalog must not shrink');
  const base=createSave();
  const progress={...base,ownedMonsters:ids,selectedMonster:ids.at(-1),xpWallet:937,
   monsterXp:Object.fromEntries(ids.map((id,index)=>[id,index%2===0?630:280])),
@@ -607,7 +607,7 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
 });
 
 test('curriculum includes 4 Snowlit City chapters with authored local quizzes and speaking tasks', () => {
-  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,31);
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,35);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
   assert.equal(ALL_PROMPTS.length,384);
   for(const difficulty of ['normal','hard']) {
@@ -2280,7 +2280,7 @@ test('original companions use the pixel atlas and expanded companions have origi
  for(const monster of MONSTERS){
   const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
   assert.match(young,/class="monster-svg pixel-art /,monster.id);
-  if(['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko','kippu','kofuu','mafura','yukidama','tegami','tokirin','runerun','gearbat','shardling','astrowisp'].includes(monster.id)){
+  if(['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko','kippu','kofuu','mafura','yukidama','tegami','tokirin','runerun','gearbat','shardling','astrowisp','namihana','michiru','sorella','kometta'].includes(monster.id)){
    assert.match(young,/shape-rendering="crispEdges"/,monster.id);
    assert.match(grown,/data-stage="1"/,monster.id);
    assert.doesNotMatch(young,/pixel-companions.png/,monster.id);

@@ -115,6 +115,25 @@ const path=require('node:path');
       assert.match(await recoveryPage.locator('#save-download').innerText(),/セーブをファイルに保存/);
       await recoveryContext.close();
     }
+    // Growing the roster must not hide newly catchable species or their
+    // evolution information inside the mobile encyclopedia.
+    {
+      const {context:catalogContext,page:catalogPage}=await boot(390);
+      await enterHomePanel(catalogPage,'collection');
+      assert.match(await catalogPage.locator('#collection-progress').innerText(),/仲間 1 \/ 35体/);
+      for(const id of ['namihana','michiru','sorella','kometta']){
+        const entry=catalogPage.locator(`[data-open-monster="${id}"]`);
+        assert.equal(await entry.count(),1,`The ${id} catalog entry must appear`);
+        await entry.click();
+        assert.equal(await catalogPage.locator('#detail-content .character-portrait').count(),1);
+        assert.equal(await catalogPage.locator('#detail-content .evolution-path span[lang="en"]').count(),3,
+          `The ${id} profile must show all three named forms`);
+        assert.match(await catalogPage.locator('#detail-content .character-portrait').innerHTML(),
+          new RegExp(`data-pixel-sprite="${id}"`));
+        await catalogPage.locator('#detail-back').click();
+      }
+      await catalogContext.close();
+    }
     // Four distinct skill buttons must really open the matching authored tasks
     // on a 320px device; only confirmed self-recall can enter the new stats.
     {

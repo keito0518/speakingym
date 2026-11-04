@@ -25,7 +25,9 @@ const ALLY_TYPES=Object.freeze({
  mafura:{strong:'grammar',weak:'listen'},yukidama:{strong:'vocab',weak:'speak'},
  tegami:{strong:'grammar',weak:'vocab'},tokirin:{strong:'listen',weak:'grammar'},
  runerun:{strong:'vocab',weak:'listen'},gearbat:{strong:'listen',weak:'grammar'},
- shardling:{strong:'grammar',weak:'speak'},astrowisp:{strong:'speak',weak:'vocab'}
+ shardling:{strong:'grammar',weak:'speak'},astrowisp:{strong:'speak',weak:'vocab'},
+ namihana:{strong:'listen',weak:'grammar'},michiru:{strong:'grammar',weak:'vocab'},
+ sorella:{strong:'listen',weak:'speak'},kometta:{strong:'speak',weak:'listen'}
 });
 // All companions have a named combat trait. A few share an archetype, but its
 // trigger is always their *own* strength: English answers are still graded by
@@ -46,7 +48,9 @@ const ALLY_SKILLS=Object.freeze({
  mafura:{name:'結び目バリア',type:'ward'},yukidama:{name:'氷結ブレイク',type:'pierce'},
  tegami:{name:'手紙の突破口',type:'pierce'},tokirin:{name:'時の共鳴',type:'charge'},
  runerun:{name:'ルーンの貫通波',type:'pierce'},gearbat:{name:'歯車の共鳴',type:'charge'},
- shardling:{name:'水晶の守護陣',type:'ward'},astrowisp:{name:'星雲の連撃',type:'burst'}
+ shardling:{name:'水晶の守護陣',type:'ward'},astrowisp:{name:'星雲の連撃',type:'burst'},
+ namihana:{name:'さざ波の共鳴',type:'charge'},michiru:{name:'道しるべの盾',type:'ward'},
+ sorella:{name:'雪灯りの結界',type:'ward'},kometta:{name:'彗星ラッシュ',type:'burst'}
 });
 const SKILL_DESCRIPTIONS=Object.freeze({
  burst:'得意技能で必殺技を使うとダメージ＋1',
@@ -70,7 +74,8 @@ const MASTERY_NAMES=Object.freeze({
  hoshiri:'流星の追撃',pipino:'翼音の調律',hiokko:'炎耳の二連撃',
  kippu:'快速の回復',kofuu:'喫茶の結界',mafura:'温もりの守護',
  yukidama:'氷晶の吸収',tegami:'飛脚の回復',tokirin:'秒針の集中',
- runerun:'刻印の吸収',gearbat:'歯車の蓄力',shardling:'プリズムの結界',astrowisp:'星霧の追撃'
+ runerun:'刻印の吸収',gearbat:'歯車の蓄力',shardling:'プリズムの結界',astrowisp:'星霧の追撃',
+ namihana:'せせらぎの集中',michiru:'旅路の守護',sorella:'灯台の結界',kometta:'流星の二連撃'
 });
 const MASTERY_EFFECTS=Object.freeze({
  burst:'得意技能の自力正解で追撃＋1。ボスでは必殺ゲージ＋1',

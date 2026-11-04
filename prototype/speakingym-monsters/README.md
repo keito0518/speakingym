@@ -1,8 +1,12 @@
+## 2026-11-04 — Four more original companions across all three worlds
+
+- The roster now has **35 companions**. Rippleaf and Waypup inhabit the forest, Lanternix is found in the snow city, and Comettail in the ruins. All four have distinct three-form pixel art, English-word origins and named battle traits. Recruitment requires genuine chapter clears plus language growth and spaced recall. Stored companions and earned evolutions are never reset.
+
 ## 2026-11-03 — World 03, 星影の遺跡, and 31 collectible companions
 
 - A **third world** unlocks only after all four Forest and four Snow City chapters are cleared. **星屑の回廊** and **時の祭壇** each contain ten ordinary encounters and a three-phase chapter boss, with their own runes/clockwork enemies, distinct exploration and battle artwork, and new collectible relics. Both chapters remain replayable, including their medals and companion boss-trial records.
 - Added **42 original offline learning tasks**: 24 level-specific vocabulary/grammar questions and 18 authored speaking situations across easy, normal, hard. The ruin bosses test comprehension, inscriptions/conditions, and practical requests. No additional AI usage, login or billing is needed; older chapters' authored content and listening audio stay intact.
-- The roster grows from **27 to 31 companions**, introducing Runelet, Cogbat, Shardlet and Nebulaim with distinct three-form pixel art, English-word origins and battle traits. Recruitment requires genuine **Ruins chapter clears plus language growth**; higher-rarity creatures additionally require spaced 1/3/7-day recall. Stored companions and earned evolutions are never reset.
+- The roster grew from **27 to 31 companions**, introducing Runelet, Cogbat, Shardlet and Nebulaim with distinct three-form pixel art, English-word origins and battle traits. Recruitment requires genuine **Ruins chapter clears plus language growth**; higher-rarity creatures additionally require spaced recall.
 - Updated home dungeon selection, journal, medal total and collection lock descriptions to include the new world. Both additions are tested with save restoration, sequential unlocking, boss attack patterns, unique curriculum, pixel art and non-bypassable recruit prerequisites. Draft PR only; no changes to production, `main`, D1, Stripe, payment or Cloudflare Worker.
 
 ## 2026-11-03 — beginner focus and first-hit feedback

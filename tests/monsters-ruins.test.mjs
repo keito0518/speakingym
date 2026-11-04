@@ -62,7 +62,7 @@ test('each ruins chapter has unique scene-grounded exams at all difficulties',()
 });
 
 test('four new illustrated species require ruins progress plus distinct mastery/recall checks',()=>{
- assert.equal(MONSTERS.length,31);
+ assert.equal(MONSTERS.length,35);
  const save=createSave();
  for(const id of ruinsIds){
   const creature=MONSTERS.find(m=>m.id===id);
