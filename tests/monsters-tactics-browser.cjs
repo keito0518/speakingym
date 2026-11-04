@@ -74,12 +74,15 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('#forest-formation-status').innerText(),/仲間が増えたら/);
      await page.locator('#forest-explore-continue').click();
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Player selects the attack type before seeing a question');
+     assert.match(await page.locator('.forest-attack-select > strong').innerText(),/① まず攻撃を選ぼう/,
+       'The first fight explains the first action without a blocking tutorial');
      assert.match(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),/^(opening|idle)$/,
        'The monster scene is ready before the player chooses an attack');
      assert.equal(await page.locator('#play-card').isVisible(),false,'No arbitrary question is shown before type selection');
      assert.equal(await page.locator('#answer-area').isVisible(),false,'There is nothing to answer until a type is chosen');
      await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
      assert.equal(await page.locator('#play-card').isVisible(),true,'The question appears only after choosing a type');
+     assert.match(await page.locator('.forest-turn-task > strong').innerText(),/② 英語で答えて攻撃しよう/);
      assert.equal(await page.locator('#forest-party-formation').isVisible(),false);
      assert.equal(await page.locator('#forest-party-hp').isVisible(),true);
      if(width===320){
@@ -237,6 +240,7 @@ const assert=require('node:assert/strict');
      assert.ok(livingEnemyOpacity>.85,`${engine}/${width}: enemy at 1 HP disappeared after the first hit (${livingEnemyOpacity})`);
      await page.locator('#next-question').click();
      assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
+     assert.match(await page.locator('.forest-turn-task > strong').innerText(),/③ 敵の反撃を防ごう/);
      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id')!==null,true);
      await page.waitForTimeout(100);
      assert.equal(await page.locator('#forest-arena-console').evaluate(el=>el.scrollTop),0,

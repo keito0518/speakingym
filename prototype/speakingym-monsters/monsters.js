@@ -4,7 +4,7 @@ import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDown
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
-import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest } from './forest-engine.js';
+import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, DUNGEON_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest } from './forest-engine.js';
 import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
@@ -537,7 +537,9 @@ function renderHome() {
   const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
   const cityClear=cityCount===CITY_AREAS.length;
   const ruinsCount=RUINS_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
-  const allClear=ruinsCount===RUINS_AREAS.length;
+  const allClear=forestCount===FOREST_AREAS.length&&cityCount===CITY_AREAS.length&&ruinsCount===RUINS_AREAS.length;
+  $('#dungeon-total-areas').querySelector('strong').textContent=DUNGEON_AREAS.length;
+  $('#dungeon-total-areas').setAttribute('aria-label',`全${DUNGEON_AREAS.length}エリアを順番に攻略`);
   $('#forest-home-progress').textContent = `森 ${forestCount}/${FOREST_AREAS.length} · 街 ${cityCount}/${CITY_AREAS.length} · 遺跡 ${ruinsCount}/${RUINS_AREAS.length}`;
   const unlocked=new Set(unlockedDungeonAreas(save).map(area=>area.id));
   const dueRetention=retentionOverview(save,dayKey()).due;
@@ -614,8 +616,8 @@ function renderHome() {
     hasAttempted:save.totalAnswers>0||summary.practiced>0||skillStats.some(stat=>stat.sample>0)||
       Object.keys(save.reviewPrompts||{}).length>0||Object.keys(save.transferReviews||{}).length>0||
       (save.savedPromptIds||[]).length>0,
-    areasCleared:forestCount,cityAreasCleared:cityCount,nextAreaName:nextArea.name,
-    bondRank:bond.rank,cityUnlocked:forestCount===FOREST_AREAS.length,cityCleared:cityClear
+    areasCleared:forestCount,cityAreasCleared:cityCount,ruinsAreasCleared:ruinsCount,totalAreas:DUNGEON_AREAS.length,
+    nextAreaName:nextArea.name,bondRank:bond.rank
   });
   homeNavigation?.updateQuest(nextLearningQuestFor(save));
   // Reuse art for already recruited creatures only; never preview locked ones.
@@ -1038,6 +1040,7 @@ function renderTacticalControls(){
  if(weak){weak.hidden=false;weak.textContent=`弱点：${BATTLE_LABELS[element.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[element.weak]}`);weak.dataset.kind=element.weak;}
  const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
  const incoming=t.turn==='enemy';
+ const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0;
  const party=battleParty();
  const attackKind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
  const supportId=!incoming?supportPartnerFor({kind:attackKind,activeId:play.companionId,party:t.party}):null;
@@ -1073,7 +1076,7 @@ function renderTacticalControls(){
    if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=foePlannedAttack({style:foeStyle,activeId:play.companionId,last:t.lastEnemyKind});
  }
- panel.innerHTML=`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'敵のターン · 反撃！':'あなたのターン · 攻撃！'}</strong><span>${incoming?`${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。`:'正解で攻撃、間違えたら敵が反撃！'}</span></p><div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
+ panel.innerHTML=`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${firstFight?(incoming?'③ 敵の反撃を防ごう':'② 英語で答えて攻撃しよう'):incoming?'敵のターン · 反撃！':'あなたのターン · 攻撃！'}</strong><span>${incoming?`${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。`:'正解で攻撃、間違えたら敵が反撃！'}</span></p><div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>

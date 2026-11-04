@@ -528,6 +528,37 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#saved-review-title').isVisible(),true);
     assert.equal(await menuPage.locator('#review-journal-title').isVisible(),true);
     await menuContext.close();
+    // The third world makes ten real chapters, not eight. Clearing the City
+    // must continue into the Ruins instead of falsely celebrating completion.
+    {
+      const {context:progressContext,page:progressPage}=await boot(390);
+      await enterHomePanel(progressPage,'forest');
+      assert.equal(await progressPage.locator('#dungeon-total-areas strong').innerText(),'10');
+      assert.equal(await progressPage.locator('#dungeon-total-areas').getAttribute('aria-label'),'全10エリアを順番に攻略');
+      await progressPage.evaluate(async()=>{
+        const {STORAGE_KEY}=await import('./monster-engine.js');
+        const {FOREST_AREAS,CITY_AREAS}=await import('./forest-engine.js');
+        const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+        saved.forest.completedAreas=[...FOREST_AREAS,...CITY_AREAS].map(area=>area.id);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+      });
+      await progressPage.reload();
+      assert.match(await progressPage.locator('#home-feature-progress').innerText(),/8\/10 エリア攻略.*星屑の回廊/);
+      assert.match(await progressPage.locator('[data-feature-dungeon]').innerText(),/つづきから冒険/);
+      await enterHomePanel(progressPage,'forest');
+      assert.match(await progressPage.locator('#dungeon-next-area').innerText(),/星屑の回廊/);
+      await progressPage.evaluate(async()=>{
+        const {STORAGE_KEY}=await import('./monster-engine.js');
+        const {DUNGEON_AREAS}=await import('./forest-engine.js');
+        const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+        saved.forest.completedAreas=DUNGEON_AREAS.map(area=>area.id);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+      });
+      await progressPage.reload();
+      assert.match(await progressPage.locator('#home-feature-progress').innerText(),/全10エリア攻略/);
+      assert.match(await progressPage.locator('[data-feature-dungeon]').innerText(),/もう一度冒険/);
+      await progressContext.close();
+    }
     // Retention mode is deliberately no-animation, honors completed review
     // dates and records a single companion bond for the spaced second day.
     const {context:recallContext,page:recallPage}=await boot(390);

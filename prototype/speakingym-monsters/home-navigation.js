@@ -3,7 +3,7 @@
 // Keep long explanations here, where players deliberately ask for them. The
 // dungeon itself only needs the current question, action and next threat.
 const STEPS=Object.freeze([
- {chapter:'basic',title:'1. Englishダンジョンに挑戦',body:'ホームの「冒険をはじめる」を押すだけでスタート。問題をクリアして敵を倒し、最後のボスを目指そう。',
+ {chapter:'basic',title:'1. Englishダンジョンに挑戦',body:'ホームの「冒険をはじめる」を押すだけでスタート。森→雪の街→遺跡の全10エリアを、英語の問題とボス戦で攻略しよう。',
   scene:['冒険をはじめる','森の入口','問題に挑戦'],tips:['最初は「やさしい」がオススメ。','先に英語を覚えていなくても始められるよ。']},
  {chapter:'basic',title:'2. 聞く・選ぶ・話すは別々の問題',body:'リスニングとスピーキングは別の問題。画面のお題を見て、今必要な操作だけをしよう。',
   scene:['リスニング','音声を再生','意味を選ぶ'],tips:['単語・文法は選択問題で確認するよ。','リスニングのあとに同じ英文を話す必要はないよ。']},
@@ -150,7 +150,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
    button.setAttribute('aria-pressed',String(selected));
   });
   dialog.querySelector('#tutorial-previous').disabled=step===0;
-  dialog.querySelector('#tutorial-next').textContent=step===STEPS.length-1?'使ってみる':'次へ →';
+  dialog.querySelector('#tutorial-next').textContent=step===STEPS.length-1?(fromGame?'バトルへ戻る':'冒険を選ぶ'):'次へ →';
  }
  function openTutorial(topic='basic'){
   lastFocused=document.activeElement;fromGame=!document.querySelector('#play-view')?.hidden;
@@ -287,8 +287,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      quest.querySelector('#home-next-quest-detail').textContent=next.detail;
      quest.querySelector('#home-next-quest-button').textContent=next.button+' →';
    },
-   updateHero({art,name,level,mastered,due,xp,hasAttempted=false,areasCleared=0,cityAreasCleared=0,nextAreaName='森の入口',bondRank=0,cityUnlocked=false,cityCleared=false}){
-     hasPlayed=hasAttempted||areasCleared>0||cityAreasCleared>0;
+   updateHero({art,name,level,mastered,due,xp,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0}){
+     const cleared=areasCleared+cityAreasCleared+ruinsAreasCleared;
+     const allCleared=totalAreas>0&&cleared===totalAreas;
+     hasPlayed=hasAttempted||cleared>0;
      quest.hidden=!hasPlayed;
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
@@ -296,10 +298,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
-     menu.querySelector('[data-feature-dungeon]').firstChild.textContent=cityCleared?'もう一度冒険 ':areasCleared?'つづきから冒険 ':'冒険をはじめる ';
-     menu.querySelector('#home-feature-practice').hidden=areasCleared>0;
-     menu.querySelector('#home-feature-progress').textContent=cityCleared?'全8エリア攻略！好きな場所で遊ぼう':
-       hasPlayed?`${areasCleared+cityAreasCleared}/8 エリア攻略 · 次は「${nextAreaName}」`:
+     menu.querySelector('[data-feature-dungeon]').firstChild.textContent=allCleared?'もう一度冒険 ':cleared?'つづきから冒険 ':'冒険をはじめる ';
+     menu.querySelector('#home-feature-practice').hidden=cleared>0;
+     menu.querySelector('#home-feature-progress').textContent=allCleared?`全${totalAreas}エリア攻略！好きな場所で遊ぼう`:
+       hasPlayed?`${cleared}/${totalAreas} エリア攻略 · 次は「${nextAreaName}」`:
        `最初の目的地「${nextAreaName}」 · ボス撃破を目指そう`;
    }
  };
