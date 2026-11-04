@@ -1677,7 +1677,13 @@ const path=require('node:path');
     }
     assert.equal(new Set(speakingSeen).size,6);
     await page.locator('#result-view').waitFor({state:'visible'});
-    assert.match(await page.locator('#result-discoveries').innerText(),/Soxie/);
+    assert.match(await page.locator('#result-companion-reveal').innerText(),/Soxie/);
+    assert.equal(await page.locator('#result-companion-reveal').isVisible(),true,
+      'New companions must be celebrated above the optional result details');
+    assert.equal(await page.locator('#result-companion-reveal [data-result-companion="katappo"]').count(),1,
+      'The earned companion has a direct, tappable field-notes entry');
+    assert.equal(await page.locator('#result-discoveries .discovery-card').count(),0,
+      'The same recruitment is not repeated inside collapsed details');
     const trainingEarned=88;
     assert.ok((await page.locator('#result-rewards').innerText()).includes('+88 XP ストック'));
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-result.png`),fullPage:true});

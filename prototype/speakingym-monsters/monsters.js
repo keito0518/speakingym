@@ -13,6 +13,7 @@ import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, ap
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
 import { createCollectionViews } from './monster-collection.js';
+import { companionRevealFor, renderCompanionSpotlight } from './companion-reveal.js';
 import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
 import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
@@ -2422,7 +2423,8 @@ function finishSession(timedOut=false,defeated=false) {
   const medal=ended.bossMedal;
   if(medal?.bonusXp)$('#result-rewards').insertAdjacentHTML('beforeend',`<span class="reward-pill boss-bonus-pill">ボス勲章 初回・昇格報酬 ＋${medal.bonusXp} XP</span>`);
   const medalDisplay=medal?`<section class="boss-medal-result" data-medal-rank="${medal.rank}"><span class="boss-medal-symbol" aria-hidden="true"></span><div><span class="tiny-caps">BOSS MASTERY · ${escapeHtml(difficultyCopy[medal.difficulty].label)}</span><h2>${medal.rank?`${BOSS_MEDAL_NAMES[medal.rank]}ランク${medal.upgraded?'獲得！':'でクリア！'}`:'練習クリア · 勲章は次の挑戦で'}</h2><p>章の問題 ${medal.independent}/${medal.total}問を自力で確認 · ボス ${medal.verifiedBoss}/3問を確認。${medal.rank===3?'全問自力でクリア！':medal.rank===2?'全問自力で金ランクを目指そう。':medal.rank===1?'75%以上を自力で確認し、ボスも2問以上自力で銀ランクへ。':'ボス3問をヒントありでも確認すると銅ランクを獲得できるよ。'}</p>${medal.best>medal.rank?`<small>この難易度の最高記録は${BOSS_MEDAL_NAMES[medal.best]}ランクのまま保存したよ。</small>`:''}</div></section>`:'';
-  const newMonsters=[...new Set(ended.captured)].map(id=>{const creature=monsterFor(id);return `<div class="discovery-card">${monsterArt(id)}<div><strong>${escapeHtml(creature.name)}が仲間入り！</strong><p>${escapeHtml(creature.kind)} · 図鑑に追加</p></div></div>`;}).join('');
+  const companions=companionRevealFor(ended.captured,save.ownedMonsters,MONSTERS);
+  renderCompanionSpotlight($('#result-companion-reveal'),companions,monsterArt);
   const newTrial=ended.mode==='forest'&&ended.bossTrialNewArea?dungeonAreaFor(ended.bossTrialNewArea):null;
   const evolutionTrial= newTrial&&getMonsterProgress(save,ended.companionId).stage<2 ?(()=>{
     const guide=getEvolutionTrialGuide(save,ended.companionId),growth=getMonsterProgress(save,ended.companionId);
@@ -2455,7 +2457,7 @@ function finishSession(timedOut=false,defeated=false) {
   }
   trialAwardRegion.hidden=!evolutionTrial;
   trialAwardRegion.innerHTML=evolutionTrial;
-  $('#result-discoveries').innerHTML=medalDisplay+newMonsters+newRelics+memories+roleplayResult;
+  $('#result-discoveries').innerHTML=medalDisplay+newRelics+memories+roleplayResult;
   wireRoleplayTransfer(transfer);
   renderDungeonLearningReport(ended);
   let targetedReview=$('#result-targeted-review');
@@ -2504,7 +2506,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
   showView('result');
 }
-const {renderCollection,renderTraining} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
+const {renderCollection,renderDetail,renderTraining} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
@@ -2558,6 +2560,10 @@ $('#leave-play').addEventListener('click',()=>{
  $('#play-view').classList.remove('forest-active','review-only');renderHome();
 });
 $('#result-home').addEventListener('click',renderHome);
+$('#result-companion-reveal').addEventListener('click',event=>{
+  const button=event.target.closest('[data-result-companion]');
+  if(button&&save.ownedMonsters.includes(button.dataset.resultCompanion))renderDetail(button.dataset.resultCompanion);
+});
 $('#result-collection').addEventListener('click',()=>{
   const id=$('#result-collection').dataset.growthId;
   if(id&&save.xpWallet>0&&save.ownedMonsters.includes(id))renderTraining(id);
