@@ -82,7 +82,8 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#answer-area').isVisible(),false,'There is nothing to answer until a type is chosen');
      await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
      assert.equal(await page.locator('#play-card').isVisible(),true,'The question appears only after choosing a type');
-     assert.match(await page.locator('.forest-turn-task > strong').innerText(),/② 英語で答えて攻撃しよう/);
+     assert.match(await page.locator('.forest-turn-task > strong').innerText(),/② 問題に答えて攻撃しよう/,
+       'All four attack types should use a truthful instruction, including Japanese listening choices');
      assert.equal(await page.locator('#forest-party-formation').isVisible(),false);
      assert.equal(await page.locator('#forest-party-hp').isVisible(),true);
      if(width===320){

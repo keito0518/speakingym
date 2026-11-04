@@ -12,7 +12,7 @@ const STEPS=Object.freeze([
  {chapter:'battle',title:'4. まず仲間を編成しよう',body:'戦略バトルでは、出撃前に最大3体を選べる。先頭の仲間と控えの得意技能が作戦のカギ。',
   scene:['出撃編成','先頭 1体 + 控え 2体','この編成で出発'],tips:['仲間カードをタップして追加・入れ替え。','戦闘中の手動交代は1戦に1回。HPは仲間ごとに違うよ。']},
  {chapter:'battle',title:'5. 英語で攻撃しよう',body:'自分のターンは、4つから攻撃の種類を選ぼう。その種類の問題に正解すると仲間が自動で攻撃するよ。',
-  scene:['問題の種類を選ぶ','英語で答える','正解 → 自動で攻撃'],tips:['攻撃の種類を選んでから問題が出るよ。出題後は種類を変更できない。','敵の弱点は敵の上に表示。正解すればダメージが増えるよ。']},
+  scene:['問題の種類を選ぶ','問題に答える','正解 → 自動で攻撃'],tips:['攻撃の種類を選んでから問題が出るよ。出題後は種類を変更できない。','敵の弱点は敵の上に表示。正解すればダメージが増えるよ。']},
  {chapter:'battle',title:'6. 敵の反撃は問題で防ぐ',body:'敵が生き残ると反撃。予告された技能の問題に自力正解すれば、HPは減らないよ。',
   scene:['次の敵攻撃：文法','英語の問題に回答','正解 → ダメージ 0'],tips:['敵の攻撃を予告で確認して仲間を選ぼう。','音声認識エラーや判定保留だけではHPを減らさないよ。']},
  {chapter:'battle',title:'7. 連携・必殺技を使い分ける',body:'詳しい作戦は「戦術・仲間を変更する」を開けば使えるよ。ヒントなしで正解すると必殺ゲージがたまる。',
@@ -189,7 +189,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   const current=practiceQuestions[practiceStage];
   practice.querySelector('#practice-battle-progress').textContent=done?'練習クリア':`練習 ${practiceStage+1} / ${practiceQuestions.length}`;
   practice.querySelector('#practice-battle-title').textContent=done?'練習バトル、クリア！':current.title;
-  practice.querySelector('#practice-battle-prompt').textContent=done?(practiceFromGame?'練習は完了！ 元の画面に戻ろう。':'攻撃タイプを選ぶ → 英語で答える → 敵の反撃を防ぐ。これが本編の流れだよ！'):current.prompt;
+  practice.querySelector('#practice-battle-prompt').textContent=done?(practiceFromGame?'練習は完了！ 元の画面に戻ろう。':'攻撃タイプを選ぶ → 問題に答える → 敵の反撃を防ぐ。これが本編の流れだよ！'):current.prompt;
   practice.querySelector('#practice-ally-hp').textContent=`HP ${practiceHp}/4`;
   practice.querySelector('#practice-enemy-hp').textContent=`HP ${done?0:practiceStage>=2?1:2}/2`;
   practice.querySelector('#practice-battle-feedback').textContent=practiceMessage;
