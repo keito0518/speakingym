@@ -41,7 +41,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
      (bases.has(baseId(p))?16:0)+
      (kinds.has(p.kind)?4:0)+
      (focus&&p.kind===focus.kind&&selections.filter(chosen=>chosen.kind===focus.kind).length<2?-12:0)+
-     (category==='review'?(weak.has(p.id)?-8:0):practicedToday(p)?35:0)+
+     (category==='review'?(weak.has(p.id)?-12:review.has(p.id)||Boolean(save.retention?.[p.id]?.nextDay&&save.retention[p.id].nextDay<=today)?-10:0):practicedToday(p)?35:0)+
      ((save.savedPromptIds||[]).includes(p.id)?-1:0)
     );
     return score(a)-score(b)||dailyRank(today,difficulty,a.id)-dailyRank(today,difficulty,b.id)||a.id.localeCompare(b.id);

@@ -4,6 +4,7 @@ import { BOSS_RESPONSE_PROMPTS } from './forest-boss-story.js';
 import { SPEAKING_ADVENTURES } from './speaking-adventures.js';
 import { SNOW_CITY_QUIZZES, SNOW_CITY_SPEAKING } from './snow-city-curriculum.js';
 import { STAR_RUINS_QUIZZES, STAR_RUINS_SPEAKING } from './star-ruins-curriculum.js';
+import { FOREST_ENTRY_PROMPTS } from './forest-entry-curriculum.js';
 // A compact, curated speaking curriculum: one useful expression, two situations.
 // The prototype does not claim that speech recognition can grade arbitrary English.
 export const PHRASES = Object.freeze([
@@ -280,6 +281,7 @@ export const ALL_PROMPTS = Object.freeze([
   ...PROMPTS,
   ...ADDITIONAL_PROMPTS.filter(p=>p.difficulty),
   ...FOREST_QUIZZES,
+  ...FOREST_ENTRY_PROMPTS,
   ...SNOW_CITY_QUIZZES,
   ...SNOW_CITY_SPEAKING,
   ...STAR_RUINS_QUIZZES,

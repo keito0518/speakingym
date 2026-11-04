@@ -609,14 +609,14 @@ test('all listening prompts have a real, matching and locally hosted humanlike A
 test('curriculum includes 4 Snowlit City chapters with authored local quizzes and speaking tasks', () => {
   assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,35);
   assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
-  assert.equal(ALL_PROMPTS.length,384);
+  assert.equal(ALL_PROMPTS.length,402);
   for(const difficulty of ['normal','hard']) {
     const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,128);
-    assert.equal(new Set(level.map(p=>p.id)).size,128);
+    assert.equal(level.length,134);
+    assert.equal(new Set(level.map(p=>p.id)).size,134);
     assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
-    assert.equal(level.filter(p=>p.kind==='vocab').length,28);
-    assert.equal(level.filter(p=>p.kind==='grammar').length,24);
+    assert.equal(level.filter(p=>p.kind==='vocab').length,30);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,26);
     assert.ok(level.filter(p=>p.kind==='listen').length>=8);
     assert.ok(level.filter(p=>p.kind==='read').length>=8);
     assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
@@ -740,8 +740,9 @@ test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endles
  assert.equal(BOSS_HITS,3);
  assert.equal(FOREST_WAVE_LENGTH,8);
  assert.deepEqual(DIFFICULTY_TRIES,{easy:3,normal:2,hard:1});
- const a=buildForestWave({difficulty:'easy',wave:1,random:()=>.99});
- const b=buildForestWave({difficulty:'easy',wave:1,random:()=>0});
+ const seeded=initial=>{let state=initial;return ()=>((state=(state*1664525+1013904223)>>>0)/4294967296);};
+ const a=buildForestWave({difficulty:'easy',wave:1,random:seeded(99)});
+ const b=buildForestWave({difficulty:'easy',wave:1,random:seeded(12345)});
  assert.equal(a.prompts.length,8);
  assert.equal(new Set(a.prompts.map(x=>x.id)).size,8);
  assert.notDeepEqual(a.prompts.map(x=>x.id),b.prompts.map(x=>x.id));
@@ -1008,7 +1009,7 @@ test('City supplies 13 unique skill-mixed encounters at all levels, including or
    const previous=[];
    for(const area of FOREST_AREAS){
     const round=buildForestWave({areaId:area.id,difficulty,progression:'story',previousIds:previous,bossConversation:true,random});
-    assert.ok(round.prompts.every(p=>!p.world),'City-only material must stay out of Forest');
+    assert.ok(round.prompts.every(p=>!p.world||p.world===area.id),'Chapter-specific material must stay in its own area');
     previous.push(...round.prompts.map(p=>p.id));
    }
    const city=buildForestWave({areaId:'city',difficulty,progression:'story',previousIds:previous,bossConversation:true,random});
@@ -1668,9 +1669,9 @@ test('positive no-worries agreements and suits-me phrasing retain timing safegua
 test('forest, city and ruins objective questions grade deterministically and never reward incorrect taps',()=>{
   for(const difficulty of DIFFICULTIES){
     const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
-    assert.equal(quizzes.length,52);
-    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,28);
-    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,24);
+    assert.equal(quizzes.length,56);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,30);
+    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,26);
     assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
     for(const p of quizzes){
       assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
@@ -1765,9 +1766,9 @@ test('an overdue word or grammar point takes priority in a later forest encounte
   assert.equal(harder.prompts[2].difficulty,'normal');
   assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
 });
-test('all 156 objective quiz questions have an authored why, comparison and transfer lesson',()=>{
+test('all 168 objective quiz questions have a why, comparison and transfer lesson',()=>{
   const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
-  assert.equal(quizzes.length,156);
+  assert.equal(quizzes.length,168);
   for(const prompt of quizzes){
     const lesson=quizTeachingFor(prompt);
     assert.ok(lesson?.label&&lesson.clue.length>=22,`Missing explanatory clue: ${prompt.id}`);
@@ -1892,10 +1893,10 @@ test('first-wave boss conversation joins listening, word order and speaking with
 });
 test('expanded dungeon quizzes change targets across levels and explain the language point',()=>{
   const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
-  assert.equal(quizzes.length,156);
-  assert.equal(new Set(quizzes.map(p=>p.id)).size,156);
+  assert.equal(quizzes.length,168);
+  assert.equal(new Set(quizzes.map(p=>p.id)).size,168);
   const baseIds=new Set(quizzes.map(p=>p.baseId));
-  assert.equal(baseIds.size,52);
+  assert.equal(baseIds.size,56);
   for(const baseId of baseIds){
     const variants=quizzes.filter(p=>p.baseId===baseId);
     assert.deepEqual(variants.map(p=>p.difficulty),['easy','normal','hard']);

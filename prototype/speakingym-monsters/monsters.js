@@ -970,7 +970,7 @@ function renderAttackChoice(panel,t){
  panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
   <strong>あなたのターン · ① まず攻撃を選ぼう</strong><span>${BATTLE_LABELS[affinity.weak]}で攻撃するとダメージアップ！</span>
   <p class="dungeon-choice-guide">迷ったら「${BATTLE_LABELS[affinity.weak]}」がオススメ。タップすると英語の問題が出るよ。</p>
-  ${focus?`<p class="forest-learning-focus"><strong>英語の復習候補：${escapeHtml(focus.label)}</strong> ${escapeHtml(focus.detail)} 敵の弱点を狙うか、苦手を練習するか自由に選べるよ。</p>`:''}
+  ${focus?`<details class="forest-learning-focus"><summary>苦手の復習候補：${escapeHtml(focus.label)}</summary><p>${escapeHtml(focus.detail)} 敵の弱点を狙うか、苦手を練習するか選べるよ。</p></details>`:''}
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>おすすめ</small>':''}${focus?.kind===kind?'<small>復習候補</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;

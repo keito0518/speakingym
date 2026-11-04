@@ -91,7 +91,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
  if(!AREA_SKILLS[areaId])throw Error('Unknown forest area');
  const level=progression==='story'?difficulty:forestLevel(difficulty,wave);
  if(!DIFFICULTY_TRIES[level])throw Error('Invalid forest difficulty');
- const localChapter=['city','ruins'].includes(DUNGEON_AREAS.find(area=>area.id===areaId)?.world);
+ const localChapter=areaId==='entry'||['city','ruins'].includes(DUNGEON_AREAS.find(area=>area.id===areaId)?.world);
  // City-authored situations do not leak into the Forest; already-learned
  // Forest expressions remain available for transfer in the new world.
  const pool=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')===level&&(!p.world||p.world===areaId));
@@ -132,6 +132,8 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    let candidates=shuffled.filter(p=>matches(p)&&!usedIds.has(p.id)&&!reservedBossIds.has(p.id));
    if(!candidates.length)throw Error('Not enough unique '+kind+' prompts for this difficulty');
    const bossSlot=areaId!=='entry'&&slot>=regular;
+   const localTarget=areaId.startsWith('ruins-')?4:3;
+   const wantsLocal=localChapter&&slot<regular&&prompts.filter(p=>p.world===areaId).length<localTarget;
    let transferBoss=false;
    if(bossSlot){
      // The boss must assess the topic actually taught in this chapter, not
@@ -177,15 +179,14 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
      // Otherwise avoid repeating expressions within one adventure.
      if(!transferBoss){
        const newPhrase=candidates.filter(p=>!usedPhrases.has(p.phraseId));
-       // The new Snowlit City chapters must actually teach their own local
-       // situations. Keep due weaknesses above this rule and prefer a fresh
-       // expression when possible, but do not let global Forest exercises
-       // crowd out the entire chapter-specific bank.
-       if(localChapter&&slot<regular){
+       // The entrance and later-world chapters should actually teach their
+       // own situations. Keep due weaknesses above this rule and prefer fresh
+       // expressions, without letting shared drills crowd out local tasks.
+       if(wantsLocal&&!candidates.some(p=>dueIds.has(p.id)||duePhrases.has(p.phraseId)||weakQuizIds.has(p.id))){
          const localFresh=newPhrase.filter(p=>p.world===areaId);
          const local=candidates.filter(p=>p.world===areaId);
          if(localFresh.length)candidates=localFresh;
-         else if(prompts.filter(p=>p.world===areaId).length<3&&local.length)candidates=local;
+         else if(prompts.filter(p=>p.world===areaId).length<localTarget&&local.length)candidates=local;
          else if(newPhrase.length)candidates=newPhrase;
        }else if(newPhrase.length)candidates=newPhrase;
      }
@@ -202,7 +203,7 @@ export function buildForestWave({difficulty='easy',wave=1,areaId='entry',progres
    const needsChapterFocus=areaId!=='entry'&&slot<regular&&chapterFocusCount<2;
    const scores=p=>[
      dueIds.has(p.id)?0:duePhrases.has(p.phraseId)?1:2,
-     localChapter&&p.world===areaId?0:1,
+     wantsLocal&&p.world===areaId?0:1,
      // Keep a boss's chapter theme intact, even if that theme was practiced
      // earlier. First teach two chapter-linked encounters before allowing
      // regular foes to branch into a broader transfer vocabulary.
