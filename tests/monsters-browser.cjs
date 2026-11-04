@@ -115,6 +115,41 @@ const path=require('node:path');
       assert.match(await recoveryPage.locator('#save-download').innerText(),/セーブをファイルに保存/);
       await recoveryContext.close();
     }
+    // Two tabs share localStorage but may carry different in-memory saves.
+    // Never let the stale tab replace a newer level/XP or hide the warning
+    // while the player is inside the full-screen dungeon.
+    {
+      const {context:tabsContext,page:staleTab}=await boot(375);
+      const newestTab=await tabsContext.newPage();
+      await newestTab.goto(base,{waitUntil:'networkidle'});
+      await enterHomePanel(newestTab,'training');
+      await staleTab.locator('[data-feature-dungeon]').click();
+      await newestTab.locator('[data-difficulty="hard"]').click();
+      await staleTab.locator('#save-warning-live').waitFor({state:'visible',timeout:6000});
+      assert.match(await staleTab.locator('#save-warning-live').innerText(),/別のタブ/);
+      await leavePlay(staleTab);
+      await enterHomePanel(staleTab,'training');
+      await staleTab.locator('[data-difficulty="normal"]').click();
+      assert.equal(await staleTab.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).difficulty),'hard',
+        'The old tab must not overwrite newer difficulty/progress');
+      await staleTab.locator('#save-transfer').evaluate(el=>{el.open=true;});
+      assert.equal(await staleTab.locator('#save-conflict-notice').isVisible(),true);
+      const oldDownload=staleTab.waitForEvent('download');
+      await staleTab.locator('#save-download').click();
+      const oldFile=JSON.parse(fs.readFileSync(await (await oldDownload).path(),'utf8'));
+      assert.equal(oldFile.difficulty,'normal','Unsaved work in the older tab remains exportable');
+      const latestDownload=staleTab.waitForEvent('download');
+      await staleTab.locator('#save-conflict-latest-download').click();
+      const latestFile=JSON.parse(fs.readFileSync(await (await latestDownload).path(),'utf8'));
+      assert.equal(latestFile.difficulty,'hard','The newer tab’s save must be separately exportable');
+      await staleTab.locator('#save-import').fill(JSON.stringify({...latestFile,xpWallet:999}));
+      staleTab.once('dialog',dialog=>dialog.accept());
+      await staleTab.locator('#save-import-button').click();
+      assert.match(await staleTab.locator('#save-transfer-status').innerText(),/別のタブ/);
+      assert.equal(await staleTab.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0,
+        'Even a confirmed import cannot erase an unseen newer save from the stale tab');
+      await tabsContext.close();
+    }
     // Growing the roster must not hide newly catchable species or their
     // evolution information inside the mobile encyclopedia.
     {

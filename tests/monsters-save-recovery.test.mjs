@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSave, validateSave, STORAGE_KEY } from '../prototype/speakingym-monsters/monster-engine.js';
-import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
 
 function fakeStorage(initial={}){
   const data=new Map(Object.entries(initial));
@@ -19,8 +19,27 @@ test('valid and brand-new saves do not create a recovery copy',()=>{
   const valid=fakeStorage({[STORAGE_KEY]:JSON.stringify(previous)});
   const loaded=loadProtectedSave(valid,validateSave);
   assert.equal(loaded.status,'valid');
+  assert.equal(loaded.raw,JSON.stringify(previous),'Storage revision must retain the exact original bytes');
   assert.equal(loaded.save.xpWallet,320);
   assert.equal(valid.getItem(UNREADABLE_BACKUP_KEY),null);
+});
+
+test('two tabs cannot silently overwrite another tab’s newer save',()=>{
+  const original=JSON.stringify(createSave());
+  const updated=JSON.stringify({...createSave(),difficulty:'hard',xpWallet:84});
+  const stale=JSON.stringify({...createSave(),difficulty:'normal',xpWallet:12});
+  const store=fakeStorage({[STORAGE_KEY]:original});
+  const first=loadProtectedSave(store,validateSave);
+  const second=loadProtectedSave(store,validateSave);
+  assert.deepEqual(writeSaveIfCurrent(store,first.raw,updated),{status:'saved',raw:updated});
+  assert.equal(writeSaveIfCurrent(store,second.raw,stale).status,'conflict');
+  assert.equal(store.getItem(STORAGE_KEY),updated,'A stale tab must not erase another tab’s XP');
+  assert.deepEqual(writeSaveIfCurrent(store,updated,stale),{status:'saved',raw:stale},
+    'A deliberate restore after loading the newest revision remains possible');
+  const broken=fakeStorage({[STORAGE_KEY]:original});
+  broken.setItem=()=>{throw new Error('QuotaExceededError');};
+  assert.throws(()=>writeSaveIfCurrent(broken,original,updated),/QuotaExceededError/);
+  assert.equal(broken.getItem(STORAGE_KEY),original);
 });
 
 test('malformed and future-version saves are preserved byte-for-byte before reset',()=>{

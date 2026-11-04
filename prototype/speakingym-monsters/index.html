@@ -160,6 +160,10 @@
                 <button type="button" id="save-recovery-archive-download" class="save-transfer-button" hidden>以前保護した別のセーブも保存</button>
                 <button type="button" id="save-recovery-reset" class="save-transfer-button" hidden>元のセーブを破棄して最初から始める</button>
               </div>
+              <div id="save-conflict-notice" class="save-warning-live" role="alert" hidden>
+                <p>別のタブで進捗が更新されました。古いタブから上書きしないよう、このタブの自動保存を止めています。まず下の「セーブをファイルに保存」で<strong>このタブの記録</strong>を保存してね。次に別タブの記録も別ファイルで保管できます。その後、新しいタブでどちらを復元するか決めよう。</p>
+                <button type="button" id="save-conflict-latest-download" class="save-transfer-button">別タブの新しいセーブも保存</button>
+              </div>
               <p>別のURL・Safari・LINE内ブラウザへ進捗は自動で移りません。移動前にファイルを保存し、移動先で読み込んで復元してね。コピー・貼り付けも使えます。</p>
               <button type="button" id="save-download" class="save-transfer-button save-download-button">セーブをファイルに保存（おすすめ）</button>
               <button type="button" id="save-export" class="save-transfer-button">今のセーブをコピー</button>
