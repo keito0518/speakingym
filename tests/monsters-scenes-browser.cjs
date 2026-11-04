@@ -165,6 +165,23 @@ const path=require('node:path');
       await noOverflow(page,`${width} smart level-up`);
       await context.close();
     }
+    // Level milestones announce the *actual* bonuses already used in combat,
+    // including multi-level feeding, without granting unearned battle power.
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);await seed(page,{xpWallet:210,monsterXp:{medamago:130}});
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      await page.locator('[data-feed-amount="next"]').click();
+      assert.match(await page.locator('.training-battle-unlock').innerText(),/戦闘HP＋1/,
+        'Lv.3 should celebrate the real HP milestone');
+      await page.locator('[data-feed-amount="next"]').click();
+      assert.match(await page.locator('.training-battle-unlock').innerText(),/熟練技「黄身の二連撃」解放/,
+        'Lv.4 should celebrate the real specialty unlock');
+      assert.equal(await page.locator('#training-wallet').innerText(),'130 XP');
+      await noOverflow(page,`${width} training combat payoff`);
+      await context.close();
+    }
     // The second evolution needs three distinct boss marks and Lv.10; merely
     // feeding across the threshold must never skip the deliberate ceremony.
     for(const width of [320,390]){

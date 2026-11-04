@@ -5,7 +5,8 @@ import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, FOREST_ROUTES, un
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
 import { BOSS_MEDAL_NAMES } from './boss-mastery.js';
-import { allyAffinity, allySkill, BATTLE_LABELS, MASTERY_LEVEL, evolvedSupportTalent } from './battle-tactics.js';
+import { allyAffinity, allySkill, BATTLE_LABELS, MASTERY_LEVEL, masterySkillFor, evolvedSupportTalent } from './battle-tactics.js';
+import { levelHpBonus } from './battle-party.js';
 
 const html = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $ = s => document.querySelector(s);
@@ -155,6 +156,15 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     const bond=getMonsterBondProgress(save,id),trial=getEvolutionTrialGuide(save,id);
     const g=getMonsterProgress(save,id),effect=reward?(reward.ascended?'ascension':reward.evolved?'evolution':reward.leveledUp?'level':'xp'):'idle';
     const message=reward?(reward.ascended?`${c.ascendedName}へ第2進化！ 得意攻撃＋1・戦闘HP＋1！`:reward.evolved?`${c.evolvedName}へ進化！ 新しい能力が使えるよ！`:`${c.name}に${reward.xp} XP！${reward.leveledUp?` Lv.${g.level}になった！`:''}${reward.readyEvolution?' 進化条件を達成！ 下のボタンから進化しよう。':''}`):'';
+    const battleUnlocks=[];
+    if(reward?.leveledUp){
+      const hpGain=levelHpBonus(reward.after.level)-levelHpBonus(reward.before.level);
+      if(hpGain>0)battleUnlocks.push(`戦闘HP＋${hpGain}`);
+      if(reward.before.level<MASTERY_LEVEL){
+        const mastery=masterySkillFor(id,reward.after.level);
+        if(mastery)battleUnlocks.push(`熟練技「${mastery.name}」解放`);
+      }
+    }
     const beforeForm=reward?.before?.stage??0;
     $('#training-content').innerHTML = `<div class="training-sheet" data-growth="${effect}" data-monster="${id}">
       <span class="tiny-caps">COMPANION GROWTH</span><h1 lang="en">${html(displayName(c,g))}</h1>
@@ -165,6 +175,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
         <span class="growth-label" aria-hidden="true">${reward?(effect==='ascension'?'2ND EVOLUTION!':effect==='evolution'?'EVOLUTION':effect==='level'?'LEVEL UP':`+${reward.xp} XP`):''}</span>
       </div>
       <div class="training-level"><strong>Lv.${g.level}</strong><span>${growthStatus(g)}</span></div>
+      ${battleUnlocks.length?`<div class="training-battle-unlock" role="status"><span>BATTLE POWER UP</span><strong>${battleUnlocks.map(html).join(' · ')}</strong><small>次の戦闘から使えるよ！</small></div>`:''}
       <div class="training-xp" role="meter" aria-label="次のレベルへのXP" aria-valuemin="0" aria-valuemax="${XP_PER_LEVEL}" aria-valuenow="${XP_PER_LEVEL-g.toNextLevel}"><span style="width:${100*(XP_PER_LEVEL-g.toNextLevel)/XP_PER_LEVEL}%"></span></div>
       <p class="training-next">次のレベルまで <strong>${g.toNextLevel} XP</strong> · 累計 ${g.xp} XP</p>
       <div class="training-wallet">育成に使えるXP <strong id="training-wallet">${save.xpWallet} XP</strong></div>

@@ -54,6 +54,12 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .growth-label{position:absolute;bottom:4px;left:0;right:0;z-index:4;font-size:24px;letter-spacing:.05em;font-weight:900;color:#7a542b;text-shadow:0 2px #fff2c7}
 .training-level{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px;color:#304d36}
 .training-level strong{font-size:26px}.training-level span{font-size:12px}
+.training-battle-unlock{display:grid;justify-items:center;gap:3px;margin:0 0 13px;padding:11px 9px;border:2px solid #d8a954;border-radius:12px;background:linear-gradient(115deg,#fff1bd,#f6ffdc);color:#614213;line-height:1.45;overflow-wrap:anywhere;animation:growth-power-up .6s ease-out both}
+.training-battle-unlock span{font-size:10px;font-weight:900;letter-spacing:.14em}
+.training-battle-unlock strong{font-size:clamp(13px,3.8vw,18px);font-weight:900}
+.training-battle-unlock small{font-size:11px;color:#486637;font-weight:800}
+@keyframes growth-power-up{from{transform:scale(.94);opacity:.5}to{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.training-battle-unlock{animation:none}}
 .training-xp{height:14px;padding:3px;border:1px solid #c7b77e;background:#dfe6cb;border-radius:12px;overflow:hidden}
 .training-xp span{display:block;height:100%;background:linear-gradient(90deg,#bfa04b,#e3bd65);border-radius:8px}
 .training-next{font-size:12px;line-height:1.8;color:#737b60;margin:10px 0 18px}

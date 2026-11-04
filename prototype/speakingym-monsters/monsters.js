@@ -731,7 +731,7 @@ function renderForestHud() {
     // Keep the legacy flag for existing battle UI and save-transfer QA.
     $('#forest-party').dataset.evolved=String(evolved);
   }
-  $('#forest-companion-name').textContent=monsterFormName(companion,progress.stage)+' と戦闘中';
+  $('#forest-companion-name').textContent=`${monsterFormName(companion,progress.stage)} · Lv.${progress.level}`;
   const world=$('#forest-world-stage');
   const currentRoute=play.route||'wild';
   const arenaKey=play.areaId+':'+currentRoute+':'+(play.index>=regularCount()?'boss':'mob');

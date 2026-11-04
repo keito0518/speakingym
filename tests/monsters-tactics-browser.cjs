@@ -629,6 +629,10 @@ const assert=require('node:assert/strict');
    assert.match(await masteryCard.innerText(),/熟練技「黄身の二連撃」/);
    await masteryPage.locator('#forest-explore-continue').click();
    await masteryPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
+   assert.match(await masteryPage.locator('#forest-companion-name').innerText(),/Yolkie · Lv\.4/,
+     'Trained level stays visible in the battle header without opening another menu');
+   assert.equal(await masteryPage.locator('#forest-party-hp').getAttribute('aria-valuemax'),'13',
+     'Level-4 ally carries its earned +1 HP into the actual encounter');
    assert.match(await masteryPage.locator('.forest-tactic-mastery').textContent(),/Lv\.4技：黄身の二連撃.*準備OK/);
    assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'false');
    await answer(masteryPage);
