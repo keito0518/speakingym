@@ -168,7 +168,8 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       <div class="training-xp" role="meter" aria-label="次のレベルへのXP" aria-valuemin="0" aria-valuemax="${XP_PER_LEVEL}" aria-valuenow="${XP_PER_LEVEL-g.toNextLevel}"><span style="width:${100*(XP_PER_LEVEL-g.toNextLevel)/XP_PER_LEVEL}%"></span></div>
       <p class="training-next">次のレベルまで <strong>${g.toNextLevel} XP</strong> · 累計 ${g.xp} XP</p>
       <div class="training-wallet">育成に使えるXP <strong id="training-wallet">${save.xpWallet} XP</strong></div>
-      <div class="training-feed"><button type="button" class="button button-primary" data-feed-monster="${id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>10 XPあげる</button><button type="button" class="button button-ghost" data-feed-monster="${id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>
+      ${save.xpWallet>=g.toNextLevel?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="next">次のLv.${g.level+1}まで育てる · ${g.toNextLevel} XP</button>`:''}
+      <div class="training-feed"><button type="button" class="button ${save.xpWallet>=g.toNextLevel?'button-ghost':'button-primary'}" data-feed-monster="${id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>10 XPあげる</button><button type="button" class="button button-ghost" data-feed-monster="${id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>
       <p id="growth-feedback" class="growth-feedback" role="status" aria-live="polite">${html(message||'問題でためたXPを、この仲間にあげられます。')}</p>
       ${evolutionPath(c)}
       ${g.stage<2?`<section class="evolution-trial" aria-label="次の進化の試練"><strong>進化の試練 · ${g.stage===0?'第1進化':'第2進化'}</strong><p>${growthGoal(g)}</p><div class="evolution-trial-marks" aria-label="異なるボス攻略 ${Math.min(g.trialCount,g.requiredTrials)} / ${g.requiredTrials}エリア">${trial.earned.map(area=>`<span data-cleared="true">${html(area.name)}<small>討伐済み</small></span>`).join('')}${Array.from({length:trial.remaining},(_,index)=>`<span data-cleared="false">未獲得の印 ${index+1}</span>`).join('')}</div><p class="evolution-next-boss">${trial.remaining?(trial.target?`次の討伐目標：${html(trial.target.name)}。この仲間とボスを倒そう！`:'次のボスエリアを解放すると、新しい印を集められるよ。'):'ボスの印はそろった！ あとは必要なXPを育成に使おう。'}</p><button type="button" class="button button-primary evolution-trigger" data-evolve-monster="${id}" ${g.canEvolve?'':'disabled'}>${g.canEvolve?'進化する！':'レベルと試練を達成すると進化できる'}</button></section>`:'<p class="training-next">すべての進化試練を達成したよ！</p>'}
@@ -188,8 +189,10 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     $('#training-content .training-sheet').append(roadmap);
     all('[data-feed-monster]').forEach(b=>b.addEventListener('click',()=>{
       try {
-        const amount=b.dataset.feedAmount==='all'?getSave().xpWallet:10;
-        const result=feedMonster(getSave(),id,amount);
+        const currentSave=getSave();
+        const amount=b.dataset.feedAmount==='all'?currentSave.xpWallet:
+          b.dataset.feedAmount==='next'?getMonsterProgress(currentSave,id).toNextLevel:10;
+        const result=feedMonster(currentSave,id,amount);
         persist(result.save);renderTraining(id,result.reward);
       } catch(error) { $('#growth-feedback').textContent=error.message; }
     }));

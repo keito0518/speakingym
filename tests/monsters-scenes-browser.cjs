@@ -143,6 +143,28 @@ const path=require('node:path');
       assert.deepEqual(after,before);
       await context.close();
     }
+    // Smart feeding spends only the XP needed for one level, rather than all
+    // earned XP. The existing 10 XP and all-XP controls remain available.
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);await seed(page,{xpWallet:75});
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      assert.match(await page.locator('[data-feed-amount="next"]').innerText(),/Lv\.2.*70 XP/);
+      assert.equal(await page.locator('[data-feed-amount="10"]').isEnabled(),true);
+      assert.equal(await page.locator('[data-feed-amount="all"]').isEnabled(),true);
+      await page.locator('[data-feed-amount="next"]').click();
+      assert.match(await page.locator('.training-level').innerText(),/Lv\.2/);
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'level');
+      assert.equal(await page.locator('#training-wallet').innerText(),'5 XP');
+      assert.equal(await page.locator('[data-feed-amount="next"]').count(),0,'Unaffordable next level is not offered');
+      assert.equal(await page.locator('[data-feed-amount="10"]').isDisabled(),true);
+      const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+      assert.equal(saved.monsterXp.medamago,70);
+      assert.equal(saved.xpWallet,5);
+      await noOverflow(page,`${width} smart level-up`);
+      await context.close();
+    }
     // The second evolution needs three distinct boss marks and Lv.10; merely
     // feeding across the threshold must never skip the deliberate ceremony.
     for(const width of [320,390]){
