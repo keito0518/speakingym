@@ -33,6 +33,7 @@ import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { nextLearningQuestFor } from './next-learning-quest.js';
+import { savedReviewRecap } from './saved-review-coach.js';
 import { createBetaTelemetry } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
 
@@ -634,7 +635,7 @@ function tacticalReviewTargets(){
 // The main dungeon starts immediately with the player's current companions.
 // Party formation remains optional in the advanced battle mode.
 function startMainDungeon(areaId=null){startSession('forest-tactics',areaId,false,true);}
-function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) {
+function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const focusKind=mode==='skill-focus'?requestedAreaId:null;
   if(mode==='skill-focus'&&!SKILL_KINDS.includes(focusKind)){renderHome();return;}
@@ -659,13 +660,13 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false) 
     .filter(p=>p.kind===(mode==='listening'?'listen':'speak')&&(p.difficulty||'easy')===difficulty&&!p.bossOnly)
     .sort((x,y)=>Number(Boolean(save.reviewPrompts?.[y.id]&&save.reviewPrompts[y.id]<=dayKey()))-Number(Boolean(save.reviewPrompts?.[x.id]&&save.reviewPrompts[x.id]<=dayKey())))
     .slice(0,6):null;
-  const prompts=forestMode?firstWave.prompts:roleplay?roleplay.turns.map(turn=>turn.prompt):focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>!onlyDue||item.due).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
+  const prompts=forestMode?firstWave.prompts:roleplay?roleplay.turns.map(turn=>turn.prompt):focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>(!onlyDue||item.due)&&(!retrySavedIds||retrySavedIds.includes(item.prompt.id))).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
   if(!prompts.length){renderHome();return;}
   const roster=[save.selectedMonster,...(save.ownedMonsters||[])].filter(id=>(save.ownedMonsters||[]).includes(id));
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,bossTrialNewArea:null,dungeonOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,bossTrialNewArea:null,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
     // did not change grading or outcomes and interrupted every battle.
@@ -2023,6 +2024,7 @@ async function gradeAnswer() {
   play.captured.push(...reward.captured);
   if(rating==='smooth')play.smooth++;
   else if(rating==='hint')play.hintedCount++;
+  if(play.mode==='saved')play.reviewOutcomes.push({promptId:prompt.id,outcome:transcriptPractice?'review':rating==='smooth'?'independent':'supported'});
   if(play.mode==='retention'&&rating==='smooth'&&play.retentionDueIds.includes(prompt.id))play.retentionPassedIds.push(prompt.id);
   if(transcriptPractice)play.assistedGates=(play.assistedGates||0)+1;
   if(play.mode==='forest')play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,
@@ -2246,6 +2248,7 @@ function skipAnswer(){
   if(play.mode==='forest'){play.encounterHelp=true;play.hintUsed=true;}
   const learnerAnswer=$('#spoken-answer')?.value||'';
   if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
+  if(play.mode==='saved')play.reviewOutcomes.push({promptId:prompt.id,outcome:'review'});
   play.revealed=true;stopAudio();
   if(play.roleplay){
     const opening=roleplayOpeningFor(play.roleplay,play.index);
@@ -2434,7 +2437,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
   const forestFinished=ended.mode==='forest'&&ended.completedForest===true;
   $('#result-view').classList.toggle('boss-clear',forestFinished);
-  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):ended.roleplay?'CONVERSATION COMPLETE':ended.mode==='transfer-review'?'TRANSFER REVIEW':'TRAINING COMPLETE';
+  $('#result-kicker').textContent=ended.mode==='forest'?(defeated?'BATTLE LOST':forestFinished?'DUNGEON CLEAR':'ADVENTURE RESULT'):ended.roleplay?'CONVERSATION COMPLETE':ended.mode==='saved'?'SAVED ENGLISH REVIEW':ended.mode==='transfer-review'?'TRANSFER REVIEW':'TRAINING COMPLETE';
   if(forestFinished&&!ended.endless)betaTelemetry.track('monsters_beta_chapter_clear',{
     chapter:ended.areaId,difficulty:ended.baseDifficulty
   });
@@ -2442,10 +2445,10 @@ function finishSession(timedOut=false,defeated=false) {
     const forest=cleanForest(save.forest);
     persist({...save,forest:{...forest,bestWave:Math.max(forest.bestWave||0,ended.wave-(ended.index===0?1:0))}});
   }
-  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='retention'?'定着チェック完了！':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'の集中練習完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
+  $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='saved'?'保存した英語を復習したよ！':ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='retention'?'定着チェック完了！':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'の集中練習完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
     (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='ruins'?'星影の遺跡のボスを討伐！':dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
-  $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='transfer-review'?(ended.smooth?'前の会話から時間を空けて、自力で表現を確認できたね！ 次は別の場面でも試そう。':'今日はヒント・例文で確認した段階。明日また1問で復習できるよ。'):ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
+  $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='saved'?'自分の力で答えられた問題を確認しよう。ヒントや例文を見た問題は、もう一度練習できるよ。':ended.mode==='transfer-review'?(ended.smooth?'前の会話から時間を空けて、自力で表現を確認できたね！ 次は別の場面でも試そう。':'今日はヒント・例文で確認した段階。明日また1問で復習できるよ。'):ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
     (defeated?ended.tactics?'味方のHPがなくなったよ。学んだ英語は消えないから、仲間の相性や防御を工夫して再挑戦しよう！':'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
      `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
@@ -2468,6 +2471,19 @@ function finishSession(timedOut=false,defeated=false) {
     const next=remaining? '今日の復習がまだ残っているよ。続けて確認しよう'
       :milestones.nextDate?`次の予定は ${milestones.nextDate}`:'今日の予定は完了！ 新しい英語にも挑戦してみよう';
     recallResult.textContent=`今回の定着チェック：自力で確認 ${checked}/${scheduled}問（別場面の追加問題は含まない）。翌日 ${milestones.day1}問・3日後 ${milestones.day3}問・7日後 ${milestones.day7}問達成。未確認の復習 ${remaining}問。 ${next}。ヒントや例文だけでは達成にならないよ。`;
+  }
+  let savedResult=$('#result-saved-review');
+  if(!savedResult){
+    savedResult=document.createElement('section');
+    savedResult.id='result-saved-review';savedResult.className='saved-review-result';
+    savedResult.setAttribute('aria-label','保存した英語の復習結果');
+    $('#result-detail-panel').before(savedResult);
+  }
+  savedResult.hidden=ended.mode!=='saved';
+  if(ended.mode==='saved'){
+    const recap=savedReviewRecap(ended.prompts,ended.reviewOutcomes);
+    savedResult.innerHTML=`<span class="tiny-caps">YOUR ENGLISH RECALL</span><h2>${recap.independent===recap.total?'全問、自力で確認！':'自力で確認 '+recap.independent+' / '+recap.total+'問'}</h2><div class="saved-review-meter" role="meter" aria-label="今回の自力確認率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${recap.percentage}"><span style="width:${recap.percentage}%"></span></div><p>ヒントあり ${recap.supported}問 · 例文・字幕で確認 ${recap.review}問${recap.pending?' · 未回答 '+recap.pending+'問':''}</p>${recap.retryIds.length?`<button type="button" id="retry-saved-weak" class="button button-primary">自力で再挑戦する（${recap.retryIds.length}問）</button>`:'<p class="saved-review-next">よくできたね！ 次は日を空けてもう一度、自力で思い出してみよう。</p>'}<small>今回の教材内での確認結果だよ。ヒント・字幕・例文だけでは自力正解に含めません。</small>`;
+    savedResult.querySelector('#retry-saved-weak')?.addEventListener('click',()=>startSession('saved',null,false,false,[...recap.retryIds]));
   }
   $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
   const medal=ended.bossMedal;

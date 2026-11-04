@@ -896,6 +896,55 @@ const path=require('node:path');
     assert.equal(await practicePage.locator('#play-view').evaluate(el=>el.classList.contains('review-only')),true);
     await leavePlay(practicePage);
     await practiceContext.close();
+    // Bookmarked review should separate genuine self-recall from revealed
+    // examples and offer one-tap retry for only the unfinished expression.
+    {
+      const {context:savedContext,page:savedPage}=await boot(320);
+      await savedPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const save=createSave();
+        save.savedPromptIds=['forest-vocab-ticket-easy','forest-vocab-order-easy'];
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
+      });
+      await savedPage.reload();
+      await enterHomePanel(savedPage,'review');
+      await savedPage.locator('#start-saved-review').click();
+      const firstId=await savedPage.locator('#play-card').getAttribute('data-prompt-id');
+      const firstAnswer=await savedPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(item=>item.id===document.querySelector('#play-card').dataset.promptId).answer;
+      });
+      await savedPage.locator('#spoken-answer').fill(firstAnswer);
+      await savedPage.locator('#show-answer').click();
+      await savedPage.locator('#next-question').click();
+      const skippedId=await savedPage.locator('#play-card').getAttribute('data-prompt-id');
+      assert.notEqual(skippedId,firstId);
+      await savedPage.locator('#spoken-answer').fill('incorrect answer');
+      await savedPage.locator('#show-answer').click();
+      await savedPage.locator('#show-example').click();
+      await savedPage.locator('#next-question').click();
+      assert.match(await savedPage.locator('#result-title').innerText(),/保存した英語を復習/);
+      assert.match(await savedPage.locator('#result-saved-review').innerText(),/自力で確認 1 \/ 2問/);
+      assert.match(await savedPage.locator('#result-saved-review').innerText(),/例文・字幕で確認 1問/);
+      assert.match(await savedPage.locator('#retry-saved-weak').innerText(),/1問/);
+      const ratio=await savedPage.locator('.saved-review-meter').getAttribute('aria-valuenow');
+      assert.equal(ratio,'50');
+      assert.equal(await savedPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+        '320px review result should fit without horizontal scrolling');
+      await savedPage.locator('#retry-saved-weak').click();
+      assert.equal(await savedPage.locator('#play-card').getAttribute('data-prompt-id'),skippedId,
+        'Only the unresolved saved task should return for practice');
+      const retryAnswer=await savedPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        return ALL_PROMPTS.find(item=>item.id===document.querySelector('#play-card').dataset.promptId).answer;
+      });
+      await savedPage.locator('#spoken-answer').fill(retryAnswer);
+      await savedPage.locator('#show-answer').click();
+      await savedPage.locator('#next-question').click();
+      assert.match(await savedPage.locator('#result-saved-review').innerText(),/全問、自力で確認/);
+      assert.equal(await savedPage.locator('#retry-saved-weak').count(),0);
+      await savedContext.close();
+    }
     // Full 5-mob + 3-hit-boss adventure on responsive viewports.
     for(const width of [320,375,390,430]){
       const {context:forestContext,page:forestPage}=await boot(width);

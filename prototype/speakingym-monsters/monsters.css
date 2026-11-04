@@ -673,6 +673,18 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .result-detail-panel .result-discoveries{margin:12px auto}
 @media(max-width:540px){.result-detail-panel{margin:12px 0}.result-quick-summary{font-size:12px}}
 
+/* A small, honest learning payoff after practicing bookmarked sentences.
+   Put one concrete retry action above the optional detailed rewards. */
+.saved-review-result:not([hidden]){margin:16px auto 8px;padding:18px;max-width:480px;border:1px solid #b8dcc0;border-radius:18px;background:linear-gradient(145deg,#f2fbed,#fffdf4);text-align:center;color:#294b37}
+.saved-review-result h2{margin:7px 0 11px;font-size:clamp(18px,4.5vw,24px);line-height:1.35;color:#24543c}
+.saved-review-meter{height:11px;border-radius:99px;overflow:hidden;background:#d8e8d8}
+.saved-review-meter span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#62b379,#279763);transition:width .4s ease}
+.saved-review-result p{margin:10px 0;color:#3a614c;font-size:12px;font-weight:750;line-height:1.6}
+.saved-review-result .button{width:100%;min-height:48px;margin:5px 0 9px;white-space:normal;line-height:1.5}
+.saved-review-result small{display:block;color:#557263;font-size:11px;line-height:1.55}
+.saved-review-result .saved-review-next{font-weight:750;color:#276144}
+@media(prefers-reduced-motion:reduce){.saved-review-meter span{transition:none}}
+
 /* After a correct forest answer, a single next action stays above optional
    teaching notes. Incorrect answers still show coaching immediately. */
 .forest-success-explanation{margin:13px 0 0;border:1px solid #c6dfcb;border-radius:11px;background:#f4f9ee;text-align:left}
