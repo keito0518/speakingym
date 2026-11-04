@@ -143,6 +143,38 @@ const path=require('node:path');
       assert.deepEqual(after,before);
       await context.close();
     }
+    // Exact-cost growth gives a satisfying single tap to the next evolution
+    // level without burning XP earmarked for the player's other companions.
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);
+      await seed(page,{xpWallet:300,monsterTrials:{medamago:['entry']}});
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      assert.match(await page.locator('[data-feed-amount="evolution"]').innerText(),/Lv\.5.*280 XP/);
+      await page.locator('[data-feed-amount="evolution"]').click();
+      assert.match(await page.locator('.training-level').innerText(),/Lv\.5/);
+      assert.equal(await page.locator('#training-wallet').innerText(),'20 XP');
+      assert.equal(await page.locator('[data-evolve-monster]').isEnabled(),true,'Boss mark and level are both required');
+      assert.equal(await page.locator('[data-feed-amount="evolution"]').count(),0,'Reached levels must not offer another identical shortcut');
+      await noOverflow(page,`${width} exact first evolution feed`);
+      await context.close();
+    }
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);
+      await seed(page,{xpWallet:350,monsterXp:{medamago:290},monsterEvolution:{medamago:1},monsterTrials:{medamago:['entry']}});
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      assert.match(await page.locator('[data-feed-amount="evolution"]').innerText(),/Lv\.10.*340 XP/);
+      await page.locator('[data-feed-amount="evolution"]').click();
+      assert.match(await page.locator('.training-level').innerText(),/Lv\.10/);
+      assert.equal(await page.locator('#training-wallet').innerText(),'10 XP');
+      assert.equal(await page.locator('[data-evolve-monster]').isDisabled(),true,'XP cannot bypass the three distinct boss marks');
+      assert.match(await page.locator('.evolution-trial').innerText(),/ボス攻略 1\/3エリア/);
+      await noOverflow(page,`${width} exact second evolution feed`);
+      await context.close();
+    }
     // Smart feeding spends only the XP needed for one level, rather than all
     // earned XP. The existing 10 XP and all-XP controls remain available.
     for(const width of [320,390]){

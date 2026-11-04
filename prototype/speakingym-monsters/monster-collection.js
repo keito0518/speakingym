@@ -155,6 +155,11 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     currentId=id; stopAudio();
     const bond=getMonsterBondProgress(save,id),trial=getEvolutionTrialGuide(save,id);
     const g=getMonsterProgress(save,id),effect=reward?(reward.ascended?'ascension':reward.evolved?'evolution':reward.leveledUp?'level':'xp'):'idle';
+    const evolutionNeed=g.nextEvolutionXp===null?0:Math.max(0,g.nextEvolutionXp-g.xp);
+    // A full-wallet feed can waste XP intended for other companions. When the
+    // player can afford the next evolution's level, offer an exact-cost shortcut
+    // while leaving the independent boss-mark requirement unchanged.
+    const evolutionFeed=evolutionNeed>g.toNextLevel&&save.xpWallet>=evolutionNeed;
     const message=reward?(reward.ascended?`${c.ascendedName}へ第2進化！ 得意攻撃＋1・戦闘HP＋1！`:reward.evolved?`${c.evolvedName}へ進化！ 新しい能力が使えるよ！`:`${c.name}に${reward.xp} XP！${reward.leveledUp?` Lv.${g.level}になった！`:''}${reward.readyEvolution?' 進化条件を達成！ 下のボタンから進化しよう。':''}`):'';
     const battleUnlocks=[];
     if(reward?.leveledUp){
@@ -179,7 +184,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       <div class="training-xp" role="meter" aria-label="次のレベルへのXP" aria-valuemin="0" aria-valuemax="${XP_PER_LEVEL}" aria-valuenow="${XP_PER_LEVEL-g.toNextLevel}"><span style="width:${100*(XP_PER_LEVEL-g.toNextLevel)/XP_PER_LEVEL}%"></span></div>
       <p class="training-next">次のレベルまで <strong>${g.toNextLevel} XP</strong> · 累計 ${g.xp} XP</p>
       <div class="training-wallet">育成に使えるXP <strong id="training-wallet">${save.xpWallet} XP</strong></div>
-      ${save.xpWallet>=g.toNextLevel?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="next">次のLv.${g.level+1}まで育てる · ${g.toNextLevel} XP</button>`:''}
+      ${evolutionFeed?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="evolution">進化レベル Lv.${1+Math.floor(g.nextEvolutionXp/XP_PER_LEVEL)}まで育てる · ${evolutionNeed} XP</button>`:save.xpWallet>=g.toNextLevel?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="next">次のLv.${g.level+1}まで育てる · ${g.toNextLevel} XP</button>`:''}
       <div class="training-feed"><button type="button" class="button ${save.xpWallet>=g.toNextLevel?'button-ghost':'button-primary'}" data-feed-monster="${id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>10 XPあげる</button><button type="button" class="button button-ghost" data-feed-monster="${id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>
       <p id="growth-feedback" class="growth-feedback" role="status" aria-live="polite">${html(message||'問題でためたXPを、この仲間にあげられます。')}</p>
       ${evolutionPath(c)}
@@ -201,8 +206,10 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     all('[data-feed-monster]').forEach(b=>b.addEventListener('click',()=>{
       try {
         const currentSave=getSave();
+        const currentGrowth=getMonsterProgress(currentSave,id);
         const amount=b.dataset.feedAmount==='all'?currentSave.xpWallet:
-          b.dataset.feedAmount==='next'?getMonsterProgress(currentSave,id).toNextLevel:10;
+          b.dataset.feedAmount==='next'?currentGrowth.toNextLevel:
+          b.dataset.feedAmount==='evolution'?Math.max(0,(currentGrowth.nextEvolutionXp??0)-currentGrowth.xp):10;
         const result=feedMonster(currentSave,id,amount);
         persist(result.save);renderTraining(id,result.reward);
       } catch(error) { $('#growth-feedback').textContent=error.message; }
