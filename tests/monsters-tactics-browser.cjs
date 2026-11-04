@@ -328,6 +328,10 @@ const assert=require('node:assert/strict');
        const damage=Number(impact.match(/−(\d+) DMG/)?.[1]);
        assert.ok(damage>=3,`Ultimate must visibly deal at least 3 damage on an ordinary foe: ${impact}`);
        assert.match(await page.locator('#forest-world-fx').innerText(),new RegExp(`必殺 ${damage} DMG`));
+       assert.equal(await page.locator('#forest-world-stage').getAttribute('data-impact'),'ultimate');
+       assert.equal(await page.locator('#forest-damage').getAttribute('data-impact-label'),'ULTIMATE');
+       assert.match(await page.locator('#forest-damage').evaluate(el=>getComputedStyle(el,'::before').content),/ULTIMATE/,
+         'A large impact badge must distinguish the ultimate from ordinary hits');
        assert.equal(Number(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow')),Math.max(0,initialHp-damage));
        assert.match(await page.locator('#forest-battle-log').innerText(),new RegExp(`${damage}ダメージ`));
      }

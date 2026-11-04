@@ -9,6 +9,7 @@ import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
 import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, battleChainTier, pickBattleSpectacle, strikeFor, incomingHit, shouldCounterPlayerMiss, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
+import { battleImpactFor } from './battle-impact.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
@@ -2142,7 +2143,11 @@ async function gradeAnswer() {
     if(prompt.kind==='vocab')stage.classList.add('forest-weakness-hit');
     if(prompt.kind==='grammar')stage.classList.add('forest-spell-cast');
     $('#forest-world-stage').dataset.attack=play.companionId;
-    $('#forest-damage').textContent=t&&usedUltimate?`−${special.damage} DMG`:`−${t?special.damage:special.strikes}`;
+    const impact=t?battleImpactFor({damage:special.damage,ultimate:usedUltimate,weak:special.weak,
+      pierce:special.pierce,resist:special.resist,boss,sealsBroken:play.bossHits,sealsTotal:BOSS_HITS}):null;
+    stage.dataset.impact=impact?.kind||'normal';
+    $('#forest-damage').dataset.impactLabel=impact?.label||'';
+    $('#forest-damage').textContent=impact?impact.damageText:'−'+special.strikes;
     $('#forest-world-fx').textContent=t?(usedUltimate?`必殺 ${special.damage} DMG`:special.ascensionBoost?`覚醒 ${special.damage} DMG`:special.tag):prompt.kind==='listen'?'BLOCK':prompt.kind==='read'?'BREAK':prompt.kind==='vocab'?'WEAKNESS':prompt.kind==='grammar'?'MAGIC':special.ability?special.ability:boss?'BOSS HIT':'HIT';
     updateEnemyHealth(true);
     const defeated=boss?play.bossHits>=BOSS_HITS:Boolean(t&&t.enemyHp<=0);
