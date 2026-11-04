@@ -364,6 +364,9 @@
 .home-next-quest-kicker{display:block;margin-bottom:3px;color:#84672e;font-size:9px;font-weight:900;letter-spacing:.06em}
 .home-next-quest h2{margin:0 0 3px;font-size:14px;line-height:1.45;color:#2e5b40;font-weight:900;overflow-wrap:anywhere}
 .home-next-quest p{margin:0;color:#5c7562;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.home-next-quest #home-learning-proof{display:block;max-width:100%;min-height:36px;margin-top:7px;padding:5px 9px;border:1px solid #8ebc9b;border-radius:8px;background:#edf7e9;color:#295b3d;text-align:left;font-size:11px;font-weight:850;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+.home-next-quest #home-learning-proof[hidden]{display:none!important}
+.home-next-quest #home-learning-proof:focus-visible{outline:3px solid #d8aa50;outline-offset:2px}
 .home-next-quest button{min-height:44px;max-width:210px;padding:9px 13px;border:1px solid #39845c;border-radius:10px;background:#28724b;color:#fffdf3;font-size:12px;font-weight:850;line-height:1.45;cursor:pointer;white-space:normal}
 .home-next-quest button:focus-visible{outline:3px solid #d8aa50;outline-offset:3px}
 .home-next-quest[data-quest-kind="retention"],.home-next-quest[data-quest-kind="review"]{border-left-color:#d6863e;background:linear-gradient(105deg,#fff7e5,#f0f8e9)}

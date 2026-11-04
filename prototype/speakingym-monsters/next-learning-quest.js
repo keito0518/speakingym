@@ -4,8 +4,21 @@
 import { dayKey, getMonsterProgress, getEvolutionTrialGuide, savedReviewQueue } from './monster-engine.js';
 import { dailyTrainingPlan } from './daily-training.js';
 import { retentionOverview } from './retention.js';
+import { retentionMilestoneSummary } from './retention.js';
 import { dueRoleplayTransfers } from './roleplay-transfer.js';
 import { nextSkillFocusFor } from './skill-progress.js';
+
+// Show a real reason to come back: independently retrieved English on later
+// days. This is an observed task checkpoint, never a pronunciation score or
+// a guess about general fluency. Nothing is awarded for same-day repetition.
+export function learningProofFor(save,today=dayKey()){
+ const progress=retentionMilestoneSummary(save,today);
+ const reached=progress.day7>0?{days:7,count:progress.day7}:
+  progress.day3>0?{days:3,count:progress.day3}:
+  progress.day1>0?{days:1,count:progress.day1}:null;
+ if(!reached)return null;
+ return {...reached,label:`${reached.days===1?'翌日':reached.days+'日後'}もヒントなしで確認できた ${reached.count}問 · 記録を見る`};
+}
 
 export function nextLearningQuestFor(save,today=dayKey()){
  const transfer=dueRoleplayTransfers(save,today)[0];

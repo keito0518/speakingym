@@ -385,6 +385,28 @@ const path=require('node:path');
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-question.png`),fullPage:true});
       await context.close();
     }
+    // Longer-term progress is visible from home after independent next-day
+    // recall. Before that milestone, avoid an empty, distracting status tile.
+    for(const width of [320,390]){
+      const {context:proofContext,page:proofPage}=await boot(width);
+      assert.equal(await proofPage.locator('#home-learning-proof').isVisible(),false);
+      await proofPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const prompt=ALL_PROMPTS.find(item=>item.kind==='speak'&&!item.bossOnly);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),totalAnswers:4,
+          retention:{[prompt.id]:{stage:4,lastDay:'2026-10-30',nextDay:'2026-11-13'}}}));
+      });
+      await proofPage.reload();
+      assert.match(await proofPage.locator('#home-learning-proof').innerText(),/7日後もヒントなしで確認できた 1問/);
+      assert.equal(await proofPage.locator('#home-learning-proof').isVisible(),true);
+      const proofWidth=await proofPage.evaluate(()=>({viewport:innerWidth,content:document.documentElement.scrollWidth}));
+      assert.ok(proofWidth.content<=proofWidth.viewport+1,`${engine}/${width} proof button must fit mobile: ${JSON.stringify(proofWidth)}`);
+      await proofPage.locator('#home-learning-proof').click();
+      assert.equal(await proofPage.locator('#home-destination-review').isVisible(),true,
+        'Learning evidence opens the existing real spaced-recall records, not a fake proficiency screen');
+      await proofContext.close();
+    }
     // The home is an actual menu, not eight stacked screens. Tutorial works on mobile.
     const {context:menuContext,page:menuPage}=await boot(390);
     assert.equal(await menuPage.locator('#home-navigation [data-home-page]').count(),11);
@@ -396,6 +418,8 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('[data-home-page="forest"]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-menu-art svg').count(),1);
     assert.match(await menuPage.locator('.home-feature h2').innerText(),/English\s*ダンジョン/);
+    assert.match(await menuPage.locator('.home-navigation-head p').innerText(),/知っている英語を、話せる英語に/,
+      'The first impression should explain the actual learning benefit beyond being a monster game');
     assert.equal(await menuPage.locator('[data-feature-dungeon]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-feature-practice').isVisible(),true,'First-time visitors see a practice shortcut');
     assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),1,'Only the one unlocked starter companion walks');

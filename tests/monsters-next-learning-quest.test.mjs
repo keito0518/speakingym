@@ -2,10 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { createSave, EVOLUTION_XP } from '../prototype/speakingym-monsters/monster-engine.js';
-import { nextLearningQuestFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
+import { recordRetention } from '../prototype/speakingym-monsters/retention.js';
+import { nextLearningQuestFor, learningProofFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
 
 const today='2026-11-02';
 const first=kind=>ALL_PROMPTS.find(p=>p.kind===kind&&(p.difficulty||'easy')==='easy'&&!p.bossOnly);
+
+test('an honest home learning proof appears only after separate-day independent recall',()=>{
+ const id=first('speak').id;let save=createSave();
+ assert.equal(learningProofFor(save,'2026-10-01'),null);
+ save=recordRetention(save,id,'smooth','2026-10-01').save;
+ assert.equal(learningProofFor(save,'2026-10-01'),null,'First exposure is not next-day mastery');
+ save=recordRetention(save,id,'smooth','2026-10-01').save;
+ assert.equal(learningProofFor(save,'2026-10-01'),null,'Same-day drilling cannot create a milestone');
+ save=recordRetention(save,id,'smooth','2026-10-02').save;
+ assert.deepEqual(learningProofFor(save,'2026-10-02'),{days:1,count:1,label:'翌日もヒントなしで確認できた 1問 · 記録を見る'});
+ save=recordRetention(save,id,'smooth','2026-10-05').save;
+ assert.match(learningProofFor(save,'2026-10-05').label,/3日後も/);
+ save=recordRetention(save,id,'smooth','2026-10-12').save;
+ assert.match(learningProofFor(save,'2026-10-12').label,/7日後も/);
+ save=recordRetention(save,id,'hint','2026-10-13').save;
+ assert.equal(learningProofFor(save,'2026-10-13'),null,'Hint-based recovery must not be presented as independent retention');
+});
 
 test('a new player gets one actionable short lesson, not a fabricated weak area',()=>{
  const mission=nextLearningQuestFor(createSave(),today);

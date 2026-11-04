@@ -32,7 +32,7 @@ import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSki
 import { setupHomeNavigation } from './home-navigation.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
-import { nextLearningQuestFor } from './next-learning-quest.js';
+import { nextLearningQuestFor, learningProofFor } from './next-learning-quest.js';
 import { savedReviewRecap, savedReviewTrend, rememberSavedReview } from './saved-review-coach.js';
 import { createBetaTelemetry } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
@@ -619,7 +619,7 @@ function renderHome() {
     areasCleared:forestCount,cityAreasCleared:cityCount,ruinsAreasCleared:ruinsCount,totalAreas:DUNGEON_AREAS.length,
     nextAreaName:nextArea.name,bondRank:bond.rank
   });
-  homeNavigation?.updateQuest(nextLearningQuestFor(save));
+  homeNavigation?.updateQuest(nextLearningQuestFor(save),learningProofFor(save));
   // Reuse art for already recruited creatures only; never preview locked ones.
   // Pick the selected companion first so that the home genuinely reflects
   // the user's own team, and cap moving sprites at three for mobile performance.

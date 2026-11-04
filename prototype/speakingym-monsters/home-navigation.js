@@ -67,7 +67,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  const menu=document.createElement('section');
  menu.className='home-navigation';menu.id='home-navigation';
  const head=document.createElement('div');head.className='home-navigation-head';
- head.innerHTML='<span class="tiny-caps">SPEAKINGYM MONSTERS</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>問題に答えて敵を倒そう。仲間と一緒に強くなる英語RPG。</p>';
+ head.innerHTML='<span class="tiny-caps">SPEAKINGYM MONSTERS</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>知っている英語を、話せる英語に。英語で戦い、日を空けた復習でもう一度使おう。</p>';
  // Optional lower-motion UI for iPhone users; CSS still honors system
  // Reduced Motion. This setting changes visuals only, not English grading.
  const motionToggle=document.createElement('button');
@@ -95,9 +95,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  feature.querySelector('[data-feature-worlds]').addEventListener('click',()=>showPage('forest'));
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
  const quest=document.createElement('section');quest.className='home-next-quest';quest.id='home-next-quest';quest.setAttribute('aria-labelledby','home-next-quest-title');
- quest.innerHTML='<div class="home-next-quest-copy"><span class="home-next-quest-kicker">YOUR NEXT QUEST · 今日のおすすめ</span><h2 id="home-next-quest-title">今日の英語を練習しよう</h2><p id="home-next-quest-detail">学習記録に合わせて、次の練習を案内するよ。</p></div><button type="button" id="home-next-quest-button">練習を始める</button>';
+ quest.innerHTML='<div class="home-next-quest-copy"><span class="home-next-quest-kicker">YOUR NEXT QUEST · 今日のおすすめ</span><h2 id="home-next-quest-title">今日の英語を練習しよう</h2><p id="home-next-quest-detail">学習記録に合わせて、次の練習を案内するよ。</p><button type="button" id="home-learning-proof" hidden>日を空けた学習記録を見る</button></div><button type="button" id="home-next-quest-button">練習を始める</button>';
  let questAction='daily',hasPlayed=false;
  quest.querySelector('#home-next-quest-button').addEventListener('click',()=>startMode(questAction));
+ quest.querySelector('#home-learning-proof').addEventListener('click',()=>showPage('review'));
  const label=document.createElement('div');label.className='home-navigation-label';label.innerHTML='<h2>ほかにできること</h2><p>冒険以外はここから</p>';
  // Local vector symbols make each destination recognizable on iOS as well
  // as desktop. No fonts, animations or image downloads are required.
@@ -276,7 +277,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
    });
  }
  return {showMenu,showPage,openTutorial,startPracticeBattle,updateWalkers,
-   updateQuest(next){
+   updateQuest(next,proof=null){
      if(!next)return;
      // The first visit has ONE clear call to action: enter the adventure.
      // Personal recommendations become useful only after an actual attempt.
@@ -286,6 +287,9 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      quest.querySelector('#home-next-quest-title').textContent=next.title;
      quest.querySelector('#home-next-quest-detail').textContent=next.detail;
      quest.querySelector('#home-next-quest-button').textContent=next.button+' →';
+     const proofButton=quest.querySelector('#home-learning-proof');
+     proofButton.hidden=!proof;
+     if(proof)proofButton.textContent=proof.label;
    },
    updateHero({art,name,level,mastered,due,xp,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0}){
      const cleared=areasCleared+cityAreasCleared+ruinsAreasCleared;
