@@ -642,6 +642,24 @@ const path=require('node:path');
     assert.match(await listenPage.locator('#listening-status').innerText(),/再生できた/,
       'Audio loading alone must not unlock listening without playback starting');
     assert.equal(await listenPage.locator('[data-listening-choice]').count(),3);
+    // When a learner switches between the native iPhone audio controls and
+    // the main replay button, playback must restart from the first word.
+    // A direct native playback is not stored in spokenAudio, so this caught
+    // a real path where the main button resumed from a stale offset.
+    await listenPage.evaluate(()=>{
+      const native=document.querySelector('#listening-native-audio');
+      native.pause();
+      native.onended?.();
+      native.currentTime=1;
+      const originalPlay=HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play=function(...args){
+        window.__listeningReplayStart=this.currentTime;
+        return originalPlay.apply(this,args);
+      };
+    });
+    await listenPage.locator('#play-audio').click();
+    const restartedAt=await listenPage.evaluate(()=>window.__listeningReplayStart);
+    assert.ok(restartedAt<.2,`Listening replay must restart from zero, not ${restartedAt}s`);
     const listened=await listenPage.evaluate(async()=>{
       const {listeningChallengeFor}=await import('./listening-challenges.js');
       const {ALL_PROMPTS}=await import('./monster-data.js');

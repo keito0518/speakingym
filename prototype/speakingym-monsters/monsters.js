@@ -407,7 +407,14 @@ function stopListeningPlayback(){
   const previous=spokenAudio;
   spokenAudio=null;
   const native=$('#listening-native-audio');
-  if(native&&native!==previous){try{native.pause();}catch{}}
+  if(native&&native!==previous){
+    try{
+      native.pause();
+      // The player can be started directly from iPhone's native controls,
+      // without becoming spokenAudio. A later "replay" must still begin at 0.
+      native.currentTime=0;
+    }catch{}
+  }
   if(previous){
     previous.onerror=null;
     previous.onended=null;
