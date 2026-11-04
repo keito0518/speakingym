@@ -13,7 +13,7 @@ import { battleImpactFor } from './battle-impact.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
-import { createCollectionViews } from './monster-collection.js';
+import { createCollectionViews, resultGrowthActionFor } from './monster-collection.js';
 import { companionRevealFor, renderCompanionSpotlight } from './companion-reveal.js';
 import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
 import { listeningChallengeFor } from './listening-challenges.js';
@@ -2602,12 +2602,9 @@ function finishSession(timedOut=false,defeated=false) {
   }else $('#result-next').onclick=null;
   $('#result-collection').classList.toggle('button-ghost',canContinue||canRetry||canResumeReview);
   $('#result-collection').classList.toggle('button-primary',!canContinue&&!canRetry&&!canResumeReview);
-  const growthId=save.ownedMonsters.includes(ended.companionId)?ended.companionId:save.selectedMonster;
-  const growNow=save.xpWallet>0&&save.ownedMonsters.includes(growthId);
-  $('#result-collection').dataset.growthId=growNow?growthId:'';
-  $('#result-collection').textContent=growNow
-    ?`${monsterFor(growthId).name}を育てる（使える${save.xpWallet} XP）`
-    :'仲間の図鑑・進化を見る';
+  const growthAction=resultGrowthActionFor(save,ended.companionId);
+  $('#result-collection').dataset.growthId=growthAction.id;
+  $('#result-collection').textContent=growthAction.label;
   $('#replay-run').hidden=canRetry||Boolean($('#victory-medal-retry'));
   $('#replay-run').textContent=ended.roleplay?'この会話にもう一度挑戦':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'をもう一度':ended.mode==='transfer-review'?'別の表現も練習する':ended.mode==='daily'?'今日の5分をもう一度':ended.mode==='forest'?(dungeonAreaFor(ended.areaId)?.world==='ruins'?'星影の遺跡へもう一度挑戦':dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街へもう一度挑戦':'森をもう一度探検する'):ended.mode==='challenge'?'もう一度60秒に挑む':'別の表現も練習する';
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
@@ -2673,7 +2670,7 @@ $('#result-companion-reveal').addEventListener('click',event=>{
 });
 $('#result-collection').addEventListener('click',()=>{
   const id=$('#result-collection').dataset.growthId;
-  if(id&&save.xpWallet>0&&save.ownedMonsters.includes(id))renderTraining(id);
+  if(id&&save.ownedMonsters.includes(id))renderTraining(id);
   else renderCollection();
 });
 $('#result-feedback').addEventListener('click',()=>{

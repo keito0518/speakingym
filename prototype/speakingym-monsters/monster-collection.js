@@ -23,6 +23,16 @@ const growthGoal = g => g.ascended?'第2進化達成！ 得意攻撃＋1・戦�
   ?`第2進化：Lv.${ASCENSION_LEVEL}（累計${SECOND_EVOLUTION_XP} XP）＋異なるボス攻略 ${g.trialCount}/3エリア。残り${ascensionRemaining(g)} XP${g.canEvolve?' · 進化できる！':''}`
   :`第1進化：Lv.${EVOLUTION_LEVEL}（累計${EVOLUTION_XP} XP）＋ボス攻略 ${g.trialCount}/1エリア。残り${evolutionRemaining(g)} XP${g.canEvolve?' · 進化できる！':''}`;
 const evolutionPath = c => `<div class="evolution-path"><span lang="en">${html(c.name)}<small>通常</small></span><span aria-hidden="true">→</span><span lang="en">${html(c.evolvedName)}<small>Lv.${EVOLUTION_LEVEL}＋ボス1</small></span><span aria-hidden="true">→</span><span lang="en">${html(c.ascendedName)}<small>Lv.${ASCENSION_LEVEL}＋ボス3</small></span></div>`;
+// Result screens must not hide an already unlocked evolution just because
+// the player has spent every available XP on this companion.
+export function resultGrowthActionFor(save,preferredId){
+ const id=save.ownedMonsters.includes(preferredId)?preferredId:save.selectedMonster;
+ if(!save.ownedMonsters.includes(id))return {id:'',label:'仲間の図鑑・進化を見る'};
+ const progress=getMonsterProgress(save,id),creature=creatureFor(id);
+ if(progress.canEvolve)return {id,label:`${creature.name}を進化させる！`};
+ if(save.xpWallet>0)return {id,label:`${creature.name}を育てる（使える${save.xpWallet} XP）`};
+ return {id:'',label:'仲間の図鑑・進化を見る'};
+}
 function unlockText(c,save){
  const p=companionUnlockProgress(save,c);
  const language=`${p.skillLabel} ${p.currentSkill}/${p.requiredSkill}`;
@@ -98,14 +108,14 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       const owned = save.ownedMonsters.includes(c.id), g = getMonsterProgress(save,c.id);
       const p=companionUnlockProgress(save,c);
       const bond=getMonsterBondProgress(save,c.id);
-      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned?g.stage:0)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned?`${growthStatus(g)} · 絆 Lv.${bond.rank}`:c.ruinsAreas?`遺跡 ${p.ruinsCount}/${p.requiredRuinsAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
+      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''} ${owned&&g.canEvolve?'evolution-ready':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned?g.stage:0)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned?`${growthStatus(g)} · 絆 Lv.${bond.rank}`:c.ruinsAreas?`遺跡 ${p.ruinsCount}/${p.requiredRuinsAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
     }).join('');
     all('[data-open-monster]').forEach(b => {
       const id=b.dataset.openMonster;
       if(save.ownedMonsters.includes(id)){
         const growth=getMonsterProgress(save,id);
-        if(!growth.ascended)b.querySelector('.catalog-evolution').textContent=growth.evolved
-          ?`第2進化：Lv.${ASCENSION_LEVEL} · ボス ${growth.trialCount}/3 · あと${ascensionRemaining(growth)} XP`
+        if(!growth.ascended)b.querySelector('.catalog-evolution').textContent=growth.canEvolve?'進化できる！ この仲間をタップ'
+          :growth.evolved?`第2進化：Lv.${ASCENSION_LEVEL} · ボス ${growth.trialCount}/3 · あと${ascensionRemaining(growth)} XP`
           :`第1進化：Lv.${EVOLUTION_LEVEL} · ボス ${growth.trialCount}/1 · あと${evolutionRemaining(growth)} XP`;
       }
       b.addEventListener('click',()=>renderDetail(id));
@@ -145,7 +155,8 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     }));
     $('#open-training')?.addEventListener('click',()=>renderTraining(id));
     $('[data-select-monster]')?.addEventListener('click',()=>{
-      persist(selectMonster(getSave(),id));renderDetail(id,`${c.name}と一緒に冒険しよう。`);
+      const persisted=persist(selectMonster(getSave(),id));
+      renderDetail(id,persisted?`${c.name}と一緒に冒険しよう。`:'仲間の変更を保存できませんでした。このタブでの変更を残すには、ホームからセーブをファイルに保存してね。');
     });
     showView('detail');
   }
@@ -159,7 +170,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     // A full-wallet feed can waste XP intended for other companions. When the
     // player can afford the next evolution's level, offer an exact-cost shortcut
     // while leaving the independent boss-mark requirement unchanged.
-    const evolutionFeed=evolutionNeed>g.toNextLevel&&save.xpWallet>=evolutionNeed;
+    const evolutionFeed=g.nextEvolutionXp!==null&&evolutionNeed>g.toNextLevel&&save.xpWallet>=evolutionNeed;
     const message=reward?(reward.ascended?`${c.ascendedName}へ第2進化！ 得意攻撃＋1・戦闘HP＋1！`:reward.evolved?`${c.evolvedName}へ進化！ 新しい能力が使えるよ！`:`${c.name}に${reward.xp} XP！${reward.leveledUp?` Lv.${g.level}になった！`:''}${reward.readyEvolution?' 進化条件を達成！ 下のボタンから進化しよう。':''}`):'';
     const battleUnlocks=[];
     if(reward?.leveledUp){
@@ -184,7 +195,8 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       <div class="training-xp" role="meter" aria-label="次のレベルへのXP" aria-valuemin="0" aria-valuemax="${XP_PER_LEVEL}" aria-valuenow="${XP_PER_LEVEL-g.toNextLevel}"><span style="width:${100*(XP_PER_LEVEL-g.toNextLevel)/XP_PER_LEVEL}%"></span></div>
       <p class="training-next">次のレベルまで <strong>${g.toNextLevel} XP</strong> · 累計 ${g.xp} XP</p>
       <div class="training-wallet">育成に使えるXP <strong id="training-wallet">${save.xpWallet} XP</strong></div>
-      ${evolutionFeed?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="evolution">進化レベル Lv.${1+Math.floor(g.nextEvolutionXp/XP_PER_LEVEL)}まで育てる · ${evolutionNeed} XP</button>`:save.xpWallet>=g.toNextLevel?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="next">次のLv.${g.level+1}まで育てる · ${g.toNextLevel} XP</button>`:''}
+      ${evolutionFeed?`<button type="button" class="button button-primary training-next-level" data-feed-monster="${id}" data-feed-amount="evolution">進化レベル Lv.${1+Math.floor(g.nextEvolutionXp/XP_PER_LEVEL)}まで育てる · ${evolutionNeed} XP</button>`:''}
+      ${save.xpWallet>=g.toNextLevel?`<button type="button" class="button ${evolutionFeed?'button-ghost':'button-primary'} training-next-level" data-feed-monster="${id}" data-feed-amount="next">次のLv.${g.level+1}まで育てる · ${g.toNextLevel} XP</button>`:''}
       <div class="training-feed"><button type="button" class="button ${save.xpWallet>=g.toNextLevel?'button-ghost':'button-primary'}" data-feed-monster="${id}" data-feed-amount="10" ${save.xpWallet<10?'disabled':''}>10 XPあげる</button><button type="button" class="button button-ghost" data-feed-monster="${id}" data-feed-amount="all" ${save.xpWallet<1?'disabled':''}>全部あげる</button></div>
       <p id="growth-feedback" class="growth-feedback" role="status" aria-live="polite">${html(message||'問題でためたXPを、この仲間にあげられます。')}</p>
       ${evolutionPath(c)}
@@ -211,11 +223,17 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
           b.dataset.feedAmount==='next'?currentGrowth.toNextLevel:
           b.dataset.feedAmount==='evolution'?Math.max(0,(currentGrowth.nextEvolutionXp??0)-currentGrowth.xp):10;
         const result=feedMonster(currentSave,id,amount);
-        persist(result.save);renderTraining(id,result.reward);
+        const persisted=persist(result.save);
+        renderTraining(id,persisted?result.reward:null);
+        if(!persisted)$('#growth-feedback').textContent='XPの変更を保存できませんでした。現在の育成はこのタブだけに反映されています。ページを閉じる前にホームからセーブをファイルに保存してね。';
       } catch(error) { $('#growth-feedback').textContent=error.message; }
     }));
     $('[data-evolve-monster]')?.addEventListener('click',()=>{
-      try {const result=evolveMonster(getSave(),id);persist(result.save);renderTraining(id,result.reward);}
+      try {
+        const result=evolveMonster(getSave(),id),persisted=persist(result.save);
+        renderTraining(id,persisted?result.reward:null);
+        if(!persisted)$('#growth-feedback').textContent='進化を保存できませんでした。このタブの進化記録を残すには、ページを閉じる前にホームからセーブをファイルに保存してね。';
+      }
       catch(error){$('#growth-feedback').textContent=error.message;}
     });
     // Feeding refreshes only this sheet; keep the viewport on the character.

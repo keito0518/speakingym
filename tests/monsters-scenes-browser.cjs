@@ -152,12 +152,58 @@ const path=require('node:path');
       await page.locator('[data-open-monster="medamago"]').click();
       await page.locator('#open-training').click();
       assert.match(await page.locator('[data-feed-amount="evolution"]').innerText(),/Lv\.5.*280 XP/);
+      assert.match(await page.locator('[data-feed-amount="next"]').innerText(),/Lv\.2.*70 XP/,
+        'An affordable evolution shortcut must not remove the next-level choice');
       await page.locator('[data-feed-amount="evolution"]').click();
       assert.match(await page.locator('.training-level').innerText(),/Lv\.5/);
       assert.equal(await page.locator('#training-wallet').innerText(),'20 XP');
       assert.equal(await page.locator('[data-evolve-monster]').isEnabled(),true,'Boss mark and level are both required');
       assert.equal(await page.locator('[data-feed-amount="evolution"]').count(),0,'Reached levels must not offer another identical shortcut');
       await noOverflow(page,`${width} exact first evolution feed`);
+      await context.close();
+    }
+    // A fully qualified companion should be visibly evolvable even when no
+    // banked XP remains, and a failed local save must never show fake fanfare.
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);
+      await seed(page,{xpWallet:0,monsterXp:{medamago:280},monsterTrials:{medamago:['entry']}});
+      await page.locator('[data-home-page="collection"]').click();
+      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').innerText(),/進化できる！/);
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      await page.evaluate(()=>{
+        const rawSet=Storage.prototype.setItem;
+        Storage.prototype.setItem=function(key,value){
+          if(key==='speakingym-monsters-prototype-v1')throw new DOMException('Storage is full','QuotaExceededError');
+          return rawSet.call(this,key,value);
+        };
+      });
+      await page.locator('[data-evolve-monster]').click();
+      assert.match(await page.locator('#growth-feedback').innerText(),/進化を保存できませんでした/);
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle',
+        'An unsaved evolution must not play a successful evolution celebration');
+      assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).monsterEvolution?.medamago||0),0);
+      await noOverflow(page,`${width} unsaved evolution warning`);
+      await context.close();
+    }
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);
+      await seed(page,{xpWallet:80});
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      await page.evaluate(()=>{
+        const rawSet=Storage.prototype.setItem;
+        Storage.prototype.setItem=function(key,value){
+          if(key==='speakingym-monsters-prototype-v1')throw new DOMException('Storage is full','QuotaExceededError');
+          return rawSet.call(this,key,value);
+        };
+      });
+      await page.locator('[data-feed-amount="next"]').click();
+      assert.match(await page.locator('#growth-feedback').innerText(),/XPの変更を保存できませんでした/);
+      assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle',
+        'An unsaved level up must not play a success animation');
+      assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).monsterXp.medamago||0),0);
       await context.close();
     }
     for(const width of [320,390]){
