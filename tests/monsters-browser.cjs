@@ -709,6 +709,30 @@ const path=require('node:path');
     assert.equal(await blockedPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),beforeSubtitled,
       'Reading a transcript cannot change spaced recall or earned progress');
     await blockedContext.close();
+    // Safari may throw from HTMLMediaElement.play() synchronously rather than
+    // reject a Promise. Clean up the native player before falling back.
+    const {context:throwContext,page:throwPage}=await boot(375);
+    await throwPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();seeded.reviewPrompts['late-call']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await throwPage.reload();
+    await enterHomePanel(throwPage,'listening');
+    await throwPage.evaluate(()=>{
+      window.__pauseCount=0;
+      const originalPause=HTMLMediaElement.prototype.pause;
+      HTMLMediaElement.prototype.pause=function(){window.__pauseCount++;return originalPause.call(this);};
+      HTMLMediaElement.prototype.play=()=>{throw new Error('Synchronous playback blocked');};
+      Object.defineProperty(window,'speechSynthesis',{configurable:true,value:null});
+    });
+    const beforeThrowPause=await throwPage.evaluate(()=>window.__pauseCount);
+    await throwPage.locator('#play-audio').click();
+    await throwPage.locator('#transcript').waitFor({state:'visible',timeout:8000});
+    assert.match(await throwPage.locator('#listening-status').innerText(),/再生できなかった/);
+    assert.ok(await throwPage.evaluate(()=>window.__pauseCount)>beforeThrowPause+1,
+      'Synchronous play() errors must pause the failed native player in the fallback cleanup');
+    await throwContext.close();
     // Previously uncertain answers are surfaced again in a later practice run.
     const {context:reviewContext,page:reviewPage}=await boot(390);
     await reviewPage.evaluate(async()=>{
@@ -1547,6 +1571,46 @@ const path=require('node:path');
     await leavePlay(micPage);
     assert.equal(await micPage.locator('#home-view').isVisible(),true);
     assert.equal(await micPage.locator('#play-view').isVisible(),false);
+    // A recognizer can deliver its callbacks before start() returns. The
+    // last UI update must not resurrect an already completed/failed mic.
+    await micPage.evaluate(async()=>{
+      const {STORAGE_KEY}=await import('./monster-engine.js');
+      const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+      saved.reviewPrompts['think-cafe']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
+    });
+    await micPage.reload();
+    await micPage.evaluate(()=>{
+      class ImmediateRecognition{
+        start(){
+          this.onstart?.();
+          this.onresult?.({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]});
+        }
+        abort(){this.aborted=true;}
+      }
+      window.SpeechRecognition=ImmediateRecognition;
+    });
+    await enterHomePanel(micPage,'training');
+    await micPage.getByRole('button',{name:/スピーキングを始める/}).click();
+    assert.equal(await micPage.locator('#play-card').getAttribute('data-prompt-id'),'think-cafe');
+    await micPage.locator('#mic-button').click();
+    assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Let me think about it.');
+    assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'false',
+      'A synchronous final transcript must not leave an orange active microphone');
+    assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
+    assert.match(await micPage.locator('#speech-helper').innerText(),/聞き取った英文を表示/);
+    await micPage.evaluate(()=>{
+      window.SpeechRecognition=class{
+        start(){this.onerror?.({error:'not-allowed'});}
+        abort(){this.aborted=true;}
+      };
+    });
+    await micPage.locator('#mic-button').click();
+    assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'false',
+      'A synchronous permission failure must restore a usable retry button');
+    assert.match(await micPage.locator('#speech-helper').innerText(),/許可されていません/);
+    assert.equal(await micPage.locator('#speech-alternatives').isVisible(),true);
+    await leavePlay(micPage);
     await micContext.close();
     // Simulate an iPhone embedded browser which exposes SpeechRecognition but
     // returns no words. Never keep a fake active microphone indefinitely.

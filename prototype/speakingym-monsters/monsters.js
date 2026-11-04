@@ -1682,8 +1682,13 @@ function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{},ra
         if(audio.id!=='listening-native-audio')
           try{audio.pause();audio.removeAttribute('src');audio.load();}catch{}
       };
-      const pending=audio.play();
-      if(pending?.catch)pending.catch(fallback);
+      // iOS/WebKit can throw from play() before returning a Promise. Take the
+      // same cleanup route as an async rejection so its 6.5s watchdog cannot
+      // unexpectedly launch a second, overlapping speech fallback.
+      try{
+        const pending=audio.play();
+        if(pending?.catch)pending.catch(fallback);
+      }catch{fallback();}
       return;
     }catch{/* Fall through to the browser's own voice. */}
   }
@@ -1719,6 +1724,9 @@ function startRecognition() {
       if(recognition!==instance||play!==session)return;
       if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
       recognitionStartTimer=null;
+      // A late onstart after the learner pressed Stop must not arm a second
+      // watchdog over the stop/final-transcript timeout.
+      if(recognitionStopping)return;
       if(helper&&!recognitionStopping)helper.textContent='音声認識中です。英語が文字にならなければ標準の音声入力に切り替えられます。';
       recognitionNoResultTimer=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
@@ -1792,9 +1800,13 @@ function startRecognition() {
       showSpeechFallback();
       if(helper)helper.textContent='マイクから応答がありません。iPhoneでは下の標準音声入力（キーボードのマイク）か手入力で続けられるよ。';
     },/iPad|iPhone|iPod/i.test(navigator.userAgent)?12000:8000);
-    instance.start();
+    // Arm the timeout and update the UI before start(). Some browsers (or
+    // permission failures) deliver onstart/onresult/onerror synchronously.
+    // Updating the button afterward would turn a completed capture orange
+    // again and leave a stale start timer behind.
     micView('listening');
     if(helper)helper.textContent='音声認識を開始しています。許可が出たらマイクを許可して英語を話してね。';
+    instance.start();
   }catch{
     stopRecognition();
     showSpeechFallback();
