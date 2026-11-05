@@ -1506,7 +1506,11 @@ const path=require('node:path');
       assert.deepEqual(saved.forest.relics,['sunlit-leaf']);
       assert.deepEqual(saved.savedPromptIds,lootSaved,'Victory English loot must survive a full page reload');
       assert.equal(saved.forest.journal.length,0,'The linear dungeon does not create arbitrary story choices');
-      assert.equal(saved.xpWallet,xp+20,'first silver trophy adds a one-time, spendable training bonus');
+      const chestBonus=(saved.battleTreasures||[]).filter(key=>key.startsWith('entry:')).reduce((total,key)=>
+        total+({3:12,5:20,8:35}[Number(key.split(':')[1])]||0),0);
+      assert.ok(chestBonus>=12,'Confirmed consecutive battle answers should unlock an area-specific chest');
+      assert.equal(saved.xpWallet,xp+20+chestBonus,
+        'First silver trophy and first-time chain chests add distinct, exactly-once spendable rewards');
       await forestContext.close();
     }
     // A second world needs a genuine locked-to-unlocked play path, distinct
