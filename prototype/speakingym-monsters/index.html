@@ -220,7 +220,15 @@
       </section>
 
       <section id="play-view" class="view" hidden>
-        <div id="save-warning-live" class="save-warning-live" role="alert" hidden>このブラウザに進捗を保存できません。ページを閉じる前に、ホームの「セーブの引き継ぎ」からデータをコピーして保管してください。</div>
+        <div id="save-warning-live" class="save-warning-live" role="alert" hidden>
+          <p id="save-warning-message">このブラウザに進捗を保存できません。ページを閉じる前にセーブを保管してください。</p>
+          <div class="save-emergency-actions">
+            <button type="button" id="save-warning-download">今のセーブをファイルに保存</button>
+            <button type="button" id="save-warning-copy">コピーして保管</button>
+          </div>
+          <textarea id="save-warning-copy-text" aria-label="コピー用のセーブデータ" readonly hidden rows="3"></textarea>
+          <p id="save-warning-status" role="status" aria-live="polite" hidden></p>
+        </div>
         <div class="play-topline"><button class="back-button" id="leave-play">← ホームへ</button><button type="button" id="open-battle-guide" class="battle-guide-button" hidden>遊び方</button><span id="play-mode-label" class="mode-chip">練習モード</span><span id="play-clock" class="clock" aria-live="off">自分のペースで</span></div>
         <div class="forest-battle-shell"><section id="forest-journey" class="forest-journey" hidden aria-label="緑風の森の進行状況">
           <div class="forest-journey-header">

@@ -1,5 +1,6 @@
 const {chromium,webkit}=require('playwright');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
 
 (async()=>{
   const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
@@ -113,7 +114,27 @@ const assert=require('node:assert/strict');
         await page.locator('[data-feature-dungeon]').click();
         assert.equal(await page.locator('#save-warning-live').isVisible(),true,
           'Storage failure must warn the player during an ongoing adventure');
-        assert.match(await page.locator('#save-warning-live').innerText(),/セーブの引き継ぎ/);
+        assert.match(await page.locator('#save-warning-live').innerText(),/セーブを保管/);
+        await page.locator('#forest-explore-continue').click();
+        await page.locator('.forest-attack-select [data-tactic-kind="vocab"]').click();
+        const endangeredPrompt=await page.locator('#play-card').getAttribute('data-prompt-id');
+        await page.locator('#bookmark-question').click();
+        assert.equal(await page.locator('#save-warning-download').isVisible(),true,
+          'A failed write during a question must not remove the emergency export buttons');
+        const emergencyDownload=page.waitForEvent('download');
+        await page.locator('#save-warning-download').click();
+        const emergencyFile=JSON.parse(fs.readFileSync(await (await emergencyDownload).path(),'utf8'));
+        assert.ok(emergencyFile.savedPromptIds.includes(endangeredPrompt),
+          'The in-battle emergency file rescues the latest unsaved bookmark');
+        assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedPromptIds.includes(endangeredPrompt)),false,
+          'The failed storage write must not silently alter the on-disk save');
+        await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{
+          configurable:true,value:{writeText:()=>Promise.reject(new Error('clipboard blocked'))}
+        }));
+        await page.locator('#save-warning-copy').click();
+        assert.equal(await page.locator('#save-warning-copy-text').isVisible(),true,
+          'Clipboard failure must expose selectable backup text without leaving the battle');
+        assert.ok(JSON.parse(await page.locator('#save-warning-copy-text').inputValue()).savedPromptIds.includes(endangeredPrompt));
         const warningMetrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
         assert.ok(warningMetrics.scroll<=warningMetrics.width+1,
           'The storage warning must fit a narrow phone without horizontal scrolling');

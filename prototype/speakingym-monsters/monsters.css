@@ -723,6 +723,13 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
    only warning in the home view. */
 .save-warning-live{max-width:750px;margin:0 auto 8px;padding:9px 12px;border:2px solid #b15a36;border-radius:11px;background:#fff2df;color:#622e1d;font-size:12px;font-weight:800;line-height:1.55;overflow-wrap:anywhere}
 .save-warning-live[hidden]{display:none!important}
+.save-warning-live p{margin:0 0 6px}
+.save-emergency-actions{display:flex;flex-wrap:wrap;gap:8px}
+.save-emergency-actions button{flex:1 1 155px;min-height:44px;padding:7px 10px;border:1px solid #76381f;border-radius:8px;background:#fff;color:#622e1d;font-size:12px;font-weight:800;cursor:pointer}
+.save-emergency-actions button:focus-visible{outline:3px solid #23593d;outline-offset:2px}
+.save-warning-live textarea{box-sizing:border-box;width:100%;max-width:100%;margin:8px 0 0;padding:8px;border:1px solid #76381f;border-radius:8px;background:#fff;color:#34251f;font-size:12px}
+.save-warning-live textarea[hidden],.save-warning-live p[hidden]{display:none!important}
+.save-warning-live #save-warning-status{margin:8px 0 0;font-weight:700}
 @media(max-width:430px){.save-warning-live{font-size:11px;padding:8px 10px}}
 
 /* Evidence-bound turn feedback for every authored speaking mode. */

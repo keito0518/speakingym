@@ -287,7 +287,8 @@ function syncUnreadableSaveUI(){
   $('#save-export').textContent=unreadableSaveStatus==='blocked'
     ?'このタブの新しい記録をコピー':'今のセーブをコピー';
   const live=$('#save-warning-live');
-  live.textContent='このブラウザに進捗を保存できません。ページを閉じる前に、ホームの「セーブの引き継ぎ」からデータをコピーして保管してください。';
+  const liveMessage=$('#save-warning-message');
+  liveMessage.textContent='このブラウザに進捗を保存できません。ページを閉じる前に、下のボタンから今のセーブを保管してください。';
   if(unreadableSaveStatus==='protected'){
     warning.textContent='古いセーブを読み込めなかったため保護しました。引き継ぎ欄から保存してね。';
     $('#save-recovery-description').textContent='前の記録を読み込めなかったので、上書きする前に元データを別の領域へ保護しました。新しい記録とは別に保存できます。元のセーブは自動復元されません。';
@@ -296,13 +297,13 @@ function syncUnreadableSaveUI(){
     $('#save-recovery-description').textContent=hasConflictingArchive
       ?'読み込めないセーブが2つ残っています。自動上書きを停止しました。下の2つのファイルを両方保存してね。通常の保存・コピーは、このタブで新しく遊んだ記録だけが対象です。'
       :'以前の記録を読み込めません。保存領域の空きがないなどの理由で、自動上書きを停止しました。まず元データをファイルに保存してね。通常の保存・コピーは、このタブの新しい記録だけが対象です。';
-    live.textContent='前のセーブを読み込めず、自動上書きを停止しています。ホームの「セーブのバックアップ・引き継ぎ」で元データを保存してね。';
+    liveMessage.textContent='前のセーブを守るため自動保存を停止中。下から今のセーブを保管してね。元のセーブはホームの「セーブの引き継ぎ」で別に保存してね。';
     live.hidden=false;
   }
   $('#save-conflict-notice').hidden=!storageConflict;
   if(storageConflict){
     warning.textContent='別のタブでセーブが更新されたため、このタブの自動保存を停止しました。';
-    live.textContent='別のタブの新しい記録を守るため、このタブの保存を停止しています。ホームの「セーブのバックアップ・引き継ぎ」から、このタブの記録をファイルに保存してね。';
+    liveMessage.textContent='別のタブの新しい記録を守るため保存を停止中。下からこのタブのセーブを保管してね。別タブの記録はホームの「セーブの引き継ぎ」から保存できるよ。';
     live.hidden=false;
   }
 }
@@ -1013,7 +1014,7 @@ function renderAttackChoice(panel,t){
   <p class="dungeon-choice-guide">迷ったら「${BATTLE_LABELS[affinity.weak]}」がオススメ。タップすると英語の問題が出るよ。</p>
   ${focus?`<details class="forest-learning-focus"><summary>苦手の復習候補：${escapeHtml(focus.label)}</summary><p>${escapeHtml(focus.detail)} 敵の弱点を狙うか、苦手を練習するか選べるよ。</p></details>`:''}
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>おすすめ</small>':''}${focus?.kind===kind?'<small>復習候補</small>':''}</button>`).join('')}</div></div>`;
- panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',()=>{
+ panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',event=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
   if(!BATTLE_KINDS.includes(kind))return;
@@ -1027,14 +1028,20 @@ function renderAttackChoice(panel,t){
   // Keep the authored wave unless the chosen skill has scheduled review.
   // Otherwise clicking the learning-focus chip could show a random new
   // question while its genuine due task remains silently skipped.
-  const candidate=base.kind===kind&&!t.usedPromptIds.has(base.id)&&!priority(selected)?base:selected||base;
-  if(!candidate){
+  const candidate=base.kind===kind&&!t.usedPromptIds.has(base.id)&&!priority(selected)?base:selected;
+  if(!candidate||candidate.kind!==kind){
    $('#forest-battle-log').textContent='この種類の問題が見つからなかったよ。別の攻撃を選んでね。';
    return;
   }
   const practiceRepeat=t.usedPromptIds.has(candidate.id);
   t.attackPrompt=candidate;t.attackKindChosen=true;t.attackCommitted=true;t.action='attack';
   renderQuestion();
+  // The button is removed when the question opens. Restore keyboard focus
+  // without scrolling the battle scene or raising an iPhone keyboard.
+  if(event.detail===0){
+   const heading=$('#play-card h1');
+   if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
+  }
   if(practiceRepeat)$('#forest-battle-log').textContent='復習問題で攻撃！ 前に解いた英語をもう一度使ってみよう。';
  }));
 }
@@ -2750,8 +2757,8 @@ $('#save-recovery-reset').addEventListener('click',()=>{
   renderHome();$('#save-transfer').open=true;
   $('#save-transfer-status').textContent='新しい記録で始められるよ。';
 });
-$('#save-download').addEventListener('click',()=>{
-  const status=$('#save-transfer-status');
+function downloadCurrentSave(status){
+  status.hidden=false;
   try{
     const blob=new Blob([JSON.stringify(save,null,2)],{type:'application/json;charset=utf-8'});
     const url=URL.createObjectURL(blob);
@@ -2762,21 +2769,30 @@ $('#save-download').addEventListener('click',()=>{
     link.click();link.remove();
     // Give iPhone Safari time to hand the download to its Files interface.
     setTimeout(()=>URL.revokeObjectURL(url),30000);
-    status.textContent='セーブファイルを保存したよ。iPhoneなら「ファイル」のダウンロード先を確認してね。移動先でこのファイルを選んで復元できるよ。';
+    status.textContent='セーブファイルを書き出したよ。iPhoneなら「ファイル」のダウンロード先を確認してね。';
   }catch{
-    status.textContent='ファイル保存が使えないブラウザです。下の「今のセーブをコピー」を試してね。';
+    status.textContent='ファイル保存が使えません。セーブのコピーを試してね。';
   }
-});
-$('#save-export').addEventListener('click',async()=>{
-  const backup=JSON.stringify(save),field=$('#save-import'),status=$('#save-transfer-status');
+}
+async function copyCurrentSave(field,status,{emergency=false}={}){
+  const backup=JSON.stringify(save);
   field.value=backup;
+  status.hidden=false;
   try{
     await navigator.clipboard.writeText(backup);
-    status.textContent='セーブをコピーしたよ。移動先の「セーブの引き継ぎ」に貼り付けてね。';
+    if(emergency)field.hidden=true;
+    status.textContent='今のセーブをコピーしたよ。メモなどに貼り付けて保管してね。';
   }catch{
-    field.focus();field.select();
-    status.textContent='データを欄に表示したよ。選択された文字を「コピー」して保管してね。';
+    field.hidden=false;
+    field.focus({preventScroll:true});field.select();
+    status.textContent='コピーが自動でできない環境だよ。下の選択されたデータを手動でコピーして保管してね。';
   }
+}
+$('#save-download').addEventListener('click',()=>downloadCurrentSave($('#save-transfer-status')));
+$('#save-warning-download').addEventListener('click',()=>downloadCurrentSave($('#save-warning-status')));
+$('#save-warning-copy').addEventListener('click',()=>copyCurrentSave($('#save-warning-copy-text'),$('#save-warning-status'),{emergency:true}));
+$('#save-export').addEventListener('click',()=>{
+  return copyCurrentSave($('#save-import'),$('#save-transfer-status'));
 });
 $('#save-import-file').addEventListener('change',async event=>{
   const file=event.target.files?.[0],field=$('#save-import'),status=$('#save-transfer-status');

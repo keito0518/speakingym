@@ -127,6 +127,12 @@ const path=require('node:path');
       await newestTab.locator('[data-difficulty="hard"]').click();
       await staleTab.locator('#save-warning-live').waitFor({state:'visible',timeout:6000});
       assert.match(await staleTab.locator('#save-warning-live').innerText(),/別のタブ/);
+      const battleBackup=staleTab.waitForEvent('download');
+      await staleTab.locator('#save-warning-download').click();
+      const battleFile=JSON.parse(fs.readFileSync(await (await battleBackup).path(),'utf8'));
+      assert.equal(battleFile.difficulty,'easy','A stale tab can export its in-memory save without abandoning the active battle');
+      assert.equal(await staleTab.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).difficulty),'hard',
+        'Emergency backup must never overwrite the newer save in a different tab');
       await leavePlay(staleTab);
       await enterHomePanel(staleTab,'training');
       await staleTab.locator('[data-difficulty="normal"]').click();
