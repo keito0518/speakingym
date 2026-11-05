@@ -24,7 +24,7 @@ const {chromium,webkit}=require('playwright');
   await page.reload({waitUntil:'networkidle'});
   await assertNoOverflow('home');
   assert.equal(await page.locator('.game-tabs button').count(),5,'Mobile game should have persistent native-style tabs');
-  assert.equal(await page.locator('[data-game-tab="home"]').getAttribute('aria-current'),'page');
+  assert.equal(await page.locator('#game-tabs [data-game-tab="home"]').getAttribute('aria-current'),'page');
   assert.match(await page.locator('#game-hud-coins').innerText(),/240 G/);
   assert.equal(await page.locator('[data-feature-armory]').isVisible(),true,'The forge must be discoverable from home');
   await page.locator('[data-feature-armory]').click();
@@ -75,16 +75,16 @@ const {chromium,webkit}=require('playwright');
   await assertNoOverflow('equipped home');
 
   // The bottom navigation is a functional game menu, not decorative links.
-  await page.locator('[data-game-tab="forge"]').click();
+  await page.locator('#game-tabs [data-game-tab="forge"]').click();
   assert.equal(await page.locator('#collection-shop').isVisible(),true);
-  assert.equal(await page.locator('[data-game-tab="forge"]').getAttribute('aria-current'),'page');
-  await page.locator('[data-game-tab="party"]').click();
+  assert.equal(await page.locator('#game-tabs [data-game-tab="forge"]').getAttribute('aria-current'),'page');
+  await page.locator('#game-tabs [data-game-tab="party"]').click();
   assert.equal(await page.locator('#collection-weapons').isVisible(),true);
-  assert.equal(await page.locator('[data-game-tab="party"]').getAttribute('aria-current'),'page');
-  await page.locator('[data-game-tab="review"]').click();
+  assert.equal(await page.locator('#game-tabs [data-game-tab="party"]').getAttribute('aria-current'),'page');
+  await page.locator('#game-tabs [data-game-tab="review"]').click();
   assert.equal(await page.locator('.review-journal').isVisible(),true);
-  assert.equal(await page.locator('[data-game-tab="review"]').getAttribute('aria-current'),'page');
-  await page.locator('[data-game-tab="home"]').click();
+  assert.equal(await page.locator('#game-tabs [data-game-tab="review"]').getAttribute('aria-current'),'page');
+  await page.locator('#game-tabs [data-game-tab="home"]').click();
   assert.equal(await page.locator('#home-navigation').isVisible(),true);
 
   await page.reload({waitUntil:'networkidle'});
@@ -99,7 +99,7 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1,
    'Equipped weapon art must survive a full browser reload');
 
-  await page.locator('[data-game-tab="forge"]').click();
+  await page.locator('#game-tabs [data-game-tab="forge"]').click();
   await page.evaluate(()=>{Math.random=()=>.009;});
   await page.locator('#shop-draw').click();
   if(await page.locator('#summon-skip').isVisible())await page.locator('#summon-skip').click();

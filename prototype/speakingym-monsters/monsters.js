@@ -495,7 +495,7 @@ function syncGameHud(){
   if(xp)xp.textContent=(save.xpWallet||0)+' XP';
 }
 function syncGameTabs(){
-  $$('[data-game-tab]').forEach(button=>{
+  $$('#game-tabs [data-game-tab]').forEach(button=>{
     const active=button.dataset.gameTab===document.body.dataset.gameTab;
     button.setAttribute('aria-current',active?'page':'false');
   });
@@ -2887,7 +2887,7 @@ homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.st
     persist({...save,huntTargetId:id});renderHome();
   }
 }});
-$$('[data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
+$$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
  const target=button.dataset.gameTab;
  if(target==='adventure'){startMainDungeon();return;}
  if(target==='forge'){openForge();return;}
