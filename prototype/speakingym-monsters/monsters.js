@@ -3,7 +3,7 @@ import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finish
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,summonProgress,summonPityProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
-import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -245,9 +245,20 @@ function attachFeedbackBookmark(prompt){
  if(next)next.before(button);else box.append(button);
  syncQuestionBookmarks(prompt);
 }
+// Public prototype QA: let testers experience real summon buttons and their
+// animations without grinding first or altering their normal adventure save.
+// This mode is intentionally unavailable on the production site.
+const gachaTestMode=new URLSearchParams(window.location.search).get('gacha-test')==='1'
+ && ['prototype-speakingym-monster.speakingym.pages.dev','localhost','127.0.0.1'].includes(window.location.hostname);
+const gachaTestSaveKey=`${STORAGE_KEY}-gacha-test`;
+const currentStorageKey=gachaTestMode?gachaTestSaveKey:STORAGE_KEY;
+const gameStorage=gachaTestMode?{
+ getItem(key){return localStorage.getItem(key===STORAGE_KEY?gachaTestSaveKey:key===UNREADABLE_BACKUP_KEY?`${gachaTestSaveKey}-unreadable-backup`:key);},
+ setItem(key,value){return localStorage.setItem(key===STORAGE_KEY?gachaTestSaveKey:key===UNREADABLE_BACKUP_KEY?`${gachaTestSaveKey}-unreadable-backup`:key,value);}
+}:localStorage;
 let unreadableSaveStatus=null;
 let lastStoredSaveRaw=null,storageConflict=false;
-let save = loadSave() || createSave();
+let save = loadSave() || (gachaTestMode?{...createSave(),coins:2400}:createSave());
 let lastDungeonReviewIds = [];
 let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, playbackGeneration = 0, homeNavigation = null;
 const betaTelemetry=createBetaTelemetry();
@@ -275,7 +286,7 @@ function queueForestEncounter(){
 
 function loadSave() {
   try{
-    const loaded=loadProtectedSave(localStorage,validateSave);
+    const loaded=loadProtectedSave(gameStorage,validateSave);
     lastStoredSaveRaw=loaded.raw;
     unreadableSaveStatus=loaded.status==='protected'||loaded.status==='blocked'?loaded.status:null;
     return loaded.save;
@@ -287,7 +298,7 @@ function syncUnreadableSaveUI(){
   notice.hidden=!unreadableSaveStatus;
   $('#save-recovery-reset').hidden=unreadableSaveStatus!=='blocked';
   let hasConflictingArchive=false;
-  try{hasConflictingArchive=conflictingArchiveForDownload(localStorage,unreadableSaveStatus)!==null;}catch{}
+  try{hasConflictingArchive=conflictingArchiveForDownload(gameStorage,unreadableSaveStatus)!==null;}catch{}
   $('#save-recovery-archive-download').hidden=!hasConflictingArchive;
   $('#save-download').textContent=unreadableSaveStatus==='blocked'
     ?'このタブの新しい記録を保存（元のセーブとは別）':'セーブをファイルに保存（おすすめ）';
@@ -322,7 +333,7 @@ function persist(next = save,{replaceUnreadable=false}={}) {
   }
   if(storageConflict){syncUnreadableSaveUI();return false;}
   try {
-    const result=writeSaveIfCurrent(localStorage,lastStoredSaveRaw,JSON.stringify(save));
+    const result=writeSaveIfCurrent(gameStorage,lastStoredSaveRaw,JSON.stringify(save));
     if(result.status==='conflict'){
       storageConflict=true;
       syncUnreadableSaveUI();
@@ -2817,7 +2828,7 @@ function renderEconomyShop(){
  const pity=summonPityProgress(save);
  const featured=WEAPONS.filter(weapon=>weapon.source==='gacha');
  const ownedDraws=featured.filter(weapon=>save.weaponInventory?.includes(weapon.id)).length;
- panel.innerHTML=`<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>冒険で手に入れた換金用のお宝を売って、武器を手に入れよう。仲間はガチャでは出ず、ストーリーと英語学習で加わるよ。</p></div>
+ panel.innerHTML=`${gachaTestMode?'<div class="gacha-qa-notice" role="status"><strong>ガチャ体験テスト</strong><span>テスト専用の2,400 Gで10連と単発を試せるよ。通常の冒険データとは別に保存されます。</span><button type="button" id="gacha-test-refill">テスト用2,400 Gを補充</button></div>':''}<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>冒険で手に入れた換金用のお宝を売って、武器を手に入れよう。仲間はガチャでは出ず、ストーリーと英語学習で加わるよ。</p></div>
  <div class="shop-wallet"><span>所持ゴールド</span><strong id="shop-coins">${save.coins||0} G</strong><small>お宝の売却見込額 ${totalValue} G</small></div>
  <div class="shop-bag"><div class="shop-section-heading"><strong>換金用のお宝</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">まだ売れるお宝はないよ。ボスを倒して自力で英語を答えると手に入る。図鑑の記念品は売られないよ。</p>'}</div>
  <div class="shop-gacha"><div class="shop-section-heading"><strong>星の召喚祭壇</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">SUMMON<br><b>THE LEGEND</b></span><span class="summon-banner-spark"></span></div><p>限定武器 ${featured.length}種。最上級の攻撃＋7〜9はここだけ！ 当選した武器は図鑑で装備でき、見た目も変わるよ。</p>
@@ -2864,6 +2875,11 @@ function renderEconomyShop(){
  drawNextTenSummons=drawTenAndCommit;
  panel.querySelector('#shop-draw').addEventListener('click',()=>{
   const result=drawAndCommit();if(result)gachaCinematic.show(result);
+ });
+ panel.querySelector('#gacha-test-refill')?.addEventListener('click',()=>{
+  if(!persist({...save,coins:Math.min(999999,(save.coins||0)+2400)}))return;
+  forgeMessage='テスト用ゴールドを補充したよ。通常の冒険データには影響しません。';
+  renderEconomyShop();syncGameHud();
  });
  panel.querySelector('#shop-draw-ten').addEventListener('click',()=>{
   const result=drawTenAndCommit();if(result)gachaCinematic.showBatch(result);
@@ -2996,17 +3012,17 @@ function downloadUnreadableSave(raw,suffix,successMessage='元データを書き
 }
 $('#save-recovery-download').addEventListener('click',()=>{
   let raw=null;
-  try{raw=unreadableSaveForDownload(localStorage,unreadableSaveStatus);}catch{}
+  try{raw=unreadableSaveForDownload(gameStorage,unreadableSaveStatus);}catch{}
   downloadUnreadableSave(raw,'recovery');
 });
 $('#save-recovery-archive-download').addEventListener('click',()=>{
   let raw=null;
-  try{raw=conflictingArchiveForDownload(localStorage,unreadableSaveStatus);}catch{}
+  try{raw=conflictingArchiveForDownload(gameStorage,unreadableSaveStatus);}catch{}
   downloadUnreadableSave(raw,'earlier-recovery');
 });
 $('#save-conflict-latest-download').addEventListener('click',()=>{
   let raw=null;
-  try{raw=localStorage.getItem(STORAGE_KEY);}catch{}
+  try{raw=gameStorage.getItem(STORAGE_KEY);}catch{}
   downloadUnreadableSave(raw,'other-tab','別のタブで保存されたセーブを書き出したよ。このタブの記録も別に保存してから、どちらを復元するか選んでね。');
 });
 $('#save-recovery-reset').addEventListener('click',()=>{
@@ -3110,7 +3126,7 @@ $('#save-import-button').addEventListener('click',()=>{
 });
 persist(save);
 window.addEventListener('storage',event=>{
-  if(event.key!==STORAGE_KEY||event.newValue===lastStoredSaveRaw)return;
+  if(event.key!==currentStorageKey||event.newValue===lastStoredSaveRaw)return;
   storageConflict=true;
   syncUnreadableSaveUI();
 });
@@ -3126,6 +3142,7 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 renderHome();
+if(gachaTestMode&&!unreadableSaveStatus)openForge();
 if(unreadableSaveStatus){
   // The save panel lives in the Training section after home navigation moves
   // it. Opening <details> alone leaves it invisible behind the main menu.

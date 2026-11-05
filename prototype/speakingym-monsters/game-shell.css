@@ -435,3 +435,8 @@ body.summon-active{overflow:hidden}
 .monsters-quiet-motion .summon-banner-ring,.monsters-quiet-motion .shop-gacha #shop-draw::after{animation:none!important;transition:none!important}
 .monsters-quiet-motion .summon-screen[data-phase="reveal"] .summon-reward,
 .monsters-quiet-motion .summon-screen[data-phase="reveal"] .summon-reveal-art{opacity:1;transform:none}
+/* Separate, explicitly opt-in preview QA wallet; never shown in normal play. */
+.gacha-qa-notice{display:grid;gap:8px;padding:14px 16px;margin:0 0 14px;border:1px solid #dfb665;border-radius:14px;background:linear-gradient(135deg,#332444,#13273f);color:#fff}
+.gacha-qa-notice strong{color:#ffdc83;font-size:1.05rem}
+.gacha-qa-notice span{color:#f5f1fc;font-size:.9rem;line-height:1.55}
+.gacha-qa-notice button{justify-self:start;padding:10px 14px;border-radius:10px;border:1px solid #ffdc83;background:#ffdc83;color:#271c39;font-weight:800;cursor:pointer}
