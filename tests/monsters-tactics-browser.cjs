@@ -35,6 +35,8 @@ const assert=require('node:assert/strict');
      const errors=[];page.on('pageerror',error=>errors.push(error.message));
      await page.addInitScript(()=>{Math.random=()=>.99;});
      await page.goto(url,{waitUntil:'networkidle'});
+     assert.equal(await page.locator('[data-feature-formation]').isVisible(),false,
+       'Before recruiting allies, beginners see only the normal adventure CTA');
      await page.locator('[data-feature-worlds]').click();
      // Pale-green onboarding text must not inherit the white font from the dark forest card.
      const hintContrast=await page.locator('.dungeon-first-tip').evaluate(el=>{
@@ -410,6 +412,49 @@ const assert=require('node:assert/strict');
    assert.match(await traitPage.locator('#forest-battle-log').innerText(),/武器特性発動！ Speak自力正解で威力＋1/);
    assert.equal(await traitPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
    await traitContext.close();
+   // The main adventure gets a one-tap saved formation option once companions
+   // are recruited. A balanced, trained team really starts with more HP and
+   // charge; next time the main CTA reuses the saved roster automatically.
+   const loadoutContext=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:engine==='webkit',reducedMotion:'reduce'});
+   const loadoutPage=await loadoutContext.newPage();
+   await loadoutPage.addInitScript(()=>{Math.random=()=>.99;});
+   await loadoutPage.goto(url,{waitUntil:'networkidle'});
+   await loadoutPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     const loadout={...createSave(),ownedMonsters:['medamago','katappo','purupun'],
+       monsterXp:{medamago:210,katappo:210,purupun:0}};
+     localStorage.setItem(STORAGE_KEY,JSON.stringify(loadout));
+   });
+   await loadoutPage.reload({waitUntil:'networkidle'});
+   assert.equal(await loadoutPage.locator('[data-feature-formation]').isVisible(),true,
+     'Recruiting a second ally exposes party planning directly beside the main adventure CTA');
+   await loadoutPage.locator('[data-feature-formation]').click();
+   assert.match(await loadoutPage.locator('.forest-formation-bonus').innerText(),/出撃HPが全員＋1、開幕必殺ゲージ＋1/);
+   assert.equal(await loadoutPage.locator('.forest-formation-bonus').getAttribute('data-opening-charge'),'1');
+   await loadoutPage.locator('#forest-formation-recommend').click();
+   assert.match(await loadoutPage.locator('[data-formation-slot="0"]').innerText(),/カタッポ/,
+     'Recommended party puts the listening specialist first against the listening-weak opening foe');
+   await loadoutPage.locator('#forest-explore-continue').click();
+   const storedLoadout=await loadoutPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.equal(storedLoadout.selectedMonster,'katappo');
+   assert.equal(storedLoadout.battleFormation[0],'katappo');
+   assert.equal(storedLoadout.battleFormation.length,3);
+   await loadoutPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
+   assert.match(await loadoutPage.locator('.forest-tactic-strategy > summary').innerText(),/必殺 1\/3/);
+   assert.equal(await loadoutPage.locator('#forest-party-hp').getAttribute('aria-valuemax'),'10',
+     'Lv.4 listening specialist has an HP growth point plus the team-resonance point');
+   loadoutPage.once('dialog',dialog=>dialog.accept());
+   await loadoutPage.locator('#leave-play').click();
+   await loadoutPage.reload({waitUntil:'networkidle'});
+   await loadoutPage.locator('[data-feature-dungeon]').click();
+   assert.equal(await loadoutPage.locator('#forest-party-formation').isVisible(),false,
+     'The ordinary one-tap adventure bypasses extra planning screens');
+   await loadoutPage.locator('#forest-explore-continue').click();
+   await loadoutPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
+   assert.equal(await loadoutPage.locator('[data-tactic-ally="purupun"]').count(),1,
+     'Previously selected reserves appear again in the next quick-start expedition');
+   assert.match(await loadoutPage.locator('.forest-tactic-strategy > summary').innerText(),/必殺 1\/3/);
+   await loadoutContext.close();
    // A saved multi-ally collection must survive unchanged while a battle uses
    // temporary, independent HP. One exchange is allowed in each encounter.
    const partyContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
@@ -423,6 +468,10 @@ const assert=require('node:assert/strict');
      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
    });
    await partyPage.reload({waitUntil:'networkidle'});
+   assert.equal(await partyPage.locator('[data-feature-formation]').isVisible(),true);
+   const partyHomeLayout=await partyPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+   assert.ok(partyHomeLayout.scroll<=partyHomeLayout.inner+1,
+     `The new 320px formation entry must not cause horizontal scrolling: ${JSON.stringify(partyHomeLayout)}`);
    await partyPage.locator('[data-feature-worlds]').click();
    await partyPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await partyPage.locator('#start-forest-tactics').click();
    assert.equal(await partyPage.locator('[data-formation-choice]').count(),4);
@@ -437,14 +486,14 @@ const assert=require('node:assert/strict');
    await partyPage.locator('[data-formation-lead="medamago"]').click();
    await partyPage.locator('#forest-explore-continue').click();
    await partyPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
-   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'8','84 XP is Lv2 and does not gain the Lv3 HP bonus');
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'9','Lv2 adds no personal HP, but three distinct specialties grant team HP＋1');
    assert.equal(await partyPage.locator('[data-tactic-ally]').count(),3);
    assert.equal(await partyPage.locator('[data-tactic-ally="purupun"]').count(),0,'The replaced reserve does not join this encounter');
    assert.equal(await partyPage.locator('[data-tactic-ally="koge"]').count(),1);
      await partyPage.locator('.forest-tactic-strategy > summary').click();
      assert.equal(await partyPage.locator('.forest-party-brief').getAttribute('open'),null,'The party swap is one compact control on mobile');
      await partyPage.locator('.forest-party-brief summary').click();
-     assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 8\/8/);
+     assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 9\/9/);
    await partyPage.locator('[data-tactic-ally="katappo"]').click();
    assert.equal(await partyPage.locator('[data-tactic-ally="katappo"]').getAttribute('aria-pressed'),'true');
      assert.equal(await partyPage.locator('.forest-party-brief').getAttribute('open'),'','Party options stay open when switching companions');
@@ -467,14 +516,14 @@ const assert=require('node:assert/strict');
    await partyPage.locator('#next-question').click();
    await partyPage.locator('#spoken-answer').fill('wrong answer');
    await partyPage.locator('#show-answer').click();
-   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5','Only the active ally loses HP');
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'6','Only the active ally loses HP');
    await answer(partyPage);
    await partyPage.locator('#next-question').click();
    assert.equal(await partyPage.locator('.forest-attack-select').isVisible(),true,'The following player turn waits for an attack choice');
    await partyPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
-   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'5');
-   assert.match(await partyPage.locator('[data-tactic-ally="medamago"]').innerText(),/HP 8\/8/,'Lv2 reserve ally HP remains intact');
-   assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 5\/8/);
+   assert.equal(await partyPage.locator('#forest-party-hp').getAttribute('aria-valuenow'),'6');
+   assert.match(await partyPage.locator('[data-tactic-ally="medamago"]').innerText(),/HP 9\/9/,'Lv2 reserve ally keeps the team HP bonus');
+   assert.match(await partyPage.locator('[data-tactic-ally="katappo"]').innerText(),/HP 6\/9/);
    const persisted=await partyPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
    assert.deepEqual(persisted.ownedMonsters,['medamago','katappo','purupun','koge'],'Choosing fighters does not discard saved monsters');
    assert.equal(persisted.selectedMonster,'medamago','Temporary battle leader does not overwrite the collection selection');

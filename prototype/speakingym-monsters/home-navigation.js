@@ -9,8 +9,8 @@ const STEPS=Object.freeze([
   scene:['リスニング','音声を再生','意味を選ぶ'],tips:['単語・文法は選択問題で確認するよ。','リスニングのあとに同じ英文を話す必要はないよ。']},
  {chapter:'basic',title:'3. iPhoneでマイクが使えないとき',body:'話す問題は文字入力でも挑戦できる。認識に失敗しただけで英語の不正解にはならないよ。',
   scene:['スピーキング','話す / 文字入力','回答を確認'],tips:['iPhoneでは「入力を開く」→英語キーボードのマイクで話してね。','自然な別表現は判定保留になることもあるよ。']},
- {chapter:'battle',title:'4. まず仲間を編成しよう',body:'戦略バトルでは、出撃前に最大3体を選べる。先頭の仲間と控えの得意技能が作戦のカギ。',
-  scene:['出撃編成','先頭 1体 + 控え 2体','この編成で出発'],tips:['仲間カードをタップして追加・入れ替え。','戦闘中の手動交代は1戦に1回。HPは仲間ごとに違うよ。']},
+ {chapter:'battle',title:'4. まず仲間を編成しよう',body:'仲間が増えたらホームの「仲間を編成して出発」から最大3体を選ぼう。先頭と控えの得意技能が違うと出撃HPが増え、育てると開幕必殺も強くなるよ。',
+  scene:['出撃編成','先頭 1体 + 控え 2体','この編成で出発'],tips:['おすすめ編成で最初の敵の弱点に合わせられる。手動変更もOK。','出撃編成は次回の冒険にも保存される。戦闘中の交代は1戦に1回。']},
  {chapter:'battle',title:'5. 英語で攻撃しよう',body:'自分のターンは、4つから攻撃の種類を選ぼう。その種類の問題に正解すると仲間が自動で攻撃するよ。',
   scene:['問題の種類を選ぶ','問題に答える','正解 → 自動で攻撃'],tips:['攻撃の種類を選んでから問題が出るよ。出題後は種類を変更できない。','敵の弱点は敵の上に表示。正解すればダメージが増えるよ。']},
  {chapter:'battle',title:'6. 敵の反撃は問題で防ぐ',body:'敵が生き残ると反撃。予告された技能の問題に自力正解すれば、HPは減らないよ。',
@@ -91,9 +91,10 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2><p>英語で攻撃して、ボスを倒せばクリア。<br>まずは森の入口から！</p>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
- <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link" data-feature-worlds>今のエリアを見る・設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
+ <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-formation-link" data-feature-formation hidden>仲間を編成して出発</button><button type="button" class="home-world-link" data-feature-worlds>今のエリアを見る・設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
  feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>startMode('forest'));
+ feature.querySelector('[data-feature-formation]').addEventListener('click',()=>startMode('forest-formation'));
  feature.querySelector('[data-feature-worlds]').addEventListener('click',()=>showPage('forest'));
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
  const quest=document.createElement('section');quest.className='home-next-quest';quest.id='home-next-quest';quest.setAttribute('aria-labelledby','home-next-quest-title');
@@ -298,7 +299,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
      proofButton.hidden=!proof;
      if(proof)proofButton.textContent=proof.label;
    },
-   updateHero({art,name,level,mastered,due,xp,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0}){
+   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0}){
      const cleared=areasCleared+cityAreasCleared+ruinsAreasCleared;
      const allCleared=totalAreas>0&&cleared===totalAreas;
      hasPlayed=hasAttempted||cleared>0;
@@ -311,6 +312,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
      menu.querySelector('[data-feature-dungeon]').firstChild.textContent=allCleared?'もう一度冒険 ':cleared?'つづきから冒険 ':'冒険をはじめる ';
+     menu.querySelector('[data-feature-formation]').hidden=ownedCount<2;
      menu.querySelector('#home-feature-practice').hidden=cleared>0;
      menu.querySelector('#home-feature-progress').textContent=allCleared?`全${totalAreas}エリア攻略！好きな場所で遊ぼう`:
        hasPlayed?`${cleared}/${totalAreas} エリア攻略 · 次は「${nextAreaName}」`:

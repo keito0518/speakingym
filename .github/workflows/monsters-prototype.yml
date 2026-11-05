@@ -26,7 +26,7 @@ jobs:
           node --check prototype/speakingym-monsters/listening-challenges.js
           node --check prototype/speakingym-monsters/roleplay-scenarios.js
       - name: Curriculum, mastery and reward tests
-        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs
+        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs tests/monsters-formation.test.mjs
       - name: Install Playwright
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - uses: actions/cache@v4
@@ -46,10 +46,10 @@ jobs:
           timeout 60s node tests/monsters-roleplay-browser.cjs
           timeout 60s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-roleplay-browser.cjs
       - name: Turn-based tactics browser QA (Chromium + WebKit)
-        timeout-minutes: 4
+        timeout-minutes: 6
         run: |
-          timeout 105s node tests/monsters-tactics-browser.cjs
-          timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
+          timeout 135s node tests/monsters-tactics-browser.cjs
+          timeout 135s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
           timeout 105s node tests/monsters-boss-cover-browser.cjs
           timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-cover-browser.cjs
       - name: Boss formation synergy browser QA (Chromium + WebKit)

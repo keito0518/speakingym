@@ -4,6 +4,7 @@ import { recordRetention, retentionOverview, sanitizeRetention } from './retenti
 import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 import { sanitizeSavedReviewHistory } from './saved-review-coach.js';
 import { normalizeEquipment } from './monster-equipment.js';
+import {normalizeBattleFormation} from './battle-formation.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
@@ -33,6 +34,7 @@ export function createSave() {
   return {
     version: SAVE_VERSION,
     selectedMonster: 'medamago',
+    battleFormation: null,
     difficulty: 'easy',
     ownedMonsters: ['medamago'],
     monsterXp: { medamago: 0 },
@@ -112,6 +114,7 @@ export function validateSave(value) {
     }).filter(([,entry])=>entry.misses>0));
   return {
     version: SAVE_VERSION, selectedMonster, ownedMonsters,
+    battleFormation:normalizeBattleFormation(value.battleFormation,ownedMonsters,selectedMonster),
     difficulty: DIFFICULTIES.includes(value.difficulty) ? value.difficulty : 'easy',
     monsterXp: Object.fromEntries(ownedMonsters.map(id => [id, safeSaveCount(value.monsterXp?.[id])])),
     monsterEvolution:Object.fromEntries(ownedMonsters.map(id=>[id,hasEvolutionLedger
@@ -340,7 +343,9 @@ export function evolveMonster(save,id){
 
 export function selectMonster(save, id) {
   if (!save.ownedMonsters.includes(id)) throw new Error('そのモンスターはまだ仲間ではありません。');
-  return { ...clone(save), selectedMonster: id };
+  return { ...clone(save), selectedMonster: id,
+    battleFormation:Array.isArray(save.battleFormation)
+      ?normalizeBattleFormation([id,...save.battleFormation],save.ownedMonsters,id):null };
 }
 
 export function feedMonster(save, id, amount) {

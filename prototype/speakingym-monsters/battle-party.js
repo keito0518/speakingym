@@ -6,13 +6,14 @@ export function levelHpBonus(level=1){
  const safe=Number.isFinite(level)?Math.max(1,Math.floor(level)):1;
  return Math.min(3,Math.floor(safe/3)); // Lv.3 / Lv.6 / Lv.9
 }
-export function createBattleParty(ids,{evolvedIds=[],ascendedIds=[],levels={}}={}){
+export function createBattleParty(ids,{evolvedIds=[],ascendedIds=[],levels={},resonanceHp=0}={}){
  const roster=[...new Set(ids)].filter(Boolean).slice(0,3);
  const evolved=new Set(evolvedIds);
  const ascended=new Set(ascendedIds);
  const base=roster.length===1?12:roster.length===2?9:8;
+ const teamHp=roster.length>=2&&Number.isFinite(resonanceHp)?Math.max(0,Math.min(1,Math.floor(resonanceHp))):0;
  return {roster,health:Object.fromEntries(roster.map(id=>{
-   const maxHp=base+(evolved.has(id)?1:0)+(ascended.has(id)?1:0)+levelHpBonus(levels[id]);
+   const maxHp=base+teamHp+(evolved.has(id)?1:0)+(ascended.has(id)?1:0)+levelHpBonus(levels[id]);
    return [id,{hp:maxHp,maxHp}];
  })),swapsUsed:0};
 }

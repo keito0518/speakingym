@@ -13,6 +13,7 @@ import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_
 import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, battleChainTier, pickBattleSpectacle, strikeFor, incomingHit, shouldCounterPlayerMiss, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
 import { battleImpactFor } from './battle-impact.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
+import {plannedBattleFormation,formationResonance,recommendBattleFormation} from './battle-formation.js';
 import { enemyArt } from './forest-enemies.js';
 import { battleArenaArt, guardArt, relicArt } from './game-visuals.js';
 import { createCollectionViews, resultGrowthActionFor } from './monster-collection.js';
@@ -100,9 +101,11 @@ function roleplayIntroMarkup(){
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
 const monsterFor = id => MONSTERS.find(monster => monster.id === id);
 function createTrainedBattleParty(ids){
+ const levels=Object.fromEntries(ids.map(id=>[id,getMonsterProgress(save,id).level]));
+ const bonus=formationResonance(ids,levels);
  return createBattleParty(ids,{evolvedIds:ids.filter(id=>getMonsterProgress(save,id).evolved),
   ascendedIds:ids.filter(id=>getMonsterProgress(save,id).ascended),
-  levels:Object.fromEntries(ids.map(id=>[id,getMonsterProgress(save,id).level]))});
+  levels,resonanceHp:bonus.hpBonus});
 }
 const difficultyCopy = {
   easy: { label: 'やさしい', description: '日本語の状況を読んで、英語で答える。' },
@@ -636,7 +639,7 @@ function renderHome() {
   renderDifficulty();
   homeNavigation?.updateHero({
     art:monsterArt(creature.id,growth.stage),name:monsterFormName(creature,growth.stage),
-    level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,
+    level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,ownedCount:save.ownedMonsters.length,
     // Keep imported/legacy review queues reachable even when their older save
     // has no modern answer counter. Only a truly empty save gets the single CTA.
     hasAttempted:save.totalAnswers>0||summary.practiced>0||skillStats.some(stat=>stat.sample>0)||
@@ -678,7 +681,7 @@ function tacticalReviewTargets(){
 }
 // The main dungeon starts immediately with the player's current companions.
 // Party formation remains optional in the advanced battle mode.
-function startMainDungeon(areaId=null){startSession('forest-tactics',areaId,false,true);}
+function startMainDungeon(areaId=null,{formation=false}={}){startSession('forest-tactics',areaId,false,!formation);}
 function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const focusKind=mode==='skill-focus'?requestedAreaId:null;
@@ -706,8 +709,9 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
     .slice(0,6):null;
   const prompts=forestMode?firstWave.prompts:roleplay?roleplay.turns.map(turn=>turn.prompt):focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>(!onlyDue||item.due)&&(!retrySavedIds||retrySavedIds.includes(item.prompt.id))).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
   if(!prompts.length){renderHome();return;}
-  const roster=[save.selectedMonster,...(save.ownedMonsters||[])].filter(id=>(save.ownedMonsters||[]).includes(id));
+  const roster=plannedBattleFormation(save);
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
+  const openingCharge=tactical?formationResonance(roster,Object.fromEntries(roster.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge:0;
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
   play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
@@ -717,7 +721,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
     // did not change grading or outcomes and interrupted every battle.
     route:area?.world==='ruins'?RUINS_ROUTES[0].id:area?.world==='city'?CITY_ROUTES[0].id:FOREST_ROUTES[0].id,companionId:save.selectedMonster,combo:0,bestCombo:0,
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
-      party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
+      party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:openingCharge,
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,eliteIndependentHits:0,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
@@ -1227,10 +1231,16 @@ function renderPartyFormation(){
  const reserveMatches=kind=>roster.slice(1).filter(id=>allyAffinity(id).strong===kind);
  const coverCount=currentLeader?bossForecast.filter(move=>allyAffinity(currentLeader).weak===move.kind&&reserveMatches(move.kind).length).length:0;
  const rangeCount=new Set(roster.map(id=>allyAffinity(id).strong)).size;
+ const levels=Object.fromEntries(owned.map(id=>[id,getMonsterProgress(save,id).level]));
+ const resonance=formationResonance(roster,levels);
+ const resonanceDetail=resonance.openingCharge?'出撃HPが全員＋1、開幕必殺ゲージ＋1！':resonance.kindCount>=2
+   ?`出撃HPが全員＋1。${resonance.kindCount===3?`Lv.4以上の仲間をあと${Math.max(0,2-resonance.trainedCount)}体育てると開幕必殺ゲージ＋1。`:'得意技能を3種類そろえると、さらに育成ボーナスが狙えるよ。'}`
+   :'得意技能が違う仲間を編成すると、出撃HPが全員＋1になるよ。';
  const guide=owned.length===1?'この仲間で始められるよ。下の「出発」を押そう。':'仲間をタップして選ぼう。準備できたら出発！';
  screen.innerHTML=`<div class="forest-formation-target"><strong>最初の敵：${escapeHtml(foe.name)}</strong><span>弱点：${BATTLE_LABELS[weakness.weak]} ／ 耐性：${BATTLE_LABELS[weakness.resist]}</span></div>
+ <div class="forest-formation-bonus" role="status" data-resonance="${resonance.kindCount}" data-opening-charge="${resonance.openingCharge}"><strong>チーム連携 · 得意${rangeCount}種類</strong><span>${resonanceDetail}</span></div>
  <details class="forest-formation-boss-wrap"><summary>ボスの攻撃・連携を見る</summary><div class="forest-formation-boss-plan" role="group" aria-label="ボスへの編成作戦"><strong>ボスの反撃予告</strong><div>${bossForecast.map((move,i)=>`<span>${i+1}手目：${i===2?'最終撃':BATTLE_LABELS[move.kind]}${i===2?'':move.pressure?' · 強':''}</span>`).join('')}</div>${link?`<p class="forest-formation-link"><strong>連携：${escapeHtml(link.name)}</strong> ${link.phase+1}手目 · 控えの${BATTLE_LABELS[link.kind]}で${link.description}。${reserveMatches(link.kind).length?' この編成で狙える！':' 控えを選ぼう。'}</p>`:''}<details class="forest-formation-extra"><summary>${coverCount?'身代わりできる組み合わせあり':'身代わり・相性の詳しい条件'}</summary><p>編成の得意技能は${rangeCount}種類。控えが先頭の苦手技能を得意としていると、ボスの反撃で身代わりできることがあるよ。身代わりはボス戦で1回。英語の正誤判定は変わらない。</p></details></div></details>
- <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong><span>先頭の仲間から戦闘スタート</span></div>
+ <div class="forest-formation-title"><strong>出撃メンバー ${roster.length} / 3体</strong>${owned.length>1?'<button type="button" class="forest-formation-recommend" id="forest-formation-recommend">おすすめ編成</button>':'<span>先頭の仲間から戦闘スタート</span>'}</div>
  <div class="forest-formation-slots" aria-label="選んだ出撃メンバー">${[0,1,2].map((_,index)=>{
    const id=roster[index],monster=id?monsterFor(id):null,progress=id?getMonsterProgress(save,id):null;
    return `<div class="forest-formation-slot" data-formation-slot="${index}"><small>${index===0?'先頭':`控え${index}`}</small><strong>${monster?escapeHtml(monster.japaneseName||monster.name)+(progress.evolved?' ★':''):'未選択'}</strong></div>`;
@@ -1272,6 +1282,14 @@ function renderPartyFormation(){
    $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,formStage);
    renderPartyFormation();
  }));
+ screen.querySelector('#forest-formation-recommend')?.addEventListener('click',()=>{
+   if(!play?.tactics?.formationPending)return;
+   t.formationIds=recommendBattleFormation(owned,{foeWeak:weakness.weak,bossKind:link?.kind,levels});
+   t.formationMessage='最初の敵の弱点と仲間の得意技能を見て編成したよ！ 自由に変更できるよ。';
+   const leader=t.formationIds[0];
+   $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,getMonsterProgress(save,leader).stage);
+   renderPartyFormation();
+ });
 }
 function showForestExplore() {
   if(!play || play.mode!=='forest')return;
@@ -1322,7 +1340,7 @@ function showForestExplore() {
   options.replaceChildren();
   const forward=$('#forest-explore-continue');
   forward.hidden=false;
-  forward.textContent=formation?'この仲間で出発':isBoss?'ボスと戦う':play.index===0?'冒険を始める':'次の問題へ';
+  forward.textContent=formation?'この編成で出発':isBoss?'ボスと戦う':play.index===0?'冒険を始める':'次の問題へ';
   view.classList.add('forest-exploring');
   $('#forest-explore-screen').hidden=false;
   $('#forest-journey').hidden=true;
@@ -2778,7 +2796,7 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
   if(monsterHuntBoard(save).options.some(entry=>entry.id===id)){
     persist({...save,huntTargetId:id});renderHome();
   }
@@ -2792,8 +2810,13 @@ $('#forest-explore-continue').addEventListener('click',()=>{
   if(play.tactics?.formationPending){
     const t=play.tactics,ids=t.formationIds;
     if(!ids.length)return;
+    if(!persist({...save,selectedMonster:ids[0],battleFormation:[...ids]})){
+      t.formationMessage='編成を保存できませんでした。端末の保存設定を確認してね。';
+      renderPartyFormation();return;
+    }
     t.party=createTrainedBattleParty(ids);
     play.companionId=ids[0];syncActiveFighter();
+    t.ultimate=formationResonance(ids,Object.fromEntries(ids.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge;
     t.formationPending=false;
     $('#forest-party-formation').hidden=true;
   }
