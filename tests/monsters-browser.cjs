@@ -788,6 +788,30 @@ const path=require('node:path');
     assert.match(await listenPage.locator('#feedback-panel').innerText(),/\+8 XP/);
     assert.equal(await listenPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),8);
     await listenContext.close();
+    // Detailed hard listening must remain usable on a narrow iPhone screen.
+    // A secondary true fact used to be an incorrect option in this clip.
+    const {context:detailContext,page:detailPage}=await boot(320);
+    await detailPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();seeded.difficulty='hard';
+      seeded.reviewPrompts['recommend-food-hard']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await detailPage.reload();
+    await enterHomePanel(detailPage,'listening');
+    assert.equal(await detailPage.locator('#play-card').getAttribute('data-prompt-id'),'recommend-food-hard');
+    await detailPage.locator('#play-audio').click();
+    await detailPage.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
+    assert.equal(await detailPage.locator('[data-listening-choice]').count(),4);
+    assert.equal(await detailPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      const {listeningChallengeFor}=await import('./listening-challenges.js');
+      const challenge=listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='recommend-food-hard'));
+      return challenge.options[challenge.correctIndex].includes('forty minutes');
+    }),true,'Advanced listening must ask about the actual forty-minute closing detail');
+    assert.ok(await detailPage.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1,
+      'Long, meaningful listening options must wrap without horizontal scrolling at 320px');
+    await detailContext.close();
     // A tap with blocked media must never be recorded as successful listening.
     const {context:blockedContext,page:blockedPage}=await boot(375);
     await blockedPage.evaluate(async()=>{

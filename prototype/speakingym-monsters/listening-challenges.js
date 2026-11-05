@@ -145,6 +145,174 @@ const CHECKS = Object.freeze({
   ]
 });
 
+// Advanced clips contain more than the main intent. These authored choices
+// test the extra factual detail. Every distractor must contradict the clip,
+// not merely restate another fact that is also true in the recording.
+const HARD_DETAIL_CHECKS=Object.freeze({
+  'think-trip':[
+    'A few tour places remain, but only a booking can hold one.',
+    'The tour is fully booked and no places are left.',
+    'A place can be held without making any booking.',
+    'They are asking you to cancel an existing tour booking.'
+  ],
+  'repeat-station':[
+    'Track maintenance has moved the last train to 10:45, fifteen minutes earlier than usual.',
+    'Track maintenance has delayed the last train by fifteen minutes.',
+    'The last train now leaves at 10:15, not 10:45.',
+    'The platform has already been confirmed and no check is needed.'
+  ],
+  'agree-work':[
+    'The room is occupied on Thursday, so they suggest meeting on Friday.',
+    'The room is free on Thursday, so the original day is confirmed.',
+    'The room is occupied on Friday, so they suggest Thursday.',
+    'The meeting has been canceled and will not be rescheduled.'
+  ],
+  'late-call':[
+    'Everyone else is at the main entrance; they ask if you are near or if they should start.',
+    'No one else has arrived at the main entrance yet.',
+    'They have already started and do not need a reply.',
+    'They ask you to change the meeting place to a different entrance.'
+  ],
+  'clarify-office':[
+    'They need the updated file before lunch to review the figures this afternoon.',
+    'They need the file at the end of the day to review figures tomorrow.',
+    'They have reviewed the figures and no longer need the updated file.',
+    'They ask you to bring printed figures to an evening meeting.'
+  ],
+  'prefer-friend':[
+    'A bus leaves in ten minutes and a train soon after; the speaker is happy with either.',
+    'Only the bus is running, so they insist on taking it.',
+    'The train leaves ten minutes before the bus.',
+    'They have already purchased the train tickets.'
+  ],
+  'help-phone':[
+    'They noticed you looking at your phone for a while and ask if something is wrong.',
+    'They want to borrow your phone to make an urgent call.',
+    'They say they have been waiting for a message from you.',
+    'They tell you the phone has been repaired and is ready to collect.'
+  ],
+  'help-ticket':[
+    'They notice you struggling with the machine and ask if you still need assistance.',
+    'They tell you the ticket machine is broken and cannot be used.',
+    'They ask whether you have helped someone else with the machine.',
+    'They say you must queue at the counter instead of using the machine.'
+  ],
+  'order-coffee':[
+    'The cafe has new iced drinks as well as regular coffee, and you can take your time ordering.',
+    'The cafe has stopped serving regular coffee and only offers iced drinks.',
+    'They say your iced drink is ready and must be collected immediately.',
+    'They ask you to order quickly because the cafe is closing.'
+  ],
+  'order-breakfast':[
+    'Breakfast is being prepared; the speaker offers tea, coffee, or juice.',
+    'Breakfast has finished, and drinks are not included.',
+    'They need you to select a dessert before breakfast.',
+    'The kitchen is closed and only water is available.'
+  ],
+  'direction-station':[
+    'They saw you checking street signs and ask whether you need help finding a place.',
+    'They tell you a particular street is closed to pedestrians.',
+    'They ask you to point out the nearest railway station for them.',
+    'They confirm that you have already found the place you wanted.'
+  ],
+  'direction-museum':[
+    'At the city information desk, they offer directions or another kind of help.',
+    'They say the city information desk is closed for the day.',
+    'They ask you to give directions to another visitor.',
+    'They explain that only museum tickets are sold at this desk.'
+  ],
+  'recommend-food':[
+    'The lunch special is still available, but the kitchen closes in about forty minutes.',
+    'The lunch special has sold out and the kitchen is already closed.',
+    'The kitchen closes in ten minutes and is no longer taking orders.',
+    'They ask whether you liked the lunch special you already ate.'
+  ],
+  'recommend-gift':[
+    'They mention local handmade items and ask if the shopping is for you or a gift.',
+    'They say all local handmade items have sold out this week.',
+    'They ask whether you have already wrapped a gift for somebody.',
+    'They tell you the store only sells gifts for other people.'
+  ],
+  'booking-table':[
+    'Before seating you, they check your reservation because the restaurant is busy after seven.',
+    'They say a confirmed reservation has been canceled without notice.',
+    'They ask you to return tomorrow because the restaurant is closed tonight.',
+    'They say no reservation is needed because it is quiet after seven.'
+  ],
+  'booking-tour':[
+    'Tomorrow morning\'s walking tour still has a few places, and you are invited to join.',
+    'Tomorrow\'s walking tour is already fully booked.',
+    'The walking tour is planned for this evening rather than tomorrow.',
+    'They are asking whether you joined yesterday\'s tour.'
+  ],
+  'apology-late':[
+    'They arrived at the station twenty minutes ago and have waited near the ticket gate.',
+    'They arrived at the station just now and have not started waiting.',
+    'They waited for twenty minutes outside the restaurant.',
+    'They ask you to buy a ticket before they reach the station.'
+  ],
+  'apology-email':[
+    'They sent an updated schedule on Monday and have not received a reply.',
+    'They plan to send an updated schedule next Monday.',
+    'They say they received your reply to the schedule earlier today.',
+    'They ask you to delete the updated schedule from Monday.'
+  ],
+  'decline-dinner':[
+    'A group is meeting at a new restaurant tonight, and they ask whether you can join.',
+    'The group has changed tonight\'s dinner to breakfast tomorrow.',
+    'They ask if you would cook dinner at home for the group.',
+    'The group has canceled its meal because the restaurant is closed.'
+  ],
+  'decline-purchase':[
+    'Your size is in stock, but the discount ends this evening.',
+    'Your size has sold out, but the discount lasts all week.',
+    'They say you have already bought the item at full price.',
+    'They ask you to return the discounted item by this evening.'
+  ],
+  'price-ticket':[
+    'Before payment, they confirm that you want one admission ticket rather than two.',
+    'They say there is only one admission ticket left to sell.',
+    'They ask whether you already paid for two tickets.',
+    'They offer a discount if you purchase two tickets.'
+  ],
+  'price-rental':[
+    'Short and weekly rentals are possible; they ask how many days you need the car.',
+    'Only weekly rentals are available, and shorter bookings are not allowed.',
+    'They say you must return the car today regardless of your booking.',
+    'They confirm that you booked the car for exactly seven days.'
+  ],
+  'change-time':[
+    'The meeting is scheduled for two this afternoon; they ask if that still works.',
+    'The meeting was moved from two to three without consulting you.',
+    'They ask you to cancel the meeting this afternoon.',
+    'They say two o\'clock was never the agreed meeting time.'
+  ],
+  'change-seat':[
+    'Your boarding pass and baggage are ready; they ask if you need anything before security.',
+    'You still need to check your baggage in after passing security.',
+    'They ask you to return to the ticket counter because the boarding pass is missing.',
+    'They announce that security is closed and you cannot board.'
+  ],
+  'problem-bill':[
+    'They ask you to check an itemized hotel invoice with breakfast and room charges.',
+    'They explain that breakfast was accidentally left off the invoice.',
+    'They confirm that the invoice has already been corrected.',
+    'They ask you to pay a deposit before checking any of the charges.'
+  ],
+  'problem-wifi':[
+    'They hope your hotel stay is going well and ask if the room needs attention.',
+    'They say the hotel room is unavailable for tonight.',
+    'They ask you to move to another room immediately.',
+    'They confirm that you complained about the Wi-Fi earlier.'
+  ],
+  'problem-train':[
+    'At the information counter, they offer help planning your journey or something else.',
+    'They say every train has been canceled for the day.',
+    'They ask you to help another traveler plan a journey.',
+    'They announce that the information counter has moved to another station.'
+  ]
+});
+
 const BASE_ID=id=>id.replace(/-(normal|hard)$/,'');
 function orderChoices(id,length){
   const seed=[...id].reduce((total,char)=>total+char.charCodeAt(0),0);
@@ -157,7 +325,7 @@ export function listeningChallengeFor(prompt){
   const authored=CHECKS[BASE_ID(prompt.id)];
   if(!authored)throw Error('Listening meaning check missing: '+prompt.id);
   const level=prompt.difficulty||'easy';
-  const source=level==='easy'?authored[0]:authored[1];
+  const source=level==='easy'?authored[0]:level==='hard'?HARD_DETAIL_CHECKS[BASE_ID(prompt.id)]||authored[1]:authored[1];
   const count=level==='hard'?4:3;
   const permutation=orderChoices(prompt.id,count);
   const advancedAudio=AUDIO_VARIANTS[BASE_ID(prompt.id)];

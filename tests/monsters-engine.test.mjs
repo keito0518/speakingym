@@ -719,6 +719,55 @@ test('every listening task requires an authored audio-first meaning check at its
     listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='problem-wifi-hard')).correctIndex);
 });
 
+test('advanced listening checks details that are actually heard, without a second true answer',()=>{
+  const examples=[
+    ['think-trip','only a booking can hold one'],
+    ['repeat-station','fifteen minutes earlier'],
+    ['agree-work','occupied on Thursday'],
+    ['late-call','Everyone else is at the main entrance'],
+    ['clarify-office','before lunch to review the figures'],
+    ['prefer-friend','a train soon after'],
+    ['help-phone','looking at your phone for a while'],
+    ['help-ticket','struggling with the machine'],
+    ['order-coffee','new iced drinks as well as regular coffee'],
+    ['order-breakfast','tea, coffee, or juice'],
+    ['direction-station','checking street signs'],
+    ['direction-museum','offer directions or another kind of help'],
+    ['recommend-food','kitchen closes in about forty minutes'],
+    ['recommend-gift','local handmade items'],
+    ['booking-table','busy after seven'],
+    ['booking-tour','Tomorrow morning'],
+    ['apology-late','twenty minutes ago'],
+    ['apology-email','updated schedule on Monday'],
+    ['decline-dinner','new restaurant tonight'],
+    ['decline-purchase','discount ends this evening'],
+    ['price-ticket','one admission ticket rather than two'],
+    ['price-rental','Short and weekly rentals'],
+    ['change-time','two this afternoon'],
+    ['change-seat','before security'],
+    ['problem-bill','breakfast and room charges'],
+    ['problem-wifi','room needs attention'],
+    ['problem-train','help planning your journey']
+  ];
+  assert.equal(examples.length,27,'Every authored advanced listening scenario needs a precise check');
+  for(const [id,detail] of examples){
+    const hard=ALL_PROMPTS.find(p=>p.id===id+'-hard');
+    const normal=ALL_PROMPTS.find(p=>p.id===id+'-normal');
+    assert.ok(hard&&normal,id);
+    const advanced=listeningChallengeFor(hard),intermediate=listeningChallengeFor(normal);
+    const correct=advanced.options[advanced.correctIndex];
+    assert.ok(correct.includes(detail),id+' must test a meaning-bearing detail of the longer audio');
+    assert.notEqual(correct,intermediate.options[intermediate.correctIndex],id+' must not repeat the normal-level gist');
+    assert.equal(advanced.options.length,4);
+    assert.equal(new Set(advanced.options).size,4);
+  }
+  const food=listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='recommend-food-hard'));
+  assert.match(food.audio,/kitchen will close in about forty minutes/);
+  assert.ok(food.options.filter((option,index)=>index!==food.correctIndex).every(option=>
+    !/^They tell you the kitchen is closing\.$/.test(option)),
+    'A distractor must not also be true just because the longer recording adds a kitchen closing time');
+});
+
 test('the illustrated adventure scene has distinct accessible route art and stable landmarks', () => {
   const before=forestWorldArt();
   const moss=forestWorldArt('moss');
