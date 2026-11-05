@@ -188,7 +188,7 @@ const path=require('node:path');
     {
       const {context:catalogContext,page:catalogPage}=await boot(390);
       await enterHomePanel(catalogPage,'collection');
-      assert.match(await catalogPage.locator('#collection-progress').innerText(),/仲間 1 \/ 35体/);
+      assert.match(await catalogPage.locator('#collection-progress').innerText(),/仲間 1 \/ 44体/);
       for(const id of ['namihana','michiru','sorella','kometta']){
         const entry=catalogPage.locator(`[data-open-monster="${id}"]`);
         assert.equal(await entry.count(),1,`The ${id} catalog entry must appear`);

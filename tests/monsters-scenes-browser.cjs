@@ -377,6 +377,6 @@ const path=require('node:path');
     assert.match(await locked.page.locator('#pronounce-feedback').innerText(),/利用できません/);
     await locked.context.close();
     assert.deepEqual(errors,[]);
-    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 25 distinct attacks and 35 pixel companions, idle/evolved FX, guard/empty-answer, map isolation passed`);
+    console.log(`${engine}: 4 widths × catalog/detail/training, pronunciation dispatch/fallback, XP/level/evolution/save, 25 distinct attacks and 44 pixel companions, idle/evolved FX, guard/empty-answer, map isolation passed`);
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
