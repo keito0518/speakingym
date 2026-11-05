@@ -2606,6 +2606,10 @@ function finishSession(timedOut=false,defeated=false) {
       const button=document.createElement('button');button.type='button';button.textContent='装備を確認する';
       button.addEventListener('click',()=>renderCollection());
       panel.append(heading,detail,button);chaseReward.append(panel);
+    }else if(ended.completedForest&&!ended.endless&&ended.smooth<3){
+      const panel=document.createElement('p');panel.className='result-weapon-hint';
+      panel.textContent=`武器の獲得まであと${3-ended.smooth}問。ボス撃破＋自力正解3問以上で、その章の武器を手に入れられるよ。`;
+      chaseReward.append(panel);
     }
     const chests=ended.newChainChests||[];
     if(chests.length){
@@ -2712,7 +2716,7 @@ function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
  const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id));
  const current=equippedWeapon(save);
- panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>ダンジョンのボス撃破で武器を獲得。初回はその章の武器が確定、再挑戦ではレア装備を狙えるよ。</p></div>
+ panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>自力正解3問以上＋ボス撃破で章の武器を初回確定入手。再挑戦ではレア装備も狙えるよ。</p></div>
   <label for="equipment-weapon-choice">出撃する武器（パーティ共通）</label>
   <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weapon.attack}${weapon.rarity==='rare'?' · レア':''}</option>`).join('')}</select>
   <p id="equipment-weapon-status" role="status">${current?`${escapeHtml(current.name)} を装備中 · 攻撃＋${current.attack}`:'いまは素手で出撃するよ。'} レベルによる攻撃成長は別に加算。ボスの封印3問は省略できないよ。</p>`;

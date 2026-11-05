@@ -375,7 +375,7 @@ const assert=require('node:assert/strict');
    });
    await gearPage.reload({waitUntil:'networkidle'});
    assert.match(await gearPage.locator('#hero-weapon-summary').innerText(),/旅立ちの木剣.*攻撃\+1/);
-   await gearPage.locator('#open-collection').click();
+   await gearPage.getByRole('button',{name:'なかま・図鑑',exact:true}).click();
    assert.equal(await gearPage.locator('#equipment-weapon-choice').inputValue(),'wooden_blade');
    await gearPage.locator('#equipment-weapon-choice').selectOption('mist_spear');
    assert.match(await gearPage.locator('#equipment-weapon-status').innerText(),/霧抜けの槍.*攻撃＋2/);

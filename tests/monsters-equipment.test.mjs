@@ -27,13 +27,14 @@ test('first completed boss clears guarantee area weapon, replays have finite rar
  assert.equal(dungeonWeaponDrop(saved,{areaId:'entry',completed:false}).weapon,null);
  assert.equal(dungeonWeaponDrop(saved,{areaId:'unknown',completed:true}).weapon,null);
  for(const areaId of ['entry','glade']){
-  const result=dungeonWeaponDrop(saved,{areaId,completed:true,independent:0,random:()=>.99});
+  const result=dungeonWeaponDrop(saved,{areaId,completed:true,independent:3,random:()=>.99});
   assert.equal(result.weapon.areaId,areaId);
   saved=result.save;
  }
  const missed=dungeonWeaponDrop(saved,{areaId:'entry',completed:true,independent:4,random:()=>.99});
  assert.equal(missed.weapon,null);
  assert.equal(dungeonWeaponDrop(saved,{areaId:'entry',completed:true,independent:3,random:()=>0}).weapon,null,'no rare drop without verified progress');
+ assert.equal(dungeonWeaponDrop(createSave(),{areaId:'entry',completed:true,independent:2,random:()=>0}).weapon,null,'hint-only chapter clears do not mint weapons');
  const rare=dungeonWeaponDrop(saved,{areaId:'entry',completed:true,independent:4,random:()=>.24});
  assert.equal(rare.weapon.id,'moonsteel');
  assert.equal(rare.save.equippedWeaponId,'wooden_blade','replay loot never silently overrides a choice');

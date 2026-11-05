@@ -16,6 +16,7 @@
 .result-weapon-drop strong{font-size:19px}
 .result-weapon-drop p{margin:0;color:#4a482e;font-size:13px;line-height:1.6}
 .result-weapon-drop button{justify-self:start;min-height:42px;padding:8px 15px;border:1px solid #7d622f;border-radius:9px;background:#514121;color:#fff4ce;font-weight:850;cursor:pointer}
+.result-weapon-hint{margin:9px 0;padding:10px 13px;border:1px solid #b0c595;border-radius:10px;background:#f0f7df;color:#30523d;font-size:13px;font-weight:750;line-height:1.6}
 @media(max-width:480px){.forest-active .forest-boss-hp[data-health-mode="bar"]{flex-basis:78px;min-width:78px}.collection-weapons{padding:13px}}
 .home-navigation{margin-top:0}
 .home-navigation-head{margin:0 0 13px;padding:0}

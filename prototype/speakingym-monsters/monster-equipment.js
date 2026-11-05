@@ -47,7 +47,8 @@ export function scaledStrikeDamage(baseDamage,level,save){
 // regional drop after enough independently verified English answers. Duplicates
 // never consume a reward slot or create endless inventory stacks.
 export function dungeonWeaponDrop(save,{areaId,completed=false,independent=0,random=Math.random}={}){
- if(!completed||!Object.hasOwn(AREA_WORLD,areaId))return {save,weapon:null};
+ // Hint-only or transcript-assisted clears cannot mint combat equipment.
+ if(!completed||independent<3||!Object.hasOwn(AREA_WORLD,areaId))return {save,weapon:null};
  const owned=new Set(Array.isArray(save.weaponInventory)?save.weaponInventory:[]);
  const regular=WEAPONS.find(item=>item.areaId===areaId);
  let weapon=!owned.has(regular.id)?regular:null;
