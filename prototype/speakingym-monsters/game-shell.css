@@ -276,6 +276,34 @@ body.summon-active{overflow:hidden}
 #play-view.scene-battle #forest-world-stage .forest-battle-info{background:linear-gradient(100deg,#142d42f1,#29415af1);border-color:#b3cae390;box-shadow:0 4px 12px #040c24a0}
 #play-view.scene-battle #forest-arena-console{border-top:2px solid #8bafc2;
  background:linear-gradient(180deg,#1b3851e8,#0a2539f9 18%,#071d30fc 94%)}
+/* The four attack disciplines are ability cards in the arena, not HTML form
+   choices. Auto margins settle the panel into the otherwise empty scene, but
+   yield to scrolling when a short iPhone viewport cannot fit the panel. */
+#play-view.scene-battle #forest-arena-console:has(.forest-attack-select:not([hidden])) #forest-tactics{margin:auto 0}
+#play-view.scene-battle #forest-arena-console .forest-attack-select{
+ border:1px solid #b7a47d;border-radius:18px;padding:16px;
+ background:radial-gradient(ellipse at 6% 0%,#45637c77,transparent 66%),linear-gradient(165deg,#1e405c,#0a2038);
+ box-shadow:0 8px 26px #0008,inset 0 1px 0 #d5e3ee36}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .dungeon-choice-guide{
+ border:1px solid #7591a650;border-radius:9px;
+ background:#c7dbdf1c;color:#d4e6e8;font-weight:750}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .forest-tactic-kinds button{
+ border:1px solid #789cba;border-bottom:3px solid #395e7b;border-radius:12px;
+ background:radial-gradient(circle at 50% -15%,#48728b99,transparent 80%),linear-gradient(160deg,#274762,#132d47);
+ color:#f5f5e7;font-weight:950;letter-spacing:.025em;text-shadow:0 1px 2px #05111a;
+ box-shadow:inset 0 1px 0 #e4f6ff55,0 5px 12px #020d2060;transition:transform .12s,filter .12s,box-shadow .12s}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .forest-tactic-kinds button:nth-child(2){
+ background:radial-gradient(circle at 50% -15%,#327c9b9c,transparent 80%),linear-gradient(155deg,#1d5767,#12364b)}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .forest-tactic-kinds button:nth-child(3){
+ background:radial-gradient(circle at 50% -15%,#796abb9c,transparent 80%),linear-gradient(155deg,#3e426b,#222c4c)}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .forest-tactic-kinds button:nth-child(4){
+ background:radial-gradient(circle at 50% -15%,#9d6c9b8c,transparent 80%),linear-gradient(155deg,#67475f,#382d4f)}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .forest-tactic-kinds button[data-weak="true"]{
+ border-color:#f8d58a;border-bottom-color:#916b34;
+ background:radial-gradient(circle at 50% -25%,#fffbe8,transparent 78%),linear-gradient(155deg,#ffeda8,#d6a44d);
+ color:#382613;text-shadow:none;box-shadow:inset 0 1px 0 #fff9d8,0 0 19px #e6bd5a66,0 5px 14px #020d2060}
+#play-view.scene-battle #forest-arena-console .forest-attack-select .forest-tactic-kinds button:active{
+ transform:translateY(2px);box-shadow:inset 0 1px 6px #04192978}
 
 @media(max-width:690px){
  .app-shell{padding:0 12px calc(90px + env(safe-area-inset-bottom))}
