@@ -390,6 +390,26 @@ const assert=require('node:assert/strict');
    assert.equal(await gearPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
      'A trained weapon upgrades a three-damage starter attack to five and defeats the first foe');
    await gearContext.close();
+   // A matching weapon trait must be visible in a real battle, without
+   // changing the English answer or silently replacing the selected weapon.
+   const traitContext=await browser.newContext({viewport:{width:375,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const traitPage=await traitContext.newPage();
+   await traitPage.goto(url,{waitUntil:'networkidle'});
+   await traitPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),weaponInventory:['starlight'],equippedWeaponId:'starlight'}));
+   });
+   await traitPage.reload({waitUntil:'networkidle'});
+   await traitPage.getByRole('button',{name:'なかま・図鑑',exact:true}).click();
+   assert.match(await traitPage.locator('#equipment-weapon-status').innerText(),/レア.*Speakを自力正解で追撃＋1/);
+   await traitPage.reload({waitUntil:'networkidle'});
+   await traitPage.locator('[data-feature-worlds]').click();
+   await traitPage.locator('#start-forest').click();
+   await traitPage.locator('#forest-explore-continue').click();
+   await answer(traitPage);
+   assert.match(await traitPage.locator('#forest-battle-log').innerText(),/武器特性発動！ Speak自力正解で威力＋1/);
+   assert.equal(await traitPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
+   await traitContext.close();
    // A saved multi-ally collection must survive unchanged while a battle uses
    // temporary, independent HP. One exchange is allowed in each encounter.
    const partyContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});

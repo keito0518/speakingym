@@ -1,7 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
-import { WEAPONS, equippedWeapon, equipWeapon, levelAttackBonus, scaledStrikeDamage, dungeonWeaponDrop } from './monster-equipment.js';
+import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -507,7 +507,7 @@ function renderHome() {
   $('#hero-monster-species').textContent = `${creature.japaneseName} · ${creature.roots.map(root=>root.word).join(' + ')}`;
   $('#hero-level').textContent = `Lv.${growth.level}`;
   const equipped=equippedWeapon(save);
-  $('#hero-weapon-summary').textContent=`攻撃成長 +${levelAttackBonus(growth.level)} · 装備：${equipped?`${equipped.name}（攻撃+${equipped.attack}）`:'素手'}`;
+  $('#hero-weapon-summary').textContent=`攻撃成長 +${levelAttackBonus(growth.level)} · 装備：${equipped?`${equipped.name}（攻撃+${equipped.attack}・${WEAPON_AFFINITY_LABELS[equipped.affinity]}特性）`:'素手'}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   const nextHealthTier=[3,6,9].find(level=>level>growth.level);
   const mastery=masterySkillFor(creature.id,growth.level);
@@ -711,7 +711,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
   play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],eliteDrops:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
     // did not change grading or outcomes and interrupted every battle.
@@ -719,7 +719,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
     tactics:tactical?{hp:fighterHealth(battleTeam,save.selectedMonster).hp,maxHp:fighterHealth(battleTeam,save.selectedMonster).maxHp,
       party:battleTeam,enemyHp:3,enemyMax:3,turn:'player',action:'attack',ultimate:0,
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
-      encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,
+      encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,nextEnemyKind:null,eliteIndependentHits:0,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
   $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='transfer-review'?'場面チェンジの復習':mode==='skill-focus'?SKILL_LABELS[focusKind]+'集中練習':mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
@@ -1361,7 +1361,7 @@ function renderQuestion() {
   $('#play-card').hidden=false;
   $('#answer-area').classList.remove('listening-result-only');
   $('#forest-journey').classList.remove('forest-victory');
-  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;play.quizMistake='';
+  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;play.quizMistake='';play.justDroppedWeapon=null;
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
@@ -1375,7 +1375,7 @@ function renderQuestion() {
         t.encounterIndex=play.index;t.enemyHp=play.index>=regularCount()?BOSS_HITS-play.bossHits:encounterVitality(play.areaId,play.index);
         t.enemyMax=encounterVitality(play.areaId,play.index,{boss:play.index>=regularCount()});
         t.turn='player';t.action='attack';t.attackPrompt=null;t.defensePrompt=null;t.pendingAdvance=false;
-        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;t.foeShifted=false;t.playerMissCountered=false;t.kindRerolled=false;t.attackCommitted=false;t.attackKindChosen=false;
+        t.bonusChargeUsed=false;t.comboUsed=false;t.lastAttackKind=null;t.eliteIndependentHits=0;t.autoSwitchedTo=null;t.party={...t.party,swapsUsed:0};t.bossReactionCompleted=false;t.styleShieldIntact=true;t.foeShifted=false;t.playerMissCountered=false;t.kindRerolled=false;t.attackCommitted=false;t.attackKindChosen=false;
         if(play.index<=regularCount())t.masteryUsed=false; // Boss phases share one mastery use.
         t.counterShield=0;
         if(play.index===regularCount()){t.bossCounterUsed=false;t.bossCoverUsed=false;t.bossLinkUsed=false;}
@@ -2173,9 +2173,11 @@ async function gradeAnswer() {
     const styled=t?foeStyledStrike({style:foeStyle,damage:amplified.damage,kind:attackKind,foeId:foe.id,
       shieldIntact:t.styleShieldIntact}):null;
     const rawSpecial=styled?{...amplified,damage:styled.damage}:amplified;
-    const special=t?{...rawSpecial,damage:scaledStrikeDamage(rawSpecial.damage,form.level,save)}:rawSpecial;
+    const weaponBonus=t?weaponAffinityBonus(save,attackKind,{independent:rating==='smooth'}):0;
+    const special=t?{...rawSpecial,damage:scaledStrikeDamage(rawSpecial.damage,form.level,save,{kind:attackKind,independent:rating==='smooth'})}:rawSpecial;
     const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0)+(mastery?.heal||0),t.maxHp-t.hp):0;
     let foeShiftNow=false;
+    let eliteLoot=null;
     let bossLink=null,linkHealAmount=0;
     if(t){
       if(styled.shieldBroken)t.styleShieldIntact=false;
@@ -2202,7 +2204,23 @@ async function gradeAnswer() {
         }
       }
       if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+1);
-      else t.enemyHp=Math.max(0,t.enemyHp-special.damage);
+      else{
+        const previousHp=t.enemyHp;
+        t.enemyHp=Math.max(0,t.enemyHp-special.damage);
+        if(rating==='smooth')t.eliteIndependentHits++;
+        if(previousHp>0&&t.enemyHp===0){
+          const loot=eliteWeaponDrop(save,{areaId:play.areaId,foeIndex:play.index,
+            defeated:true,independentHits:t.eliteIndependentHits});
+          if(loot.weapon){
+            const before=save;
+            if(persist(loot.save)){
+              play.eliteDrops.push(loot.weapon);
+              eliteLoot=loot.weapon;
+              play.justDroppedWeapon=loot.weapon;
+            }else save=before;
+          }
+        }
+      }
       // A boss seal represents one independently verified English task, not
       // one HP. Preserve all three tasks while making a high-damage ultimate
       // genuinely useful against the next counterattack as well as healing.
@@ -2262,11 +2280,13 @@ async function gradeAnswer() {
     const duoNote=duo?.activated?`${monsterFor(duo.partnerId).name}との連携成功！ ${duo.awakened?`${duo.awakened}発動！ `:''}${duo.extraDamage?`援護でダメージ＋${duo.extraDamage}。 `:''}${duo.extraCharge?`必殺ゲージ＋${duo.extraCharge}（最大${ULTIMATE_MAX}）。 `:''}${duo.extraHeal?(healed?`回復効果が発動！ `:'HP満タンで回復効果は不要だったよ。 '):''}`:choseAssist?'連携はヒントなしの自力正解で発動するよ。 ':'';
     const masteryNote=mastery?.activated?`Lv.${MASTERY_LEVEL}技「${mastery.name}」発動！ ${mastery.extraDamage?'追撃ダメージ＋1。 ':''}${mastery.extraCharge?'必殺ゲージ＋1。 ':''}${mastery.heal?'仲間HPを回復。 ':''}${mastery.shield?'次の敵攻撃を1軽減。 ':''}`:'';
     const ascensionNote=special.ascensionBoost?'第2進化ボーナス！ 得意攻撃の威力＋1。 ':'';
+    const weaponNote=weaponBonus?`武器特性発動！ ${WEAPON_AFFINITY_LABELS[attackKind]}自力正解で威力＋${weaponBonus}。 `:'';
+    const dropNote=eliteLoot?` 強敵限定ドロップ！「${eliteLoot.name}」を獲得。図鑑で装備できるよ！`:'';
     const shiftNote=foeShiftNow?`属性変化！ 次の弱点は${BATTLE_LABELS[foeBattleAffinity({foeId:foe.id,style:foeStyle,shifted:true}).weak]}に変わった。 `:'';
     const counterNote=bossCounter?.activated?`迎撃成功！ 必殺ゲージ＋1・次の敵攻撃−1${bossCounter.heal&&healed?'・進化回復':''}。 `:'';
     const linkNote=bossLink?.activated?`ボス連携「${bossLink.name}」成功！ ${monsterFor(bossLink.partnerId).name}の援護で${bossLink.shield?'次の反撃−1':bossLink.extraCharge?'必殺ゲージ＋1':`味方HP合計＋${linkHealAmount}`}。 `:'';
     $('#forest-battle-log').textContent=t
-      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${ascensionNote}${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${boss?`封印を1枚解除（${play.bossHits}/${BOSS_HITS}、ダメージとは別）。 `:''}${bossUltimateBarrier?'必殺バリア発動！ 次の敵の反撃を2軽減。 ':''}${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}`
+      ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${ascensionNote}${weaponNote}${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${boss?`封印を1枚解除（${play.bossHits}/${BOSS_HITS}、ダメージとは別）。 `:''}${bossUltimateBarrier?'必殺バリア発動！ 次の敵の反撃を2軽減。 ':''}${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}${dropNote}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t)renderTacticalControls();
   }
@@ -2312,7 +2332,8 @@ async function gradeAnswer() {
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=1
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}" data-chain-start="${streak.chain===1}"><strong>${streak.chain} CHAIN</strong><span>${!play.endless&&chainChestAt(save,streak.chain,play.areaId)?'このエリアの宝箱を発見！ 冒険終了時に獲得':streak.chain===1?'コンボ開始！':play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
+  const lootPulse=play.justDroppedWeapon?`<p class="forest-drop-flash"><strong>EPIC DROP!</strong><span>${escapeHtml(play.justDroppedWeapon.name)}を獲得！ 図鑑で装備できるよ。</span></p>`:'';
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
@@ -2599,14 +2620,16 @@ function finishSession(timedOut=false,defeated=false) {
   chaseReward.replaceChildren();
   chaseReward.hidden=ended.mode!=='forest';
   if(ended.mode==='forest'){
-    if(ended.weaponDrop){
+    for(const weapon of [...(ended.eliteDrops||[]),...(ended.weaponDrop?[ended.weaponDrop]:[])]){
       const panel=document.createElement('div');panel.className='result-weapon-drop';
-      const heading=document.createElement('strong');heading.textContent=`装備ドロップ！ ${ended.weaponDrop.name}`;
-      const detail=document.createElement('p');detail.textContent=`攻撃＋${ended.weaponDrop.attack} · ${ended.weaponDrop.rarity==='rare'?'レア装備！':'このエリアの初獲得'}${save.equippedWeaponId===ended.weaponDrop.id?' · 自動装備したよ':' · 図鑑で装備を変更できるよ'}`;
+      panel.dataset.rarity=weapon.rarity;
+      const heading=document.createElement('strong');heading.textContent=`${weapon.rarity==='epic'?'強敵限定ドロップ！':'装備ドロップ！'} ${weapon.name}`;
+      const detail=document.createElement('p');detail.textContent=`${WEAPON_RARITY_LABELS[weapon.rarity]} · 攻撃＋${weapon.attack} · ${WEAPON_AFFINITY_LABELS[weapon.affinity]}を自力正解で追撃＋${weapon.rarity==='epic'?2:1}${save.equippedWeaponId===weapon.id?' · 自動装備したよ':' · 図鑑で装備を変更できるよ'}`;
       const button=document.createElement('button');button.type='button';button.textContent='装備を確認する';
       button.addEventListener('click',()=>renderCollection());
       panel.append(heading,detail,button);chaseReward.append(panel);
-    }else if(ended.completedForest&&!ended.endless&&ended.smooth<3){
+    }
+    if(!ended.weaponDrop&&ended.completedForest&&!ended.endless&&ended.smooth<3){
       const panel=document.createElement('p');panel.className='result-weapon-hint';
       panel.textContent=`武器の獲得まであと${3-ended.smooth}問。ボス撃破＋自力正解3問以上で、その章の武器を手に入れられるよ。`;
       chaseReward.append(panel);
@@ -2716,10 +2739,10 @@ function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
  const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id));
  const current=equippedWeapon(save);
- panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>自力正解3問以上＋ボス撃破で章の武器を初回確定入手。再挑戦ではレア装備も狙えるよ。</p></div>
+ panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>ボス撃破＋自力正解3問で章の武器が初回確定。再攻略は自力4問以上でレア25%。5体目の強敵も、自力攻撃2回以上で限定武器18%のチャンス！</p></div>
   <label for="equipment-weapon-choice">出撃する武器（パーティ共通）</label>
-  <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weapon.attack}${weapon.rarity==='rare'?' · レア':''}</option>`).join('')}</select>
-  <p id="equipment-weapon-status" role="status">${current?`${escapeHtml(current.name)} を装備中 · 攻撃＋${current.attack}`:'いまは素手で出撃するよ。'} レベルによる攻撃成長は別に加算。ボスの封印3問は省略できないよ。</p>`;
+  <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weapon.attack} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select>
+  <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${escapeHtml(current.name)} を装備中 · ${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${current.attack} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${current.rarity==='epic'?2:1}`:'いまは素手で出撃するよ。'} レベル攻撃力は別に加算。ボスの封印3問は省略できないよ。</p>`;
  panel.querySelector('#equipment-weapon-choice').addEventListener('change',event=>{
    const id=event.target.value||null;
    if(!persist(equipWeapon(save,id))){event.target.value=equippedWeapon(save)?.id||'';return;}
