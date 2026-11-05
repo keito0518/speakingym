@@ -64,9 +64,13 @@ jobs:
           timeout 210s node tests/monsters-scenes-browser.cjs
           timeout 90s node tests/monsters-beta-browser.cjs
       - name: WebKit mobile and learning QA
-        timeout-minutes: 8
+        # WebKit replays the full four-viewport/save-recovery suite and is
+        # notably slower than Chromium on shared GitHub runners. Keep every
+        # scenario covered instead of letting the 160s per-process gate kill
+        # an otherwise advancing browser run near its final page load.
+        timeout-minutes: 12
         run: |
-          timeout 160s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
+          timeout 300s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
           timeout 210s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-scenes-browser.cjs
           timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-beta-browser.cjs
       - uses: actions/upload-artifact@v4
