@@ -13,7 +13,7 @@ export function forestLearningPulseFor(prompt,grade,{answer='',hinted=false}={})
     return {
       kind:'listen',badge,achievedLabel:'聞き取れた意味',
       achieved:challenge.options[challenge.correctIndex],
-      tip:'音声の言い回しと、選んだ意味を結びつけよう。',
+      tip:challenge.coaching?`音声の手がかり「${challenge.coaching.quote}」＝ ${challenge.coaching.meaning}`:'音声の言い回しと、選んだ意味を結びつけよう。',
       next:'次は選択肢を見ずに、聞こえた内容を一言でまとめよう。'
     };
   }

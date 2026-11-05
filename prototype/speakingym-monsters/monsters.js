@@ -1550,6 +1550,8 @@ function renderQuestion() {
   if(listenMode){
     $('#answer-area').hidden=true;
     const state=play.listeningState;
+    if(comprehension.coaching)
+      $('#listening-status').insertAdjacentHTML('afterend','<p id="listening-coach" class="listening-coach" hidden></p>');
     const showChoices=()=>{$('#listening-meaning').hidden=false;};
     const markAudioReady=()=>{
       if(document.hidden||!play||play.listeningState!==state||state.understood)return;
@@ -1622,6 +1624,11 @@ function renderQuestion() {
         // Do not charge accidental repeat taps on a previously rejected option.
         // A different wrong meaning remains a new damaging attempt.
         button.disabled=true;
+        if(comprehension.coaching){
+          const cue=$('#listening-coach');
+          cue.hidden=false;
+          cue.textContent=`聞き直すポイント：${comprehension.coaching.focus}`;
+        }
         if(!play.tactics||(!play.tactics.playerMissCountered&&!play.tactics.defenseHitTaken))
           $('#listening-status').textContent=englishMode?'Not quite. Listen again and compare the details.':'少し違うかも。もう一度聞いて、細かい違いに注目しよう。';
         return;
@@ -1629,6 +1636,7 @@ function renderQuestion() {
       state.understood=true;
       stopListeningPlayback();
       button.classList.add('is-correct');
+      if($('#listening-coach'))$('#listening-coach').hidden=true;
       $('#listening-status').textContent=state.usedTranscript?'字幕で意味を確認できたね。聞き取り成績はつけず、0 XPの復習として進むよ。':
         state.usedSlowAudio?'ゆっくり再生で意味を確認できたね。今回はヒントありの記録だよ。':
         englishMode?'Correct! Listening complete.':'正解！聞き取れたね。スピーキングは別の問題で練習できるよ。';
@@ -2254,8 +2262,9 @@ async function gradeAnswer() {
   const retentionNote=reward.retentionAdvanced?`<p class="retention-result"><strong>${retentionTitle(reward.retentionStage)}</strong> · 次のチェック ${reward.nextRetentionDay}${reward.bondGained?` · 仲間との絆 +${reward.bondGained}`:''}</p>`:
     reward.nextRetentionDay?`<p class="retention-result">${reward.recovering?'定着を再確認中 · ':'次の定着チェック：'}${reward.nextRetentionDay}（ヒントあり・同じ日の再挑戦では段階は進みません）</p>`:'';
   const quizLearningNote=quizState&&!wasQuizResolved?`<p class="forest-quiz-review-status">${quizState.resolved?'苦手克服！日を空けて2回、自力で答えられたね。':quizState.nextReviewDay<=dayKey()?'このポイントは次の冒険でもう一度出題するよ。':'復習予定に登録したよ。次回もヒントなしで挑戦！'}</p>`:'';
-  const explanationHtml=prompt.kind==='listen'
-    ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">${transcriptPractice?'字幕で確認した意味':'聞き取れたポイント'}</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningChallengeFor(prompt).audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</p><p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
+  const listeningCheck=prompt.kind==='listen'?listeningChallengeFor(prompt):null;
+  const explanationHtml=listeningCheck
+    ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">${transcriptPractice?'字幕で確認した意味':'聞き取れたポイント'}</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningCheck.audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningCheck.options[listeningCheck.correctIndex])}</p>${listeningCheck.coaching?`<p class="listening-evidence-note"><strong>聞き取りの根拠</strong> <span lang="en">${escapeHtml(listeningCheck.coaching.quote)}</span> — ${escapeHtml(listeningCheck.coaching.meaning)}</p>`:''}<p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
     :objectiveQuiz?quizTeachingHtml(prompt):conversationFeedbackHtml(prompt,raw,grade,{hinted:rating==='hint'});
   const checkingNote=transcriptPractice?'音声の再生を確認できなかったため、字幕を読んで意味を練習したよ。聞き取りの実績・XP・定着記録には含めていません。':prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';

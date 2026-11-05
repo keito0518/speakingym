@@ -313,6 +313,40 @@ const HARD_DETAIL_CHECKS=Object.freeze({
   ]
 });
 
+// A wrong answer should point learners toward an audible distinction, without
+// showing the transcript or the correct choice before they try again.
+// After a verified answer, show the *exact* spoken evidence and its meaning.
+// [what to listen for, verbatim excerpt from the hard recording, Japanese meaning]
+const HARD_LISTENING_COACH=Object.freeze({
+  'think-trip':['空席の数と、席を確保するための条件','cannot hold them without a booking','予約しないと席は確保できません'],
+  'repeat-station':['終電の時刻と、普段より早いのか遅いのか','fifteen minutes earlier than usual','普段より15分早い'],
+  'agree-work':['会議室が使えない曜日と、提案された曜日','conference room is occupied on Thursday','木曜日は会議室が使用中'],
+  'late-call':['待ち合わせ場所と、すでに到着した人','everyone else has arrived','ほかの全員は到着済み'],
+  'clarify-office':['資料が必要な時刻と、その理由','before lunch rather than at the end of the day','終業時ではなく昼食前に'],
+  'prefer-friend':['バスと電車の出発順と、相手の希望','a bus in ten minutes or a train leaving just after that','バスは10分後、電車はその少し後'],
+  'help-phone':['相手が何を見て、心配したのか','looking at your phone for a while','しばらくスマホを見ている'],
+  'help-ticket':['相手が気づいた困りごとと、その提案','having some trouble with the machine','機械の操作に困っている'],
+  'order-coffee':['新しい飲み物と、従来のメニューの両方','new iced drinks today as well as our regular coffee menu','新しいアイス飲料に加えて定番のコーヒーも'],
+  'order-breakfast':['朝食の準備中に提案された飲み物','perhaps tea, coffee, or some juice','紅茶、コーヒー、またはジュース'],
+  'direction-station':['相手が声をかけた理由','checking the street signs for a while','しばらく道路標識を確認している'],
+  'direction-museum':['案内所で手伝えることの選択肢','Are you after directions, or is there something else','道案内ですか、それとも別のご用件ですか'],
+  'recommend-food':['料理の注文可否と、厨房が閉まるまでの時間','kitchen will close in about forty minutes','厨房はあと約40分で閉まります'],
+  'recommend-gift':['商品が何で、誰のための買い物か','local handmade items on display this week','今週は地元の手作り品を展示中'],
+  'booking-table':['席へ案内する前の確認と、混雑する時間','fairly busy after seven this evening','今夜7時以降はかなり混んでいます'],
+  'booking-tour':['ツアーの日程と、残っている席','a few places are still available','まだ数席空いています'],
+  'apology-late':['到着から何分経ったかと、待っている場所','arrived at the station twenty minutes ago','20分前に駅へ着きました'],
+  'apology-email':['メールを送った曜日と、その内容','emailed you on Monday with the updated schedule','月曜日に更新した予定をメールしました'],
+  'decline-dinner':['食事会の日時と、店の特徴','new restaurant tonight','今夜、新しいレストランで'],
+  'decline-purchase':['サイズの在庫と、割引の期限','discount ends this evening','割引は今夜終了します'],
+  'price-ticket':['チケットが1枚か2枚か','one admission ticket rather than a pair','2枚ではなく入場券を1枚'],
+  'price-rental':['選べるレンタル期間','a short rental or a weekly booking','短期レンタルまたは週単位の予約'],
+  'change-time':['もともとの予定時刻と、変更の有無','scheduled to meet at two this afternoon','今日の午後2時に会う予定'],
+  'change-seat':['保安検査の前に終わった手続き','boarding pass is ready and your baggage is checked in','搭乗券の準備と荷物の預け入れは完了'],
+  'problem-wifi':['ホテルの人が何について確認しているか','Is everything all right with your room','お部屋に問題はありませんか'],
+  'problem-bill':['請求書に含まれている費用','including breakfast and room charges','朝食代と宿泊料金を含みます'],
+  'problem-train':['案内所が申し出ている支援','trouble planning your journey','移動の計画でお困りですか']
+});
+
 const BASE_ID=id=>id.replace(/-(normal|hard)$/,'');
 function orderChoices(id,length){
   const seed=[...id].reduce((total,char)=>total+char.charCodeAt(0),0);
@@ -329,11 +363,13 @@ export function listeningChallengeFor(prompt){
   const count=level==='hard'?4:3;
   const permutation=orderChoices(prompt.id,count);
   const advancedAudio=AUDIO_VARIANTS[BASE_ID(prompt.id)];
+  const coach=level==='hard'?HARD_LISTENING_COACH[BASE_ID(prompt.id)]:null;
   return Object.freeze({
     level,
     question:level==='easy'?'相手は何を伝えた？':level==='normal'?'What did the speaker mean?':'Which interpretation is the most precise?',
     options:permutation.map(i=>source[i]),
     correctIndex:permutation.indexOf(0),
+    coaching:coach?Object.freeze({focus:coach[0],quote:coach[1],meaning:coach[2]}):null,
     // No task, response, or spoken English is exposed before the audio check.
     audio:level==='easy'?prompt.audio:advancedAudio?.[level==='normal'?0:1]||prompt.audio
   });

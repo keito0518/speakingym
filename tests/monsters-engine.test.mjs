@@ -760,6 +760,12 @@ test('advanced listening checks details that are actually heard, without a secon
     assert.notEqual(correct,intermediate.options[intermediate.correctIndex],id+' must not repeat the normal-level gist');
     assert.equal(advanced.options.length,4);
     assert.equal(new Set(advanced.options).size,4);
+    assert.equal(intermediate.coaching,null,'Normal listening must not inherit hard-only coaching');
+    assert.ok(advanced.coaching?.focus.length>8,id+' needs an actionable listening focus after a mistake');
+    assert.ok(advanced.audio.includes(advanced.coaching.quote),id+' evidence must be spoken verbatim');
+    assert.ok(advanced.coaching.meaning.length>5,id+' evidence needs a concrete explanation');
+    assert.ok(!advanced.options.some(option=>option.includes(advanced.coaching.meaning)),
+      id+' must not put the answer in the retry cue');
   }
   const food=listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='recommend-food-hard'));
   assert.match(food.audio,/kitchen will close in about forty minutes/);

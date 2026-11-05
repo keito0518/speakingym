@@ -811,6 +811,23 @@ const path=require('node:path');
     }),true,'Advanced listening must ask about the actual forty-minute closing detail');
     assert.ok(await detailPage.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=1,
       'Long, meaningful listening options must wrap without horizontal scrolling at 320px');
+    assert.equal(await detailPage.locator('#listening-coach').isVisible(),false,
+      'The retry focus must be hidden until the learner makes a mistake');
+    const detailCorrect=await detailPage.evaluate(async()=>{
+      const {ALL_PROMPTS}=await import('./monster-data.js');
+      const {listeningChallengeFor}=await import('./listening-challenges.js');
+      return listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='recommend-food-hard')).correctIndex;
+    });
+    await detailPage.locator(`[data-listening-choice="${(detailCorrect+1)%4}"]`).click();
+    assert.match(await detailPage.locator('#listening-coach').innerText(),/厨房が閉まるまでの時間/,
+      'A wrong hard answer should show a targeted listening focus');
+    assert.equal(await detailPage.locator('#transcript').isVisible(),false,
+      'A retry cue must never reveal the hidden audio transcript');
+    await detailPage.locator(`[data-listening-choice="${detailCorrect}"]`).click();
+    await detailPage.locator('.listening-evidence-note').waitFor({state:'visible',timeout:5000});
+    assert.match(await detailPage.locator('.listening-evidence-note').innerText(),/kitchen will close in about forty minutes/,
+      'After success, show a quote that really occurs in the audio');
+    assert.equal(await detailPage.locator('#listening-coach').isVisible(),false);
     await detailContext.close();
     // A tap with blocked media must never be recorded as successful listening.
     const {context:blockedContext,page:blockedPage}=await boot(375);

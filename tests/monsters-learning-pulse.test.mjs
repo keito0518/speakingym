@@ -43,6 +43,18 @@ test('listening reports the correct selected meaning, not a speaking or pronunci
  assert.match(pulse.next,/選択肢を見ずに/);
 });
 
+test('advanced listening takeaway names evidence actually heard only after a verified answer',()=>{
+ const prompt=ALL_PROMPTS.find(item=>item.id==='recommend-food-hard');
+ const challenge=listeningChallengeFor(prompt);
+ assert.ok(challenge.audio.includes(challenge.coaching.quote));
+ assert.equal(forestLearningPulseFor(prompt,{status:'review'}),null,
+  'An incorrect or unverified attempt never earns a success takeaway');
+ const pulse=forestLearningPulseFor(prompt,{status:'correct'},{hinted:true});
+ assert.match(pulse.tip,/forty minutes/);
+ assert.ok(pulse.tip.includes(challenge.coaching.meaning));
+ assert.match(pulse.badge,/ヒントあり/);
+});
+
 test('vocabulary and grammar show only authored, challenge-specific learning tips',()=>{
  for(const kind of ['vocab','grammar']){
   const prompt=first(kind);
