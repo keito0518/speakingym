@@ -160,6 +160,20 @@ body[data-game-view="play"] .app-shell{padding-bottom:0}
 .shop-odds [data-tier="legend"]{background:#64502b;border-color:#e3bf66;color:#ffecb1}
 .shop-odds small{color:inherit;opacity:.8}
 .shop-pity{background:#10243b;border:1px solid #45627c;color:#c5d8e5!important}
+.shop-collection-track,.shop-pity-tracks{display:grid;gap:8px;padding:12px;margin:13px 0;border:1px solid #526c88;border-radius:13px;background:linear-gradient(130deg,#152c48,#18273d);color:#edf0e4}
+.shop-collection-copy,.shop-pity-copy{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 9px;font-size:11px;font-weight:800}
+.shop-collection-copy strong{letter-spacing:.13em;color:#f3d99c}
+.shop-collection-copy span{font-size:13px;color:#ffeba9;font-weight:950}
+.shop-collection-track small{font-size:11px;line-height:1.5;color:#c4d6e5}
+.shop-collection-meter,.shop-pity-meter{height:9px;overflow:hidden;border-radius:12px;background:#09182b;box-shadow:inset 0 2px 4px #000a;border:1px solid #62788c}
+.shop-collection-meter span,.shop-pity-meter span{display:block;height:100%;border-radius:12px;background:linear-gradient(90deg,#b98242,#ffe69a);transition:width .3s ease}
+.shop-pity-tracks{gap:12px;padding:13px 12px;background:linear-gradient(140deg,#172640,#27304b)}
+.shop-pity-row{display:grid;gap:7px;min-width:0}
+.shop-pity-copy strong{color:#b9dfff;font-weight:950;letter-spacing:.07em}
+.shop-pity-row:nth-child(2) .shop-pity-copy strong{color:#e9b8fb}
+.shop-pity-copy span{color:#f3ebd3}
+.shop-pity-meter span{background:linear-gradient(90deg,#416fc0,#a4d4fb)}
+.shop-pity-row:nth-child(2) .shop-pity-meter span{background:linear-gradient(90deg,#8e51b6,#e6b5ff)}
 .shop-gacha-result{background:#1b3e48;color:#f4eec9!important;border:1px solid #537e82;font-size:12px!important}
 .summon-banner{height:clamp(135px,20vw,195px);position:relative;overflow:hidden;border:1px solid #ba9756;border-radius:13px;margin:12px 0;
  background:radial-gradient(circle at 74% 45%,#ffde9c4e,transparent 23%),radial-gradient(circle at 50% 57%,#8256ce6b,transparent 45%),linear-gradient(115deg,#171a3b,#42315a 55%,#182a51)}
@@ -209,7 +223,7 @@ body.summon-active{overflow:hidden}
 .summon-rays{position:absolute;inset:-30%;opacity:0;
  background:repeating-conic-gradient(from 0deg at 50% 50%,var(--summon-color) 0deg 3deg,transparent 3deg 25deg);
  animation:banner-orbit 7s linear infinite;transition:opacity .45s}
-.summon-screen[data-phase="crack"] .summon-rays,.summon-screen[data-phase="reveal"] .summon-rays{opacity:.17}
+.summon-screen[data-phase="crack"] .summon-rays,.summon-screen[data-phase="surge"] .summon-rays,.summon-screen[data-phase="reveal"] .summon-rays{opacity:.17}
 .summon-aura{position:absolute;left:50%;top:50%;width:min(100vw,650px);aspect-ratio:1;transform:translate(-50%,-50%);
  background:radial-gradient(circle,var(--summon-glow),transparent 68%);filter:blur(80px);opacity:.27;animation:hub-aura 3s ease-in-out infinite alternate}
 .summon-dialog{width:min(100%,650px);min-height:100dvh;display:flex;flex-direction:column;
@@ -225,6 +239,19 @@ body.summon-active{overflow:hidden}
 .summon-story{min-height:35px;color:var(--summon-accent);font-size:clamp(12px,2vw,16px);font-weight:900;
  letter-spacing:.13em;text-align:center;text-shadow:0 1px 10px var(--summon-glow)}
 .summon-portal{position:relative;width:min(76vw,340px,44dvh);aspect-ratio:1;margin:2px auto 9px;display:grid;place-items:center;isolation:isolate}
+.summon-meteors{position:absolute;inset:-28%;overflow:hidden;border-radius:50%;pointer-events:none}
+.summon-meteors span{position:absolute;top:-25%;left:15%;width:5px;height:35%;opacity:0;transform:rotate(32deg);background:linear-gradient(0deg,transparent,var(--summon-color),#fffdf1);border-radius:100%;filter:drop-shadow(0 0 8px var(--summon-glow))}
+.summon-meteors span:nth-child(2){left:32%;height:48%;animation-delay:.18s!important}
+.summon-meteors span:nth-child(3){left:52%;height:26%;animation-delay:.32s!important}
+.summon-meteors span:nth-child(4){left:70%;height:37%;animation-delay:.12s!important}
+.summon-meteors span:nth-child(5){left:82%;height:43%;animation-delay:.45s!important}
+.summon-meteors span:nth-child(6){left:42%;height:34%;animation-delay:.59s!important}
+.summon-ascension{position:absolute;inset:-50% 10%;opacity:0;pointer-events:none;transform:scaleX(.7);clip-path:polygon(45% 0,55% 0,100% 100%,0 100%);background:linear-gradient(180deg,transparent,var(--summon-color) 47%,transparent);filter:blur(15px)}
+.summon-screen[data-phase="surge"] .summon-meteors span{animation:summon-meteor .85s cubic-bezier(.1,.2,.3,1) infinite}
+.summon-screen[data-phase="surge"] .summon-ascension{animation:summon-ascend .5s ease-in-out infinite alternate}
+.summon-screen[data-phase="surge"] .summon-sigil{animation-duration:2.7s;filter:drop-shadow(0 0 22px var(--summon-glow))}
+.summon-screen[data-phase="surge"] .summon-core{animation:summon-shudder .08s linear infinite alternate;box-shadow:0 0 65px var(--summon-color)}
+.summon-screen[data-rarity="legend"][data-phase="surge"] .summon-meteors span{width:9px;filter:drop-shadow(0 0 16px #ffedb6)}
 .summon-portal::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#ffffff3b,transparent 68%);box-shadow:0 0 90px var(--summon-glow)}
 .summon-sigil{position:absolute;inset:0;width:100%;height:100%;color:var(--summon-color);
  filter:drop-shadow(0 0 10px var(--summon-glow));animation:banner-orbit 12s linear infinite}
@@ -247,6 +274,8 @@ body.summon-active{overflow:hidden}
 .summon-screen[data-phase="reveal"] .summon-reveal-art{animation:summon-appear .85s cubic-bezier(.18,1.3,.3,1) both}
 .summon-reward{max-width:100%;display:flex;align-items:center;flex-direction:column;gap:6px;opacity:0;transform:translateY(30px);text-align:center}
 .summon-screen[data-phase="reveal"] .summon-reward{animation:summon-appear .6s .2s ease both}
+.summon-screen[data-rarity="epic"][data-phase="reveal"] .summon-reward{filter:drop-shadow(0 0 14px #b36aff77)}
+.summon-screen[data-rarity="legend"][data-phase="reveal"] .summon-reward{filter:drop-shadow(0 0 21px #ffd87f99)}
 .summon-rarity{padding:6px 22px;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--summon-glow) 65%,transparent),transparent);
  color:var(--summon-accent);font-size:clamp(13px,3vw,20px);font-weight:950;letter-spacing:.21em;text-shadow:0 0 14px var(--summon-glow)}
 .summon-reward h2{color:#fff7dc;font-size:clamp(25px,6vw,41px);line-height:1.3;text-shadow:0 3px 20px #000,0 0 22px var(--summon-glow);overflow-wrap:anywhere}
@@ -266,6 +295,8 @@ body.summon-active{overflow:hidden}
 @keyframes summon-crack{to{filter:drop-shadow(0 0 22px #fff);width:10px}}
 @keyframes summon-burst{0%{opacity:.96;transform:scale(.1)}35%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
 @keyframes summon-appear{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes summon-meteor{0%{opacity:0;transform:translate(30px,-80px) rotate(32deg)}25%{opacity:.85}100%{opacity:0;transform:translate(-120px,430px) rotate(32deg)}}
+@keyframes summon-ascend{from{opacity:.3;transform:scaleX(.45)}to{opacity:.72;transform:scaleX(1.1)}}
 
 /* The battle remains a one-screen game. Add HUD depth without moving the
    answer dock, microphone, monsters, or tested hit effects. */
@@ -361,6 +392,7 @@ body.summon-active{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
  .summon-screen *, .summon-screen *::before,.summon-screen *::after,.home-feature-companion::before,
  .summon-banner-ring,.shop-gacha #shop-draw::after{animation:none!important;transition:none!important}
+ .shop-collection-meter span,.shop-pity-meter span{transition:none}
  .summon-screen[data-phase="reveal"] .summon-reward,.summon-screen[data-phase="reveal"] .summon-reveal-art{opacity:1;transform:none}
 }
 .monsters-quiet-motion .summon-screen *,.monsters-quiet-motion .summon-screen *::before,

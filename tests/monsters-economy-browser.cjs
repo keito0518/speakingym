@@ -34,6 +34,10 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#shop-draw').isEnabled(),true);
   assert.match(await page.locator('.shop-odds').innerText(),/67%.*26%.*6%.*1%/s);
   assert.match(await page.locator('.shop-gacha').innerText(),/現金購入・課金ガチャ・換金はありません/);
+  assert.equal(await page.locator('.shop-pity-meter').count(),2,'Rarity guarantees should have visible progress meters');
+  assert.equal(await page.locator('.shop-collection-meter').getAttribute('aria-valuemax'),'24');
+  assert.match(await page.locator('.shop-collection-copy').innerText(),/0 \/ 24 種/);
+  assert.match(await page.locator('.shop-pity-tracks').innerText(),/最大あと 7 回.*最大あと 25 回/s);
   assert.equal(await page.locator('[data-sell-treasure]').count(),2);
   assert.match(await page.locator('#collection-progress').innerText(),/44体/);
   assert.equal(await page.locator('[data-open-monster="kohan"] [data-pixel-sprite="kohan"]').count(),1,
@@ -114,6 +118,23 @@ const {chromium,webkit}=require('playwright');
   const afterRepeat=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
   assert.equal(afterRepeat.gachaPullCount,3,'Skip, close and equipping must never reroll');
   assert.deepEqual(afterRepeat.weaponInventory,['eternal_crest']);
+  // The ordinary motion path for EPIC has an extra build-up stage that can
+  // always be skipped, and a new draw is charged only once at its start.
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{Math.random=()=>.03;});
+  await page.locator('#shop-draw').click();
+  assert.equal(await page.locator('#summon-screen').getAttribute('data-rarity'),'epic');
+  await page.waitForFunction(()=>document.querySelector('#summon-screen')?.dataset.phase==='surge',null,{timeout:3000});
+  assert.match(await page.locator('#summon-story').innerText(),/召喚陣が共鳴/);
+  assert.equal(await page.locator('#summon-reveal-art').evaluate(el=>getComputedStyle(el).opacity),'0',
+   'Weapon art should be hidden until the surge finishes or is explicitly skipped');
+  await page.locator('#summon-skip').click();
+  assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
+  assert.match(await page.locator('#summon-rarity').innerText(),/EPIC/);
+  await page.locator('#summon-close').click();
+  const afterEpic=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+  assert.equal(afterEpic.gachaPullCount,4,'The extended cinematic must not charge extra draws');
+  assert.equal(afterEpic.coins,50);
   await assertNoOverflow('repeat gacha');
   assert.deepEqual(errors,[],`${engine} browser console errors`);
   console.log(`${engine}: treasure sale, earned-only gacha, 44 story monsters, weapon appearance and reload passed`);

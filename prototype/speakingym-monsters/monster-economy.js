@@ -46,6 +46,15 @@ export function summonProgress(save){
   missing:Math.max(0,GACHA_COST-potential),
   percent:Math.min(100,Math.round(100*potential/GACHA_COST))};
 }
+// Worst-case draw counts until a guaranteed rarity. Early lucky pulls reset
+// their respective counters, so the meters never promise a specific next drop.
+export function summonPityProgress(save){
+ const economy=normalizeEconomy(save);
+ const progress=(current,limit)=>({current,limit,remaining:limit-current,
+  percent:Math.round(current*100/limit)});
+ return {rare:progress(economy.pullsSinceRare,RARE_PITY),
+  epic:progress(economy.pullsSinceEpic,EPIC_PITY)};
+}
 export function grantDungeonTreasure(save,{areaId,independent=0,firstClear=false,random=Math.random}={}){
  const areas=['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core'];
  const index=areas.indexOf(areaId);

@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
 import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
-import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,
+import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
+import {SUMMON_TIMINGS} from '../prototype/speakingym-monsters/gacha-cinematic.js';
 
 test('old saves restore an empty wallet safely and untrusted backups cannot forge currency',()=>{
  const old=createSave();delete old.coins;delete old.treasureBag;delete old.gachaPullCount;
@@ -107,6 +108,35 @@ test('gacha rarity boundaries, transparent rare/epic pity, and legendary 1% are 
  const epic=drawWeaponGacha({...base,pullsSinceEpic:EPIC_PITY-1},{random:()=>.99});
  assert.equal(epic.tier,'epic');assert.equal(epic.save.pullsSinceEpic,0);
  assert.equal(epic.save.pullsSinceRare,0);
+});
+
+test('summon meter reports guaranteed worst-case draws, clamps invalid counts and resets on rares',()=>{
+ const empty=summonPityProgress(createSave());
+ assert.deepEqual(empty,{rare:{current:0,limit:7,remaining:7,percent:0},epic:{current:0,limit:25,remaining:25,percent:0}});
+ const almost={...createSave(),coins:240,pullsSinceRare:6,pullsSinceEpic:24};
+ const progress=summonPityProgress(almost);
+ assert.deepEqual(progress.rare,{current:6,limit:7,remaining:1,percent:86});
+ assert.deepEqual(progress.epic,{current:24,limit:25,remaining:1,percent:96});
+ const pull=drawWeaponGacha(almost,{random:()=>.99});
+ assert.equal(pull.tier,'epic','An epic guarantee takes precedence when both caps are due');
+ assert.equal(summonPityProgress(pull.save).rare.current,0);
+ assert.equal(summonPityProgress(pull.save).epic.current,0);
+ const invalid=summonPityProgress({pullsSinceRare:999,pullsSinceEpic:-3});
+ assert.equal(invalid.rare.remaining,1);
+ assert.equal(invalid.epic.remaining,25);
+});
+
+test('premium summon tiers have unique skippable buildup, without altering reward odds',()=>{
+ assert.ok(SUMMON_TIMINGS.common.reveal<SUMMON_TIMINGS.rare.reveal);
+ assert.ok(SUMMON_TIMINGS.rare.reveal<SUMMON_TIMINGS.epic.reveal);
+ assert.ok(SUMMON_TIMINGS.epic.reveal<SUMMON_TIMINGS.legend.reveal);
+ for(const tier of ['epic','legend']){
+  assert.ok(SUMMON_TIMINGS[tier].crack<SUMMON_TIMINGS[tier].surge);
+  assert.ok(SUMMON_TIMINGS[tier].surge<SUMMON_TIMINGS[tier].reveal);
+ }
+ assert.equal(SUMMON_TIMINGS.common.surge,null);
+ assert.equal(SUMMON_TIMINGS.rare.surge,null);
+ assert.deepEqual(GACHA_ODDS,{common:67,rare:26,epic:6,legend:1});
 });
 
 test('equipment overlays visibly differ by type and rarity for both old atlas and nine new sprites',()=>{

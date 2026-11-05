@@ -2,10 +2,19 @@
 // commits the result BEFORE this presentation begins; skipping or closing the
 // animation cannot draw a second item or change the saved result.
 const RARITY_COPY=Object.freeze({
- common:{label:'COMMON',name:'旅の武器',intro:'装備の気配が集まっていく…'},
- rare:{label:'RARE',name:'希少な武器',intro:'青い光が召喚陣を包む…'},
- epic:{label:'EPIC',name:'秘宝級の武器',intro:'紫の雷光が走る…'},
- legend:{label:'LEGEND',name:'伝説の武器',intro:'金色の星が目を覚ます…'}
+ common:{label:'COMMON',name:'旅の武器',intro:'装備の気配が集まっていく…',surge:''},
+ rare:{label:'RARE',name:'希少な武器',intro:'青い光が召喚陣を包む…',surge:''},
+ epic:{label:'EPIC',name:'秘宝級の武器',intro:'紫の雷光が走る…',surge:'召喚陣が共鳴している！'},
+ legend:{label:'LEGEND',name:'伝説の武器',intro:'金色の星が目を覚ます…',surge:'伝説の封印が、いま解き放たれる！'}
+});
+
+// A high rarity has more anticipation, not different odds or extra draws.
+// Every sequence remains skippable; reduced-motion reveals immediately.
+export const SUMMON_TIMINGS=Object.freeze({
+ common:Object.freeze({crack:800,surge:null,reveal:1900}),
+ rare:Object.freeze({crack:850,surge:null,reveal:2250}),
+ epic:Object.freeze({crack:900,surge:1500,reveal:2900}),
+ legend:Object.freeze({crack:950,surge:1650,reveal:3500})
 });
 
 export function createGachaCinematic({onEquip,onRepeat}){
@@ -44,6 +53,8 @@ export function createGachaCinematic({onEquip,onRepeat}){
     <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>SUMMON</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="召喚画面を閉じる">閉じる</button></div></div>
     <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">武器の気配が集まっていく…</p>
       <div class="summon-portal" aria-hidden="true">
+        <div class="summon-meteors"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="summon-ascension"></div>
         <div class="summon-orbit orbit-one"></div><div class="summon-orbit orbit-two"></div>
         <svg class="summon-sigil" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="150" cy="150" r="133" stroke="currentColor" stroke-width="2"/><circle cx="150" cy="150" r="112" stroke="currentColor" stroke-width="1" stroke-dasharray="5 13"/><path d="M150 28 270 219H30L150 28ZM150 272 30 81h240L150 272Z" stroke="currentColor" stroke-width="1.5"/><circle cx="150" cy="150" r="70" stroke="currentColor" stroke-width="1.5"/><path d="M150 96 204 150 150 204 96 150Z" stroke="currentColor" stroke-width="2"/></svg>
         <div class="summon-core"><span class="summon-core-inner"></span><span class="summon-crack crack-one"></span><span class="summon-crack crack-two"></span><span class="summon-crack crack-three"></span></div>
@@ -119,8 +130,13 @@ export function createGachaCinematic({onEquip,onRepeat}){
   const quiet=document.documentElement.classList.contains('monsters-quiet-motion')||
    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(quiet){reveal();return;}
-  later(()=>{root.dataset.phase='crack';root.querySelector('#summon-story').textContent='封印が解ける――';playCue('crack');},850);
-  later(reveal,2020);
+  const timeline=SUMMON_TIMINGS[root.dataset.rarity];
+  later(()=>{root.dataset.phase='crack';root.querySelector('#summon-story').textContent='封印が解ける――';playCue('crack');},timeline.crack);
+  if(timeline.surge!==null)later(()=>{
+   root.dataset.phase='surge';root.querySelector('#summon-story').textContent=rarity.surge;
+   playCue('surge');
+  },timeline.surge);
+  later(reveal,timeline.reveal);
  }
  function close(){
   if(!root||root.hidden)return;
