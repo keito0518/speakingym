@@ -83,10 +83,11 @@ test('zero HP remains down until wave cleared; next wave restores the party',()=
  assert.equal(recovered.swapsUsed,0);
 });
 test('higher dungeon chapters raise foe HP gradually, while boss requires three correct answers',()=>{
- assert.equal(encounterVitality('entry',0),3);
- assert.equal(encounterVitality('entry',1),2);
- assert.equal(encounterVitality('thicket',0),4);
- assert.equal(encounterVitality('city',1),3);
- assert.equal(encounterVitality('city-blizzard',1),4);
+ assert.equal(encounterVitality('entry',0),5);
+ assert.equal(encounterVitality('entry',1),5);
+ assert.equal(encounterVitality('entry',4),13,'chapter elite has a visible 13 HP pool');
+ assert.equal(encounterVitality('thicket',0),7);
+ assert.equal(encounterVitality('city',1),7);
+ assert.equal(encounterVitality('city-blizzard',1),9);
  assert.equal(encounterVitality('city-blizzard',9,{boss:true}),3);
 });

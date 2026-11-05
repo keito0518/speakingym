@@ -1,5 +1,22 @@
 /* Adventure-first navigation. Keep optional modes discoverable but out of the
    initial decision: start, repeat a short training, review, or see companions. */
+.hero-weapon-summary{margin:7px 0 0;color:#f7ebca;font-size:12px;font-weight:800;line-height:1.55}
+.collection-weapons{margin:18px 0;padding:16px 18px;border:2px solid #afcb9a;border-radius:16px;background:#f4f9e9;color:#244937;box-shadow:0 4px 0 #d8e6cb}
+.collection-weapons .forest-treasures-heading{margin:0 0 12px}
+.collection-weapons h2{margin:4px 0;font-size:22px;color:#203e2c}
+.collection-weapons p{margin:5px 0;font-size:13px;line-height:1.6;color:#335844}
+.collection-weapons label{display:block;margin:12px 0 6px;font-size:13px;font-weight:850}
+.collection-weapons select{display:block;width:100%;min-height:45px;padding:8px 11px;border:2px solid #648b69;border-radius:10px;background:#fff;color:#213e30;font-size:15px;font-weight:800}
+.collection-weapons select:focus-visible{outline:3px solid #c48e3f;outline-offset:3px}
+.collection-weapons #equipment-weapon-status{padding:8px 10px;border-radius:8px;background:#dcefd3;font-weight:750}
+.forest-active .forest-boss-hp[data-health-mode="bar"]{display:block;flex:0 0 105px;min-width:105px;min-height:17px;padding:0!important;border-radius:999px;background:#422a2a;box-shadow:inset 0 0 0 2px #e0c59b;overflow:hidden}
+.forest-active .forest-boss-hp[data-health-mode="bar"]::before{background:linear-gradient(90deg,#50bd67,#bada6e);border-radius:999px}
+.forest-active .forest-tactic-weapon{margin:4px 0;padding:6px 10px;border-radius:8px;background:#ddebd2;color:#234b30;font-size:12px;font-weight:850}
+.result-weapon-drop{display:grid;gap:7px;margin:12px 0;padding:16px 18px;border:2px solid #c2a35a;border-radius:14px;background:linear-gradient(125deg,#fff4cf,#e8f6d9);color:#493821;box-shadow:0 4px 0 #c7d3aa}
+.result-weapon-drop strong{font-size:19px}
+.result-weapon-drop p{margin:0;color:#4a482e;font-size:13px;line-height:1.6}
+.result-weapon-drop button{justify-self:start;min-height:42px;padding:8px 15px;border:1px solid #7d622f;border-radius:9px;background:#514121;color:#fff4ce;font-weight:850;cursor:pointer}
+@media(max-width:480px){.forest-active .forest-boss-hp[data-health-mode="bar"]{flex-basis:78px;min-width:78px}.collection-weapons{padding:13px}}
 .home-navigation{margin-top:0}
 .home-navigation-head{margin:0 0 13px;padding:0}
 .home-navigation-head .tiny-caps{font-size:9px;letter-spacing:.13em}

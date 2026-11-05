@@ -1,6 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
+import { WEAPONS, equippedWeapon, equipWeapon, levelAttackBonus, scaledStrikeDamage, dungeonWeaponDrop } from './monster-equipment.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -505,11 +506,14 @@ function renderHome() {
   $('#hero-monster-name').textContent = monsterFormName(creature,growth.stage) + (growth.ascended ? ' / 第2進化' : growth.evolved ? ' / 進化済み' : '');
   $('#hero-monster-species').textContent = `${creature.japaneseName} · ${creature.roots.map(root=>root.word).join(' + ')}`;
   $('#hero-level').textContent = `Lv.${growth.level}`;
+  const equipped=equippedWeapon(save);
+  $('#hero-weapon-summary').textContent=`攻撃成長 +${levelAttackBonus(growth.level)} · 装備：${equipped?`${equipped.name}（攻撃+${equipped.attack}）`:'素手'}`;
   $('#hero-xp-fill').style.width = `${100 - growth.toNextLevel / XP_PER_LEVEL * 100}%`;
   const nextHealthTier=[3,6,9].find(level=>level>growth.level);
   const mastery=masterySkillFor(creature.id,growth.level);
   const evolutionBrief=growth.ascended?'第2進化達成！':growth.canEvolve?'進化条件達成！ 図鑑で「進化する」を押そう':`次の進化：Lv.${growth.evolved?10:5}＋ボス ${growth.trialCount}/${growth.requiredTrials}エリア`;
-  $('#hero-next-level').textContent = `次のLv.まで ${growth.toNextLevel} XP · ${evolutionBrief}${nextHealthTier?` · Lv.${nextHealthTier}でHP＋1`:''}${!mastery?` · Lv.${MASTERY_LEVEL}で熟練技`:''}`;
+  const nextAttackLevel=growth.level<13?4+3*levelAttackBonus(growth.level):null;
+  $('#hero-next-level').textContent = `次のLv.まで ${growth.toNextLevel} XP · ${evolutionBrief}${nextHealthTier?` · Lv.${nextHealthTier}でHP＋1`:''}${nextAttackLevel?` · Lv.${nextAttackLevel}で攻撃＋1`:''}${!mastery?` · Lv.${MASTERY_LEVEL}で熟練技`:''}`;
   $('#home-wallet').textContent = save.xpWallet;
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);
@@ -845,8 +849,11 @@ function updateEnemyHealth(hit=false) {
   const left=boss?Math.max(0,BOSS_HITS-play.bossHits):(play.tactics?play.tactics.enemyHp:hit?0:1);
   const meter=$('#forest-boss-hp');
   meter.hidden=false;
-  meter.textContent=boss?`封印 ${left} / ${max}`:`HP ${left} / ${max}`;
-  meter.setAttribute('aria-label',boss?'ボスの残り封印':'敵のHP');
+  // Show regular-foe vitality as a clean bar, not a second row of numbers.
+  // Screen readers retain exact HP and the boss still shows three seals.
+  meter.dataset.healthMode=boss?'seals':'bar';
+  meter.textContent=boss?`封印 ${left} / ${max}`:'';
+  meter.setAttribute('aria-label',boss?`ボスの残り封印 ${left}/${max}`:`敵のHP ${left}/${max}`);
   meter.setAttribute('aria-valuemax',String(max));
   meter.setAttribute('aria-valuenow',String(left));
   meter.style.setProperty('--boss-health',`${100*left/max}%`);
@@ -1106,6 +1113,7 @@ function renderTacticalControls(){
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
+  ${!incoming?`<p class="forest-tactic-weapon">Lv.${getMonsterProgress(save,play.companionId).level} 攻撃成長 +${levelAttackBonus(getMonsterProgress(save,play.companionId).level)} · ${equippedWeapon(save)?`${escapeHtml(equippedWeapon(save).name)} 攻撃+${equippedWeapon(save).attack}`:'素手'}</p>`:''}
   ${boss?`<div class="forest-boss-tactical-plan" role="group" aria-label="ボスの3手の攻撃予告"><strong>ボスの攻撃パターン</strong><ol>${[0,1,2].map(phase=>{const threat=bossAttackFor(foe.id,phase);return `<li data-boss-plan-phase="${phase}" data-current="${String(phase===play.index-regularCount())}"><span>${phase+1}手目</span><b>${BATTLE_LABELS[threat.kind]}</b><small>${phase===2?'撃破で反撃なし':threat.pressure?'強攻撃':'通常攻撃'}</small></li>`;}).join('')}</ol><small>最初の2手は敵が反撃する。3つの英語確認をすべてクリアすると勝利！</small></div>`:''}
   ${boss?`<p class="forest-boss-link" data-link-ready="${String(!t.bossLinkUsed&&linkPreview?.partnerId&&play.index-regularCount()===bossLink.phase)}" data-link-used="${String(t.bossLinkUsed)}"><strong>連携：${escapeHtml(bossLink.name)}</strong> ${bossLink.phase+1}手目 · 控えの${BATTLE_LABELS[bossLink.kind]}で${bossLink.description}。${t.bossLinkUsed?' 発動済み。':linkPreview?.partnerId?` ${escapeHtml(monsterFor(linkPreview.partnerId).name)}が待機中！`:' 控えが必要。'}</p>`:''}
   ${boss&&!incoming&&!finalBossStrike?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`}</p>`:''}
@@ -2164,7 +2172,8 @@ async function gradeAnswer() {
       tag:duo?.activated?'DUO!':mastery?.extraDamage?'MASTERY!':baseSpecial.tag};
     const styled=t?foeStyledStrike({style:foeStyle,damage:amplified.damage,kind:attackKind,foeId:foe.id,
       shieldIntact:t.styleShieldIntact}):null;
-    const special=styled?{...amplified,damage:styled.damage}:amplified;
+    const rawSpecial=styled?{...amplified,damage:styled.damage}:amplified;
+    const special=t?{...rawSpecial,damage:scaledStrikeDamage(rawSpecial.damage,form.level,save)}:rawSpecial;
     const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0)+(mastery?.heal||0),t.maxHp-t.hp):0;
     let foeShiftNow=false;
     let bossLink=null,linkHealAmount=0;
@@ -2252,7 +2261,7 @@ async function gradeAnswer() {
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
     const duoNote=duo?.activated?`${monsterFor(duo.partnerId).name}との連携成功！ ${duo.awakened?`${duo.awakened}発動！ `:''}${duo.extraDamage?`援護でダメージ＋${duo.extraDamage}。 `:''}${duo.extraCharge?`必殺ゲージ＋${duo.extraCharge}（最大${ULTIMATE_MAX}）。 `:''}${duo.extraHeal?(healed?`回復効果が発動！ `:'HP満タンで回復効果は不要だったよ。 '):''}`:choseAssist?'連携はヒントなしの自力正解で発動するよ。 ':'';
     const masteryNote=mastery?.activated?`Lv.${MASTERY_LEVEL}技「${mastery.name}」発動！ ${mastery.extraDamage?'追撃ダメージ＋1。 ':''}${mastery.extraCharge?'必殺ゲージ＋1。 ':''}${mastery.heal?'仲間HPを回復。 ':''}${mastery.shield?'次の敵攻撃を1軽減。 ':''}`:'';
-    const ascensionNote=special.ascensionBoost?'第2進化ボーナス！ 得意攻撃の威力＋1（最大5）。 ':'';
+    const ascensionNote=special.ascensionBoost?'第2進化ボーナス！ 得意攻撃の威力＋1。 ':'';
     const shiftNote=foeShiftNow?`属性変化！ 次の弱点は${BATTLE_LABELS[foeBattleAffinity({foeId:foe.id,style:foeStyle,shifted:true}).weak]}に変わった。 `:'';
     const counterNote=bossCounter?.activated?`迎撃成功！ 必殺ゲージ＋1・次の敵攻撃−1${bossCounter.heal&&healed?'・進化回復':''}。 `:'';
     const linkNote=bossLink?.activated?`ボス連携「${bossLink.name}」成功！ ${monsterFor(bossLink.partnerId).name}の援護で${bossLink.shield?'次の反撃−1':bossLink.extraCharge?'必殺ゲージ＋1':`味方HP合計＋${linkHealAmount}`}。 `:'';
@@ -2506,6 +2515,11 @@ function finishSession(timedOut=false,defeated=false) {
     ended.newChainChests=chestReward.unlocked;
     if(chestReward.unlocked.length||ended.bestCombo>(save.bestBattleChain||0))
       persist({...chestReward.save,bestBattleChain:Math.max(save.bestBattleChain||0,ended.bestCombo)});
+    const loot=dungeonWeaponDrop(save,{areaId:ended.areaId,
+      completed:ended.completedForest===true&&!ended.endless,
+      independent:ended.smooth});
+    ended.weaponDrop=loot.weapon;
+    if(loot.weapon)persist(loot.save);
   }
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
   if(ended.mode==='daily'&&ended.index>=ended.prompts.length){
@@ -2585,6 +2599,14 @@ function finishSession(timedOut=false,defeated=false) {
   chaseReward.replaceChildren();
   chaseReward.hidden=ended.mode!=='forest';
   if(ended.mode==='forest'){
+    if(ended.weaponDrop){
+      const panel=document.createElement('div');panel.className='result-weapon-drop';
+      const heading=document.createElement('strong');heading.textContent=`装備ドロップ！ ${ended.weaponDrop.name}`;
+      const detail=document.createElement('p');detail.textContent=`攻撃＋${ended.weaponDrop.attack} · ${ended.weaponDrop.rarity==='rare'?'レア装備！':'このエリアの初獲得'}${save.equippedWeaponId===ended.weaponDrop.id?' · 自動装備したよ':' · 図鑑で装備を変更できるよ'}`;
+      const button=document.createElement('button');button.type='button';button.textContent='装備を確認する';
+      button.addEventListener('click',()=>renderCollection());
+      panel.append(heading,detail,button);chaseReward.append(panel);
+    }
     const chests=ended.newChainChests||[];
     if(chests.length){
       const panel=document.createElement('div');panel.className='result-chain-chest';
@@ -2684,7 +2706,23 @@ function finishSession(timedOut=false,defeated=false) {
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
   showView('result');
 }
-const {renderCollection,renderDetail,renderTraining} = createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
+const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
+const {renderDetail,renderTraining}=collectionViews;
+function renderEquipmentCollection(){
+ const panel=$('#collection-weapons');
+ const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id));
+ const current=equippedWeapon(save);
+ panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>ダンジョンのボス撃破で武器を獲得。初回はその章の武器が確定、再挑戦ではレア装備を狙えるよ。</p></div>
+  <label for="equipment-weapon-choice">出撃する武器（パーティ共通）</label>
+  <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weapon.attack}${weapon.rarity==='rare'?' · レア':''}</option>`).join('')}</select>
+  <p id="equipment-weapon-status" role="status">${current?`${escapeHtml(current.name)} を装備中 · 攻撃＋${current.attack}`:'いまは素手で出撃するよ。'} レベルによる攻撃成長は別に加算。ボスの封印3問は省略できないよ。</p>`;
+ panel.querySelector('#equipment-weapon-choice').addEventListener('change',event=>{
+   const id=event.target.value||null;
+   if(!persist(equipWeapon(save,id))){event.target.value=equippedWeapon(save)?.id||'';return;}
+   renderEquipmentCollection();
+ });
+}
+function renderCollection(){collectionViews.renderCollection();renderEquipmentCollection();}
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));

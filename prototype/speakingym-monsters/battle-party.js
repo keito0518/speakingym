@@ -61,5 +61,9 @@ export function restorePartyForNextWave(party,amount=4){
 const AREA_TIERS=Object.freeze({entry:0,glade:0,thicket:1,sanctuary:1,city:1,'city-market':1,'city-terminal':2,'city-blizzard':2,'ruins-gate':2,'ruins-core':3});
 export function encounterVitality(areaId,index,{boss=false}={}){
  if(boss)return 3;
- return (index===0?3:2)+(AREA_TIERS[areaId]||0);
+ // Ordinary fights usually take two or three verified attacks. Every fifth
+ // foe is tougher (13 HP in the opening chapter), making weapon/level growth
+ // visible without turning *every* question into a drawn-out boss encounter.
+ const step=Math.max(0,Number.isInteger(index)?index:0)%5;
+ return (step===4?13:step>=2?8:5)+(AREA_TIERS[areaId]||0)*2;
 }

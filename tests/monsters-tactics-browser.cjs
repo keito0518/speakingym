@@ -136,7 +136,8 @@ const assert=require('node:assert/strict');
      const answerViewport=await page.evaluate(()=>({top:document.querySelector('#spoken-answer').getBoundingClientRect().top,viewport:innerHeight}));
      assert.ok(answerViewport.top<answerViewport.viewport,
        `${engine}/${width}: the first answer field must appear without scrolling past tactical explanations (${JSON.stringify(answerViewport)})`);
-     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'5');
+     assert.equal(await page.locator('#forest-boss-hp').innerText(),'','Ordinary foes show their HP as a bar, not distracting numbers');
      assert.equal(await page.locator('[data-tactic-action]').count(),2,'Defense is automatic: only attack and ultimate remain');
      assert.equal(await page.locator('[data-tactic-action="assist"]').count(),0,'Solo players do not get an unusable team-up control');
      assert.equal(await page.locator('[data-tactic-action="guard"]').count(),0);
@@ -233,12 +234,12 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1');
      assert.equal(await page.locator('.forest-chain-result').count(),1,'First independent success has one compact chain badge beside the answer');
      assert.match(await page.locator('.forest-chain-result').innerText(),/1 CHAIN[\s\S]*コンボ開始！/);
-     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1','Starter ally speak attack deals two vs first foe');
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2','Starter unarmed hit deals three against a 5 HP foe');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-tactics'),'true');
      assert.equal(await page.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-defeated')),false,'A living enemy must not be flagged defeated');
      if(width!==375)await page.waitForTimeout(1350); // Original bug only appeared after the knockout animation finished.
      const livingEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));
-     assert.ok(livingEnemyOpacity>.85,`${engine}/${width}: enemy at 1 HP disappeared after the first hit (${livingEnemyOpacity})`);
+     assert.ok(livingEnemyOpacity>.85,`${engine}/${width}: injured enemy disappeared after the first hit (${livingEnemyOpacity})`);
      await page.locator('#next-question').click();
      assert.match(await page.locator('#forest-tactics').innerText(),/敵の反撃を防ごう.*文法/s);
      assert.match(await page.locator('.forest-turn-task > strong').innerText(),/③ 敵の反撃を防ごう/);
@@ -273,7 +274,7 @@ const assert=require('node:assert/strict');
      }
      await page.locator('#next-question').click();
      assert.match(await page.locator('#forest-tactics').innerText(),/あなたのターン/);
-     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1');
+     assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2');
      const browserLayout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
      assert.ok(browserLayout.scroll<=browserLayout.width+1,`${engine}/${width}: horizontal overflow ${JSON.stringify(browserLayout)}`);
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Next player turn again starts with skill choice');
@@ -352,7 +353,7 @@ const assert=require('node:assert/strict');
        await page.locator('#forest-explore-continue').click();
        assert.equal(await page.locator('#forest-world-stage').getAttribute('data-tactics'),'true',
          'The main English dungeon must use real turn-based combat');
-       assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3',
+       assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'5',
          'The normal foe must survive the first regular hit instead of disappearing');
        assert.equal(await page.locator('#forest-arena-console #play-card').count(),1);
        assert.equal(await page.locator('#forest-arena-console #answer-area').count(),1);
@@ -362,6 +363,33 @@ const assert=require('node:assert/strict');
      assert.deepEqual(errors,[]);
      await context.close();
    }
+   // Weapon inventory uses the same persistent save as companion growth.
+   // Equipping a previously won weapon must survive reload and visibly change
+   // regular-foe damage without changing the English answer or boss seals.
+   const gearContext=await browser.newContext({viewport:{width:375,height:844},hasTouch:true,isMobile:engine==='webkit'});
+   const gearPage=await gearContext.newPage();
+   await gearPage.goto(url,{waitUntil:'networkidle'});
+   await gearPage.evaluate(async()=>{
+     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+     localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),weaponInventory:['wooden_blade','mist_spear'],equippedWeaponId:'wooden_blade'}));
+   });
+   await gearPage.reload({waitUntil:'networkidle'});
+   assert.match(await gearPage.locator('#hero-weapon-summary').innerText(),/旅立ちの木剣.*攻撃\+1/);
+   await gearPage.locator('#open-collection').click();
+   assert.equal(await gearPage.locator('#equipment-weapon-choice').inputValue(),'wooden_blade');
+   await gearPage.locator('#equipment-weapon-choice').selectOption('mist_spear');
+   assert.match(await gearPage.locator('#equipment-weapon-status').innerText(),/霧抜けの槍.*攻撃＋2/);
+   await gearPage.reload({waitUntil:'networkidle'});
+   assert.match(await gearPage.locator('#hero-weapon-summary').innerText(),/霧抜けの槍.*攻撃\+2/);
+   await gearPage.locator('[data-feature-worlds]').click();
+   await gearPage.locator('#start-forest').click();
+   await gearPage.locator('#forest-explore-continue').click();
+   assert.equal(await gearPage.locator('#forest-boss-hp').getAttribute('aria-valuemax'),'5');
+   await gearPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
+   await answer(gearPage);
+   assert.equal(await gearPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
+     'A trained weapon upgrades a three-damage starter attack to five and defeats the first foe');
+   await gearContext.close();
    // A saved multi-ally collection must survive unchanged while a battle uses
    // temporary, independent HP. One exchange is allowed in each encounter.
    const partyContext=await browser.newContext({viewport:{width:320,height:844},hasTouch:true,isMobile:engine==='webkit'});
@@ -595,8 +623,8 @@ const assert=require('node:assert/strict');
    await advancedPage.locator('.forest-tactic-strategy > summary').click();
    assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/最初の一撃は弱点以外のダメージ−1/);
    await answer(advancedPage);
-   assert.equal(await advancedPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1',
-     'An evolved specialty attack deals 3, but the enemy shell visibly absorbs 1');
+   assert.equal(await advancedPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2',
+     'An evolved specialty attack scales from base damage while the enemy shell still absorbs one');
    assert.match(await advancedPage.locator('#forest-battle-log').textContent(),/敵の殻に威力を1防がれた/);
    assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/殻は破れた/);
    const advancedContrast=await advancedPage.locator('.forest-tactic-foe-style').evaluate(el=>{
@@ -676,7 +704,7 @@ const assert=require('node:assert/strict');
    await shiftingPage.locator('.forest-tactic-strategy > summary').click();
    assert.match(await shiftingPage.locator('.forest-tactic-heading').innerText(),/敵の弱点：リスニング.*耐性：文法/s);
    await answer(shiftingPage);
-   assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2');
+   assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'4');
    assert.match(await shiftingPage.locator('#forest-battle-log').textContent(),/属性変化！ 次の弱点は文法/);
    assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'true');
    assert.equal(await shiftingPage.locator('#forest-enemy-weakness').innerText(),'弱点：文法',

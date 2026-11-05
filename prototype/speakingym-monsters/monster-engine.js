@@ -3,6 +3,7 @@ import { cleanForest, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, unlockedDungeonArea
 import { recordRetention, retentionOverview, sanitizeRetention } from './retention.js';
 import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 import { sanitizeSavedReviewHistory } from './saved-review-coach.js';
+import { normalizeEquipment } from './monster-equipment.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
 export const SAVE_VERSION = 1;
@@ -54,6 +55,8 @@ export function createSave() {
     bestBattleChain: 0,
     battleTreasures: [],
     huntTargetId: null,
+    weaponInventory: [],
+    equippedWeaponId: null,
     totalAnswers: 0,
     forest: cleanForest(null)
   };
@@ -143,6 +146,7 @@ export function validateSave(value) {
     battleTreasures:unique((Array.isArray(value.battleTreasures)?value.battleTreasures:[])
       .filter(key=>typeof key==='string'&&areaIds.has(key.split(':')[0])&&['3','5','8'].includes(key.split(':')[1])&&key.split(':').length===2)).sort(),
     huntTargetId:typeof value.huntTargetId==='string'&&ids.has(value.huntTargetId)&&!ownedMonsters.includes(value.huntTargetId)?value.huntTargetId:null,
+    ...normalizeEquipment(value),
     totalAnswers: safeSaveCount(value.totalAnswers),
     forest: cleanForest(value.forest)
   };
