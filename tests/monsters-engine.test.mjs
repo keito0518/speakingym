@@ -14,6 +14,7 @@ import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-mons
 import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
 import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
 import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
+import { quizRetryCoachFor, missingQuizWordMeanings } from '../prototype/speakingym-monsters/forest-quiz-retry-coach.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
@@ -1837,6 +1838,33 @@ test('all 168 objective quiz questions have a why, comparison and transfer lesso
   const advancedPrice=quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-price-hard'));
   assert.match(advancedPrice.clue,/複数形/);
   assert.equal(quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak')),null);
+});
+test('every wrong vocabulary option has a safe individual meaning, and grammar retries point to the mismatch',()=>{
+ const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
+ assert.deepEqual(missingQuizWordMeanings(quizzes),[],'No authored word distractor may lack a meaning');
+ for(const prompt of quizzes.filter(prompt=>prompt.kind==='vocab')){
+  for(const option of prompt.options.filter(option=>option.toLowerCase()!==prompt.answer.toLowerCase())){
+   const cue=quizRetryCoachFor(prompt,option);
+   assert.equal(cue.kind,'vocab');
+   assert.equal(cue.selected,option);
+   assert.match(cue.message,/文の場面と意味が合うか/);
+   assert.ok(cue.message.includes('「'+option+'」'));
+   assert.ok(!cue.message.includes('「'+prompt.answer+'」'),
+    'Retry coaching cannot name the correct choice before the learner tries again');
+  }
+  assert.equal(quizRetryCoachFor(prompt,prompt.answer),null);
+ }
+ const grammar=ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-arrive-easy');
+ const swapped=quizRetryCoachFor(grammar,'I will be late ten minutes.');
+ assert.equal(swapped.kind,'grammar');
+ assert.equal(swapped.matchingPrefix,3);
+ assert.match(swapped.message,/最初の3語/);
+ assert.doesNotMatch(swapped.message,/ten minutes late/, 'Do not leak the correct order');
+ const missing=quizRetryCoachFor(grammar,'I will be');
+ assert.match(missing.message,/3語少ない/);
+ assert.equal(quizRetryCoachFor(grammar,grammar.answer),null);
+ assert.equal(quizRetryCoachFor(grammar,''),null);
+ assert.equal(quizRetryCoachFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak'),'refund'),null);
 });
 test('every chapter and route has a meaningful but grade-neutral choice event',()=>{
  assert.deepEqual(Object.keys(FOREST_EVENTS),FOREST_AREAS.map(area=>area.id));

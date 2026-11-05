@@ -19,6 +19,7 @@ import { quizControlsHtml, wireQuizControls } from './forest-quiz-ui.js';
 import { listeningChallengeFor } from './listening-challenges.js';
 import { LISTENING_AUDIO } from './listening-audio-manifest.js';
 import { quizTeachingFor } from './forest-teaching.js';
+import { quizRetryCoachFor } from './forest-quiz-retry-coach.js';
 import { speakingFeedbackFor, conversationFeedbackFor } from './speaking-feedback.js';
 import { forestLearningPulseFor } from './forest-learning-pulse.js';
 import { conversationPolishFor } from './conversation-polish.js';
@@ -106,11 +107,12 @@ const difficultyCopy = {
   normal: { label: 'ふつう', description: '英語の状況と指示を読み、英語で答える。' },
   hard: { label: 'むずかしい', description: '長めの英文を読み、複数の条件を満たして英語で答える。' }
 };
-function quizTeachingHtml(prompt,learnerAnswer=''){
+function quizTeachingHtml(prompt,learnerAnswer='',{previousMistake=false}={}){
   const note=quizTeachingFor(prompt);
   if(!note)return '';
+  const retryCoach=quizRetryCoachFor(prompt,learnerAnswer);
   const contrast=learnerAnswer.trim()&&learnerAnswer.trim().toLowerCase()!==prompt.answer.toLowerCase()
-    ? `<p class="forest-teaching-learner"><strong>今回の回答</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span></p>`:'';
+    ? `<p class="forest-teaching-learner"><strong>${previousMistake?'前に選んだ答え':'今回の回答'}</strong> <span lang="en">${escapeHtml(learnerAnswer)}</span>${retryCoach?`<small>${escapeHtml(retryCoach.message)}</small>`:''}</p>`:'';
   return `<section class="forest-teaching feedback-note" aria-label="${escapeHtml(note.label)}"><strong class="forest-teaching-title">${escapeHtml(note.label)}</strong>${contrast}<p>${escapeHtml(note.clue)}</p><p>${escapeHtml(note.detail)}</p><p class="forest-teaching-transfer"><strong>別の場面でも使おう</strong> ${escapeHtml(note.transfer)}</p></section>`;
 }
 // One explanation model serves free speaking, boss battles and roleplay.
@@ -1341,7 +1343,7 @@ function renderQuestion() {
   $('#play-card').hidden=false;
   $('#answer-area').classList.remove('listening-result-only');
   $('#forest-journey').classList.remove('forest-victory');
-  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;
+  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;play.quizMistake='';
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
@@ -1980,6 +1982,7 @@ async function gradeAnswer() {
       // Only a confident contradiction or an objective wrong quiz is a miss.
       if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
       play.hintUsed=true;
+      if(['vocab','grammar'].includes(prompt.kind))play.quizMistake=raw;
       if(play.mode==='forest'){play.combo=0;play.encounterHelp=true;syncBattleAura();}
     }
     if(play.mode==='forest' && raw && !defending&&!playerCounteredNow){
@@ -2020,11 +2023,13 @@ async function gradeAnswer() {
     const incomplete=grade.status==='incomplete';
     const uncertain=grade.status==='review'||grade.status==='ungraded';
     const teaching=incorrect?quizTeachingFor(prompt):null;
+    const quizRetry=teaching?quizRetryCoachFor(prompt,raw):null;
     const speakingLesson=['review','incomplete','incorrect'].includes(grade.status)&&raw?speakingFeedbackFor(prompt,raw):null;
     // A concrete correction is instructional help, so subsequent success
     // cannot quietly earn the same XP as an independent first attempt.
     if(speakingLesson?.specific||grade.checks?.missing?.length)play.hintUsed=true;
     const nudge=teaching?`<p class="forest-teaching-nudge"><strong>考え方のヒント</strong> ${escapeHtml(teaching.clue)}</p>`:'';
+    const quizContrast=quizRetry?`<p class="forest-quiz-retry-contrast"><strong>今回の回答を見直そう</strong> ${escapeHtml(quizRetry.message)}</p>`:'';
     const speakingNudge=conversationFeedbackHtml(prompt,raw,grade,{hinted:play.hintUsed});
     const aidedNote=speakingLesson?.specific||grade.checks?.missing?.length?'<p class="forest-checking-note">言い直しのヒントを表示したため、次の正答はヒントありXPになります。</p>':'';
     // A low-confidence browser judgement is not a proven English error.
@@ -2032,7 +2037,7 @@ async function gradeAnswer() {
     // trapping them in a gate that the offline scorer cannot recognize.
     const allowPractice=play.mode==='forest'&&!play.endless&&uncertain&&Boolean(raw)&&!['vocab','grammar'].includes(prompt.kind);
     const practiceButton=allowPractice?'<button type="button" class="grading-skip" id="continue-as-practice">判定できない表現として先へ進む（XPなし） →</button>':'';
-    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'登録された条件と食い違う部分があるよ。必要な情報を確認して言い直してみよう。':incomplete?'必要な情報が一部確認できなかったよ。条件を足してもう一度試そう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${nudge}${grade.reasons.length&&(!speakingNudge||!grade.checks?.missing?.length)?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}${practiceButton}</div>`;
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'登録された条件と食い違う部分があるよ。必要な情報を確認して言い直してみよう。':incomplete?'必要な情報が一部確認できなかったよ。条件を足してもう一度試そう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${quizContrast}${nudge}${grade.reasons.length&&(!speakingNudge||!grade.checks?.missing?.length)?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}${practiceButton}</div>`;
     if(!empty)attachFeedbackBookmark(prompt);
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     if(allowPractice)$('#continue-as-practice').addEventListener('click',()=>{
@@ -2265,7 +2270,7 @@ async function gradeAnswer() {
   const listeningCheck=prompt.kind==='listen'?listeningChallengeFor(prompt):null;
   const explanationHtml=listeningCheck
     ?`<section class="forest-teaching listening-success-guide"><strong class="forest-teaching-title">${transcriptPractice?'字幕で確認した意味':'聞き取れたポイント'}</strong><p>相手の発言：<span lang="en">${escapeHtml(listeningCheck.audio)}</span></p><p><strong>確認できた意味</strong> ${escapeHtml(listeningCheck.options[listeningCheck.correctIndex])}</p>${listeningCheck.coaching?`<p class="listening-evidence-note"><strong>聞き取りの根拠</strong> <span lang="en">${escapeHtml(listeningCheck.coaching.quote)}</span> — ${escapeHtml(listeningCheck.coaching.meaning)}</p>`:''}<p>${escapeHtml(prompt.tip||phraseFor(prompt.phraseId)?.tip||'聞こえた内容の意味を確認しよう。')}</p></section>`
-    :objectiveQuiz?quizTeachingHtml(prompt):conversationFeedbackHtml(prompt,raw,grade,{hinted:rating==='hint'});
+    :objectiveQuiz?quizTeachingHtml(prompt,play.quizMistake||'',{previousMistake:Boolean(play.quizMistake)}):conversationFeedbackHtml(prompt,raw,grade,{hinted:rating==='hint'});
   const checkingNote=transcriptPractice?'音声の再生を確認できなかったため、字幕を読んで意味を練習したよ。聞き取りの実績・XP・定着記録には含めていません。':prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)

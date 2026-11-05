@@ -1247,6 +1247,12 @@ const path=require('node:path');
           // instead of the former generic retry heading.
           assert.match(await forestPage.locator('#feedback-panel').innerText(),/伝わる意味が違うよ/);
           assert.match(await forestPage.locator('.forest-teaching-nudge').innerText(),/考え方のヒント/);
+          const retryText=await forestPage.locator('.forest-quiz-retry-contrast').innerText();
+          assert.match(retryText,/今回の回答を見直そう/);
+          assert.ok(retryText.includes('「'+info.options[bad]+'」'),
+            'The wrong selected word must have an individual meaning cue');
+          assert.ok(!retryText.includes('「'+info.answer+'」'),
+            'The retry coach must not reveal the correct option');
           assert.equal(await forestPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),originalXp);
           await forestPage.locator(`[data-vocab-option="${good}"]`).click();
           assert.equal(await forestPage.locator('#spoken-answer').inputValue(),info.answer);
@@ -1285,6 +1291,8 @@ const path=require('node:path');
           assert.equal(await forestPage.locator('.forest-teaching-title').isVisible(),false,
             'The detailed explanation must not push the next button below it');
           await forestPage.locator('#forest-success-explanation > summary').click();
+          if(mob===3)assert.match(await forestPage.locator('.forest-teaching-learner').innerText(),/前に選んだ答え/,
+            'A corrected quiz should make the previous mistake reviewable after success');
           assert.equal(await forestPage.locator('.forest-teaching-title').isVisible(),true,
             'Learners can choose to inspect the full teaching content');
           assert.match(await forestPage.locator('.forest-teaching-title').innerText(),mob===3?/なぜこの単語を使う/:/なぜこの語順になる/);
