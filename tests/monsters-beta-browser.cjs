@@ -126,7 +126,7 @@ const fs=require('node:fs');
         const emergencyFile=JSON.parse(fs.readFileSync(await (await emergencyDownload).path(),'utf8'));
         assert.ok(emergencyFile.savedPromptIds.includes(endangeredPrompt),
           'The in-battle emergency file rescues the latest unsaved bookmark');
-        assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedPromptIds.includes(endangeredPrompt)),false,
+        assert.equal(await page.evaluate(promptId=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).savedPromptIds.includes(promptId),endangeredPrompt),false,
           'The failed storage write must not silently alter the on-disk save');
         await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{
           configurable:true,value:{writeText:()=>Promise.reject(new Error('clipboard blocked'))}
