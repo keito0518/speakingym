@@ -23,6 +23,9 @@ const {chromium,webkit}=require('playwright');
   });
   await page.reload({waitUntil:'networkidle'});
   await assertNoOverflow('home');
+  assert.equal(await page.locator('.game-tabs button').count(),5,'Mobile game should have persistent native-style tabs');
+  assert.equal(await page.locator('[data-game-tab="home"]').getAttribute('aria-current'),'page');
+  assert.match(await page.locator('#game-hud-coins').innerText(),/240 G/);
   assert.equal(await page.locator('[data-feature-armory]').isVisible(),true,'The forge must be discoverable from home');
   await page.locator('[data-feature-armory]').click();
   assert.equal(await page.locator('#collection-shop').isVisible(),true);
@@ -40,10 +43,23 @@ const {chromium,webkit}=require('playwright');
   // persistent save purposes; regular players use native Math.random.
   await page.evaluate(()=>{Math.random=()=>.009;});
   await page.locator('#shop-draw').click();
+  assert.equal(await page.locator('#summon-screen').isVisible(),true,'Summon should take over the game screen');
+  assert.equal(await page.locator('#summon-screen').getAttribute('data-rarity'),'legend');
+  assert.match(await page.locator('#game-hud-coins').innerText(),/120 G/,'Reward must commit before the cinematic');
+  if(await page.locator('#summon-skip').isVisible())await page.locator('#summon-skip').click();
+  assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
+  assert.match(await page.locator('#summon-title').innerText(),/永遠/);
+  assert.match(await page.locator('#summon-rarity').innerText(),/LEGEND/);
+  assert.equal(await page.locator('#summon-reveal-art [data-equipped-weapon="eternal_crest"]').count(),1,
+   'The summoned weapon must visibly appear on the companion');
+  assert.equal(await page.locator('#summon-skip').isHidden(),true);
+  assert.equal(await page.locator('#summon-equip').isVisible(),true);
   assert.match(await page.locator('#shop-gacha-result').innerText(),/伝説 獲得/);
   assert.match(await page.locator('#shop-coins').innerText(),/120 G/);
   assert.equal(await page.locator('#equipment-weapon-choice option').count(),2);
-  await page.locator('#equipment-weapon-choice').selectOption('eternal_crest');
+  await page.locator('#summon-equip').click();
+  assert.equal(await page.locator('#summon-screen').isHidden(),true);
+  assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
   assert.equal(await page.locator('.equipment-monster-preview [data-equipped-weapon="eternal_crest"]').count(),1,
    'The equipped weapon must be rendered on the actual character');
   assert.match(await page.locator('#equipment-weapon-status').innerText(),/伝説.*追撃＋2/);
@@ -58,6 +74,19 @@ const {chromium,webkit}=require('playwright');
    'Equipment preview must match the home character');
   await assertNoOverflow('equipped home');
 
+  // The bottom navigation is a functional game menu, not decorative links.
+  await page.locator('[data-game-tab="forge"]').click();
+  assert.equal(await page.locator('#collection-shop').isVisible(),true);
+  assert.equal(await page.locator('[data-game-tab="forge"]').getAttribute('aria-current'),'page');
+  await page.locator('[data-game-tab="party"]').click();
+  assert.equal(await page.locator('#collection-weapons').isVisible(),true);
+  assert.equal(await page.locator('[data-game-tab="party"]').getAttribute('aria-current'),'page');
+  await page.locator('[data-game-tab="review"]').click();
+  assert.equal(await page.locator('.review-journal').isVisible(),true);
+  assert.equal(await page.locator('[data-game-tab="review"]').getAttribute('aria-current'),'page');
+  await page.locator('[data-game-tab="home"]').click();
+  assert.equal(await page.locator('#home-navigation').isVisible(),true);
+
   await page.reload({waitUntil:'networkidle'});
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
   assert.equal(saved.coins,230);
@@ -69,6 +98,21 @@ const {chromium,webkit}=require('playwright');
   assert.equal(saved.ownedMonsters.length,2,'Gacha must never grant or lose companions');
   assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1,
    'Equipped weapon art must survive a full browser reload');
+
+  await page.locator('[data-game-tab="forge"]').click();
+  await page.evaluate(()=>{Math.random=()=>.009;});
+  await page.locator('#shop-draw').click();
+  if(await page.locator('#summon-skip').isVisible())await page.locator('#summon-skip').click();
+  assert.match(await page.locator('#summon-duplicate').innerText(),/90 G 返還/);
+  assert.match(await page.locator('#shop-coins').innerText(),/200 G/);
+  await page.locator('#summon-repeat').click();
+  assert.match(await page.locator('#shop-coins').innerText(),/170 G/,'Repeat spends once and returns duplicate gold once');
+  await page.locator('#summon-close').click();
+  assert.equal(await page.locator('#summon-screen').isHidden(),true);
+  const afterRepeat=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+  assert.equal(afterRepeat.gachaPullCount,3,'Skip, close and equipping must never reroll');
+  assert.deepEqual(afterRepeat.weaponInventory,['eternal_crest']);
+  await assertNoOverflow('repeat gacha');
   assert.deepEqual(errors,[],`${engine} browser console errors`);
   console.log(`${engine}: treasure sale, earned-only gacha, 44 story monsters, weapon appearance and reload passed`);
  }finally{await browser.close();}

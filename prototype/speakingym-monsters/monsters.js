@@ -35,6 +35,7 @@ import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTrans
 import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
 import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
+import { createGachaCinematic } from './gacha-cinematic.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { nextLearningQuestFor, learningProofFor } from './next-learning-quest.js';
@@ -476,11 +477,28 @@ function clearTimer() { if (timer) clearInterval(timer); timer = null; }
 function showView(name) {
   cancelAutoAdvance();
   for (const id of ['home','play','result','collection','detail','training']) $(`#${id}-view`).hidden = id !== name;
+  document.body.dataset.gameView=name;
+  if(name==='home')document.body.dataset.gameTab='home';
+  else if(name==='collection'&&!['forge','party'].includes(document.body.dataset.gameTab))document.body.dataset.gameTab='party';
+  syncGameHud();
+  syncGameTabs();
   stopAudio();
   if(name==='home')homeNavigation?.showMenu();
   const heading = $(`#${name}-view h1`);
   if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   window.scrollTo({top:0,behavior:'instant'});
+}
+function syncGameHud(){
+  const coins=$('#game-hud-coins'),level=$('#game-hud-level'),xp=$('#game-hud-xp');
+  if(coins)coins.textContent=(save.coins||0).toLocaleString('ja-JP')+' G';
+  if(level)level.textContent='Lv.'+getMonsterProgress(save).level;
+  if(xp)xp.textContent=(save.xpWallet||0)+' XP';
+}
+function syncGameTabs(){
+  $$('[data-game-tab]').forEach(button=>{
+    const active=button.dataset.gameTab===document.body.dataset.gameTab;
+    button.setAttribute('aria-current',active?'page':'false');
+  });
 }
 function renderDifficulty() {
   $$('[data-difficulty]').forEach(button => {
@@ -2764,6 +2782,14 @@ function finishSession(timedOut=false,defeated=false) {
 const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
 const {renderDetail,renderTraining}=collectionViews;
 let forgeMessage='';
+let drawNextSummon=()=>null;
+const gachaCinematic=createGachaCinematic({
+ onEquip:weapon=>{
+  if(!persist(equipWeapon(save,weapon.id)))return false;
+  renderEquipmentCollection();syncGameHud();return true;
+ },
+ onRepeat:()=>drawNextSummon()
+});
 function renderEconomyShop(){
  const panel=$('#collection-shop');
  const bag=save.treasureBag||{};
@@ -2773,15 +2799,15 @@ function renderEconomyShop(){
  panel.innerHTML=`<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>冒険で手に入れた換金用のお宝を売って、武器を手に入れよう。仲間はガチャでは出ず、ストーリーと英語学習で加わるよ。</p></div>
  <div class="shop-wallet"><span>所持ゴールド</span><strong id="shop-coins">${save.coins||0} G</strong><small>お宝の売却見込額 ${totalValue} G</small></div>
  <div class="shop-bag"><div class="shop-section-heading"><strong>換金用のお宝</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">まだ売れるお宝はないよ。ボスを倒して自力で英語を答えると手に入る。図鑑の記念品は売られないよ。</p>'}</div>
- <div class="shop-gacha"><div class="shop-section-heading"><strong>鍛冶屋の武器召喚</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><p>限定武器 ${WEAPONS.filter(w=>w.source==='gacha').length}種。最上級の攻撃＋7〜9はここだけ！ 当選した武器は図鑑で装備でき、見た目も変わるよ。</p>
+ <div class="shop-gacha"><div class="shop-section-heading"><strong>星の召喚祭壇</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">SUMMON<br><b>THE LEGEND</b></span><span class="summon-banner-spark"></span></div><p>限定武器 ${WEAPONS.filter(w=>w.source==='gacha').length}種。最上級の攻撃＋7〜9はここだけ！ 当選した武器は図鑑で装備でき、見た目も変わるよ。</p>
  <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
  <p class="shop-pity">レア以上は最大${RARE_PITY}回で確定（あと${Math.max(1,RARE_PITY-(save.pullsSinceRare||0))}回）。エピック以上は最大${EPIC_PITY}回で確定（あと${Math.max(1,EPIC_PITY-(save.pullsSinceEpic||0))}回）。<br>重複はレア度に応じて20〜90 G返還。確率はガチャ限定の武器内での割合です。</p>
- <button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}>武器を1つ召喚する · ${GACHA_COST} G</button><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
+ <button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>召喚を始める · ${GACHA_COST} G</button><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
  const commitResult=(next,successMessage)=>{
   if(!persist(next)){forgeMessage='保存に失敗しました。売却や召喚は反映していません。';renderEconomyShop();return false;}
   // Selling or summoning must not navigate away from the forge before the
   // player can equip the item they just earned. Returning home redraws art.
-  forgeMessage=successMessage;renderEconomyShop();renderEquipmentCollection();return true;
+  forgeMessage=successMessage;renderEconomyShop();renderEquipmentCollection();syncGameHud();return true;
  };
  panel.querySelector('#shop-sell-all').addEventListener('click',()=>{
   const result=sellAllTreasures(save);
@@ -2792,13 +2818,20 @@ function renderEconomyShop(){
   const result=sellTreasure(save,item?.id,1);
   if(result.coins>0)commitResult(result.save,`${item.name} を売って ${result.coins} G 手に入れた！`);
  }));
- panel.querySelector('#shop-draw').addEventListener('click',()=>{
+ const drawAndCommit=()=>{
+  if((save.coins||0)<GACHA_COST)return null;
   const result=drawWeaponGacha(save);
-  if(!result.weapon)return;
+  if(!result.weapon)return null;
   const label=WEAPON_RARITY_LABELS[result.tier];
   const message=result.duplicate?`【${label}】${result.weapon.name} は所持済み！ ${result.refund} G 返還された。`:
     `【${label} 獲得！】${result.weapon.name} · 攻撃＋${result.weapon.attack}！ すぐ下の図鑑から装備しよう。`;
-  commitResult(result.save,message);
+  if(!commitResult(result.save,message))return null;
+  return {...result,art:monsterArt(save.selectedMonster,getMonsterProgress(save).stage,result.weapon),
+   affinity:WEAPON_AFFINITY_LABELS[result.weapon.affinity],canRepeat:(save.coins||0)>=GACHA_COST};
+ };
+ drawNextSummon=drawAndCommit;
+ panel.querySelector('#shop-draw').addEventListener('click',()=>{
+  const result=drawAndCommit();if(result)gachaCinematic.show(result);
  });
 }
 function renderEquipmentCollection(){
@@ -2817,6 +2850,10 @@ function renderEquipmentCollection(){
  });
 }
 function renderCollection(){collectionViews.renderCollection();renderEconomyShop();renderEquipmentCollection();}
+function openForge(){
+ renderCollection();document.body.dataset.gameTab='forge';syncGameTabs();
+ $('#collection-shop').scrollIntoView({block:'start',behavior:'instant'});
+}
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
@@ -2845,11 +2882,25 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?renderCollection():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
   if(monsterHuntBoard(save).options.some(entry=>entry.id===id)){
     persist({...save,huntTargetId:id});renderHome();
   }
 }});
+$$('[data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
+ const target=button.dataset.gameTab;
+ if(target==='adventure'){startMainDungeon();return;}
+ if(target==='forge'){openForge();return;}
+ if(target==='party'){
+  renderCollection();document.body.dataset.gameTab='party';syncGameTabs();
+  $('#collection-weapons').scrollIntoView({block:'start',behavior:'instant'});
+  return;
+ }
+ renderHome();
+ if(target==='review')homeNavigation.showPage('review');
+ document.body.dataset.gameTab=target;syncGameTabs();
+}));
+$('.game-topbar .brand')?.addEventListener('click',event=>{event.preventDefault();renderHome();});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
 $('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
 $('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));
