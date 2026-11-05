@@ -2779,7 +2779,9 @@ function renderEconomyShop(){
  <button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}>武器を1つ召喚する · ${GACHA_COST} G</button><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
  const commitResult=(next,successMessage)=>{
   if(!persist(next)){forgeMessage='保存に失敗しました。売却や召喚は反映していません。';renderEconomyShop();return false;}
-  forgeMessage=successMessage;renderEconomyShop();renderEquipmentCollection();renderHome();return true;
+  // Selling or summoning must not navigate away from the forge before the
+  // player can equip the item they just earned. Returning home redraws art.
+  forgeMessage=successMessage;renderEconomyShop();renderEquipmentCollection();return true;
  };
  panel.querySelector('#shop-sell-all').addEventListener('click',()=>{
   const result=sellAllTreasures(save);
