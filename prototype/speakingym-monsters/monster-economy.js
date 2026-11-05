@@ -1,6 +1,6 @@
 // Offline, earned-only adventure economy. There is no purchase, paid currency,
 // real-money exchange or deadline. Correct English is graded outside this file.
-import {WEAPONS} from './monster-equipment.js';
+import {WEAPONS,grantDuplicateShard} from './monster-equipment.js';
 
 export const GACHA_COST=120;
 export const GACHA_TEN_PULL_COUNT=10;
@@ -102,13 +102,14 @@ export function drawWeaponGacha(save,{random=Math.random}={}){
  const owned=Array.isArray(save.weaponInventory)?save.weaponInventory:[];
  const duplicate=owned.includes(weapon.id);
  const refund=duplicate?({common:20,rare:35,epic:60,legend:90}[tier]):0;
- const saveNext={...save,coins:Math.min(maxCoins,economy.coins-GACHA_COST+refund),
+ const nextWithShard=duplicate?grantDuplicateShard(save,weapon.id):save;
+ const saveNext={...nextWithShard,coins:Math.min(maxCoins,economy.coins-GACHA_COST+refund),
   weaponInventory:duplicate?owned:[...owned,weapon.id],
   equippedWeaponId:save.equippedWeaponId??null,
   gachaPullCount:Math.min(1000000,economy.gachaPullCount+1),
   pullsSinceRare:['rare','epic','legend'].includes(tier)?0:economy.pullsSinceRare+1,
   pullsSinceEpic:['epic','legend'].includes(tier)?0:economy.pullsSinceEpic+1};
- return {save:saveNext,weapon,duplicate,refund,tier};
+ return {save:saveNext,weapon,duplicate,refund,tier,shardGained:duplicate?1:0};
 }
 // The ten-pull is a convenience, not a discount or a separate rarity pool.
 // Require the full 1,200 G up front: duplicate refunds cannot bankroll draws
@@ -123,7 +124,7 @@ export function drawWeaponGachaTen(save,{random=Math.random}={}){
   const result=drawWeaponGacha(next,{random});
   if(!result.weapon)throw Error('Ten-pull funds must cover every draw');
   next=result.save;
-  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund});
+  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund,shardGained:result.shardGained});
  }
  return {save:next,results,spent:GACHA_TEN_PULL_COST,
   refunded:results.reduce((sum,item)=>sum+item.refund,0)};

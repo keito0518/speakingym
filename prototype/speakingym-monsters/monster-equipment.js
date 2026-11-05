@@ -28,6 +28,12 @@ export const WEAPONS=Object.freeze([
  {id:'willow_spear',name:'柳の槍',attack:3,rarity:'common',source:'gacha',affinity:'listen',shape:'spear'},
  {id:'cinder_wand',name:'熾火のワンド',attack:4,rarity:'common',source:'gacha',affinity:'grammar',shape:'staff'},
  {id:'stone_axe',name:'礫の斧',attack:4,rarity:'common',source:'gacha',affinity:'vocab',shape:'axe'},
+ {id:'bronze_scythe',name:'銀ねずみの鎌',attack:4,rarity:'common',source:'gacha',affinity:'vocab',shape:'scythe'},
+ {id:'rain_crossbow',name:'雨音の弩',attack:4,rarity:'common',source:'gacha',affinity:'listen',shape:'crossbow'},
+ {id:'moth_claw',name:'夜蛾の爪',attack:3,rarity:'common',source:'gacha',affinity:'grammar',shape:'claw'},
+ {id:'oak_shield',name:'樫の盾',attack:3,rarity:'common',source:'gacha',affinity:'speak',shape:'shield'},
+ {id:'tidal_whip',name:'潮風の鞭',attack:3,rarity:'common',source:'gacha',affinity:'listen',shape:'whip'},
+ {id:'amber_sabre',name:'琥珀の曲刀',attack:4,rarity:'common',source:'gacha',affinity:'grammar',shape:'sword'},
  {id:'silver_edge',name:'銀月の刃',attack:5,rarity:'rare',source:'gacha',affinity:'speak',shape:'sword'},
  {id:'north_bow',name:'北風の弓',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'bow'},
  {id:'rune_hammer',name:'刻印ハンマー',attack:5,rarity:'rare',source:'gacha',affinity:'grammar',shape:'hammer'},
@@ -36,30 +42,73 @@ export const WEAPONS=Object.freeze([
  {id:'meteor_axe',name:'流星の斧',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'axe'},
  {id:'mirror_dagger',name:'鏡合わせの短剣',attack:5,rarity:'rare',source:'gacha',affinity:'grammar',shape:'dagger'},
  {id:'coral_sword',name:'珊瑚の剣',attack:6,rarity:'rare',source:'gacha',affinity:'vocab',shape:'sword'},
+ {id:'crystal_scythe',name:'水晶の大鎌',attack:6,rarity:'rare',source:'gacha',affinity:'grammar',shape:'scythe'},
+ {id:'comet_crossbow',name:'彗星の弩',attack:6,rarity:'rare',source:'gacha',affinity:'vocab',shape:'crossbow'},
+ {id:'wolf_claw',name:'白狼の爪',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'claw'},
+ {id:'midnight_shield',name:'夜半の盾',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'shield'},
+ {id:'tempest_whip',name:'疾風の鞭',attack:5,rarity:'rare',source:'gacha',affinity:'speak',shape:'whip'},
  {id:'thunder_javelin',name:'雷鳴の投槍',attack:7,rarity:'epic',source:'gacha',affinity:'speak',shape:'spear'},
  {id:'glacier_bow',name:'氷河の弓',attack:7,rarity:'epic',source:'gacha',affinity:'listen',shape:'bow'},
  {id:'oracle_staff',name:'予言者の杖',attack:7,rarity:'epic',source:'gacha',affinity:'grammar',shape:'staff'},
  {id:'titan_hammer',name:'巨人のハンマー',attack:7,rarity:'epic',source:'gacha',affinity:'vocab',shape:'hammer'},
  {id:'solar_blade',name:'太陽の聖剣',attack:8,rarity:'epic',source:'gacha',affinity:'speak',shape:'sword'},
  {id:'night_reaper',name:'夜渡りの大鎌',attack:8,rarity:'epic',source:'gacha',affinity:'listen',shape:'axe'},
+ {id:'eclipse_scythe',name:'月蝕の大鎌',attack:8,rarity:'epic',source:'gacha',affinity:'vocab',shape:'scythe'},
+ {id:'storm_crossbow',name:'轟雷の連弩',attack:8,rarity:'epic',source:'gacha',affinity:'listen',shape:'crossbow'},
+ {id:'seraph_claw',name:'星翼の爪',attack:8,rarity:'epic',source:'gacha',affinity:'grammar',shape:'claw'},
  {id:'eternal_crest',name:'永遠の星剣',attack:9,rarity:'legend',source:'gacha',affinity:'grammar',shape:'sword'},
- {id:'worldtree_scepter',name:'世界樹の宝杖',attack:9,rarity:'legend',source:'gacha',affinity:'vocab',shape:'staff'}
+ {id:'worldtree_scepter',name:'世界樹の宝杖',attack:9,rarity:'legend',source:'gacha',affinity:'vocab',shape:'staff'},
+ {id:'celestial_aegis',name:'天穹の聖盾',attack:9,rarity:'legend',source:'gacha',affinity:'speak',shape:'shield'},
+ {id:'infinity_whip',name:'無窮の星鞭',attack:9,rarity:'legend',source:'gacha',affinity:'listen',shape:'whip'}
 ].map(item=>Object.freeze(item)));
 
 const BY_ID=new Map(WEAPONS.map(item=>[item.id,item]));
 const AREA_WORLD=Object.freeze({entry:'forest',glade:'forest',thicket:'forest',sanctuary:'forest',city:'city','city-market':'city','city-terminal':'city','city-blizzard':'city','ruins-gate':'ruins','ruins-core':'ruins'});
 export const WEAPON_RARITY_LABELS=Object.freeze({common:'通常',rare:'レア',epic:'エピック',legend:'伝説'});
 export const WEAPON_AFFINITY_LABELS=Object.freeze({speak:'Speak',listen:'Listen',vocab:'単語',grammar:'文法'});
+export const MAX_WEAPON_AWAKENING=3;
+export const AWAKENING_COSTS=Object.freeze({
+ common:Object.freeze([2,3,4]),rare:Object.freeze([2,3,5]),
+ epic:Object.freeze([3,5,7]),legend:Object.freeze([3,6,9])
+});
+const countUpTo=(value,max)=>Number.isSafeInteger(value)&&value>=0?Math.min(max,value):0;
+const weaponById=id=>BY_ID.get(id)||null;
 
 export function normalizeEquipment(value){
  const inventory=[...new Set((Array.isArray(value?.weaponInventory)?value.weaponInventory:[])
    .filter(id=>typeof id==='string'&&BY_ID.has(id)))].slice(0,WEAPONS.length);
  const equippedWeaponId=inventory.includes(value?.equippedWeaponId)?value.equippedWeaponId:null;
- return {weaponInventory:inventory,equippedWeaponId};
+ const shards=value?.weaponShards&&typeof value.weaponShards==='object'&&!Array.isArray(value.weaponShards)?value.weaponShards:{};
+ const awakened=value?.weaponAwakening&&typeof value.weaponAwakening==='object'&&!Array.isArray(value.weaponAwakening)?value.weaponAwakening:{};
+ return {weaponInventory:inventory,equippedWeaponId,
+  weaponShards:Object.fromEntries(inventory.map(id=>[id,countUpTo(shards[id],999)]).filter(([,count])=>count>0)),
+  weaponAwakening:Object.fromEntries(inventory.map(id=>[id,countUpTo(awakened[id],MAX_WEAPON_AWAKENING)]).filter(([,level])=>level>0))};
+}
+export function awakeningProgress(save,id){
+ const weapon=weaponById(id),owned=Boolean(weapon&&save?.weaponInventory?.includes(id));
+ const rank=owned?countUpTo(save?.weaponAwakening?.[id],MAX_WEAPON_AWAKENING):0;
+ const shards=owned?countUpTo(save?.weaponShards?.[id],999):0;
+ const requirement=owned&&rank<MAX_WEAPON_AWAKENING?AWAKENING_COSTS[weapon.rarity][rank]:0;
+ return {rank,shards,requirement,canAwaken:Boolean(requirement&&shards>=requirement),maxed:owned&&rank===MAX_WEAPON_AWAKENING};
+}
+export function grantDuplicateShard(save,id){
+ if(!weaponById(id)||!save?.weaponInventory?.includes(id))return save;
+ return {...save,weaponShards:{...save.weaponShards,[id]:Math.min(999,countUpTo(save.weaponShards?.[id],999)+1)}};
+}
+export function awakenWeapon(save,id){
+ const {canAwaken,rank,shards,requirement}=awakeningProgress(save,id);
+ if(!canAwaken)return {save,awakened:false};
+ const weaponShards={...save.weaponShards,[id]:shards-requirement};
+ if(!weaponShards[id])delete weaponShards[id];
+ return {save:{...save,weaponShards,weaponAwakening:{...save.weaponAwakening,[id]:rank+1}},awakened:true,rank:rank+1};
+}
+export function weaponAttack(save,weapon){
+ return (weapon?.attack||0)+(weapon?.id?awakeningProgress(save,weapon.id).rank:0);
 }
 export function equippedWeapon(save){
- return Array.isArray(save?.weaponInventory)&&save.weaponInventory.includes(save?.equippedWeaponId)
+ const weapon=Array.isArray(save?.weaponInventory)&&save.weaponInventory.includes(save?.equippedWeaponId)
    ?BY_ID.get(save.equippedWeaponId)||null:null;
+ return weapon?{...weapon,attack:weaponAttack(save,weapon),awakeningRank:awakeningProgress(save,weapon.id).rank}:null;
 }
 export function equipWeapon(save,id){
  if(id!==null&&(!BY_ID.has(id)||!Array.isArray(save.weaponInventory)||!save.weaponInventory.includes(id)))return save;

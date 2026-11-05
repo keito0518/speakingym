@@ -47,7 +47,7 @@ test('first completed boss clears guarantee area weapon, replays have finite rar
 
 test('old saves and untrusted backup entries never grant unowned weapons',()=>{
  const old=createSave();delete old.weaponInventory;delete old.equippedWeaponId;
- assert.deepEqual(normalizeEquipment(old),{weaponInventory:[],equippedWeaponId:null});
+ assert.deepEqual(normalizeEquipment(old),{weaponInventory:[],equippedWeaponId:null,weaponShards:{},weaponAwakening:{}});
  const loaded=validateSave({...createSave(),weaponInventory:['wooden_blade','wooden_blade','spoof',5],equippedWeaponId:'moonsteel'});
  assert.deepEqual(loaded.weaponInventory,['wooden_blade']);
  assert.equal(loaded.equippedWeaponId,null);
@@ -91,5 +91,5 @@ test('elite-only weapons are earned at the fifth encounter after two unaided hit
  const restored=validateSave(star.save);
  assert.equal(restored.weaponInventory.length,3);
  assert.equal(restored.equippedWeaponId,'moss_fang','old and new equipment restore safely');
- assert.equal(WEAPONS.length,40);
+ assert.equal(WEAPONS.length,56);
 });

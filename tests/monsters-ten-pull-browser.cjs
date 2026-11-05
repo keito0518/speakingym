@@ -30,9 +30,13 @@ const {chromium,webkit}=require('playwright');
    await page.locator('#shop-draw-ten').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-mode'),'batch');
    assert.equal(await page.locator('#summon-screen').getAttribute('data-rarity'),'legend');
-   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'charge');
+   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
+   assert.match(await page.locator('#summon-crank-status').innerText(),/時計回り/);
    assert.equal(await page.locator('#shop-coins').innerText(),'2010 G',
     'One new legend and nine duplicates must deduct 1200 and refund only 810');
+   for(let i=0;i<4;i++)await page.locator('#summon-crank').click();
+   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'vend',
+    'Four direct turns should release the capsule, with no extra roll');
    await page.locator('#summon-skip').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
    assert.equal(await page.locator('.summon-batch-card').count(),10);
@@ -43,6 +47,8 @@ const {chromium,webkit}=require('playwright');
    assert.match(await page.locator('#summon-attack').innerText(),/1200 G.*810 G/);
    assert.equal(await page.locator('#summon-equip').isHidden(),true);
    assert.match(await page.locator('#summon-repeat').innerText(),/10連をもう一度/);
+   const scroll=await page.locator('#summon-screen').evaluate(el=>({client:el.clientHeight,total:el.scrollHeight}));
+   assert.ok(scroll.total>scroll.client+60,`Ten reward cards must exceed the small screen: ${JSON.stringify(scroll)}`);
 
    await page.locator('#summon-repeat').click();
    assert.equal(await page.locator('#shop-coins').innerText(),'1710 G',
@@ -50,7 +56,10 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await page.locator('#summon-screen').getAttribute('data-mode'),'batch');
    await page.locator('#summon-skip').click();
    assert.equal(await page.locator('.summon-batch-card[data-duplicate="true"]').count(),10);
-   await page.locator('[data-batch-equip="0"]').click();
+   await page.locator('#summon-screen').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+   assert.ok(await page.locator('#summon-screen').evaluate(el=>el.scrollTop)>0,
+    'The user must be able to scroll to the last capsule result');
+   await page.locator('[data-batch-equip="9"]').click();
    assert.equal(await page.locator('#summon-screen').isHidden(),true);
    assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
 
@@ -58,12 +67,13 @@ const {chromium,webkit}=require('playwright');
    assert.equal(saved.coins,1710);
    assert.equal(saved.gachaPullCount,20);
    assert.deepEqual(saved.weaponInventory,['eternal_crest']);
+   assert.equal(saved.weaponShards.eternal_crest,19,'Nine plus ten duplicates grant awakening material');
    assert.equal(saved.xpWallet,333,'The ten-pull must not spend experience');
    assert.equal(saved.equippedWeaponId,'eternal_crest');
    await page.reload({waitUntil:'networkidle'});
    assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1);
    await page.locator('#game-tabs [data-game-tab="forge"]').click();
-   assert.match(await page.locator('.shop-collection-copy').innerText(),/1 \/ 24 種/);
+   assert.match(await page.locator('.shop-collection-copy').innerText(),/1 \/ 40 種/);
    const horizontal=await page.evaluate(()=>({view:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(horizontal.scroll<=horizontal.view+1,`${name}/${width}: overflow ${JSON.stringify(horizontal)}`);
    assert.deepEqual(errors,[],`${name}/${width}: page errors`);

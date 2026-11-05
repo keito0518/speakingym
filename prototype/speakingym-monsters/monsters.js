@@ -1,7 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
-import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
+import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, weaponAttack, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,summonProgress,summonPityProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
@@ -2835,7 +2835,7 @@ function renderEconomyShop(){
  <div class="shop-collection-track" aria-label="限定武器の収集状況"><div class="shop-collection-copy"><strong>WEAPON COLLECTION</strong><span>入手 ${ownedDraws} / ${featured.length} 種</span></div><div class="shop-collection-meter" role="progressbar" aria-label="限定武器の収集率" aria-valuemin="0" aria-valuemax="${featured.length}" aria-valuenow="${ownedDraws}"><span style="width:${Math.round(ownedDraws*100/featured.length)}%"></span></div><small>${ownedDraws===featured.length?'限定武器をコンプリート！':`未所持の限定武器 あと ${featured.length-ownedDraws} 種。仲間は冒険で手に入れよう。`}</small></div>
  <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
  <div class="shop-pity-tracks" aria-label="レアリティ確定までの最長回数"><div class="shop-pity-row"><div class="shop-pity-copy"><strong>RARE+ 確定</strong><span>最大あと ${pity.rare.remaining} 回 · ${pity.rare.current} / ${pity.rare.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="レア以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.rare.limit}" aria-valuenow="${pity.rare.current}"><span style="width:${pity.rare.percent}%"></span></div></div><div class="shop-pity-row"><div class="shop-pity-copy"><strong>EPIC+ 確定</strong><span>最大あと ${pity.epic.remaining} 回 · ${pity.epic.current} / ${pity.epic.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="エピック以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.epic.limit}" aria-valuenow="${pity.epic.current}"><span style="width:${pity.epic.percent}%"></span></div></div></div>
- <p class="shop-pity">早めにレア武器が出た場合、対応する確定カウントはリセット。重複はレア度に応じて20〜90 G返還。確率はガチャ限定武器内の割合です。</p>
+ <p class="shop-pity">早めにレア武器が出た場合、対応する確定カウントはリセット。重複は20〜90 G返還に加えて同じ武器の覚醒の欠片を1個獲得。確率はガチャ限定武器内の割合です。</p>
  <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>1回召喚<span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}>10連召喚<span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G · 割引なし</span></button></div><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>10連も同じ排出率と天井カウントで、1,200 Gを先に用意する必要があるよ。ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
  const commitResult=(next,successMessage)=>{
   if(!persist(next)){forgeMessage='保存に失敗しました。売却や召喚は反映していません。';renderEconomyShop();return false;}
@@ -2857,7 +2857,7 @@ function renderEconomyShop(){
   const result=drawWeaponGacha(save);
   if(!result.weapon)return null;
   const label=WEAPON_RARITY_LABELS[result.tier];
-  const message=result.duplicate?`【${label}】${result.weapon.name} は所持済み！ ${result.refund} G 返還された。`:
+  const message=result.duplicate?`【${label}】${result.weapon.name} は所持済み！ ${result.refund} G 返還＋覚醒の欠片1個。`:
     `【${label} 獲得！】${result.weapon.name} · 攻撃＋${result.weapon.attack}！ すぐ下の図鑑から装備しよう。`;
   if(!commitResult(result.save,message))return null;
   return {...result,art:monsterArt(save.selectedMonster,getMonsterProgress(save).stage,result.weapon),
@@ -2869,7 +2869,7 @@ function renderEconomyShop(){
   const result=drawWeaponGachaTen(save);
   if(result.error)return null;
   const newCount=result.results.filter(item=>!item.duplicate).length;
-  if(!commitResult(result.save,`10連召喚！ 新しい武器 ${newCount} 種 · 重複返還 ${result.refunded} G。演出を閉じても結果は保存済み。`))return null;
+  if(!commitResult(result.save,`10連召喚！ 新しい武器 ${newCount} 種 · 重複返還 ${result.refunded} G · 覚醒の欠片 ${result.results.filter(item=>item.duplicate).length} 個。結果は保存済み。`))return null;
   return {...result,canRepeat:(save.coins||0)>=GACHA_TEN_PULL_COST};
  };
  drawNextTenSummons=drawTenAndCommit;
@@ -2889,15 +2889,27 @@ function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
  const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id));
  const current=equippedWeapon(save);
+ const awaken=current?awakeningProgress(save,current.id):null;
  panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>章のボスや強敵から入手できる武器と、鍛冶屋のガチャ限定武器があるよ。攻撃＋7以上はガチャ限定。仲間の姿に武器が表示されるよ。</p></div>
   <div class="equipment-monster-preview" aria-label="現在の装備を身につけた仲間">${monsterArt(save.selectedMonster,getMonsterProgress(save).stage,current)}<span>${current?escapeHtml(current.name):'素手'}<small>装備するとホームとバトルにも反映</small></span></div>
   <label for="equipment-weapon-choice">出撃する武器（パーティ共通）</label>
-  <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weapon.attack} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select>
-  <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${escapeHtml(current.name)} を装備中 · ${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${current.attack} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${['epic','legend'].includes(current.rarity)?2:1}`:'いまは素手で出撃するよ。'} レベル攻撃力は別に加算。ボスの封印3問は省略できないよ。</p>`;
+  <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weaponAttack(save,weapon)} · ${WEAPON_RARITY_LABELS[weapon.rarity]}${awakeningProgress(save,weapon.id).rank?` · 覚醒+${awakeningProgress(save,weapon.id).rank}`:''}</option>`).join('')}</select>
+  <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${escapeHtml(current.name)} を装備中 · ${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${current.attack} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${['epic','legend'].includes(current.rarity)?2:1}`:'いまは素手で出撃するよ。'} レベル攻撃力は別に加算。ボスの封印3問は省略できないよ。</p>
+  <section class="weapon-awakening" aria-label="重複武器で覚醒"><div class="weapon-awakening-heading"><strong>WEAPON AWAKENING · 武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'武器を選んでね'}</span></div>
+    <p>同じ武器がガチャで重複すると、返還Gに加えて専用の欠片が1個増える。必要数を集めて覚醒すると攻撃＋1、武器の光も変化する。最大3段階、英語の判定は変わらないよ。</p>
+    ${current?`<div class="weapon-awakening-track"><span>欠片 ${awaken.shards} ${awaken.maxed?'· MAX':`/ ${awaken.requirement}`}</span><div class="weapon-awakening-meter"><span style="width:${awaken.maxed?100:Math.min(100,Math.round(100*awaken.shards/awaken.requirement))}%"></span></div></div><button type="button" id="weapon-awaken" ${awaken.canAwaken?'':'disabled'}>${awaken.maxed?'最大覚醒に到達':awaken.canAwaken?'欠片を使って覚醒する':`覚醒まであと ${awaken.requirement-awaken.shards} 個`}</button>`:'<small>図鑑の武器を選択すると、覚醒に必要な欠片が表示されるよ。</small>'}
+  </section>`;
  panel.querySelector('#equipment-weapon-choice').addEventListener('change',event=>{
    const id=event.target.value||null;
    if(!persist(equipWeapon(save,id))){event.target.value=equippedWeapon(save)?.id||'';return;}
    renderEquipmentCollection();
+ });
+ panel.querySelector('#weapon-awaken')?.addEventListener('click',()=>{
+  const result=awakenWeapon(save,current?.id);
+  if(!result.awakened||!persist(result.save))return;
+  renderEquipmentCollection();syncGameHud();
+  const status=$('#equipment-weapon-status');
+  status.textContent=`覚醒成功！ ${current.name} が覚醒＋${result.rank} に進化した。攻撃力も見た目も強化されたよ。`;
  });
 }
 function renderCollection(){collectionViews.renderCollection();renderEconomyShop();renderEquipmentCollection();}

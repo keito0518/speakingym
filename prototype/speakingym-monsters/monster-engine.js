@@ -60,6 +60,8 @@ export function createSave() {
     huntTargetId: null,
     weaponInventory: [],
     equippedWeaponId: null,
+    weaponShards: {},
+    weaponAwakening: {},
     coins:0,
     treasureBag:{},
     gachaPullCount:0,

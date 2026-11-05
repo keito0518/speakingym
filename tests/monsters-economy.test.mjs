@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
-import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon} from '../prototype/speakingym-monsters/monster-equipment.js';
+import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
 import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
@@ -68,10 +68,11 @@ test('summon progress previews sale value but unsold loot cannot be spent on a d
  assert.equal(summonProgress({...start,coins:-3,treasureBag:{forged_relic:100}}).missing,120);
 });
 
-test('gacha is earned-only, has disclosed odds, twenty-four exclusive weapons and no characters',()=>{
+test('gacha is earned-only, has disclosed odds, forty exclusive weapons and no characters',()=>{
  const pool=WEAPONS.filter(w=>w.source==='gacha');
- assert.equal(WEAPONS.length,40);assert.equal(pool.length,24);
- assert.equal(pool.filter(w=>w.rarity==='legend').length,2);
+ assert.equal(WEAPONS.length,56);assert.equal(pool.length,40);
+ assert.deepEqual(['common','rare','epic','legend'].map(rarity=>pool.filter(w=>w.rarity===rarity).length),[14,13,9,4]);
+ assert.deepEqual(new Set(pool.map(w=>w.shape)).size,12);
  assert.equal(gachaPoolSummary().reduce((sum,r)=>sum+r.odds,0),100);
  assert.deepEqual(GACHA_ODDS,{common:67,rare:26,epic:6,legend:1});
  assert.equal(drawWeaponGacha(createSave(),{random:()=>0}).error,'not_enough_coins');
@@ -90,11 +91,61 @@ test('a draw spends gold exactly once, duplicate refunds are bounded and the pla
  const same=drawWeaponGacha(one.save,{random:()=>.4});
  assert.equal(same.duplicate,true);assert.equal(same.refund,20);
  assert.equal(same.save.coins,20);assert.equal(same.save.weaponInventory.length,1);
+ assert.equal(same.shardGained,1);
+ assert.equal(same.save.weaponShards[one.weapon.id],1);
  assert.equal(same.save.gachaPullCount,2);
  assert.equal(drawWeaponGacha(same.save).error,'not_enough_coins');
  const equipped=equipWeapon(one.save,one.weapon.id);
  assert.equal(equippedWeapon(equipped)?.id,one.weapon.id);
  assert.ok(scaledStrikeDamage(1,1,equipped)>scaledStrikeDamage(1,1,ready));
+});
+
+test('duplicates are weapon-specific awakening shards; voluntary 3-stage growth preserves level, odds, refund and save',()=>{
+ const start={...createSave(),coins:5000,xpWallet:280};
+ const random=()=>.4;
+ const original=drawWeaponGacha(start,{random});
+ const id=original.weapon.id;
+ let save=original.save;
+ for(let i=0;i<2;i++){
+  const draw=drawWeaponGacha(save,{random});
+  assert.equal(draw.duplicate,true);
+  assert.equal(draw.shardGained,1);
+  assert.equal(draw.refund,20);
+  save=draw.save;
+ }
+ assert.equal(awakeningProgress(save,id).canAwaken,true);
+ assert.equal(awakeningProgress(save,'fake_weapon').canAwaken,false);
+ assert.equal(awakenWeapon(save,'fake_weapon').awakened,false);
+ const equipped=equipWeapon(save,id);
+ const before=scaledStrikeDamage(1,1,equipped);
+ const awakened=awakenWeapon(equipped,id);
+ assert.equal(awakened.awakened,true);
+ assert.equal(awakened.rank,1);
+ assert.equal(awakeningProgress(awakened.save,id).shards,0);
+ assert.equal(equippedWeapon(awakened.save).attack,original.weapon.attack+1);
+ assert.equal(scaledStrikeDamage(1,1,awakened.save),before+1);
+ assert.equal(awakened.save.xpWallet,280);
+ assert.equal(awakened.save.gachaPullCount,3);
+ assert.equal(awakenWeapon(awakened.save,id).awakened,false,'No free second awakening');
+ assert.deepEqual(validateSave(awakened.save),awakened.save);
+ const art=monsterArt('medamago',0,equippedWeapon(awakened.save));
+ assert.match(art,/data-awakening="1"/);
+ assert.match(art,/data-weapon-awakened="1"/);
+ assert.equal(MAX_WEAPON_AWAKENING,3);
+});
+
+test('legacy equipment migrates to empty shards and out-of-range upgrades are normalized',()=>{
+ const original=createSave();
+ delete original.weaponShards;delete original.weaponAwakening;
+ const legacy=validateSave({...original,weaponInventory:['eternal_crest'],equippedWeaponId:'eternal_crest'});
+ assert.deepEqual(legacy.weaponShards,{});
+ assert.deepEqual(legacy.weaponAwakening,{});
+ const invalid=validateSave({...original,weaponInventory:['eternal_crest'],equippedWeaponId:'eternal_crest',
+  weaponShards:{eternal_crest:999999,forged_weapon:900},weaponAwakening:{eternal_crest:999,forged_weapon:3}});
+ assert.deepEqual(invalid.weaponShards,{eternal_crest:999});
+ assert.deepEqual(invalid.weaponAwakening,{eternal_crest:3});
+ assert.equal(awakeningProgress(invalid,'eternal_crest').maxed,true);
+ assert.equal(awakenWeapon(invalid,'eternal_crest').awakened,false);
 });
 
 test('10-pull requires all 1200 earned G up front and cannot be funded by refunds from its own draws',()=>{
