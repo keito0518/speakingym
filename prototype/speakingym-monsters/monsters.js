@@ -1,5 +1,6 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -641,6 +642,7 @@ function renderHome() {
     nextAreaName:nextArea.name,bondRank:bond.rank
   });
   homeNavigation?.updateQuest(nextLearningQuestFor(save),learningProofFor(save));
+  homeNavigation?.updateHunt(monsterHuntBoard(save),nextChainChest(save,nextArea.id),nextArea.name,save.battleTreasures?.length||0,DUNGEON_AREAS.length*3);
   // Reuse art for already recruited creatures only; never preview locked ones.
   // Pick the selected companion first so that the home genuinely reflects
   // the user's own team, and cap moving sprites at three for mobile performance.
@@ -702,9 +704,10 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   if(!prompts.length){renderHome();return;}
   const roster=[save.selectedMonster,...(save.ownedMonsters||[])].filter(id=>(save.ownedMonsters||[]).includes(id));
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
+  const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
   play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,bossTrialNewArea:null,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
     // did not change grading or outcomes and interrupted every battle.
@@ -2299,7 +2302,7 @@ async function gradeAnswer() {
   // Keep the payoff where the learner answered; the arena may be off-screen
   // on mobile. This is a short-lived result, never another battle control.
   const streakNote=streak?.chain>=1
-    ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}" data-chain-start="${streak.chain===1}"><strong>${streak.chain} CHAIN</strong><span>${streak.chain===1?'コンボ開始！':play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
+    ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}" data-chain-start="${streak.chain===1}"><strong>${streak.chain} CHAIN</strong><span>${!play.endless&&chainChestAt(save,streak.chain,play.areaId)?'このエリアの宝箱を発見！ 冒険終了時に獲得':streak.chain===1?'コンボ開始！':play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
   $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
@@ -2498,8 +2501,12 @@ function finishSession(timedOut=false,defeated=false) {
   betaTelemetry.track('monsters_beta_end',{...betaSessionFields(ended),
     outcome:ended.mode==='forest'?(defeated?'defeat':ended.endless?'endless_end':ended.completedForest?'clear':'stopped'):
       timedOut?'timeout':'complete'});
-  if(ended.tactics&&ended.bestCombo>(save.bestBattleChain||0))
-    persist({...save,bestBattleChain:ended.bestCombo});
+  if(ended.mode==='forest'){
+    const chestReward=ended.endless?{save,unlocked:[],bonusXp:0}:awardChainChests(save,ended.bestCombo,ended.areaId);
+    ended.newChainChests=chestReward.unlocked;
+    if(chestReward.unlocked.length||ended.bestCombo>(save.bestBattleChain||0))
+      persist({...chestReward.save,bestBattleChain:Math.max(save.bestBattleChain||0,ended.bestCombo)});
+  }
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
   if(ended.mode==='daily'&&ended.index>=ended.prompts.length){
     persist(recordDailyCompletion(save,{difficulty:ended.difficulty,date:dayKey(),
@@ -2570,6 +2577,35 @@ function finishSession(timedOut=false,defeated=false) {
   const medalDisplay=medal?`<section class="boss-medal-result" data-medal-rank="${medal.rank}"><span class="boss-medal-symbol" aria-hidden="true"></span><div><span class="tiny-caps">BOSS MASTERY · ${escapeHtml(difficultyCopy[medal.difficulty].label)}</span><h2>${medal.rank?`${BOSS_MEDAL_NAMES[medal.rank]}ランク${medal.upgraded?'獲得！':'でクリア！'}`:'練習クリア · 勲章は次の挑戦で'}</h2><p>章の問題 ${medal.independent}/${medal.total}問を自力で確認 · ボス ${medal.verifiedBoss}/3問を確認。${medal.rank===3?'全問自力でクリア！':medal.rank===2?'全問自力で金ランクを目指そう。':medal.rank===1?'75%以上を自力で確認し、ボスも2問以上自力で銀ランクへ。':'ボス3問をヒントありでも確認すると銅ランクを獲得できるよ。'}</p>${medal.best>medal.rank?`<small>この難易度の最高記録は${BOSS_MEDAL_NAMES[medal.best]}ランクのまま保存したよ。</small>`:''}</div></section>`:'';
   const companions=companionRevealFor(ended.captured,save.ownedMonsters,MONSTERS);
   renderCompanionSpotlight($('#result-companion-reveal'),companions,monsterArt);
+  let chaseReward=$('#result-game-goals');
+  if(!chaseReward){
+    chaseReward=document.createElement('section');chaseReward.id='result-game-goals';
+    $('#result-detail-panel').before(chaseReward);
+  }
+  chaseReward.replaceChildren();
+  chaseReward.hidden=ended.mode!=='forest';
+  if(ended.mode==='forest'){
+    const chests=ended.newChainChests||[];
+    if(chests.length){
+      const panel=document.createElement('div');panel.className='result-chain-chest';
+      const heading=document.createElement('strong');heading.textContent=`宝箱オープン！ ＋${chests.reduce((sum,chest)=>sum+chest.xp,0)} XP`;
+      const detail=document.createElement('p');detail.textContent=chests.map(chest=>`${chest.name}（${chest.chain} CHAIN）`).join(' · ')+' · 初回達成報酬。次はもっと長い連勝に挑戦！';
+      panel.append(heading,detail);chaseReward.append(panel);
+    }
+    const hunted=monsterFor(ended.huntTargetId);
+    if(hunted){
+      const captured=ended.captured.includes(hunted.id);
+      const current=save.ownedMonsters.includes(hunted.id)?null:monsterHuntBoard(save).options.find(entry=>entry.id===hunted.id);
+      const after=current?.count??0;
+      if(captured||after>ended.huntBefore){
+        const panel=document.createElement('div');panel.className='result-chain-chest';
+        const heading=document.createElement('strong');heading.textContent=captured?`モンスターハント成功！ ${hunted.name}が仲間に！`:`${hunted.name}の発見に近づいた！`;
+        const detail=document.createElement('p');detail.textContent=captured?'図鑑で新しい仲間を確認しよう。':`獲得条件 ${ended.huntBefore} → ${after}。ホームで残りの条件を確認して、次の冒険を決めよう。`;
+        panel.append(heading,detail);chaseReward.append(panel);
+      }
+    }
+    chaseReward.hidden=chaseReward.children.length===0;
+  }
   const newTrial=ended.mode==='forest'&&ended.bossTrialNewArea?dungeonAreaFor(ended.bossTrialNewArea):null;
   const evolutionTrial= newTrial&&getMonsterProgress(save,ended.companionId).stage<2 ?(()=>{
     const guide=getEvolutionTrialGuide(save,ended.companionId),growth=getMonsterProgress(save,ended.companionId);
@@ -2677,7 +2713,11 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
+  if(monsterHuntBoard(save).options.some(entry=>entry.id===id)){
+    persist({...save,huntTargetId:id});renderHome();
+  }
+}});
 $('#open-dungeon-tutorial').addEventListener('click',()=>homeNavigation.openTutorial('basic'));
 $('#start-practice-battle').addEventListener('click',()=>homeNavigation.startPracticeBattle());
 $('#open-battle-guide').addEventListener('click',()=>homeNavigation.openTutorial(play?.tactics?'battle':'basic'));

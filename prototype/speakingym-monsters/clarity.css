@@ -372,6 +372,35 @@
 .home-next-quest[data-quest-kind="retention"],.home-next-quest[data-quest-kind="review"]{border-left-color:#d6863e;background:linear-gradient(105deg,#fff7e5,#f0f8e9)}
 @media(max-width:540px){.home-next-quest{grid-template-columns:minmax(0,1fr);gap:8px;padding:11px 12px}.home-next-quest button{width:100%;max-width:none;min-height:42px}.home-next-quest h2{font-size:13px}.home-next-quest p{font-size:10px}}
 
+/* A visible, player-chosen collection objective and a short battle challenge.
+   Locked monsters remain silhouettes until they are actually recruited. */
+.home-monster-hunt{margin:10px 0 16px;padding:15px 17px;border-radius:17px;border:1px solid #91baa4;background:linear-gradient(120deg,#f3f8ed,#e7f2e8);color:#244c37;box-shadow:0 5px 16px #163c2520}
+.home-monster-hunt[hidden]{display:none!important}
+.hunt-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hunt-heading #hunt-collection-count{font-size:12px;font-weight:900;color:#30694a}
+.hunt-main{display:grid;grid-template-columns:80px minmax(0,1fr);align-items:start;gap:14px;margin-top:12px}
+.hunt-silhouette{width:80px;height:90px;display:grid;place-items:center;border:3px solid #7ea88f;border-radius:20px 20px 28px 28px;background:radial-gradient(circle at 45% 25%,#5c846c,#294d39);box-shadow:inset 0 5px 17px #173a2a80,0 4px 0 #39654a}
+.hunt-silhouette span{font-size:54px;color:#cee6be;font-weight:1000;text-shadow:0 3px 2px #183a2b}
+.hunt-content{min-width:0}
+.hunt-content label{display:block;font-size:11px;font-weight:900;margin-bottom:4px}
+.hunt-content select{width:100%;min-height:44px;max-width:460px;padding:8px 12px;border-radius:9px;border:2px solid #69967a;background:#fffef4;color:#203f2b;font-weight:800;font-size:13px}
+.hunt-meter{height:10px;border-radius:15px;background:#aec8b2;overflow:hidden;margin:10px 0 9px}
+.hunt-meter[hidden]{display:none}
+#hunt-meter-fill{display:block;height:100%;border-radius:15px;background:linear-gradient(90deg,#258758,#e4b447);transition:width .2s ease}
+#hunt-requirements{display:flex;flex-wrap:wrap;list-style:none;gap:5px 10px;padding:0;margin:0}
+#hunt-requirements li{font-size:11px;line-height:1.55;font-weight:750;overflow-wrap:anywhere}
+#hunt-requirements .hunt-cleared{color:#216b49}
+#hunt-requirements .hunt-pending{color:#725734}
+.hunt-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:13px;padding-top:11px;border-top:1px solid #abc6ae}
+#hunt-next-chest{font-size:12px;font-weight:900;color:#78511b}
+#hunt-go-battle{min-height:44px;padding:9px 15px;border-radius:11px;background:#276e4d;border:1px solid #195c3a;color:white;font-weight:900;cursor:pointer}
+#hunt-go-battle:focus-visible,.hunt-content select:focus-visible{outline:3px solid #d1a144;outline-offset:2px}
+.result-chain-chest{margin:13px 0;padding:15px;border:2px solid #dcb35c;border-radius:16px;background:linear-gradient(120deg,#fff4c8,#f5e4a6);color:#624519;box-shadow:0 5px 0 #8c652c40}
+.result-chain-chest strong{display:block;font-size:17px;font-weight:950;margin-bottom:5px;color:#5c411c}
+.result-chain-chest p{margin:0;font-size:12px;font-weight:750;line-height:1.7;color:#725222}
+@media(max-width:540px){.home-monster-hunt{padding:12px}.hunt-main{grid-template-columns:60px minmax(0,1fr);gap:9px}.hunt-silhouette{width:60px;height:71px;border-radius:15px 15px 22px 22px}.hunt-silhouette span{font-size:43px}.hunt-content select{font-size:12px}.hunt-footer{align-items:stretch}#hunt-go-battle{width:100%}}
+@media(prefers-reduced-motion:reduce){#hunt-meter-fill{transition:none}}
+
 /* Direct revenge for verified weak questions; the detailed report remains
    available on demand and the main next-area action stays first. */
 #result-targeted-review{display:block;max-width:100%;min-height:44px;margin:10px auto 6px;padding:10px 15px;border:1px solid #8fac9a;border-radius:11px;background:#e6f2e7;color:#28533d;font-size:12px;font-weight:850;line-height:1.5;cursor:pointer}

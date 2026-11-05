@@ -52,6 +52,8 @@ export function createSave() {
     completedRuns: 0,
     bestSmooth: 0,
     bestBattleChain: 0,
+    battleTreasures: [],
+    huntTargetId: null,
     totalAnswers: 0,
     forest: cleanForest(null)
   };
@@ -138,6 +140,9 @@ export function validateSave(value) {
     completedRuns: safeSaveCount(value.completedRuns),
     bestSmooth: safeSaveCount(value.bestSmooth,999),
     bestBattleChain: Number.isSafeInteger(value.bestBattleChain)?Math.max(0,Math.min(999,value.bestBattleChain)):0,
+    battleTreasures:unique((Array.isArray(value.battleTreasures)?value.battleTreasures:[])
+      .filter(key=>typeof key==='string'&&areaIds.has(key.split(':')[0])&&['3','5','8'].includes(key.split(':')[1])&&key.split(':').length===2)).sort(),
+    huntTargetId:typeof value.huntTargetId==='string'&&ids.has(value.huntTargetId)&&!ownedMonsters.includes(value.huntTargetId)?value.huntTargetId:null,
     totalAnswers: safeSaveCount(value.totalAnswers),
     forest: cleanForest(value.forest)
   };

@@ -19,10 +19,12 @@ const STEPS=Object.freeze([
   scene:['必殺ゲージ','1 / 3 → 2 / 3 → 3 / 3','必殺技を使う'],tips:['必殺技は使うタイミングが大事。','ボスによって役立つ控えが違う。詳しい相性は攻略メモで見よう。']},
  {chapter:'growth',title:'8. 仲間を育てて進化させよう',body:'冒険でXPをため、好きな仲間に分けて育成。レベル4では仲間固有の熟練技も解放されるよ。',
   scene:['仲間の図鑑','XPを使ってレベルアップ','進化・熟練技'],tips:['仲間の得意技能や固有能力はそれぞれ違うよ。','育てた仲間の組み合わせで攻略方法が変わる。']},
- {chapter:'growth',title:'9. 間違いは復習につなげよう',body:'問題のあとで解説を読もう。「問題を保存」から後日やり直すと、使える英語として定着していくよ。',
+ {chapter:'growth',title:'9. 狙う仲間と連勝宝箱',body:'ホームで次に欲しい仲間を選ぼう。獲得条件が少しずつ進むのを確認できるよ。各エリアで3・5・8 CHAINに初めて到達すると宝箱から育成XPを獲得。',
+  scene:['モンスターハント','狙う仲間を選ぶ','3 CHAIN → 宝箱'],tips:['仲間のレア度が高いと、別の日の復習や複数エリアのボス攻略も必要。','宝箱はエリアごとに1回だけ。ヒントなしの連続成功が条件だよ。']},
+ {chapter:'growth',title:'10. 間違いは復習につなげよう',body:'問題のあとで解説を読もう。「問題を保存」から後日やり直すと、使える英語として定着していくよ。',
   scene:['学習の記録','間違い・保存した問題','復習に挑戦'],tips:['ヒントは使ってOK。ただし自力正解とは区別して記録。','毎日長く遊ぶ必要はないよ。少しずつ続けよう。']}
 ]);
-export function setupHomeNavigation({home,startMode,showCollection}){
+export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}){
  const sections={
   daily:document.createElement('section'),
   roleplay:document.createElement('section'),
@@ -96,6 +98,11 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
  const quest=document.createElement('section');quest.className='home-next-quest';quest.id='home-next-quest';quest.setAttribute('aria-labelledby','home-next-quest-title');
  quest.innerHTML='<div class="home-next-quest-copy"><span class="home-next-quest-kicker">YOUR NEXT QUEST · 今日のおすすめ</span><h2 id="home-next-quest-title">今日の英語を練習しよう</h2><p id="home-next-quest-detail">学習記録に合わせて、次の練習を案内するよ。</p><button type="button" id="home-learning-proof" hidden>日を空けた学習記録を見る</button></div><button type="button" id="home-next-quest-button">練習を始める</button>';
+ const hunt=document.createElement('section');hunt.className='home-monster-hunt';hunt.id='home-monster-hunt';hunt.hidden=true;
+ hunt.setAttribute('aria-label','モンスターハントと連勝宝箱');
+ hunt.innerHTML='<div class="hunt-heading"><span class="home-next-quest-kicker">MONSTER HUNT · 次に仲間にしたいのは？</span><span id="hunt-collection-count"></span></div><div class="hunt-main"><div class="hunt-silhouette" aria-hidden="true"><span>?</span></div><div class="hunt-content"><label for="hunt-target-select">狙うモンスター</label><select id="hunt-target-select" aria-label="狙うモンスターを選ぶ"></select><div class="hunt-meter" role="progressbar" aria-label="仲間にする条件の達成度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="hunt-meter-fill"></span></div><ul id="hunt-requirements"></ul></div></div><div class="hunt-footer"><span id="hunt-next-chest"></span><button type="button" id="hunt-go-battle">続きを冒険する →</button></div>';
+ hunt.querySelector('#hunt-target-select').addEventListener('change',event=>onHuntTarget?.(event.target.value));
+ hunt.querySelector('#hunt-go-battle').addEventListener('click',()=>startMode('forest'));
  let questAction='daily',hasPlayed=false;
  quest.querySelector('#home-next-quest-button').addEventListener('click',()=>startMode(questAction));
  quest.querySelector('#home-learning-proof').addEventListener('click',()=>showPage('review'));
@@ -131,7 +138,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   (['daily','roleplay','review','collection'].includes(item.id)?grid:extraGrid).append(button);
  }
  extra.append(extraGrid,motionToggle);
- menu.append(head,feature,quest,label,grid,extra);home.prepend(menu);
+ menu.append(head,feature,quest,hunt,label,grid,extra);home.prepend(menu);
  const dialog=document.createElement('div');dialog.className='tutorial-backdrop';dialog.id='monsters-tutorial';dialog.hidden=true;
  dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><button type="button" id="tutorial-try-battle" class="tutorial-try-battle">操作して覚える練習バトル</button><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
  document.body.append(dialog);
@@ -296,6 +303,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      const allCleared=totalAreas>0&&cleared===totalAreas;
      hasPlayed=hasAttempted||cleared>0;
      quest.hidden=!hasPlayed;
+     hunt.hidden=!hasPlayed;
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
      menu.querySelector('#home-menu-level').textContent='Lv.'+level+' · 絆 Lv.'+bondRank;
@@ -307,6 +315,38 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-feature-progress').textContent=allCleared?`全${totalAreas}エリア攻略！好きな場所で遊ぼう`:
        hasPlayed?`${cleared}/${totalAreas} エリア攻略 · 次は「${nextAreaName}」`:
        `最初の目的地「${nextAreaName}」 · ボス撃破を目指そう`;
+   },
+   updateHunt(board,chest,areaName,treasures,totalTreasures){
+     hunt.querySelector('#hunt-collection-count').textContent=`図鑑 ${board.ownedCount}/${board.totalCount} · 宝箱 ${treasures}/${totalTreasures}`;
+     const picker=hunt.querySelector('#hunt-target-select');
+     picker.replaceChildren(...board.options.map(entry=>{
+       const item=document.createElement('option');item.value=entry.id;
+       item.textContent=`${entry.name} · ${entry.rarity.toUpperCase()} · ${entry.percent}%`;
+       return item;
+     }));
+     picker.disabled=!board.selected;
+     picker.hidden=!board.selected;
+     hunt.querySelector('.hunt-silhouette').hidden=!board.selected;
+     const reqs=hunt.querySelector('#hunt-requirements');
+     const meter=hunt.querySelector('.hunt-meter');
+     if(board.selected){
+       picker.value=board.selected.id;
+       meter.hidden=false;meter.setAttribute('aria-valuenow',String(board.selected.percent));
+       hunt.querySelector('#hunt-meter-fill').style.width=board.selected.percent+'%';
+       reqs.replaceChildren(...board.selected.gates.map(gate=>{
+         const item=document.createElement('li');item.className=gate.remaining?'hunt-pending':'hunt-cleared';
+         item.textContent=`${gate.remaining?'○':'✓'} ${gate.label} ${Math.min(gate.current,gate.required)}/${gate.required}`;
+         return item;
+       }));
+       hunt.querySelector('#hunt-go-battle').hidden=false;
+     }else{
+       reqs.replaceChildren();meter.hidden=true;
+       const item=document.createElement('li');item.textContent='全モンスターを仲間にした！ 図鑑コンプリート！';reqs.append(item);
+       hunt.querySelector('#hunt-go-battle').hidden=true;
+     }
+     hunt.querySelector('#hunt-next-chest').textContent=chest
+       ?`${areaName}の宝箱：${chest.chain} CHAIN · 初回＋${chest.xp} XP`
+       :`「${areaName}」の連勝宝箱コンプリート！ 別のエリアにも挑戦しよう`;
    }
  };
 }

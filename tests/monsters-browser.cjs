@@ -53,6 +53,33 @@ const path=require('node:path');
     await page.locator(`[data-listening-choice="${correct}"]`).click();
   };
   try{
+    // A game-minded player can pick a specific locked creature to hunt.
+    // The chase remains after reload, without revealing its artwork or
+    // obscuring the single beginner CTA before the first attempt.
+    {
+      const {context:huntContext,page:huntPage}=await boot(390);
+      assert.equal(await huntPage.locator('#home-monster-hunt').isVisible(),false);
+      await huntPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const seeded={...createSave(),totalAnswers:1};
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+      });
+      await huntPage.reload();
+      assert.equal(await huntPage.locator('#home-monster-hunt').isVisible(),true);
+      assert.match(await huntPage.locator('#hunt-next-chest').innerText(),/3 CHAIN/);
+      assert.ok(await huntPage.locator('#hunt-target-select option').count()>20);
+      await huntPage.locator('#hunt-target-select').selectOption('tokirin');
+      assert.equal(await huntPage.locator('#hunt-target-select').inputValue(),'tokirin');
+      assert.equal(await huntPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).huntTargetId),'tokirin');
+      await huntPage.reload();
+      assert.equal(await huntPage.locator('#hunt-target-select').inputValue(),'tokirin');
+      assert.match(await huntPage.locator('#hunt-requirements').innerText(),/雪の街のボス/);
+      assert.match(await huntPage.locator('#hunt-requirements').innerText(),/日を空けた復習/);
+      assert.equal(await huntPage.locator('#home-monster-hunt img').count(),0,'Locked creatures use an honest silhouette');
+      const huntWidth=await huntPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(huntWidth.scroll<=huntWidth.inner+1,`390px hunt must not cause horizontal overflow: ${JSON.stringify(huntWidth)}`);
+      await huntContext.close();
+    }
     // A future-version / damaged local save must not silently disappear when
     // the prototype opens. Preserve its exact bytes, offer a file download,
     // and keep recovery available after a second reload.
