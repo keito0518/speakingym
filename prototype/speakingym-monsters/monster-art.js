@@ -1,4 +1,5 @@
 import { newPixelCompanionArt } from './monster-new-sprites.js';
+import {weaponPixelOverlay} from './weapon-visuals.js';
 
 // Original pixel sprites, made from the 15 existing companion designs at a
 // deliberate 48x44 native resolution. All three forms live in one cached atlas.
@@ -12,12 +13,12 @@ const IDS=Object.freeze([
 const CELL_WIDTH=48,CELL_HEIGHT=44,ATLAS_WIDTH=IDS.length*CELL_WIDTH;
 let nextClip=0;
 
-export function monsterArt(id,form=false){
+export function monsterArt(id,form=false,weapon=null){
   // Keep the established 15-character atlas intact; new residents have their
   // own authored, crisp-edged silhouettes at the same native pixel scale.
   const stage=typeof form==='number'?Math.max(0,Math.min(2,Math.floor(form))):form?1:0;
   const expansionArt=newPixelCompanionArt(id,stage);
-  if(expansionArt)return expansionArt;
+  if(expansionArt)return weapon?expansionArt.replace('</svg>',`${weaponPixelOverlay(weapon)}</svg>`):expansionArt;
   const index=IDS.indexOf(id);
   if(index<0){
     // Unknown catalog entries stay undiscovered rather than reusing Yolkie.
@@ -35,5 +36,5 @@ export function monsterArt(id,form=false){
   const back=evolved?'<g class="monster-evolution-morph monster-evolution-back" aria-hidden="true"><rect x="21" y="34" width="8" height="8" fill="#f8dc8e"/><rect x="151" y="22" width="10" height="10" fill="#ffe69b"/><rect x="160" y="48" width="5" height="5" fill="#fff4c1"/></g>':'';
   const front=evolved?'<g class="monster-evolution-morph monster-evolution-front" aria-hidden="true"><rect x="13" y="81" width="6" height="6" fill="#fff2b4"/><rect x="158" y="112" width="7" height="7" fill="#f8d783"/><rect x="144" y="132" width="4" height="4" fill="#fff9dd"/></g>':'';
   const crown=ascended?'<g class="monster-ascension-sparks" aria-hidden="true"><rect x="5" y="34" width="9" height="9" fill="#a8ffea"/><rect x="166" y="67" width="9" height="9" fill="#fff2aa"/><rect x="36" y="10" width="6" height="6" fill="#fff2aa"/><rect x="143" y="13" width="7" height="7" fill="#a8ffea"/></g>':'';
-  return `<svg viewBox="0 0 180 164" class="monster-svg pixel-art ${evolved?'monster-evolved':''} ${ascended?'monster-ascended':''}" data-pixel-sprite="${id}" data-evolved="${evolved}" data-stage="${stage}" role="img" aria-label="${ascended?'第2進化した':evolved?'進化した':'通常の'}モンスターのイラスト" xmlns="http://www.w3.org/2000/svg">${back}${sprite}${front}${crown}</svg>`;
+  return `<svg viewBox="0 0 180 164" class="monster-svg pixel-art ${evolved?'monster-evolved':''} ${ascended?'monster-ascended':''}" data-pixel-sprite="${id}" data-evolved="${evolved}" data-stage="${stage}" role="img" aria-label="${ascended?'第2進化した':evolved?'進化した':'通常の'}モンスターのイラスト" xmlns="http://www.w3.org/2000/svg">${back}${sprite}${front}${crown}${weaponPixelOverlay(weapon,{legacy:true})}</svg>`;
 }

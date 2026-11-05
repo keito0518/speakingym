@@ -17,12 +17,38 @@ export const WEAPONS=Object.freeze([
  {id:'starlight',name:'星明かりの剣',attack:5,rarity:'rare',world:'ruins',affinity:'speak'},
  {id:'moss_fang',name:'深森の牙',attack:3,rarity:'epic',eliteWorld:'forest',affinity:'vocab'},
  {id:'blizzard_lance',name:'吹雪の長槍',attack:4,rarity:'epic',eliteWorld:'city',affinity:'listen'},
- {id:'astral_sword',name:'星核の剣',attack:5,rarity:'epic',eliteWorld:'ruins',affinity:'grammar'}
+ {id:'astral_sword',name:'星核の剣',attack:5,rarity:'epic',eliteWorld:'ruins',affinity:'grammar'},
+ // A separate earned-currency-only forge pool. The strongest equipment is
+ // never a chapter drop; coins cannot be purchased with real money.
+ {id:'copper_fang',name:'銅の牙',attack:3,rarity:'common',source:'gacha',affinity:'speak',shape:'dagger'},
+ {id:'river_staff',name:'せせらぎの杖',attack:3,rarity:'common',source:'gacha',affinity:'listen',shape:'staff'},
+ {id:'meadow_bow',name:'草原の弓',attack:3,rarity:'common',source:'gacha',affinity:'vocab',shape:'bow'},
+ {id:'quartz_hammer',name:'石英ハンマー',attack:4,rarity:'common',source:'gacha',affinity:'grammar',shape:'hammer'},
+ {id:'sky_sabre',name:'青空のサーベル',attack:4,rarity:'common',source:'gacha',affinity:'speak',shape:'sword'},
+ {id:'willow_spear',name:'柳の槍',attack:3,rarity:'common',source:'gacha',affinity:'listen',shape:'spear'},
+ {id:'cinder_wand',name:'熾火のワンド',attack:4,rarity:'common',source:'gacha',affinity:'grammar',shape:'staff'},
+ {id:'stone_axe',name:'礫の斧',attack:4,rarity:'common',source:'gacha',affinity:'vocab',shape:'axe'},
+ {id:'silver_edge',name:'銀月の刃',attack:5,rarity:'rare',source:'gacha',affinity:'speak',shape:'sword'},
+ {id:'north_bow',name:'北風の弓',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'bow'},
+ {id:'rune_hammer',name:'刻印ハンマー',attack:5,rarity:'rare',source:'gacha',affinity:'grammar',shape:'hammer'},
+ {id:'ivy_lance',name:'蔦の長槍',attack:5,rarity:'rare',source:'gacha',affinity:'vocab',shape:'spear'},
+ {id:'aurora_wand',name:'極光のワンド',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'staff'},
+ {id:'meteor_axe',name:'流星の斧',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'axe'},
+ {id:'mirror_dagger',name:'鏡合わせの短剣',attack:5,rarity:'rare',source:'gacha',affinity:'grammar',shape:'dagger'},
+ {id:'coral_sword',name:'珊瑚の剣',attack:6,rarity:'rare',source:'gacha',affinity:'vocab',shape:'sword'},
+ {id:'thunder_javelin',name:'雷鳴の投槍',attack:7,rarity:'epic',source:'gacha',affinity:'speak',shape:'spear'},
+ {id:'glacier_bow',name:'氷河の弓',attack:7,rarity:'epic',source:'gacha',affinity:'listen',shape:'bow'},
+ {id:'oracle_staff',name:'予言者の杖',attack:7,rarity:'epic',source:'gacha',affinity:'grammar',shape:'staff'},
+ {id:'titan_hammer',name:'巨人のハンマー',attack:7,rarity:'epic',source:'gacha',affinity:'vocab',shape:'hammer'},
+ {id:'solar_blade',name:'太陽の聖剣',attack:8,rarity:'epic',source:'gacha',affinity:'speak',shape:'sword'},
+ {id:'night_reaper',name:'夜渡りの大鎌',attack:8,rarity:'epic',source:'gacha',affinity:'listen',shape:'axe'},
+ {id:'eternal_crest',name:'永遠の星剣',attack:9,rarity:'legend',source:'gacha',affinity:'grammar',shape:'sword'},
+ {id:'worldtree_scepter',name:'世界樹の宝杖',attack:9,rarity:'legend',source:'gacha',affinity:'vocab',shape:'staff'}
 ].map(item=>Object.freeze(item)));
 
 const BY_ID=new Map(WEAPONS.map(item=>[item.id,item]));
 const AREA_WORLD=Object.freeze({entry:'forest',glade:'forest',thicket:'forest',sanctuary:'forest',city:'city','city-market':'city','city-terminal':'city','city-blizzard':'city','ruins-gate':'ruins','ruins-core':'ruins'});
-export const WEAPON_RARITY_LABELS=Object.freeze({common:'通常',rare:'レア',epic:'強敵限定'});
+export const WEAPON_RARITY_LABELS=Object.freeze({common:'通常',rare:'レア',epic:'エピック',legend:'伝説'});
 export const WEAPON_AFFINITY_LABELS=Object.freeze({speak:'Speak',listen:'Listen',vocab:'単語',grammar:'文法'});
 
 export function normalizeEquipment(value){
@@ -48,7 +74,7 @@ export function levelAttackBonus(level=1){
 // the mandatory three independently checked boss seals.
 export function weaponAffinityBonus(save,kind,{independent=false}={}){
  const weapon=equippedWeapon(save);
- return independent&&kind&&weapon?.affinity===kind?(weapon.rarity==='epic'?2:1):0;
+ return independent&&kind&&weapon?.affinity===kind?(['epic','legend'].includes(weapon.rarity)?2:1):0;
 }
 export function scaledStrikeDamage(baseDamage,level,save,{kind=null,independent=false}={}){
  const base=Number.isFinite(baseDamage)?Math.max(1,Math.floor(baseDamage)):1;

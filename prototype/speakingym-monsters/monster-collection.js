@@ -1,6 +1,7 @@
 import { MONSTERS, monsterFormName } from './monster-data.js';
 import { getMonsterProgress, getEvolutionTrialGuide, learningSummary, feedMonster, evolveMonster, selectMonster, XP_PER_LEVEL, EVOLUTION_XP, SECOND_EVOLUTION_XP, companionUnlockProgress, getMonsterBondProgress } from './monster-engine.js';
 import { monsterArt } from './monster-art.js';
+import {equippedWeapon} from './monster-equipment.js';
 import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, FOREST_ROUTES, unlockedCityAreas, unlockedRuinsAreas, cleanForest } from './forest-engine.js';
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
@@ -108,7 +109,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       const owned = save.ownedMonsters.includes(c.id), g = getMonsterProgress(save,c.id);
       const p=companionUnlockProgress(save,c);
       const bond=getMonsterBondProgress(save,c.id);
-      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''} ${owned&&g.canEvolve?'evolution-ready':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned?g.stage:0)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned?`${growthStatus(g)} · 絆 Lv.${bond.rank}`:c.ruinsAreas?`遺跡 ${p.ruinsCount}/${p.requiredRuinsAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
+      return `<button type="button" class="catalog-card ${owned?'':'locked'} ${c.rarity?'catalog-rare':''} ${owned&&g.canEvolve?'evolution-ready':''}" data-open-monster="${c.id}" aria-label="${html(c.name)}の詳細${owned?'':'・未所持'}"><span class="catalog-portrait">${monsterArt(c.id,owned?g.stage:0,owned?equippedWeapon(save):null)}</span><strong lang="en">${html(owned?displayName(c,g):c.name)}</strong><span class="catalog-state">${owned?`Lv.${g.level} · 所持`:'未所持'}</span><span class="catalog-evolution">${owned?`${growthStatus(g)} · 絆 Lv.${bond.rank}`:c.ruinsAreas?`遺跡 ${p.ruinsCount}/${p.requiredRuinsAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.cityAreas?`街 ${p.cityCount}/${p.requiredCityAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:c.forestAreas?`森 ${p.areaCount}/${p.requiredAreas} · 定着 ${p.currentRecall}/${p.requiredRecall}`:'未解放'}</span></button>`;
     }).join('');
     all('[data-open-monster]').forEach(b => {
       const id=b.dataset.openMonster;
@@ -129,7 +130,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
     const save = getSave(), owned = save.ownedMonsters.includes(id), g = getMonsterProgress(save,id), power = powerFor(id), bond=getMonsterBondProgress(save,id);
     const trial=getEvolutionTrialGuide(save,id);
     $('#detail-content').innerHTML = `<div class="character-sheet">
-      <div class="character-portrait ${owned?'':'unowned'}">${monsterArt(id,owned?g.stage:0)}</div>
+      <div class="character-portrait ${owned?'':'unowned'}">${monsterArt(id,owned?g.stage:0,owned?equippedWeapon(save):null)}</div>
       <span class="tiny-caps">MONSTER FIELD NOTES</span><h1 lang="en">${html(owned?displayName(c,g):c.name)}</h1>
       <p class="character-subtitle">${html(c.japaneseName)} · ${html(c.kind)}</p>
       <p class="character-description">${html(c.note)}</p>

@@ -27,7 +27,12 @@ const ALLY_TYPES=Object.freeze({
  runerun:{strong:'vocab',weak:'listen'},gearbat:{strong:'listen',weak:'grammar'},
  shardling:{strong:'grammar',weak:'speak'},astrowisp:{strong:'speak',weak:'vocab'},
  namihana:{strong:'listen',weak:'grammar'},michiru:{strong:'grammar',weak:'vocab'},
- sorella:{strong:'listen',weak:'speak'},kometta:{strong:'speak',weak:'listen'}
+ sorella:{strong:'listen',weak:'speak'},kometta:{strong:'speak',weak:'listen'},
+ kohan:{strong:'vocab',weak:'grammar'},domoro:{strong:'grammar',weak:'listen'},
+ lumika:{strong:'listen',weak:'vocab'},pofuyu:{strong:'speak',weak:'grammar'},
+ neonko:{strong:'vocab',weak:'listen'},shirobue:{strong:'listen',weak:'speak'},
+ runezo:{strong:'grammar',weak:'vocab'},orbitto:{strong:'listen',weak:'grammar'},
+ tokeru:{strong:'speak',weak:'vocab'}
 });
 // All companions have a named combat trait. A few share an archetype, but its
 // trigger is always their *own* strength: English answers are still graded by
@@ -50,7 +55,12 @@ const ALLY_SKILLS=Object.freeze({
  runerun:{name:'ルーンの貫通波',type:'pierce'},gearbat:{name:'歯車の共鳴',type:'charge'},
  shardling:{name:'水晶の守護陣',type:'ward'},astrowisp:{name:'星雲の連撃',type:'burst'},
  namihana:{name:'さざ波の共鳴',type:'charge'},michiru:{name:'道しるべの盾',type:'ward'},
- sorella:{name:'雪灯りの結界',type:'ward'},kometta:{name:'彗星ラッシュ',type:'burst'}
+ sorella:{name:'雪灯りの結界',type:'ward'},kometta:{name:'彗星ラッシュ',type:'burst'},
+ kohan:{name:'木の葉の貫通',type:'pierce'},domoro:{name:'大地の守護',type:'ward'},
+ lumika:{name:'月音の共鳴',type:'charge'},pofuyu:{name:'雪玉ラッシュ',type:'burst'},
+ neonko:{name:'虹色の追撃',type:'burst'},shirobue:{name:'白笛チャージ',type:'charge'},
+ runezo:{name:'石碑の結界',type:'ward'},orbitto:{name:'星環の共鳴',type:'charge'},
+ tokeru:{name:'時空の一閃',type:'burst'}
 });
 const SKILL_DESCRIPTIONS=Object.freeze({
  burst:'得意技能で必殺技を使うとダメージ＋1',
@@ -75,7 +85,10 @@ const MASTERY_NAMES=Object.freeze({
  kippu:'快速の回復',kofuu:'喫茶の結界',mafura:'温もりの守護',
  yukidama:'氷晶の吸収',tegami:'飛脚の回復',tokirin:'秒針の集中',
  runerun:'刻印の吸収',gearbat:'歯車の蓄力',shardling:'プリズムの結界',astrowisp:'星霧の追撃',
- namihana:'せせらぎの集中',michiru:'旅路の守護',sorella:'灯台の結界',kometta:'流星の二連撃'
+ namihana:'せせらぎの集中',michiru:'旅路の守護',sorella:'灯台の結界',kometta:'流星の二連撃',
+ kohan:'新緑の槍',domoro:'大地の甲羅',lumika:'月光の波動',
+ pofuyu:'雪風の二連撃',neonko:'極光の追撃',shirobue:'吹雪の蓄力',
+ runezo:'古代石の加護',orbitto:'星海の集中',tokeru:'時空の連撃'
 });
 const MASTERY_EFFECTS=Object.freeze({
  burst:'得意技能の自力正解で追撃＋1。ボスでは必殺ゲージ＋1',

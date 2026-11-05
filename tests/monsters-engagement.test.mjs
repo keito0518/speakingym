@@ -40,7 +40,7 @@ test('the hunter can choose a distant rare target while default recommendations 
   const save=createSave();
   const board=monsterHuntBoard(save,'2026-11-05');
   assert.equal(board.ownedCount,1);
-  assert.equal(board.totalCount,35);
+  assert.equal(board.totalCount,44);
   assert.ok(board.selected);
   assert.ok(board.selected.remaining.length>0);
   assert.ok(board.selected.percent>=0&&board.selected.percent<=100);

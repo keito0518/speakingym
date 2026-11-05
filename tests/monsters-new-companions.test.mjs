@@ -7,13 +7,14 @@ import { allyAffinity, allySkill, masterySkillFor } from '../prototype/speakingy
 import { monsterArt } from '../prototype/speakingym-monsters/monster-art.js';
 
 const newIds=['namihana','michiru','sorella','kometta'];
+const latestIds=['kohan','domoro','lumika','pofuyu','neonko','shirobue','runezo','orbitto','tokeru'];
 
 test('four new forest, snow-city and ruins companions have unique battle roles and three proper pixel forms',()=>{
- assert.equal(MONSTERS.length,35);
- assert.equal(new Set(MONSTERS.map(m=>m.id)).size,35);
- assert.equal(new Set(MONSTERS.map(m=>m.name)).size,35);
- assert.equal(new Set(MONSTERS.map(m=>m.evolvedName)).size,35);
- assert.equal(new Set(MONSTERS.map(m=>m.ascendedName)).size,35);
+ assert.equal(MONSTERS.length,44);
+ assert.equal(new Set(MONSTERS.map(m=>m.id)).size,44);
+ assert.equal(new Set(MONSTERS.map(m=>m.name)).size,44);
+ assert.equal(new Set(MONSTERS.map(m=>m.evolvedName)).size,44);
+ assert.equal(new Set(MONSTERS.map(m=>m.ascendedName)).size,44);
  for(const id of newIds){
   const creature=MONSTERS.find(monster=>monster.id===id);
   assert.ok(creature?.roots.length>=2,id);
@@ -60,8 +61,8 @@ test('new rare species cannot be captured by same-day XP or chapter clears witho
  assert.equal(captureEligibleMonsters(trained).captured.some(id=>newIds.includes(id)),false);
 });
 
-test('an existing 31-companion save stays unchanged when the collection expands to 35',()=>{
- const oldIds=MONSTERS.filter(monster=>!newIds.includes(monster.id)).map(monster=>monster.id);
+test('an existing 31-companion save stays unchanged when the collection expands to 44',()=>{
+ const oldIds=MONSTERS.filter(monster=>![...newIds,...latestIds].includes(monster.id)).map(monster=>monster.id);
  assert.equal(oldIds.length,31);
  const save={...createSave(),ownedMonsters:oldIds,selectedMonster:oldIds.at(-1),
   monsterXp:Object.fromEntries(oldIds.map(id=>[id,630])),
@@ -76,4 +77,22 @@ test('an existing 31-companion save stays unchanged when the collection expands 
  }
  assert.equal(restored.ownedMonsters.some(id=>newIds.includes(id)),false,
   'Installing a new version must not grant companions or reset the old roster');
+});
+
+test('nine more story-only monsters have distinct pixel silhouettes, evolution names and hard learning gates',()=>{
+ assert.equal(latestIds.length,9);
+ for(const id of latestIds){
+  const monster=MONSTERS.find(entry=>entry.id===id);
+  assert.ok(monster?.roots.length>=2,id);
+  assert.ok(monster.evolvedName&&monster.ascendedName,id);
+  assert.ok(monster.masteryUnlock>=7,id);
+  assert.ok(monster.retentionUnlock>=2,id);
+  assert.ok(monster.forestAreas||monster.cityAreas||monster.ruinsAreas,id);
+  assert.ok(!companionUnlockProgress(createSave(),monster).ready,id);
+  assert.ok(allySkill(id).name,`own combat skill for ${id}`);
+  assert.ok(masterySkillFor(id,4)?.name,`own level-four skill for ${id}`);
+  const stages=[0,1,2].map(stage=>monsterArt(id,stage));
+  stages.forEach((svg,stage)=>{assert.match(svg,new RegExp(`data-pixel-sprite="${id}"`));assert.match(svg,new RegExp(`data-stage="${stage}"`));});
+  assert.notEqual(stages[0],stages[1]);assert.notEqual(stages[1],stages[2]);
+ }
 });

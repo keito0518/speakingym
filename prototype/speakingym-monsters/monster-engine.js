@@ -4,6 +4,7 @@ import { recordRetention, retentionOverview, sanitizeRetention } from './retenti
 import { appendSkillAttempt, sanitizeSkillAttempts } from './skill-progress.js';
 import { sanitizeSavedReviewHistory } from './saved-review-coach.js';
 import { normalizeEquipment } from './monster-equipment.js';
+import {normalizeEconomy} from './monster-economy.js';
 import {normalizeBattleFormation} from './battle-formation.js';
 
 export const STORAGE_KEY = 'speakingym-monsters-prototype-v1';
@@ -59,6 +60,11 @@ export function createSave() {
     huntTargetId: null,
     weaponInventory: [],
     equippedWeaponId: null,
+    coins:0,
+    treasureBag:{},
+    gachaPullCount:0,
+    pullsSinceRare:0,
+    pullsSinceEpic:0,
     totalAnswers: 0,
     forest: cleanForest(null)
   };
@@ -150,6 +156,7 @@ export function validateSave(value) {
       .filter(key=>typeof key==='string'&&areaIds.has(key.split(':')[0])&&['3','5','8'].includes(key.split(':')[1])&&key.split(':').length===2)).sort(),
     huntTargetId:typeof value.huntTargetId==='string'&&ids.has(value.huntTargetId)&&!ownedMonsters.includes(value.huntTargetId)?value.huntTargetId:null,
     ...normalizeEquipment(value),
+    ...normalizeEconomy(value),
     totalAnswers: safeSaveCount(value.totalAnswers),
     forest: cleanForest(value.forest)
   };

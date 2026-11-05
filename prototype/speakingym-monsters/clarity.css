@@ -2,6 +2,21 @@
    initial decision: start, repeat a short training, review, or see companions. */
 .hero-weapon-summary{margin:7px 0 0;color:#f7ebca;font-size:12px;font-weight:800;line-height:1.55}
 .collection-weapons{margin:18px 0;padding:16px 18px;border:2px solid #afcb9a;border-radius:16px;background:#f4f9e9;color:#244937;box-shadow:0 4px 0 #d8e6cb}
+.collection-shop{margin:20px 0 12px;padding:18px;border:2px solid #c3a76a;border-radius:18px;background:linear-gradient(160deg,#fff9ea,#e9f3ea);color:#293d36;box-shadow:0 5px 0 #e5ddc7;overflow-wrap:anywhere}
+.collection-shop h2{font-size:22px;color:#42371f;margin:5px 0 8px}.collection-shop p{font-size:13px;line-height:1.55;margin:8px 0;color:#384d41}
+.shop-wallet{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:13px;background:#f9edc9;border:1px solid #caaa6a}
+.shop-wallet strong{font-size:25px;font-variant-numeric:tabular-nums;color:#563e1b}.shop-wallet small{margin-left:auto;font-size:12px;font-weight:750;color:#5b4c31}
+.shop-bag,.shop-gacha{background:#fffef7;border:1px solid #d1d7bd;border-radius:14px;margin:13px 0;padding:12px;min-width:0}
+.shop-section-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.shop-section-heading strong{font-size:16px;color:#2e4b39}.shop-section-heading button,.shop-good button{cursor:pointer;border:1px solid #527b60;border-radius:10px;background:#e0f2d9;color:#243d2d;min-height:37px;padding:7px 12px;font-weight:800}
+.shop-section-heading button:disabled,.shop-good button:disabled{opacity:.5;cursor:not-allowed}
+.shop-good{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #d7dac9;min-width:0}
+.shop-good:last-child{border:0}.shop-good span{min-width:0}.shop-good strong{display:block;font-size:14px}.shop-good small{font-size:12px;color:#526852}
+.shop-empty{color:#53665a}.shop-price{font-weight:900;color:#59411f;background:#fff1c8;padding:7px 10px;border-radius:10px;white-space:nowrap}
+.shop-odds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:12px 0}.shop-odds span{text-align:center;border:1px solid #adc3af;background:#edf4e7;border-radius:9px;padding:7px 3px;font-size:12px;font-weight:850;min-width:0}
+.shop-odds [data-tier="rare"]{background:#e6eefc;border-color:#8fa8d6}.shop-odds [data-tier="epic"]{background:#f2e4fc;border-color:#c29cdf}.shop-odds [data-tier="legend"]{background:#fff0cd;border-color:#e0bb67}
+.shop-odds small{display:block;color:#3f5645;font-size:11px}.shop-pity{background:#ecf4f4;border-radius:9px;padding:8px}.shop-gacha #shop-draw{min-height:49px;width:100%;font-size:16px;cursor:pointer}.shop-gacha #shop-draw:disabled{opacity:.55;cursor:not-allowed}.shop-gacha-result{font-weight:800!important;background:#eef6df;padding:10px;border-radius:10px}
+.equipment-monster-preview{display:flex;align-items:center;gap:14px;border-radius:12px;padding:9px 11px;background:#e5efe4;margin:8px 0}.equipment-monster-preview svg{width:72px;height:72px;flex:none;object-fit:contain}.equipment-monster-preview span{font-size:14px;font-weight:850}.equipment-monster-preview small{display:block;font-size:11px;color:#4c6355;font-weight:500;margin-top:4px}
 .collection-weapons .forest-treasures-heading{margin:0 0 12px}
 .collection-weapons h2{margin:4px 0;font-size:22px;color:#203e2c}
 .collection-weapons p{margin:5px 0;font-size:13px;line-height:1.6;color:#335844}
@@ -24,6 +39,7 @@
 .forest-drop-flash{display:flex;flex-wrap:wrap;gap:5px 10px;align-items:center;margin:9px 0;padding:12px 13px;border:2px solid #b287d1;border-radius:11px;background:#f5e7ff;color:#4b2e65;font-size:13px;line-height:1.45;font-weight:800}
 .forest-drop-flash strong{letter-spacing:.08em;color:#67358b;font-size:14px}
 @media(max-width:480px){.forest-active .forest-boss-hp[data-health-mode="bar"]{flex-basis:78px;min-width:78px}.collection-weapons{padding:13px}}
+@media(max-width:480px){.collection-shop{padding:12px}.shop-odds span{font-size:10px}.shop-wallet small{margin-left:0;width:100%}.shop-good button{flex:none}}
 .home-navigation{margin-top:0}
 .home-navigation-head{margin:0 0 13px;padding:0}
 .home-navigation-head .tiny-caps{font-size:9px;letter-spacing:.13em}

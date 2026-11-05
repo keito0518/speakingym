@@ -2,6 +2,7 @@ import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './mons
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
+import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -505,7 +506,7 @@ function renderDifficulty() {
 }
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);
-  $('#hero-monster-art').innerHTML = monsterArt(creature.id,growth.stage);
+  $('#hero-monster-art').innerHTML = monsterArt(creature.id,growth.stage,equippedWeapon(save));
   $('#hero-monster-name').textContent = monsterFormName(creature,growth.stage) + (growth.ascended ? ' / 第2進化' : growth.evolved ? ' / 進化済み' : '');
   $('#hero-monster-species').textContent = `${creature.japaneseName} · ${creature.roots.map(root=>root.word).join(' + ')}`;
   $('#hero-level').textContent = `Lv.${growth.level}`;
@@ -638,7 +639,7 @@ function renderHome() {
   $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
   homeNavigation?.updateHero({
-    art:monsterArt(creature.id,growth.stage),name:monsterFormName(creature,growth.stage),
+    art:monsterArt(creature.id,growth.stage,equippedWeapon(save)),name:monsterFormName(creature,growth.stage),
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,ownedCount:save.ownedMonsters.length,
     // Keep imported/legacy review queues reachable even when their older save
     // has no modern answer counter. Only a truly empty save gets the single CTA.
@@ -656,7 +657,7 @@ function renderHome() {
   const walkingIds=[save.selectedMonster,...save.ownedMonsters.filter(id=>id!==save.selectedMonster)].slice(0,3);
   homeNavigation?.updateWalkers(walkingIds.map(id=>{
     const progress=getMonsterProgress(save,id);
-    return {art:monsterArt(id,progress.stage)};
+    return {art:monsterArt(id,progress.stage,equippedWeapon(save))};
   }));
   showView('home');
 }
@@ -713,7 +714,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   const openingCharge=tactical?formationResonance(roster,Object.fromEntries(roster.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge:0;
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
-  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,
+  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,tradeDrops:[],
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],eliteDrops:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
@@ -769,9 +770,9 @@ function renderForestHud() {
   if(!play || play.mode!=='forest')return;
   const companion=monsterFor(play.companionId);
   const progress=getMonsterProgress(save,play.companionId),evolved=progress.evolved;
-  $('#forest-companion-art').innerHTML=monsterArt(companion.id,progress.stage);
+  $('#forest-companion-art').innerHTML=monsterArt(companion.id,progress.stage,equippedWeapon(save));
   if($('#forest-party').dataset.companion!==companion.id || $('#forest-party').dataset.formStage!==String(progress.stage)){
-    $('#forest-player-art').innerHTML=monsterArt(companion.id,progress.stage);
+    $('#forest-player-art').innerHTML=monsterArt(companion.id,progress.stage,equippedWeapon(save));
     $('#forest-party').dataset.companion=companion.id;
     $('#forest-party').dataset.formStage=String(progress.stage);
     // Keep the legacy flag for existing battle UI and save-transfer QA.
@@ -1252,7 +1253,7 @@ function renderPartyFormation(){
    const mastery=masterySkillFor(id,progress.level);
    const label=leader?'先頭で出撃中':selected?'控えから外す':roster.length===3?'控え3と交代':'仲間に加える';
    return `<div class="forest-formation-card" data-formation-card="${escapeHtml(id)}" data-formation-selected="${selected}" data-formation-leader="${leader}">
-    <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.stage)}</div>
+    <div class="forest-formation-creature" aria-hidden="true">${monsterArt(id,progress.stage,equippedWeapon(save))}</div>
    <div class="forest-formation-detail"><strong>${escapeHtml(monster.japaneseName||monster.name)}${progress.ascended?' ★★':progress.evolved?' ★':''}</strong><span>Lv.${progress.level} · 得意 ${BATTLE_LABELS[affinity.strong]}</span><details class="forest-formation-monster-more"><summary>能力を見る</summary><span>${escapeHtml(monsterFormName(monster,progress.stage))} · HP成長＋${levelHpBonus(progress.level)+progress.stage} · 苦手 ${BATTLE_LABELS[affinity.weak]}</span><small>${match}${progress.ascended?' · 第2進化：得意攻撃＋1':progress.evolved?' · 次の進化はLv.10＋ボス3エリア':''}${progress.evolved?` · 進化援護「${evolvedSupportTalent(id).name}」`:''}${mastery?` · 熟練技「${escapeHtml(mastery.name)}」`:` · Lv.${MASTERY_LEVEL}で熟練技`}</small></details></div>
     <div class="forest-formation-buttons"><button type="button" data-formation-choice="${escapeHtml(id)}" aria-pressed="${String(selected)}">${label}</button>${selected&&!leader?`<button type="button" class="forest-formation-lead" data-formation-lead="${escapeHtml(id)}">先頭にする</button>`:''}</div>
    </div>`;
@@ -1279,7 +1280,7 @@ function renderPartyFormation(){
    t.formationIds=editBattleFormation(t.formationIds,owned,button.dataset.formationLead,{leader:true});
    t.formationMessage='先頭の仲間を変更したよ！';
    const leader=t.formationIds[0],formStage=getMonsterProgress(save,leader).stage;
-   $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,formStage);
+   $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,formStage,equippedWeapon(save));
    renderPartyFormation();
  }));
  screen.querySelector('#forest-formation-recommend')?.addEventListener('click',()=>{
@@ -1287,7 +1288,7 @@ function renderPartyFormation(){
    t.formationIds=recommendBattleFormation(owned,{foeWeak:weakness.weak,bossKind:link?.kind,levels});
    t.formationMessage='最初の敵の弱点と仲間の得意技能を見て編成したよ！ 自由に変更できるよ。';
    const leader=t.formationIds[0];
-   $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,getMonsterProgress(save,leader).stage);
+   $('#forest-explore-art .forest-explore-companion').innerHTML=monsterArt(leader,getMonsterProgress(save,leader).stage,equippedWeapon(save));
    renderPartyFormation();
  });
 }
@@ -1307,7 +1308,7 @@ function showForestExplore() {
   const stage=Math.min(4,Math.max(0,Math.round(4*play.index/Math.max(1,regularCount()))));
   map.innerHTML=forestWorldArt(play.route,play.areaId)+
     '<div class="forest-explore-depth" aria-hidden="true"></div>'+
-    '<div class="forest-explore-companion">'+monsterArt(companion.id,formStage)+'</div>'+
+    '<div class="forest-explore-companion">'+monsterArt(companion.id,formStage,equippedWeapon(save))+'</div>'+
     '<div class="forest-explore-destination" aria-hidden="true"></div>';
   // Repeat a softly blurred crop behind the legible, full-width route map.
   // A landscape SVG in a portrait iPhone would otherwise leave huge blank
@@ -2439,7 +2440,13 @@ function advanceQuestion(){
         medalResult?{difficulty:play.difficulty,rank:medalResult.rank}:null);
       // Unlock chapter-gated allies only after the boss was actually beaten.
       // Endless replay does not unlock new story chapters.
-      const awarded=captureEligibleMonsters(reward.save);
+      // Every clear grants one tradable trophy only after enough independent
+      // answers. Keeps unique story souvenirs forever; selling uses copies.
+      const loot=play.endless?{save:reward.save,item:null,count:0}:grantDungeonTreasure(reward.save,{
+        areaId:play.areaId,independent:play.smooth,
+        firstClear:!cleanForest(save.forest).completedAreas.includes(play.areaId)});
+      if(loot.item)play.tradeDrops.push({item:loot.item,count:loot.count});
+      const awarded=captureEligibleMonsters(loot.save);
       persist(awarded.save);
       if(reward.trialEarned)play.bossTrialNewArea=play.areaId;
       play.captured.push(...awarded.captured);
@@ -2679,6 +2686,8 @@ function finishSession(timedOut=false,defeated=false) {
     return `<section class="victory-trial-award" aria-label="進化の試練・新しいボスの印"><span class="victory-trial-seal" aria-hidden="true"><span>NEW</span></span><div><small>EVOLUTION TRIAL · BOSS MARK</small><strong>${escapeHtml(newTrial.name)}の印を獲得！</strong><p>進化に必要な討伐の印 ${Math.min(growth.trialCount,growth.requiredTrials)} / ${growth.requiredTrials}エリア。${growth.canEvolve?'進化の条件達成！ 図鑑で進化させよう。':guide.remaining?(guide.target?`次は${escapeHtml(guide.target.name)}のボスへ！`:'次のボスエリアを解放しよう。'):'ボスの印がそろった！ XPを育成に使おう。'}</p></div></section>`;
   })():'';
   const newRelics=ended.mode==='forest'?ended.forestRelics.map(id=>`<div class="forest-result-relic"><span aria-hidden="true">${relicArt(id)}</span><div><strong>${escapeHtml(FOREST_RELICS[id].name)} を発見！</strong><p>${escapeHtml(FOREST_RELICS[id].meaning)} · 冒険の宝物</p></div></div>`).join(''):'';
+  const tradableLoot=ended.mode==='forest'?(ended.tradeDrops||[]).map(({item,count})=>
+    `<div class="forest-result-relic trade-loot-result"><div><strong>換金できるお宝！ ${escapeHtml(item.name)} ×${count}</strong><p>武器の鍛冶屋で売ると ${item.price*count} G。冒険の記念品は図鑑に残るよ。</p></div></div>`).join(''):'';
   const memories=ended.mode==='forest'?(ended.eventMemories||[]).slice(-8).map(memory=>
     `<div class="forest-event-memory"><strong>${escapeHtml(memory.title)} · ${escapeHtml(memory.memento)}</strong><p>${escapeHtml(memory.outcome)}</p><small>探索の記録 · XPなし</small></div>`).join(''):'';
   const transfer=ended.roleplay?roleplayTransferFor(ended.roleplay):null;
@@ -2705,7 +2714,8 @@ function finishSession(timedOut=false,defeated=false) {
   }
   trialAwardRegion.hidden=!evolutionTrial;
   trialAwardRegion.innerHTML=evolutionTrial;
-  $('#result-discoveries').innerHTML=medalDisplay+newRelics+memories+roleplayResult;
+  $('#result-discoveries').innerHTML=medalDisplay+newRelics+tradableLoot+(tradableLoot?'<button type="button" id="result-visit-armory" class="button button-primary">お宝を売って武器ガチャへ</button>':'')+memories+roleplayResult;
+  $('#result-visit-armory')?.addEventListener('click',()=>renderCollection());
   wireRoleplayTransfer(transfer);
   renderDungeonLearningReport(ended);
   let targetedReview=$('#result-targeted-review');
@@ -2753,21 +2763,58 @@ function finishSession(timedOut=false,defeated=false) {
 }
 const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
 const {renderDetail,renderTraining}=collectionViews;
+let forgeMessage='';
+function renderEconomyShop(){
+ const panel=$('#collection-shop');
+ const bag=save.treasureBag||{};
+ const goods=TREASURES.filter(item=>bag[item.id]>0);
+ const totalValue=treasureValue(save);
+ const odds=gachaPoolSummary();
+ panel.innerHTML=`<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>冒険で手に入れた換金用のお宝を売って、武器を手に入れよう。仲間はガチャでは出ず、ストーリーと英語学習で加わるよ。</p></div>
+ <div class="shop-wallet"><span>所持ゴールド</span><strong id="shop-coins">${save.coins||0} G</strong><small>お宝の売却見込額 ${totalValue} G</small></div>
+ <div class="shop-bag"><div class="shop-section-heading"><strong>換金用のお宝</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">まだ売れるお宝はないよ。ボスを倒して自力で英語を答えると手に入る。図鑑の記念品は売られないよ。</p>'}</div>
+ <div class="shop-gacha"><div class="shop-section-heading"><strong>鍛冶屋の武器召喚</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><p>限定武器 ${WEAPONS.filter(w=>w.source==='gacha').length}種。最上級の攻撃＋7〜9はここだけ！ 当選した武器は図鑑で装備でき、見た目も変わるよ。</p>
+ <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
+ <p class="shop-pity">レア以上は最大${RARE_PITY}回で確定（あと${Math.max(1,RARE_PITY-(save.pullsSinceRare||0))}回）。エピック以上は最大${EPIC_PITY}回で確定（あと${Math.max(1,EPIC_PITY-(save.pullsSinceEpic||0))}回）。<br>重複はレア度に応じて20〜90 G返還。確率はガチャ限定の武器内での割合です。</p>
+ <button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}>武器を1つ召喚する · ${GACHA_COST} G</button><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
+ const commitResult=(next,successMessage)=>{
+  if(!persist(next)){forgeMessage='保存に失敗しました。売却や召喚は反映していません。';renderEconomyShop();return false;}
+  forgeMessage=successMessage;renderEconomyShop();renderEquipmentCollection();renderHome();return true;
+ };
+ panel.querySelector('#shop-sell-all').addEventListener('click',()=>{
+  const result=sellAllTreasures(save);
+  if(result.coins>0)commitResult(result.save,`お宝を売って ${result.coins} G 手に入れた！`);
+ });
+ panel.querySelectorAll('[data-sell-treasure]').forEach(button=>button.addEventListener('click',()=>{
+  const item=TREASURES.find(good=>good.id===button.dataset.sellTreasure);
+  const result=sellTreasure(save,item?.id,1);
+  if(result.coins>0)commitResult(result.save,`${item.name} を売って ${result.coins} G 手に入れた！`);
+ }));
+ panel.querySelector('#shop-draw').addEventListener('click',()=>{
+  const result=drawWeaponGacha(save);
+  if(!result.weapon)return;
+  const label=WEAPON_RARITY_LABELS[result.tier];
+  const message=result.duplicate?`【${label}】${result.weapon.name} は所持済み！ ${result.refund} G 返還された。`:
+    `【${label} 獲得！】${result.weapon.name} · 攻撃＋${result.weapon.attack}！ すぐ下の図鑑から装備しよう。`;
+  commitResult(result.save,message);
+ });
+}
 function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
  const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id));
  const current=equippedWeapon(save);
- panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>ボス撃破＋自力正解3問で章の武器が初回確定。再攻略は自力4問以上でレア25%。5体目の強敵も、自力攻撃2回以上で限定武器18%のチャンス！</p></div>
+ panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>章のボスや強敵から入手できる武器と、鍛冶屋のガチャ限定武器があるよ。攻撃＋7以上はガチャ限定。仲間の姿に武器が表示されるよ。</p></div>
+  <div class="equipment-monster-preview" aria-label="現在の装備を身につけた仲間">${monsterArt(save.selectedMonster,getMonsterProgress(save).stage,current)}<span>${current?escapeHtml(current.name):'素手'}<small>装備するとホームとバトルにも反映</small></span></div>
   <label for="equipment-weapon-choice">出撃する武器（パーティ共通）</label>
   <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weapon.attack} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select>
-  <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${escapeHtml(current.name)} を装備中 · ${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${current.attack} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${current.rarity==='epic'?2:1}`:'いまは素手で出撃するよ。'} レベル攻撃力は別に加算。ボスの封印3問は省略できないよ。</p>`;
+  <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${escapeHtml(current.name)} を装備中 · ${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${current.attack} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${['epic','legend'].includes(current.rarity)?2:1}`:'いまは素手で出撃するよ。'} レベル攻撃力は別に加算。ボスの封印3問は省略できないよ。</p>`;
  panel.querySelector('#equipment-weapon-choice').addEventListener('change',event=>{
    const id=event.target.value||null;
    if(!persist(equipWeapon(save,id))){event.target.value=equippedWeapon(save)?.id||'';return;}
    renderEquipmentCollection();
  });
 }
-function renderCollection(){collectionViews.renderCollection();renderEquipmentCollection();}
+function renderCollection(){collectionViews.renderCollection();renderEconomyShop();renderEquipmentCollection();}
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
@@ -2796,7 +2843,7 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?renderCollection():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),onHuntTarget:id=>{
   if(monsterHuntBoard(save).options.some(entry=>entry.id===id)){
     persist({...save,huntTargetId:id});renderHome();
   }
