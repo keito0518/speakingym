@@ -6,24 +6,45 @@ import { CHAIN_CHESTS, awardChainChests, chainChestAt, monsterHuntBoard, nextCha
 test('three battle chests per area reward verified chain thresholds once, without feeding monsters',()=>{
   const initial=createSave();
   assert.equal(nextChainChest(initial,'entry')?.chain,3);
-  assert.deepEqual(awardChainChests(initial,2,'entry'),{save:initial,unlocked:[],bonusXp:0});
+  assert.deepEqual(awardChainChests(initial,2,'entry'),{save:initial,unlocked:[],bonusXp:0,bonusGold:0});
   const bronze=awardChainChests(initial,3,'entry');
   assert.deepEqual(bronze.unlocked.map(chest=>chest.chain),[3]);
   assert.equal(bronze.bonusXp,12);
+  assert.equal(bronze.bonusGold,8);
   assert.equal(bronze.save.xpWallet,12);
+  assert.equal(bronze.save.coins,8);
   assert.equal(bronze.save.monsterXp.medamago,0,'Bonus is a spendable reward, not an evolution shortcut');
   assert.equal(nextChainChest(bronze.save,'entry')?.chain,5);
   assert.equal(chainChestAt(bronze.save,3,'entry'),null,'Replaying a 3-chain in the same area never pays again');
   assert.equal(awardChainChests(bronze.save,4,'entry').bonusXp,0);
+  assert.equal(awardChainChests(bronze.save,4,'entry').bonusGold,0);
   const gold=awardChainChests(bronze.save,8,'entry');
   assert.deepEqual(gold.unlocked.map(chest=>chest.chain),[5,8]);
+  assert.equal(gold.bonusGold,38);
+  assert.equal(gold.save.coins,46,'All chests in one chapter give 46 G in total');
   assert.equal(gold.save.xpWallet,CHAIN_CHESTS.reduce((sum,chest)=>sum+chest.xp,0));
   assert.equal(nextChainChest(gold.save,'entry'),null);
   assert.equal(awardChainChests(gold.save,99,'entry').bonusXp,0);
+  assert.equal(awardChainChests(gold.save,99,'entry').bonusGold,0,'Repeated runs cannot mint gold');
   assert.equal(nextChainChest(gold.save,'glade')?.chain,3,'Clearing one area does not consume another area’s reward');
-  assert.equal(awardChainChests(gold.save,3,'glade').bonusXp,12);
+  const nextArea=awardChainChests(gold.save,3,'glade');
+  assert.equal(nextArea.bonusXp,12);
+  assert.equal(nextArea.bonusGold,8);
+  assert.equal(nextArea.save.coins,54);
   assert.equal(awardChainChests(gold.save,8,null).bonusXp,0,'Unattributed endless runs cannot claim a chapter chest');
+  assert.equal(awardChainChests(gold.save,8,null).bonusGold,0);
   assert.deepEqual(validateSave(JSON.parse(JSON.stringify(gold.save))),gold.save);
+});
+
+test('battle chest gold is capped, shared with the normal wallet and cannot bypass a replay',()=>{
+  const initial={...createSave(),coins:999995,xpWallet:50};
+  const earned=awardChainChests(initial,8,'entry');
+  assert.equal(earned.bonusGold,4);
+  assert.equal(earned.save.coins,999999);
+  assert.equal(earned.bonusXp,67);
+  assert.deepEqual(earned.save.battleTreasures,['entry:3','entry:5','entry:8']);
+  assert.equal(awardChainChests(earned.save,8,'entry').bonusGold,0);
+  assert.deepEqual(validateSave(earned.save),earned.save);
 });
 
 test('imported chest ledger and hunter target are strictly validated',()=>{

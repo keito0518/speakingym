@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
 import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
-import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,
+import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
 
 test('old saves restore an empty wallet safely and untrusted backups cannot forge currency',()=>{
@@ -47,6 +47,24 @@ test('treasure can be sold singly or in a batch, cannot be sold twice and never 
  assert.deepEqual(all.save.treasureBag,{});
  assert.equal(sellAllTreasures(all.save).coins,0);
  assert.equal(sellTreasure({...start,coins:999999},'amber_leaf').coins,0,'money cap prevents item loss');
+});
+
+test('summon progress previews sale value but unsold loot cannot be spent on a draw',()=>{
+ const start=createSave();
+ assert.deepEqual(summonProgress(start),{coins:0,sellableGold:0,potential:0,cost:120,readyNow:false,readyAfterSale:false,missing:120,percent:0});
+ const midway={...start,coins:34,treasureBag:{amber_leaf:2}};
+ assert.deepEqual(summonProgress(midway),{coins:34,sellableGold:48,potential:82,cost:120,readyNow:false,readyAfterSale:false,missing:38,percent:68});
+ const sellable={...midway,treasureBag:{amber_leaf:4}};
+ assert.equal(summonProgress(sellable).readyAfterSale,true);
+ assert.equal(summonProgress(sellable).readyNow,false);
+ assert.equal(summonProgress(sellable).percent,100);
+ assert.equal(drawWeaponGacha(sellable).error,'not_enough_coins','The player must sell their treasure first');
+ const sold=sellAllTreasures(sellable);
+ assert.equal(summonProgress(sold.save).readyNow,true);
+ assert.equal(summonProgress(sold.save).sellableGold,0);
+ assert.equal(summonProgress({...start,coins:120}).missing,0);
+ assert.equal(summonProgress({...start,coins:999999,treasureBag:{amber_leaf:999}}).percent,100);
+ assert.equal(summonProgress({...start,coins:-3,treasureBag:{forged_relic:100}}).missing,120);
 });
 
 test('gacha is earned-only, has disclosed odds, twenty-four exclusive weapons and no characters',()=>{

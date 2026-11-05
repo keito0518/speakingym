@@ -35,6 +35,17 @@ export function treasureValue(save){
  const bag=normalizeEconomy(save).treasureBag;
  return TREASURES.reduce((total,item)=>total+(bag[item.id]||0)*item.price,0);
 }
+// Read-only HUD projection: unsold loot counts toward the next summon goal,
+// but cannot be spent before the player explicitly sells it in the forge.
+export function summonProgress(save){
+ const coins=normalizeEconomy(save).coins;
+ const sellableGold=treasureValue(save);
+ const potential=coins+sellableGold;
+ return {coins,sellableGold,potential,cost:GACHA_COST,
+  readyNow:coins>=GACHA_COST,readyAfterSale:potential>=GACHA_COST,
+  missing:Math.max(0,GACHA_COST-potential),
+  percent:Math.min(100,Math.round(100*potential/GACHA_COST))};
+}
 export function grantDungeonTreasure(save,{areaId,independent=0,firstClear=false,random=Math.random}={}){
  const areas=['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core'];
  const index=areas.indexOf(areaId);

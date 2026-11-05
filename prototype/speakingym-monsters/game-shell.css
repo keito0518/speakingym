@@ -100,6 +100,7 @@ body[data-game-view="play"] .app-shell{padding-bottom:0}
 .home-feature-progress{color:#cae8e1!important;text-shadow:0 2px 4px #06182a}
 .home-world-link{border:1px solid #8ab5ca90;background:#112d45b8;color:#dbebea;border-radius:9px;font-size:11px;box-shadow:inset 0 1px 0 #ffffff24}
 .home-armory-link{border-color:#efcf7a;color:#ffe9b9;background:#8b643347}
+.home-armory-link[data-summon-ready="true"]{border-color:#ffdd83;background:linear-gradient(120deg,#855026,#ab732bb0);color:#fff4cf;box-shadow:0 0 15px #f2b74c45,inset 0 1px 0 #ffeeb45c}
 .home-feature-practice{color:#c2e7eb;font-size:11px}
 .home-navigation-label{margin:28px 0 13px;padding:0 2px}
 .home-navigation-label h2{color:#f8df9d;font-size:18px;letter-spacing:.08em}

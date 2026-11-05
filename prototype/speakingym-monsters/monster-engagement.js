@@ -1,14 +1,15 @@
 import { MONSTERS } from './monster-data.js';
 import { companionUnlockProgress, dayKey } from './monster-engine.js';
 import { DUNGEON_AREAS } from './forest-engine.js';
+import { normalizeEconomy } from './monster-economy.js';
 
 // Each chapter has three lifetime chests. Their XP is awarded once per chapter,
 // only for consecutive independently confirmed answers in a story dungeon.
 // A retry, hint or transcript-only fallback cannot advance the battle chain.
 export const CHAIN_CHESTS = Object.freeze([
-  Object.freeze({chain:3,xp:12,name:'ブロンズの宝箱'}),
-  Object.freeze({chain:5,xp:20,name:'シルバーの宝箱'}),
-  Object.freeze({chain:8,xp:35,name:'ゴールドの宝箱'})
+  Object.freeze({chain:3,xp:12,gold:8,name:'ブロンズの宝箱'}),
+  Object.freeze({chain:5,xp:20,gold:14,name:'シルバーの宝箱'}),
+  Object.freeze({chain:8,xp:35,gold:24,name:'ゴールドの宝箱'})
 ]);
 
 const chestKey=(areaId,chain)=>`${areaId}:${chain}`;
@@ -26,15 +27,18 @@ export function chainChestAt(save,chain,areaId){
 }
 
 export function awardChainChests(save,bestChain,areaId){
-  if(!validArea(areaId))return {save,unlocked:[],bonusXp:0};
+  if(!validArea(areaId))return {save,unlocked:[],bonusXp:0,bonusGold:0};
   const collected=new Set(Array.isArray(save.battleTreasures)?save.battleTreasures:[]);
   const unlocked=CHAIN_CHESTS.filter(chest=>bestChain>=chest.chain&&!collected.has(chestKey(areaId,chest.chain)));
-  if(!unlocked.length)return {save,unlocked:[],bonusXp:0};
+  if(!unlocked.length)return {save,unlocked:[],bonusXp:0,bonusGold:0};
   const bonusXp=unlocked.reduce((total,chest)=>total+chest.xp,0);
+  const coins=normalizeEconomy(save).coins;
+  const bonusGold=Math.min(999999-coins,unlocked.reduce((total,chest)=>total+chest.gold,0));
   return {save:{...save,
     battleTreasures:[...collected,...unlocked.map(chest=>chestKey(areaId,chest.chain))].sort(),
-    xpWallet:Math.min(1_000_000_000,Math.max(0,save.xpWallet||0)+bonusXp)
-  },unlocked,bonusXp};
+    xpWallet:Math.min(1_000_000_000,Math.max(0,save.xpWallet||0)+bonusXp),
+    coins:coins+bonusGold
+  },unlocked,bonusXp,bonusGold};
 }
 
 const huntGates=progress=>[

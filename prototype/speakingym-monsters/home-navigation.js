@@ -19,7 +19,7 @@ const STEPS=Object.freeze([
   scene:['必殺ゲージ','1 / 3 → 2 / 3 → 3 / 3','必殺技を使う'],tips:['必殺技は使うタイミングが大事。','ボスによって役立つ控えが違う。詳しい相性は攻略メモで見よう。']},
  {chapter:'growth',title:'8. 育成と武器で強くなろう',body:'冒険でXPをため、仲間を育てよう。Lv.4・7・10・13で攻撃力が上昇し、Lv.4で熟練技も覚えるよ。武器には英語の得意攻撃による追撃がある。',
   scene:['強敵やボスを倒す','武器をドロップ！','図鑑で装備する'],tips:['自力正解3問以上＋ボス撃破で章の武器を初回確定入手。再挑戦ではレアも狙えるよ。','5体目の強敵は自力攻撃2回以上で限定装備が18%の確率で落ちる。ボスの封印は英語3問のままだよ。']},
- {chapter:'growth',title:'9. 狙う仲間と連勝宝箱',body:'ホームで次に欲しい仲間を選ぼう。獲得条件が少しずつ進むのを確認できるよ。各エリアで3・5・8 CHAINに初めて到達すると宝箱から育成XPを獲得。',
+ {chapter:'growth',title:'9. 狙う仲間と連勝宝箱',body:'ホームで次に欲しい仲間を選ぼう。獲得条件が少しずつ進むのを確認できるよ。各エリアで3・5・8 CHAINに初めて到達すると宝箱から育成XPと召喚用ゴールドを獲得。',
   scene:['モンスターハント','狙う仲間を選ぶ','3 CHAIN → 宝箱'],tips:['仲間のレア度が高いと、別の日の復習や複数エリアのボス攻略も必要。','宝箱はエリアごとに1回だけ。ヒントなしの連続成功が条件だよ。']},
  {chapter:'growth',title:'10. 間違いは復習につなげよう',body:'問題のあとで解説を読もう。「問題を保存」から後日やり直すと、使える英語として定着していくよ。',
   scene:['学習の記録','間違い・保存した問題','復習に挑戦'],tips:['ヒントは使ってOK。ただし自力正解とは区別して記録。','毎日長く遊ぶ必要はないよ。少しずつ続けよう。']}
@@ -302,7 +302,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
      proofButton.hidden=!proof;
      if(proof)proofButton.textContent=proof.label;
    },
-   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0}){
+   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0,summon=null}){
      const cleared=areasCleared+cityAreasCleared+ruinsAreasCleared;
      const allCleared=totalAreas>0&&cleared===totalAreas;
      chapter.querySelector('#home-chapter-counter').textContent=String(Math.min(cleared+1,totalAreas)).padStart(2,'0')+' / '+totalAreas;
@@ -320,6 +320,11 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
      menu.querySelector('[data-feature-dungeon]').firstChild.textContent=allCleared?'もう一度冒険 ':cleared?'つづきから冒険 ':'冒険をはじめる ';
      menu.querySelector('[data-feature-formation]').hidden=ownedCount<2;
+     const armory=menu.querySelector('[data-feature-armory]');
+     if(summon){
+       armory.textContent=summon.readyNow?'星の祭壇 · 召喚できる！':summon.readyAfterSale?'星の祭壇 · お宝を売れば召喚！':`星の祭壇 · あと${summon.missing} Gで召喚`;
+       armory.dataset.summonReady=String(summon.readyNow||summon.readyAfterSale);
+     }
      menu.querySelector('#home-feature-practice').hidden=cleared>0;
      menu.querySelector('#home-feature-progress').textContent=allCleared?`全${totalAreas}エリア攻略！好きな場所で遊ぼう`:
        hasPlayed?`${cleared}/${totalAreas} エリア攻略 · 次は「${nextAreaName}」`:
@@ -354,7 +359,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
        hunt.querySelector('#hunt-go-battle').hidden=true;
      }
      hunt.querySelector('#hunt-next-chest').textContent=chest
-       ?`${areaName}の宝箱：${chest.chain} CHAIN · 初回＋${chest.xp} XP`
+       ?`${areaName}の宝箱：${chest.chain} CHAIN · 初回＋${chest.xp} XP / ＋${chest.gold} G`
        :`「${areaName}」の連勝宝箱コンプリート！ 別のエリアにも挑戦しよう`;
    }
  };

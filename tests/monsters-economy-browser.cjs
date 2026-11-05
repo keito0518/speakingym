@@ -27,6 +27,7 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#game-tabs [data-game-tab="home"]').getAttribute('aria-current'),'page');
   assert.match(await page.locator('#game-hud-coins').innerText(),/240 G/);
   assert.equal(await page.locator('[data-feature-armory]').isVisible(),true,'The forge must be discoverable from home');
+  assert.match(await page.locator('[data-feature-armory]').innerText(),/召喚できる/,'The hub should celebrate when enough earned G is ready');
   await page.locator('[data-feature-armory]').click();
   assert.equal(await page.locator('#collection-shop').isVisible(),true);
   assert.match(await page.locator('#shop-coins').innerText(),/240 G/);
@@ -72,6 +73,7 @@ const {chromium,webkit}=require('playwright');
   await page.locator('#collection-home').click();
   assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1,
    'Equipment preview must match the home character');
+  assert.match(await page.locator('[data-feature-armory]').innerText(),/召喚できる/,'The hub projection must refresh after trading loot');
   await assertNoOverflow('equipped home');
 
   // The bottom navigation is a functional game menu, not decorative links.

@@ -2,7 +2,7 @@ import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './mons
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
-import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from './monster-economy.js';
+import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,summonProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -665,7 +665,7 @@ function renderHome() {
       Object.keys(save.reviewPrompts||{}).length>0||Object.keys(save.transferReviews||{}).length>0||
       (save.savedPromptIds||[]).length>0,
     areasCleared:forestCount,cityAreasCleared:cityCount,ruinsAreasCleared:ruinsCount,totalAreas:DUNGEON_AREAS.length,
-    nextAreaName:nextArea.name,bondRank:bond.rank
+    nextAreaName:nextArea.name,bondRank:bond.rank,summon:summonProgress(save)
   });
   homeNavigation?.updateQuest(nextLearningQuestFor(save),learningProofFor(save));
   homeNavigation?.updateHunt(monsterHuntBoard(save),nextChainChest(save,nextArea.id),nextArea.name,save.battleTreasures?.length||0,DUNGEON_AREAS.length*3);
@@ -2575,8 +2575,9 @@ function finishSession(timedOut=false,defeated=false) {
     outcome:ended.mode==='forest'?(defeated?'defeat':ended.endless?'endless_end':ended.completedForest?'clear':'stopped'):
       timedOut?'timeout':'complete'});
   if(ended.mode==='forest'){
-    const chestReward=ended.endless?{save,unlocked:[],bonusXp:0}:awardChainChests(save,ended.bestCombo,ended.areaId);
+    const chestReward=ended.endless?{save,unlocked:[],bonusXp:0,bonusGold:0}:awardChainChests(save,ended.bestCombo,ended.areaId);
     ended.newChainChests=chestReward.unlocked;
+    ended.newChainGold=chestReward.bonusGold;
     if(chestReward.unlocked.length||ended.bestCombo>(save.bestBattleChain||0))
       persist({...chestReward.save,bestBattleChain:Math.max(save.bestBattleChain||0,ended.bestCombo)});
     const loot=dungeonWeaponDrop(save,{areaId:ended.areaId,
@@ -2680,9 +2681,24 @@ function finishSession(timedOut=false,defeated=false) {
     const chests=ended.newChainChests||[];
     if(chests.length){
       const panel=document.createElement('div');panel.className='result-chain-chest';
-      const heading=document.createElement('strong');heading.textContent=`宝箱オープン！ ＋${chests.reduce((sum,chest)=>sum+chest.xp,0)} XP`;
-      const detail=document.createElement('p');detail.textContent=chests.map(chest=>`${chest.name}（${chest.chain} CHAIN）`).join(' · ')+' · 初回達成報酬。次はもっと長い連勝に挑戦！';
+      const heading=document.createElement('strong');heading.textContent=`宝箱オープン！ ＋${chests.reduce((sum,chest)=>sum+chest.xp,0)} XP / ＋${ended.newChainGold||0} G`;
+      const detail=document.createElement('p');detail.textContent=chests.map(chest=>`${chest.name}（${chest.chain} CHAIN）`).join(' · ')+' · エリアごとに初回1回だけ。次はもっと長い連勝に挑戦！';
       panel.append(heading,detail);chaseReward.append(panel);
+    }
+    if(ended.completedForest&&!ended.endless){
+      const summon=summonProgress(save),panel=document.createElement('section');
+      panel.className='result-summon-goal';panel.setAttribute('aria-label','次の武器召喚への進捗');
+      const summary=document.createElement('div');summary.className='result-summon-copy';
+      summary.innerHTML=`<span>SUMMON PROGRESS · 次の武器召喚</span><strong>${summon.readyNow?'武器を召喚できる！':summon.readyAfterSale?'お宝を売れば召喚できる！':`あと ${summon.missing} G で召喚`}</strong><small>所持 ${summon.coins} G · お宝の売却見込み ${summon.sellableGold} G / 1回 ${summon.cost} G</small>`;
+      const track=document.createElement('div');track.className='result-summon-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label','次の武器召喚に必要なゴールドの達成度');track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow',String(summon.percent));
+      const fill=document.createElement('span');fill.style.width=summon.percent+'%';track.append(fill);
+      panel.append(summary,track);
+      if(summon.readyNow||summon.sellableGold){
+        const button=document.createElement('button');button.type='button';
+        button.textContent=summon.readyNow?'武器を召喚する':'お宝を売りに行く';
+        button.addEventListener('click',openForge);panel.append(button);
+      }
+      chaseReward.append(panel);
     }
     const hunted=monsterFor(ended.huntTargetId);
     if(hunted){

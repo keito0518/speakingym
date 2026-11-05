@@ -1394,6 +1394,10 @@ const path=require('node:path');
       }
       assert.equal(await forestPage.locator('#result-view').isVisible(),true);
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
+      assert.equal(await forestPage.locator('.result-summon-goal').isVisible(),true,
+        'Clearing a chapter should reveal progress toward the next earned weapon summon');
+      assert.match(await forestPage.locator('.result-summon-copy').innerText(),/次の武器召喚/);
+      assert.equal(await forestPage.locator('.result-summon-track').getAttribute('aria-valuemax'),'100');
       assert.equal(await forestPage.locator('#dungeon-victory-recap').isVisible(),true,
         `${engine}/${width}: a boss clear immediately shows its English and evolution rewards`);
       assert.match(await forestPage.locator('.victory-loot-total').innerText(),/XP/);
@@ -1509,7 +1513,10 @@ const path=require('node:path');
       assert.equal(saved.forest.journal.length,0,'The linear dungeon does not create arbitrary story choices');
       const chestBonus=(saved.battleTreasures||[]).filter(key=>key.startsWith('entry:')).reduce((total,key)=>
         total+({3:12,5:20,8:35}[Number(key.split(':')[1])]||0),0);
+      const chestGold=(saved.battleTreasures||[]).filter(key=>key.startsWith('entry:')).reduce((total,key)=>
+        total+({3:8,5:14,8:24}[Number(key.split(':')[1])]||0),0);
       assert.ok(chestBonus>=12,'Confirmed consecutive battle answers should unlock an area-specific chest');
+      assert.equal(saved.coins,chestGold,'First-time consecutive English answers alone pay one-time summon gold');
       assert.equal(saved.xpWallet,xp+20+chestBonus,
         'First silver trophy and first-time chain chests add distinct, exactly-once spendable rewards');
       await forestContext.close();

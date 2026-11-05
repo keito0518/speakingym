@@ -440,8 +440,18 @@
 .result-chain-chest{margin:13px 0;padding:15px;border:2px solid #dcb35c;border-radius:16px;background:linear-gradient(120deg,#fff4c8,#f5e4a6);color:#624519;box-shadow:0 5px 0 #8c652c40}
 .result-chain-chest strong{display:block;font-size:17px;font-weight:950;margin-bottom:5px;color:#5c411c}
 .result-chain-chest p{margin:0;font-size:12px;font-weight:750;line-height:1.7;color:#725222}
+.result-summon-goal{display:grid;gap:10px;margin:13px 0;padding:16px;border:1px solid #b6a16d;border-radius:17px;background:linear-gradient(130deg,#10283d,#20304c 65%,#56432e);color:#fff4d7;box-shadow:0 6px 17px #162b3d2b,inset 0 1px 0 #ffffff22;overflow:hidden}
+.result-summon-copy{display:grid;gap:5px;min-width:0}
+.result-summon-copy span{font-size:10px;font-weight:900;letter-spacing:.11em;color:#edd392}
+.result-summon-copy strong{font-size:clamp(16px,4vw,21px);font-weight:950;line-height:1.35;overflow-wrap:anywhere}
+.result-summon-copy small{font-size:11px;font-weight:700;line-height:1.65;color:#e0e2de;overflow-wrap:anywhere}
+.result-summon-track{height:12px;overflow:hidden;border-radius:20px;background:#0c1c2b;box-shadow:inset 0 2px 4px #0008;border:1px solid #5b6472}
+.result-summon-track span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#d19340,#ffdf88,#f6edb5);box-shadow:0 0 15px #ffde80b8;transition:width .35s ease}
+.result-summon-goal button{justify-self:start;min-height:44px;max-width:100%;padding:10px 16px;border:1px solid #ffe7a5;border-radius:12px;background:linear-gradient(135deg,#eec96e,#b88134);color:#241b14;font-size:12px;font-weight:950;cursor:pointer;box-shadow:0 3px 0 #553c21;overflow-wrap:anywhere}
+.result-summon-goal button:focus-visible{outline:3px solid #fff4bd;outline-offset:3px}
 @media(max-width:540px){.home-monster-hunt{padding:12px}.hunt-main{grid-template-columns:60px minmax(0,1fr);gap:9px}.hunt-silhouette{width:60px;height:71px;border-radius:15px 15px 22px 22px}.hunt-silhouette span{font-size:43px}.hunt-content select{font-size:12px}.hunt-footer{align-items:stretch}#hunt-go-battle{width:100%}}
-@media(prefers-reduced-motion:reduce){#hunt-meter-fill{transition:none}}
+@media(max-width:380px){.result-summon-goal{padding:12px}.result-summon-goal button{width:100%;justify-self:stretch}}
+@media(prefers-reduced-motion:reduce){#hunt-meter-fill,.result-summon-track span{transition:none}}
 
 /* Direct revenge for verified weak questions; the detailed report remains
    available on demand and the main next-area action stays first. */
