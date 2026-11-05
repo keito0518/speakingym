@@ -117,7 +117,12 @@ const assert=require('node:assert/strict');
   assert.match(await page.locator('[data-tactic-ally="koge"]').innerText(),/HP 8\/9|HP 7\/8/);
   assert.match(await page.locator('.forest-boss-cover').textContent(),/使用済み/, 'Reserve protection cannot be farmed in the next boss phase');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
-  assert.deepEqual(saved.ownedMonsters,['medamago','katappo','koge']);
+  // Traversing the dungeon can legitimately recruit new companions. The
+  // boss cover must preserve the initial roster, not freeze collection growth.
+  assert.equal(new Set(saved.ownedMonsters).size,saved.ownedMonsters.length,'Companions remain unique');
+  for(const id of ['medamago','katappo','koge'])
+   assert.equal(saved.ownedMonsters.includes(id),true,`Existing companion ${id} is preserved`);
+  assert.equal(saved.selectedMonster,'katappo','The selected companion survives boss cover');
   assert.equal(saved.xpWallet>=49,true);
   assert.equal(Object.hasOwn(saved,'party'),false,'Boss-only HP and cover state must not migrate to the save');
   const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
