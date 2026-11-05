@@ -2,7 +2,7 @@ import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './mons
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
-import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,summonProgress,summonPityProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from './monster-economy.js';
+import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,treasureValue,summonProgress,summonPityProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -2799,12 +2799,14 @@ const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,s
 const {renderDetail,renderTraining}=collectionViews;
 let forgeMessage='';
 let drawNextSummon=()=>null;
+let drawNextTenSummons=()=>null;
 const gachaCinematic=createGachaCinematic({
  onEquip:weapon=>{
   if(!persist(equipWeapon(save,weapon.id)))return false;
   renderEquipmentCollection();syncGameHud();return true;
  },
- onRepeat:()=>drawNextSummon()
+ onRepeat:()=>drawNextSummon(),
+ onRepeatTen:()=>drawNextTenSummons()
 });
 function renderEconomyShop(){
  const panel=$('#collection-shop');
@@ -2823,7 +2825,7 @@ function renderEconomyShop(){
  <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
  <div class="shop-pity-tracks" aria-label="レアリティ確定までの最長回数"><div class="shop-pity-row"><div class="shop-pity-copy"><strong>RARE+ 確定</strong><span>最大あと ${pity.rare.remaining} 回 · ${pity.rare.current} / ${pity.rare.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="レア以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.rare.limit}" aria-valuenow="${pity.rare.current}"><span style="width:${pity.rare.percent}%"></span></div></div><div class="shop-pity-row"><div class="shop-pity-copy"><strong>EPIC+ 確定</strong><span>最大あと ${pity.epic.remaining} 回 · ${pity.epic.current} / ${pity.epic.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="エピック以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.epic.limit}" aria-valuenow="${pity.epic.current}"><span style="width:${pity.epic.percent}%"></span></div></div></div>
  <p class="shop-pity">早めにレア武器が出た場合、対応する確定カウントはリセット。重複はレア度に応じて20〜90 G返還。確率はガチャ限定武器内の割合です。</p>
- <button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>召喚を始める · ${GACHA_COST} G</button><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
+ <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>1回召喚<span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}>10連召喚<span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G · 割引なし</span></button></div><p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'お宝を売って120 Gためよう。':'出会える武器は運次第。強い武器ほど入手しづらいよ。'))}</p><small>10連も同じ排出率と天井カウントで、1,200 Gを先に用意する必要があるよ。ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はありません。英語の採点、XP、ボスの3問は装備では変わりません。</small></div>`;
  const commitResult=(next,successMessage)=>{
   if(!persist(next)){forgeMessage='保存に失敗しました。売却や召喚は反映していません。';renderEconomyShop();return false;}
   // Selling or summoning must not navigate away from the forge before the
@@ -2851,8 +2853,20 @@ function renderEconomyShop(){
    affinity:WEAPON_AFFINITY_LABELS[result.weapon.affinity],canRepeat:(save.coins||0)>=GACHA_COST};
  };
  drawNextSummon=drawAndCommit;
+ const drawTenAndCommit=()=>{
+  if((save.coins||0)<GACHA_TEN_PULL_COST)return null;
+  const result=drawWeaponGachaTen(save);
+  if(result.error)return null;
+  const newCount=result.results.filter(item=>!item.duplicate).length;
+  if(!commitResult(result.save,`10連召喚！ 新しい武器 ${newCount} 種 · 重複返還 ${result.refunded} G。演出を閉じても結果は保存済み。`))return null;
+  return {...result,canRepeat:(save.coins||0)>=GACHA_TEN_PULL_COST};
+ };
+ drawNextTenSummons=drawTenAndCommit;
  panel.querySelector('#shop-draw').addEventListener('click',()=>{
   const result=drawAndCommit();if(result)gachaCinematic.show(result);
+ });
+ panel.querySelector('#shop-draw-ten').addEventListener('click',()=>{
+  const result=drawTenAndCommit();if(result)gachaCinematic.showBatch(result);
  });
 }
 function renderEquipmentCollection(){

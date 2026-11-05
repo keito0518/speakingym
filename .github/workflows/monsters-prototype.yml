@@ -26,6 +26,7 @@ jobs:
           node --check prototype/speakingym-monsters/listening-challenges.js
           node --check prototype/speakingym-monsters/roleplay-scenarios.js
           node --check tests/monsters-gacha-growth-browser.cjs
+          node --check tests/monsters-ten-pull-browser.cjs
       - name: Curriculum, mastery and reward tests
         run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs tests/monsters-formation.test.mjs tests/monsters-economy.test.mjs tests/monsters-new-companions.test.mjs
       - name: Install Playwright
@@ -56,6 +57,11 @@ jobs:
         run: |
           timeout 70s node tests/monsters-gacha-growth-browser.cjs
           timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-gacha-growth-browser.cjs
+      - name: Ten-pull gacha cinematic and persistence (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 70s node tests/monsters-ten-pull-browser.cjs
+          timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-ten-pull-browser.cjs
       - name: Turn-based tactics browser QA (Chromium + WebKit)
         timeout-minutes: 6
         run: |

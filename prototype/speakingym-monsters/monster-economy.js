@@ -3,6 +3,8 @@
 import {WEAPONS} from './monster-equipment.js';
 
 export const GACHA_COST=120;
+export const GACHA_TEN_PULL_COUNT=10;
+export const GACHA_TEN_PULL_COST=GACHA_COST*GACHA_TEN_PULL_COUNT;
 export const GACHA_ODDS=Object.freeze({common:67,rare:26,epic:6,legend:1});
 export const RARE_PITY=7;
 export const EPIC_PITY=25;
@@ -107,6 +109,24 @@ export function drawWeaponGacha(save,{random=Math.random}={}){
   pullsSinceRare:['rare','epic','legend'].includes(tier)?0:economy.pullsSinceRare+1,
   pullsSinceEpic:['epic','legend'].includes(tier)?0:economy.pullsSinceEpic+1};
  return {save:saveNext,weapon,duplicate,refund,tier};
+}
+// The ten-pull is a convenience, not a discount or a separate rarity pool.
+// Require the full 1,200 G up front: duplicate refunds cannot bankroll draws
+// within the same batch. The caller persists the final save exactly once,
+// before showing any animation or offering a skip/close action.
+export function drawWeaponGachaTen(save,{random=Math.random}={}){
+ if(normalizeEconomy(save).coins<GACHA_TEN_PULL_COST)
+  return {save,results:[],error:'not_enough_coins'};
+ let next=save;
+ const results=[];
+ for(let i=0;i<GACHA_TEN_PULL_COUNT;i++){
+  const result=drawWeaponGacha(next,{random});
+  if(!result.weapon)throw Error('Ten-pull funds must cover every draw');
+  next=result.save;
+  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund});
+ }
+ return {save:next,results,spent:GACHA_TEN_PULL_COST,
+  refunded:results.reduce((sum,item)=>sum+item.refund,0)};
 }
 export function gachaPoolSummary(){
  return tiers.map(rarity=>({rarity,count:WEAPONS.filter(w=>w.source==='gacha'&&w.rarity===rarity).length,odds:GACHA_ODDS[rarity]}));

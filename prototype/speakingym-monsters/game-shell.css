@@ -194,6 +194,13 @@ body[data-game-view="play"] .app-shell{padding-bottom:0}
 .shop-gacha #shop-draw::after{content:"";position:absolute;inset:-100% auto -100% -40%;width:32%;transform:rotate(22deg);
  background:linear-gradient(90deg,transparent,#ffffffa8,transparent);animation:forge-glint 4.5s ease-in-out infinite}
 .shop-gacha #shop-draw:disabled::after{animation:none}
+.shop-draw-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+.shop-gacha #shop-draw-ten{min-height:64px;padding:9px 8px;color:#fff3d1;font-size:clamp(13px,2.4vw,18px);
+ font-weight:950;line-height:1.3;cursor:pointer;border:2px solid #ffe2a6;border-radius:14px;
+ background:linear-gradient(140deg,#55429c,#9e559c 55%,#6a3166);
+ box-shadow:0 5px 0 #3c2049,0 11px 23px #050e21;text-shadow:0 1px 8px #24133b}
+.shop-gacha #shop-draw-ten:disabled{opacity:.52;filter:saturate(.6);cursor:not-allowed}
+.shop-draw-options .shop-draw-caption{display:block;font-size:11px;letter-spacing:.03em;opacity:.94}
 .collection-weapons{background:linear-gradient(125deg,#243d4e,#1b2e43);border:1px solid #678b93;color:#f3edda;box-shadow:0 6px 0 #081522}
 .collection-weapons h2,.collection-weapons .forest-treasures-heading h2{color:#ffe8b3}
 .collection-weapons p{color:#c2d7db}
@@ -274,6 +281,33 @@ body.summon-active{overflow:hidden}
 .summon-screen[data-phase="reveal"] .summon-reveal-art{animation:summon-appear .85s cubic-bezier(.18,1.3,.3,1) both}
 .summon-reward{max-width:100%;display:flex;align-items:center;flex-direction:column;gap:6px;opacity:0;transform:translateY(30px);text-align:center}
 .summon-screen[data-phase="reveal"] .summon-reward{animation:summon-appear .6s .2s ease both}
+.summon-screen[data-mode="batch"][data-phase="reveal"] .summon-center{min-height:0;justify-content:flex-start}
+.summon-screen[data-mode="batch"][data-phase="reveal"] .summon-portal{width:min(39vw,166px,19dvh);flex-shrink:0}
+.summon-screen[data-mode="batch"] .summon-reward h2{font-size:clamp(24px,5vw,32px)}
+.summon-batch-rewards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%;
+ max-width:580px;margin:12px auto 16px;opacity:0}
+.summon-screen[data-phase="reveal"] .summon-batch-rewards{animation:summon-batch-enter .55s .12s ease both}
+.summon-batch-card{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
+ padding:13px 8px 10px;border:1px solid #6d8c9a;border-radius:13px;
+ background:linear-gradient(165deg,#29405a,#142237 70%);box-shadow:inset 0 1px #ffffff26,0 5px 18px #020916ab;
+ text-align:center;color:#e9f2fb}
+.summon-batch-card[data-tier="rare"]{border-color:#66bfff;background:linear-gradient(160deg,#244f7b,#122846 75%)}
+.summon-batch-card[data-tier="epic"]{border-color:#d498ff;background:linear-gradient(160deg,#5c3476,#231939 75%)}
+.summon-batch-card[data-tier="legend"]{border-color:#ffd477;background:linear-gradient(160deg,#71502f,#33281e 75%);
+ box-shadow:inset 0 1px #fff8ce75,0 0 25px #ffda7e38,0 5px 18px #020916a8}
+.summon-batch-number{position:absolute;top:7px;left:9px;color:#bfd1db;font-size:10px;font-weight:800}
+.summon-batch-weapon{width:60px;height:70px;overflow:visible;filter:drop-shadow(0 0 13px #b0d8f47a)}
+.summon-batch-card[data-tier="legend"] .summon-batch-weapon{filter:drop-shadow(0 0 16px #ffdb81c9)}
+.summon-batch-rarity{font-size:10px;letter-spacing:.14em;font-weight:950;color:#cee6f2}
+.summon-batch-card[data-tier="rare"] .summon-batch-rarity{color:#97d6ff}
+.summon-batch-card[data-tier="epic"] .summon-batch-rarity{color:#e6b4ff}
+.summon-batch-card[data-tier="legend"] .summon-batch-rarity{color:#ffdf8b}
+.summon-batch-card strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.summon-batch-card small{font-size:10px;color:#d0dfe7}
+.summon-batch-card[data-duplicate="true"] small{color:#e8d6b0}
+.summon-batch-card button{margin-top:auto;min-height:36px;padding:6px 10px;border-radius:9px;
+ color:#f6eacf;background:#2d4559;border:1px solid #8ba6b6;font-size:11px;font-weight:900;cursor:pointer}
+.summon-batch-card button:focus-visible{outline:3px solid #fff7b0;outline-offset:2px}
 .summon-screen[data-rarity="epic"][data-phase="reveal"] .summon-reward{filter:drop-shadow(0 0 14px #b36aff77)}
 .summon-screen[data-rarity="legend"][data-phase="reveal"] .summon-reward{filter:drop-shadow(0 0 21px #ffd87f99)}
 .summon-rarity{padding:6px 22px;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--summon-glow) 65%,transparent),transparent);
@@ -295,6 +329,7 @@ body.summon-active{overflow:hidden}
 @keyframes summon-crack{to{filter:drop-shadow(0 0 22px #fff);width:10px}}
 @keyframes summon-burst{0%{opacity:.96;transform:scale(.1)}35%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
 @keyframes summon-appear{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes summon-batch-enter{to{opacity:1}}
 @keyframes summon-meteor{0%{opacity:0;transform:translate(30px,-80px) rotate(32deg)}25%{opacity:.85}100%{opacity:0;transform:translate(-120px,430px) rotate(32deg)}}
 @keyframes summon-ascend{from{opacity:.3;transform:scaleX(.45)}to{opacity:.72;transform:scaleX(1.1)}}
 

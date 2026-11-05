@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
 import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
-import {GACHA_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,
- grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
+import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,
+ grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
 import {SUMMON_TIMINGS} from '../prototype/speakingym-monsters/gacha-cinematic.js';
 
 test('old saves restore an empty wallet safely and untrusted backups cannot forge currency',()=>{
@@ -95,6 +95,55 @@ test('a draw spends gold exactly once, duplicate refunds are bounded and the pla
  const equipped=equipWeapon(one.save,one.weapon.id);
  assert.equal(equippedWeapon(equipped)?.id,one.weapon.id);
  assert.ok(scaledStrikeDamage(1,1,equipped)>scaledStrikeDamage(1,1,ready));
+});
+
+test('10-pull requires all 1200 earned G up front and cannot be funded by refunds from its own draws',()=>{
+ assert.equal(GACHA_TEN_PULL_COUNT,10);
+ assert.equal(GACHA_TEN_PULL_COST,GACHA_COST*10);
+ const original={...createSave(),coins:1199,xpWallet:500,treasureBag:{star_gear:4}};
+ const failed=drawWeaponGachaTen(original,{random:()=>0});
+ assert.equal(failed.error,'not_enough_coins');
+ assert.equal(failed.save,original);
+ assert.equal(failed.results.length,0);
+ assert.equal(original.gachaPullCount,0);
+ assert.deepEqual(original.weaponInventory,[]);
+ assert.equal(original.coins,1199,'The forge cannot silently sell unsold treasure');
+});
+
+test('10-pull commits exactly ten sequential rolls with per-roll duplicate returns, pity, and immutable XP',()=>{
+ const original={...createSave(),coins:1200,xpWallet:500,ownedMonsters:['medamago'],
+  pullsSinceRare:RARE_PITY-1,pullsSinceEpic:EPIC_PITY-1};
+ const batch=drawWeaponGachaTen(original,{random:()=>.99});
+ assert.equal(batch.error,undefined);
+ assert.equal(batch.results.length,10);
+ assert.equal(batch.spent,1200);
+ assert.equal(batch.results[0].tier,'epic','An existing epic pity must count inside the batch');
+ assert.equal(batch.results[0].duplicate,false);
+ assert.equal(batch.results[7].tier,'rare','A later rare pity must advance inside the same batch');
+ assert.equal(batch.results.slice(1,7).every(item=>item.tier==='common'),true);
+ assert.equal(batch.results.at(-1).tier,'common');
+ const expectedRefund=batch.results.reduce((sum,item)=>sum+item.refund,0);
+ assert.equal(batch.refunded,expectedRefund);
+ assert.equal(batch.save.coins,expectedRefund);
+ assert.equal(batch.save.gachaPullCount,10);
+ assert.equal(batch.save.weaponInventory.length,new Set(batch.results.map(item=>item.weapon.id)).size);
+ assert.equal(batch.save.xpWallet,500);
+ assert.deepEqual(batch.save.ownedMonsters,['medamago']);
+ assert.equal(batch.save.equippedWeaponId,null,'A batch never auto-equips');
+ assert.deepEqual(validateSave(batch.save),batch.save);
+ assert.equal(original.coins,1200,'A failed persist may discard the whole uncommitted batch');
+ assert.equal(original.gachaPullCount,0);
+});
+
+test('10-pull has no undisclosed guaranteed rarity, and preserves standard one-pull odds',()=>{
+ const batch=drawWeaponGachaTen({...createSave(),coins:1200},{random:()=>.99});
+ assert.equal(batch.results[0].tier,'common');
+ assert.equal(batch.results[6].tier,'rare','The seventh common-streak draw triggers the existing rare pity');
+ assert.equal(batch.results.filter(item=>item.tier==='epic'||item.tier==='legend').length,0);
+ assert.equal(batch.results.length,10);
+ assert.equal(batch.refunded,8*20,'After its first new common weapon, duplicates give the usual 20 G refund');
+ assert.equal(batch.save.coins,160);
+ assert.equal(batch.save.gachaPullCount,10);
 });
 
 test('gacha rarity boundaries, transparent rare/epic pity, and legendary 1% are deterministic',()=>{
