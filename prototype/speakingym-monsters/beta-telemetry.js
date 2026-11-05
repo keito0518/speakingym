@@ -5,12 +5,26 @@
 export const BETA_CONSENT_KEY = 'speakingym-monsters-beta-consent-v1';
 const LAST_VISIT_KEY = 'speakingym-monsters-beta-visit-day-v1';
 const SESSION_VISIT_KEY = 'speakingym-monsters-beta-visit-session-v1';
+const MODES=['forest','forest-tactics','forest-endless','daily','speaking','listening','challenge','practice','saved','retention','dungeon-review','roleplay','transfer-review','skill-focus'];
+const DIFFICULTIES=['easy','normal','hard','mixed'];
+const CHAPTERS=['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core','other'];
 const EVENT_FIELDS = Object.freeze({
   monsters_beta_visit: {returning:['yes','no']},
-  monsters_beta_start: {mode:['forest','forest-endless','daily','speaking','listening','challenge','practice','saved','retention','dungeon-review'],difficulty:['easy','normal','hard','mixed'],chapter:['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core','other']},
+  monsters_beta_start: {mode:MODES,difficulty:DIFFICULTIES,chapter:CHAPTERS},
+  monsters_beta_end: {mode:MODES,difficulty:DIFFICULTIES,chapter:CHAPTERS,outcome:['clear','defeat','endless_end','complete','timeout','quit','stopped']},
   monsters_beta_chapter_clear: {chapter:['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core'],difficulty:['easy','normal','hard']},
   monsters_beta_feedback: {reaction:['fun','hard','grading','usability','audio']}
 });
+
+// Deliberately send only fixed categories. No answers, scores, local monster
+// IDs, progress, transcripts, or player/device identifiers enter these events.
+export function betaSessionFields(session){
+  const mode=session.mode==='forest'
+    ?session.endless?'forest-endless':session.tactics&&!session.quickStart?'forest-tactics':'forest'
+    :session.mode;
+  return {mode,difficulty:session.mode==='retention'?'mixed':session.baseDifficulty||session.difficulty,
+    chapter:session.areaId||'other'};
+}
 
 export function safeBetaEvent(name, fields = {}) {
   const rules=EVENT_FIELDS[name];

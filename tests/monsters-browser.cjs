@@ -732,6 +732,27 @@ const path=require('node:path');
     assert.match(await listenPage.locator('#listening-status').innerText(),/再生できた/,
       'Audio loading alone must not unlock listening without playback starting');
     assert.equal(await listenPage.locator('[data-listening-choice]').count(),3);
+    // Switching apps mid-clip must stop audio and close the unverified answer
+    // choices. A late media "playing" callback while hidden cannot reopen them.
+    await listenPage.evaluate(()=>{
+      const audio=document.querySelector('#listening-native-audio');
+      Object.defineProperty(audio,'paused',{configurable:true,value:false});
+      Object.defineProperty(audio,'ended',{configurable:true,value:false});
+      Object.defineProperty(document,'hidden',{configurable:true,value:true});
+      document.dispatchEvent(new Event('visibilitychange'));
+      audio.dispatchEvent(new Event('playing'));
+    });
+    assert.equal(await listenPage.locator('#listening-meaning').isVisible(),false,
+      'Interrupted playback must not count as a completed listening opportunity');
+    assert.equal(await listenPage.locator('#play-slow-audio').isVisible(),false);
+    assert.match(await listenPage.locator('#listening-status').innerText(),/途中で中断/);
+    assert.equal(await listenPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
+    await listenPage.evaluate(()=>{
+      const audio=document.querySelector('#listening-native-audio');
+      delete audio.paused;delete audio.ended;delete document.hidden;
+    });
+    await listenPage.locator('#play-audio').click();
+    await listenPage.locator('#listening-meaning').waitFor({state:'visible',timeout:12000});
     // When a learner switches between the native iPhone audio controls and
     // the main replay button, playback must restart from the first word.
     // A direct native playback is not stored in spokenAudio, so this caught
@@ -1640,10 +1661,14 @@ const path=require('node:path');
     await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Could you'}],{isFinal:false})]}));
     await micButton.click(); // stop(), NOT abort(): still waiting for WebKit's final transcript.
     assert.equal(await micButton.getAttribute('aria-pressed'),'false');
+    assert.equal(await micButton.isDisabled(),true,
+      'Pending transcription should be shown as finishing, not a non-responsive start button');
+    assert.match(await micButton.innerText(),/確定中/);
     assert.equal(await micPage.evaluate(()=>window.__activeMic.stopped),true);
     assert.equal(await micPage.evaluate(()=>Boolean(window.__activeMic.aborted)),false,'Stopping must not discard pending speech');
     await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Could you help me?'}],{isFinal:true})]}));
     assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Could you help me?');
+    assert.equal(await micButton.isEnabled(),true);
     assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
     await micButton.click();
     await micPage.evaluate(()=>window.__activeMic.onerror?.({error:'not-allowed'}));

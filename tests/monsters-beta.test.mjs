@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {BETA_CONSENT_KEY,createBetaTelemetry,safeBetaEvent} from '../prototype/speakingym-monsters/beta-telemetry.js';
+import {BETA_CONSENT_KEY,betaSessionFields,createBetaTelemetry,safeBetaEvent} from '../prototype/speakingym-monsters/beta-telemetry.js';
 
 function fixture({initial={},day=1,id='G-DRH440861Y'}={}){
   const saved=new Map(Object.entries(initial)),session=new Map(),scripts=[];
@@ -26,6 +26,30 @@ test('beta events never accept free-text, transcripts, IDs or unknown event name
   assert.deepEqual(safeBetaEvent('monsters_beta_start',{
     mode:'forest',difficulty:'easy',chapter:'entry',spokenAnswer:'private'
   }),{name:'monsters_beta_start',fields:{mode:'forest',difficulty:'easy',chapter:'entry'}});
+  assert.equal(safeBetaEvent('monsters_beta_end',{mode:'roleplay',difficulty:'normal',chapter:'other',outcome:'My answer'}),null);
+  assert.deepEqual(safeBetaEvent('monsters_beta_end',{
+    mode:'roleplay',difficulty:'normal',chapter:'other',outcome:'quit',
+    transcript:'Could I have a window seat?',email:'private@example.org',xp:800
+  }),{name:'monsters_beta_end',fields:{mode:'roleplay',difficulty:'normal',chapter:'other',outcome:'quit'}});
+});
+
+test('every playable mode records a validated opt-in start and outcome without personal state',()=>{
+  for(const [session,expected] of [
+    [{mode:'forest',endless:false,tactics:null,areaId:'entry',baseDifficulty:'easy'},'forest'],
+    [{mode:'forest',endless:true,tactics:{},areaId:'entry',baseDifficulty:'hard'},'forest-endless'],
+    [{mode:'forest',endless:false,tactics:{},quickStart:false,areaId:'city',baseDifficulty:'normal'},'forest-tactics'],
+    [{mode:'forest',endless:false,tactics:{},quickStart:true,areaId:'ruins-core',baseDifficulty:'hard'},'forest'],
+    ...['daily','speaking','listening','challenge','practice','saved','retention','dungeon-review','roleplay','transfer-review','skill-focus']
+      .map(mode=>[{mode,difficulty:'easy'},mode])
+  ]){
+    const fields=betaSessionFields(session);
+    assert.equal(fields.mode,expected);
+    assert.equal(fields.difficulty,session.mode==='retention'?'mixed':session.baseDifficulty||session.difficulty);
+    assert.ok(safeBetaEvent('monsters_beta_start',fields),expected+' must not disappear from beta analytics');
+    for(const outcome of ['complete','quit','defeat']){
+      assert.ok(safeBetaEvent('monsters_beta_end',{...fields,outcome}),expected+': '+outcome);
+    }
+  }
 });
 
 test('default and refusal do not inject GA4 or record any events',()=>{
@@ -48,13 +72,14 @@ test('opt-in records one visit per tab, never injects the vendor twice, and can 
   assert.match(f.scripts[0].src,/https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-DRH440861Y/);
   assert.equal(f.calls.filter(args=>args[0]==='event'&&args[1]==='monsters_beta_visit').length,1);
   assert.equal(f.instance.track('monsters_beta_start',{mode:'forest',difficulty:'easy',chapter:'entry'}),true);
+  assert.equal(f.instance.track('monsters_beta_end',{mode:'roleplay',difficulty:'easy',chapter:'other',outcome:'quit'}),true);
   assert.equal(f.instance.track('monsters_beta_chapter_clear',{chapter:'entry',difficulty:'easy'}),true);
   assert.equal(f.instance.track('monsters_beta_feedback',{reaction:'audio'}),true);
   assert.equal(f.instance.track('monsters_beta_feedback',{reaction:'invalid'}),false);
   assert.equal(f.instance.markVisit(),false);
   assert.equal(f.scripts.length,1);
   assert.deepEqual(f.calls.filter(args=>args[0]==='event').map(args=>args[1]),[
-    'monsters_beta_visit','monsters_beta_start','monsters_beta_chapter_clear','monsters_beta_feedback'
+    'monsters_beta_visit','monsters_beta_start','monsters_beta_end','monsters_beta_chapter_clear','monsters_beta_feedback'
   ]);
   assert.equal(f.calls.find(args=>args[0]==='config')[2].send_page_view,false);
   f.instance.setConsent('no');

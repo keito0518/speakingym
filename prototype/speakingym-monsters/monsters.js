@@ -34,7 +34,7 @@ import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dun
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { nextLearningQuestFor, learningProofFor } from './next-learning-quest.js';
 import { savedReviewRecap, savedReviewTrend, rememberSavedReview } from './saved-review-coach.js';
-import { createBetaTelemetry } from './beta-telemetry.js';
+import { createBetaTelemetry, betaSessionFields } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
 
 const $ = selector => document.querySelector(selector);
@@ -339,11 +339,11 @@ function micView(mode='ready') {
     const unavailable=button.dataset.speechUnavailable==='true';
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.innerHTML=mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':'<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span>';
-    button.title=mode==='listening'?'録音を停止する':'マイクで音声認識を開始する';
-    button.setAttribute('aria-label',mode==='listening'?'録音を停止する':'マイクで音声認識を開始する');
+    button.innerHTML=mode==='finishing'?'<span>確定中…</span>':mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':'<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span>';
+    button.title=mode==='finishing'?'音声の文字起こしを確定中':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する';
+    button.setAttribute('aria-label',mode==='finishing'?'文字起こしを確定中':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する');
     button.hidden=mode==='done'||unavailable;
-    button.disabled=mode==='done'||unavailable;
+    button.disabled=mode==='done'||mode==='finishing'||unavailable;
   }
   const keyboard=$('#native-ios-dictation');
   if(keyboard)keyboard.hidden=mode==='done';
@@ -396,7 +396,9 @@ function finishRecognition(){
   recognitionStopping=true;
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
   recognitionStartTimer=null;
-  micView('ready');
+  // stop() can take several seconds to deliver the final transcript on iOS.
+  // Keep that pending state visible rather than offering a dead "話す" button.
+  micView('finishing');
   if(helper)helper.textContent='文字起こしを確定中です。英語が表示されてから判定してね。';
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
   recognitionWatchdog=setTimeout(()=>{
@@ -444,6 +446,22 @@ function stopListeningPlayback(){
     }catch{}
   }
   try { window.speechSynthesis?.cancel(); } catch {}
+}
+function pauseInterruptedListening(){
+  const state=play?.listeningState;
+  const native=$('#listening-native-audio');
+  const inFlight=Boolean(spokenAudio&&!spokenAudio.ended)||
+    Boolean(native&&!native.paused&&!native.ended)||
+    Boolean(window.speechSynthesis?.speaking||window.speechSynthesis?.pending);
+  stopListeningPlayback();
+  // An interrupted clip is not evidence of listening comprehension. Keep a
+  // fully finished replay available, and retain transcript-only practice.
+  if(!inFlight||!state||state.understood||state.usedTranscript)return;
+  state.played=false;
+  const choices=$('#listening-meaning'),slow=$('#play-slow-audio'),status=$('#listening-status');
+  if(choices)choices.hidden=true;
+  if(slow)slow.hidden=true;
+  if(status)status.textContent='音声が途中で中断されたよ。もう一度再生して聞いてね。';
 }
 function clearTimer() { if (timer) clearInterval(timer); timer = null; }
 function showView(name) {
@@ -709,11 +727,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
     $('#forest-world-stage').dataset.renderedRoute='';
   }
   showView('play');
-  betaTelemetry.track('monsters_beta_start',{
-    mode:mode==='forest-endless'?'forest-endless':tactical&&quickStart?'forest':mode,
-    difficulty:mode==='retention'?'mixed':difficulty,
-    chapter:area?.id||'other'
-  });
+  betaTelemetry.track('monsters_beta_start',betaSessionFields(play));
   if(forestMode)showForestExplore(false);
   else renderQuestion();
   if (mode === 'challenge') timer = setInterval(updateClock,200);
@@ -1538,7 +1552,7 @@ function renderQuestion() {
     const state=play.listeningState;
     const showChoices=()=>{$('#listening-meaning').hidden=false;};
     const markAudioReady=()=>{
-      if(!play||play.listeningState!==state||state.understood)return;
+      if(document.hidden||!play||play.listeningState!==state||state.understood)return;
       state.played=true;
       $('#play-slow-audio').hidden=false;
       showChoices();
@@ -2460,6 +2474,9 @@ function finishSession(timedOut=false,defeated=false) {
   if(!play)return;
   cancelAutoAdvance();
   const ended=play;play=null;clearTimer();stopAudio();
+  betaTelemetry.track('monsters_beta_end',{...betaSessionFields(ended),
+    outcome:ended.mode==='forest'?(defeated?'defeat':ended.endless?'endless_end':ended.completedForest?'clear':'stopped'):
+      timedOut?'timeout':'complete'});
   if(ended.tactics&&ended.bestCombo>(save.bestBattleChain||0))
     persist({...save,bestBattleChain:ended.bestCombo});
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
@@ -2660,6 +2677,7 @@ $('#open-collection').addEventListener('click',()=>renderCollection());
 $('#open-wallet').addEventListener('click',()=>renderCollection());
 $('#leave-play').addEventListener('click',()=>{
  if(play&&!window.confirm('今の挑戦を中断してホームへ戻る？\n\n途中の戦闘や問題の進み具合は失われます。すでに獲得したXP・保存した問題は残るよ。'))return;
+ if(play)betaTelemetry.track('monsters_beta_end',{...betaSessionFields(play),outcome:'quit'});
  cancelAutoAdvance();clearTimer();stopAudio();play=null;
  $('#play-view').classList.remove('forest-active','review-only');renderHome();
 });
@@ -2803,11 +2821,14 @@ window.addEventListener('storage',event=>{
   storageConflict=true;
   syncUnreadableSaveUI();
 });
-window.addEventListener('pagehide',()=>{cancelAutoAdvance();stopAudio();});
+window.addEventListener('pagehide',()=>{
+  cancelAutoAdvance();stopRecognition('done');pauseInterruptedListening();
+});
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
     cancelAutoAdvance();
     if(recognition)stopRecognition();
+    pauseInterruptedListening();
     if($('#forest-auto-status'))$('#forest-auto-status').textContent='戻ってきたら「今すぐ次へ」で再開できるよ。';
   }
 });
