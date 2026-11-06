@@ -384,6 +384,7 @@ const assert=require('node:assert/strict');
    await gearPage.locator('#equipment-filter-affinity').selectOption('listen');
    assert.equal(await gearPage.locator('.equipment-item').count(),1);
    assert.equal(await gearPage.locator('.equipment-item[data-item-id="mist_spear"]').count(),1);
+   assert.equal(await gearPage.locator('#equipment-filters').getAttribute('open'),'');
    assert.match(await gearPage.locator('.equipment-current').innerText(),/旅立ちの木剣/,
      'Filtering cards never unequips a hidden weapon');
    await gearPage.locator('#equipment-filter-affinity').selectOption('all');

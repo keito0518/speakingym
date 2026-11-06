@@ -2953,10 +2953,16 @@ function renderEquipmentCollection(){
  // Keep awakening beside the equipped item; a large inventory should never
  // force the player to scroll through every card to upgrade their weapon.
  panel.querySelector('.equipment-current')?.after(panel.querySelector('.weapon-awakening'));
- panel.querySelector('#equipment-filters')?.addEventListener('toggle',event=>{equipmentFiltersOpen=event.currentTarget.open;});
+ panel.querySelector('#equipment-filters')?.addEventListener('toggle',event=>{
+  // A rerender can detach this disclosure before its deferred toggle fires.
+  // Ignore stale events instead of closing the freshly rendered filters.
+  if(event.currentTarget.isConnected)equipmentFiltersOpen=event.currentTarget.open;
+ });
  for(const [id,key] of [['equipment-filter-rarity','rarity'],['equipment-filter-affinity','affinity'],['equipment-filter-sort','sort']]){
   panel.querySelector(`#${id}`)?.addEventListener('change',event=>{
    equipmentView[key]=event.target.value;
+   // Preserve the open state even if the initial summary toggle is still queued.
+   equipmentFiltersOpen=true;
    renderEquipmentCollection();
    panel.querySelector(`#${id}`)?.focus({preventScroll:true});
   });
