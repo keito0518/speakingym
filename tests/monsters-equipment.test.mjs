@@ -64,10 +64,10 @@ test('weapon affinity adds damage only for the correct independently answered sk
  assert.equal(weaponAffinityBonus(first,'speak',{independent:false}),0,'hints cannot trigger weapon traits');
  assert.equal(scaledStrikeDamage(1,1,first,{kind:'speak',independent:true}),4);
  assert.equal(scaledStrikeDamage(1,1,first,{kind:'speak',independent:false}),3);
- const epic={...first,weaponInventory:[...first.weaponInventory,'moss_fang'],equippedWeaponId:'moss_fang'};
- assert.equal(weaponAffinityBonus(epic,'vocab',{independent:true}),2,'elite weapon has stronger matching-skill trait');
- assert.equal(scaledStrikeDamage(1,4,epic,{kind:'vocab',independent:true}),8);
- assert.equal(weaponAffinityBonus({...epic,equippedWeaponId:'forged'},'vocab',{independent:true}),0,
+ const elite={...first,weaponInventory:[...first.weaponInventory,'moss_fang'],equippedWeaponId:'moss_fang'};
+ assert.equal(weaponAffinityBonus(elite,'vocab',{independent:true}),2,'elite weapon retains its stronger matching-skill trait');
+ assert.equal(scaledStrikeDamage(1,4,elite,{kind:'vocab',independent:true}),11);
+ assert.equal(weaponAffinityBonus({...elite,equippedWeaponId:'forged'},'vocab',{independent:true}),0,
   'unowned or invented gear cannot grant passives');
 });
 

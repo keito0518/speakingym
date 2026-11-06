@@ -166,10 +166,15 @@ test('duplicates are weapon-specific awakening shards; voluntary 3-stage growth 
  assert.equal(MAX_WEAPON_AWAKENING,3);
 });
 
-test('rarity power is monotonic: fully awakened lower gacha tiers never overtake untouched higher tiers',()=>{
- const pool=WEAPONS.filter(weapon=>weapon.source==='gacha');
+test('all 80 weapons share strict rarity bands, including old dungeon and elite drops',()=>{
+ const pool=WEAPONS;
  const kinds=['speak','listen','vocab','grammar'];
  const tiers=['common','rare','epic','legend'];
+ assert.equal(pool.length,80);
+ assert.equal(pool.filter(weapon=>weapon.source!=='gacha'&&['epic','legend'].includes(weapon.rarity)).length,0,
+  'all epic and legendary weapons remain gacha-only');
+ assert.equal(pool.filter(weapon=>weapon.source==='gacha'&&weapon.rarity==='legend').length,6,
+  'the six strongest legendary weapons remain gacha-only');
  assert.deepEqual(GACHA_ATTACK_CAPS,{common:4,rare:7,epic:10,legend:15});
  for(let index=0;index<tiers.length-1;index++){
   const lower=pool.filter(weapon=>weapon.rarity===tiers[index]);

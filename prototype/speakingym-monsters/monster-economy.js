@@ -104,8 +104,9 @@ export function sellAllTreasures(save){
  }
  return {save:next,coins};
 }
-// Pity is deterministic and inspectable. All weapons here are gacha-only;
-// chapters and elites still drop their existing, weaker field equipment.
+// Pity is deterministic and inspectable. These weapons are gacha-only;
+// only the gacha pool contains epic and legendary equipment. Chapter/elite
+// drops share the common/rare attack bands and cannot reach 7 attack.
 export function drawWeaponGacha(save,{random=Math.random}={}){
  const economy=normalizeEconomy(save);
  if(economy.coins<GACHA_COST)return {save,weapon:null,error:'not_enough_coins'};

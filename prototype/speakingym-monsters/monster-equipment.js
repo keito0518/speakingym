@@ -12,12 +12,15 @@ export const WEAPONS=Object.freeze([
  {id:'frost_sword',name:'吹雪の大剣',attack:3,rarity:'common',areaId:'city-blizzard',affinity:'grammar'},
  {id:'rune_blade',name:'碑文の剣',attack:3,rarity:'common',areaId:'ruins-gate',affinity:'grammar'},
  {id:'chrono_edge',name:'時の刃',attack:4,rarity:'common',areaId:'ruins-core',affinity:'speak'},
- {id:'moonsteel',name:'月鋼の剣',attack:3,rarity:'rare',world:'forest',affinity:'listen'},
- {id:'snowguard',name:'雪守りの剣',attack:4,rarity:'rare',world:'city',affinity:'grammar'},
- {id:'starlight',name:'星明かりの剣',attack:5,rarity:'rare',world:'ruins',affinity:'speak'},
- {id:'moss_fang',name:'深森の牙',attack:3,rarity:'epic',eliteWorld:'forest',affinity:'vocab'},
- {id:'blizzard_lance',name:'吹雪の長槍',attack:4,rarity:'epic',eliteWorld:'city',affinity:'listen'},
- {id:'astral_sword',name:'星核の剣',attack:5,rarity:'epic',eliteWorld:'ruins',affinity:'grammar'},
+ // Story drops stay below attack 7: stronger equipment is gacha-exclusive.
+ // Elite trophies are rare-tier keepsakes with their original stronger
+ // affinity, not misleading epic-tier weapons with common-tier attack.
+ {id:'moonsteel',name:'月鋼の剣',attack:6,rarity:'rare',world:'forest',affinity:'listen'},
+ {id:'snowguard',name:'雪守りの剣',attack:6,rarity:'rare',world:'city',affinity:'grammar'},
+ {id:'starlight',name:'星明かりの剣',attack:6,rarity:'rare',world:'ruins',affinity:'speak'},
+ {id:'moss_fang',name:'深森の牙',attack:6,rarity:'rare',eliteWorld:'forest',affinity:'vocab'},
+ {id:'blizzard_lance',name:'吹雪の長槍',attack:6,rarity:'rare',eliteWorld:'city',affinity:'listen'},
+ {id:'astral_sword',name:'星核の剣',attack:6,rarity:'rare',eliteWorld:'ruins',affinity:'grammar'},
  // A separate earned-currency-only forge pool. The strongest equipment is
  // never a chapter drop; coins cannot be purchased with real money.
  {id:'copper_fang',name:'銅の牙',attack:3,rarity:'common',source:'gacha',affinity:'speak',shape:'dagger'},
@@ -117,7 +120,7 @@ export function weaponBattleVisual(weapon){
  return {shape,motion:WEAPON_ATTACK_MOTIONS[shape]||'unarmed',rarity,rank};
 }
 export const MAX_WEAPON_AWAKENING=3;
-// Gacha rarity bands cannot be overturned by duplicate-powered upgrades.
+// All weapons share these caps, including historical chapter/elite drops.
 // The highest possible attack in one tier is below the base of the next.
 export const GACHA_ATTACK_CAPS=Object.freeze({common:4,rare:7,epic:10,legend:15});
 const SECONDARY_AFFINITY=Object.freeze({speak:'listen',listen:'speak',vocab:'grammar',grammar:'vocab'});
@@ -255,11 +258,10 @@ export function weaponAttack(save,weapon){
  // contains calculated attack and must never accidentally add awakening twice.
  const base=BY_ID.get(weapon.id)||weapon;
  const result=(base.attack||0)+(base.id?awakeningProgress(save,base.id).rank:0);
- if(base.source!=='gacha')return result;
  const rarityCap=GACHA_ATTACK_CAPS[base.rarity]||result;
- // Even within legendary weapons, a weaker starting item may catch up but
- // never pass the stronger base item through awakening alone.
- const personalCap=base.rarity==='legend'?base.attack+1:rarityCap;
+ // A weaker starting item may CATCH UP by one point but cannot pass a
+ // stronger base item, even if a legacy save contains an awakened drop.
+ const personalCap=base.attack+1;
  return Math.min(rarityCap,personalCap,result);
 }
 export function equippedWeapon(save){
@@ -281,16 +283,16 @@ export function levelAttackBonus(level=1){
 export function weaponAffinityBonus(save,kind,{independent=false}={}){
  const weapon=equippedWeapon(save);
  if(!independent||!kind||!weapon)return 0;
- const baseline=['epic','legend'].includes(weapon.rarity)?2:1;
- if(kind===weapon.affinity)return baseline+(weapon.awakeningRank>0?1:0);
+ const baseline=weapon.eliteWorld||['epic','legend'].includes(weapon.rarity)?2:1;
+ if(kind===weapon.affinity)return baseline+(weapon.source==='gacha'&&weapon.awakeningRank>0?1:0);
  return weapon.awakeningRank>=2&&kind===weaponSecondaryAffinity(weapon)?
   (weapon.awakeningRank>=3?2:1):0;
 }
 export function weaponEffectDescription(save,weapon){
  if(!weapon)return '';
  const stage=weapon.id?awakeningProgress(save,weapon.id).visualRank:0;
- const primary=['epic','legend'].includes(weapon.rarity)?2:1;
- const main=`${WEAPON_AFFINITY_LABELS[weapon.affinity]}を自力正解で追撃＋${primary+(stage>0?1:0)}`;
+ const primary=weapon.eliteWorld||['epic','legend'].includes(weapon.rarity)?2:1;
+ const main=`${WEAPON_AFFINITY_LABELS[weapon.affinity]}を自力正解で追撃＋${primary+(weapon.source==='gacha'&&stage>0?1:0)}`;
  return stage>=2?`${main} · ${WEAPON_AFFINITY_LABELS[weaponSecondaryAffinity(weapon)]}でも追撃＋${stage>=3?2:1}`:main;
 }
 export function scaledStrikeDamage(baseDamage,level,save,{kind=null,independent=false}={}){
