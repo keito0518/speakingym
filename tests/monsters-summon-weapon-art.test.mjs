@@ -14,6 +14,8 @@ test('every weapon class has a matching crisp pixel summon portrait, not glossy 
   assert.match(picture,/viewBox="0 0 180 240"/);
   assert.match(picture,new RegExp(`data-weapon-shape="${silhouettes[index]}"`));
   assert.match(picture,new RegExp(`data-equipped-weapon="test_${silhouettes[index]}"`));
+  assert.equal((picture.match(/data-equipped-weapon=/g)||[]).length,1,
+   'Only the actual pixel weapon should carry the equipment marker');
   assert.match(picture,/shape-rendering="crispEdges"/);
   assert.match(picture,/class="summon-pixel-weapon"/);
   assert.match(picture,/<rect /);

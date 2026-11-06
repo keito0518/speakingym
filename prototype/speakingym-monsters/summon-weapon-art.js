@@ -27,7 +27,7 @@ export function summonWeaponArtwork(weapon,{instance='single',decorative=false}=
   return `<path d="M${x} ${y-size}v${size*2}m-${size} -${size}h${size*2}" stroke="${index%3===0?colors.spark:colors.frame}" stroke-width="${index%3===0?3:2}" />`;
  }).join('');
  return `<svg class="summon-weapon-illustration" viewBox="0 0 180 240" role="${decorative?'presentation':'img'}" aria-label="${decorative?'':escapeAttribute(weapon.name)}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-  <g id="${id}-pixel" data-equipped-weapon="${escapeAttribute(weapon.id)}" data-weapon-shape="${shape}" data-awakening="${rank}">
+  <g id="${id}-pixel" data-weapon-shape="${shape}" data-awakening="${rank}">
    <rect x="13" y="11" width="154" height="218" rx="23" fill="${colors.frame}" opacity=".11"/>
    <rect x="22" y="20" width="136" height="200" rx="18" fill="${colors.paper}" opacity=".07"/>
    <path d="M19 63h12M149 63h12M19 179h12M149 179h12" stroke="${colors.frame}" stroke-width="3" opacity=".8"/>
