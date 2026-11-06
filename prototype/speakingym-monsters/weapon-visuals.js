@@ -59,5 +59,5 @@ export function weaponPixelOverlay(weapon,{legacy=false}={}){
  // New companions have a native 48x44 viewBox, unlike the 180x164 atlas.
  // Keep all 12 silhouettes (and the awakening sparks) INSIDE that viewport.
  return legacy?`<g transform="translate(${legacyX} 17) scale(${legacyScale} ${legacyScale})">${center}</g>`:
-  `<g transform="translate(7 0) scale(.77 .94)">${center}</g>`;
+  `<g transform="translate(6 0) scale(.77 .94)">${center}</g>`;
 }

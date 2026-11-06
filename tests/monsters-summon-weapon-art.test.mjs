@@ -59,7 +59,7 @@ test('all new-character weapons fit the 48x44 atlas and escape hostile IDs',()=>
  for(const shape of silhouettes){
   const weapon={id:`new_${shape}`,rarity:'epic',shape,awakeningRank:3};
   const rendered=weaponPixelOverlay(weapon);
-  assert.match(rendered,/transform="translate\(7 0\) scale\(\.77 \.94\)"/);
+  assert.match(rendered,/transform="translate\(6 0\) scale\(\.77 \.94\)"/);
   assert.match(rendered,new RegExp(`data-weapon-shape="${shape}"`));
   assert.match(rendered,/shape-rendering="crispEdges"/);
  }
