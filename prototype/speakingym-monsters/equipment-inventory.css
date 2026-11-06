@@ -62,6 +62,7 @@
 .collection-weapons #equipment-weapon-status[data-rarity="none"]{
  margin:0;padding:9px 11px;background:#244c5a;border:1px solid #72a4a2;
  border-radius:9px;color:#f5fff8;font-size:13px;line-height:1.6;text-shadow:none}
+.collection-weapons .equipment-current-technique{margin:9px 1px 0;color:#e1eee6;font-size:12px;font-weight:750;line-height:1.6}
 .collection-weapons #equipment-unequip{
  min-height:38px;margin-top:11px;padding:6px 14px;border:2px solid #799bb1;
  border-radius:9px;background:#234355;color:#f0f9fb;font-size:13px;font-weight:800;cursor:pointer}

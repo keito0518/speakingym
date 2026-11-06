@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
-import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
+import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponTechniqueDescription,weaponTechniqueFor,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
 import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
@@ -233,6 +233,36 @@ test('weapon shapes unlock varied second affinities at resonance II without gran
   assert.equal(weaponAffinityBonus(save,second,{independent:false}),0,'Hint-assisted replies cannot benefit');
   assert.match(weaponEffectDescription(save,weapon),/でも追撃＋1/);
  }
+});
+
+test('all sixteen gacha weapon shapes unlock one of four honest tactical signatures without overriding rarity',()=>{
+ const weapons=WEAPONS.filter(item=>item.source==='gacha');
+ const signatures=new Map();
+ for(const weapon of weapons){
+  const save={...createSave(),weaponInventory:[weapon.id],equippedWeaponId:weapon.id};
+  const other=['speak','listen','vocab','grammar'].find(kind=>kind!==weapon.affinity);
+  const signature=weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:other,independent:true});
+  const same=weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:weapon.affinity,independent:true});
+  const found=signature||same;
+  assert.ok(found,`${weapon.id} has a usable signature`);
+  assert.match(weaponTechniqueDescription(weapon),/自力正解.*敵ごと1回/);
+  assert.equal(weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:other,independent:false}),null,
+   'Hints and answer reveals never activate techniques');
+  assert.equal(weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:other,independent:true,used:true}),null,
+   'A tactical signature cannot be farmed repeatedly on the same foe');
+  assert.equal(weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:other,independent:true,canCharge:false,canShield:false,canHeal:false}),null,
+   'Already-full gauges, protected allies and full HP do not burn a signature');
+  assert.equal(found.charge+found.shield+found.heal,1,'A single trigger grants only one capped utility');
+  const existing=signatures.get(weapon.shape);
+  if(existing)assert.equal(found.type,existing,'Each weapon shape has one predictable tactical identity');
+  else signatures.set(weapon.shape,found.type);
+  assert.equal(scaledStrikeDamage(1,1,save,{kind:weapon.affinity,independent:true}),
+   2+weaponAttack(save,weapon)+weaponAffinityBonus(save,weapon.affinity,{independent:true}),
+   'Tactical utility does not secretly raise attack damage');
+ }
+ assert.equal(signatures.size,16);
+ assert.deepEqual(new Set(signatures.values()),new Set(['tempo','pivot','ward','sustain']));
+ assert.equal(weaponTechniqueFor(createSave(),{kind:'speak',independent:true}),null);
 });
 
 test('owned equipment filters keep the equipped item first and safely sort by attack, recent acquisition or resonance',()=>{

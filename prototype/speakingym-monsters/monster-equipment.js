@@ -111,6 +111,18 @@ const SHAPE_SECONDARY_AFFINITY=Object.freeze([
  Object.freeze({speak:'vocab',listen:'grammar',vocab:'speak',grammar:'listen'}),
  Object.freeze({speak:'grammar',listen:'vocab',vocab:'listen',grammar:'speak'})
 ]);
+// These four tactical signatures create reasons to equip different weapon
+// shapes without adding damage or overturning the rarity power hierarchy.
+// Each can activate only once per encounter on independently graded English.
+const WEAPON_TECHNIQUE_BY_SHAPE=Object.freeze({
+ sword:'tempo',dagger:'tempo',axe:'tempo',claw:'tempo',
+ bow:'pivot',spear:'pivot',crossbow:'pivot',scythe:'pivot',
+ shield:'ward',hammer:'ward',staff:'ward',lantern:'ward',
+ flute:'sustain',fan:'sustain',whip:'sustain',ring:'sustain'
+});
+const WEAPON_TECHNIQUE_LABELS=Object.freeze({
+ tempo:'連撃',pivot:'転換',ward:'守勢',sustain:'再生'
+});
 export const AWAKENING_COSTS=Object.freeze({
  common:Object.freeze([2,3,4]),rare:Object.freeze([2,3,5]),
  epic:Object.freeze([3,5,7]),legend:Object.freeze([3,6,9])
@@ -121,6 +133,28 @@ export function weaponSecondaryAffinity(weapon){
  const base=weapon?.id?BY_ID.get(weapon.id)||weapon:weapon;
  const group=SHAPE_RESONANCE_FAMILY[base?.shape];
  return (SHAPE_SECONDARY_AFFINITY[group]||SECONDARY_AFFINITY)[base?.affinity]||null;
+}
+export function weaponTechniqueDescription(weapon){
+ const type=WEAPON_TECHNIQUE_BY_SHAPE[weapon?.shape];
+ if(!type)return '';
+ return {
+  tempo:'連撃：同じ分野を続けて自力正解で必殺ゲージ＋1',
+  pivot:'転換：別の分野へ切り替えて自力正解で必殺ゲージ＋1',
+  ward:'守勢：得意分野を自力正解で次の被ダメージ−1',
+  sustain:'再生：得意分野を自力正解で味方HP＋1'
+ }[type]+'（敵ごと1回）';
+}
+export function weaponTechniqueFor(save,{kind=null,previousKind=null,independent=false,used=false,canCharge=true,canShield=true,canHeal=true}={}){
+ const weapon=equippedWeapon(save);
+ const type=WEAPON_TECHNIQUE_BY_SHAPE[weapon?.shape];
+ if(!type||!independent||used||!kind)return null;
+ const matches=kind===weapon.affinity;
+ const enabled=type==='tempo'?Boolean(previousKind&&previousKind===kind&&canCharge):
+  type==='pivot'?Boolean(previousKind&&previousKind!==kind&&canCharge):
+  type==='ward'?Boolean(matches&&canShield):Boolean(matches&&canHeal);
+ if(!enabled)return null;
+ return {type,name:WEAPON_TECHNIQUE_LABELS[type],charge:Number(type==='tempo'||type==='pivot'),
+  shield:Number(type==='ward'),heal:Number(type==='sustain')};
 }
 export function filteredWeaponInventory(save,{rarity='all',affinity='all',sort='attack'}={}){
  const ids=Array.isArray(save?.weaponInventory)?save.weaponInventory:[];

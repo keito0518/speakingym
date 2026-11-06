@@ -74,6 +74,10 @@ const {chromium,webkit}=require('playwright');
    await page.locator('[data-batch-equip="9"]').click();
    assert.equal(await page.locator('#summon-screen').isHidden(),true);
    assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
+   assert.match(await page.locator('.equipment-current-technique').innerText(),/連撃.*必殺ゲージ＋1/,
+    'The equipped weapon presents its tactical signature next to its regular effect');
+   assert.match(await page.locator('.equipment-item').first().innerText(),/武器技.*連撃/s,
+    'The inventory makes each shape-specific tactical effect visible before equipping');
 
    let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
    assert.equal(saved.coins,1710);
