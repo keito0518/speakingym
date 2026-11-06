@@ -58,7 +58,7 @@ export function monsterHuntBoard(save,today=dayKey()){
     const count=gates.reduce((total,gate)=>total+Math.min(gate.current,gate.required),0);
     const required=gates.reduce((total,gate)=>total+gate.required,0);
     const remaining=gates.filter(gate=>gate.remaining>0);
-    return {id:monster.id,name:monster.name,rarity:monster.rarity||'common',
+    return {id:monster.id,name:monster.name,catalogNo:MONSTERS.indexOf(monster)+1,rarity:monster.rarity||'common',
       score,gates,remaining,progress,count,required,
       percent:required?Math.min(100,Math.round(100*count/required)):100};
   }).sort((a,b)=>a.score-b.score||a.name.localeCompare(b.name));

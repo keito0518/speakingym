@@ -8,6 +8,47 @@
  cursor:pointer;text-align:left;box-shadow:0 4px 0 #18354a}
 .collection-shop .shop-open-inventory span{flex:none;padding:4px 9px;border-radius:8px;background:#ffe4a1;color:#32465a;font-size:12px}
 .collection-shop .shop-open-inventory:focus-visible{outline:3px solid #f8d68a;outline-offset:4px}
+
+/* A quiet summon screen: details and reveal spoilers stay folded away. */
+.shop-gacha-result:empty{display:none}
+.shop-gacha-disclosure{margin:12px 0 0;min-width:0;border:1px solid #718b97;border-radius:13px;background:#122b3e;color:#f4edda;overflow:hidden}
+.shop-gacha-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:50px;padding:11px 13px;cursor:pointer;list-style:none;font-size:14px;font-weight:900;color:#fdf0cc}
+.shop-gacha-disclosure>summary::-webkit-details-marker{display:none}
+.shop-gacha-disclosure>summary::after{content:'＋';font-size:20px;line-height:1;color:#ebcf99;flex:none}
+.shop-gacha-disclosure[open]>summary::after{content:'−'}
+.shop-gacha-disclosure>summary span{margin-left:auto;font-size:11px;color:#c7dfe1;text-align:right;line-height:1.35;font-weight:700}
+.shop-gacha-disclosure>summary:focus-visible{outline:3px solid #fae1a3;outline-offset:-4px}
+.shop-gacha-disclosure-content{padding:0 13px 14px;border-top:1px solid #4c6b78;min-width:0}
+.shop-gacha-disclosure-content>p{font-size:12px!important;line-height:1.7!important;color:#e2edf0!important}
+.shop-gacha-disclosure-content .shop-odds{margin:12px 0}
+.shop-gacha-disclosure-content .shop-pity-tracks{margin:12px 0}
+.shop-gacha-disclosure-content .shop-pity{padding:11px 12px}
+.shop-catalog-tier{margin-top:15px}
+.shop-catalog-tier h4{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 9px;font-size:13px;color:#f7e6bb}
+.shop-catalog-tier h4 span{font-size:12px;color:#c3dbe3}
+.shop-catalog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.shop-catalog-card{display:flex;flex-direction:column;min-width:0;align-items:center;gap:4px;padding:8px 5px 11px;border:1px solid #607e8c;border-radius:10px;background:#254056;color:#f5f0dc;text-align:center}
+.shop-catalog-card.is-mystery{background:#1b3549;border-style:dashed;color:#e5e6db}
+.shop-catalog-card.is-found[data-catalog-rarity="rare"]{border-color:#7cb7d9}
+.shop-catalog-card.is-found[data-catalog-rarity="epic"]{border-color:#bc94d2}
+.shop-catalog-card.is-found[data-catalog-rarity="legend"]{border-color:#e8c075}
+.shop-catalog-image{display:grid;place-items:center;width:68px;max-width:100%;height:75px;overflow:hidden}
+.shop-catalog-image svg{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.shop-unknown-weapon{display:grid;place-items:center;width:47px;height:51px;border:2px solid #68869a;border-radius:8px;background:#2e4b5e;color:#d6ded2;font-size:27px;font-weight:900;line-height:1}
+.shop-catalog-card strong{font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.shop-catalog-card small{font-size:10px;line-height:1.35;color:#c9e2e1;overflow-wrap:anywhere}
+.shop-discovery-rewards{margin-top:16px;padding:11px 12px;border:1px solid #72827c;border-radius:12px;background:#273e50}
+.shop-discovery-rewards>strong{font-size:13px;color:#fff1c5}
+.shop-discovery-rewards>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.shop-discovery-rewards span{min-width:0;padding:9px 6px;border:1px solid #70868d;border-radius:8px;color:#e0e9e8;font-size:11px;text-align:center;font-weight:800}
+.shop-discovery-rewards span.is-earned{border-color:#d6b975;background:#3b4a43;color:#ffe6a3}
+.catalog-card.locked .catalog-portrait svg,.character-portrait.unowned svg{filter:none;opacity:1}
+.catalog-card.locked{border-style:dashed;border-color:#a1b4b6;background:#e4ece9;color:#355362}
+.catalog-card.locked .catalog-portrait{background:radial-gradient(ellipse at 50% 82%,#d6e2d9,transparent 65%)}
+.catalog-card.locked .catalog-evolution{color:#486475}
+.character-mystery .character-portrait{background:radial-gradient(ellipse,#e0efe8,#f7f4e3 70%)}
+@media(min-width:620px){.shop-catalog-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:350px){.shop-gacha-disclosure>summary{padding:10px;font-size:13px}.shop-gacha-disclosure>summary span{font-size:10px}.shop-catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .collection-weapons .forest-treasures-heading h2{font-size:clamp(21px,4.7vw,26px);letter-spacing:.01em}
 .collection-weapons .forest-treasures-heading p{max-width:620px;line-height:1.6}
 .collection-weapons .equipment-current{

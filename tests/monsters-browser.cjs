@@ -183,8 +183,8 @@ const path=require('node:path');
         'Even a confirmed import cannot erase an unseen newer save from the stale tab');
       await tabsContext.close();
     }
-    // Growing the roster must not hide newly catchable species or their
-    // evolution information inside the mobile encyclopedia.
+    // A growing roster remains discoverable, but undiscovered species must
+    // not expose names, art or evolution spoilers before recruitment.
     {
       const {context:catalogContext,page:catalogPage}=await boot(390);
       await enterHomePanel(catalogPage,'collection');
@@ -192,12 +192,14 @@ const path=require('node:path');
       for(const id of ['namihana','michiru','sorella','kometta']){
         const entry=catalogPage.locator(`[data-open-monster="${id}"]`);
         assert.equal(await entry.count(),1,`The ${id} catalog entry must appear`);
+        assert.match(await entry.innerText(),/？？？/);
+        assert.doesNotMatch(await entry.innerText(),new RegExp(id,'i'));
+        assert.equal(await entry.locator('[data-pixel-sprite]').count(),0);
         await entry.click();
         assert.equal(await catalogPage.locator('#detail-content .character-portrait').count(),1);
-        assert.equal(await catalogPage.locator('#detail-content .evolution-path span[lang="en"]').count(),3,
-          `The ${id} profile must show all three named forms`);
-        assert.match(await catalogPage.locator('#detail-content .character-portrait').innerHTML(),
-          new RegExp(`data-pixel-sprite="${id}"`));
+        assert.match(await catalogPage.locator('#detail-content').innerText(),/？？？.*未発見の仲間/s);
+        assert.equal(await catalogPage.locator('#detail-content .evolution-path').count(),0);
+        assert.equal(await catalogPage.locator('#detail-content [data-pixel-sprite]').count(),0);
         await catalogPage.locator('#detail-back').click();
       }
       await catalogContext.close();

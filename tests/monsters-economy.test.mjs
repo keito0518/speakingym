@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
 import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
-import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,
+import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
 import {SUMMON_TIMINGS} from '../prototype/speakingym-monsters/gacha-cinematic.js';
 
@@ -98,6 +98,34 @@ test('a draw spends gold exactly once, duplicate refunds are bounded and the pla
  const equipped=equipWeapon(one.save,one.weapon.id);
  assert.equal(equippedWeapon(equipped)?.id,one.weapon.id);
  assert.ok(scaledStrikeDamage(1,1,equipped)>scaledStrikeDamage(1,1,ready));
+});
+
+test('discovery rewards unlock on new weapons only, once per collection milestone',()=>{
+ const pool=WEAPONS.filter(w=>w.source==='gacha');
+ assert.deepEqual(WEAPON_DISCOVERY_REWARDS.map(x=>x.count),[5,12,24,40]);
+ const four=pool.filter(w=>w.rarity==='common').slice(0,4).map(w=>w.id);
+ const ready={...createSave(),coins:120,weaponInventory:four};
+ assert.deepEqual(weaponDiscoveryProgress(ready),{found:4,total:40,next:{count:5,gold:120},remaining:1});
+ const milestone=drawWeaponGacha(ready,{random:()=>.99});
+ assert.equal(milestone.duplicate,false);
+ assert.equal(milestone.discoveryGold,120);
+ assert.equal(milestone.save.coins,120);
+ assert.equal(weaponDiscoveryProgress(milestone.save).found,5);
+ const repeated=drawWeaponGacha(milestone.save,{random:()=>.99});
+ assert.equal(repeated.duplicate,true);
+ assert.equal(repeated.discoveryGold,0);
+ assert.equal(repeated.save.coins,20);
+ const batch=drawWeaponGachaTen({...ready,coins:1200},{random:()=>.99});
+ assert.equal(batch.discoveryGold,120,'Ten-pull pays the milestone at most once');
+ assert.equal(batch.results.filter(item=>item.discoveryGold).length,1);
+ assert.equal(batch.save.coins,280,'Ten pulls, eight refunds and one milestone');
+ const almostFull={...createSave(),coins:120,weaponInventory:pool.filter(w=>w.id!=='seraph_claw').map(w=>w.id),pullsSinceEpic:24};
+ const complete=drawWeaponGacha(almostFull,{random:()=>.99});
+ assert.equal(complete.weapon.id,'seraph_claw');
+ assert.equal(complete.discoveryGold,600);
+ assert.equal(complete.save.coins,600);
+ assert.equal(weaponDiscoveryProgress(complete.save).next,null);
+ assert.deepEqual(validateSave(complete.save),complete.save);
 });
 
 test('duplicates are weapon-specific awakening shards; voluntary 3-stage growth preserves level, odds, refund and save',()=>{

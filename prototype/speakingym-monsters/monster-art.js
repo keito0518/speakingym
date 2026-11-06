@@ -13,6 +13,12 @@ const IDS=Object.freeze([
 const CELL_WIDTH=48,CELL_HEIGHT=44,ATLAS_WIDTH=IDS.length*CELL_WIDTH;
 let nextClip=0;
 
+// Catalog placeholders must never leak the silhouette or asset ID of a
+// companion before it has actually joined the party.
+export function mysteryMonsterArt(){
+ return '<svg viewBox="0 0 180 164" class="monster-svg pixel-art mystery-monster-art" role="img" aria-label="未発見の仲間" xmlns="http://www.w3.org/2000/svg"><g shape-rendering="crispEdges"><path d="M50 141h80v8H50z" fill="#b9cfce"/><path d="M62 62h56v16h14v50H48V78h14z" fill="#637f8c"/><path d="M70 44h40v16H70z" fill="#637f8c"/><path d="M54 79h8v43h-8zM118 79h8v43h-8z" fill="#415f72"/><path d="M78 66h24v11H90v12H79v-12h-1zM79 99h11v11H79z" fill="#f8ebbc"/><rect x="37" y="52" width="8" height="8" fill="#b8d8d1"/><rect x="137" y="37" width="6" height="6" fill="#d6e3c5"/><rect x="143" y="96" width="7" height="7" fill="#c9dbcf"/></g></svg>';
+}
+
 export function monsterArt(id,form=false,weapon=null){
   // Keep the established 15-character atlas intact; new residents have their
   // own authored, crisp-edged silhouettes at the same native pixel scale.
@@ -22,7 +28,7 @@ export function monsterArt(id,form=false,weapon=null){
   const index=IDS.indexOf(id);
   if(index<0){
     // Unknown catalog entries stay undiscovered rather than reusing Yolkie.
-    return '<svg viewBox="0 0 180 164" class="monster-svg pixel-art" role="img" aria-label="未発見のモンスター" xmlns="http://www.w3.org/2000/svg"><rect x="39" y="28" width="102" height="108" fill="#a1afa4"/><rect x="49" y="38" width="82" height="88" fill="#dce5db"/><path d="M75 67h30v12H93v15H81V79h-6Z" fill="#758b7a"/><rect x="81" y="103" width="12" height="12" fill="#758b7a"/></svg>';
+    return mysteryMonsterArt();
   }
   // Accept the historical boolean API while letting all screens show stage 2.
   const evolved=stage>=1,ascended=stage===2;

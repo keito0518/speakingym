@@ -335,7 +335,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
      const picker=hunt.querySelector('#hunt-target-select');
      picker.replaceChildren(...board.options.map(entry=>{
        const item=document.createElement('option');item.value=entry.id;
-       item.textContent=`${entry.name} · ${entry.rarity.toUpperCase()} · ${entry.percent}%`;
+       item.textContent=`No.${String(entry.catalogNo).padStart(2,'0')} · ？？？ · 発見まで ${entry.percent}%`;
        return item;
      }));
      picker.disabled=!board.selected;

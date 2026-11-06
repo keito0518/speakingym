@@ -8,6 +8,14 @@ export const GACHA_TEN_PULL_COST=GACHA_COST*GACHA_TEN_PULL_COUNT;
 export const GACHA_ODDS=Object.freeze({common:67,rare:26,epic:6,legend:1});
 export const RARE_PITY=7;
 export const EPIC_PITY=25;
+// One-time rewards for discovering distinct gacha weapons. Progress is
+// derived from owned IDs, so no claim button or new save field is needed.
+export const WEAPON_DISCOVERY_REWARDS=Object.freeze([
+ Object.freeze({count:5,gold:120}),
+ Object.freeze({count:12,gold:240}),
+ Object.freeze({count:24,gold:360}),
+ Object.freeze({count:40,gold:600})
+]);
 export const TREASURES=Object.freeze([
  {id:'amber_leaf',name:'琥珀の葉',world:'forest',price:24},
  {id:'glowing_spore',name:'ひかる胞子',world:'forest',price:30},
@@ -57,6 +65,13 @@ export function summonPityProgress(save){
  return {rare:progress(economy.pullsSinceRare,RARE_PITY),
   epic:progress(economy.pullsSinceEpic,EPIC_PITY)};
 }
+export function weaponDiscoveryProgress(save){
+ const owned=new Set(Array.isArray(save?.weaponInventory)?save.weaponInventory:[]);
+ const found=WEAPONS.filter(weapon=>weapon.source==='gacha'&&owned.has(weapon.id)).length;
+ const next=WEAPON_DISCOVERY_REWARDS.find(reward=>reward.count>found)||null;
+ return {found,total:WEAPONS.filter(weapon=>weapon.source==='gacha').length,
+  next,remaining:next?next.count-found:0};
+}
 export function grantDungeonTreasure(save,{areaId,independent=0,firstClear=false,random=Math.random}={}){
  const areas=['entry','glade','thicket','sanctuary','city','city-market','city-terminal','city-blizzard','ruins-gate','ruins-core'];
  const index=areas.indexOf(areaId);
@@ -102,14 +117,20 @@ export function drawWeaponGacha(save,{random=Math.random}={}){
  const owned=Array.isArray(save.weaponInventory)?save.weaponInventory:[];
  const duplicate=owned.includes(weapon.id);
  const refund=duplicate?({common:20,rare:35,epic:60,legend:90}[tier]):0;
+ const beforeDiscoveries=weaponDiscoveryProgress(save).found;
+ const discoveryGold=duplicate?0:WEAPON_DISCOVERY_REWARDS
+  .filter(reward=>beforeDiscoveries<reward.count&&beforeDiscoveries+1>=reward.count)
+  .reduce((total,reward)=>total+reward.gold,0);
  const nextWithShard=duplicate?grantDuplicateShard(save,weapon.id):save;
- const saveNext={...nextWithShard,coins:Math.min(maxCoins,economy.coins-GACHA_COST+refund),
+ const nextCoins=Math.min(maxCoins,economy.coins-GACHA_COST+refund+discoveryGold);
+ const saveNext={...nextWithShard,coins:nextCoins,
   weaponInventory:duplicate?owned:[...owned,weapon.id],
   equippedWeaponId:save.equippedWeaponId??null,
   gachaPullCount:Math.min(1000000,economy.gachaPullCount+1),
   pullsSinceRare:['rare','epic','legend'].includes(tier)?0:economy.pullsSinceRare+1,
   pullsSinceEpic:['epic','legend'].includes(tier)?0:economy.pullsSinceEpic+1};
- return {save:saveNext,weapon,duplicate,refund,tier,shardGained:duplicate?1:0};
+ return {save:saveNext,weapon,duplicate,refund,tier,shardGained:duplicate?1:0,
+  discoveryGold:nextCoins-(economy.coins-GACHA_COST+refund)};
 }
 // The ten-pull is a convenience, not a discount or a separate rarity pool.
 // Require the full 1,200 G up front: duplicate refunds cannot bankroll draws
@@ -124,10 +145,11 @@ export function drawWeaponGachaTen(save,{random=Math.random}={}){
   const result=drawWeaponGacha(next,{random});
   if(!result.weapon)throw Error('Ten-pull funds must cover every draw');
   next=result.save;
-  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund,shardGained:result.shardGained});
+  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund,shardGained:result.shardGained,discoveryGold:result.discoveryGold});
  }
  return {save:next,results,spent:GACHA_TEN_PULL_COST,
-  refunded:results.reduce((sum,item)=>sum+item.refund,0)};
+  refunded:results.reduce((sum,item)=>sum+item.refund,0),
+  discoveryGold:results.reduce((sum,item)=>sum+item.discoveryGold,0)};
 }
 export function gachaPoolSummary(){
  return tiers.map(rarity=>({rarity,count:WEAPONS.filter(w=>w.source==='gacha'&&w.rarity===rarity).length,odds:GACHA_ODDS[rarity]}));

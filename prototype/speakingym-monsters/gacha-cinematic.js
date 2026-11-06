@@ -161,6 +161,10 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-story').textContent=active.results?
    `10連召喚結果 · 新規入手 ${active.results.filter(item=>!item.duplicate).length} 種`:
    active.duplicate?'所持済み武器を獲得':'新しい武器を獲得';
+  root.querySelector('#summon-title').textContent=active.results?'10連召喚 結果':active.weapon.name;
+  root.querySelector('#summon-attack').textContent=active.results?
+   `消費 ${active.spent} G · 重複返還 ${active.refunded} G${active.discoveryGold?` · 図鑑報酬＋${active.discoveryGold} G`:''}`:
+   `ATTACK +${active.weapon.attack} · ${active.affinity}${active.discoveryGold?` · 図鑑報酬＋${active.discoveryGold} G`:''}`;
   root.querySelector('#summon-skip').hidden=true;
   root.querySelector('#summon-equip').hidden=Boolean(active.results);
   root.querySelector('#summon-repeat').hidden=!active.canRepeat;
@@ -182,9 +186,8 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-tier-splash-text').textContent=best.tier==='legend'?'LEGEND':best.tier==='epic'?'EPIC':'RARE';
   root.querySelector('#summon-story').textContent=batch?'10連ガチャ · 宝箱を開封':'宝箱を開封';
   root.querySelector('#summon-rarity').textContent=batch?'10連ガチャ · '+rarity.label:rarity.label+' · '+rarity.name;
-  root.querySelector('#summon-title').textContent=batch?'10連召喚 結果':data.weapon.name;
-  root.querySelector('#summon-attack').textContent=batch?`消費 ${data.spent} G · 重複返還 ${data.refunded} G`:
-   `ATTACK +${data.weapon.attack} · ${data.affinity}`;
+  root.querySelector('#summon-title').textContent='武器召喚';
+  root.querySelector('#summon-attack').textContent='';
   root.querySelector('#summon-duplicate').hidden=batch||!data.duplicate;
   root.querySelector('#summon-duplicate').textContent=!batch&&data.duplicate?`所持済み：${data.refund} G 返還 ＋ 覚醒の欠片1個`:'';
   root.querySelector('#summon-reveal-art').innerHTML=`<div class="summon-weapon-pedestal">${summonWeaponArtwork(best.weapon,{instance:'main'})}</div>`;

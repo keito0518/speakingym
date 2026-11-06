@@ -39,7 +39,10 @@ const {chromium,webkit}=require('playwright');
     // not an additional transaction and equipping changes the hero's sprite.
     await page.locator('[data-feature-armory]').click();
     assert.equal(await page.locator('#shop-draw').isEnabled(),true);
+    assert.equal(await page.locator('.shop-odds').isVisible(),false);
+    await page.locator('#shop-gacha-details summary').click();
     assert.match(await page.locator('.shop-odds').innerText(),/67%.*26%.*6%.*1%/s);
+    await page.locator('#shop-gacha-details summary').click();
     await page.evaluate(()=>{Math.random=()=>.009;});
     await page.locator('#shop-draw').click();
     assert.equal(await page.locator('#summon-screen').getAttribute('data-rarity'),'legend');
