@@ -810,7 +810,9 @@ body.summon-active{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.summon-vault-stage::before,.prism-light-streaks>span{animation:none!important}}
 .monsters-quiet-motion .summon-vault-stage::before,.monsters-quiet-motion .prism-light-streaks>span{animation:none!important}
 @keyframes prism-core-pulse{to{box-shadow:0 0 0 16px #72e2ff17,0 0 68px #43f6ffd8,inset 0 0 63px #81efff88;filter:brightness(1.22)}}
-@keyframes prism-control-float{to{transform:translate(-50%,-53%) rotate(45deg);box-shadow:0 0 0 5px #07112dcc,0 0 0 10px #5bdeff9d,0 0 70px #44e0ffcf}}
+/* Never animate the touch target's bounding box: iPhone taps and automated
+   browsers must see a stable control while its lighting still pulses. */
+@keyframes prism-control-float{to{box-shadow:0 0 0 5px #07112dcc,0 0 0 10px #5bdeff9d,0 0 70px #44e0ffcf;filter:brightness(1.13)}}
 @keyframes prism-orbit{to{transform:rotate(360deg)}}
 @keyframes prism-scan{to{transform:translateY(90px)}}
 @keyframes prism-banner-sweep{0%,25%{transform:translateX(-60%)}75%,100%{transform:translateX(75%)}}
