@@ -3,7 +3,7 @@ import test from 'node:test';
 import {summonWeaponArtwork} from '../prototype/speakingym-monsters/summon-weapon-art.js';
 import {weaponPixelOverlay} from '../prototype/speakingym-monsters/weapon-visuals.js';
 
-const silhouettes=['sword','dagger','spear','staff','bow','hammer','axe','scythe','crossbow','claw','shield','whip'];
+const silhouettes=['sword','dagger','spear','staff','bow','hammer','axe','scythe','crossbow','claw','shield','whip','fan','flute','lantern','ring'];
 
 test('every weapon class has a matching crisp pixel summon portrait, not glossy vector art',()=>{
  const illustrations=silhouettes.map(shape=>summonWeaponArtwork({
@@ -33,7 +33,7 @@ test('a duplicate can display multiple instances without colliding art IDs',()=>
  assert.match(tenth,/id="summon-comet_bow-batch-9-pixel"/);
  assert.match(main,/data-awakening="3"/);
  assert.match(tenth,/role="presentation"/);
- assert.match(main,/fill="#ffe488"/);
+ assert.match(main,/fill="#fffdf1"/);
 });
 
 test('malformed weapon metadata cannot inject markup or unbounded gradient identifiers',()=>{
@@ -54,7 +54,7 @@ test('equipped weapon sprites have hand-authored pixels and do not cover the cla
   assert.match(art,/transform="translate\(34 17\) scale\(2.65 2.65\)"/);
   assert.match(art,/shape-rendering="crispEdges"/);
   assert.match(art,/data-equipped-weapon="hero_/);
-  assert.match(art,/fill="#ffe488"/,'Every weapon gets a jewel-colored pixel detail');
+  assert.match(art,/fill="#fffdf1"/,'Every weapon gets a jewel-colored pixel detail');
  }
  assert.match(weaponPixelOverlay({id:'shield',shape:'shield',rarity:'rare'},{legacy:true}),/translate\(34 17\) scale\(2.65 2.65\)/);
  assert.ok(34+54*2.65<180,'Even a fully awakened classic weapon stays inside the 180px atlas');
@@ -71,4 +71,14 @@ test('all new-character weapons fit the 48x44 atlas and escape hostile IDs',()=>
  const hostile=weaponPixelOverlay({id:'"><script>alert(1)</script>',rarity:'rare',shape:'sword'});
  assert.doesNotMatch(hostile,/<script>/);
  assert.match(hostile,/data-equipped-weapon="&quot;&gt;&lt;script&gt;/);
+});
+
+test('each duplicate resonance stage has a distinct pixel palette within its original rarity',()=>{
+ for(const rarity of ['common','rare','epic','legend']){
+  const variants=Array.from({length:4},(_,rank)=>weaponPixelOverlay({id:'tint_test',shape:'fan',rarity,awakeningRank:rank}));
+  assert.equal(new Set(variants).size,4,`${rarity} has four distinguishable palettes`);
+  for(let rank=0;rank<4;rank++)assert.match(variants[rank],new RegExp(`data-awakening="${rank}"`));
+  assert.notEqual(variants[0].match(/fill="#[0-9a-f]{6}"/ig)?.join('|'),variants[1].match(/fill="#[0-9a-f]{6}"/ig)?.join('|'),
+   'First duplicate changes the actual weapon pixels');
+ }
 });

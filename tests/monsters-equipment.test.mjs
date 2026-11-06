@@ -91,5 +91,5 @@ test('elite-only weapons are earned at the fifth encounter after two unaided hit
  const restored=validateSave(star.save);
  assert.equal(restored.weaponInventory.length,3);
  assert.equal(restored.equippedWeaponId,'moss_fang','old and new equipment restore safely');
- assert.equal(WEAPONS.length,56);
+ assert.equal(WEAPONS.length,80);
 });

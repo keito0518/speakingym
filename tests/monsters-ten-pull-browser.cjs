@@ -81,7 +81,7 @@ const {chromium,webkit}=require('playwright');
    await page.reload({waitUntil:'networkidle'});
    assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1);
    await page.locator('#game-tabs [data-game-tab="forge"]').click();
-   assert.match(await page.locator('.shop-collection-copy').innerText(),/1 \/ 40 種/);
+   assert.match(await page.locator('.shop-collection-copy').innerText(),/1 \/ 64 種/);
    const horizontal=await page.evaluate(()=>({view:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(horizontal.scroll<=horizontal.view+1,`${name}/${width}: overflow ${JSON.stringify(horizontal)}`);
    assert.deepEqual(errors,[],`${name}/${width}: page errors`);

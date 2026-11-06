@@ -34,32 +34,56 @@ export const WEAPONS=Object.freeze([
  {id:'oak_shield',name:'樫の盾',attack:3,rarity:'common',source:'gacha',affinity:'speak',shape:'shield'},
  {id:'tidal_whip',name:'潮風の鞭',attack:3,rarity:'common',source:'gacha',affinity:'listen',shape:'whip'},
  {id:'amber_sabre',name:'琥珀の曲刀',attack:4,rarity:'common',source:'gacha',affinity:'grammar',shape:'sword'},
- {id:'silver_edge',name:'銀月の刃',attack:5,rarity:'rare',source:'gacha',affinity:'speak',shape:'sword'},
- {id:'north_bow',name:'北風の弓',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'bow'},
- {id:'rune_hammer',name:'刻印ハンマー',attack:5,rarity:'rare',source:'gacha',affinity:'grammar',shape:'hammer'},
- {id:'ivy_lance',name:'蔦の長槍',attack:5,rarity:'rare',source:'gacha',affinity:'vocab',shape:'spear'},
- {id:'aurora_wand',name:'極光のワンド',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'staff'},
- {id:'meteor_axe',name:'流星の斧',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'axe'},
- {id:'mirror_dagger',name:'鏡合わせの短剣',attack:5,rarity:'rare',source:'gacha',affinity:'grammar',shape:'dagger'},
- {id:'coral_sword',name:'珊瑚の剣',attack:6,rarity:'rare',source:'gacha',affinity:'vocab',shape:'sword'},
- {id:'crystal_scythe',name:'水晶の大鎌',attack:6,rarity:'rare',source:'gacha',affinity:'grammar',shape:'scythe'},
- {id:'comet_crossbow',name:'彗星の弩',attack:6,rarity:'rare',source:'gacha',affinity:'vocab',shape:'crossbow'},
- {id:'wolf_claw',name:'白狼の爪',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'claw'},
- {id:'midnight_shield',name:'夜半の盾',attack:5,rarity:'rare',source:'gacha',affinity:'listen',shape:'shield'},
- {id:'tempest_whip',name:'疾風の鞭',attack:5,rarity:'rare',source:'gacha',affinity:'speak',shape:'whip'},
- {id:'thunder_javelin',name:'雷鳴の投槍',attack:7,rarity:'epic',source:'gacha',affinity:'speak',shape:'spear'},
- {id:'glacier_bow',name:'氷河の弓',attack:7,rarity:'epic',source:'gacha',affinity:'listen',shape:'bow'},
- {id:'oracle_staff',name:'予言者の杖',attack:7,rarity:'epic',source:'gacha',affinity:'grammar',shape:'staff'},
- {id:'titan_hammer',name:'巨人のハンマー',attack:7,rarity:'epic',source:'gacha',affinity:'vocab',shape:'hammer'},
- {id:'solar_blade',name:'太陽の聖剣',attack:8,rarity:'epic',source:'gacha',affinity:'speak',shape:'sword'},
- {id:'night_reaper',name:'夜渡りの大鎌',attack:8,rarity:'epic',source:'gacha',affinity:'listen',shape:'axe'},
- {id:'eclipse_scythe',name:'月蝕の大鎌',attack:8,rarity:'epic',source:'gacha',affinity:'vocab',shape:'scythe'},
- {id:'storm_crossbow',name:'轟雷の連弩',attack:8,rarity:'epic',source:'gacha',affinity:'listen',shape:'crossbow'},
- {id:'seraph_claw',name:'星翼の爪',attack:8,rarity:'epic',source:'gacha',affinity:'grammar',shape:'claw'},
- {id:'eternal_crest',name:'永遠の星剣',attack:9,rarity:'legend',source:'gacha',affinity:'grammar',shape:'sword'},
- {id:'worldtree_scepter',name:'世界樹の宝杖',attack:9,rarity:'legend',source:'gacha',affinity:'vocab',shape:'staff'},
- {id:'celestial_aegis',name:'天穹の聖盾',attack:9,rarity:'legend',source:'gacha',affinity:'speak',shape:'shield'},
- {id:'infinity_whip',name:'無窮の星鞭',attack:9,rarity:'legend',source:'gacha',affinity:'listen',shape:'whip'}
+ {id:'bamboo_blade',name:'青竹の刀',attack:4,rarity:'common',source:'gacha',affinity:'vocab',shape:'sword'},
+ {id:'pebble_mallet',name:'小石の槌',attack:3,rarity:'common',source:'gacha',affinity:'grammar',shape:'hammer'},
+ {id:'brook_sickle',name:'小川の鎌',attack:3,rarity:'common',source:'gacha',affinity:'listen',shape:'scythe'},
+ {id:'windmill_spear',name:'風車の槍',attack:4,rarity:'common',source:'gacha',affinity:'speak',shape:'spear'},
+ {id:'morning_fan',name:'朝焼けの扇',attack:3,rarity:'common',source:'gacha',affinity:'speak',shape:'fan'},
+ {id:'reed_flute',name:'葦笛',attack:4,rarity:'common',source:'gacha',affinity:'listen',shape:'flute'},
+ {id:'sakura_claw',name:'桜色の爪',attack:4,rarity:'common',source:'gacha',affinity:'grammar',shape:'claw'},
+ {id:'cloud_shield',name:'雲間の盾',attack:3,rarity:'common',source:'gacha',affinity:'vocab',shape:'shield'},
+ {id:'silver_edge',name:'銀月の刃',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'sword'},
+ {id:'north_bow',name:'北風の弓',attack:6,rarity:'rare',source:'gacha',affinity:'listen',shape:'bow'},
+ {id:'rune_hammer',name:'刻印ハンマー',attack:6,rarity:'rare',source:'gacha',affinity:'grammar',shape:'hammer'},
+ {id:'ivy_lance',name:'蔦の長槍',attack:6,rarity:'rare',source:'gacha',affinity:'vocab',shape:'spear'},
+ {id:'aurora_wand',name:'極光のワンド',attack:6,rarity:'rare',source:'gacha',affinity:'listen',shape:'staff'},
+ {id:'meteor_axe',name:'流星の斧',attack:7,rarity:'rare',source:'gacha',affinity:'speak',shape:'axe'},
+ {id:'mirror_dagger',name:'鏡合わせの短剣',attack:6,rarity:'rare',source:'gacha',affinity:'grammar',shape:'dagger'},
+ {id:'coral_sword',name:'珊瑚の剣',attack:7,rarity:'rare',source:'gacha',affinity:'vocab',shape:'sword'},
+ {id:'crystal_scythe',name:'水晶の大鎌',attack:7,rarity:'rare',source:'gacha',affinity:'grammar',shape:'scythe'},
+ {id:'comet_crossbow',name:'彗星の弩',attack:7,rarity:'rare',source:'gacha',affinity:'vocab',shape:'crossbow'},
+ {id:'wolf_claw',name:'白狼の爪',attack:7,rarity:'rare',source:'gacha',affinity:'speak',shape:'claw'},
+ {id:'midnight_shield',name:'夜半の盾',attack:6,rarity:'rare',source:'gacha',affinity:'listen',shape:'shield'},
+ {id:'tempest_whip',name:'疾風の鞭',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'whip'},
+ {id:'frostbell_staff',name:'氷鈴の杖',attack:6,rarity:'rare',source:'gacha',affinity:'listen',shape:'staff'},
+ {id:'nightfall_bow',name:'宵空の弓',attack:7,rarity:'rare',source:'gacha',affinity:'vocab',shape:'bow'},
+ {id:'lantern_staff',name:'灯籠の杖',attack:6,rarity:'rare',source:'gacha',affinity:'speak',shape:'lantern'},
+ {id:'tideglass_ring',name:'潮鏡の輪',attack:7,rarity:'rare',source:'gacha',affinity:'grammar',shape:'ring'},
+ {id:'ember_scythe',name:'残り火の鎌',attack:7,rarity:'rare',source:'gacha',affinity:'speak',shape:'scythe'},
+ {id:'horizon_lance',name:'水平線の槍',attack:6,rarity:'rare',source:'gacha',affinity:'listen',shape:'spear'},
+ {id:'thunderbell_hammer',name:'雷鈴の槌',attack:7,rarity:'rare',source:'gacha',affinity:'vocab',shape:'hammer'},
+ {id:'snowflake_shield',name:'雪花の盾',attack:6,rarity:'rare',source:'gacha',affinity:'grammar',shape:'shield'},
+ {id:'thunder_javelin',name:'雷鳴の投槍',attack:9,rarity:'epic',source:'gacha',affinity:'speak',shape:'spear'},
+ {id:'glacier_bow',name:'氷河の弓',attack:9,rarity:'epic',source:'gacha',affinity:'listen',shape:'bow'},
+ {id:'oracle_staff',name:'予言者の杖',attack:9,rarity:'epic',source:'gacha',affinity:'grammar',shape:'staff'},
+ {id:'titan_hammer',name:'巨人のハンマー',attack:9,rarity:'epic',source:'gacha',affinity:'vocab',shape:'hammer'},
+ {id:'solar_blade',name:'太陽の聖剣',attack:10,rarity:'epic',source:'gacha',affinity:'speak',shape:'sword'},
+ {id:'night_reaper',name:'夜渡りの大鎌',attack:10,rarity:'epic',source:'gacha',affinity:'listen',shape:'axe'},
+ {id:'eclipse_scythe',name:'月蝕の大鎌',attack:10,rarity:'epic',source:'gacha',affinity:'vocab',shape:'scythe'},
+ {id:'storm_crossbow',name:'轟雷の連弩',attack:10,rarity:'epic',source:'gacha',affinity:'listen',shape:'crossbow'},
+ {id:'seraph_claw',name:'星翼の爪',attack:10,rarity:'epic',source:'gacha',affinity:'grammar',shape:'claw'},
+ {id:'aurora_saber',name:'極光の刀',attack:9,rarity:'epic',source:'gacha',affinity:'speak',shape:'sword'},
+ {id:'boreal_flute',name:'白夜の笛',attack:10,rarity:'epic',source:'gacha',affinity:'listen',shape:'flute'},
+ {id:'moonrabbit_fan',name:'月兎の扇',attack:9,rarity:'epic',source:'gacha',affinity:'grammar',shape:'fan'},
+ {id:'volcanic_axe',name:'火山の斧',attack:10,rarity:'epic',source:'gacha',affinity:'vocab',shape:'axe'},
+ {id:'tempest_claw',name:'乱気流の爪',attack:9,rarity:'epic',source:'gacha',affinity:'speak',shape:'claw'},
+ {id:'stardust_scythe',name:'星屑の鎌',attack:10,rarity:'epic',source:'gacha',affinity:'grammar',shape:'scythe'},
+ {id:'eternal_crest',name:'永遠の星剣',attack:13,rarity:'legend',source:'gacha',affinity:'grammar',shape:'sword'},
+ {id:'worldtree_scepter',name:'世界樹の宝杖',attack:13,rarity:'legend',source:'gacha',affinity:'vocab',shape:'staff'},
+ {id:'celestial_aegis',name:'天穹の聖盾',attack:13,rarity:'legend',source:'gacha',affinity:'speak',shape:'shield'},
+ {id:'infinity_whip',name:'無窮の星鞭',attack:13,rarity:'legend',source:'gacha',affinity:'listen',shape:'whip'},
+ {id:'skyline_lantern',name:'天際の灯籠',attack:13,rarity:'legend',source:'gacha',affinity:'listen',shape:'lantern'},
+ {id:'prism_ring',name:'七彩の輪',attack:14,rarity:'legend',source:'gacha',affinity:'vocab',shape:'ring'}
 ].map(item=>Object.freeze(item)));
 
 const BY_ID=new Map(WEAPONS.map(item=>[item.id,item]));
@@ -67,6 +91,10 @@ const AREA_WORLD=Object.freeze({entry:'forest',glade:'forest',thicket:'forest',s
 export const WEAPON_RARITY_LABELS=Object.freeze({common:'通常',rare:'レア',epic:'エピック',legend:'伝説'});
 export const WEAPON_AFFINITY_LABELS=Object.freeze({speak:'Speak',listen:'Listen',vocab:'単語',grammar:'文法'});
 export const MAX_WEAPON_AWAKENING=3;
+// Gacha rarity bands cannot be overturned by duplicate-powered upgrades.
+// The highest possible attack in one tier is below the base of the next.
+export const GACHA_ATTACK_CAPS=Object.freeze({common:4,rare:7,epic:10,legend:15});
+const SECONDARY_AFFINITY=Object.freeze({speak:'listen',listen:'speak',vocab:'grammar',grammar:'vocab'});
 export const AWAKENING_COSTS=Object.freeze({
  common:Object.freeze([2,3,4]),rare:Object.freeze([2,3,5]),
  epic:Object.freeze([3,5,7]),legend:Object.freeze([3,6,9])
@@ -89,7 +117,10 @@ export function awakeningProgress(save,id){
  const rank=owned?countUpTo(save?.weaponAwakening?.[id],MAX_WEAPON_AWAKENING):0;
  const shards=owned?countUpTo(save?.weaponShards?.[id],999):0;
  const requirement=owned&&rank<MAX_WEAPON_AWAKENING?AWAKENING_COSTS[weapon.rarity][rank]:0;
- return {rank,shards,requirement,canAwaken:Boolean(requirement&&shards>=requirement),maxed:owned&&rank===MAX_WEAPON_AWAKENING};
+ // The FIRST duplicate immediately changes the sprite and its skill effect.
+ // Spending shards on a permanent awakening never reverts that change.
+ const visualRank=owned?Math.min(MAX_WEAPON_AWAKENING,rank+(shards>0?1:0)):0;
+ return {rank,shards,visualRank,requirement,canAwaken:Boolean(requirement&&shards>=requirement),maxed:owned&&rank===MAX_WEAPON_AWAKENING};
 }
 export function grantDuplicateShard(save,id){
  if(!weaponById(id)||!save?.weaponInventory?.includes(id))return save;
@@ -103,12 +134,22 @@ export function awakenWeapon(save,id){
  return {save:{...save,weaponShards,weaponAwakening:{...save.weaponAwakening,[id]:rank+1}},awakened:true,rank:rank+1};
 }
 export function weaponAttack(save,weapon){
- return (weapon?.attack||0)+(weapon?.id?awakeningProgress(save,weapon.id).rank:0);
+ if(!weapon)return 0;
+ // Recompute from the canonical catalogue. An equipped/display copy already
+ // contains calculated attack and must never accidentally add awakening twice.
+ const base=BY_ID.get(weapon.id)||weapon;
+ const result=(base.attack||0)+(base.id?awakeningProgress(save,base.id).rank:0);
+ if(base.source!=='gacha')return result;
+ const rarityCap=GACHA_ATTACK_CAPS[base.rarity]||result;
+ // Even within legendary weapons, a weaker starting item may catch up but
+ // never pass the stronger base item through awakening alone.
+ const personalCap=base.rarity==='legend'?base.attack+1:rarityCap;
+ return Math.min(rarityCap,personalCap,result);
 }
 export function equippedWeapon(save){
  const weapon=Array.isArray(save?.weaponInventory)&&save.weaponInventory.includes(save?.equippedWeaponId)
    ?BY_ID.get(save.equippedWeaponId)||null:null;
- return weapon?{...weapon,attack:weaponAttack(save,weapon),awakeningRank:awakeningProgress(save,weapon.id).rank}:null;
+ return weapon?{...weapon,attack:weaponAttack(save,weapon),awakeningRank:awakeningProgress(save,weapon.id).visualRank}:null;
 }
 export function equipWeapon(save,id){
  if(id!==null&&(!BY_ID.has(id)||!Array.isArray(save.weaponInventory)||!save.weaponInventory.includes(id)))return save;
@@ -123,7 +164,18 @@ export function levelAttackBonus(level=1){
 // the mandatory three independently checked boss seals.
 export function weaponAffinityBonus(save,kind,{independent=false}={}){
  const weapon=equippedWeapon(save);
- return independent&&kind&&weapon?.affinity===kind?(['epic','legend'].includes(weapon.rarity)?2:1):0;
+ if(!independent||!kind||!weapon)return 0;
+ const baseline=['epic','legend'].includes(weapon.rarity)?2:1;
+ if(kind===weapon.affinity)return baseline+(weapon.awakeningRank>0?1:0);
+ return weapon.awakeningRank>=2&&kind===SECONDARY_AFFINITY[weapon.affinity]?
+  (weapon.awakeningRank>=3?2:1):0;
+}
+export function weaponEffectDescription(save,weapon){
+ if(!weapon)return '';
+ const stage=weapon.id?awakeningProgress(save,weapon.id).visualRank:0;
+ const primary=['epic','legend'].includes(weapon.rarity)?2:1;
+ const main=`${WEAPON_AFFINITY_LABELS[weapon.affinity]}を自力正解で追撃＋${primary+(stage>0?1:0)}`;
+ return stage>=2?`${main} · ${WEAPON_AFFINITY_LABELS[SECONDARY_AFFINITY[weapon.affinity]]}でも追撃＋${stage>=3?2:1}`:main;
 }
 export function scaledStrikeDamage(baseDamage,level,save,{kind=null,independent=false}={}){
  const base=Number.isFinite(baseDamage)?Math.max(1,Math.floor(baseDamage)):1;

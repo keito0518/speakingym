@@ -1,6 +1,6 @@
 // Offline, earned-only adventure economy. There is no purchase, paid currency,
 // real-money exchange or deadline. Correct English is graded outside this file.
-import {WEAPONS,grantDuplicateShard} from './monster-equipment.js';
+import {WEAPONS,grantDuplicateShard,awakeningProgress,weaponAttack} from './monster-equipment.js';
 
 export const GACHA_COST=120;
 export const GACHA_TEN_PULL_COUNT=10;
@@ -14,7 +14,9 @@ export const WEAPON_DISCOVERY_REWARDS=Object.freeze([
  Object.freeze({count:5,gold:120}),
  Object.freeze({count:12,gold:240}),
  Object.freeze({count:24,gold:360}),
- Object.freeze({count:40,gold:600})
+ Object.freeze({count:40,gold:600}),
+ Object.freeze({count:56,gold:800}),
+ Object.freeze({count:64,gold:1200})
 ]);
 export const TREASURES=Object.freeze([
  {id:'amber_leaf',name:'琥珀の葉',world:'forest',price:24},
@@ -122,6 +124,7 @@ export function drawWeaponGacha(save,{random=Math.random}={}){
   .filter(reward=>beforeDiscoveries<reward.count&&beforeDiscoveries+1>=reward.count)
   .reduce((total,reward)=>total+reward.gold,0);
  const nextWithShard=duplicate?grantDuplicateShard(save,weapon.id):save;
+ const previousVisualRank=awakeningProgress(save,weapon.id).visualRank;
  const nextCoins=Math.min(maxCoins,economy.coins-GACHA_COST+refund+discoveryGold);
  const saveNext={...nextWithShard,coins:nextCoins,
   weaponInventory:duplicate?owned:[...owned,weapon.id],
@@ -129,7 +132,12 @@ export function drawWeaponGacha(save,{random=Math.random}={}){
   gachaPullCount:Math.min(1000000,economy.gachaPullCount+1),
   pullsSinceRare:['rare','epic','legend'].includes(tier)?0:economy.pullsSinceRare+1,
   pullsSinceEpic:['epic','legend'].includes(tier)?0:economy.pullsSinceEpic+1};
- return {save:saveNext,weapon,duplicate,refund,tier,shardGained:duplicate?1:0,
+ // Give the cinematic the POST-duplicate pixel palette and combat effect.
+ // The hidden weapon identity is still only revealed when the chest opens.
+ const visibleWeapon={...weapon,attack:weaponAttack(saveNext,weapon),
+  awakeningRank:awakeningProgress(saveNext,weapon.id).visualRank};
+ return {save:saveNext,weapon:visibleWeapon,duplicate,refund,tier,shardGained:duplicate?1:0,
+  visualChanged:duplicate&&visibleWeapon.awakeningRank>previousVisualRank,
   discoveryGold:nextCoins-(economy.coins-GACHA_COST+refund)};
 }
 // The ten-pull is a convenience, not a discount or a separate rarity pool.
@@ -145,7 +153,7 @@ export function drawWeaponGachaTen(save,{random=Math.random}={}){
   const result=drawWeaponGacha(next,{random});
   if(!result.weapon)throw Error('Ten-pull funds must cover every draw');
   next=result.save;
-  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund,shardGained:result.shardGained,discoveryGold:result.discoveryGold});
+  results.push({weapon:result.weapon,tier:result.tier,duplicate:result.duplicate,refund:result.refund,shardGained:result.shardGained,visualChanged:result.visualChanged,discoveryGold:result.discoveryGold});
  }
  return {save:next,results,spent:GACHA_TEN_PULL_COST,
   refunded:results.reduce((sum,item)=>sum+item.refund,0),

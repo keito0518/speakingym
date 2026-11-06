@@ -165,6 +165,9 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-attack').textContent=active.results?
    `消費 ${active.spent} G · 重複返還 ${active.refunded} G${active.discoveryGold?` · 図鑑報酬＋${active.discoveryGold} G`:''}`:
    `ATTACK +${active.weapon.attack} · ${active.affinity}${active.discoveryGold?` · 図鑑報酬＋${active.discoveryGold} G`:''}`;
+  root.querySelector('#summon-duplicate').hidden=Boolean(active.results)||!active.duplicate;
+  root.querySelector('#summon-duplicate').textContent=active.duplicate?
+   `重複：${active.refund} G 返還 · 欠片＋1${active.visualChanged?' · 武器の色と効果が変化':''}`:'';
   root.querySelector('#summon-skip').hidden=true;
   root.querySelector('#summon-equip').hidden=Boolean(active.results);
   root.querySelector('#summon-repeat').hidden=!active.canRepeat;
@@ -188,8 +191,8 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-rarity').textContent=batch?'10連ガチャ · '+rarity.label:rarity.label+' · '+rarity.name;
   root.querySelector('#summon-title').textContent='武器召喚';
   root.querySelector('#summon-attack').textContent='';
-  root.querySelector('#summon-duplicate').hidden=batch||!data.duplicate;
-  root.querySelector('#summon-duplicate').textContent=!batch&&data.duplicate?`所持済み：${data.refund} G 返還 ＋ 覚醒の欠片1個`:'';
+  root.querySelector('#summon-duplicate').hidden=true;
+  root.querySelector('#summon-duplicate').textContent='';
   root.querySelector('#summon-reveal-art').innerHTML=`<div class="summon-weapon-pedestal">${summonWeaponArtwork(best.weapon,{instance:'main'})}</div>`;
   const rewards=root.querySelector('#summon-batch-rewards');
   rewards.hidden=true;
@@ -198,7 +201,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
     <div class="summon-batch-weapon">${summonWeaponArtwork(item.weapon,{instance:`batch-${index}`,decorative:true})}</div>
     <span class="summon-batch-rarity">${RARITY_COPY[item.tier].label}</span>
     <strong>${escapeHtml(item.weapon.name)}</strong>
-    <small>ATTACK +${item.weapon.attack}${item.duplicate?` · 重複 +${item.refund} G / 覚醒の欠片 +1`:' · NEW'}</small>
+    <small>ATTACK +${item.weapon.attack}${item.duplicate?` · 重複 +${item.refund} G / 欠片 +1${item.visualChanged?' / 色・効果変化':''}`:' · NEW'}</small>
     <button type="button" data-batch-equip="${index}" aria-label="${escapeHtml(item.weapon.name)}を装備する">装備する</button>
    </div>`).join(''):'';
   root.querySelector('#summon-skip').hidden=false;
