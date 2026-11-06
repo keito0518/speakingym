@@ -36,7 +36,7 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('.shop-odds').isVisible(),false,'The summon CTA is not buried under probability tables');
   await page.locator('#shop-gacha-details summary').click();
   assert.match(await page.locator('.shop-odds').innerText(),/67%.*26%.*6%.*1%/s);
-  assert.match(await page.locator('.shop-gacha').innerText(),/現金購入・課金ガチャ・換金はありません/);
+  assert.match(await page.locator('.shop-gacha').innerText(),/現金購入・課金ガチャ・換金はできません/);
   assert.equal(await page.locator('.shop-pity-meter').count(),2,'Rarity guarantees should have visible progress meters');
   assert.equal(await page.locator('.shop-collection-meter').getAttribute('aria-valuemax'),'64');
   assert.match(await page.locator('.shop-collection-copy').innerText(),/0 \/ 64 種/);
