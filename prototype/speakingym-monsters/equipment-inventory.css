@@ -71,6 +71,17 @@
 .collection-weapons .equipment-item-list-heading strong{font-size:17px;color:#fff2c7}
 .collection-weapons .equipment-item-list-heading strong span{font-size:21px;color:#ffe09a}
 .collection-weapons .equipment-item-list-heading>span{color:#d2e3df;font-size:12px;font-weight:650}
+.collection-weapons .equipment-filter-disclosure{margin:0 0 13px;border:1px solid #718f9e;border-radius:11px;background:#19394c;color:#fff4d6;min-width:0}
+.collection-weapons .equipment-filter-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:44px;padding:10px 12px;cursor:pointer;font-size:13px;font-weight:850;list-style:none}
+.collection-weapons .equipment-filter-disclosure>summary::-webkit-details-marker{display:none}
+.collection-weapons .equipment-filter-disclosure>summary::before{content:'＋';color:#f4d28b;font-size:17px}
+.collection-weapons .equipment-filter-disclosure[open]>summary::before{content:'−'}
+.collection-weapons .equipment-filter-disclosure>summary span{margin-left:auto;color:#d6e5e7;font-size:12px;font-weight:700}
+.collection-weapons .equipment-filter-disclosure>summary:focus-visible{outline:3px solid #f9d392;outline-offset:2px}
+.collection-weapons .equipment-filter-controls{display:grid;grid-template-columns:1fr;gap:9px;padding:12px;border-top:1px solid #496c7d}
+.collection-weapons .equipment-filter-controls label{display:grid;gap:5px;min-width:0;color:#e9f0eb;font-size:12px;font-weight:850}
+.collection-weapons .equipment-filter-controls select{min-width:0;width:100%;min-height:40px;padding:8px 9px;border:1px solid #8eb3ba;border-radius:8px;background:#f6f4e9;color:#223c4b;font-size:14px;font-weight:750}
+.collection-weapons .equipment-filter-controls select:focus-visible{outline:3px solid #f9d392;outline-offset:2px}
 .collection-weapons .equipment-item-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .collection-weapons .equipment-item{
  display:grid;grid-template-columns:91px minmax(0,1fr);grid-template-rows:auto auto;
@@ -114,6 +125,7 @@
 .collection-weapons .weapon-awakening{margin-top:22px}
 .collection-weapons .weapon-awakening-heading strong{font-size:16px}
 @media(min-width:770px){
+ .collection-weapons .equipment-filter-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
  .collection-weapons .equipment-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:370px){

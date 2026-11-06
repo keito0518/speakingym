@@ -90,17 +90,51 @@ const BY_ID=new Map(WEAPONS.map(item=>[item.id,item]));
 const AREA_WORLD=Object.freeze({entry:'forest',glade:'forest',thicket:'forest',sanctuary:'forest',city:'city','city-market':'city','city-terminal':'city','city-blizzard':'city','ruins-gate':'ruins','ruins-core':'ruins'});
 export const WEAPON_RARITY_LABELS=Object.freeze({common:'通常',rare:'レア',epic:'エピック',legend:'伝説'});
 export const WEAPON_AFFINITY_LABELS=Object.freeze({speak:'Speak',listen:'Listen',vocab:'単語',grammar:'文法'});
+export const WEAPON_SHAPE_LABELS=Object.freeze({
+ sword:'剣',dagger:'短剣',staff:'杖',bow:'弓',hammer:'槌',spear:'槍',axe:'斧',scythe:'鎌',
+ crossbow:'弩',claw:'爪',shield:'盾',whip:'鞭',fan:'扇',flute:'笛',lantern:'灯籠',ring:'輪'
+});
 export const MAX_WEAPON_AWAKENING=3;
 // Gacha rarity bands cannot be overturned by duplicate-powered upgrades.
 // The highest possible attack in one tier is below the base of the next.
 export const GACHA_ATTACK_CAPS=Object.freeze({common:4,rare:7,epic:10,legend:15});
 const SECONDARY_AFFINITY=Object.freeze({speak:'listen',listen:'speak',vocab:'grammar',grammar:'vocab'});
+// Weapon families open different *second* English affinities at resonance II.
+// They share the same capped damage numbers, so no shape is an upgrade in
+// rarity or a reason to bypass a question. Chapter drops retain old pairings.
+const SHAPE_RESONANCE_FAMILY=Object.freeze({
+ sword:0,dagger:1,staff:2,bow:1,hammer:2,spear:0,axe:1,scythe:2,
+ crossbow:2,claw:0,shield:1,whip:2,fan:1,flute:2,lantern:0,ring:1
+});
+const SHAPE_SECONDARY_AFFINITY=Object.freeze([
+ SECONDARY_AFFINITY,
+ Object.freeze({speak:'vocab',listen:'grammar',vocab:'speak',grammar:'listen'}),
+ Object.freeze({speak:'grammar',listen:'vocab',vocab:'listen',grammar:'speak'})
+]);
 export const AWAKENING_COSTS=Object.freeze({
  common:Object.freeze([2,3,4]),rare:Object.freeze([2,3,5]),
  epic:Object.freeze([3,5,7]),legend:Object.freeze([3,6,9])
 });
 const countUpTo=(value,max)=>Number.isSafeInteger(value)&&value>=0?Math.min(max,value):0;
 const weaponById=id=>BY_ID.get(id)||null;
+export function weaponSecondaryAffinity(weapon){
+ const base=weapon?.id?BY_ID.get(weapon.id)||weapon:weapon;
+ const group=SHAPE_RESONANCE_FAMILY[base?.shape];
+ return (SHAPE_SECONDARY_AFFINITY[group]||SECONDARY_AFFINITY)[base?.affinity]||null;
+}
+export function filteredWeaponInventory(save,{rarity='all',affinity='all',sort='attack'}={}){
+ const ids=Array.isArray(save?.weaponInventory)?save.weaponInventory:[];
+ const owned=new Set(ids);
+ const position=new Map(ids.map((id,index)=>[id,index]));
+ const selected=save?.equippedWeaponId;
+ return WEAPONS.filter(item=>owned.has(item.id)&&
+  (rarity==='all'||item.rarity===rarity)&&(affinity==='all'||item.affinity===affinity))
+  .sort((a,b)=>Number(b.id===selected)-Number(a.id===selected)||
+   (sort==='recent'?((position.get(b.id)??0)-(position.get(a.id)??0)):
+    sort==='resonance'?(awakeningProgress(save,b.id).visualRank-awakeningProgress(save,a.id).visualRank):
+     weaponAttack(save,b)-weaponAttack(save,a))||
+   weaponAttack(save,b)-weaponAttack(save,a)||a.name.localeCompare(b.name,'ja'));
+}
 
 export function normalizeEquipment(value){
  const inventory=[...new Set((Array.isArray(value?.weaponInventory)?value.weaponInventory:[])
@@ -167,7 +201,7 @@ export function weaponAffinityBonus(save,kind,{independent=false}={}){
  if(!independent||!kind||!weapon)return 0;
  const baseline=['epic','legend'].includes(weapon.rarity)?2:1;
  if(kind===weapon.affinity)return baseline+(weapon.awakeningRank>0?1:0);
- return weapon.awakeningRank>=2&&kind===SECONDARY_AFFINITY[weapon.affinity]?
+ return weapon.awakeningRank>=2&&kind===weaponSecondaryAffinity(weapon)?
   (weapon.awakeningRank>=3?2:1):0;
 }
 export function weaponEffectDescription(save,weapon){
@@ -175,7 +209,7 @@ export function weaponEffectDescription(save,weapon){
  const stage=weapon.id?awakeningProgress(save,weapon.id).visualRank:0;
  const primary=['epic','legend'].includes(weapon.rarity)?2:1;
  const main=`${WEAPON_AFFINITY_LABELS[weapon.affinity]}を自力正解で追撃＋${primary+(stage>0?1:0)}`;
- return stage>=2?`${main} · ${WEAPON_AFFINITY_LABELS[SECONDARY_AFFINITY[weapon.affinity]]}でも追撃＋${stage>=3?2:1}`:main;
+ return stage>=2?`${main} · ${WEAPON_AFFINITY_LABELS[weaponSecondaryAffinity(weapon)]}でも追撃＋${stage>=3?2:1}`:main;
 }
 export function scaledStrikeDamage(baseDamage,level,save,{kind=null,independent=false}={}){
  const base=Number.isFinite(baseDamage)?Math.max(1,Math.floor(baseDamage)):1;

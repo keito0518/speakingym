@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
-import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
+import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
 import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
@@ -213,6 +213,41 @@ test('duplicates immediately recolor the weapon and improve skill effects, while
  assert.equal(awakeningProgress(second,weapon.id).visualRank,2);
  assert.equal(weaponAffinityBonus(second,'grammar',{independent:true}),1,'Second stage adds a paired skill');
  assert.match(weaponEffectDescription(second,weapon),/文法でも追撃＋1/);
+});
+
+test('weapon shapes unlock varied second affinities at resonance II without granting free English credit',()=>{
+ const pool=WEAPONS.filter(item=>item.source==='gacha');
+ const shapes=new Set(pool.map(item=>item.shape));
+ assert.equal(shapes.size,16);
+ assert.deepEqual(new Set(Object.keys(WEAPON_SHAPE_LABELS)),shapes);
+ assert.equal(weaponSecondaryAffinity(WEAPONS.find(item=>item.id==='sky_sabre')),'listen');
+ assert.equal(weaponSecondaryAffinity(WEAPONS.find(item=>item.id==='morning_fan')),'vocab');
+ assert.equal(weaponSecondaryAffinity(WEAPONS.find(item=>item.id==='reed_flute')),'vocab');
+ for(const weapon of pool){
+  const second=weaponSecondaryAffinity(weapon);
+  assert.ok(['speak','listen','vocab','grammar'].includes(second),weapon.id);
+  assert.notEqual(second,weapon.affinity,weapon.id);
+  const save={...createSave(),weaponInventory:[weapon.id],equippedWeaponId:weapon.id,
+   weaponAwakening:{[weapon.id]:1},weaponShards:{[weapon.id]:1}};
+  assert.equal(weaponAffinityBonus(save,second,{independent:true}),1,`${weapon.id} second skill`);
+  assert.equal(weaponAffinityBonus(save,second,{independent:false}),0,'Hint-assisted replies cannot benefit');
+  assert.match(weaponEffectDescription(save,weapon),/でも追撃＋1/);
+ }
+});
+
+test('owned equipment filters keep the equipped item first and safely sort by attack, recent acquisition or resonance',()=>{
+ const save={...createSave(),weaponInventory:['bamboo_blade','north_bow','eternal_crest','river_staff'],
+  equippedWeaponId:'river_staff',weaponShards:{north_bow:1}};
+ assert.deepEqual(filteredWeaponInventory(save).map(item=>item.id),
+  ['river_staff','eternal_crest','north_bow','bamboo_blade']);
+ assert.deepEqual(filteredWeaponInventory(save,{rarity:'rare'}).map(item=>item.id),['north_bow']);
+ assert.deepEqual(filteredWeaponInventory(save,{affinity:'listen'}).map(item=>item.id),['river_staff','north_bow']);
+ assert.deepEqual(filteredWeaponInventory(save,{sort:'recent'}).map(item=>item.id),
+  ['river_staff','eternal_crest','north_bow','bamboo_blade']);
+ assert.deepEqual(filteredWeaponInventory(save,{sort:'resonance'}).map(item=>item.id),
+  ['river_staff','north_bow','eternal_crest','bamboo_blade']);
+ assert.deepEqual(filteredWeaponInventory(save,{rarity:'legend',affinity:'listen'}),[]);
+ assert.deepEqual(filteredWeaponInventory(createSave()),[]);
 });
 
 test('legacy equipment migrates to empty shards and out-of-range upgrades are normalized',()=>{

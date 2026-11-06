@@ -378,6 +378,16 @@ const assert=require('node:assert/strict');
    await gearPage.reload({waitUntil:'networkidle'});
    assert.match(await gearPage.locator('#hero-weapon-summary').innerText(),/旅立ちの木剣.*攻撃\+1/);
    await gearPage.getByRole('button',{name:'なかま・図鑑',exact:true}).click();
+   assert.equal(await gearPage.locator('#equipment-filters').getAttribute('open'),null,
+     'Inventory filters start folded to keep the item list uncluttered');
+   await gearPage.locator('#equipment-filters summary').click();
+   await gearPage.locator('#equipment-filter-affinity').selectOption('listen');
+   assert.equal(await gearPage.locator('.equipment-item').count(),1);
+   assert.equal(await gearPage.locator('.equipment-item[data-item-id="mist_spear"]').count(),1);
+   assert.match(await gearPage.locator('.equipment-current').innerText(),/旅立ちの木剣/,
+     'Filtering cards never unequips a hidden weapon');
+   await gearPage.locator('#equipment-filter-affinity').selectOption('all');
+   assert.equal(await gearPage.locator('.equipment-item').count(),2);
    assert.equal(await gearPage.locator('#equipment-weapon-choice').inputValue(),'wooden_blade');
    await gearPage.locator('#equipment-weapon-choice').selectOption('mist_spear');
    assert.match(await gearPage.locator('.equipment-monster-preview > span').innerText(),/霧抜けの槍/);

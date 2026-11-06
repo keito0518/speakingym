@@ -1,7 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
-import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, weaponAttack, weaponEffectDescription, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
+import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, weaponAttack, weaponEffectDescription, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
@@ -2813,6 +2813,8 @@ let forgeMessage='';
 let drawNextSummon=()=>null;
 let drawNextTenSummons=()=>null;
 let shopInfoOpen=false;
+const equipmentView={rarity:'all',affinity:'all',sort:'attack'};
+let equipmentFiltersOpen=false;
 let shopCatalogOpen=false;
 const gachaCinematic=createGachaCinematic({
  onEquip:weapon=>{
@@ -2916,15 +2918,15 @@ function renderEconomyShop(){
 function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
  const current=equippedWeapon(save);
- const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id)).sort((a,b)=>
-  Number(b.id===current?.id)-Number(a.id===current?.id)||weaponAttack(save,b)-weaponAttack(save,a)||a.name.localeCompare(b.name,'ja'));
+ const inventory=filteredWeaponInventory(save);
+ const shown=filteredWeaponInventory(save,equipmentView);
  const awaken=current?awakeningProgress(save,current.id):null;
- const cards=inventory.map(weapon=>{
+ const cards=shown.map(weapon=>{
   const rank=awakeningProgress(save,weapon.id).visualRank;
   const isEquipped=weapon.id===current?.id;
   return `<article class="equipment-item${isEquipped?' is-equipped':''}" data-item-id="${weapon.id}" data-rarity="${weapon.rarity}">
    <div class="equipment-item-image" aria-hidden="true">${summonWeaponArtwork({...weapon,awakeningRank:rank},{instance:`inventory-${weapon.id}`,decorative:true})}</div>
-   <div class="equipment-item-details"><span class="equipment-item-rarity">${WEAPON_RARITY_LABELS[weapon.rarity]}${rank?` · 共鳴 ${rank}/3`:''}</span><h3>${escapeHtml(weapon.name)}</h3>
+   <div class="equipment-item-details"><span class="equipment-item-rarity">${WEAPON_RARITY_LABELS[weapon.rarity]}${weapon.shape?` · ${WEAPON_SHAPE_LABELS[weapon.shape]||'武器'}`:''}${rank?` · 共鳴 ${rank}/3`:''}</span><h3>${escapeHtml(weapon.name)}</h3>
     <dl><div><dt>攻撃</dt><dd>＋${weaponAttack(save,weapon)}</dd></div><div><dt>追加効果</dt><dd>${escapeHtml(weaponEffectDescription(save,weapon))}</dd></div></dl>
     <small>${weapon.source==='gacha'?'ガチャ限定':'冒険で入手'}</small>
    </div>
@@ -2936,8 +2938,13 @@ function renderEquipmentCollection(){
    <div class="equipment-monster-preview" aria-label="現在の装備を身につけた仲間">${monsterArt(save.selectedMonster,getMonsterProgress(save).stage,current)}<span>${current?escapeHtml(current.name):'武器なし'}<small>ホーム・バトルに反映／パーティ共通</small></span></div>
    <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${weaponAttack(save,current)} · ${escapeHtml(weaponEffectDescription(save,current))}`:'武器を装備していません（攻撃＋0）'}</p>
    ${current?'<button type="button" id="equipment-unequip">装備を外す</button>':''}</div>
-  <div class="equipment-item-list"><div class="equipment-item-list-heading"><strong>所持武器 <span>${inventory.length}</span> / ${WEAPONS.length}</strong><span>攻撃力順・装備中を先頭に表示</span></div>
-   <div class="equipment-item-grid">${cards||'<p class="equipment-item-empty">武器はまだありません。冒険やガチャで入手できます。</p>'}</div></div>
+  <div class="equipment-item-list"><div class="equipment-item-list-heading"><strong>所持武器 <span>${inventory.length}</span> / ${WEAPONS.length}</strong><span>装備中を先頭に表示</span></div>
+   ${inventory.length>1?`<details class="equipment-filter-disclosure" id="equipment-filters" ${equipmentFiltersOpen?'open':''}><summary>絞り込み・並び替え <span>表示 ${shown.length}/${inventory.length} 件</span></summary><div class="equipment-filter-controls">
+    <label>レア度<select id="equipment-filter-rarity"><option value="all">すべて</option>${Object.entries(WEAPON_RARITY_LABELS).map(([key,label])=>`<option value="${key}" ${equipmentView.rarity===key?'selected':''}>${label}</option>`).join('')}</select></label>
+    <label>得意分野<select id="equipment-filter-affinity"><option value="all">すべて</option>${Object.entries(WEAPON_AFFINITY_LABELS).map(([key,label])=>`<option value="${key}" ${equipmentView.affinity===key?'selected':''}>${label}</option>`).join('')}</select></label>
+    <label>並び順<select id="equipment-filter-sort"><option value="attack" ${equipmentView.sort==='attack'?'selected':''}>攻撃力順</option><option value="resonance" ${equipmentView.sort==='resonance'?'selected':''}>共鳴順</option><option value="recent" ${equipmentView.sort==='recent'?'selected':''}>最近入手順</option></select></label>
+   </div></details>`:''}
+   <div class="equipment-item-grid">${cards||(inventory.length?' <p class="equipment-item-empty">条件に合う武器がありません。</p>':'<p class="equipment-item-empty">武器はまだありません。冒険やガチャで入手できます。</p>')}</div></div>
   <div class="equipment-select-sync"><label for="equipment-weapon-choice">武器選択</label><select id="equipment-weapon-choice"><option value="">武器なし · 攻撃＋0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃＋${weaponAttack(save,weapon)} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select></div>
   <section class="weapon-awakening" aria-label="重複武器で覚醒"><div class="weapon-awakening-heading"><strong>武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'装備武器を選択'}</span></div>
     <p>同じ武器を引くと色と追撃が変化。欠片を集めて覚醒すると変化が定着し、次の段階へ進めます（最大3段階）。レア度の強さは逆転しません。</p>
@@ -2946,6 +2953,14 @@ function renderEquipmentCollection(){
  // Keep awakening beside the equipped item; a large inventory should never
  // force the player to scroll through every card to upgrade their weapon.
  panel.querySelector('.equipment-current')?.after(panel.querySelector('.weapon-awakening'));
+ panel.querySelector('#equipment-filters')?.addEventListener('toggle',event=>{equipmentFiltersOpen=event.currentTarget.open;});
+ for(const [id,key] of [['equipment-filter-rarity','rarity'],['equipment-filter-affinity','affinity'],['equipment-filter-sort','sort']]){
+  panel.querySelector(`#${id}`)?.addEventListener('change',event=>{
+   equipmentView[key]=event.target.value;
+   renderEquipmentCollection();
+   panel.querySelector(`#${id}`)?.focus({preventScroll:true});
+  });
+ }
  const equip=id=>{
   if(!persist(equipWeapon(save,id)))return false;
   renderEquipmentCollection();syncGameHud();
