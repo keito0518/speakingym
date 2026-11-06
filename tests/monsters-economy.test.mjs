@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
 import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,nextWeaponResonancePreview,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponTechniqueDescription,weaponTechniqueFor,resolveWeaponTechniqueTurn,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,WEAPON_AFFINITY_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
 import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
 import {SUMMON_TIMINGS} from '../prototype/speakingym-monsters/gacha-cinematic.js';
+
+test('game navigation, gacha and reward UI never call a weapon draw a summon',()=>{
+ for(const file of ['index.html','home-navigation.js','monsters.js','gacha-cinematic.js']){
+  const source=readFileSync(new URL(`../prototype/speakingym-monsters/${file}`,import.meta.url),'utf8');
+  assert.doesNotMatch(source,/召喚|WEAPON SUMMON/,`${file}: show gacha language to players`);
+ }
+});
 
 test('old saves restore an empty wallet safely and untrusted backups cannot forge currency',()=>{
  const old=createSave();delete old.coins;delete old.treasureBag;delete old.gachaPullCount;

@@ -66,7 +66,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.innerHTML=`<div class="summon-vault-backdrop" aria-hidden="true"></div><div class="summon-vault-doors" aria-hidden="true"><span></span><span></span></div><div class="summon-vault-heaven" aria-hidden="true"></div><div class="prism-light-streaks" aria-hidden="true">${Array.from({length:28},(_,i)=>`<span style="--streak-index:${i};--streak-angle:${(i*137.5).toFixed(1)}deg;--streak-delay:${(i%9)*.06}s"></span>`).join('')}</div><div class="summon-tier-splash" aria-hidden="true"><span id="summon-tier-splash-text">LEGENDARY</span></div>
   <div class="summon-universe" aria-hidden="true"><div class="summon-stardust"></div><div class="summon-rays"></div><div class="summon-aura"></div></div>
   <section class="summon-dialog" role="dialog" aria-modal="true" aria-labelledby="summon-title" aria-describedby="summon-story">
-    <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>武器ガチャ</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="召喚画面を閉じる">閉じる</button></div></div>
+    <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>武器ガチャ</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="ガチャ画面を閉じる">閉じる</button></div></div>
     <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">宝箱を開封</p>
       <div class="summon-vault-stage" id="summon-vault-stage">
        <div class="summon-vault-crest" aria-hidden="true"><span class="crest-orbit orbit-a"></span><span class="crest-orbit orbit-b"></span><span class="crest-spokes"></span></div>
@@ -74,7 +74,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
         <span class="summon-seal-inner"><svg viewBox="0 0 128 128" aria-hidden="true" shape-rendering="crispEdges"><g class="storybook-chest-lid"><rect x="11" y="23" width="106" height="42" rx="8" fill="#563a6d" stroke="#291d49" stroke-width="5"/><rect x="18" y="29" width="92" height="30" rx="5" fill="#efad65"/><rect x="27" y="30" width="74" height="12" fill="#ffe4a0"/><rect x="18" y="47" width="92" height="9" fill="#d98565"/><rect x="56" y="27" width="16" height="37" fill="#fff0a3" stroke="#b96858" stroke-width="3"/></g><g class="storybook-chest-body"><rect x="12" y="61" width="104" height="55" rx="8" fill="#513b77" stroke="#291d49" stroke-width="5"/><rect x="20" y="67" width="88" height="41" rx="4" fill="#e9996c"/><rect x="28" y="71" width="72" height="30" fill="#f3c278"/><rect x="57" y="61" width="14" height="47" fill="#fff2ac"/><rect x="48" y="75" width="32" height="25" rx="5" fill="#41365e"/><rect x="59" y="81" width="10" height="13" fill="#fff0a9"/></g></svg><b>OPEN!</b></span>
        </button>
        <div class="summon-vault-shards" aria-hidden="true">${Array.from({length:18},(_,i)=>`<span style="--shard-angle:${i*20}deg;--shard-delay:${(i%6)*.035}s"></span>`).join('')}</div>
-       <div class="summon-vault-guide"><span class="tiny-caps">WEAPON SUMMON</span><strong id="summon-seal-status" role="status">上にスワイプして開封</strong><span>上スワイプ / 3回タップ</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="開封進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
+       <div class="summon-vault-guide"><span class="tiny-caps">WEAPON GACHA</span><strong id="summon-seal-status" role="status">上にスワイプして開封</strong><span>上スワイプ / 3回タップ</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="開封進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
       </div>
       <div class="summon-portal" aria-hidden="true">
         <div class="summon-confetti">${Array.from({length:24},(_,i)=>`<span style="--spark-rotation:${i*15}deg;--spark-delay:${(i%6)*.045}s"></span>`).join('')}</div><div class="summon-shockwave"></div>
@@ -85,10 +85,10 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
         <div class="summon-core"><span class="summon-core-inner"></span><span class="summon-crack crack-one"></span><span class="summon-crack crack-two"></span><span class="summon-crack crack-three"></span></div>
         <div class="summon-reveal-art" id="summon-reveal-art"></div><div class="summon-flash"></div>
       </div>
-      <div class="summon-reward" id="summon-reward"><span id="summon-rarity" class="summon-rarity">RARE</span><h2 id="summon-title">武器を召喚</h2><p id="summon-attack"></p><p id="summon-duplicate" class="summon-duplicate" hidden></p></div>
+      <div class="summon-reward" id="summon-reward"><span id="summon-rarity" class="summon-rarity">RARE</span><h2 id="summon-title">武器ガチャ</h2><p id="summon-attack"></p><p id="summon-duplicate" class="summon-duplicate" hidden></p></div>
       <div class="summon-batch-rewards" id="summon-batch-rewards" aria-label="10連で獲得した武器" hidden></div>
     </div>
-    <div class="summon-actions"><button type="button" id="summon-skip" class="summon-secondary">結果を見る</button><button type="button" id="summon-equip" class="summon-primary" hidden>この武器を装備</button><button type="button" id="summon-repeat" class="summon-secondary" hidden>もう一度召喚する</button><p class="summon-game-only">ゲーム内ゴールドのみ。現金・課金による抽選はありません。</p></div>
+    <div class="summon-actions"><button type="button" id="summon-skip" class="summon-secondary">結果を見る</button><button type="button" id="summon-equip" class="summon-primary" hidden>この武器を装備</button><button type="button" id="summon-repeat" class="summon-secondary" hidden>もう一度引く</button><p class="summon-game-only">ゲーム内ゴールドのみ。現金・課金による抽選はありません。</p></div>
   </section>`;
   document.body.append(root);
   root.querySelector('#summon-close').addEventListener('click',close);
@@ -159,9 +159,9 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   clearTimers();root.dataset.phase='reveal';
   root.scrollTop=0;
   root.querySelector('#summon-story').textContent=active.results?
-   `10連召喚結果 · 新規入手 ${active.results.filter(item=>!item.duplicate).length} 種`:
+   `10連ガチャ結果 · 新規入手 ${active.results.filter(item=>!item.duplicate).length} 種`:
    active.duplicate?'所持済み武器を獲得':'新しい武器を獲得';
-  root.querySelector('#summon-title').textContent=active.results?'10連召喚 結果':active.weapon.name;
+  root.querySelector('#summon-title').textContent=active.results?'10連ガチャ 結果':active.weapon.name;
   root.querySelector('#summon-attack').textContent=active.results?
    `消費 ${active.spent} G · 重複返還 ${active.refunded} G${active.discoveryGold?` · 図鑑報酬＋${active.discoveryGold} G`:''}`:
    `ATTACK +${active.weapon.attack} · ${active.affinity}${active.discoveryGold?` · 図鑑報酬＋${active.discoveryGold} G`:''}`;
@@ -189,7 +189,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-tier-splash-text').textContent=best.tier==='legend'?'LEGEND':best.tier==='epic'?'EPIC':'RARE';
   root.querySelector('#summon-story').textContent=batch?'10連ガチャ · 宝箱を開封':'宝箱を開封';
   root.querySelector('#summon-rarity').textContent=batch?'10連ガチャ · '+rarity.label:rarity.label+' · '+rarity.name;
-  root.querySelector('#summon-title').textContent='武器召喚';
+  root.querySelector('#summon-title').textContent='武器ガチャ';
   root.querySelector('#summon-attack').textContent='';
   root.querySelector('#summon-duplicate').hidden=true;
   root.querySelector('#summon-duplicate').textContent='';
@@ -207,7 +207,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-skip').hidden=false;
   root.querySelector('#summon-equip').hidden=true;
   root.querySelector('#summon-repeat').hidden=true;
-  root.querySelector('#summon-repeat').textContent=batch?'10連をもう一度召喚する':'もう一度召喚する';
+  root.querySelector('#summon-repeat').textContent=batch?'10連をもう一度引く':'もう一度引く';
   root.hidden=false;document.body.classList.add('summon-active');root.scrollTop=0;
   sealProgress=0;sealPointer=null;sealDragged=false;suppressSealClick=false;
   root.style.setProperty('--seal-progress','0');

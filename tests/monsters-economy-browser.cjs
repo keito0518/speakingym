@@ -27,7 +27,7 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#game-tabs [data-game-tab="home"]').getAttribute('aria-current'),'page');
   assert.match(await page.locator('#game-hud-coins').innerText(),/240 G/);
   assert.equal(await page.locator('[data-feature-armory]').isVisible(),true,'The forge must be discoverable from home');
-  assert.match(await page.locator('[data-feature-armory]').innerText(),/召喚できる/,'The hub should celebrate when enough earned G is ready');
+  assert.match(await page.locator('[data-feature-armory]').innerText(),/今すぐ引ける/,'The hub should celebrate when enough earned G is ready');
   await page.locator('[data-feature-armory]').click();
   assert.equal(await page.locator('#collection-shop').isVisible(),true);
   assert.match(await page.locator('#shop-coins').innerText(),/240 G/);
@@ -68,7 +68,7 @@ const {chromium,webkit}=require('playwright');
    'The summoned weapon must visibly appear on the companion');
   assert.equal(await page.locator('#summon-skip').isHidden(),true);
   assert.equal(await page.locator('#summon-equip').isVisible(),true);
-  assert.match(await page.locator('#shop-gacha-result').innerText(),/召喚結果を保存/);
+  assert.match(await page.locator('#shop-gacha-result').innerText(),/ガチャ結果を保存/);
   assert.match(await page.locator('#shop-coins').innerText(),/120 G/);
   assert.equal(await page.locator('#equipment-weapon-choice option').count(),2);
   await page.locator('#summon-equip').click();
@@ -98,7 +98,7 @@ const {chromium,webkit}=require('playwright');
   await page.locator('#collection-home').click();
   assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1,
    'Equipment preview must match the home character');
-  assert.match(await page.locator('[data-feature-armory]').innerText(),/召喚できる/,'The hub projection must refresh after trading loot');
+  assert.match(await page.locator('[data-feature-armory]').innerText(),/今すぐ引ける/,'The hub projection must refresh after trading loot');
   await assertNoOverflow('equipped home');
 
   // The bottom navigation is a functional game menu, not decorative links.
@@ -161,6 +161,36 @@ const {chromium,webkit}=require('playwright');
   assert.equal(afterEpic.coins,50);
   await assertNoOverflow('repeat gacha');
   assert.deepEqual(errors,[],`${engine} browser console errors`);
+
+  // A racing tab or failed storage write must not spend coins or grant a
+  // phantom weapon in the current UI, even briefly. Real progress is protected.
+  const conflicting=await browser.newPage({viewport:{width:320,height:844}});
+  try{
+   await conflicting.goto(url,{waitUntil:'networkidle'});
+   await conflicting.evaluate(async()=>{
+    const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),coins:240}));
+   });
+   await conflicting.reload({waitUntil:'networkidle'});
+   await conflicting.locator('#game-tabs [data-game-tab="forge"]').click();
+   await conflicting.evaluate(async()=>{
+    const {STORAGE_KEY}=await import('./monster-engine.js');
+    const external=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({...external,coins:777}));
+   });
+   await conflicting.locator('#shop-draw').click();
+   assert.match(await conflicting.locator('#shop-gacha-result').innerText(),/保存に失敗/);
+   assert.equal(await conflicting.locator('#shop-coins').innerText(),'240 G',
+    'A failed gacha commit must restore in-memory coins');
+   assert.equal(await conflicting.locator('#summon-screen').count(),0,
+    'A failed save must never start a gacha animation');
+   const external=await conflicting.evaluate(async()=>{
+    const {STORAGE_KEY}=await import('./monster-engine.js');
+    return JSON.parse(localStorage.getItem(STORAGE_KEY));
+   });
+   assert.equal(external.coins,777,'A racing tab must keep its saved coins');
+   assert.equal(external.weaponInventory.length,0,'A rejected draw must not grant a weapon');
+  }finally{await conflicting.close();}
   console.log(`${engine}: treasure sale, earned-only gacha, 44 story monsters, weapon appearance and reload passed`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

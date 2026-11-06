@@ -2737,15 +2737,15 @@ function finishSession(timedOut=false,defeated=false) {
     }
     if(ended.completedForest&&!ended.endless){
       const summon=summonProgress(save),panel=document.createElement('section');
-      panel.className='result-summon-goal';panel.setAttribute('aria-label','次の武器召喚への進捗');
+      panel.className='result-summon-goal';panel.setAttribute('aria-label','次の武器ガチャまでの進捗');
       const summary=document.createElement('div');summary.className='result-summon-copy';
-      summary.innerHTML=`<span>SUMMON PROGRESS · 次の武器召喚</span><strong>${summon.readyNow?'武器を召喚できる！':summon.readyAfterSale?'お宝を売れば召喚できる！':`あと ${summon.missing} G で召喚`}</strong><small>所持 ${summon.coins} G · お宝の売却見込み ${summon.sellableGold} G / 1回 ${summon.cost} G</small>`;
-      const track=document.createElement('div');track.className='result-summon-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label','次の武器召喚に必要なゴールドの達成度');track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow',String(summon.percent));
+      summary.innerHTML=`<span>GACHA PROGRESS · 次の武器ガチャ</span><strong>${summon.readyNow?'武器ガチャを引ける！':summon.readyAfterSale?'お宝を売ればガチャを引ける！':`あと ${summon.missing} G でガチャを引ける`}</strong><small>所持 ${summon.coins} G · お宝の売却見込み ${summon.sellableGold} G / 1回 ${summon.cost} G</small>`;
+      const track=document.createElement('div');track.className='result-summon-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label','次の武器ガチャに必要なゴールドの達成度');track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow',String(summon.percent));
       const fill=document.createElement('span');fill.style.width=summon.percent+'%';track.append(fill);
       panel.append(summary,track);
       if(summon.readyNow||summon.sellableGold){
         const button=document.createElement('button');button.type='button';
-        button.textContent=summon.readyNow?'武器を召喚する':'お宝を売りに行く';
+        button.textContent=summon.readyNow?'武器ガチャを引く':'お宝を売りに行く';
         button.addEventListener('click',openForge);panel.append(button);
       }
       chaseReward.append(panel);
@@ -2889,23 +2889,29 @@ function renderEconomyShop(){
  const featured=WEAPONS.filter(weapon=>weapon.source==='gacha');
  const ownedDraws=featured.filter(weapon=>save.weaponInventory?.includes(weapon.id)).length;
  const discovery=weaponDiscoveryProgress(save);
- panel.innerHTML=`${gachaTestMode?'<div class="gacha-qa-notice" role="status"><strong>ガチャ体験テスト</strong><span>テスト専用の2,400 Gで10連と単発を確認できます。通常の冒険データとは別に保存されます。</span><button type="button" id="gacha-test-refill">テスト用2,400 Gを補充</button></div>':''}<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>お宝を売却して武器を召喚。仲間は冒険で加入します。</p></div>
+ panel.innerHTML=`${gachaTestMode?'<div class="gacha-qa-notice" role="status"><strong>ガチャ体験テスト</strong><span>テスト専用の2,400 Gで10連と単発を確認できます。通常の冒険データとは別に保存されます。</span><button type="button" id="gacha-test-refill">テスト用2,400 Gを補充</button></div>':''}<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>冒険でお宝を集め、売却したゴールドで武器ガチャを引こう。仲間は冒険で加入します。</p></div>
  <button type="button" id="shop-open-inventory" class="shop-open-inventory">所持武器・装備一覧を見る <span>${save.weaponInventory?.length||0}件</span></button>
  <div class="shop-wallet"><span>所持ゴールド</span><strong id="shop-coins">${save.coins||0} G</strong><small>お宝の売却見込額 ${totalValue} G</small></div>
  <div class="shop-bag"><div class="shop-section-heading"><strong>換金用のお宝</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">売却できるお宝はありません。冒険の報酬で入手できます。図鑑の記念品は売却対象外です。</p>'}</div>
  <div class="shop-gacha"><div class="shop-section-heading"><strong>武器ガチャ</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">WEAPON<br><b>GACHA</b></span><span class="summon-banner-spark"></span></div>
  <div class="shop-collection-track" aria-label="限定武器の収集状況"><div class="shop-collection-copy"><strong>WEAPON COLLECTION</strong><span>入手 ${ownedDraws} / ${featured.length} 種</span></div><div class="shop-collection-meter" role="progressbar" aria-label="限定武器の収集率" aria-valuemin="0" aria-valuemax="${featured.length}" aria-valuenow="${ownedDraws}"><span style="width:${Math.round(ownedDraws*100/featured.length)}%"></span></div><small>${discovery.next?`次の図鑑報酬まであと ${discovery.remaining} 種 · ${discovery.next.gold} G`:'全武器を発見・図鑑完成'}</small></div>
- <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>1回召喚<span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}>10連召喚<span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G</span></button></div>
+ <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>1回ガチャ<span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}>10連ガチャ<span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G</span></button></div>
  <p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'必要なゴールドが不足しています。お宝を売却して獲得できます。':''))}</p>
  <details class="shop-gacha-disclosure shop-catalog-disclosure" id="shop-gacha-catalog" ${shopCatalogOpen?'open':''}><summary>武器図鑑 <span>発見 ${ownedDraws}/${featured.length} 種</span></summary><div class="shop-gacha-disclosure-content"><p>入手した武器だけ、名前・姿・性能を公開します。</p>${gachaCatalogHtml(save,featured)}<div class="shop-discovery-rewards"><strong>発見報酬</strong><div>${WEAPON_DISCOVERY_REWARDS.map(reward=>`<span class="${ownedDraws>=reward.count?'is-earned':''}">${reward.count}種 · ${reward.gold} G ${ownedDraws>=reward.count?'獲得済み':''}</span>`).join('')}</div></div></div></details>
  <details class="shop-gacha-disclosure" id="shop-gacha-details" ${shopInfoOpen?'open':''}><summary>ガチャの詳細 <span>排出率・確定枠・ルール</span></summary><div class="shop-gacha-disclosure-content"><p>限定武器全 ${featured.length} 種。重複した武器は色と追撃効果が変化。攻撃力は上位レアリティを追い越せません。</p>
  <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
- <div class="shop-pity-tracks" aria-label="レアリティ確定までの最長回数"><div class="shop-pity-row"><div class="shop-pity-copy"><strong>RARE+ 確定</strong><span>最大あと ${pity.rare.remaining} 回 · ${pity.rare.current} / ${pity.rare.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="レア以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.rare.limit}" aria-valuenow="${pity.rare.current}"><span style="width:${pity.rare.percent}%"></span></div></div><div class="shop-pity-row"><div class="shop-pity-copy"><strong>EPIC+ 確定</strong><span>最大あと ${pity.epic.remaining} 回 · ${pity.epic.current} / ${pity.epic.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="エピック以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.epic.limit}" aria-valuenow="${pity.epic.current}"><span style="width:${pity.epic.percent}%"></span></div></div></div>
+ <div class="shop-pity-tracks" aria-label="レアリティ確定までの最長回数"><div class="shop-pity-row"><div class="shop-pity-copy"><strong>RARE+ 確定</strong><span>最大あと ${pity.rare.remaining} 回 · ${pity.rare.current} / ${pity.rare.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="レア以上の確定までのガチャ記録" aria-valuemin="0" aria-valuemax="${pity.rare.limit}" aria-valuenow="${pity.rare.current}"><span style="width:${pity.rare.percent}%"></span></div></div><div class="shop-pity-row"><div class="shop-pity-copy"><strong>EPIC+ 確定</strong><span>最大あと ${pity.epic.remaining} 回 · ${pity.epic.current} / ${pity.epic.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="エピック以上の確定までのガチャ記録" aria-valuemin="0" aria-valuemax="${pity.epic.limit}" aria-valuenow="${pity.epic.current}"><span style="width:${pity.epic.percent}%"></span></div></div></div>
  <p class="shop-pity">早めにレア武器が出た場合は対応する確定カウントがリセットされます。重複すると20〜90 Gを返還し、欠片が1個増えます。欠片を1個入手した時点で色と追撃が変わり、覚醒すると次の変化を解放できます。</p><p>10連は単発10回と同じ抽選・確定カウントを使い、${GACHA_TEN_PULL_COST} Gを消費します。割引や別の確定枠はありません。</p><p>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はできません。装備によって英語の正誤判定・XP・ボスの必須3問は変わりません。</p></div></details></div>`;
  panel.querySelector('#shop-gacha-details')?.addEventListener('toggle',event=>{shopInfoOpen=event.currentTarget.open;});
  panel.querySelector('#shop-gacha-catalog')?.addEventListener('toggle',event=>{shopCatalogOpen=event.currentTarget.open;});
  const commitResult=(next,successMessage)=>{
-  if(!persist(next)){forgeMessage='保存に失敗しました。売却や召喚は反映していません。';renderEconomyShop();return false;}
+  const previous=save;
+  if(!persist(next)){
+   // A failed save must not appear to spend G or grant a weapon in memory.
+   save=previous;
+   forgeMessage='保存に失敗しました。売却やガチャは反映していません。';
+   renderEconomyShop();return false;
+  }
   // Selling or summoning must not navigate away from the forge before the
   // player can equip the item they just earned. Returning home redraws art.
   forgeMessage=successMessage;renderEconomyShop();renderEquipmentCollection();syncGameHud();return true;
@@ -2928,7 +2934,7 @@ function renderEconomyShop(){
   if(!result.weapon)return null;
   // Commit before animation, but keep the underlying live status generic:
   // revealing a name here would spoil the chest for screen-reader players.
-  if(!commitResult(result.save,'召喚結果を保存しました。'))return null;
+  if(!commitResult(result.save,'ガチャ結果を保存しました。'))return null;
   return {...result,art:monsterArt(save.selectedMonster,getMonsterProgress(save).stage,result.weapon),
    affinity:WEAPON_AFFINITY_LABELS[result.weapon.affinity],canRepeat:(save.coins||0)>=GACHA_COST};
  };
@@ -2937,7 +2943,7 @@ function renderEconomyShop(){
   if((save.coins||0)<GACHA_TEN_PULL_COST)return null;
   const result=drawWeaponGachaTen(save);
   if(result.error)return null;
-  if(!commitResult(result.save,'10連召喚の結果を保存しました。'))return null;
+  if(!commitResult(result.save,'10連ガチャの結果を保存しました。'))return null;
   return {...result,canRepeat:(save.coins||0)>=GACHA_TEN_PULL_COST};
  };
  drawNextTenSummons=drawTenAndCommit;

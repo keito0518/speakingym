@@ -24,7 +24,7 @@ const {chromium,webkit}=require('playwright');
    await page.reload({waitUntil:'networkidle'});
    await page.locator('#game-tabs [data-game-tab="forge"]').click();
    assert.equal(await page.locator('#shop-draw-ten').isEnabled(),true);
-   assert.match(await page.locator('#shop-draw-ten').innerText(),/10連召喚.*1200 G/s);
+   assert.match(await page.locator('#shop-draw-ten').innerText(),/10連ガチャ.*1200 G/s);
    assert.equal(await page.locator('#shop-gacha-details').getAttribute('open'),null,
     'Detailed summon rules should start collapsed');
    await page.locator('#shop-gacha-details summary').click();

@@ -19,7 +19,7 @@ const STEPS=Object.freeze([
   scene:['必殺ゲージ','1 / 3 → 2 / 3 → 3 / 3','必殺技を使う'],tips:['必殺技は使うタイミングが大事。','ボスによって役立つ控えが違う。詳しい相性は攻略メモで見よう。']},
  {chapter:'growth',title:'8. 育成と武器で強くなろう',body:'冒険でXPをため、仲間を育てよう。Lv.4・7・10・13で攻撃力が上昇し、Lv.4で熟練技も覚えるよ。武器には英語の得意攻撃による追撃がある。',
   scene:['強敵やボスを倒す','武器をドロップ！','図鑑で装備する'],tips:['自力正解3問以上＋ボス撃破で章の武器を初回確定入手。再挑戦ではレアも狙えるよ。','5体目の強敵は自力攻撃2回以上で限定装備が18%の確率で落ちる。ボスの封印は英語3問のままだよ。']},
- {chapter:'growth',title:'9. 狙う仲間と連勝宝箱',body:'ホームで次に欲しい仲間を選ぼう。獲得条件が少しずつ進むのを確認できるよ。各エリアで3・5・8 CHAINに初めて到達すると宝箱から育成XPと召喚用ゴールドを獲得。',
+ {chapter:'growth',title:'9. 狙う仲間と連勝宝箱',body:'ホームで次に欲しい仲間を選ぼう。獲得条件が少しずつ進むのを確認できるよ。各エリアで3・5・8 CHAINに初めて到達すると宝箱から育成XPとガチャに使えるゴールドを獲得。',
   scene:['モンスターハント','狙う仲間を選ぶ','3 CHAIN → 宝箱'],tips:['仲間のレア度が高いと、別の日の復習や複数エリアのボス攻略も必要。','宝箱はエリアごとに1回だけ。ヒントなしの連続成功が条件だよ。']},
  {chapter:'growth',title:'10. 間違いは復習につなげよう',body:'問題のあとで解説を読もう。「問題を保存」から後日やり直すと、使える英語として定着していくよ。',
   scene:['学習の記録','間違い・保存した問題','復習に挑戦'],tips:['ヒントは使ってOK。ただし自力正解とは区別して記録。','毎日長く遊ぶ必要はないよ。少しずつ続けよう。']}
@@ -93,7 +93,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2><p>英語で攻撃して、ボスを倒せばクリア。<br>まずは森の入口から！</p>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
- <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-formation-link" data-feature-formation hidden>仲間を編成して出発</button><button type="button" class="home-world-link home-armory-link" data-feature-armory>星の祭壇 · 武器召喚</button><button type="button" class="home-world-link" data-feature-worlds>エリア・出撃設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
+ <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-formation-link" data-feature-formation hidden>仲間を編成して出発</button><button type="button" class="home-world-link home-armory-link" data-feature-armory>武器ガチャ</button><button type="button" class="home-world-link" data-feature-worlds>エリア・出撃設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
  feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>startMode('forest'));
  feature.querySelector('[data-feature-formation]').addEventListener('click',()=>startMode('forest-formation'));
@@ -322,7 +322,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
      menu.querySelector('[data-feature-formation]').hidden=ownedCount<2;
      const armory=menu.querySelector('[data-feature-armory]');
      if(summon){
-       armory.textContent=summon.readyNow?'星の祭壇 · 召喚できる！':summon.readyAfterSale?'星の祭壇 · お宝を売れば召喚！':`星の祭壇 · あと${summon.missing} Gで召喚`;
+       armory.textContent=summon.readyNow?'武器ガチャ · 今すぐ引ける！':summon.readyAfterSale?'武器ガチャ · お宝を売れば引ける！':`武器ガチャ · あと${summon.missing} G`;
        armory.dataset.summonReady=String(summon.readyNow||summon.readyAfterSale);
      }
      menu.querySelector('#home-feature-practice').hidden=cleared>0;

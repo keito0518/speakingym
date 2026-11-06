@@ -1398,7 +1398,7 @@ const path=require('node:path');
       assert.match(await forestPage.locator('#result-title').innerText(),/ボスを討伐/);
       assert.equal(await forestPage.locator('.result-summon-goal').isVisible(),true,
         'Clearing a chapter should reveal progress toward the next earned weapon summon');
-      assert.match(await forestPage.locator('.result-summon-copy').innerText(),/次の武器召喚/);
+      assert.match(await forestPage.locator('.result-summon-copy').innerText(),/次の武器ガチャ/);
       assert.equal(await forestPage.locator('.result-summon-track').getAttribute('aria-valuemax'),'100');
       assert.equal(await forestPage.locator('#dungeon-victory-recap').isVisible(),true,
         `${engine}/${width}: a boss clear immediately shows its English and evolution rewards`);
