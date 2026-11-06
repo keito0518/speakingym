@@ -390,6 +390,7 @@ const path=require('node:path');
       await context.close();
     }
     const locked=await boot(320);await locked.page.locator('[data-home-page="collection"]').click();
+    await locked.page.locator('[data-catalog-filter="all"]').click();
     await locked.page.locator('[data-open-monster="katappo"]').click();
     assert.equal(await locked.page.locator('#open-training').count(),0);
     assert.match(await locked.page.locator('#detail-content').innerText(),/？？？.*未発見の仲間/s);
