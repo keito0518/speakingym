@@ -11,16 +11,17 @@ const ui=readFileSync(new URL('monsters.js',root),'utf8');
 test('all 64 gacha weapons select one of nine choreography families and a unique shape motif',()=>{
  const gacha=WEAPONS.filter(weapon=>weapon.source==='gacha');
  assert.equal(gacha.length,64);
+ assert.equal(WEAPONS.length,80);
  assert.equal(new Set(gacha.map(weapon=>weapon.shape)).size,16);
  assert.deepEqual(new Set(Object.keys(WEAPON_ATTACK_MOTIONS)),new Set(Object.keys(WEAPON_SHAPE_LABELS)));
  assert.equal(new Set(Object.values(WEAPON_ATTACK_MOTIONS)).size,9);
- for(const weapon of gacha){
+ for(const weapon of WEAPONS){
   const visual=weaponBattleVisual({...weapon,awakeningRank:2});
-  assert.equal(visual.shape,weapon.shape);
+  if(weapon.source==='gacha')assert.equal(visual.shape,weapon.shape);
   assert.equal(visual.rarity,weapon.rarity);
   assert.equal(visual.rank,2);
-  assert.ok(visual.motion&&visual.motion!=='unarmed');
-  assert.match(css,new RegExp(`\\[data-weapon-shape="${weapon.shape}"\\]`),`${weapon.shape} needs its own rendered path`);
+  assert.ok(visual.motion&&visual.motion!=='unarmed',`${weapon.id} must have a visual even when earned in a chapter`);
+  assert.match(css,new RegExp(`\\[data-weapon-shape="${visual.shape}"\\]`),`${visual.shape} needs its own rendered path`);
   assert.match(css,new RegExp(`data-weapon-motion="${visual.motion}"`),`${visual.motion} needs a motion keyframe`);
  }
 });

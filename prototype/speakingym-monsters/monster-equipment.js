@@ -101,8 +101,17 @@ export const WEAPON_ATTACK_MOTIONS=Object.freeze({
  axe:'crush',scythe:'sweep',crossbow:'shoot',claw:'flurry',shield:'brace',whip:'lash',
  fan:'pulse',flute:'pulse',lantern:'channel',ring:'pulse'
 });
+// Story and elite drops predate the gacha's shape field. Give these earned
+// weapons a matching silhouette without changing their saved schema or power.
+const LEGACY_WEAPON_SHAPES=Object.freeze({
+ wooden_blade:'sword',sun_dagger:'dagger',mist_spear:'spear',elder_staff:'staff',
+ rail_saber:'sword',market_knife:'dagger',signal_lance:'spear',frost_sword:'sword',
+ rune_blade:'sword',chrono_edge:'sword',moonsteel:'sword',snowguard:'sword',
+ starlight:'sword',moss_fang:'claw',blizzard_lance:'spear',astral_sword:'sword'
+});
 export function weaponBattleVisual(weapon){
- const shape=weapon?.shape&&Object.hasOwn(WEAPON_ATTACK_MOTIONS,weapon.shape)?weapon.shape:'unarmed';
+ const candidate=weapon?.shape||LEGACY_WEAPON_SHAPES[weapon?.id];
+ const shape=candidate&&Object.hasOwn(WEAPON_ATTACK_MOTIONS,candidate)?candidate:'unarmed';
  const rarity=['common','rare','epic','legend'].includes(weapon?.rarity)?weapon.rarity:'none';
  const rank=Number.isSafeInteger(weapon?.awakeningRank)?Math.max(0,Math.min(3,weapon.awakeningRank)):0;
  return {shape,motion:WEAPON_ATTACK_MOTIONS[shape]||'unarmed',rarity,rank};
