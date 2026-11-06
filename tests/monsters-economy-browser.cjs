@@ -127,8 +127,8 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
   for(let i=0;i<3;i++)await page.locator('#summon-seal').click();
   await page.waitForFunction(()=>document.querySelector('#summon-screen')?.dataset.phase==='surge',null,{timeout:5000});
-  assert.match(await page.locator('#summon-story').innerText(),/高エネルギー反応/,
-   'The EPIC surge should use the current Prism Gate cinematic, not the removed ritual copy');
+  assert.match(await page.locator('#summon-story').innerText(),/宝箱から大きな虹/,
+   'The EPIC surge should use the same storybook treasure theme as the companions');
   assert.equal(await page.locator('#summon-reveal-art').evaluate(el=>getComputedStyle(el).opacity),'0',
    'Weapon art should be hidden until the surge finishes or is explicitly skipped');
   await page.locator('#summon-skip').click();
