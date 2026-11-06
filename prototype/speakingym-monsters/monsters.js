@@ -47,6 +47,9 @@ import { setupBetaFeedback } from './beta-feedback.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+// Keep the badge above the foe terse and in English. Beginner explanations
+// belong to the separate answer controls, not over the battle sprites.
+const WEAK_BADGE_LABELS=Object.freeze({speak:'Speak',listen:'Listen',vocab:'Vocab',grammar:'Grammar'});
 const battleSounds=createWeaponBattleSoundPlayer();
 // Every dungeon encounter uses a single arena for characters, the question and its
 // answer controls. Move the existing live nodes instead of duplicating a form:
@@ -852,7 +855,7 @@ function renderForestHud() {
   const affinity=play.tactics?foeBattleAffinity({foeId:foe.id,style:foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:play.index>=regularCount()}),shifted:play.tactics.foeShifted}):foeAffinity(foe.id);
   const weak=$('#forest-enemy-weakness');
   weak.hidden=!play.tactics;
-  if(play.tactics){weak.textContent=`弱点：${BATTLE_LABELS[affinity.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[affinity.weak]}`);weak.dataset.kind=affinity.weak;}
+  if(play.tactics){weak.textContent=`Weak: ${WEAK_BADGE_LABELS[affinity.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[affinity.weak]}`);weak.dataset.kind=affinity.weak;}
   // Separate the English name and Japanese epithet at a meaningful line break.
   $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
   $('#forest-foe-pattern').textContent=bossPhase?`${tactic.name} · ${bossPhase.signature.name}`:tactic.name;
@@ -1119,7 +1122,7 @@ function renderTacticalControls(){
  const foeStyle=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
  const element=foeBattleAffinity({foeId:foe.id,style:foeStyle,shifted:t.foeShifted});
  const weak=$('#forest-enemy-weakness');
- if(weak){weak.hidden=false;weak.textContent=`弱点：${BATTLE_LABELS[element.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[element.weak]}`);weak.dataset.kind=element.weak;}
+ if(weak){weak.hidden=false;weak.textContent=`Weak: ${WEAK_BADGE_LABELS[element.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[element.weak]}`);weak.dataset.kind=element.weak;}
  const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
  const incoming=t.turn==='enemy';
  const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0;

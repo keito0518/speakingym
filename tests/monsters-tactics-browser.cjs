@@ -788,7 +788,7 @@ const assert=require('node:assert/strict');
    assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'4');
    assert.match(await shiftingPage.locator('#forest-battle-log').textContent(),/属性変化！ 次の弱点は文法/);
    assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'true');
-   assert.equal(await shiftingPage.locator('#forest-enemy-weakness').innerText(),'弱点：文法',
+   assert.equal(await shiftingPage.locator('#forest-enemy-weakness').innerText(),'Weak: Grammar',
      'The visible weakness badge changes when the enemy shifts its affinity');
    assert.match(await shiftingPage.locator('.forest-tactic-heading').textContent(),/敵の弱点：文法.*耐性：リスニング/s);
    await shiftingPage.locator('#next-question').click();
@@ -831,7 +831,7 @@ const assert=require('node:assert/strict');
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    const weakness=counterPage.locator('#forest-enemy-weakness');
    assert.equal(await weakness.isVisible(),true,'A foe weakness label is displayed in the battle scene');
-   assert.equal(await weakness.innerText(),'弱点：リスニング','The visible badge must tell players which English skill beats this foe');
+   assert.equal(await weakness.innerText(),'Weak: Listen','The visible badge stays compact and in English above the foe');
    assert.match(await weakness.getAttribute('aria-label'),/敵の弱点：リスニング/);
    const weaknessLayout=await counterPage.evaluate(()=>{
      const badge=document.querySelector('#forest-enemy-weakness').getBoundingClientRect();
