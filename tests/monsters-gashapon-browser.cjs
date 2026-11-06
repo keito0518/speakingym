@@ -20,8 +20,8 @@ const {chromium,webkit}=require('playwright');
    await page.locator('#shop-draw-ten').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
    assert.equal(await page.locator('.summon-vault-stage').isVisible(),true);
-   assert.match(await page.locator('.summon-vault-backdrop').evaluate(el=>getComputedStyle(el).backgroundImage),/summon-vault\.webp/,
-    'The summon must use the finished game-environment artwork');
+   assert.match(await page.locator('.summon-vault-backdrop').evaluate(el=>getComputedStyle(el).backgroundImage),/prism-gate\.svg/,
+    'The summon must use the finished futuristic reactor artwork');
    assert.equal(await page.locator('.summon-tier-splash').count(),1);
    assert.match(await page.locator('#shop-coins').innerText(),/2010 G/,'The result is committed before unlocking the vault');
 
@@ -47,6 +47,14 @@ const {chromium,webkit}=require('playwright');
    await page.locator('[data-batch-equip="9"]').click();
 
    assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
+   const contrast=await page.locator('#equipment-weapon-status').evaluate(el=>{
+    const parse=color=>getComputedStyle(el).getPropertyValue(color).match(/[\d.]+/g).slice(0,3).map(Number);
+    const luminance=channels=>channels.map(value=>{const s=value/255;return s<=.04045?s/12.92:((s+.055)/1.055)**2.4;})
+     .reduce((total,value,index)=>total+value*[.2126,.7152,.0722][index],0);
+    const [foreground,background]=[parse('color'),parse('background-color')].map(luminance);
+    return (Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05);
+   });
+   assert.ok(contrast>=4.5,`Equipped weapon status needs WCAG AA text contrast; got ${contrast.toFixed(2)}:1`);
    assert.equal(await page.locator('#weapon-awaken').isEnabled(),true,'Nine duplicates make awakening available');
    await page.locator('#weapon-awaken').click();
    assert.match(await page.locator('#equipment-weapon-status').innerText(),/覚醒成功/);

@@ -695,3 +695,123 @@ body.summon-active{overflow:hidden}
 @media(max-width:430px){.summon-batch-card{min-height:219px}.summon-batch-card .summon-batch-weapon{width:80px;height:92px}}
 @media(prefers-reduced-motion:reduce){.summon-weapon-pedestal svg.summon-weapon-illustration{animation:none}}
 .monsters-quiet-motion .summon-weapon-pedestal svg.summon-weapon-illustration{animation:none}
+
+/* PRISM GATE: Japanese mobile-RPG energy chamber, replacing the European vault.
+   Controls and reward cards intentionally share the same light language. */
+.collection-weapons #equipment-weapon-status,
+.collection-weapons #equipment-weapon-status[data-rarity="none"]{
+ padding:12px 14px;border:1px solid #4fa6a8;border-radius:10px;
+ background:#123a46;color:#f4fcff;font-size:14px;font-weight:750;line-height:1.65;
+ text-shadow:none;overflow-wrap:anywhere
+}
+.collection-weapons #equipment-weapon-status[data-rarity="rare"]{background:#142e54;border-color:#6d9fe0;color:#f2f7ff}
+.collection-weapons #equipment-weapon-status[data-rarity="epic"]{background:#38214d;border-color:#b48bda;color:#fff2ff}
+.collection-weapons #equipment-weapon-status[data-rarity="legend"]{background:#493521;border-color:#e3bc6c;color:#fff4dd}
+.summon-screen{background:#060e25;--summon-color:#94e7ff;--summon-glow:#33c6ed;--summon-accent:#e4faff}
+.summon-screen[data-rarity="legend"]{--summon-color:#ffe29b;--summon-glow:#ffb64b;--summon-accent:#fff5cd}
+.shop-gacha .summon-banner{border-color:#56c5ed;
+ background:linear-gradient(90deg,#040f2af5 3%,#092852b8 56%,#09285224),url('./assets/prism-gate.svg') center 40%/cover;
+ box-shadow:inset 0 1px #aaf5ff9c,0 12px 28px #020b1c99}
+.shop-gacha .summon-banner-title{font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;
+ letter-spacing:.075em;text-shadow:0 3px 18px #000,0 0 20px #25d0f9}
+.shop-gacha .summon-banner-ring{border-color:#73eaff9e;box-shadow:0 0 32px #21d8f976}
+.shop-gacha .summon-banner-spark{background:linear-gradient(#fff,#80eaf6);box-shadow:0 0 32px #3dfff7}
+.summon-vault-backdrop{background:linear-gradient(180deg,#06102766,#06102711 38%,#050e25 98%),url('./assets/prism-gate.svg') center 40%/cover no-repeat;
+ background-color:#091a35;filter:brightness(.92) saturate(1.22);transform:scale(1.01)}
+.summon-vault-backdrop::before{content:"";position:absolute;inset:-10%;background:repeating-linear-gradient(0deg,transparent 0 44px,#77e4ff14 45px,transparent 47px 90px);
+ mix-blend-mode:screen;opacity:.52;animation:prism-scan 9s linear infinite}
+.summon-vault-backdrop::after{background:radial-gradient(ellipse at 50% 34%,#8fe8ff22,transparent 46%),linear-gradient(0deg,#02091de8,transparent 40% 82%,#040b2278)}
+.summon-vault-crest{border:1px solid #65e9fff2;border-radius:24%;transform:translate(-50%,-50%) rotate(45deg);
+ box-shadow:0 0 0 8px #72e2ff12,0 0 35px #23d3ff81,inset 0 0 40px #3ef2ff71;animation:prism-core-pulse 2.4s ease-in-out infinite alternate}
+.crest-orbit{border-color:#a9f4ff;border-radius:25%;box-shadow:0 0 20px #3bdbff}
+.crest-orbit.orbit-a{border-style:solid;clip-path:polygon(0 0,60% 0,60% 15%,100% 15%,100% 100%,0 100%);animation:prism-orbit 6s linear infinite}
+.crest-orbit.orbit-b{border-style:dashed;border-radius:50%;animation:prism-orbit 9s linear infinite reverse}
+.crest-spokes{border-color:#98ecff;box-shadow:0 0 22px #34e4ff}
+.summon-vault-seal{border:2px solid #cef8ff;border-radius:25%;transform:translate(-50%,-50%) rotate(45deg);
+ color:#eafdff;background:conic-gradient(from 0deg,#087cbd,#75eaff,#174ca7,#cbfcff,#087cbd);
+ box-shadow:0 0 0 5px #07112dcc,0 0 0 8px #5bdeff7a,0 0 52px #44e0ffb0,0 16px 36px #020819;
+ animation:prism-control-float 2.2s ease-in-out infinite alternate}
+.summon-vault-seal::before{border:2px dashed #c8fcff;inset:6px;border-radius:22%;animation:prism-orbit 13s linear infinite}
+.summon-seal-inner{border:1px solid #acfcff;border-radius:17%;transform:rotate(-45deg);
+ background:radial-gradient(circle at 45% 30%,#64eeffb5,#1b5ea8 43%,#041c49 78%);
+ box-shadow:inset 0 0 32px #bbfcffbb,0 0 24px #64eaff8e}
+.summon-seal-inner svg{stroke:#e7fdff;filter:drop-shadow(0 0 9px #4febff)}
+.summon-seal-inner b{color:#f3ffff;font-family:system-ui,-apple-system,sans-serif;letter-spacing:.12em;font-size:10px}
+.summon-vault-guide{border:1px solid #67dfff;border-radius:15px;color:#f1fdff;
+ background:linear-gradient(145deg,#092453ed,#05152de8);box-shadow:inset 0 1px #8cefff77,0 15px 35px #020917d9}
+.summon-vault-guide .tiny-caps{color:#8feaff;letter-spacing:.18em}
+.summon-vault-guide strong{font-family:system-ui,-apple-system,sans-serif;text-shadow:0 0 17px #33d6ff}
+.summon-vault-guide>span:nth-child(3){color:#d5f7ff}
+.summon-seal-meter{border-color:#2f9dc9}
+.summon-seal-meter span{background:linear-gradient(90deg,#28a7ff,#50fff1,#e4fcff);box-shadow:0 0 17px #34eaff}
+.summon-vault-shards>span{clip-path:polygon(48% 0,100% 47%,56% 100%,0 45%);
+ background:linear-gradient(120deg,#faffff,#4deaff 60%,#ab89fc);filter:drop-shadow(0 0 17px #63e9ff)}
+.summon-vault-doors>span{background:linear-gradient(100deg,#01183d55,#81efffad,#1f61ff42)}
+.summon-vault-doors>span:last-child{background:linear-gradient(260deg,#01183d55,#81efffad,#1f61ff42)}
+.summon-vault-heaven{background:radial-gradient(ellipse at 50% 42%,#fff 0%,#7afaff 10%,var(--summon-color) 23%,transparent 53%)}
+.summon-screen[data-phase="manual"] .summon-story,.summon-screen[data-phase="unseal"] .summon-story{
+ letter-spacing:.06em;font-family:system-ui,-apple-system,sans-serif;text-shadow:0 2px 12px #020a29,0 0 25px #2ccef3}
+.summon-sigil{display:none} /* No pentagrams, faux runes or occult circles. */
+.summon-portal{filter:drop-shadow(0 0 32px #3ae6ff4d)}
+.summon-orbit{border-color:#66edffaf;border-radius:24%;transform:rotate(45deg)}
+.summon-orbit.orbit-two{border:2px dashed #a4ffffab}
+.summon-core{border-radius:18%;background:radial-gradient(circle at 39% 28%,#fff,#84f7ff 25%,#1d65d0 63%,#07173b 88%)}
+.summon-screen[data-phase="charge"] .summon-vault-backdrop{animation:prism-zoom 1.4s ease-out both}
+.summon-screen[data-phase="crack"] .summon-core{animation:summon-shudder .08s linear infinite alternate,prism-overdrive .55s ease-in-out infinite alternate}
+.summon-screen[data-phase="surge"] .summon-rays{opacity:.65!important;animation-duration:.7s}
+.summon-screen[data-phase="surge"] .summon-meteors span{height:60%;width:7px}
+.summon-tier-splash{background:linear-gradient(120deg,transparent 18%,#efffff36 50%,transparent 83%)}
+.summon-tier-splash span{font-family:system-ui,-apple-system,sans-serif;font-weight:1000;letter-spacing:.08em;
+ font-style:italic;-webkit-text-stroke:1px #fff9;text-shadow:0 3px 3px #030f27,0 0 28px #fff,0 0 70px var(--summon-glow)}
+.summon-reward h2{font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;letter-spacing:.02em}
+.summon-weapon-pedestal::before{border-color:#88efff;border-radius:24%;transform:rotate(45deg);box-shadow:0 0 40px var(--summon-glow)}
+.summon-batch-card{border-radius:14px;border-color:#4dd6fb;background:radial-gradient(ellipse at 50% 5%,#277d9d68,transparent 65%),linear-gradient(150deg,#143858,#071326);
+ box-shadow:inset 0 1px #98efff55,0 10px 22px #000a}
+.summon-batch-card::before{border:3px solid #82eaff;border-radius:14px;
+ background:radial-gradient(circle at 50% 45%,#3deaff 0 3%,#093456 8% 25%,#5decff 27% 28%,#071a38 31% 75%),linear-gradient(140deg,#1a5f9a,#041123)}
+.summon-batch-card button{border-radius:10px;border-color:#63c7e7;color:#f0ffff;background:linear-gradient(#17608d,#17304f)}
+.summon-batch-card[data-tier="legend"]{border-color:#ffda83;box-shadow:inset 0 0 0 2px #ab671c88,0 0 30px #ffaf5a75}
+.summon-batch-card[data-tier="epic"]{border-color:#d6a7ff;box-shadow:inset 0 0 0 2px #8935d878,0 0 24px #bb71ff5b}
+.summon-screen[data-rarity="legend"][data-phase="surge"] .summon-vault-heaven{animation:vault-legend-flash .9s ease-out both}
+.summon-vault-stage::before{content:"";position:absolute;top:0;left:50%;height:70%;width:50%;transform:translateX(-50%);
+ pointer-events:none;background:linear-gradient(0deg,#d1ffff00,#58dbff4b 36%,#8cf6ff00 95%);clip-path:polygon(49% 0,51% 0,80% 100%,20% 100%);
+ animation:prism-column-pulse 3.1s ease-in-out infinite alternate;z-index:-1}
+.summon-vault-stage::after{content:"";position:absolute;top:65%;left:50%;width:min(88vw,550px);height:18%;transform:translateX(-50%);
+ pointer-events:none;background:radial-gradient(ellipse,#7cf9ff8a 0,#2179c05e 28%,transparent 72%);filter:blur(11px);z-index:-1}
+.summon-vault-crest::before{content:"";position:absolute;inset:-11px;border-radius:26%;
+ background:conic-gradient(#4de8ff calc(var(--seal-progress,0) * 1%),transparent 0);
+ mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
+ padding:5px;box-shadow:0 0 24px #30eaff;pointer-events:none}
+.summon-vault-crest::after{content:"";position:absolute;inset:-17%;border:1px solid #81e8ff65;border-radius:27%;
+ opacity:.8;transform:rotate(18deg);box-shadow:inset 0 0 10px #63eeff49;pointer-events:none}
+.prism-light-streaks{position:fixed;inset:0;pointer-events:none;z-index:3;overflow:hidden;opacity:0}
+.prism-light-streaks>span{position:absolute;left:50%;top:39%;width:3px;height:clamp(65px,20vh,190px);
+ transform:rotate(var(--streak-angle)) translateY(-180px) scaleY(.01);transform-origin:50% 0;
+ background:linear-gradient(transparent,#e8ffff 70%,var(--summon-color));
+ box-shadow:0 0 13px var(--summon-glow);opacity:0}
+.summon-screen[data-phase="unseal"] .prism-light-streaks{opacity:1}
+.summon-screen[data-phase="unseal"] .prism-light-streaks>span{animation:prism-streak-out .9s var(--streak-delay) ease-out both}
+.summon-screen[data-phase="unseal"] .summon-vault-seal{animation:prism-core-launch .85s cubic-bezier(.2,0,.15,1) both}
+.summon-screen[data-phase="unseal"] .summon-vault-crest{animation:prism-core-detonate .85s ease-out both}
+.summon-screen[data-phase="surge"] .prism-light-streaks{opacity:1}
+.summon-screen[data-phase="surge"] .prism-light-streaks>span{animation:prism-streak-spin .9s var(--streak-delay) ease-in-out infinite}
+.summon-screen[data-phase="crack"] .summon-vault-backdrop::before,
+.summon-screen[data-phase="surge"] .summon-vault-backdrop::before{animation-duration:.8s;opacity:.92}
+.summon-screen[data-rarity="epic"][data-phase="surge"] .prism-light-streaks>span{background:linear-gradient(transparent,#fff,#d78eff)}
+.summon-screen[data-rarity="legend"][data-phase="surge"] .prism-light-streaks>span{background:linear-gradient(transparent,#fff,#ffdc65);
+ box-shadow:0 0 15px #ffbe5b}
+@keyframes prism-column-pulse{to{opacity:.4;transform:translateX(-50%) scaleX(.7)}}
+@keyframes prism-streak-out{0%{opacity:0;transform:rotate(var(--streak-angle)) translateY(-60px) scaleY(.01)}15%{opacity:1}100%{opacity:0;transform:rotate(var(--streak-angle)) translateY(-500px) scaleY(1.6)}}
+@keyframes prism-streak-spin{0%{opacity:0;transform:rotate(var(--streak-angle)) translateY(-60px) scaleY(.1)}25%{opacity:1}80%{opacity:1}100%{opacity:0;transform:rotate(calc(var(--streak-angle) + 35deg)) translateY(-390px) scaleY(2)}}
+@keyframes prism-core-launch{0%{transform:translate(-50%,-50%) rotate(45deg) scale(1);opacity:1}38%{transform:translate(-50%,-50%) rotate(70deg) scale(1.25);filter:brightness(2.8)}100%{transform:translate(-50%,-50%) rotate(180deg) scale(3.4);opacity:0}}
+@keyframes prism-core-detonate{to{transform:translate(-50%,-50%) rotate(260deg) scale(2.6);opacity:0}}
+@media(prefers-reduced-motion:reduce){.summon-vault-stage::before,.prism-light-streaks>span{animation:none!important}}
+.monsters-quiet-motion .summon-vault-stage::before,.monsters-quiet-motion .prism-light-streaks>span{animation:none!important}
+@keyframes prism-core-pulse{to{box-shadow:0 0 0 16px #72e2ff17,0 0 68px #43f6ffd8,inset 0 0 63px #81efff88;filter:brightness(1.22)}}
+@keyframes prism-control-float{to{transform:translate(-50%,-53%) rotate(45deg);box-shadow:0 0 0 5px #07112dcc,0 0 0 10px #5bdeff9d,0 0 70px #44e0ffcf}}
+@keyframes prism-orbit{to{transform:rotate(360deg)}}
+@keyframes prism-scan{to{transform:translateY(90px)}}
+@keyframes prism-zoom{0%{transform:scale(1);filter:brightness(.92)}40%{transform:scale(1.26);filter:brightness(2)}100%{transform:scale(1.1);filter:brightness(.6)}}
+@keyframes prism-overdrive{to{box-shadow:0 0 130px #f4ffff,0 0 170px var(--summon-glow);filter:brightness(1.5)}}
+@media(prefers-reduced-motion:reduce){.summon-vault-backdrop::before,.summon-vault-crest,.summon-vault-seal{animation:none!important}}
+.monsters-quiet-motion .summon-vault-backdrop::before,.monsters-quiet-motion .summon-vault-crest,.monsters-quiet-motion .summon-vault-seal{animation:none!important}

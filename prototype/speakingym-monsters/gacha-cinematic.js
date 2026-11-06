@@ -4,10 +4,10 @@
 import {summonWeaponArtwork} from './summon-weapon-art.js';
 
 const RARITY_COPY=Object.freeze({
- common:{label:'COMMON',name:'旅の武器',intro:'装備の気配が集まっていく…',surge:''},
- rare:{label:'RARE',name:'希少な武器',intro:'青い光が召喚陣を包む…',surge:''},
- epic:{label:'EPIC',name:'秘宝級の武器',intro:'紫の雷光が走る…',surge:'召喚陣が共鳴している！'},
- legend:{label:'LEGEND',name:'伝説の武器',intro:'金色の星が目を覚ます…',surge:'伝説の封印が、いま解き放たれる！'}
+ common:{label:'COMMON',name:'旅の武器',intro:'エネルギーを解析中…',surge:''},
+ rare:{label:'RARE',name:'希少な武器',intro:'青い光が一気に加速する…',surge:''},
+ epic:{label:'EPIC',name:'秘宝級の武器',intro:'紫色の光が限界値を突破…',surge:'高エネルギー反応！ さらに加速！'},
+ legend:{label:'LEGEND',name:'伝説の武器',intro:'虹色の光が中心に集まっていく…',surge:'最高レアリティの反応を検出！'}
 });
 
 // A high rarity has more anticipation, not different odds or extra draws.
@@ -62,25 +62,25 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root=document.createElement('div');
   root.id='summon-screen';root.className='summon-screen';root.hidden=true;
   root.dataset.phase='charge';root.dataset.rarity='common';
-  root.innerHTML=`<div class="summon-vault-backdrop" aria-hidden="true"></div><div class="summon-vault-doors" aria-hidden="true"><span></span><span></span></div><div class="summon-vault-heaven" aria-hidden="true"></div><div class="summon-tier-splash" aria-hidden="true"><span id="summon-tier-splash-text">LEGENDARY</span></div>
+  root.innerHTML=`<div class="summon-vault-backdrop" aria-hidden="true"></div><div class="summon-vault-doors" aria-hidden="true"><span></span><span></span></div><div class="summon-vault-heaven" aria-hidden="true"></div><div class="prism-light-streaks" aria-hidden="true">${Array.from({length:28},(_,i)=>`<span style="--streak-index:${i};--streak-angle:${(i*137.5).toFixed(1)}deg;--streak-delay:${(i%9)*.06}s"></span>`).join('')}</div><div class="summon-tier-splash" aria-hidden="true"><span id="summon-tier-splash-text">LEGENDARY</span></div>
   <div class="summon-universe" aria-hidden="true"><div class="summon-stardust"></div><div class="summon-rays"></div><div class="summon-aura"></div></div>
   <section class="summon-dialog" role="dialog" aria-modal="true" aria-labelledby="summon-title" aria-describedby="summon-story">
     <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>SUMMON</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="召喚画面を閉じる">閉じる</button></div></div>
-    <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">星の武器庫が目を覚ます…</p>
+    <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">召喚システム、起動準備完了。</p>
       <div class="summon-vault-stage" id="summon-vault-stage">
        <div class="summon-vault-crest" aria-hidden="true"><span class="crest-orbit orbit-a"></span><span class="crest-orbit orbit-b"></span><span class="crest-spokes"></span></div>
-       <button type="button" id="summon-seal" class="summon-vault-seal" aria-label="封印を上へスワイプして解く。タップ3回でも解ける">
-        <span class="summon-seal-inner"><svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 7 72 42 110 60 72 77 60 113 47 77 10 60 47 42Z"/><path d="M60 30 69 50 90 60 69 70 60 90 51 70 30 60 51 50Z"/><circle cx="60" cy="60" r="8"/></svg><b>UNSEAL</b></span>
+       <button type="button" id="summon-seal" class="summon-vault-seal" aria-label="コアを上へスワイプして起動する。タップ3回でも起動できる">
+        <span class="summon-seal-inner"><svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 11 105 60 60 109 15 60Z"/><path d="M60 25 91 60 60 95 29 60Z"/><path d="M60 39 79 60 60 81 41 60Z"/><path d="M60 48V9M72 60h40M60 72v39M48 60H9"/><circle cx="60" cy="60" r="7"/></svg><b>ACTIVATE</b></span>
        </button>
        <div class="summon-vault-shards" aria-hidden="true">${Array.from({length:18},(_,i)=>`<span style="--shard-angle:${i*20}deg;--shard-delay:${(i%6)*.035}s"></span>`).join('')}</div>
-       <div class="summon-vault-guide"><span class="tiny-caps">ASTRAL VAULT · SUMMON RITUAL</span><strong id="summon-seal-status" role="status">封印を上へスワイプ</strong><span>指を上へ滑らせる / タップ3回でも解放</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="封印解放の進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
+       <div class="summon-vault-guide"><span class="tiny-caps">PRISM GATE · SUMMON SYSTEM</span><strong id="summon-seal-status" role="status">コアを上へスワイプ</strong><span>上にスワイプ / 3回タップでも起動</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="コア起動の進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
       </div>
       <div class="summon-portal" aria-hidden="true">
         <div class="summon-confetti">${Array.from({length:24},(_,i)=>`<span style="--spark-rotation:${i*15}deg;--spark-delay:${(i%6)*.045}s"></span>`).join('')}</div><div class="summon-shockwave"></div>
         <div class="summon-meteors"><span></span><span></span><span></span><span></span><span></span><span></span></div>
         <div class="summon-ascension"></div>
         <div class="summon-orbit orbit-one"></div><div class="summon-orbit orbit-two"></div>
-        <svg class="summon-sigil" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="150" cy="150" r="133" stroke="currentColor" stroke-width="2"/><circle cx="150" cy="150" r="112" stroke="currentColor" stroke-width="1" stroke-dasharray="5 13"/><path d="M150 28 270 219H30L150 28ZM150 272 30 81h240L150 272Z" stroke="currentColor" stroke-width="1.5"/><circle cx="150" cy="150" r="70" stroke="currentColor" stroke-width="1.5"/><path d="M150 96 204 150 150 204 96 150Z" stroke="currentColor" stroke-width="2"/></svg>
+        <svg class="summon-sigil" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M150 17 266 83v134l-116 66-116-66V83Z" stroke="currentColor" stroke-width="2"/><path d="M150 50 237 100v100l-87 50-87-50V100Z" stroke="currentColor" stroke-width="1.5"/><path d="M150 79 221 150 150 221 79 150Z" stroke="currentColor" stroke-width="2"/></svg>
         <div class="summon-core"><span class="summon-core-inner"></span><span class="summon-crack crack-one"></span><span class="summon-crack crack-two"></span><span class="summon-crack crack-three"></span></div>
         <div class="summon-reveal-art" id="summon-reveal-art"></div><div class="summon-flash"></div>
       </div>
@@ -179,7 +179,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.dataset.mode=batch?'batch':'single';
   root.dataset.rarity=best.tier in RARITY_COPY?best.tier:'common';root.dataset.phase='charge';
   root.querySelector('#summon-tier-splash-text').textContent=best.tier==='legend'?'LEGENDARY':best.tier==='epic'?'EPIC AWAKENING':'RARE SUMMON';
-  root.querySelector('#summon-story').textContent=batch?'10の武器の気配が、ひとつの召喚陣に集う…':rarity.intro;
+  root.querySelector('#summon-story').textContent=batch?'10個の武器データを同時に召喚する…':rarity.intro;
   root.querySelector('#summon-rarity').textContent=batch?'10 SUMMONS · '+rarity.label:rarity.label+' · '+rarity.name;
   root.querySelector('#summon-title').textContent=batch?'10連召喚 結果':data.weapon.name;
   root.querySelector('#summon-attack').textContent=batch?`消費 ${data.spent} G · 重複返還 ${data.refunded} G`:
@@ -206,7 +206,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.style.setProperty('--seal-progress','0');
   root.querySelector('#summon-seal-meter').setAttribute('aria-valuenow','0');
   root.querySelector('#summon-seal-meter span').style.width='0%';
-  root.querySelector('#summon-seal-status').textContent='封印を上へスワイプ';
+  root.querySelector('#summon-seal-status').textContent='コアを上へスワイプ';
   root.querySelector('#summon-seal').disabled=false;
   root.dataset.phase='manual';
   root.querySelector('#summon-skip').textContent='操作をスキップして結果を見る';
@@ -219,22 +219,22 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.style.setProperty('--seal-progress',String(sealProgress));
   root.querySelector('#summon-seal-meter').setAttribute('aria-valuenow',String(Math.round(sealProgress)));
   root.querySelector('#summon-seal-meter span').style.width=`${Math.round(sealProgress)}%`;
-  root.querySelector('#summon-seal-status').textContent=sealProgress>=100?'封印解放！':`封印解放 ${Math.round(sealProgress)}%`;
+  root.querySelector('#summon-seal-status').textContent=sealProgress>=100?'コア起動！':`起動チャージ ${Math.round(sealProgress)}%`;
   if(sealProgress>=100){
    root.dataset.phase='unseal';root.querySelector('#summon-seal').disabled=true;
-   root.querySelector('#summon-story').textContent='星の扉が、いま開く――';
+   root.querySelector('#summon-story').textContent='エネルギー解放！ 召喚開始！';
    playCue('crack');later(startMagicSequence,900);
   }else playCue('turn');
  }
  function startMagicSequence(){
   if(!root||root.hidden||!active||root.dataset.phase!=='unseal')return;
   root.dataset.phase='charge';
-  root.querySelector('#summon-story').textContent=active.results?'十の星が、星核へと集う…':RARITY_COPY[active.tier].intro;
+  root.querySelector('#summon-story').textContent=active.results?'10個の武器データを一斉転送中…':RARITY_COPY[active.tier].intro;
   root.querySelector('#summon-skip').textContent='演出をスキップ';
   playCue('charge');
   const rarity=RARITY_COPY[root.dataset.rarity];
   const timeline=SUMMON_TIMINGS[root.dataset.rarity];
-  later(()=>{root.dataset.phase='crack';root.querySelector('#summon-story').textContent='封印が解ける――';playCue('crack');},timeline.crack);
+  later(()=>{root.dataset.phase='crack';root.querySelector('#summon-story').textContent='転送ゲート、臨界点に到達！';playCue('crack');},timeline.crack);
   if(timeline.surge!==null)later(()=>{
    root.dataset.phase='surge';root.querySelector('#summon-story').textContent=rarity.surge;
    playCue('surge');
