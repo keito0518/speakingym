@@ -22,7 +22,7 @@ export const SUMMON_TIMINGS=Object.freeze({
 const rarityOrder=['common','rare','epic','legend'];
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
-export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
+export function createGachaCinematic({onEquip,onPlayWithWeapon,onRepeat,onRepeatTen}){
  let root=null,active=null,previousFocus=null;
  let soundEnabled=false,audioContext=null;
  let lastTurnCue=0;
@@ -88,7 +88,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
       <div class="summon-reward" id="summon-reward"><span id="summon-rarity" class="summon-rarity">RARE</span><h2 id="summon-title">武器ガチャ</h2><p id="summon-attack"></p><p id="summon-duplicate" class="summon-duplicate" hidden></p></div>
       <div class="summon-batch-rewards" id="summon-batch-rewards" aria-label="10連で獲得した武器" hidden></div>
     </div>
-    <div class="summon-actions"><button type="button" id="summon-skip" class="summon-secondary">結果を見る</button><button type="button" id="summon-equip" class="summon-primary" hidden>この武器を装備</button><button type="button" id="summon-repeat" class="summon-secondary" hidden>もう一度引く</button><p class="summon-game-only">ゲーム内ゴールドのみ。現金・課金による抽選はありません。</p></div>
+    <div class="summon-actions"><button type="button" id="summon-skip" class="summon-secondary">結果を見る</button><button type="button" id="summon-equip-play" class="summon-primary" hidden>装備して冒険へ</button><button type="button" id="summon-equip" class="summon-secondary" hidden>装備だけする</button><button type="button" id="summon-repeat" class="summon-secondary" hidden>もう一度引く</button><p class="summon-game-only">ゲーム内ゴールドのみ。現金・課金による抽選はありません。</p></div>
   </section>`;
   document.body.append(root);
   root.querySelector('#summon-close').addEventListener('click',close);
@@ -126,6 +126,12 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-equip').addEventListener('click',()=>{
    if(!active||root.dataset.phase!=='reveal')return;
    if(onEquip(active.weapon)){close();document.querySelector('#collection-weapons')?.scrollIntoView({block:'start',behavior:'instant'});}
+  });
+  root.querySelector('#summon-equip-play').addEventListener('click',()=>{
+   if(!active||root.dataset.phase!=='reveal'||active.results)return;
+   // Reuse the same persisted equipment transaction as the ordinary button.
+   // The cinematic is presentation only: this does not spend gold again.
+   if(onEquip(active.weapon)){close();onPlayWithWeapon?.();}
   });
   root.querySelector('#summon-batch-rewards').addEventListener('click',event=>{
    const button=event.target.closest('[data-batch-equip]');
@@ -170,11 +176,12 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
    `重複：${active.refund} G 返還 · 欠片＋1${active.visualChanged?' · 武器の色と効果が変化':''}`:'';
   root.querySelector('#summon-skip').hidden=true;
   root.querySelector('#summon-equip').hidden=Boolean(active.results);
+  root.querySelector('#summon-equip-play').hidden=Boolean(active.results)||typeof onPlayWithWeapon!=='function';
   root.querySelector('#summon-repeat').hidden=!active.canRepeat;
   root.querySelector('#summon-batch-rewards').hidden=!active.results;
   playCue('reveal');
   const firstAction=active.results?root.querySelector('[data-batch-equip]')||root.querySelector('#summon-repeat'):
-   root.querySelector('#summon-equip');
+   typeof onPlayWithWeapon==='function'?root.querySelector('#summon-equip-play'):root.querySelector('#summon-equip');
   (firstAction?.hidden?root.querySelector('#summon-close'):firstAction)?.focus({preventScroll:true});
  }
  function show(data,{keepFocus=false}={}){
@@ -206,6 +213,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
    </div>`).join(''):'';
   root.querySelector('#summon-skip').hidden=false;
   root.querySelector('#summon-equip').hidden=true;
+  root.querySelector('#summon-equip-play').hidden=true;
   root.querySelector('#summon-repeat').hidden=true;
   root.querySelector('#summon-repeat').textContent=batch?'10連をもう一度引く':'もう一度引く';
   root.hidden=false;document.body.classList.add('summon-active');root.scrollTop=0;

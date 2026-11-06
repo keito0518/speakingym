@@ -2859,6 +2859,7 @@ const gachaCinematic=createGachaCinematic({
   if(!persist(equipWeapon(save,weapon.id)))return false;
   renderEquipmentCollection();syncGameHud();return true;
  },
+ onPlayWithWeapon:()=>startMainDungeon(),
  onRepeat:()=>drawNextSummon(),
  onRepeatTen:()=>drawNextTenSummons()
 });
