@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
-import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponTechniqueDescription,weaponTechniqueFor,resolveWeaponTechniqueTurn,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
+import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,nextWeaponResonancePreview,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponTechniqueDescription,weaponTechniqueFor,resolveWeaponTechniqueTurn,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,WEAPON_AFFINITY_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
 import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
@@ -291,6 +291,50 @@ test('weapon techniques trigger once per foe; a missed or assisted answer breaks
  assert.equal(blocked.weaponTechniqueUsed,false,'A wasted guard never consumes the only activation');
  const ready=resolveWeaponTechniqueTurn(shield,blocked,{kind:'speak',independent:true,canShield:true});
  assert.equal(ready.technique?.shield,1);
+});
+
+test('sixteen weapon silhouettes get distinct named signatures with unchanged bounded effects',()=>{
+ const names=new Set();
+ const shapes=new Set();
+ for(const weapon of WEAPONS.filter(item=>item.source==='gacha')){
+  const save={...createSave(),weaponInventory:[weapon.id],equippedWeaponId:weapon.id};
+  const technique=weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:weapon.affinity,independent:true})||
+   weaponTechniqueFor(save,{kind:weapon.affinity,previousKind:'unused',independent:true});
+  assert.ok(technique,`${weapon.id} can activate without bypassing an English answer`);
+  assert.ok(weaponTechniqueDescription(weapon,save).startsWith(`${technique.name}：`));
+  assert.equal(technique.charge+technique.shield+technique.heal,1,'Each weapon grants just one utility point');
+  if(!shapes.has(weapon.shape)){
+   assert.ok(!names.has(technique.name),`${weapon.shape} must have a distinct technique name`);
+   names.add(technique.name);shapes.add(weapon.shape);
+  }
+ }
+ assert.equal(shapes.size,16);assert.equal(names.size,16);
+});
+
+test('second resonance extends guard and sustain signatures to a paired skill without extra uses',()=>{
+ for(const id of ['oak_shield','reed_flute','worldtree_scepter','celestial_aegis']){
+  const weapon=WEAPONS.find(item=>item.id===id);
+  const save={...createSave(),weaponInventory:[id],equippedWeaponId:id};
+  const second=weaponSecondaryAffinity(weapon);
+  assert.notEqual(second,weapon.affinity);
+  assert.equal(weaponTechniqueFor(save,{kind:second,independent:true}),null,`${id} starts with one trained affinity`);
+  const next=nextWeaponResonancePreview(save,id);
+  assert.equal(next.rank,1);
+  assert.match(next.effect,/追撃＋2|追撃＋3/,'The first duplicate previews a primary-skill improvement');
+  const resonant={...save,weaponAwakening:{[id]:1},weaponShards:{[id]:1}};
+  const before=structuredClone(resonant);
+  const stage=nextWeaponResonancePreview(resonant,id);
+  assert.equal(stage.rank,3,'A shard above permanent first awakening advances the visual milestone');
+  assert.match(weaponTechniqueDescription(weapon,resonant),new RegExp(WEAPON_AFFINITY_LABELS[second]));
+  const proc=weaponTechniqueFor(resonant,{kind:second,independent:true});
+  assert.ok(proc,`${id} unlocks the paired defensive technique`);
+  assert.equal(proc.charge+proc.shield+proc.heal,1,'Resonance improves options, not the number of effects');
+  assert.equal(weaponTechniqueFor(resonant,{kind:second,independent:false}),null);
+  assert.equal(weaponTechniqueFor(resonant,{kind:second,independent:true,used:true}),null);
+  assert.deepEqual(resonant,before,'Preview and battle queries must never spend shards or mutate saves');
+ }
+ const max={...createSave(),weaponInventory:['oak_shield'],weaponAwakening:{oak_shield:3}};
+ assert.equal(nextWeaponResonancePreview(max,'oak_shield'),null);
 });
 
 test('owned equipment filters keep the equipped item first and safely sort by attack, recent acquisition or resonance',()=>{

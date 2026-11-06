@@ -120,8 +120,13 @@ const WEAPON_TECHNIQUE_BY_SHAPE=Object.freeze({
  shield:'ward',hammer:'ward',staff:'ward',lantern:'ward',
  flute:'sustain',fan:'sustain',whip:'sustain',ring:'sustain'
 });
-const WEAPON_TECHNIQUE_LABELS=Object.freeze({
- tempo:'連撃',pivot:'転換',ward:'守勢',sustain:'再生'
+// Unique names give each silhouette an identity, while the four underlying
+// rules stay predictable and bounded. Names never imply unearned damage.
+const WEAPON_TECHNIQUE_NAMES=Object.freeze({
+ sword:'双閃',dagger:'影追い',axe:'連斬',claw:'双爪',
+ bow:'転射',spear:'転槍',crossbow:'交差射撃',scythe:'反転刈り',
+ shield:'堅守',hammer:'防護衝',staff:'結界',lantern:'守護灯',
+ flute:'癒奏',fan:'癒風',whip:'命脈',ring:'循環'
 });
 export const AWAKENING_COSTS=Object.freeze({
  common:Object.freeze([2,3,4]),rare:Object.freeze([2,3,5]),
@@ -134,26 +139,31 @@ export function weaponSecondaryAffinity(weapon){
  const group=SHAPE_RESONANCE_FAMILY[base?.shape];
  return (SHAPE_SECONDARY_AFFINITY[group]||SECONDARY_AFFINITY)[base?.affinity]||null;
 }
-export function weaponTechniqueDescription(weapon){
+export function weaponTechniqueDescription(weapon,save=null){
  const type=WEAPON_TECHNIQUE_BY_SHAPE[weapon?.shape];
  if(!type)return '';
- return {
-  tempo:'連撃：同じ分野を続けて自力正解で必殺ゲージ＋1',
-  pivot:'転換：別の分野へ切り替えて自力正解で必殺ゲージ＋1',
-  ward:'守勢：得意分野を自力正解で次の被ダメージ−1',
-  sustain:'再生：得意分野を自力正解で味方HP＋1'
+ const resonant=save&&weapon?.id&&awakeningProgress(save,weapon.id).visualRank>=2;
+ const affinity=WEAPON_AFFINITY_LABELS[weapon.affinity]||'';
+ const paired=WEAPON_AFFINITY_LABELS[weaponSecondaryAffinity(weapon)]||'';
+ const focus=resonant?`${affinity}または${paired}`:affinity;
+ return `${WEAPON_TECHNIQUE_NAMES[weapon.shape]}：`+{
+  tempo:'同じ分野を続けて自力正解で必殺ゲージ＋1',
+  pivot:'別の分野へ切り替えて自力正解で必殺ゲージ＋1',
+  ward:`${focus}を自力正解で次の被ダメージ−1`,
+  sustain:`${focus}を自力正解で味方HP＋1`
  }[type]+'（敵ごと1回）';
 }
 export function weaponTechniqueFor(save,{kind=null,previousKind=null,independent=false,used=false,canCharge=true,canShield=true,canHeal=true}={}){
  const weapon=equippedWeapon(save);
  const type=WEAPON_TECHNIQUE_BY_SHAPE[weapon?.shape];
  if(!type||!independent||used||!kind)return null;
- const matches=kind===weapon.affinity;
+ const matches=kind===weapon.affinity||
+  (weapon.awakeningRank>=2&&kind===weaponSecondaryAffinity(weapon));
  const enabled=type==='tempo'?Boolean(previousKind&&previousKind===kind&&canCharge):
   type==='pivot'?Boolean(previousKind&&previousKind!==kind&&canCharge):
   type==='ward'?Boolean(matches&&canShield):Boolean(matches&&canHeal);
  if(!enabled)return null;
- return {type,name:WEAPON_TECHNIQUE_LABELS[type],charge:Number(type==='tempo'||type==='pivot'),
+ return {type,name:WEAPON_TECHNIQUE_NAMES[weapon.shape],charge:Number(type==='tempo'||type==='pivot'),
   shield:Number(type==='ward'),heal:Number(type==='sustain')};
 }
 export function resolveWeaponTechniqueTurn(save,state,{kind=null,independent=false,...capacity}={}){
@@ -195,6 +205,16 @@ export function awakeningProgress(save,id){
  // Spending shards on a permanent awakening never reverts that change.
  const visualRank=owned?Math.min(MAX_WEAPON_AWAKENING,rank+(shards>0?1:0)):0;
  return {rank,shards,visualRank,requirement,canAwaken:Boolean(requirement&&shards>=requirement),maxed:owned&&rank===MAX_WEAPON_AWAKENING};
+}
+export function nextWeaponResonancePreview(save,id){
+ const weapon=weaponById(id),progress=awakeningProgress(save,id);
+ if(!weapon||!save?.weaponInventory?.includes(id)||progress.visualRank>=MAX_WEAPON_AWAKENING)return null;
+ const rank=progress.visualRank+1;
+ // Describe the next *visual* milestone without changing the real inventory,
+ // shards, committed awakening or any saved resource.
+ const preview={...save,weaponShards:{...save.weaponShards,[id]:0},
+  weaponAwakening:{...save.weaponAwakening,[id]:rank}};
+ return {rank,effect:weaponEffectDescription(preview,weapon),technique:weaponTechniqueDescription(weapon,preview)};
 }
 export function grantDuplicateShard(save,id){
  if(!weaponById(id)||!save?.weaponInventory?.includes(id))return save;

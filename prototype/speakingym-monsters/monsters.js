@@ -1,7 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
-import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
+import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
@@ -2945,13 +2945,14 @@ function renderEquipmentCollection(){
  const inventory=filteredWeaponInventory(save);
  const shown=filteredWeaponInventory(save,equipmentView);
  const awaken=current?awakeningProgress(save,current.id):null;
+ const upcoming=current?nextWeaponResonancePreview(save,current.id):null;
  const cards=shown.map(weapon=>{
   const rank=awakeningProgress(save,weapon.id).visualRank;
   const isEquipped=weapon.id===current?.id;
   return `<article class="equipment-item${isEquipped?' is-equipped':''}" data-item-id="${weapon.id}" data-rarity="${weapon.rarity}">
    <div class="equipment-item-image" aria-hidden="true">${summonWeaponArtwork({...weapon,awakeningRank:rank},{instance:`inventory-${weapon.id}`,decorative:true})}</div>
    <div class="equipment-item-details"><span class="equipment-item-rarity">${WEAPON_RARITY_LABELS[weapon.rarity]}${weapon.shape?` · ${WEAPON_SHAPE_LABELS[weapon.shape]||'武器'}`:''}${rank?` · 共鳴 ${rank}/3`:''}</span><h3>${escapeHtml(weapon.name)}</h3>
-    <dl><div><dt>攻撃</dt><dd>＋${weaponAttack(save,weapon)}</dd></div><div><dt>追加効果</dt><dd>${escapeHtml(weaponEffectDescription(save,weapon))}</dd></div>${weaponTechniqueDescription(weapon)?`<div><dt>武器技</dt><dd>${escapeHtml(weaponTechniqueDescription(weapon))}</dd></div>`:''}</dl>
+    <dl><div><dt>攻撃</dt><dd>＋${weaponAttack(save,weapon)}</dd></div><div><dt>追加効果</dt><dd>${escapeHtml(weaponEffectDescription(save,weapon))}</dd></div>${weaponTechniqueDescription(weapon,save)?`<div><dt>武器技</dt><dd>${escapeHtml(weaponTechniqueDescription(weapon,save))}</dd></div>`:''}</dl>
     <small>${weapon.source==='gacha'?'ガチャ限定':'冒険で入手'}</small>
    </div>
    <button type="button" data-equip-weapon="${weapon.id}" ${isEquipped?'disabled':''} aria-label="${escapeHtml(weapon.name)}を${isEquipped?'装備中':'装備する'}">${isEquipped?'装備中':'装備する'}</button>
@@ -2961,7 +2962,7 @@ function renderEquipmentCollection(){
   <div class="equipment-current" aria-label="現在の出撃装備"><strong class="equipment-current-title" tabindex="-1">現在の出撃装備</strong>
    <div class="equipment-monster-preview" aria-label="現在の装備を身につけた仲間">${monsterArt(save.selectedMonster,getMonsterProgress(save).stage,current)}<span>${current?escapeHtml(current.name):'武器なし'}<small>ホーム・バトルに反映／パーティ共通</small></span></div>
    <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${weaponAttack(save,current)} · ${escapeHtml(weaponEffectDescription(save,current))}`:'武器を装備していません（攻撃＋0）'}</p>
-   ${current&&weaponTechniqueDescription(current)?`<p class="equipment-current-technique">${escapeHtml(weaponTechniqueDescription(current))}</p>`:''}
+   ${current&&weaponTechniqueDescription(current,save)?`<p class="equipment-current-technique">${escapeHtml(weaponTechniqueDescription(current,save))}</p>`:''}
    ${current?'<button type="button" id="equipment-unequip">装備を外す</button>':''}</div>
   <div class="equipment-item-list"><div class="equipment-item-list-heading"><strong>所持武器 <span>${inventory.length}</span> / ${WEAPONS.length}</strong><span>装備中を先頭に表示</span></div>
    ${inventory.length>1?`<details class="equipment-filter-disclosure" id="equipment-filters" ${equipmentFiltersOpen?'open':''}><summary>絞り込み・並び替え <span>表示 ${shown.length}/${inventory.length} 件</span></summary><div class="equipment-filter-controls">
@@ -2973,7 +2974,7 @@ function renderEquipmentCollection(){
   <div class="equipment-select-sync"><label for="equipment-weapon-choice">武器選択</label><select id="equipment-weapon-choice"><option value="">武器なし · 攻撃＋0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃＋${weaponAttack(save,weapon)} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select></div>
   <section class="weapon-awakening" aria-label="重複武器で覚醒"><div class="weapon-awakening-heading"><strong>武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'装備武器を選択'}</span></div>
     <p>同じ武器を引くと色と追撃が変化。欠片を集めて覚醒すると変化が定着し、次の段階へ進めます（最大3段階）。レア度の強さは逆転しません。</p>
-    ${current?`<div class="weapon-awakening-track"><span>欠片 ${awaken.shards} ${awaken.maxed?'· MAX':`/ ${awaken.requirement}`}</span><div class="weapon-awakening-meter"><span style="width:${awaken.maxed?100:Math.min(100,Math.round(100*awaken.shards/awaken.requirement))}%"></span></div></div><button type="button" id="weapon-awaken" ${awaken.canAwaken?'':'disabled'}>${awaken.maxed?'最大覚醒に到達':awaken.canAwaken?'欠片を使って覚醒する':`覚醒まであと ${awaken.requirement-awaken.shards} 個`}</button>`:'<small>武器を装備すると、覚醒に必要な欠片を確認できます。</small>'}
+    ${current?`<div class="weapon-awakening-track"><span>欠片 ${awaken.shards} ${awaken.maxed?'· MAX':`/ ${awaken.requirement}`}</span><div class="weapon-awakening-meter"><span style="width:${awaken.maxed?100:Math.min(100,Math.round(100*awaken.shards/awaken.requirement))}%"></span></div></div><button type="button" id="weapon-awaken" ${awaken.canAwaken?'':'disabled'}>${awaken.maxed?'最大覚醒に到達':awaken.canAwaken?'欠片を使って覚醒する':`覚醒まであと ${awaken.requirement-awaken.shards} 個`}</button>${upcoming?`<details class="weapon-resonance-preview"><summary>次の共鳴で変わる効果</summary><p>共鳴 ${upcoming.rank}/3 · ${escapeHtml(upcoming.effect)}</p>${upcoming.technique?`<p>武器技：${escapeHtml(upcoming.technique)}</p>`:''}</details>`:''}`:'<small>武器を装備すると、覚醒に必要な欠片を確認できます。</small>'}
   </section>`;
  // Keep awakening beside the equipped item; a large inventory should never
  // force the player to scroll through every card to upgrade their weapon.

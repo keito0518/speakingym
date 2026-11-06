@@ -125,6 +125,10 @@
  white-space:nowrap!important;border:0!important}
 .collection-weapons .weapon-awakening{margin-top:22px}
 .collection-weapons .weapon-awakening-heading strong{font-size:16px}
+.collection-weapons .weapon-resonance-preview{min-width:0;margin-top:13px;border:1px solid #7798a5;border-radius:10px;background:#213f52;color:#f0f5eb;overflow:hidden}
+.collection-weapons .weapon-resonance-preview>summary{padding:11px 12px;cursor:pointer;color:#fff0bd;font-size:13px;font-weight:850;list-style-position:inside}
+.collection-weapons .weapon-resonance-preview>summary:focus-visible{outline:3px solid #f6ce86;outline-offset:-3px}
+.collection-weapons .weapon-resonance-preview>p{margin:0;padding:8px 12px;border-top:1px solid #506d79;font-size:12px;line-height:1.6;color:#e4f1ee;overflow-wrap:anywhere}
 @media(min-width:770px){
  .collection-weapons .equipment-filter-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
  .collection-weapons .equipment-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
