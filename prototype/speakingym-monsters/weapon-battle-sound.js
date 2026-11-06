@@ -17,6 +17,18 @@ const SOUND_PROFILES=Object.freeze({
  brace:[['triangle',235,260,.032,-80],['sine',480,260,.018,-160]],
  lash:[['sawtooth',980,185,.022,-730],['square',380,82,.010,-180]]
 });
+// Higher rarity adds quiet harmonic detail, never bonus damage. Each added
+// accent stays brief so the next listening question cannot be masked.
+const RARITY_ACCENTS=Object.freeze({
+ rare:[['sine',1060,.09,.12,.006,-120]],
+ epic:[['sine',1130,.08,.15,.008,85],['triangle',880,.17,.16,.006,130]],
+ legend:[['sine',1310,.07,.18,.009,170],['triangle',990,.16,.20,.007,110],['sine',1480,.25,.15,.005,-160]]
+});
+const RESONANCE_ACCENTS=Object.freeze([
+ ['sine',740,.08,.12,.005,90],
+ ['sine',920,.14,.15,.006,120],
+ ['triangle',1190,.21,.16,.006,160]
+]);
 const MAX_GAIN=.045;
 
 export function weaponAttackSoundPlan(visual,{ultimate=false}={}){
@@ -29,11 +41,14 @@ export function weaponAttackSoundPlan(visual,{ultimate=false}={}){
   delay:index*(motion==='flurry'?.065:.045),
   duration:length/1000,gain:Math.min(MAX_GAIN,gain),slide
  }));
+ const addAccent=([wave,freq,delay,duration,gain,slide])=>notes.push({
+  wave,frequency:Math.max(70,freq+tuning+bonus),delay,duration,gain,slide
+ });
+ for(const accent of RARITY_ACCENTS[visual?.rarity]||[])addAccent(accent);
+ for(const accent of RESONANCE_ACCENTS.slice(0,rank))addAccent(accent);
  if(ultimate){
   notes.push({wave:'sine',frequency:Math.max(180,523+tuning),delay:.13,duration:.38,gain:.022,slide:175});
   notes.push({wave:'triangle',frequency:Math.max(230,784+tuning),delay:.22,duration:.43,gain:.026,slide:100});
- }else if(rank>=2){
-  notes.push({wave:'sine',frequency:Math.max(230,820+tuning),delay:.11,duration:.18,gain:.010,slide:80});
  }
  return notes;
 }

@@ -8,15 +8,23 @@ const {chromium,webkit}=require('playwright');
   {executablePath:process.env.MONSTERS_CHROMIUM_EXECUTABLE,args:['--no-sandbox']}:{} )});
  const base=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
  try{
-  for(const [id,shape,motion] of [['solar_blade','sword','sweep'],['north_bow','bow','shoot'],['worldtree_scepter','staff','channel'],['celestial_aegis','shield','brace']]){
+  const cases=[
+   ['bamboo_blade','sword','sweep','common',0],
+   ['north_bow','bow','shoot','rare',0],
+   ['solar_blade','sword','sweep','epic',0],
+   ['worldtree_scepter','staff','channel','legend',0],
+   ['celestial_aegis','shield','brace','legend',3]
+  ];
+  for(const [id,shape,motion,rarity,rank] of cases){
    const context=await browser.newContext({viewport:{width:375,height:844},hasTouch:true,isMobile:engine==='webkit'});
    const page=await context.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(base,{waitUntil:'networkidle'});
-   await page.evaluate(async weaponId=>{
+   await page.evaluate(async ({weaponId,rank})=>{
     const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
-    localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),weaponInventory:[weaponId],equippedWeaponId:weaponId}));
-   },id);
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),weaponInventory:[weaponId],equippedWeaponId:weaponId,
+     weaponAwakening:rank?{[weaponId]:rank}:{}}));
+   },{weaponId:id,rank});
    await page.reload({waitUntil:'networkidle'});
    await page.locator('[data-feature-worlds]').click();
    await page.locator('#start-forest').click();
@@ -31,6 +39,8 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await sound.getAttribute('aria-pressed'),'false','Tapping again must mute battle audio');
    assert.equal(await arena.getAttribute('data-weapon-shape'),shape);
    assert.equal(await arena.getAttribute('data-weapon-motion'),motion);
+   assert.equal(await arena.getAttribute('data-weapon-rarity'),rarity);
+   assert.equal(await arena.getAttribute('data-weapon-rank'),String(rank));
    await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
    const answer=await page.evaluate(async()=>{
     const {ALL_PROMPTS}=await import('./monster-data.js');
@@ -46,13 +56,19 @@ const {chromium,webkit}=require('playwright');
     const fx=document.querySelector('#forest-weapon-fx');
     const consolePane=document.querySelector('#forest-arena-console');
     const damage=document.querySelector('#forest-damage');
+    const named=part=>getComputedStyle(fx.querySelector('.weapon-fx-'+part)).animationName;
     return {motion:getComputedStyle(actor).animationName,fx:getComputedStyle(fx).animationName,
+     glint:named('glint'),orbit:named('orbit'),crest:named('crest'),resonance:named('resonance'),
      fxBottom:fx.getBoundingClientRect().bottom,consoleTop:consolePane.getBoundingClientRect().top,
      hudZ:parseInt(getComputedStyle(damage).zIndex,10),fxZ:parseInt(getComputedStyle(fx).zIndex,10),
      fxPointer:getComputedStyle(fx).pointerEvents,overlayCount:stage.querySelectorAll('#forest-weapon-fx').length};
    });
    assert.equal(snapshot.motion,`weapon-${motion}-step`,`${id}: the equipped weapon must change the ally's motion`);
    assert.equal(snapshot.fx,'weapon-fx-lifetime',`${id}: the attack must start its own visual effect`);
+   assert.equal(snapshot.glint,rarity==='common'?'none':'weapon-tier-glint',`${id}: rarity glint`);
+   assert.equal(snapshot.orbit,['epic','legend'].includes(rarity)?'weapon-tier-orbit':'none',`${id}: epic orbit`);
+   assert.equal(snapshot.crest,rarity==='legend'?'weapon-tier-crest':'none',`${id}: legend crest`);
+   assert.equal(snapshot.resonance,rank>0?'weapon-resonance-echo':'none',`${id}: duplicate resonance halo`);
    assert.ok(snapshot.fxBottom<=snapshot.consoleTop+1,`${id}: FX must not cover the English question (${JSON.stringify(snapshot)})`);
    assert.ok(snapshot.hudZ>snapshot.fxZ&&snapshot.fxPointer==='none',`${id}: keep damage legible and controls clickable`);
    assert.equal(snapshot.overlayCount,1);

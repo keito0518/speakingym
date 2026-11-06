@@ -69,6 +69,63 @@
  filter:drop-shadow(0 0 15px var(--weapon-light));
 }
 
+/* Rarity is a SILHOUETTE, not just a hue: common keeps its clean strike,
+   rare flashes a small star, epic draws an orbit, and legend earns a crest.
+   These are transparent details inside the existing clipped, non-clickable
+   stage FX; they cannot conceal the English question or the damage HUD. */
+.weapon-fx-glint,.weapon-fx-orbit,.weapon-fx-crest,.weapon-fx-resonance{
+ position:absolute;box-sizing:border-box;display:block;pointer-events:none;
+ opacity:0;left:50%;top:49%;transform:translate(-50%,-50%);
+ filter:drop-shadow(0 0 5px var(--weapon-aura));
+}
+.weapon-fx-glint{
+ width:42px;height:42px;background:var(--weapon-light);
+ clip-path:polygon(50% 0,57% 41%,100% 50%,57% 59%,50% 100%,43% 59%,0 50%,43% 41%);
+}
+.weapon-fx-orbit{
+ width:94px;height:78px;border:2px dashed var(--weapon-line);border-radius:50%;
+ box-shadow:0 0 12px var(--weapon-aura),inset 0 0 7px var(--weapon-aura);
+}
+.weapon-fx-crest{
+ width:67px;height:67px;background:var(--weapon-light);
+ clip-path:polygon(50% 0,58% 34%,85% 15%,66% 42%,100% 50%,66% 58%,85% 85%,58% 66%,50% 100%,42% 66%,15% 85%,34% 58%,0 50%,34% 42%,15% 15%,42% 34%);
+}
+.weapon-fx-resonance{
+ width:38px;height:38px;border:2px solid var(--weapon-light);border-radius:50%;
+ box-shadow:0 0 9px var(--weapon-aura);
+}
+#forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]):is([data-weapon-rarity="rare"],[data-weapon-rarity="epic"],[data-weapon-rarity="legend"]) .weapon-fx-glint{
+ animation:weapon-tier-glint 1.08s ease-out .13s both;
+}
+#forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]):is([data-weapon-rarity="epic"],[data-weapon-rarity="legend"]) .weapon-fx-orbit{
+ animation:weapon-tier-orbit 1.08s ease-out .09s both;
+}
+#forest-world-stage.forest-attack[data-weapon-rarity="legend"]:not([data-weapon-shape="unarmed"]) .weapon-fx-crest{
+ animation:weapon-tier-crest 1.08s ease-out .2s both;
+}
+#forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]):is([data-weapon-rank="1"],[data-weapon-rank="2"],[data-weapon-rank="3"]) .weapon-fx-resonance{
+ animation:weapon-resonance-echo 1.08s ease-out .25s both;
+}
+#forest-world-stage[data-weapon-rank="2"] .weapon-fx-resonance{
+ width:49px;height:49px;border-style:dotted;border-width:3px;
+}
+#forest-world-stage[data-weapon-rank="3"] .weapon-fx-resonance{
+ width:59px;height:59px;border-style:double;border-width:5px;
+ box-shadow:0 0 16px var(--weapon-aura),inset 0 0 10px var(--weapon-aura);
+}
+@keyframes weapon-tier-glint{
+ 0%,12%{opacity:0;scale:.15}36%{opacity:.86;scale:.9}62%{opacity:.62;scale:1.2}100%{opacity:0;scale:1.6}
+}
+@keyframes weapon-tier-orbit{
+ 0%{opacity:0;scale:.3;rotate:-50deg}28%,64%{opacity:.72;scale:1;rotate:12deg}100%{opacity:0;scale:1.26;rotate:68deg}
+}
+@keyframes weapon-tier-crest{
+ 0%,14%{opacity:0;scale:.1;rotate:-25deg}47%{opacity:.83;scale:1;rotate:12deg}100%{opacity:0;scale:1.55;rotate:45deg}
+}
+@keyframes weapon-resonance-echo{
+ 0%,15%{opacity:0;scale:.35}48%{opacity:.79;scale:1}100%{opacity:0;scale:1.7}
+}
+
 /* The old universal diagonal flash covered the foe, even for staffs and bows.
    Its cinematic callout, exact damage number and enemy reactions remain. */
 #play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"])::before,
