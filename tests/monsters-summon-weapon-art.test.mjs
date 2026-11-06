@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {summonWeaponArtwork} from '../prototype/speakingym-monsters/summon-weapon-art.js';
+import {weaponPixelOverlay} from '../prototype/speakingym-monsters/weapon-visuals.js';
 
 const silhouettes=['sword','dagger','spear','staff','bow','hammer','axe','scythe','crossbow','claw','shield','whip'];
 
@@ -41,4 +42,15 @@ test('malformed weapon metadata cannot inject markup or unbounded gradient ident
  assert.doesNotMatch(result,/<script>|<img/);
  assert.match(result,/data-equipped-weapon="x&quot;&gt;&lt;script&gt;/);
  assert.match(result,/aria-label="&quot;&gt;&lt;img/);
+});
+
+test('equipped weapon sprites have hand-authored pixels and do not cover the classic hero face',()=>{
+ for(const shape of silhouettes){
+  const art=weaponPixelOverlay({id:`hero_${shape}`,rarity:'legend',shape,awakeningRank:3},{legacy:true});
+  assert.match(art,/<g transform="translate\(\d+ 17\) scale\([\d.]+ [\d.]+\)">/);
+  assert.match(art,/shape-rendering="crispEdges"/);
+  assert.match(art,/data-equipped-weapon="hero_/);
+  assert.match(art,/fill="#ffe488"/,'Every weapon gets a jewel-colored pixel detail');
+ }
+ assert.match(weaponPixelOverlay({id:'shield',shape:'shield',rarity:'rare'},{legacy:true}),/translate\(56 17\) scale\(2.5 2.5\)/);
 });

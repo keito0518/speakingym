@@ -51,5 +51,9 @@ export function weaponPixelOverlay(weapon,{legacy=false}={}){
  const rank=Number.isSafeInteger(weapon.awakeningRank)?Math.max(0,Math.min(3,weapon.awakeningRank)):0;
  const aura=rank?`<g data-weapon-awakened="${rank}"><rect x="27" y="${20-rank*4}" width="4" height="4" fill="${rank===3?'#ffea8b':'#83f4fb'}"/><rect x="49" y="${24-rank*3}" width="3" height="3" fill="#fffceb"/>${rank>1?'<rect x="41" y="1" width="5" height="5" fill="#fff5b4"/>':''}${rank===3?'<rect x="25" y="4" width="3" height="3" fill="#ffe18f"/><rect x="51" y="33" width="3" height="3" fill="#ffe18f"/>':''}</g>`:'';
  const center=`<g data-equipped-weapon="${weapon.id}" data-weapon-shape="${shape}" data-awakening="${rank}" aria-hidden="true" shape-rendering="crispEdges" style="filter:drop-shadow(1px 1px 0px #081426)">${art}${aura}</g>`;
- return legacy?`<g transform="translate(-22 0) scale(3.75 3.72727)">${center}</g>`:center;
+ // The classic 180x164 hero has its face in the middle. Keep equipment at the
+ // RIGHT edge with a shape-aware size; a shield must not hide the monster.
+ const legacyScale=shape==='shield'?2.5:['crossbow','claw','axe','hammer'].includes(shape)?2.7:3.1;
+ const legacyX=shape==='shield'?56:['crossbow','claw'].includes(shape)?44:42;
+ return legacy?`<g transform="translate(${legacyX} 17) scale(${legacyScale} ${legacyScale})">${center}</g>`:center;
 }
