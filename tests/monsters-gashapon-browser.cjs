@@ -1,4 +1,4 @@
-// The ritual's tactile path: swipe the central seal, view the full 10-pull by
+// The storybook chest's tactile path: swipe the lid, view the full 10-pull by
 // scrolling, then awaken duplicate gear without changing the normal save.
 const assert=require('node:assert/strict');
 const {chromium,webkit}=require('playwright');
@@ -20,8 +20,10 @@ const {chromium,webkit}=require('playwright');
    await page.locator('#shop-draw-ten').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
    assert.equal(await page.locator('.summon-vault-stage').isVisible(),true);
-   assert.match(await page.locator('.summon-vault-backdrop').evaluate(el=>getComputedStyle(el).backgroundImage),/prism-gate\.svg/,
-    'The summon must use the finished futuristic reactor artwork');
+   assert.match(await page.locator('.summon-vault-backdrop').evaluate(el=>getComputedStyle(el).backgroundImage),/storybook-gacha\.svg/,
+    'The summon must use the pixel-storybook forest rather than the old sci-fi reactor');
+   assert.equal(await page.locator('#summon-seal .storybook-chest-lid').count(),1,
+    'The player must open an illustrated treasure chest');
    assert.equal(await page.locator('.summon-tier-splash').count(),1);
    assert.match(await page.locator('#shop-coins').innerText(),/2010 G/,'The result is committed before unlocking the vault');
 
@@ -34,11 +36,13 @@ const {chromium,webkit}=require('playwright');
    for(let distance=0;distance<=160;distance+=10)await page.mouse.move(x,y-distance);
    await page.mouse.up();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'unseal',
-    'Dragging up must visibly break the celestial seal');
-   assert.equal(await page.locator('#summon-tier-splash-text').innerText(),'LEGENDARY');
+    'Dragging up must visibly open the treasure chest');
+   assert.equal(await page.locator('#summon-tier-splash-text').innerText(),'でた！ 伝説のおたから！');
    await page.locator('#summon-skip').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
    assert.equal(await page.locator('.summon-batch-card').count(),10);
+   assert.equal(await page.locator('.summon-batch-card [data-equipped-weapon="eternal_crest"]').count(),10,
+    'Every duplicate card shows one copy of the actual equipment pixel sprite');
    const dimensions=await page.locator('#summon-screen').evaluate(el=>({height:el.clientHeight,full:el.scrollHeight,overflow:getComputedStyle(el).overflowY}));
    assert.ok(dimensions.full>dimensions.height+100,`Ten results must have a scroll range ${JSON.stringify(dimensions)}`);
    assert.equal(dimensions.overflow,'auto');
@@ -72,6 +76,6 @@ const {chromium,webkit}=require('playwright');
    assert.deepEqual(errors,[],`${engine}/${width} page errors`);
    await context.close();
   }
-  console.log(`${engine}: vault swipe, ten-card reveal, scroll, duplicate awakening, reload, isolation PASS`);
+  console.log(`${engine}: storybook chest swipe, ten-card reveal, scroll, duplicate awakening, reload, isolation PASS`);
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
