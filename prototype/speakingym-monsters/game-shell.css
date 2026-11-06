@@ -712,6 +712,8 @@ body.summon-active{overflow:hidden}
 .shop-gacha .summon-banner{border-color:#56c5ed;
  background:linear-gradient(90deg,#040f2af5 3%,#092852b8 56%,#09285224),url('./assets/prism-gate.svg') center 40%/cover;
  box-shadow:inset 0 1px #aaf5ff9c,0 12px 28px #020b1c99}
+.shop-gacha .summon-banner::before{inset:0;opacity:.45;
+ background:linear-gradient(120deg,transparent 35%,#9efeff30 49%,transparent 61%);animation:prism-banner-sweep 4.5s ease-in-out infinite}
 .shop-gacha .summon-banner-title{font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;
  letter-spacing:.075em;text-shadow:0 3px 18px #000,0 0 20px #25d0f9}
 .shop-gacha .summon-banner-ring{border-color:#73eaff9e;box-shadow:0 0 32px #21d8f976}
@@ -811,7 +813,9 @@ body.summon-active{overflow:hidden}
 @keyframes prism-control-float{to{transform:translate(-50%,-53%) rotate(45deg);box-shadow:0 0 0 5px #07112dcc,0 0 0 10px #5bdeff9d,0 0 70px #44e0ffcf}}
 @keyframes prism-orbit{to{transform:rotate(360deg)}}
 @keyframes prism-scan{to{transform:translateY(90px)}}
+@keyframes prism-banner-sweep{0%,25%{transform:translateX(-60%)}75%,100%{transform:translateX(75%)}}
 @keyframes prism-zoom{0%{transform:scale(1);filter:brightness(.92)}40%{transform:scale(1.26);filter:brightness(2)}100%{transform:scale(1.1);filter:brightness(.6)}}
 @keyframes prism-overdrive{to{box-shadow:0 0 130px #f4ffff,0 0 170px var(--summon-glow);filter:brightness(1.5)}}
 @media(prefers-reduced-motion:reduce){.summon-vault-backdrop::before,.summon-vault-crest,.summon-vault-seal{animation:none!important}}
+.monsters-quiet-motion .shop-gacha .summon-banner::before{animation:none!important}
 .monsters-quiet-motion .summon-vault-backdrop::before,.monsters-quiet-motion .summon-vault-crest,.monsters-quiet-motion .summon-vault-seal{animation:none!important}
