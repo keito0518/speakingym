@@ -1,7 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
-import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
+import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
@@ -68,9 +68,17 @@ function arrangeBattleScene(forestMode){
   }
   consolePanel.hidden=!forestMode;
 }
+function syncBattleWeaponPresentation(world){
+ const visual=weaponBattleVisual(equippedWeapon(save));
+ world.dataset.weaponShape=visual.shape;
+ world.dataset.weaponMotion=visual.motion;
+ world.dataset.weaponRarity=visual.rarity;
+ world.dataset.weaponRank=String(visual.rank);
+}
 function playBattleCinematic(kind,chain=play?.combo||0){
   if(play?.mode!=='forest')return;
   const world=$('#forest-world-stage');
+ syncBattleWeaponPresentation(world);
   if(kind==='attack'||kind==='victory'){
     const style=pickBattleSpectacle({chain,previousFx:world.dataset.fxVariant,
       previousMotion:world.dataset.strikeMotion});
@@ -819,6 +827,7 @@ function renderForestHud() {
   world.dataset.stage='arena';
   world.dataset.tactics=String(Boolean(play.tactics));
   world.dataset.attack=companion.id;
+  syncBattleWeaponPresentation(world);
   world.dataset.evolved=String(evolved);
   world.dataset.ascended=String(progress.ascended);
   $('#forest-guard').innerHTML=guardArt();

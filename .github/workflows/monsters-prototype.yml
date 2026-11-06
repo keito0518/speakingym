@@ -29,6 +29,7 @@ jobs:
           node --check tests/monsters-ten-pull-browser.cjs
           node --check tests/monsters-gacha-demo-browser.cjs
           node --check tests/monsters-gashapon-browser.cjs
+          node --check tests/monsters-weapon-motion-browser.cjs
       - name: Curriculum, mastery and reward tests
         run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs tests/monsters-formation.test.mjs tests/monsters-economy.test.mjs tests/monsters-new-companions.test.mjs
       - name: Install Playwright
@@ -81,6 +82,11 @@ jobs:
           timeout 135s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
           timeout 105s node tests/monsters-boss-cover-browser.cjs
           timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-cover-browser.cjs
+      - name: Equipped weapon motion and FX (Chromium + WebKit)
+        timeout-minutes: 4
+        run: |
+          timeout 100s node tests/monsters-weapon-motion-browser.cjs
+          timeout 100s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-weapon-motion-browser.cjs
       - name: Boss formation synergy browser QA (Chromium + WebKit)
         timeout-minutes: 4
         run: |

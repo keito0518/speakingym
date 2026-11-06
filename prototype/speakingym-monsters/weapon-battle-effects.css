@@ -1,0 +1,131 @@
+/* The weapon, not a random attack preset, determines how the ally moves.
+   All effects stay in the SCENIC strip: below the damage/HP HUD and never in
+   the question pane. These are translucent paths, not boxes over the foe. */
+#forest-world-stage{
+ --weapon-line:#b8f4dd;
+ --weapon-light:#e7fff6;
+ --weapon-aura:#84e6d780;
+ --weapon-flare:drop-shadow(0 0 5px var(--weapon-aura));
+}
+#forest-world-stage[data-weapon-rarity="rare"]{--weapon-line:#86caff;--weapon-light:#e5f7ff;--weapon-aura:#6cc9f288}
+#forest-world-stage[data-weapon-rarity="epic"]{--weapon-line:#d5a9ff;--weapon-light:#fbe6ff;--weapon-aura:#b887ff99}
+#forest-world-stage[data-weapon-rarity="legend"]{--weapon-line:#ffe094;--weapon-light:#fffbe1;--weapon-aura:#ffc969bb}
+#forest-world-stage[data-weapon-rank="2"],
+#forest-world-stage[data-weapon-rank="3"]{--weapon-flare:drop-shadow(0 0 10px var(--weapon-aura))}
+
+.forest-weapon-fx{
+ position:absolute;z-index:11;left:53%;top:8px;width:35%;height:clamp(110px,20dvh,174px);
+ overflow:hidden;isolation:isolate;pointer-events:none;opacity:0;
+}
+#play-view.scene-battle .forest-weapon-fx{height:calc(var(--scene-top) - 20px);max-height:224px}
+.forest-world-stage.forest-boss-stage .forest-weapon-fx{left:51%;width:43%}
+.weapon-fx-trail,.weapon-fx-core{position:absolute;display:block;pointer-events:none;opacity:0;filter:var(--weapon-flare)}
+.weapon-fx-trail{left:4%;top:48%;width:88%;height:5px;border-radius:90px;background:linear-gradient(90deg,transparent,var(--weapon-line) 26%,var(--weapon-light) 62%,transparent)}
+.weapon-fx-trail-b{top:58%;width:70%;left:17%}
+.weapon-fx-trail-c{top:39%;width:63%;left:25%}
+.weapon-fx-core{left:calc(55% - 14px);top:calc(49% - 14px);width:28px;height:28px;border:3px solid var(--weapon-line);border-radius:50%;box-shadow:0 0 16px var(--weapon-aura)}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .forest-weapon-fx{animation:weapon-fx-lifetime 1.08s ease-out both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-trail-a{animation:weapon-slash .76s ease-out .18s both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-trail-b{animation:weapon-slash .76s ease-out .26s both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-trail-c{animation:weapon-slash .76s ease-out .34s both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-core{animation:weapon-pulse .8s ease-out .27s both}
+
+/* The old universal diagonal flash covered the foe, even for staffs and bows.
+   Its cinematic callout, exact damage number and enemy reactions remain. */
+#play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"])::before,
+#play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"])::after{animation:none!important;opacity:0!important}
+#play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .cinematic-strike{animation:none!important;opacity:0!important}
+
+/* Nine movement families. They override monster-specific attacks only while
+   a weapon is equipped; an unarmed monster keeps its original personality. */
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="sweep"] .forest-party{animation:weapon-sweep-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="flurry"] .forest-party{animation:weapon-flurry-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="crush"] .forest-party{animation:weapon-crush-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="thrust"] .forest-party{animation:weapon-thrust-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="shoot"] .forest-party{animation:weapon-shoot-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="channel"] .forest-party{animation:weapon-channel-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="pulse"] .forest-party{animation:weapon-pulse-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="brace"] .forest-party{animation:weapon-brace-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="lash"] .forest-party{animation:weapon-lash-step 1.08s ease-out both!important}
+
+/* Swords, daggers, axes and claws each leave different cut patterns. */
+[data-weapon-shape="sword"] .weapon-fx-trail-a{transform:rotate(-38deg)}
+[data-weapon-shape="sword"] .weapon-fx-trail-b{transform:rotate(35deg)}
+[data-weapon-shape="sword"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="dagger"] .weapon-fx-trail{height:3px;width:55%;left:30%;transform:rotate(-51deg)}
+[data-weapon-shape="dagger"] .weapon-fx-trail-b{left:19%;top:49%;transform:rotate(48deg)}
+[data-weapon-shape="dagger"] .weapon-fx-trail-c{left:39%;top:64%;transform:rotate(-53deg)}
+[data-weapon-shape="axe"] .weapon-fx-trail-a{width:84%;height:11px;transform:rotate(-68deg);top:42%}
+[data-weapon-shape="axe"] .weapon-fx-trail-b{width:55%;height:7px;top:66%;transform:rotate(-11deg)}
+[data-weapon-shape="axe"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="claw"] .weapon-fx-trail{width:62%;height:3px;left:25%;transform:rotate(-51deg)}
+[data-weapon-shape="claw"] .weapon-fx-trail-a{top:36%}
+[data-weapon-shape="claw"] .weapon-fx-trail-b{top:51%}
+[data-weapon-shape="claw"] .weapon-fx-trail-c{top:66%}
+
+/* Projectile heads are small bright diamonds. Nothing opaque covers the foe. */
+[data-weapon-shape="spear"] .weapon-fx-trail-a,
+[data-weapon-shape="bow"] .weapon-fx-trail-a,
+[data-weapon-shape="crossbow"] .weapon-fx-trail-a{top:46%;height:3px;width:80%;left:2%}
+[data-weapon-shape="spear"] .weapon-fx-trail-b{height:2px;width:72%;top:53%;left:3%}
+[data-weapon-shape="spear"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="bow"] .weapon-fx-trail-b{height:2px;width:47%;top:53%;left:5%;transform:rotate(-10deg)}
+[data-weapon-shape="bow"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="crossbow"] .weapon-fx-trail-b{height:3px;width:75%;top:60%;left:2%}
+[data-weapon-shape="crossbow"] .weapon-fx-trail-c{width:58%;height:2px;left:4%;top:53%}
+[data-weapon-shape="spear"] .weapon-fx-core,
+[data-weapon-shape="bow"] .weapon-fx-core,
+[data-weapon-shape="crossbow"] .weapon-fx-core{left:73%;top:39%;width:21px;height:19px;border:0;border-radius:0;background:var(--weapon-light);clip-path:polygon(0 35%,64% 35%,64% 0,100% 50%,64% 100%,64% 65%,0 65%)}
+
+/* Heavy blows shake the floor; scythes and whips use curved trajectories. */
+[data-weapon-shape="hammer"] .weapon-fx-trail-a{width:9px;height:69%;top:4%;left:65%;background:var(--weapon-line)}
+[data-weapon-shape="hammer"] .weapon-fx-trail-b{width:78%;height:5px;left:11%;top:75%}
+[data-weapon-shape="hammer"] .weapon-fx-trail-c{width:49%;height:3px;left:26%;top:86%}
+[data-weapon-shape="scythe"] .weapon-fx-trail-a,
+[data-weapon-shape="whip"] .weapon-fx-trail-a{width:78%;height:75%;left:13%;top:8%;border:5px solid var(--weapon-line);border-left-color:transparent;border-bottom-color:transparent;border-radius:50%;background:none;transform:rotate(-23deg)}
+[data-weapon-shape="scythe"] .weapon-fx-trail-b{width:48%;height:3px;left:35%;top:75%;transform:rotate(-42deg)}
+[data-weapon-shape="scythe"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="whip"] .weapon-fx-trail-a{border-width:3px;transform:rotate(31deg)}
+[data-weapon-shape="whip"] .weapon-fx-trail-b{width:53%;height:2px;left:17%;top:67%;transform:rotate(23deg)}
+[data-weapon-shape="whip"] .weapon-fx-trail-c{display:none}
+
+/* Casting and support instruments use thin halos, wind or sound. */
+[data-weapon-shape="staff"] .weapon-fx-trail-a,
+[data-weapon-shape="lantern"] .weapon-fx-trail-a,
+[data-weapon-shape="ring"] .weapon-fx-trail-a,
+[data-weapon-shape="flute"] .weapon-fx-trail-a{left:26%;top:19%;width:54%;height:57%;border:3px solid var(--weapon-line);border-radius:50%;background:none}
+[data-weapon-shape="staff"] .weapon-fx-trail-b{left:36%;top:29%;width:33%;height:37%;border:2px dashed var(--weapon-light);border-radius:50%;background:none}
+[data-weapon-shape="staff"] .weapon-fx-trail-c{width:76%;top:47%;left:14%;height:2px}
+[data-weapon-shape="lantern"] .weapon-fx-trail-a{border-style:dotted;transform:scale(.93)}
+[data-weapon-shape="lantern"] .weapon-fx-trail-b{left:43%;top:8%;width:4px;height:80%;background:var(--weapon-line)}
+[data-weapon-shape="lantern"] .weapon-fx-trail-c{left:18%;top:47%;width:69%;height:3px}
+[data-weapon-shape="shield"] .weapon-fx-trail-a{left:27%;top:12%;width:50%;height:72%;border:4px solid var(--weapon-line);border-radius:42% 42% 48% 48%;background:linear-gradient(120deg,transparent,#e9ffff12)}
+[data-weapon-shape="shield"] .weapon-fx-trail-b{left:40%;top:25%;width:24%;height:43%;border:2px solid var(--weapon-light);border-radius:45%;background:none}
+[data-weapon-shape="shield"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="flute"] .weapon-fx-trail-a{border-left-color:transparent;border-bottom-color:transparent}
+[data-weapon-shape="flute"] .weapon-fx-trail-b{left:34%;top:29%;width:38%;height:38%;border:3px solid var(--weapon-line);border-left-color:transparent;border-radius:50%;background:none}
+[data-weapon-shape="flute"] .weapon-fx-trail-c{left:40%;top:35%;width:25%;height:25%;border:2px solid var(--weapon-light);border-left-color:transparent;border-radius:50%;background:none}
+[data-weapon-shape="fan"] .weapon-fx-trail{left:15%;top:49%;width:72%;height:3px;transform-origin:10% 50%}
+[data-weapon-shape="fan"] .weapon-fx-trail-a{transform:rotate(-43deg)}
+[data-weapon-shape="fan"] .weapon-fx-trail-b{transform:rotate(-12deg)}
+[data-weapon-shape="fan"] .weapon-fx-trail-c{transform:rotate(29deg)}
+[data-weapon-shape="ring"] .weapon-fx-trail-a{border-width:4px;transform:rotate(-26deg)}
+[data-weapon-shape="ring"] .weapon-fx-trail-b{left:37%;top:30%;width:31%;height:36%;border:3px solid var(--weapon-light);border-radius:50%;background:none;transform:rotate(31deg)}
+[data-weapon-shape="ring"] .weapon-fx-trail-c{display:none}
+
+@keyframes weapon-fx-lifetime{0%,15%{opacity:0}25%,68%{opacity:1}100%{opacity:0}}
+@keyframes weapon-slash{0%{opacity:0;scale:.26}30%{opacity:.95;scale:1.08}65%{opacity:1;scale:1}100%{opacity:0;scale:1.25}}
+@keyframes weapon-pulse{0%{opacity:0;scale:.2}38%{opacity:.9;scale:1.12}100%{opacity:0;scale:1.55}}
+@keyframes weapon-sweep-step{0%,100%{transform:translate(-50%,9%) rotate(0)}22%{transform:translate(-70%,3%) rotate(-12deg)}52%{transform:translate(84%,-8%) rotate(18deg)}75%{transform:translate(22%,-4%) rotate(-6deg)}}
+@keyframes weapon-flurry-step{0%,100%{transform:translate(-50%,9%)}27%{transform:translate(34%,-11%) scale(.94)}42%{transform:translate(93%,-11%) scale(1.12)}53%{transform:translate(68%,3%) scale(.96)}68%{transform:translate(105%,-8%) scale(1.1)}}
+@keyframes weapon-crush-step{0%,100%{transform:translate(-50%,9%) scale(1)}29%{transform:translate(-48%,-24%) scale(.9,1.15)}53%{transform:translate(62%,17%) scale(1.22,.82)}69%{transform:translate(45%,5%) scale(1)}}
+@keyframes weapon-thrust-step{0%,100%{transform:translate(-50%,9%)}32%{transform:translate(-58%,9%) scale(.94)}47%{transform:translate(106%,-3%) scale(1.08,.96)}63%{transform:translate(35%,3%)}}
+@keyframes weapon-shoot-step{0%,100%{transform:translate(-50%,9%) rotate(0)}28%{transform:translate(-60%,10%) rotate(-8deg)}47%{transform:translate(-32%,5%) rotate(6deg)}68%{transform:translate(-50%,9%)}}
+@keyframes weapon-channel-step{0%,100%{transform:translate(-50%,9%) scale(1)}30%{transform:translate(-50%,-18%) scale(1.06)}55%{transform:translate(-50%,-11%) scale(1.14)}73%{transform:translate(-50%,-4%)}}
+@keyframes weapon-pulse-step{0%,100%{transform:translate(-50%,9%) scale(1)}30%{transform:translate(-50%,2%) scale(.93,1.1)}52%{transform:translate(-50%,-8%) scale(1.1)}72%{transform:translate(-50%,5%)}}
+@keyframes weapon-brace-step{0%,100%{transform:translate(-50%,9%) scale(1)}33%{transform:translate(-35%,17%) scale(1.1,.86)}55%{transform:translate(14%,7%) scale(1.14)}74%{transform:translate(-35%,9%)}}
+@keyframes weapon-lash-step{0%,100%{transform:translate(-50%,9%) rotate(0)}27%{transform:translate(-55%,4%) rotate(-18deg)}52%{transform:translate(-4%,0) rotate(17deg)}70%{transform:translate(-25%,9%) rotate(-9deg)}}
+@media(prefers-reduced-motion:reduce){
+ .forest-weapon-fx{display:none!important}
+ #play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-shape] .forest-party{animation:none!important}
+}

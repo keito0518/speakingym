@@ -94,6 +94,19 @@ export const WEAPON_SHAPE_LABELS=Object.freeze({
  sword:'剣',dagger:'短剣',staff:'杖',bow:'弓',hammer:'槌',spear:'槍',axe:'斧',scythe:'鎌',
  crossbow:'弩',claw:'爪',shield:'盾',whip:'鞭',fan:'扇',flute:'笛',lantern:'灯籠',ring:'輪'
 });
+// Presentation only. Weapon choice alters visible choreography, never the
+// English grade, enemy HP, loot probability or battle damage formula.
+export const WEAPON_ATTACK_MOTIONS=Object.freeze({
+ sword:'sweep',dagger:'flurry',staff:'channel',bow:'shoot',hammer:'crush',spear:'thrust',
+ axe:'crush',scythe:'sweep',crossbow:'shoot',claw:'flurry',shield:'brace',whip:'lash',
+ fan:'pulse',flute:'pulse',lantern:'channel',ring:'pulse'
+});
+export function weaponBattleVisual(weapon){
+ const shape=weapon?.shape&&Object.hasOwn(WEAPON_ATTACK_MOTIONS,weapon.shape)?weapon.shape:'unarmed';
+ const rarity=['common','rare','epic','legend'].includes(weapon?.rarity)?weapon.rarity:'none';
+ const rank=Number.isSafeInteger(weapon?.awakeningRank)?Math.max(0,Math.min(3,weapon.awakeningRank)):0;
+ return {shape,motion:WEAPON_ATTACK_MOTIONS[shape]||'unarmed',rarity,rank};
+}
 export const MAX_WEAPON_AWAKENING=3;
 // Gacha rarity bands cannot be overturned by duplicate-powered upgrades.
 // The highest possible attack in one tier is below the base of the next.
