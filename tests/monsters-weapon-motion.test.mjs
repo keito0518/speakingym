@@ -33,6 +33,15 @@ test('battle effects obey rarity and awakening palette, and do not alter battle 
  assert.equal(weaponBattleVisual({shape:'sword',rarity:'legend',awakeningRank:999}).rank,3);
  assert.match(css,/data-weapon-rarity="legend"/);
  assert.match(css,/data-weapon-rank="3"/);
+ assert.match(css,/weapon-legend-idle-orbit/);
+ assert.match(css,/data-weapon-rarity="legend"\]:not\(\.forest-attack\)/,
+  'Legendary idle flair should stop during an attack');
+ assert.match(css,/weapon-finisher-signature/);
+ assert.match(html,/class="weapon-fx-finisher-mark"/);
+ for(const shape of Object.keys(WEAPON_ATTACK_MOTIONS))
+  assert.match(css,new RegExp(`\\[data-weapon-shape="${shape}"\\] \\.weapon-fx-finisher-mark\\{`),
+   `${shape} needs a unique ultimate mark`);
+ assert.match(css,/monsters-quiet-motion[^\n]*\.forest-party::after\{animation:none!important;opacity:0!important\}/);
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/forest-attack:not\(\[data-weapon-shape="unarmed"\]\)/);
  assert.match(css,/pointer-events:none/);

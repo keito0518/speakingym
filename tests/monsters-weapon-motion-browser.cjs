@@ -41,6 +41,9 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await arena.getAttribute('data-weapon-motion'),motion);
    assert.equal(await arena.getAttribute('data-weapon-rarity'),rarity);
    assert.equal(await arena.getAttribute('data-weapon-rank'),String(rank));
+   const idle=await arena.locator('.forest-party').evaluate(actor=>getComputedStyle(actor,'::after').animationName);
+   assert.equal(idle,rarity==='legend'?'weapon-legend-idle-orbit':'none',
+    `${id}: only a legendary weapon gains the persistent idle orbit`);
    await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
    const answer=await page.evaluate(async()=>{
     const {ALL_PROMPTS}=await import('./monster-data.js');
@@ -72,6 +75,14 @@ const {chromium,webkit}=require('playwright');
    assert.ok(snapshot.fxBottom<=snapshot.consoleTop+1,`${id}: FX must not cover the English question (${JSON.stringify(snapshot)})`);
    assert.ok(snapshot.hudZ>snapshot.fxZ&&snapshot.fxPointer==='none',`${id}: keep damage legible and controls clickable`);
    assert.equal(snapshot.overlayCount,1);
+   await arena.evaluate(stage=>{stage.dataset.weaponUltimate='true'});
+   const finisher=await arena.locator('.weapon-fx-finisher-mark').evaluate(mark=>({
+    animation:getComputedStyle(mark).animationName,
+    footprint:mark.getBoundingClientRect().width,
+    pointer:getComputedStyle(mark).pointerEvents
+   }));
+   assert.equal(finisher.animation,'weapon-finisher-signature',`${id}: weapon-specific finisher mark`);
+   assert.ok(finisher.footprint>0&&finisher.pointer==='none',`${id}: mark must be decorative and visible`);
    assert.deepEqual(errors,[],`${id}: no browser exceptions`);
    await context.close();
   }
