@@ -24,6 +24,16 @@ const {chromium,webkit}=require('playwright');
     'The summon must use the pixel-storybook forest rather than the old sci-fi reactor');
    assert.equal(await page.locator('#summon-seal .storybook-chest-lid').count(),1,
     'The player must open an illustrated treasure chest');
+   const summonShapes=await page.locator('#summon-screen').evaluate(root=>{
+    const style=(selector,pseudo)=>getComputedStyle(root.querySelector(selector),pseudo);
+    return {coreRadius:style('.summon-core').borderRadius,innerClip:style('.summon-core-inner').clipPath,
+     pedestalBorder:style('.summon-weapon-pedestal','::before').borderTopStyle,
+     sparkRadius:style('.summon-confetti span').borderRadius};
+   });
+   assert.equal(summonShapes.coreRadius,'50%','Charge should show rounded light, not a floating square');
+   assert.equal(summonShapes.innerClip,'none','Remove the diamond from the summon glow');
+   assert.equal(summonShapes.pedestalBorder,'none','Weapon reveal must not sit in a dashed rectangle');
+   assert.equal(summonShapes.sparkRadius,'50%','Animated confetti should be light particles instead of blocks');
    assert.doesNotMatch(await page.locator('#summon-screen').innerText(),/わくわく|何が入っているかな|パカッ|もう少し！/,
     'Summon UI text must use a restrained RPG tone, not nursery-style dialogue');
    assert.equal(await page.locator('.summon-tier-splash').count(),1);

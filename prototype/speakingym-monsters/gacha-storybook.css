@@ -110,21 +110,27 @@
 .summon-screen.theme-storybook .summon-portal{
  width:min(72vw,290px,35dvh);filter:none;margin:10px auto 9px}
 .summon-screen.theme-storybook .summon-portal::before{
- border-radius:27%;background:radial-gradient(circle,#fff5dba8,#ffcf8e5a 39%,transparent 70%);
+ border-radius:50%;background:radial-gradient(circle,#fff5dba8,#ffcf8e5a 39%,transparent 70%);
  box-shadow:none}
 .summon-screen.theme-storybook .summon-core{
- inset:24%;border:0;border-radius:20%;transform:rotate(8deg);
- background:repeating-conic-gradient(from 14deg,#ffe5aa 0deg 16deg,#f8c58b 16deg 32deg);
- box-shadow:0 0 0 8px #fff4b970,0 0 0 14px #87d1af55}
+ inset:24%;border:0;border-radius:50%;transform:none;
+ background:radial-gradient(circle,#fffdf1 0 12%,#ffedb3 31%,#ffc985 54%,#f7bf794a 72%,transparent 76%);
+ box-shadow:0 0 35px #ffe9aa88}
 .summon-screen.theme-storybook .summon-core-inner{
- border:0;background:#fff4d8;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+ border:0;border-radius:50%;background:radial-gradient(circle,#fffdf5 0 20%,#fff7cf99 54%,transparent 78%);clip-path:none}
 .summon-screen.theme-storybook[data-phase="crack"] .summon-core{animation:storybook-core-wobble .12s linear infinite alternate}
 .summon-screen.theme-storybook[data-phase="surge"] .summon-portal{animation:storybook-portal-bounce .38s ease-in-out infinite alternate}
 .summon-screen.theme-storybook .summon-flash{background:radial-gradient(circle,#fffad8 0,#ffe197 19%,transparent 65%)}
+.summon-screen.theme-storybook .summon-confetti span{
+ width:9px;height:9px;border-radius:50%;background:#fff1b4;
+ box-shadow:0 0 13px #ffe6a5;clip-path:none}
+.summon-screen.theme-storybook .summon-confetti span:nth-child(3n){width:5px;height:5px;background:#fffdf1}
+.summon-screen.theme-storybook .summon-confetti span:nth-child(5n){background:#a8f3dc}
 .summon-screen.theme-storybook .summon-reveal-art{filter:drop-shadow(0 5px 0 #36526c55)}
-.summon-screen.theme-storybook .summon-weapon-pedestal{border-radius:22%;background:radial-gradient(circle,#fff6c6ab,transparent 65%);filter:none}
+.summon-screen.theme-storybook .summon-weapon-pedestal{border-radius:50%;background:radial-gradient(circle,#fff6c6ab,transparent 65%);filter:none}
 .summon-screen.theme-storybook .summon-weapon-pedestal::before{
- border:3px dashed #fff3c9;border-radius:25%;transform:rotate(9deg);box-shadow:none}
+ border:0;border-radius:50%;background:radial-gradient(circle,#fff7d488,transparent 65%);
+ transform:none;box-shadow:none}
 .summon-screen.theme-storybook .summon-weapon-pedestal svg.summon-weapon-illustration{
  width:86%;height:100%;max-width:220px;max-height:255px;image-rendering:pixelated;
  filter:drop-shadow(0 6px 0 #273f5999);animation:storybook-pixel-float 2s steps(4,end) infinite alternate}
@@ -182,7 +188,7 @@
  45%{transform:translate(-50%,-54%) scale(1.14);opacity:1}
  100%{transform:translate(-50%,-67%) scale(1.32);opacity:0}}
 @keyframes storybook-chest-lid{to{transform:translateY(-37px) rotate(-8deg)}}
-@keyframes storybook-core-wobble{to{transform:rotate(-8deg) scale(1.06)}}
+@keyframes storybook-core-wobble{to{transform:scale(1.1);filter:brightness(1.14)}}
 @keyframes storybook-portal-bounce{to{transform:scale(1.05)}}
 @keyframes storybook-pixel-float{to{transform:translateY(-5px)}}
 @media(max-width:430px){
