@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave} from '../prototype/speakingym-monsters/monster-engine.js';
-import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponTechniqueDescription,weaponTechniqueFor,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
+import {WEAPONS,scaledStrikeDamage,equippedWeapon,equipWeapon,awakeningProgress,awakenWeapon,weaponAttack,weaponAffinityBonus,weaponEffectDescription,weaponTechniqueDescription,weaponTechniqueFor,resolveWeaponTechniqueTurn,weaponSecondaryAffinity,filteredWeaponInventory,WEAPON_SHAPE_LABELS,GACHA_ATTACK_CAPS,MAX_WEAPON_AWAKENING} from '../prototype/speakingym-monsters/monster-equipment.js';
 import {monsterArt} from '../prototype/speakingym-monsters/monster-art.js';
 import {GACHA_COST,GACHA_TEN_PULL_COUNT,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,normalizeEconomy,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,
  grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from '../prototype/speakingym-monsters/monster-economy.js';
@@ -263,6 +263,34 @@ test('all sixteen gacha weapon shapes unlock one of four honest tactical signatu
  assert.equal(signatures.size,16);
  assert.deepEqual(new Set(signatures.values()),new Set(['tempo','pivot','ward','sustain']));
  assert.equal(weaponTechniqueFor(createSave(),{kind:'speak',independent:true}),null);
+});
+
+test('weapon techniques trigger once per foe; a missed or assisted answer breaks the clean chain',()=>{
+ const sword={...createSave(),weaponInventory:['sky_sabre'],equippedWeaponId:'sky_sabre'};
+ const fresh={weaponTechniqueUsed:false,lastIndependentKind:null};
+ const first=resolveWeaponTechniqueTurn(sword,fresh,{kind:'speak',independent:true});
+ assert.equal(first.technique,null,'First hit has no previous independent attack');
+ const miss=resolveWeaponTechniqueTurn(sword,first,{kind:'grammar',independent:false});
+ assert.equal(miss.lastIndependentKind,null,'An incorrect or assisted attempt breaks the combo');
+ const afterMiss=resolveWeaponTechniqueTurn(sword,miss,{kind:'speak',independent:true});
+ assert.equal(afterMiss.technique,null,'An interrupted chain cannot trigger a two-hit bonus');
+ const second=resolveWeaponTechniqueTurn(sword,afterMiss,{kind:'speak',independent:true});
+ assert.equal(second.technique?.type,'tempo');
+ assert.equal(second.technique?.charge,1);
+ const repeated=resolveWeaponTechniqueTurn(sword,second,{kind:'speak',independent:true});
+ assert.equal(repeated.technique,null,'A weapon cannot fire twice against the same foe');
+ const nextFoe=resolveWeaponTechniqueTurn(sword,{...repeated,weaponTechniqueUsed:false},{kind:'speak',independent:true});
+ assert.equal(nextFoe.technique?.charge,1,'A new foe resets the one-use limit, not the answer chain');
+ const bow={...createSave(),weaponInventory:['meadow_bow'],equippedWeaponId:'meadow_bow'};
+ const opener=resolveWeaponTechniqueTurn(bow,fresh,{kind:'vocab',independent:true});
+ const switched=resolveWeaponTechniqueTurn(bow,opener,{kind:'listen',independent:true});
+ assert.equal(switched.technique?.type,'pivot');
+ const shield={...createSave(),weaponInventory:['oak_shield'],equippedWeaponId:'oak_shield'};
+ const blocked=resolveWeaponTechniqueTurn(shield,fresh,{kind:'speak',independent:true,canShield:false});
+ assert.equal(blocked.technique,null);
+ assert.equal(blocked.weaponTechniqueUsed,false,'A wasted guard never consumes the only activation');
+ const ready=resolveWeaponTechniqueTurn(shield,blocked,{kind:'speak',independent:true,canShield:true});
+ assert.equal(ready.technique?.shield,1);
 });
 
 test('owned equipment filters keep the equipped item first and safely sort by attack, recent acquisition or resonance',()=>{

@@ -1,7 +1,7 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
-import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, weaponTechniqueFor, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
+import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
@@ -1945,6 +1945,9 @@ function showHint() {
 function counterPlayerMiss(status){
   const t=play?.mode==='forest'&&play.tactics?.turn==='player'?play.tactics:null;
   if(!t||!shouldCounterPlayerMiss({status,hasInput:true,turn:t.turn}))return false;
+  // A failed attack breaks the independent-answer chain immediately; fixing
+  // the answer later cannot masquerade as two consecutive clean strikes.
+  t.lastIndependentKind=null;
   const foe=opponentFor(play.index,play.wave,play.areaId),boss=play.index>=regularCount();
   const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss});
   const attack=t.playerMissCountered&&t.lastEnemyKind?t.lastEnemyKind:
@@ -1969,6 +1972,7 @@ function counterPlayerMiss(status){
 function counterEnemyDefenseMiss(){
   const t=play?.mode==='forest'&&play.tactics?.turn==='enemy'?play.tactics:null;
   if(!t)return false;
+  t.lastIndependentKind=null;
   const blow=incomingHit({kind:t.enemyKind,allyId:play.companionId,
     evolved:getMonsterProgress(save,play.companionId).evolved,
     action:t.actionAtAttack,result:'incorrect',pressure:t.enemyPressure,counterShield:t.counterShield});
@@ -2126,6 +2130,7 @@ async function gradeAnswer() {
       if(play.tactics){
         // A review-only answer is not a successful attack: it cannot remove
         // enemy HP or clear a boss phase. Yield the action without XP instead.
+        play.tactics.lastIndependentKind=null;
         play.tactics.usedPromptIds.add(prompt.id);
         $('#forest-battle-log').textContent='判定保留：攻撃は命中していないよ。HP・XPはそのままで敵のターンへ。';
         advanceQuestion();
@@ -2298,20 +2303,21 @@ async function gradeAnswer() {
         if(bossLink.shield)t.counterShield=Math.max(t.counterShield,bossLink.shield);
         if(bossLink.extraCharge)t.ultimate=advanceUltimate(t.ultimate,{independent:true});
       }
-      weaponTechnique=weaponTechniqueFor(save,{kind:attackKind,previousKind:t.lastIndependentKind,
-       independent:rating==='smooth',used:t.weaponTechniqueUsed,
+      const techniqueTurn=resolveWeaponTechniqueTurn(save,t,{kind:attackKind,
+       independent:rating==='smooth',
        canCharge:t.ultimate<ULTIMATE_MAX,
        canShield:t.counterShield===0&&(!t.pendingAdvance||(boss&&play.bossHits<BOSS_HITS)),
        canHeal:t.hp<t.maxHp});
+      weaponTechnique=techniqueTurn.technique;
+      t.weaponTechniqueUsed=techniqueTurn.weaponTechniqueUsed;
+      t.lastIndependentKind=techniqueTurn.lastIndependentKind;
       if(weaponTechnique){
-        t.weaponTechniqueUsed=true;
         if(weaponTechnique.charge)t.ultimate=advanceUltimate(t.ultimate,{independent:true});
         if(weaponTechnique.shield)t.counterShield=Math.max(t.counterShield,weaponTechnique.shield);
         if(weaponTechnique.heal){
           const before=t.hp;healActiveFighter(weaponTechnique.heal);weaponTechniqueHeal=t.hp-before;
         }
       }
-      t.lastIndependentKind=rating==='smooth'?attackKind:null;
       t.lastAttackKind=attackKind;
       t.action='attack';
     }else{
@@ -2407,6 +2413,7 @@ async function gradeAnswer() {
 }
 function skipAnswer(){
   if(!play || play.revealed)return;
+  if(play.tactics)play.tactics.lastIndependentKind=null;
   const prompt=currentPrompt();
   const defending=play.mode==='forest'&&play.tactics?.turn==='enemy';
   if(play.mode==='forest'){play.encounterHelp=true;play.hintUsed=true;}

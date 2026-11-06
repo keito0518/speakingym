@@ -156,6 +156,12 @@ export function weaponTechniqueFor(save,{kind=null,previousKind=null,independent
  return {type,name:WEAPON_TECHNIQUE_LABELS[type],charge:Number(type==='tempo'||type==='pivot'),
   shield:Number(type==='ward'),heal:Number(type==='sustain')};
 }
+export function resolveWeaponTechniqueTurn(save,state,{kind=null,independent=false,...capacity}={}){
+ const technique=weaponTechniqueFor(save,{kind,independent,previousKind:state?.lastIndependentKind,
+  used:Boolean(state?.weaponTechniqueUsed),...capacity});
+ return {technique,weaponTechniqueUsed:Boolean(state?.weaponTechniqueUsed||technique),
+  lastIndependentKind:independent&&kind?kind:null};
+}
 export function filteredWeaponInventory(save,{rarity='all',affinity='all',sort='attack'}={}){
  const ids=Array.isArray(save?.weaponInventory)?save.weaponInventory:[];
  const owned=new Set(ids);
