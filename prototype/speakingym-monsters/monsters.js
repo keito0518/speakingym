@@ -36,6 +36,7 @@ import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMile
 import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { createGachaCinematic } from './gacha-cinematic.js';
+import { createWeaponBattleSoundPlayer } from './weapon-battle-sound.js';
 import { summonWeaponArtwork } from './summon-weapon-art.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
@@ -46,6 +47,7 @@ import { setupBetaFeedback } from './beta-feedback.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+const battleSounds=createWeaponBattleSoundPlayer();
 // Every dungeon encounter uses a single arena for characters, the question and its
 // answer controls. Move the existing live nodes instead of duplicating a form:
 // recognition, quiz choices, hints and review listeners must keep one owner.
@@ -53,6 +55,7 @@ function arrangeBattleScene(forestMode){
   const world=$('#forest-world-stage'),consolePanel=$('#forest-arena-console');
   const home=$('.forest-command-window');
   const info=$('.forest-battle-info'),partyHp=$('#forest-party-hp');
+  $('#battle-sound-toggle').hidden=!forestMode;
   if(forestMode){
     world.insertBefore(info,consolePanel);
     // All HP meters belong in ONE slim HUD row. A separately positioned ally
@@ -75,10 +78,11 @@ function syncBattleWeaponPresentation(world){
  world.dataset.weaponRarity=visual.rarity;
  world.dataset.weaponRank=String(visual.rank);
 }
-function playBattleCinematic(kind,chain=play?.combo||0){
+function playBattleCinematic(kind,chain=play?.combo||0,{ultimate=false}={}){
   if(play?.mode!=='forest')return;
   const world=$('#forest-world-stage');
- syncBattleWeaponPresentation(world);
+  syncBattleWeaponPresentation(world);
+  world.dataset.weaponUltimate=String(Boolean(ultimate));
   if(kind==='attack'||kind==='victory'){
     const style=pickBattleSpectacle({chain,previousFx:world.dataset.fxVariant,
       previousMotion:world.dataset.strikeMotion});
@@ -90,6 +94,7 @@ function playBattleCinematic(kind,chain=play?.combo||0){
   world.dataset.cinematic='idle';
   void world.offsetWidth; // Restart CSS cut-ins for each independently graded turn.
   world.dataset.cinematic=kind;
+  if(kind==='attack'||kind==='victory')battleSounds.play(weaponBattleVisual(equippedWeapon(save)),{ultimate});
 }
 function syncBattleAura(){
   const world=$('#forest-world-stage'),chain=play?.mode==='forest'?play.combo||0:0;
@@ -2353,7 +2358,7 @@ async function gradeAnswer() {
     const defeated=boss?play.bossHits>=BOSS_HITS:Boolean(t&&t.enemyHp<=0);
     // Use the clean answer being resolved *now*, so the third and fifth hits
     // immediately unlock their stronger animations instead of lagging a turn.
-    playBattleCinematic(defeated?'victory':'attack',play.combo+(rating==='smooth'?1:0));
+    playBattleCinematic(defeated?'victory':'attack',play.combo+(rating==='smooth'?1:0),{ultimate:usedUltimate});
     if(defeated)$('#forest-world-stage').classList.add('forest-boss-defeated');
     const bossMove=boss?forestBossPhase({areaId:play.areaId,index:play.index,wave:play.wave,level:play.difficulty,prompt}):null;
     const sealNote=bossMove?`「${bossMove.signature.name}」を打ち破った！ `:'';
@@ -3254,6 +3259,13 @@ window.addEventListener('storage',event=>{
 });
 window.addEventListener('pagehide',()=>{
   cancelAutoAdvance();stopRecognition('done');pauseInterruptedListening();
+});
+$('#battle-sound-toggle').addEventListener('click',()=>{
+  const button=$('#battle-sound-toggle');
+  const enabled=battleSounds.setEnabled(!battleSounds.isEnabled());
+  button.setAttribute('aria-pressed',String(enabled));
+  button.setAttribute('aria-label',enabled?'戦闘効果音をオフにする':'戦闘効果音をオンにする');
+  button.textContent=enabled?'戦闘音 ON':'戦闘音 OFF';
 });
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
