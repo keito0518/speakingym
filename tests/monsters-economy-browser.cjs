@@ -125,7 +125,7 @@ const {chromium,webkit}=require('playwright');
   await page.locator('#shop-draw').click();
   assert.equal(await page.locator('#summon-screen').getAttribute('data-rarity'),'epic');
   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
-  for(let i=0;i<4;i++)await page.locator('#summon-crank').click();
+  for(let i=0;i<3;i++)await page.locator('#summon-seal').click();
   await page.waitForFunction(()=>document.querySelector('#summon-screen')?.dataset.phase==='surge',null,{timeout:5000});
   assert.match(await page.locator('#summon-story').innerText(),/召喚陣が共鳴/);
   assert.equal(await page.locator('#summon-reveal-art').evaluate(el=>getComputedStyle(el).opacity),'0',

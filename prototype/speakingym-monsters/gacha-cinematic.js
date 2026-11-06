@@ -25,7 +25,8 @@ const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<'
 export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
  let root=null,active=null,previousFocus=null;
  let soundEnabled=false,audioContext=null;
- let crankProgress=0,lastCrankAngle=null,crankPointer=null,crankDragged=false,suppressCrankClick=false;
+ let lastTurnCue=0;
+ let sealProgress=0,sealPointer=null,sealStartY=0,sealDragged=false,suppressSealClick=false;
  const timers=[];
  const clearTimers=()=>{while(timers.length)clearTimeout(timers.pop());};
  const later=(fn,delay)=>timers.push(setTimeout(fn,delay));
@@ -38,13 +39,18 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
    if(!AudioEngine)return;
    audioContext||=new AudioEngine();
    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
-   const tones=kind==='reveal'?(active?.tier==='legend'?[440,554,659,880]:active?.tier==='epic'?[392,523,659]:[392,523]):kind==='crack'?[155,120]:[261,329];
    const now=audioContext.currentTime;
+   if(kind==='turn'&&now-lastTurnCue<.16)return;
+   if(kind==='turn')lastTurnCue=now;
+   const tier=root?.dataset.rarity||active?.tier;
+   const tones=kind==='reveal'?(tier==='legend'?[392,494,587,784,988]:tier==='epic'?[349,440,523,698]:[392,523,659]):
+    kind==='crack'?[98,145,220]:kind==='surge'?[196,293,440,587]:kind==='turn'?[620]:[220,330,440];
    tones.forEach((frequency,index)=>{
     const oscillator=audioContext.createOscillator(),gain=audioContext.createGain();
-    const start=now+index*(kind==='crack'?.045:.095),duration=kind==='reveal'?.38:.14;
-    oscillator.type=kind==='crack'?'triangle':'sine';oscillator.frequency.setValueAtTime(frequency,start);
-    gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(.065,start+.02);
+    const start=now+index*(kind==='crack'?.03:kind==='reveal'?.085:.065),duration=kind==='reveal'?.8:kind==='surge'?.34:kind==='turn'?.07:.21;
+    oscillator.type=kind==='crack'?'sawtooth':kind==='turn'?'sine':'triangle';oscillator.frequency.setValueAtTime(frequency,start);
+    if(kind==='crack')oscillator.frequency.exponentialRampToValueAtTime(Math.max(50,frequency*.52),start+duration);
+    gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(kind==='turn'?.012:.035,start+.025);
     gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
     oscillator.connect(gain);gain.connect(audioContext.destination);
     oscillator.start(start);oscillator.stop(start+duration+.02);
@@ -56,21 +62,18 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root=document.createElement('div');
   root.id='summon-screen';root.className='summon-screen';root.hidden=true;
   root.dataset.phase='charge';root.dataset.rarity='common';
-  root.innerHTML=`<div class="summon-universe" aria-hidden="true"><div class="summon-stardust"></div><div class="summon-rays"></div><div class="summon-aura"></div></div>
+  root.innerHTML=`<div class="summon-vault-backdrop" aria-hidden="true"></div><div class="summon-vault-doors" aria-hidden="true"><span></span><span></span></div><div class="summon-vault-heaven" aria-hidden="true"></div><div class="summon-tier-splash" aria-hidden="true"><span id="summon-tier-splash-text">LEGENDARY</span></div>
+  <div class="summon-universe" aria-hidden="true"><div class="summon-stardust"></div><div class="summon-rays"></div><div class="summon-aura"></div></div>
   <section class="summon-dialog" role="dialog" aria-modal="true" aria-labelledby="summon-title" aria-describedby="summon-story">
     <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>SUMMON</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="召喚画面を閉じる">閉じる</button></div></div>
-    <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">武器の気配が集まっていく…</p>
-      <div class="gashapon-stage" id="gashapon-stage">
-       <div class="gashapon-machine" aria-label="手動ガシャポン筐体">
-        <div class="gashapon-glass"><div class="gashapon-glass-glare"></div><div class="gashapon-capsules" aria-hidden="true">${Array.from({length:16},(_,i)=>`<span class="gashapon-ball" style="--ball-x:${7+(i*37)%78}%;--ball-y:${39+(i*19)%44}%;--ball-hue:${i*37}deg;--ball-index:${i}"></span>`).join('')}</div></div>
-        <div class="gashapon-neck"></div>
-        <div class="gashapon-cabinet"><div class="gashapon-marquee">STAR CAPSULE <small>WEAPON SUMMON</small></div>
-          <div class="gashapon-controls"><button type="button" id="summon-crank" class="gashapon-crank" aria-label="ハンドルを時計回りに回す。タップでも回せる"><span class="gashapon-handle"></span><span class="gashapon-handle-center"></span></button>
-          <div class="gashapon-coinplate"><span>GOLD</span><strong id="summon-gashapon-price">120 G</strong><i></i><small>ゲーム内通貨</small></div></div>
-          <div class="gashapon-hatch"><span>CAPSULE EXIT</span><div class="gashapon-dropped-ball"></div></div>
-        </div><div class="gashapon-feet"></div>
-       </div>
-       <div class="gashapon-guide"><strong id="summon-crank-status" role="status">ハンドルを時計回りに回そう</strong><span>指で回す／タップ4回でもOK</span><div id="summon-crank-meter" class="gashapon-meter" role="progressbar" aria-label="ハンドルの回転進行" aria-valuemin="0" aria-valuemax="300" aria-valuenow="0"><span></span></div></div>
+    <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">星の武器庫が目を覚ます…</p>
+      <div class="summon-vault-stage" id="summon-vault-stage">
+       <div class="summon-vault-crest" aria-hidden="true"><span class="crest-orbit orbit-a"></span><span class="crest-orbit orbit-b"></span><span class="crest-spokes"></span></div>
+       <button type="button" id="summon-seal" class="summon-vault-seal" aria-label="封印を上へスワイプして解く。タップ3回でも解ける">
+        <span class="summon-seal-inner"><svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 7 72 42 110 60 72 77 60 113 47 77 10 60 47 42Z"/><path d="M60 30 69 50 90 60 69 70 60 90 51 70 30 60 51 50Z"/><circle cx="60" cy="60" r="8"/></svg><b>UNSEAL</b></span>
+       </button>
+       <div class="summon-vault-shards" aria-hidden="true">${Array.from({length:18},(_,i)=>`<span style="--shard-angle:${i*20}deg;--shard-delay:${(i%6)*.035}s"></span>`).join('')}</div>
+       <div class="summon-vault-guide"><span class="tiny-caps">ASTRAL VAULT · SUMMON RITUAL</span><strong id="summon-seal-status" role="status">封印を上へスワイプ</strong><span>指を上へ滑らせる / タップ3回でも解放</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="封印解放の進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
       </div>
       <div class="summon-portal" aria-hidden="true">
         <div class="summon-confetti">${Array.from({length:24},(_,i)=>`<span style="--spark-rotation:${i*15}deg;--spark-delay:${(i%6)*.045}s"></span>`).join('')}</div><div class="summon-shockwave"></div>
@@ -96,33 +99,28 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
    if(soundEnabled)playCue('charge');
   });
   root.querySelector('#summon-skip').addEventListener('click',reveal);
-  const crank=root.querySelector('#summon-crank');
-  const angleAt=event=>{
-   const r=crank.getBoundingClientRect();
-   return Math.atan2(event.clientY-r.top-r.height/2,event.clientX-r.left-r.width/2)*180/Math.PI;
-  };
-  crank.addEventListener('pointerdown',event=>{
+  const seal=root.querySelector('#summon-seal');
+  seal.addEventListener('pointerdown',event=>{
    if(root.dataset.phase!=='manual')return;
-   crankPointer=event.pointerId;lastCrankAngle=angleAt(event);crankDragged=false;
-   crank.setPointerCapture?.(event.pointerId);
+   sealPointer=event.pointerId;sealStartY=event.clientY;sealDragged=false;
+   seal.setPointerCapture?.(event.pointerId);
   });
-  crank.addEventListener('pointermove',event=>{
-   if(root.dataset.phase!=='manual'||event.pointerId!==crankPointer||lastCrankAngle===null)return;
-   const angle=angleAt(event),delta=(angle-lastCrankAngle+540)%360-180;
-   if(Math.abs(delta)>2)crankDragged=true;
-   if(delta>0)advanceCrank(Math.min(65,delta));
-   lastCrankAngle=angle;
+  seal.addEventListener('pointermove',event=>{
+   if(root.dataset.phase!=='manual'||event.pointerId!==sealPointer)return;
+   const distance=sealStartY-event.clientY;
+   if(Math.abs(distance)>6)sealDragged=true;
+   if(distance>0)advanceSeal(Math.max(0,Math.min(100,distance/1.4))-sealProgress);
   });
-  crank.addEventListener('pointerup',event=>{
-   if(event.pointerId===crankPointer){
-    suppressCrankClick=crankDragged;
-    crankPointer=null;lastCrankAngle=null;
+  seal.addEventListener('pointerup',event=>{
+   if(event.pointerId===sealPointer){
+    suppressSealClick=sealDragged;
+    sealPointer=null;
    }
   });
-  crank.addEventListener('pointercancel',()=>{crankPointer=null;lastCrankAngle=null;});
-  crank.addEventListener('click',()=>{
-   if(suppressCrankClick){suppressCrankClick=false;return;}
-   advanceCrank(90);
+  seal.addEventListener('pointercancel',()=>{sealPointer=null;});
+  seal.addEventListener('click',()=>{
+   if(suppressSealClick){suppressSealClick=false;return;}
+   advanceSeal(34);
   });
   root.querySelector('#summon-equip').addEventListener('click',()=>{
    if(!active||root.dataset.phase!=='reveal')return;
@@ -180,6 +178,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   const rarity=RARITY_COPY[best.tier]||RARITY_COPY.common;
   root.dataset.mode=batch?'batch':'single';
   root.dataset.rarity=best.tier in RARITY_COPY?best.tier:'common';root.dataset.phase='charge';
+  root.querySelector('#summon-tier-splash-text').textContent=best.tier==='legend'?'LEGENDARY':best.tier==='epic'?'EPIC AWAKENING':'RARE SUMMON';
   root.querySelector('#summon-story').textContent=batch?'10の武器の気配が、ひとつの召喚陣に集う…':rarity.intro;
   root.querySelector('#summon-rarity').textContent=batch?'10 SUMMONS · '+rarity.label:rarity.label+' · '+rarity.name;
   root.querySelector('#summon-title').textContent=batch?'10連召喚 結果':data.weapon.name;
@@ -187,10 +186,10 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
    `ATTACK +${data.weapon.attack} · ${data.affinity}`;
   root.querySelector('#summon-duplicate').hidden=batch||!data.duplicate;
   root.querySelector('#summon-duplicate').textContent=!batch&&data.duplicate?`所持済み：${data.refund} G 返還 ＋ 覚醒の欠片1個`:'';
-  root.querySelector('#summon-reveal-art').innerHTML=batch?'':data.art;
+  root.querySelector('#summon-reveal-art').innerHTML=`<div class="summon-weapon-pedestal"><svg viewBox="25 0 28 49" role="img" aria-label="${escapeHtml(best.weapon.name)}">${weaponPixelOverlay(best.weapon)}</svg></div>`;
   const rewards=root.querySelector('#summon-batch-rewards');
   rewards.hidden=true;
-  rewards.innerHTML=batch?data.results.map((item,index)=>`<div class="summon-batch-card" data-tier="${item.tier}" data-duplicate="${item.duplicate}">
+  rewards.innerHTML=batch?data.results.map((item,index)=>`<div class="summon-batch-card" style="--card-delay:${(index*.105).toFixed(3)}s" data-tier="${item.tier}" data-duplicate="${item.duplicate}">
     <span class="summon-batch-number">${String(index+1).padStart(2,'0')}</span>
     <svg class="summon-batch-weapon" viewBox="25 0 28 49" aria-hidden="true">${weaponPixelOverlay(item.weapon)}</svg>
     <span class="summon-batch-rarity">${RARITY_COPY[item.tier].label}</span>
@@ -202,36 +201,35 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.querySelector('#summon-equip').hidden=true;
   root.querySelector('#summon-repeat').hidden=true;
   root.querySelector('#summon-repeat').textContent=batch?'10連をもう一度召喚する':'もう一度召喚する';
-  root.querySelector('#summon-gashapon-price').textContent=batch?'1,200 G':'120 G';
   root.hidden=false;document.body.classList.add('summon-active');root.scrollTop=0;
-  crankProgress=0;lastCrankAngle=null;crankPointer=null;crankDragged=false;suppressCrankClick=false;
-  root.style.setProperty('--crank-angle','0deg');
-  root.querySelector('#summon-crank-meter').setAttribute('aria-valuenow','0');
-  root.querySelector('#summon-crank-meter span').style.width='0%';
-  root.querySelector('#summon-crank-status').textContent='ハンドルを時計回りに回そう';
-  root.querySelector('#summon-crank').disabled=false;
+  sealProgress=0;sealPointer=null;sealDragged=false;suppressSealClick=false;
+  root.style.setProperty('--seal-progress','0');
+  root.querySelector('#summon-seal-meter').setAttribute('aria-valuenow','0');
+  root.querySelector('#summon-seal-meter span').style.width='0%';
+  root.querySelector('#summon-seal-status').textContent='封印を上へスワイプ';
+  root.querySelector('#summon-seal').disabled=false;
   root.dataset.phase='manual';
   root.querySelector('#summon-skip').textContent='操作をスキップして結果を見る';
-  root.querySelector('#summon-crank').focus({preventScroll:true});
+  root.querySelector('#summon-seal').focus({preventScroll:true});
   if(reducedMotion()){reveal();return;}
  }
- function advanceCrank(degrees){
+ function advanceSeal(amount){
   if(!root||root.hidden||root.dataset.phase!=='manual')return;
-  crankProgress=Math.min(300,crankProgress+Math.max(0,degrees));
-  root.style.setProperty('--crank-angle',`${crankProgress}deg`);
-  root.querySelector('#summon-crank-meter').setAttribute('aria-valuenow',String(Math.round(crankProgress)));
-  root.querySelector('#summon-crank-meter span').style.width=`${Math.round(100*crankProgress/300)}%`;
-  root.querySelector('#summon-crank-status').textContent=crankProgress>=300?'カプセル排出！':`あと ${Math.ceil(300-crankProgress)}° 回そう！`;
-  if(crankProgress>=300){
-   root.dataset.phase='vend';root.querySelector('#summon-crank').disabled=true;
-   root.querySelector('#summon-story').textContent='カプセルが落ちてきた！';
-   playCue('crack');later(startMagicSequence,680);
-  }else if(Math.round(crankProgress)%90<10)playCue('turn');
+  sealProgress=Math.min(100,sealProgress+Math.max(0,amount));
+  root.style.setProperty('--seal-progress',String(sealProgress));
+  root.querySelector('#summon-seal-meter').setAttribute('aria-valuenow',String(Math.round(sealProgress)));
+  root.querySelector('#summon-seal-meter span').style.width=`${Math.round(sealProgress)}%`;
+  root.querySelector('#summon-seal-status').textContent=sealProgress>=100?'封印解放！':`封印解放 ${Math.round(sealProgress)}%`;
+  if(sealProgress>=100){
+   root.dataset.phase='unseal';root.querySelector('#summon-seal').disabled=true;
+   root.querySelector('#summon-story').textContent='星の扉が、いま開く――';
+   playCue('crack');later(startMagicSequence,900);
+  }else playCue('turn');
  }
  function startMagicSequence(){
-  if(!root||root.hidden||!active||root.dataset.phase!=='vend')return;
+  if(!root||root.hidden||!active||root.dataset.phase!=='unseal')return;
   root.dataset.phase='charge';
-  root.querySelector('#summon-story').textContent=active.results?'10個のカプセルが星の光と共鳴する…':RARITY_COPY[active.tier].intro;
+  root.querySelector('#summon-story').textContent=active.results?'十の星が、星核へと集う…':RARITY_COPY[active.tier].intro;
   root.querySelector('#summon-skip').textContent='演出をスキップ';
   playCue('charge');
   const rarity=RARITY_COPY[root.dataset.rarity];

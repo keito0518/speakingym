@@ -1,5 +1,5 @@
-// The real-motion path is deliberately tactile: drag a physical crank, view
-// every 10-pull card by scrolling, then evolve duplicate gear manually.
+// The ritual's tactile path: swipe the central seal, view the full 10-pull by
+// scrolling, then awaken duplicate gear without changing the normal save.
 const assert=require('node:assert/strict');
 const {chromium,webkit}=require('playwright');
 
@@ -19,22 +19,23 @@ const {chromium,webkit}=require('playwright');
    await page.evaluate(()=>{Math.random=()=>.009;});
    await page.locator('#shop-draw-ten').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
-   assert.equal(await page.locator('.gashapon-machine').isVisible(),true);
-   assert.match(await page.locator('#shop-coins').innerText(),/2010 G/,'The result is already committed before the crank');
+   assert.equal(await page.locator('.summon-vault-stage').isVisible(),true);
+   assert.match(await page.locator('.summon-vault-backdrop').evaluate(el=>getComputedStyle(el).backgroundImage),/summon-vault\.webp/,
+    'The summon must use the finished game-environment artwork');
+   assert.equal(await page.locator('.summon-tier-splash').count(),1);
+   assert.match(await page.locator('#shop-coins').innerText(),/2010 G/,'The result is committed before unlocking the vault');
 
-   const crank=page.locator('#summon-crank');
-   await crank.scrollIntoViewIfNeeded();
-   const box=await crank.boundingBox();
-   assert.ok(box,'A real handle must exist');
-   const x=box.x+box.width/2,y=box.y+box.height/2,r=Math.min(box.width,box.height)*.31;
-   await page.mouse.move(x,y-r);await page.mouse.down();
-   for(let angle=-90;angle<=270;angle+=18){
-    const radians=angle*Math.PI/180;
-    await page.mouse.move(x+Math.cos(radians)*r,y+Math.sin(radians)*r);
-   }
+   const seal=page.locator('#summon-seal');
+   await seal.scrollIntoViewIfNeeded();
+   const box=await seal.boundingBox();
+   assert.ok(box,'The seal must have a touch target');
+   const x=box.x+box.width/2,y=box.y+box.height*.7;
+   await page.mouse.move(x,y);await page.mouse.down();
+   for(let distance=0;distance<=160;distance+=10)await page.mouse.move(x,y-distance);
    await page.mouse.up();
-   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'vend',
-    'Dragging the real dial clockwise must physically release a capsule');
+   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'unseal',
+    'Dragging up must visibly break the celestial seal');
+   assert.equal(await page.locator('#summon-tier-splash-text').innerText(),'LEGENDARY');
    await page.locator('#summon-skip').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
    assert.equal(await page.locator('.summon-batch-card').count(),10);
@@ -63,6 +64,6 @@ const {chromium,webkit}=require('playwright');
    assert.deepEqual(errors,[],`${engine}/${width} page errors`);
    await context.close();
   }
-  console.log(`${engine}: gashapon crank, 10-result scroll, duplicate awakening, reload, isolation PASS`);
+  console.log(`${engine}: vault swipe, ten-card reveal, scroll, duplicate awakening, reload, isolation PASS`);
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

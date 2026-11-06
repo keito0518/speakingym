@@ -64,7 +64,7 @@ jobs:
         run: |
           timeout 70s node tests/monsters-ten-pull-browser.cjs
           timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-ten-pull-browser.cjs
-      - name: Hand-cranked gashapon, scrolling and awakening (Chromium + WebKit)
+      - name: Celestial vault swipe, scrolling and awakening (Chromium + WebKit)
         timeout-minutes: 3
         run: |
           timeout 75s node tests/monsters-gashapon-browser.cjs

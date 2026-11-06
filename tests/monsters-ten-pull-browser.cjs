@@ -31,12 +31,12 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await page.locator('#summon-screen').getAttribute('data-mode'),'batch');
    assert.equal(await page.locator('#summon-screen').getAttribute('data-rarity'),'legend');
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
-   assert.match(await page.locator('#summon-crank-status').innerText(),/時計回り/);
+   assert.match(await page.locator('#summon-seal-status').innerText(),/スワイプ/);
    assert.equal(await page.locator('#shop-coins').innerText(),'2010 G',
     'One new legend and nine duplicates must deduct 1200 and refund only 810');
-   for(let i=0;i<4;i++)await page.locator('#summon-crank').click();
-   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'vend',
-    'Four direct turns should release the capsule, with no extra roll');
+   for(let i=0;i<3;i++)await page.locator('#summon-seal').click();
+   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'unseal',
+    'Three deliberate taps must break the celestial seal, with no extra roll');
    await page.locator('#summon-skip').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
    assert.equal(await page.locator('.summon-batch-card').count(),10);
