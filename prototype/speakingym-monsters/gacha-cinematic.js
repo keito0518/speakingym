@@ -1,7 +1,7 @@
 // A summon is an earned in-game reward, never a paid lottery. The economy
 // commits the result BEFORE this presentation begins; skipping or closing the
 // animation cannot draw a second item or change the saved result.
-import {weaponPixelOverlay} from './weapon-visuals.js';
+import {summonWeaponArtwork} from './summon-weapon-art.js';
 
 const RARITY_COPY=Object.freeze({
  common:{label:'COMMON',name:'旅の武器',intro:'装備の気配が集まっていく…',surge:''},
@@ -186,12 +186,12 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
    `ATTACK +${data.weapon.attack} · ${data.affinity}`;
   root.querySelector('#summon-duplicate').hidden=batch||!data.duplicate;
   root.querySelector('#summon-duplicate').textContent=!batch&&data.duplicate?`所持済み：${data.refund} G 返還 ＋ 覚醒の欠片1個`:'';
-  root.querySelector('#summon-reveal-art').innerHTML=`<div class="summon-weapon-pedestal"><svg viewBox="25 0 28 49" role="img" aria-label="${escapeHtml(best.weapon.name)}">${weaponPixelOverlay(best.weapon)}</svg></div>`;
+  root.querySelector('#summon-reveal-art').innerHTML=`<div class="summon-weapon-pedestal">${summonWeaponArtwork(best.weapon,{instance:'main'})}</div>`;
   const rewards=root.querySelector('#summon-batch-rewards');
   rewards.hidden=true;
   rewards.innerHTML=batch?data.results.map((item,index)=>`<div class="summon-batch-card" style="--card-delay:${(index*.105).toFixed(3)}s" data-tier="${item.tier}" data-duplicate="${item.duplicate}">
     <span class="summon-batch-number">${String(index+1).padStart(2,'0')}</span>
-    <svg class="summon-batch-weapon" viewBox="25 0 28 49" aria-hidden="true">${weaponPixelOverlay(item.weapon)}</svg>
+    <div class="summon-batch-weapon">${summonWeaponArtwork(item.weapon,{instance:`batch-${index}`,decorative:true})}</div>
     <span class="summon-batch-rarity">${RARITY_COPY[item.tier].label}</span>
     <strong>${escapeHtml(item.weapon.name)}</strong>
     <small>ATTACK +${item.weapon.attack}${item.duplicate?` · 重複 +${item.refund} G / 覚醒の欠片 +1`:' · NEW'}</small>

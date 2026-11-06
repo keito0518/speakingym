@@ -15,7 +15,7 @@ const shapes=Object.freeze({
  shield:'<path d="M27 8 40 5 51 9 50 27 40 40 29 28Z" fill="EDGE"/><path d="M31 12 40 9 47 13 46 26 40 34 33 25Z" fill="BLADE"/><path d="M40 12 40 31 M34 20 46 20" stroke="LIGHT" stroke-width="2" fill="none"/>',
  whip:'<rect x="37" y="29" width="5" height="13" fill="HANDLE"/><path d="M40 29Q51 22 47 13Q45 6 38 7Q29 8 30 18Q31 24 37 23" fill="none" stroke="EDGE" stroke-width="6"/><path d="M40 29Q51 22 47 13Q45 6 38 7Q29 8 30 18Q31 24 37 23" fill="none" stroke="BLADE" stroke-width="3"/><rect x="29" y="19" width="4" height="4" fill="LIGHT"/>'
 });
-function shapeFor(weapon){
+export function weaponShapeFor(weapon){
  if(weapon?.shape&&Object.hasOwn(shapes,weapon.shape))return weapon.shape;
  if(/staff|wand|scepter/.test(weapon?.id||''))return 'staff';
  if(/bow/.test(weapon?.id||''))return 'bow';
@@ -28,7 +28,7 @@ export function weaponPixelOverlay(weapon,{legacy=false}={}){
  if(!weapon?.id||!['common','rare','epic','legend'].includes(weapon.rarity))return '';
  const colors={common:['#b0c8cd','#f0f6f3','#455766'],rare:['#65b6e8','#e8faff','#27639c'],
   epic:['#e6a5ff','#fff4cc','#8248bb'],legend:['#ffc85d','#fffbe0','#b46620']}[weapon.rarity];
- const shape=shapeFor(weapon),[blade,light,edge]=colors;
+ const shape=weaponShapeFor(weapon),[blade,light,edge]=colors;
  const art=shapes[shape].replaceAll('BLADE',blade).replaceAll('LIGHT',light).replaceAll('EDGE',edge).replaceAll('HANDLE','#695145');
  const rank=Number.isSafeInteger(weapon.awakeningRank)?Math.max(0,Math.min(3,weapon.awakeningRank)):0;
  const aura=rank?`<g data-weapon-awakened="${rank}"><rect x="27" y="${20-rank*4}" width="4" height="4" fill="${rank===3?'#ffea8b':'#83f4fb'}"/><rect x="49" y="${24-rank*3}" width="3" height="3" fill="#fffceb"/>${rank>1?'<rect x="41" y="1" width="5" height="5" fill="#fff5b4"/>':''}${rank===3?'<rect x="25" y="4" width="3" height="3" fill="#ffe18f"/><rect x="51" y="33" width="3" height="3" fill="#ffe18f"/>':''}</g>`:'';

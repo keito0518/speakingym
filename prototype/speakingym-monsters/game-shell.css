@@ -672,3 +672,21 @@ body.summon-active{overflow:hidden}
  .summon-batch-card .summon-batch-weapon{width:64px;height:70px}.summon-batch-card strong{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.summon-screen .summon-batch-card::before{display:none}}
 .monsters-quiet-motion .summon-screen .summon-batch-card::before{display:none}
+
+/* Gacha portraits are forged as individual illustrated vectors. The tiny
+   pixel sprite still belongs to the character in actual exploration/battle. */
+.summon-screen[data-phase="reveal"] .summon-vault-backdrop{filter:brightness(.42) saturate(.83) blur(7px)}
+.summon-screen[data-phase="reveal"] .summon-rays{opacity:.10;mask-image:radial-gradient(ellipse at center,#000 13%,transparent 78%);
+ background:repeating-conic-gradient(from 0deg at 50% 50%,var(--summon-color) 0deg 1.2deg,transparent 1.2deg 21deg)}
+.summon-weapon-pedestal svg.summon-weapon-illustration{width:86%;height:100%;max-width:250px;max-height:260px;
+ image-rendering:auto;filter:drop-shadow(0 4px 6px #0009) drop-shadow(0 0 14px var(--summon-glow));
+ animation:vault-weapon-hover 2.6s ease-in-out infinite alternate}
+.summon-batch-card .summon-batch-weapon{width:100px;height:91px;max-width:100%;display:grid;place-items:center;
+ filter:drop-shadow(0 0 8px var(--summon-glow))}
+.summon-batch-card .summon-batch-weapon svg{width:100%;height:100%;max-width:100%;max-height:100%;
+ overflow:visible;object-fit:contain}
+.summon-batch-card[data-tier="epic"] .summon-batch-weapon,
+.summon-batch-card[data-tier="legend"] .summon-batch-weapon{filter:drop-shadow(0 0 12px var(--summon-color))}
+@media(max-width:430px){.summon-batch-card .summon-batch-weapon{width:72px;height:76px}}
+@media(prefers-reduced-motion:reduce){.summon-weapon-pedestal svg.summon-weapon-illustration{animation:none}}
+.monsters-quiet-motion .summon-weapon-pedestal svg.summon-weapon-illustration{animation:none}
