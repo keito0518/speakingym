@@ -687,6 +687,11 @@ body.summon-active{overflow:hidden}
  overflow:visible;object-fit:contain}
 .summon-batch-card[data-tier="epic"] .summon-batch-weapon,
 .summon-batch-card[data-tier="legend"] .summon-batch-weapon{filter:drop-shadow(0 0 12px var(--summon-color))}
-@media(max-width:430px){.summon-batch-card .summon-batch-weapon{width:72px;height:76px}}
+.summon-batch-card{min-height:252px;justify-content:flex-start}
+.summon-batch-card .summon-batch-weapon{width:110px;height:115px;flex-shrink:0;overflow:hidden;isolation:isolate}
+.summon-batch-card .summon-batch-weapon svg{overflow:hidden}
+.summon-batch-card .summon-batch-rarity{margin-top:1px}
+.summon-batch-card button{margin-top:auto}
+@media(max-width:430px){.summon-batch-card{min-height:219px}.summon-batch-card .summon-batch-weapon{width:80px;height:92px}}
 @media(prefers-reduced-motion:reduce){.summon-weapon-pedestal svg.summon-weapon-illustration{animation:none}}
 .monsters-quiet-motion .summon-weapon-pedestal svg.summon-weapon-illustration{animation:none}

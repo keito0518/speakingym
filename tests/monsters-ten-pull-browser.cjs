@@ -43,7 +43,15 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await page.locator('.summon-batch-card[data-tier="legend"]').count(),10);
    assert.equal(await page.locator('.summon-batch-card[data-duplicate="true"]').count(),9);
    assert.equal(await page.locator('.summon-batch-card svg [data-equipped-weapon="eternal_crest"]').count(),10,
-    'Ten distinct reward cards must render a visible pixel weapon');
+    'Ten distinct reward cards must render a visible weapon portrait');
+   assert.equal(await page.locator('.summon-batch-card .summon-weapon-illustration').count(),10,
+    'The result cards must show full illustrated portraits, not enlarged battle sprites');
+   const cardLayout=await page.locator('.summon-batch-card').first().evaluate(card=>{
+    const art=card.querySelector('.summon-batch-weapon'),rarity=card.querySelector('.summon-batch-rarity');
+    return {artBottom:art.offsetTop+art.offsetHeight,rarityTop:rarity.offsetTop};
+   });
+   assert.ok(cardLayout.artBottom<=cardLayout.rarityTop,
+    `${name}/${width}: weapon art must not cover the rarity label: ${JSON.stringify(cardLayout)}`);
    assert.match(await page.locator('#summon-attack').innerText(),/1200 G.*810 G/);
    assert.equal(await page.locator('#summon-equip').isHidden(),true);
    assert.match(await page.locator('#summon-repeat').innerText(),/10連をもう一度/);
@@ -58,7 +66,7 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await page.locator('.summon-batch-card[data-duplicate="true"]').count(),10);
    await page.locator('#summon-screen').evaluate(el=>{el.scrollTop=el.scrollHeight;});
    assert.ok(await page.locator('#summon-screen').evaluate(el=>el.scrollTop)>0,
-    'The user must be able to scroll to the last capsule result');
+    'The user must be able to scroll to the last reward result');
    await page.locator('[data-batch-equip="9"]').click();
    assert.equal(await page.locator('#summon-screen').isHidden(),true);
    assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
