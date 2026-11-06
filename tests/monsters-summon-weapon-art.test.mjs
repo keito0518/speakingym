@@ -54,3 +54,16 @@ test('equipped weapon sprites have hand-authored pixels and do not cover the cla
  }
  assert.match(weaponPixelOverlay({id:'shield',shape:'shield',rarity:'rare'},{legacy:true}),/translate\(56 17\) scale\(2.5 2.5\)/);
 });
+
+test('all new-character weapons fit the 48x44 atlas and escape hostile IDs',()=>{
+ for(const shape of silhouettes){
+  const weapon={id:`new_${shape}`,rarity:'epic',shape,awakeningRank:3};
+  const rendered=weaponPixelOverlay(weapon);
+  assert.match(rendered,/transform="translate\(7 0\) scale\(\.77 \.94\)"/);
+  assert.match(rendered,new RegExp(`data-weapon-shape="${shape}"`));
+  assert.match(rendered,/shape-rendering="crispEdges"/);
+ }
+ const hostile=weaponPixelOverlay({id:'"><script>alert(1)</script>',rarity:'rare',shape:'sword'});
+ assert.doesNotMatch(hostile,/<script>/);
+ assert.match(hostile,/data-equipped-weapon="&quot;&gt;&lt;script&gt;/);
+});

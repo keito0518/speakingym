@@ -32,6 +32,7 @@ const pixelFacets=Object.freeze({
  shield:'<rect x="31" y="12" width="3" height="12" fill="LIGHT"/><rect x="43" y="12" width="3" height="12" fill="DARK"/><rect x="37" y="14" width="6" height="12" fill="GEM"/><rect x="40" y="12" width="1" height="20" fill="LIGHT"/><rect x="34" y="20" width="13" height="2" fill="TRIM"/><rect x="38" y="35" width="4" height="3" fill="TRIM"/>',
  whip:'<rect x="29" y="16" width="3" height="2" fill="GEM"/><rect x="45" y="10" width="3" height="2" fill="LIGHT"/><rect x="44" y="20" width="3" height="2" fill="LIGHT"/><rect x="38" y="29" width="4" height="3" fill="TRIM"/><rect x="38" y="34" width="4" height="1" fill="TRIM"/><rect x="38" y="39" width="5" height="2" fill="TRIM"/>'
 });
+const escapeAttribute=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 export function weaponShapeFor(weapon){
  if(weapon?.shape&&Object.hasOwn(shapes,weapon.shape))return weapon.shape;
  if(/staff|wand|scepter/.test(weapon?.id||''))return 'staff';
@@ -50,10 +51,13 @@ export function weaponPixelOverlay(weapon,{legacy=false}={}){
   .replaceAll('HANDLE','#4e3551').replaceAll('DARK','#0a1d39').replaceAll('TRIM','#e9bc77').replaceAll('GEM',gem);
  const rank=Number.isSafeInteger(weapon.awakeningRank)?Math.max(0,Math.min(3,weapon.awakeningRank)):0;
  const aura=rank?`<g data-weapon-awakened="${rank}"><rect x="27" y="${20-rank*4}" width="4" height="4" fill="${rank===3?'#ffea8b':'#83f4fb'}"/><rect x="49" y="${24-rank*3}" width="3" height="3" fill="#fffceb"/>${rank>1?'<rect x="41" y="1" width="5" height="5" fill="#fff5b4"/>':''}${rank===3?'<rect x="25" y="4" width="3" height="3" fill="#ffe18f"/><rect x="51" y="33" width="3" height="3" fill="#ffe18f"/>':''}</g>`:'';
- const center=`<g data-equipped-weapon="${weapon.id}" data-weapon-shape="${shape}" data-awakening="${rank}" aria-hidden="true" shape-rendering="crispEdges" style="filter:drop-shadow(1px 1px 0px #081426)">${art}${aura}</g>`;
+ const center=`<g data-equipped-weapon="${escapeAttribute(weapon.id)}" data-weapon-shape="${shape}" data-awakening="${rank}" aria-hidden="true" shape-rendering="crispEdges" style="filter:drop-shadow(1px 1px 0px #081426)">${art}${aura}</g>`;
  // The classic 180x164 hero has its face in the middle. Keep equipment at the
  // RIGHT edge with a shape-aware size; a shield must not hide the monster.
  const legacyScale=shape==='shield'?2.5:['crossbow','claw','axe','hammer'].includes(shape)?2.7:3.1;
  const legacyX=shape==='shield'?56:['crossbow','claw'].includes(shape)?44:42;
- return legacy?`<g transform="translate(${legacyX} 17) scale(${legacyScale} ${legacyScale})">${center}</g>`:center;
+ // New companions have a native 48x44 viewBox, unlike the 180x164 atlas.
+ // Keep all 12 silhouettes (and the awakening sparks) INSIDE that viewport.
+ return legacy?`<g transform="translate(${legacyX} 17) scale(${legacyScale} ${legacyScale})">${center}</g>`:
+  `<g transform="translate(7 0) scale(.77 .94)">${center}</g>`;
 }
