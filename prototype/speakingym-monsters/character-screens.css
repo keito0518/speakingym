@@ -11,6 +11,8 @@ button:focus-visible{outline:3px solid #b88030;outline-offset:4px}
 .collection-filters button{padding:9px 12px;min-height:39px;border:1px solid #b7c4aa;border-radius:99px;background:#fffdf5;color:#39583e;font-weight:800;font-size:12px;cursor:pointer}
 .collection-filters button[aria-pressed="true"]{background:#305944;color:#fff;border-color:#305944;box-shadow:0 3px 0 #b4c5ae}
 .collection-filters button:focus-visible{outline:3px solid #b88030;outline-offset:2px}
+.collection-sortbar .collection-roster-equipment{min-height:42px;padding:8px 14px;border:1px solid #d2af63;border-radius:11px;background:#284760;color:#fff3d5;font-weight:850;font-size:12px;cursor:pointer}
+.collection-sortbar .collection-roster-equipment:focus-visible{outline:3px solid #b88030;outline-offset:3px}
 .catalog-card:hover{transform:translateY(-3px);box-shadow:0 7px 0 #d9ddc9}
 .catalog-portrait{display:block;height:140px;width:100%;border-radius:12px;background:radial-gradient(ellipse at 50% 80%,#d4e5c7,transparent 65%)}
 .catalog-portrait svg{max-height:140px;animation:none}

@@ -2884,6 +2884,7 @@ function renderEconomyShop(){
  const bag=save.treasureBag||{};
  const goods=TREASURES.filter(item=>bag[item.id]>0);
  const totalValue=treasureValue(save);
+ const nextGacha=summonProgress(save);
  const odds=gachaPoolSummary();
  const pity=summonPityProgress(save);
  const featured=WEAPONS.filter(weapon=>weapon.source==='gacha');
@@ -2896,6 +2897,7 @@ function renderEconomyShop(){
  <div class="shop-gacha"><div class="shop-section-heading"><strong>武器ガチャ</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">WEAPON<br><b>GACHA</b></span><span class="summon-banner-spark"></span></div>
  <div class="shop-collection-track" aria-label="限定武器の収集状況"><div class="shop-collection-copy"><strong>WEAPON COLLECTION</strong><span>入手 ${ownedDraws} / ${featured.length} 種</span></div><div class="shop-collection-meter" role="progressbar" aria-label="限定武器の収集率" aria-valuemin="0" aria-valuemax="${featured.length}" aria-valuenow="${ownedDraws}"><span style="width:${Math.round(ownedDraws*100/featured.length)}%"></span></div><small>${discovery.next?`次の図鑑報酬まであと ${discovery.remaining} 種 · ${discovery.next.gold} G`:'全武器を発見・図鑑完成'}</small></div>
  <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>1回ガチャ<span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}>10連ガチャ<span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G</span></button></div>
+ ${nextGacha.missing>0?`<div class="shop-next-adventure"><span>あと <strong>${nextGacha.missing} G</strong> で1回ガチャ</span><button id="shop-go-quest" type="button">冒険でお宝を集める</button></div>`:''}
  <p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||((save.coins||0)<GACHA_COST?'必要なゴールドが不足しています。お宝を売却して獲得できます。':''))}</p>
  <details class="shop-gacha-disclosure shop-catalog-disclosure" id="shop-gacha-catalog" ${shopCatalogOpen?'open':''}><summary>武器図鑑 <span>発見 ${ownedDraws}/${featured.length} 種</span></summary><div class="shop-gacha-disclosure-content"><p>入手した武器だけ、名前・姿・性能を公開します。</p>${gachaCatalogHtml(save,featured)}<div class="shop-discovery-rewards"><strong>発見報酬</strong><div>${WEAPON_DISCOVERY_REWARDS.map(reward=>`<span class="${ownedDraws>=reward.count?'is-earned':''}">${reward.count}種 · ${reward.gold} G ${ownedDraws>=reward.count?'獲得済み':''}</span>`).join('')}</div></div></div></details>
  <details class="shop-gacha-disclosure" id="shop-gacha-details" ${shopInfoOpen?'open':''}><summary>ガチャの詳細 <span>排出率・確定枠・ルール</span></summary><div class="shop-gacha-disclosure-content"><p>限定武器全 ${featured.length} 種。重複した武器は色と追撃効果が変化。攻撃力は上位レアリティを追い越せません。</p>
@@ -2923,6 +2925,7 @@ function renderEconomyShop(){
  panel.querySelector('#shop-open-inventory')?.addEventListener('click',()=>{
   renderEquipmentCollection();document.querySelector('#collection-weapons')?.scrollIntoView({block:'start',behavior:'instant'});
  });
+ panel.querySelector('#shop-go-quest')?.addEventListener('click',()=>startMainDungeon());
  panel.querySelectorAll('[data-sell-treasure]').forEach(button=>button.addEventListener('click',()=>{
   const item=TREASURES.find(good=>good.id===button.dataset.sellTreasure);
   const result=sellTreasure(save,item?.id,1);
@@ -3038,6 +3041,9 @@ function openForge(){
  renderCollection();document.body.dataset.gameTab='forge';syncGameTabs();
  $('#collection-shop').scrollIntoView({block:'start',behavior:'instant'});
 }
+$('#collection-open-equipment').addEventListener('click',()=>{
+ $('#collection-weapons').scrollIntoView({block:'start',behavior:'instant'});
+});
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
   persist(chooseDifficulty(save, button.dataset.difficulty));
@@ -3077,7 +3083,9 @@ $$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click'
  if(target==='forge'){openForge();return;}
  if(target==='party'){
   renderCollection();document.body.dataset.gameTab='party';syncGameTabs();
-  $('#collection-weapons').scrollIntoView({block:'start',behavior:'instant'});
+  // This tab is labelled "仲間": land on the usable party, not the armory.
+  // Players can jump back to equipment through the adjacent explicit button.
+  $('.collection-sortbar').scrollIntoView({block:'start',behavior:'instant'});
   return;
  }
  renderHome();

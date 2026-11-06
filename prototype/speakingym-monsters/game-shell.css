@@ -154,6 +154,10 @@ body[data-game-view="play"] .app-shell{padding-bottom:0}
 .shop-good small{color:#9dbecc}
 .shop-section-heading button,.shop-good button{background:#3b576c;border:1px solid #7194aa;color:#ebeff2}
 .shop-empty{color:#abc6d0!important}
+.shop-next-adventure{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:12px 0 2px;padding:12px;border:1px solid #709cad;border-radius:12px;background:#213c4d;color:#f8eed9;font-weight:750;font-size:13px}
+.shop-next-adventure strong{color:#ffe09b;font-size:17px}
+.shop-next-adventure button{min-height:43px;padding:9px 13px;border:1px solid #e8c277;border-radius:10px;background:#edd18d;color:#233247;font-weight:900;cursor:pointer}
+.shop-next-adventure button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .shop-odds span{background:#32465b;border:1px solid #607a96;color:#e4e9ef;box-shadow:inset 0 1px #e9f1ff24}
 .shop-odds [data-tier="rare"]{background:#23496a;border-color:#4a9ad9;color:#aee0ff}
 .shop-odds [data-tier="epic"]{background:#4b3267;border-color:#ad6eda;color:#f3d2ff}

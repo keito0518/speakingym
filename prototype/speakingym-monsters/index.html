@@ -286,11 +286,12 @@
         <div class="collection-sortbar" aria-label="仲間図鑑の絞り込み">
           <p id="collection-progress" aria-live="polite">仲間 0 / 44体</p>
           <div class="collection-filters" role="group" aria-label="表示する仲間">
-            <button type="button" data-catalog-filter="all" aria-pressed="true">すべて</button>
-            <button type="button" data-catalog-filter="owned" aria-pressed="false">仲間</button>
+            <button type="button" data-catalog-filter="all" aria-pressed="false">すべて</button>
+            <button type="button" data-catalog-filter="owned" aria-pressed="true">仲間</button>
             <button type="button" data-catalog-filter="undiscovered" aria-pressed="false">未所持</button>
             <button type="button" data-catalog-filter="rare" aria-pressed="false">レア</button>
           </div>
+          <button type="button" id="collection-open-equipment" class="collection-roster-equipment">武器・装備を変更する</button>
         </div>
         <div id="collection-grid" class="collection-grid"></div>
         <section class="forest-treasures" aria-labelledby="forest-treasures-title">

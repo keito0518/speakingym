@@ -59,7 +59,10 @@ function powerFor(id) {
 }
 export function createCollectionViews({getSave, persist, showView, stopAudio}) {
   let currentId = null;
-  let catalogFilter = 'all';
+  // The party tab is primarily for raising and selecting companions. Showing
+  // dozens of undiscovered silhouettes first buried the one usable companion.
+  // The full mystery catalog remains one tap away under "すべて".
+  let catalogFilter = 'owned';
   function renderCollection() {
     stopAudio();
     const save = getSave(), summary = learningSummary(save), forest = cleanForest(save.forest);

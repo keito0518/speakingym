@@ -53,7 +53,28 @@ const path=require('node:path');
   }
   try{
     for(const width of [320,375,390,430]){
-      const {context,page}=await boot(width,'no-preference');await seed(page,{xpWallet:300,monsterTrials:{medamago:['entry']}});
+      const {context,page}=await boot(width,'no-preference');
+      // A new player must land on the one companion they can actually use,
+      // without scrolling past the armory or forty-three hidden silhouettes.
+      await page.locator('#game-tabs [data-game-tab="party"]').click();
+      assert.equal(await page.locator('[data-open-monster]').count(),1,`${width}: party shows owned companions by default`);
+      assert.equal(await page.locator('[data-catalog-filter="owned"]').getAttribute('aria-pressed'),'true');
+      assert.ok(await page.locator('.collection-sortbar').evaluate(el=>{
+        const bounds=el.getBoundingClientRect();return bounds.top>=0&&bounds.top<window.innerHeight*.65;
+      }),`${width}: party tab jumps straight to its companion filters`);
+      await page.locator('#collection-open-equipment').click();
+      assert.ok(await page.locator('#collection-weapons').evaluate(el=>{
+        const bounds=el.getBoundingClientRect();return bounds.top>=0&&bounds.top<window.innerHeight*.65;
+      }),`${width}: party can still reach equipment with one tap`);
+      await page.locator('[data-catalog-filter="all"]').click();
+      assert.equal(await page.locator('[data-open-monster]').count(),44,'Full discovery catalog remains available');
+      await page.locator('[data-catalog-filter="owned"]').click();
+      assert.equal(await page.locator('[data-open-monster]').count(),1);
+      await page.locator('#game-tabs [data-game-tab="forge"]').click();
+      assert.match(await page.locator('.shop-next-adventure').innerText(),/あと 120 G/);
+      await page.locator('#shop-go-quest').click();
+      assert.equal(await page.locator('#play-view').isVisible(),true,'Empty gacha routes directly to an adventure');
+      await seed(page,{xpWallet:300,monsterTrials:{medamago:['entry']}});
       assert.equal(await page.locator('#home-navigation .home-walker').count(),3,'Three recruited friends decorate the menu, no more');
       assert.equal(await page.locator('[data-home-page="forest"] .home-walker').count(),0,'Hidden extra menu does not carry a walker');
       assert.equal(await page.locator('[data-home-page="collection"] .home-walker svg').count(),1);
