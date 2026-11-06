@@ -24,6 +24,8 @@ const {chromium,webkit}=require('playwright');
     'The summon must use the pixel-storybook forest rather than the old sci-fi reactor');
    assert.equal(await page.locator('#summon-seal .storybook-chest-lid').count(),1,
     'The player must open an illustrated treasure chest');
+   assert.doesNotMatch(await page.locator('#summon-screen').innerText(),/わくわく|何が入っているかな|パカッ|もう少し！/,
+    'Summon UI text must use a restrained RPG tone, not nursery-style dialogue');
    assert.equal(await page.locator('.summon-tier-splash').count(),1);
    assert.match(await page.locator('#shop-coins').innerText(),/2010 G/,'The result is committed before unlocking the vault');
 
@@ -37,7 +39,7 @@ const {chromium,webkit}=require('playwright');
    await page.mouse.up();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'unseal',
     'Dragging up must visibly open the treasure chest');
-   assert.equal(await page.locator('#summon-tier-splash-text').innerText(),'でた！ 伝説のおたから！');
+   assert.equal(await page.locator('#summon-tier-splash-text').innerText(),'LEGEND');
    await page.locator('#summon-skip').click();
    assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'reveal');
    assert.equal(await page.locator('.summon-batch-card').count(),10);

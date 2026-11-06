@@ -68,6 +68,18 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('.equipment-monster-preview [data-equipped-weapon="eternal_crest"]').count(),1,
    'The equipped weapon must be rendered on the actual character');
   assert.match(await page.locator('#equipment-weapon-status').innerText(),/伝説.*追撃＋2/);
+  const ownedCard=page.locator('.equipment-item[data-item-id="eternal_crest"]');
+  assert.equal(await ownedCard.count(),1,'Owned equipment should have a visible inventory card');
+  assert.equal(await ownedCard.locator('.equipment-item-image [data-equipped-weapon="eternal_crest"]').count(),1,
+   'The inventory portrait must use the same pixel weapon as the character and gacha');
+  assert.match(await ownedCard.innerText(),/攻撃\s*＋9/);
+  assert.match(await ownedCard.innerText(),/文法を自力正解で追撃＋2/);
+  assert.equal(await ownedCard.locator('[data-equip-weapon]').isDisabled(),true);
+  await page.locator('#equipment-unequip').click();
+  assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'','Unequipping should update the save');
+  await page.locator('[data-equip-weapon="eternal_crest"]').click();
+  assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest',
+   'Re-equipping from the image card should restore the combat item');
   await assertNoOverflow('equipped forge');
 
   await page.locator('#shop-sell-all').click();
@@ -127,8 +139,8 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#summon-screen').getAttribute('data-phase'),'manual');
   for(let i=0;i<3;i++)await page.locator('#summon-seal').click();
   await page.waitForFunction(()=>document.querySelector('#summon-screen')?.dataset.phase==='surge',null,{timeout:5000});
-  assert.match(await page.locator('#summon-story').innerText(),/宝箱から大きな虹/,
-   'The EPIC surge should use the same storybook treasure theme as the companions');
+  assert.match(await page.locator('#summon-story').innerText(),/EPIC 武器確定/,
+   'The EPIC surge should communicate rarity without childish dialogue');
   assert.equal(await page.locator('#summon-reveal-art').evaluate(el=>getComputedStyle(el).opacity),'0',
    'Weapon art should be hidden until the surge finishes or is explicitly skipped');
   await page.locator('#summon-skip').click();

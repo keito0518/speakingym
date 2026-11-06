@@ -36,6 +36,7 @@ import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMile
 import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { createGachaCinematic } from './gacha-cinematic.js';
+import { summonWeaponArtwork } from './summon-weapon-art.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { nextLearningQuestFor, learningProofFor } from './next-learning-quest.js';
@@ -2828,10 +2829,11 @@ function renderEconomyShop(){
  const pity=summonPityProgress(save);
  const featured=WEAPONS.filter(weapon=>weapon.source==='gacha');
  const ownedDraws=featured.filter(weapon=>save.weaponInventory?.includes(weapon.id)).length;
- panel.innerHTML=`${gachaTestMode?'<div class="gacha-qa-notice" role="status"><strong>ガチャ体験テスト</strong><span>テスト専用の2,400 Gで10連と単発を試せるよ。通常の冒険データとは別に保存されます。</span><button type="button" id="gacha-test-refill">テスト用2,400 Gを補充</button></div>':''}<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>冒険で手に入れた換金用のお宝を売って、武器を手に入れよう。仲間はガチャでは出ず、ストーリーと英語学習で加わるよ。</p></div>
+ panel.innerHTML=`${gachaTestMode?'<div class="gacha-qa-notice" role="status"><strong>ガチャ体験テスト</strong><span>テスト専用の2,400 Gで10連と単発を確認できます。通常の冒険データとは別に保存されます。</span><button type="button" id="gacha-test-refill">テスト用2,400 Gを補充</button></div>':''}<div class="shop-heading"><span class="tiny-caps">ADVENTURE ARMORY · GAME GOLD ONLY</span><h2>お宝の換金・武器ガチャ</h2><p>獲得したお宝を売却し、ゲーム内ゴールドで武器を召喚できます。仲間はガチャには含まれません。</p></div>
+ <button type="button" id="shop-open-inventory" class="shop-open-inventory">所持武器・装備一覧を見る <span>${save.weaponInventory?.length||0}件</span></button>
  <div class="shop-wallet"><span>所持ゴールド</span><strong id="shop-coins">${save.coins||0} G</strong><small>お宝の売却見込額 ${totalValue} G</small></div>
- <div class="shop-bag"><div class="shop-section-heading"><strong>換金用のお宝</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">まだ売れるお宝はないよ。ボスを倒して自力で英語を答えると手に入る。図鑑の記念品は売られないよ。</p>'}</div>
- <div class="shop-gacha"><div class="shop-section-heading"><strong>おたからボックス · 武器ガチャ</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">わくわく！<br><b>おたからガチャ</b></span><span class="summon-banner-spark"></span></div><p>森の宝箱をあけて、仲間の武器を見つけよう。全${featured.length}種。攻撃＋7〜9の最上級装備はここだけ！</p>
+ <div class="shop-bag"><div class="shop-section-heading"><strong>換金用のお宝</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">売却できるお宝はありません。冒険の報酬で入手できます。図鑑の記念品は売却対象外です。</p>'}</div>
+ <div class="shop-gacha"><div class="shop-section-heading"><strong>武器ガチャ</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">WEAPON<br><b>GACHA</b></span><span class="summon-banner-spark"></span></div><p>武器ラインナップ全${featured.length}種。攻撃＋7〜9の上位武器はガチャ限定。</p>
  <div class="shop-collection-track" aria-label="限定武器の収集状況"><div class="shop-collection-copy"><strong>WEAPON COLLECTION</strong><span>入手 ${ownedDraws} / ${featured.length} 種</span></div><div class="shop-collection-meter" role="progressbar" aria-label="限定武器の収集率" aria-valuemin="0" aria-valuemax="${featured.length}" aria-valuenow="${ownedDraws}"><span style="width:${Math.round(ownedDraws*100/featured.length)}%"></span></div><small>${ownedDraws===featured.length?'限定武器をコンプリート！':`未所持の限定武器 あと ${featured.length-ownedDraws} 種。仲間は冒険で手に入れよう。`}</small></div>
  <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
  <div class="shop-pity-tracks" aria-label="レアリティ確定までの最長回数"><div class="shop-pity-row"><div class="shop-pity-copy"><strong>RARE+ 確定</strong><span>最大あと ${pity.rare.remaining} 回 · ${pity.rare.current} / ${pity.rare.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="レア以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.rare.limit}" aria-valuenow="${pity.rare.current}"><span style="width:${pity.rare.percent}%"></span></div></div><div class="shop-pity-row"><div class="shop-pity-copy"><strong>EPIC+ 確定</strong><span>最大あと ${pity.epic.remaining} 回 · ${pity.epic.current} / ${pity.epic.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="エピック以上の確定までの召喚記録" aria-valuemin="0" aria-valuemax="${pity.epic.limit}" aria-valuenow="${pity.epic.current}"><span style="width:${pity.epic.percent}%"></span></div></div></div>
@@ -2846,6 +2848,9 @@ function renderEconomyShop(){
  panel.querySelector('#shop-sell-all').addEventListener('click',()=>{
   const result=sellAllTreasures(save);
   if(result.coins>0)commitResult(result.save,`お宝を売って ${result.coins} G 手に入れた！`);
+ });
+ panel.querySelector('#shop-open-inventory')?.addEventListener('click',()=>{
+  renderEquipmentCollection();document.querySelector('#collection-weapons')?.scrollIntoView({block:'start',behavior:'instant'});
  });
  panel.querySelectorAll('[data-sell-treasure]').forEach(button=>button.addEventListener('click',()=>{
   const item=TREASURES.find(good=>good.id===button.dataset.sellTreasure);
@@ -2878,7 +2883,7 @@ function renderEconomyShop(){
  });
  panel.querySelector('#gacha-test-refill')?.addEventListener('click',()=>{
   if(!persist({...save,coins:Math.min(999999,(save.coins||0)+2400)}))return;
-  forgeMessage='テスト用ゴールドを補充したよ。通常の冒険データには影響しません。';
+  forgeMessage='テスト用ゴールドを補充しました。通常の冒険データには影響しません。';
   renderEconomyShop();syncGameHud();
  });
  panel.querySelector('#shop-draw-ten').addEventListener('click',()=>{
@@ -2887,29 +2892,57 @@ function renderEconomyShop(){
 }
 function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
- const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id));
  const current=equippedWeapon(save);
+ const inventory=WEAPONS.filter(weapon=>save.weaponInventory?.includes(weapon.id)).sort((a,b)=>
+  Number(b.id===current?.id)-Number(a.id===current?.id)||weaponAttack(save,b)-weaponAttack(save,a)||a.name.localeCompare(b.name,'ja'));
  const awaken=current?awakeningProgress(save,current.id):null;
- panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">ADVENTURE EQUIPMENT</span><h2>装備・武器 ${inventory.length} / ${WEAPONS.length}</h2><p>章のボスや強敵から入手できる武器と、鍛冶屋のガチャ限定武器があるよ。攻撃＋7以上はガチャ限定。仲間の姿に武器が表示されるよ。</p></div>
-  <div class="equipment-monster-preview" aria-label="現在の装備を身につけた仲間">${monsterArt(save.selectedMonster,getMonsterProgress(save).stage,current)}<span>${current?escapeHtml(current.name):'素手'}<small>装備するとホームとバトルにも反映</small></span></div>
-  <label for="equipment-weapon-choice">出撃する武器（パーティ共通）</label>
-  <select id="equipment-weapon-choice"><option value="">素手 · 攻撃+0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃+${weaponAttack(save,weapon)} · ${WEAPON_RARITY_LABELS[weapon.rarity]}${awakeningProgress(save,weapon.id).rank?` · 覚醒+${awakeningProgress(save,weapon.id).rank}`:''}</option>`).join('')}</select>
-  <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${escapeHtml(current.name)} を装備中 · ${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${current.attack} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${['epic','legend'].includes(current.rarity)?2:1}`:'いまは素手で出撃するよ。'} レベル攻撃力は別に加算。ボスの封印3問は省略できないよ。</p>
-  <section class="weapon-awakening" aria-label="重複武器で覚醒"><div class="weapon-awakening-heading"><strong>WEAPON AWAKENING · 武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'武器を選んでね'}</span></div>
-    <p>同じ武器がガチャで重複すると、返還Gに加えて専用の欠片が1個増える。必要数を集めて覚醒すると攻撃＋1、武器の光も変化する。最大3段階、英語の判定は変わらないよ。</p>
-    ${current?`<div class="weapon-awakening-track"><span>欠片 ${awaken.shards} ${awaken.maxed?'· MAX':`/ ${awaken.requirement}`}</span><div class="weapon-awakening-meter"><span style="width:${awaken.maxed?100:Math.min(100,Math.round(100*awaken.shards/awaken.requirement))}%"></span></div></div><button type="button" id="weapon-awaken" ${awaken.canAwaken?'':'disabled'}>${awaken.maxed?'最大覚醒に到達':awaken.canAwaken?'欠片を使って覚醒する':`覚醒まであと ${awaken.requirement-awaken.shards} 個`}</button>`:'<small>図鑑の武器を選択すると、覚醒に必要な欠片が表示されるよ。</small>'}
+ const cards=inventory.map(weapon=>{
+  const rank=awakeningProgress(save,weapon.id).rank;
+  const isEquipped=weapon.id===current?.id;
+  const affinity=WEAPON_AFFINITY_LABELS[weapon.affinity];
+  const bonus=['epic','legend'].includes(weapon.rarity)?2:1;
+  return `<article class="equipment-item${isEquipped?' is-equipped':''}" data-item-id="${weapon.id}" data-rarity="${weapon.rarity}">
+   <div class="equipment-item-image" aria-hidden="true">${summonWeaponArtwork({...weapon,awakeningRank:rank},{instance:`inventory-${weapon.id}`,decorative:true})}</div>
+   <div class="equipment-item-details"><span class="equipment-item-rarity">${WEAPON_RARITY_LABELS[weapon.rarity]}${rank?` · 覚醒 ${rank}/3`:''}</span><h3>${escapeHtml(weapon.name)}</h3>
+    <dl><div><dt>攻撃</dt><dd>＋${weaponAttack(save,weapon)}</dd></div><div><dt>追加効果</dt><dd>${affinity}を自力正解で追撃＋${bonus}</dd></div></dl>
+    <small>${weapon.source==='gacha'?'ガチャ限定':'冒険で入手'}</small>
+   </div>
+   <button type="button" data-equip-weapon="${weapon.id}" ${isEquipped?'disabled':''} aria-label="${escapeHtml(weapon.name)}を${isEquipped?'装備中':'装備する'}">${isEquipped?'装備中':'装備する'}</button>
+  </article>`;
+ }).join('');
+ panel.innerHTML=`<div class="forest-treasures-heading"><span class="tiny-caps">EQUIPMENT</span><h2>武器・アイテム一覧</h2><p>出撃武器はパーティ共通。装備の画像・攻撃力・追加効果を確認して変更できます。</p></div>
+  <div class="equipment-current" aria-label="現在の出撃装備"><strong class="equipment-current-title" tabindex="-1">現在の出撃装備</strong>
+   <div class="equipment-monster-preview" aria-label="現在の装備を身につけた仲間">${monsterArt(save.selectedMonster,getMonsterProgress(save).stage,current)}<span>${current?escapeHtml(current.name):'武器なし'}<small>ホーム・バトルに反映／パーティ共通</small></span></div>
+   <p id="equipment-weapon-status" role="status" data-rarity="${current?.rarity||'none'}">${current?`${WEAPON_RARITY_LABELS[current.rarity]} · 攻撃＋${weaponAttack(save,current)} · ${WEAPON_AFFINITY_LABELS[current.affinity]}を自力正解で追撃＋${['epic','legend'].includes(current.rarity)?2:1}`:'武器を装備していません（攻撃＋0）'}</p>
+   ${current?'<button type="button" id="equipment-unequip">装備を外す</button>':''}</div>
+  <div class="equipment-item-list"><div class="equipment-item-list-heading"><strong>所持武器 <span>${inventory.length}</span> / ${WEAPONS.length}</strong><span>攻撃力順・装備中を先頭に表示</span></div>
+   <div class="equipment-item-grid">${cards||'<p class="equipment-item-empty">武器はまだありません。冒険やガチャで入手できます。</p>'}</div></div>
+  <div class="equipment-select-sync"><label for="equipment-weapon-choice">武器選択</label><select id="equipment-weapon-choice"><option value="">武器なし · 攻撃＋0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃＋${weaponAttack(save,weapon)} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select></div>
+  <section class="weapon-awakening" aria-label="重複武器で覚醒"><div class="weapon-awakening-heading"><strong>武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'装備武器を選択'}</span></div>
+    <p>同じ武器が重複した際に欠片を獲得。欠片を使って攻撃力を段階的に強化できます（最大3段階）。英語の採点には影響しません。</p>
+    ${current?`<div class="weapon-awakening-track"><span>欠片 ${awaken.shards} ${awaken.maxed?'· MAX':`/ ${awaken.requirement}`}</span><div class="weapon-awakening-meter"><span style="width:${awaken.maxed?100:Math.min(100,Math.round(100*awaken.shards/awaken.requirement))}%"></span></div></div><button type="button" id="weapon-awaken" ${awaken.canAwaken?'':'disabled'}>${awaken.maxed?'最大覚醒に到達':awaken.canAwaken?'欠片を使って覚醒する':`覚醒まであと ${awaken.requirement-awaken.shards} 個`}</button>`:'<small>武器を装備すると、覚醒に必要な欠片を確認できます。</small>'}
   </section>`;
+ // Keep awakening beside the equipped item; a large inventory should never
+ // force the player to scroll through every card to upgrade their weapon.
+ panel.querySelector('.equipment-current')?.after(panel.querySelector('.weapon-awakening'));
+ const equip=id=>{
+  if(!persist(equipWeapon(save,id)))return false;
+  renderEquipmentCollection();syncGameHud();
+  panel.querySelector('.equipment-current-title')?.focus({preventScroll:true});
+  return true;
+ };
+ panel.querySelectorAll('[data-equip-weapon]').forEach(button=>button.addEventListener('click',()=>equip(button.dataset.equipWeapon)));
+ panel.querySelector('#equipment-unequip')?.addEventListener('click',()=>equip(null));
  panel.querySelector('#equipment-weapon-choice').addEventListener('change',event=>{
    const id=event.target.value||null;
-   if(!persist(equipWeapon(save,id))){event.target.value=equippedWeapon(save)?.id||'';return;}
-   renderEquipmentCollection();
+   if(!equip(id))event.target.value=equippedWeapon(save)?.id||'';
  });
  panel.querySelector('#weapon-awaken')?.addEventListener('click',()=>{
   const result=awakenWeapon(save,current?.id);
   if(!result.awakened||!persist(result.save))return;
   renderEquipmentCollection();syncGameHud();
   const status=$('#equipment-weapon-status');
-  status.textContent=`覚醒成功！ ${current.name} が覚醒＋${result.rank} に進化した。攻撃力も見た目も強化されたよ。`;
+  status.textContent=`覚醒成功：${current.name} · 覚醒 ${result.rank}/3。攻撃力と武器表示を更新しました。`;
  });
 }
 function renderCollection(){collectionViews.renderCollection();renderEconomyShop();renderEquipmentCollection();}

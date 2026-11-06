@@ -4,10 +4,10 @@
 import {summonWeaponArtwork} from './summon-weapon-art.js';
 
 const RARITY_COPY=Object.freeze({
- common:{label:'COMMON',name:'旅の武器',intro:'宝箱がコトコトゆれている…',surge:''},
- rare:{label:'RARE',name:'希少な武器',intro:'ふたのすき間から青い星が…',surge:''},
- epic:{label:'EPIC',name:'秘宝級の武器',intro:'紫色の星が次々と飛び出した！',surge:'わあ！ 宝箱から大きな虹が！'},
- legend:{label:'LEGEND',name:'伝説の武器',intro:'金色の星が空いっぱいに…',surge:'すごい！ 伝説のお宝が目を覚ます！'}
+ common:{label:'COMMON',name:'通常武器',intro:'武器を確認中',surge:''},
+ rare:{label:'RARE',name:'レア武器',intro:'武器を確認中',surge:''},
+ epic:{label:'EPIC',name:'エピック武器',intro:'武器を確認中',surge:'EPIC 武器確定'},
+ legend:{label:'LEGEND',name:'伝説武器',intro:'武器を確認中',surge:'LEGEND 武器確定'}
 });
 
 // A high rarity has more anticipation, not different odds or extra draws.
@@ -66,15 +66,15 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.innerHTML=`<div class="summon-vault-backdrop" aria-hidden="true"></div><div class="summon-vault-doors" aria-hidden="true"><span></span><span></span></div><div class="summon-vault-heaven" aria-hidden="true"></div><div class="prism-light-streaks" aria-hidden="true">${Array.from({length:28},(_,i)=>`<span style="--streak-index:${i};--streak-angle:${(i*137.5).toFixed(1)}deg;--streak-delay:${(i%9)*.06}s"></span>`).join('')}</div><div class="summon-tier-splash" aria-hidden="true"><span id="summon-tier-splash-text">LEGENDARY</span></div>
   <div class="summon-universe" aria-hidden="true"><div class="summon-stardust"></div><div class="summon-rays"></div><div class="summon-aura"></div></div>
   <section class="summon-dialog" role="dialog" aria-modal="true" aria-labelledby="summon-title" aria-describedby="summon-story">
-    <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>おたからガチャ</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="召喚画面を閉じる">閉じる</button></div></div>
-    <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">森の宝箱をあけてみよう！</p>
+    <div class="summon-topline"><span class="summon-brand">SPEAKINGYM <b>武器ガチャ</b></span><div class="summon-top-actions"><button type="button" id="summon-sound" class="summon-icon-button" aria-pressed="false">効果音 OFF</button><button type="button" id="summon-close" class="summon-icon-button" aria-label="召喚画面を閉じる">閉じる</button></div></div>
+    <div class="summon-center"><p id="summon-story" class="summon-story" aria-live="polite">宝箱を開封</p>
       <div class="summon-vault-stage" id="summon-vault-stage">
        <div class="summon-vault-crest" aria-hidden="true"><span class="crest-orbit orbit-a"></span><span class="crest-orbit orbit-b"></span><span class="crest-spokes"></span></div>
-       <button type="button" id="summon-seal" class="summon-vault-seal" aria-label="宝箱を上へスワイプして開ける。タップ3回でも開けられる">
+       <button type="button" id="summon-seal" class="summon-vault-seal" aria-label="宝箱を上へスワイプして開封。3回タップでも開ける">
         <span class="summon-seal-inner"><svg viewBox="0 0 128 128" aria-hidden="true" shape-rendering="crispEdges"><g class="storybook-chest-lid"><rect x="11" y="23" width="106" height="42" rx="8" fill="#563a6d" stroke="#291d49" stroke-width="5"/><rect x="18" y="29" width="92" height="30" rx="5" fill="#efad65"/><rect x="27" y="30" width="74" height="12" fill="#ffe4a0"/><rect x="18" y="47" width="92" height="9" fill="#d98565"/><rect x="56" y="27" width="16" height="37" fill="#fff0a3" stroke="#b96858" stroke-width="3"/></g><g class="storybook-chest-body"><rect x="12" y="61" width="104" height="55" rx="8" fill="#513b77" stroke="#291d49" stroke-width="5"/><rect x="20" y="67" width="88" height="41" rx="4" fill="#e9996c"/><rect x="28" y="71" width="72" height="30" fill="#f3c278"/><rect x="57" y="61" width="14" height="47" fill="#fff2ac"/><rect x="48" y="75" width="32" height="25" rx="5" fill="#41365e"/><rect x="59" y="81" width="10" height="13" fill="#fff0a9"/></g></svg><b>OPEN!</b></span>
        </button>
        <div class="summon-vault-shards" aria-hidden="true">${Array.from({length:18},(_,i)=>`<span style="--shard-angle:${i*20}deg;--shard-delay:${(i%6)*.035}s"></span>`).join('')}</div>
-       <div class="summon-vault-guide"><span class="tiny-caps">ふしぎな森の おたからボックス</span><strong id="summon-seal-status" role="status">宝箱を上へスワイプ！</strong><span>上にスワイプ / 3回タップでも開くよ</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="宝箱が開くまでの進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
+       <div class="summon-vault-guide"><span class="tiny-caps">WEAPON SUMMON</span><strong id="summon-seal-status" role="status">上にスワイプして開封</strong><span>上スワイプ / 3回タップ</span><div id="summon-seal-meter" class="summon-seal-meter" role="progressbar" aria-label="開封進行度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
       </div>
       <div class="summon-portal" aria-hidden="true">
         <div class="summon-confetti">${Array.from({length:24},(_,i)=>`<span style="--spark-rotation:${i*15}deg;--spark-delay:${(i%6)*.045}s"></span>`).join('')}</div><div class="summon-shockwave"></div>
@@ -88,7 +88,7 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
       <div class="summon-reward" id="summon-reward"><span id="summon-rarity" class="summon-rarity">RARE</span><h2 id="summon-title">武器を召喚</h2><p id="summon-attack"></p><p id="summon-duplicate" class="summon-duplicate" hidden></p></div>
       <div class="summon-batch-rewards" id="summon-batch-rewards" aria-label="10連で獲得した武器" hidden></div>
     </div>
-    <div class="summon-actions"><button type="button" id="summon-skip" class="summon-secondary">演出をスキップ</button><button type="button" id="summon-equip" class="summon-primary" hidden>この武器を装備</button><button type="button" id="summon-repeat" class="summon-secondary" hidden>もう一度召喚する</button><p class="summon-game-only">ゲーム内ゴールドのみ。現金・課金による抽選はありません。</p></div>
+    <div class="summon-actions"><button type="button" id="summon-skip" class="summon-secondary">結果を見る</button><button type="button" id="summon-equip" class="summon-primary" hidden>この武器を装備</button><button type="button" id="summon-repeat" class="summon-secondary" hidden>もう一度召喚する</button><p class="summon-game-only">ゲーム内ゴールドのみ。現金・課金による抽選はありません。</p></div>
   </section>`;
   document.body.append(root);
   root.querySelector('#summon-close').addEventListener('click',close);
@@ -159,8 +159,8 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   clearTimers();root.dataset.phase='reveal';
   root.scrollTop=0;
   root.querySelector('#summon-story').textContent=active.results?
-   `10連召喚完了！ 新しい武器 ${active.results.filter(item=>!item.duplicate).length} 種`:
-   active.duplicate?'すでに持っている武器だった！':'新しい武器が仲間になった！';
+   `10連召喚結果 · 新規入手 ${active.results.filter(item=>!item.duplicate).length} 種`:
+   active.duplicate?'所持済み武器を獲得':'新しい武器を獲得';
   root.querySelector('#summon-skip').hidden=true;
   root.querySelector('#summon-equip').hidden=Boolean(active.results);
   root.querySelector('#summon-repeat').hidden=!active.canRepeat;
@@ -179,8 +179,8 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   const rarity=RARITY_COPY[best.tier]||RARITY_COPY.common;
   root.dataset.mode=batch?'batch':'single';
   root.dataset.rarity=best.tier in RARITY_COPY?best.tier:'common';root.dataset.phase='charge';
-  root.querySelector('#summon-tier-splash-text').textContent=best.tier==='legend'?'でた！ 伝説のおたから！':best.tier==='epic'?'キラキラ！ 大当たり！':'おっ！ レアなおたから！';
-  root.querySelector('#summon-story').textContent=batch?'10個のおたからが待っているよ！':rarity.intro;
+  root.querySelector('#summon-tier-splash-text').textContent=best.tier==='legend'?'LEGEND':best.tier==='epic'?'EPIC':'RARE';
+  root.querySelector('#summon-story').textContent=batch?'10連ガチャ · 宝箱を開封':'宝箱を開封';
   root.querySelector('#summon-rarity').textContent=batch?'10連ガチャ · '+rarity.label:rarity.label+' · '+rarity.name;
   root.querySelector('#summon-title').textContent=batch?'10連召喚 結果':data.weapon.name;
   root.querySelector('#summon-attack').textContent=batch?`消費 ${data.spent} G · 重複返還 ${data.refunded} G`:
@@ -207,10 +207,10 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.style.setProperty('--seal-progress','0');
   root.querySelector('#summon-seal-meter').setAttribute('aria-valuenow','0');
   root.querySelector('#summon-seal-meter span').style.width='0%';
-  root.querySelector('#summon-seal-status').textContent='宝箱を上へスワイプ！';
+  root.querySelector('#summon-seal-status').textContent='上にスワイプして開封';
   root.querySelector('#summon-seal').disabled=false;
   root.dataset.phase='manual';
-  root.querySelector('#summon-skip').textContent='操作をスキップして結果を見る';
+  root.querySelector('#summon-skip').textContent='結果を見る';
   root.querySelector('#summon-seal').focus({preventScroll:true});
   if(reducedMotion()){reveal();return;}
  }
@@ -220,22 +220,22 @@ export function createGachaCinematic({onEquip,onRepeat,onRepeatTen}){
   root.style.setProperty('--seal-progress',String(sealProgress));
   root.querySelector('#summon-seal-meter').setAttribute('aria-valuenow',String(Math.round(sealProgress)));
   root.querySelector('#summon-seal-meter span').style.width=`${Math.round(sealProgress)}%`;
-  root.querySelector('#summon-seal-status').textContent=sealProgress>=100?'パカッ！ 宝箱が開く！':`もう少し！ ${Math.round(sealProgress)}%`;
+  root.querySelector('#summon-seal-status').textContent=sealProgress>=100?'開封完了':`開封 ${Math.round(sealProgress)}%`;
   if(sealProgress>=100){
    root.dataset.phase='unseal';root.querySelector('#summon-seal').disabled=true;
-   root.querySelector('#summon-story').textContent='おたからが飛び出すよ！';
+   root.querySelector('#summon-story').textContent='開封中';
    playCue('crack');later(startMagicSequence,900);
   }else playCue('turn');
  }
  function startMagicSequence(){
   if(!root||root.hidden||!active||root.dataset.phase!=='unseal')return;
   root.dataset.phase='charge';
-  root.querySelector('#summon-story').textContent=active.results?'10個の宝箱がいっせいに開いた！':RARITY_COPY[active.tier].intro;
+  root.querySelector('#summon-story').textContent=active.results?'10連武器を確認中':RARITY_COPY[active.tier].intro;
   root.querySelector('#summon-skip').textContent='演出をスキップ';
   playCue('charge');
   const rarity=RARITY_COPY[root.dataset.rarity];
   const timeline=SUMMON_TIMINGS[root.dataset.rarity];
-  later(()=>{root.dataset.phase='crack';root.querySelector('#summon-story').textContent='ピカッ！ 何が入っているかな？';playCue('crack');},timeline.crack);
+  later(()=>{root.dataset.phase='crack';root.querySelector('#summon-story').textContent='レアリティ判定中';playCue('crack');},timeline.crack);
   if(timeline.surge!==null)later(()=>{
    root.dataset.phase='surge';root.querySelector('#summon-story').textContent=rarity.surge;
    playCue('surge');
