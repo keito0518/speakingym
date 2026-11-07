@@ -220,6 +220,18 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 #home-destination-review .retention-hub-metrics{margin-top:9px}
 #home-destination-review .retention-bond-status{margin-top:10px}
 
+/* Clear result flow: reward, one prominent next action, optional details. */
+#result-view .result-surface{margin-top:17px;padding:27px 21px 31px}
+#result-view #result-title{margin:5px 0 8px;font-size:clamp(23px,5.8vw,31px);color:#264f39}
+#result-view #result-description{margin:3px auto 11px;max-width:520px;color:#456450;font-size:13px;line-height:1.6}
+#result-view #result-quick-summary{margin:12px auto 7px;color:#1f5637;font-size:clamp(13px,3.3vw,16px);font-weight:900}
+#result-view .result-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-width:470px;margin:15px auto 12px}
+#result-view .result-actions .button{min-width:0;min-height:46px;padding:11px 12px;white-space:normal;overflow-wrap:anywhere;font-size:13px}
+#result-view #result-collection{grid-column:1/-1;min-height:52px;font-size:15px}
+#result-view .result-detail-panel{margin:12px auto 0}
+#result-view .result-detail-panel>summary{color:#28513b}
+#result-view #result-feedback{margin:12px auto 3px;display:block;max-width:100%;font-size:12px}
+
 @media(max-width:690px){
  #home-destination-training .hero-grid{display:flex;flex-direction:column;gap:10px;padding:4px 0 16px}
  #home-destination-training .hero-copy h1{font-size:clamp(24px,6.5vw,29px);margin:4px 0 17px}
