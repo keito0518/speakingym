@@ -34,6 +34,10 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .collection-weapons .equipment-awakening-more>summary:focus-visible{outline:3px solid #f7d68a;outline-offset:-4px}
 .collection-weapons .equipment-awakening-more>.weapon-awakening{margin:0!important;border:0;border-top:1px solid #63858c;border-radius:0;box-shadow:none}
 .collection-weapons .weapon-awakening[hidden]{display:none!important}
+.collection-weapons .equipment-item-technique{margin:8px 0 1px;border-top:1px solid #c4d0cc;color:#314d57}
+.collection-weapons .equipment-item-technique>summary{display:list-item;margin:0;padding:8px 0 2px;list-style-position:inside;cursor:pointer;color:#315b69;font-size:12px;font-weight:900}
+.collection-weapons .equipment-item-technique>summary:focus-visible{outline:3px solid #e5b360;outline-offset:3px}
+.collection-weapons .equipment-item-technique>p{margin:5px 0 2px;font-size:12px;line-height:1.5;color:#304f58;overflow-wrap:anywhere}
 .equipment-empty-cta{display:block;width:100%;min-height:48px;margin-top:15px;padding:12px 16px;border:1px solid #e4bc77;border-radius:12px;background:linear-gradient(#ffe4a1,#d6a95a);color:#312a21;font-weight:950;font-size:15px;cursor:pointer}
 .equipment-empty-cta:focus-visible{outline:3px solid #fff1ba;outline-offset:3px}
 
