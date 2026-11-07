@@ -23,6 +23,12 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.roleplay-hub').isVisible(),true);
   assert.equal(await page.locator('[data-roleplay-card]').count(),4,
     'Four different situations must be discoverable without hidden navigation');
+  assert.equal(await page.locator('.roleplay-option p').first().isVisible(),false,
+    'Scene names carry the menu without long descriptions in every card');
+  assert.equal(await page.locator('.roleplay-about').getAttribute('open'),null,
+    'Honest limitations remain accessible but start collapsed');
+  assert.equal(await page.locator('[data-roleplay="restaurant"]').isVisible(),true,
+    'The recommended scene is directly actionable');
   assert.match(await page.locator('#roleplay-recommendation').innerText(),/レストランで伝え切る/);
   assert.equal(await page.locator('[data-roleplay-card="restaurant"]').getAttribute('data-recommended'),'true');
   assert.equal(await page.locator('[data-roleplay-card]').first().getAttribute('data-roleplay-card'),'restaurant');
