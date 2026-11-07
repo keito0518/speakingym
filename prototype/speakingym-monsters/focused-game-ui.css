@@ -52,6 +52,12 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .collection-archive[open]>.phrase-grid{margin-left:12px;margin-right:12px}
 
 /* A companion's primary action should precede encyclopaedia copy. */
+.character-sheet,.training-sheet{color:#284239}
+.character-sheet .character-description{color:#495d4f}
+.character-sheet .character-badge{color:#31533c;background:#deebd4}
+.character-sheet .character-actions .button:disabled{opacity:1!important;color:#496452!important;background:#e1e9df!important;border-color:#c6d7c7!important}
+.character-view>.back-button{display:inline-flex;align-items:center;min-height:44px;padding:9px 13px;border:1px solid #739cac;border-radius:11px;background:#294d64;color:#fff0c7!important;font-weight:900}
+.character-view>.back-button:focus-visible{outline:3px solid #f5d18b;outline-offset:3px}
 .character-sheet .character-actions{margin:14px 0 7px}
 .character-sheet #detail-feedback:empty{display:none}
 .character-more{margin:17px 0 4px;border:1px solid #99b4ab;border-radius:14px;overflow:hidden;background:#e8f0e8;color:#294c3e}
