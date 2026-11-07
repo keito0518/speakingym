@@ -895,6 +895,9 @@ const assert=require('node:assert/strict');
    await listenPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
    await listenPage.locator('.forest-tactic-strategy > summary').click();
    assert.equal(await listenPage.locator('#play-audio').count(),1,'Listening attack uses choice assessment');
+   assert.equal(await listenPage.locator('#forest-arena-console .listening-fallback-options > summary')
+     .evaluate(el=>getComputedStyle(el).color),'rgb(225, 248, 232)',
+     'Audio fallback stays readable against the dark tactical battle console');
    assert.equal(await listenPage.locator('#play-slow-audio').isVisible(),false,
      'Slow assisted playback stays hidden until the first genuine listening attempt');
    await listenPage.locator('#play-audio').click();
