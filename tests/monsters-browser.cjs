@@ -53,6 +53,27 @@ const path=require('node:path');
     await page.locator(`[data-listening-choice="${correct}"]`).click();
   };
   try{
+    // A privacy-restricted browser may throw on *reading* localStorage, not
+    // merely on setItem. The adventure must remain playable in memory and
+    // visibly warn that its progress cannot be stored.
+    {
+      const context=await browser.newContext({viewport:{width:375,height:844},hasTouch:true});
+      const page=await context.newPage(),errors=[];
+      page.on('pageerror',error=>errors.push(error.message));
+      await page.addInitScript(()=>{
+        Object.defineProperty(window,'localStorage',{configurable:true,
+          get(){throw new DOMException('Storage blocked','SecurityError');}});
+      });
+      await page.goto(base,{waitUntil:'networkidle'});
+      assert.equal(await page.locator('#home-navigation').isVisible(),true);
+      assert.equal(await page.locator('#save-warning-live').isVisible(),true,
+        'An unavailable storage getter must show the in-game backup warning');
+      await page.locator('[data-feature-dungeon]').click();
+      assert.equal(await page.locator('#play-view').isVisible(),true,
+        'A blocked localStorage getter must not block the first adventure');
+      assert.deepEqual(errors,[],'The storage getter must not throw an uncaught browser error');
+      await context.close();
+    }
     // A game-minded player can pick a specific locked creature to hunt.
     // The chase remains after reload, without revealing its artwork or
     // obscuring the single beginner CTA before the first attempt.

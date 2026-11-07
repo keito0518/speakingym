@@ -5,6 +5,16 @@ import { STORAGE_KEY } from './monster-engine.js';
 // first or the player explicitly confirms that the old data may be replaced.
 export const UNREADABLE_BACKUP_KEY=`${STORAGE_KEY}-unreadable-backup`;
 
+// Some privacy modes throw when reading window.localStorage itself, before
+// getItem can be called. Defer the property access until the guarded save
+// operation so the game can still boot with its in-memory/export fallback.
+export function lazyStorage(getStorage,translateKey=key=>key){
+  return {
+    getItem(key){return getStorage().getItem(translateKey(key));},
+    setItem(key,value){return getStorage().setItem(translateKey(key),value);}
+  };
+}
+
 export function loadProtectedSave(storage,validate){
   let raw;
   try{raw=storage.getItem(STORAGE_KEY);}catch{return {save:null,status:'storage-unavailable',raw:null};}

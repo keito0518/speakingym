@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSave, validateSave, STORAGE_KEY } from '../prototype/speakingym-monsters/monster-engine.js';
-import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
 
 function fakeStorage(initial={}){
   const data=new Map(Object.entries(initial));
@@ -11,6 +11,24 @@ function fakeStorage(initial={}){
     get data(){return data;}
   };
 }
+
+test('storage getter denial cannot crash startup or silently claim a successful save',()=>{
+  const blocked=lazyStorage(()=>{throw new Error('SecurityError: storage access denied');});
+  assert.deepEqual(loadProtectedSave(blocked,validateSave),
+    {save:null,status:'storage-unavailable',raw:null});
+  assert.throws(()=>writeSaveIfCurrent(blocked,null,JSON.stringify(createSave())),/SecurityError/);
+  assert.equal(unreadableSaveForDownload(blocked,'protected'),null);
+});
+
+test('a lazy storage adapter isolates gacha QA without changing normal saves',()=>{
+  const backing=fakeStorage({[STORAGE_KEY]:'normal-progress'});
+  const testKey=`${STORAGE_KEY}-gacha-test`;
+  const testStore=lazyStorage(()=>backing,key=>key===STORAGE_KEY?testKey:key);
+  assert.equal(loadProtectedSave(testStore,validateSave).status,'fresh');
+  assert.equal(writeSaveIfCurrent(testStore,null,JSON.stringify(createSave())).status,'saved');
+  assert.equal(backing.getItem(STORAGE_KEY),'normal-progress');
+  assert.equal(backing.getItem(testKey),JSON.stringify(createSave()));
+});
 
 test('valid and brand-new saves do not create a recovery copy',()=>{
   const fresh=fakeStorage();
