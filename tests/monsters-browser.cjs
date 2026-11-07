@@ -616,9 +616,23 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#play-audio').count(),0);
     await leavePlay(menuPage);
     await menuPage.locator('[data-home-page="review"]').click();
-    assert.equal(await menuPage.locator('#saved-review-title').isVisible(),true);
+    assert.equal(await menuPage.locator('#saved-review-title').isVisible(),false,
+      'A player without saved questions does not see an empty disabled panel');
     assert.equal(await menuPage.locator('#review-journal-title').isVisible(),true);
     await menuContext.close();
+    // A first-time player sees one meaningful practice action, not three
+    // empty statistics boards and unusable review buttons.
+    {
+      const {context:emptyReviewContext,page:emptyReviewPage}=await boot(390);
+      await enterHomePanel(emptyReviewPage,'review');
+      assert.equal(await emptyReviewPage.locator('#start-review-practice').isVisible(),true);
+      assert.equal(await emptyReviewPage.locator('.saved-review').isVisible(),false);
+      assert.equal(await emptyReviewPage.locator('.retention-hub').isVisible(),false);
+      assert.equal(await emptyReviewPage.locator('.review-journal-records').isVisible(),false);
+      assert.equal(await emptyReviewPage.locator('#review-journal-title').evaluate(el=>getComputedStyle(el).color),'rgb(37, 75, 59)',
+        'A review heading must remain dark against its pale card');
+      await emptyReviewContext.close();
+    }
     // The third world makes ten real chapters, not eight. Clearing the City
     // must continue into the Ruins instead of falsely celebrating completion.
     {
