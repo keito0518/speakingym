@@ -573,6 +573,8 @@ function renderHome() {
     :`今日の8問 · 自力${dailyGold.required}問で ＋${dailyGold.bonus} G`;
   $('#start-daily-gym').disabled=!gym.prompts.length;
   $('#daily-last-rate').textContent=dailyGrowth.lastRate===null?'―':`${dailyGrowth.lastRate}%`;
+  $('.daily-gym').dataset.hasHistory=String(dailyGrowth.sessions>0);
+  $('.daily-gym-progress').dataset.hasHistory=String(dailyGrowth.sessions>0);
   $('#daily-growth-note').textContent=dailyGrowth.changeSevenDays!==null
     ?`同じ難易度の7日以上前と比較：${dailyGrowth.changeSevenDays>=0?'+':''}${dailyGrowth.changeSevenDays}ポイント（${dailyGrowth.weekBeforeRate}% → ${dailyGrowth.lastRate}%）`
     :dailyGrowth.sessions?`完了 ${dailyGrowth.sessions}回 · 前回 ${dailyGrowth.lastDuration}秒 · 7日以上の記録がたまると比較できるよ。`
