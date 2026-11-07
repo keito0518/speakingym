@@ -3040,12 +3040,20 @@ function renderEquipmentCollection(){
  });
 }
 function renderCollection(){collectionViews.renderCollection();renderEconomyShop();renderEquipmentCollection();}
+function jumpToCollectionSection(selector){
+ const section=$(selector);
+ if(!section)return;
+ const jump=()=>{if(!$('#collection-view').hidden)section.scrollIntoView({block:'start',behavior:'instant'});};
+ // showView resets the prior page's scroll while the new view is entering.
+ // Reapply after layout, especially on narrow iPhone-sized screens.
+ jump();requestAnimationFrame(jump);
+}
 function openForge(){
  renderCollection();document.body.dataset.gameTab='forge';syncGameTabs();
- $('#collection-shop').scrollIntoView({block:'start',behavior:'instant'});
+ jumpToCollectionSection('#collection-shop');
 }
 $('#collection-open-equipment').addEventListener('click',()=>{
- $('#collection-weapons').scrollIntoView({block:'start',behavior:'instant'});
+ jumpToCollectionSection('#collection-weapons');
 });
 
 $$('[data-difficulty]').forEach(button => button.addEventListener('click', () => {
@@ -3088,7 +3096,7 @@ $$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click'
   renderCollection();document.body.dataset.gameTab='party';syncGameTabs();
   // This tab is labelled "仲間": land on the usable party, not the armory.
   // Players can jump back to equipment through the adjacent explicit button.
-  $('.collection-sortbar').scrollIntoView({block:'start',behavior:'instant'});
+  jumpToCollectionSection('.collection-sortbar');
   return;
  }
  renderHome();

@@ -59,10 +59,18 @@ const path=require('node:path');
       await page.locator('#game-tabs [data-game-tab="party"]').click();
       assert.equal(await page.locator('[data-open-monster]').count(),1,`${width}: party shows owned companions by default`);
       assert.equal(await page.locator('[data-catalog-filter="owned"]').getAttribute('aria-pressed'),'true');
+      await page.waitForFunction(()=>{
+        const bounds=document.querySelector('.collection-sortbar').getBoundingClientRect();
+        return bounds.top>=0&&bounds.top<window.innerHeight*.65;
+      },null,{timeout:4000});
       assert.ok(await page.locator('.collection-sortbar').evaluate(el=>{
         const bounds=el.getBoundingClientRect();return bounds.top>=0&&bounds.top<window.innerHeight*.65;
       }),`${width}: party tab jumps straight to its companion filters`);
       await page.locator('#collection-open-equipment').click();
+      await page.waitForFunction(()=>{
+        const bounds=document.querySelector('#collection-weapons').getBoundingClientRect();
+        return bounds.top>=0&&bounds.top<window.innerHeight*.65;
+      },null,{timeout:4000});
       assert.ok(await page.locator('#collection-weapons').evaluate(el=>{
         const bounds=el.getBoundingClientRect();return bounds.top>=0&&bounds.top<window.innerHeight*.65;
       }),`${width}: party can still reach equipment with one tap`);
