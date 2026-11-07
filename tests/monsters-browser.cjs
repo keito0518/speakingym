@@ -2082,6 +2082,21 @@ const path=require('node:path');
     await enterHomePanel(page,'training');
     await page.getByRole('button',{name:/スピーキングを始める/}).click();
     assert.match(await page.locator('#play-mode-label').innerText(),/スピーキング道場/);
+    const questionContrast=await page.evaluate(()=>{
+      const card=document.querySelector('#play-card');
+      const ratio=(foreground,background)=>{
+        const rgb=value=>(value.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
+        const luminance=value=>rgb(value).map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
+          .reduce((sum,n,i)=>sum+n*[.2126,.7152,.0722][i],0);
+        const [high,low]=[luminance(foreground),luminance(background)].sort((a,b)=>b-a);
+        return (high+.05)/(low+.05);
+      };
+      const bg=getComputedStyle(card).backgroundColor;
+      return {heading:ratio(getComputedStyle(card.querySelector('h1')).color,bg),
+        context:ratio(getComputedStyle(card.querySelector('.question-caption')).color,bg)};
+    });
+    assert.ok(questionContrast.heading>=7,`Actual question must have strong contrast: ${JSON.stringify(questionContrast)}`);
+    assert.ok(questionContrast.context>=4.5,`Scene context must stay legible: ${JSON.stringify(questionContrast)}`);
     const speakingSeen=[];
     for(let i=0;i<6;i++){
       const id=await page.locator('#play-card').getAttribute('data-prompt-id');
