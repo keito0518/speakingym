@@ -729,6 +729,11 @@ const path=require('node:path');
     }
     assert.equal(new Set(allDaily).size,8);
     assert.match(await gymPage.locator('#result-title').innerText(),/今日の5分ジム完了/);
+    assert.equal(await gymPage.locator('#result-detail-panel').getAttribute('open'),null,
+      'Daily results show the reward and next action before optional study records');
+    assert.match(await gymPage.locator('#result-quick-summary').innerText(),/12 G/);
+    assert.equal(await gymPage.locator('#result-collection').isVisible(),true);
+    await gymPage.locator('#result-detail-panel > summary').click();
     assert.match(await gymPage.locator('#result-rewards').innerText(),/ヒントなし正解率/);
     assert.match(await gymPage.locator('#result-rewards').innerText(),/今日のごほうび ＋12 G/);
     const gymSaved=await gymPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
@@ -2168,6 +2173,10 @@ const path=require('node:path');
     assert.equal(await page.locator('#result-discoveries .discovery-card').count(),0,
       'The same recruitment is not repeated inside collapsed details');
     const trainingEarned=88;
+    assert.match(await page.locator('#result-quick-summary').innerText(),/88 XP/);
+    assert.equal(await page.locator('#result-detail-panel').getAttribute('open'),null,
+      'Speaking rewards must not bury the growth action beneath long statistics');
+    await page.locator('#result-detail-panel > summary').click();
     assert.ok((await page.locator('#result-rewards').innerText()).includes('+88 XP ストック'));
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-result.png`),fullPage:true});
     await page.locator('#result-collection').click();
