@@ -159,7 +159,7 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 #home-destination-training .companion-showcase .showcase-glow{width:145px;height:145px;top:10px}
 #home-destination-training .hero-monster-art{height:146px}
 #home-destination-training .hero-monster-art .monster-svg{max-height:140px}
-#home-destination-training .showcase-footer strong{font-size:16px}
+#home-destination-training .showcase-footer strong{font-size:16px;color:#294b3c}
 #home-destination-training .showcase-footer span:not(.level-pill),
 #home-destination-training .hero-vocab,
 #home-destination-training .xp-track,
