@@ -127,6 +127,8 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 #play-view .listening-fallback-options>summary:focus-visible{outline:3px solid #f0b958;outline-offset:3px}
 #play-view .listening-fallback-options .listening-native{margin:5px 0 0}
 #play-view .listening-fallback-options .listening-fallback{min-height:40px;margin-top:5px;padding:8px 4px}
+#play-view.scene-battle #forest-arena-console .listening-fallback-options,
+#play-view.scene-battle #forest-arena-console .listening-fallback-options>summary{color:#e1f8e8}
 
 /* Main mission is already a pictorial call to action: extra prose competes
    with the button. The current destination stays in the progress meter. */
