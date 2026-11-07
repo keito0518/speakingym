@@ -503,7 +503,8 @@ const path=require('node:path');
     }));
     assert.deepEqual(forestPlacement,{gridColumn:'span 2',inDisclosure:true},
       'Optional stage selection can use a wider row inside the collapsed extra menu, not the main menu');
-    assert.match(await menuPage.locator('.home-feature').innerText(),/英語/);
+    assert.match(await menuPage.locator('.home-feature').innerText(),/English\s*ダンジョン/,
+      'The adventure name and its main action carry the home card without extra copy');
     assert.equal(await menuPage.locator('#home-navigation').isVisible(),true);
     assert.equal(await menuPage.locator('.home-destination:visible').count(),0);
     await menuPage.locator('[data-home-page="tutorial"]').click();
@@ -1535,6 +1536,7 @@ const path=require('node:path');
       assert.ok(collectionWidth.content<=collectionWidth.viewport+1,
         `${engine}/${width}: boss medal collection must fit the phone screen: ${JSON.stringify(collectionWidth)}`);
       await forestPage.locator('[data-open-monster="medamago"]').click();
+      await forestPage.locator('#detail-notes summary').click();
       assert.match(await forestPage.locator('#detail-content').innerText(),/ことばの連撃/,
         'Companion field notes must describe actual tactical abilities instead of saying not implemented');
       await forestPage.locator('#detail-back').click();

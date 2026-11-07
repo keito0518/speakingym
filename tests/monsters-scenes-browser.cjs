@@ -128,6 +128,10 @@ const path=require('node:path');
       assert.equal(await page.locator('#collection-view').isVisible(),false);
       assert.match(await page.locator('#detail-content').innerText(),/Yolkie.*メダマゴ/s);
       assert.match(await page.locator('#detail-content').innerText(),/卵の黄身/);
+      assert.equal(await page.locator('#detail-notes').getAttribute('open'),null,
+        'Secondary monster lore should not separate the player from the Grow button');
+      assert.equal(await page.locator('#open-training').isVisible(),true);
+      await page.locator('#detail-notes summary').click();
       assert.match(await page.locator('#detail-content').innerText(),/第1進化：Lv\.5（累計280 XP）＋ボス攻略 1\/1エリア。残り280 XP/,
         'The level and boss-clear prerequisites must be visible in the field notes');
       await page.evaluate(()=>{
@@ -178,10 +182,12 @@ const path=require('node:path');
       assert.equal(before.monsterXp.medamago,300);assert.equal(before.ownedMonsters.length,44);
       assert.equal(before.monsterEvolution.medamago,1);
       await page.locator('#training-back').click();
+      await page.locator('#detail-notes summary').click();
       assert.match(await page.locator('#detail-content').innerText(),/進化後、控えからの連携で「覚醒・追撃」/,
         'Evolved companion notes should describe the real tactical combo instead of the old placeholder');
       await page.locator('#detail-back').click();
-      assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.5.*第2進化：Lv.10/s);
+      assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.5/s);
+      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').textContent(),/第2進化：Lv.10/);
       await page.reload();
       assert.equal(await page.locator('#home-wallet').innerText(),'0');
       assert.match(await page.locator('#hero-monster-name').innerText(),/Sunnyolk/);
@@ -318,6 +324,7 @@ const path=require('node:path');
       assert.match(await page.locator('#hero-next-level').innerText(),/Lv\.10.*ボス 3\/3/);
       await page.locator('[data-home-page="collection"]').click();
       await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#detail-notes summary').click();
       assert.match(await page.locator('#detail-content').innerText(),/第2進化：Lv\.10（累計630 XP）＋異なるボス攻略 3\/3エリア。残り1 XP/);
       await page.locator('#open-training').click();
       await page.locator('[data-feed-amount="10"]').click();

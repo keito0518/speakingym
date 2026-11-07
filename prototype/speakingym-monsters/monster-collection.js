@@ -159,12 +159,14 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       <p class="character-subtitle">${html(c.japaneseName)} · ${html(c.kind)}</p>
       <p class="character-description">${html(c.note)}</p>
       <span class="character-badge">${owned?`Lv.${g.level} · ${growthStatus(g)} · 仲間`:'まだ仲間になっていないよ'}</span>
+      ${owned?`<div class="character-actions"><button type="button" id="open-training" class="button button-primary">育てる</button><button type="button" class="button button-ghost" data-select-monster="${id}" ${save.selectedMonster===id?'disabled':''}>${save.selectedMonster===id?'冒険中':'一緒に冒険'}</button></div>`:''}
+      <p id="detail-feedback" role="status">${html(message)}</p>
       <section class="character-section"><h2>名前の由来</h2>${c.roots.map(r=>`<div class="word-row"><span><b lang="en">${html(r.word)}</b><small>${html(r.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${html(r.word)}" aria-label="${html(r.word)} の発音を聞く"><span class="audio-glyph" aria-hidden="true"></span>聞く</button></div>`).join('')}<p id="pronounce-feedback" role="status"></p></section>
+      <details id="detail-notes" class="character-more"><summary>能力・進化の詳細 <span aria-hidden="true">＋</span></summary>
       <section class="character-section"><h2>固有能力</h2><strong>${html(power.name)}</strong><p>${html(power.description)}</p><small>戦略バトル（開発版）で使用可能。第1進化では連携強化、第2進化では得意攻撃＋1・戦闘HP＋1（英語の採点は変わりません）。</small></section>
       <section class="character-section"><h2>学習で深まる絆</h2><p>絆 Lv.${bond.rank} · ${bond.points}ポイント</p><p>${bond.maxed?'絆レベルMAX！これからも英語を使っていこう。':`次の絆レベルまで ${bond.next}ポイント`}</p><small>翌日・3日後・7日後の定着チェックを、日を空けてヒントなしでクリアすると増えるよ。XPや戦闘力には影響しない。</small></section>
       <section class="character-section"><h2>進化の記録</h2>${evolutionPath(c)}<p>${owned?growthGoal(g):html(unlockText(c,save))}</p>${owned&&trial.remaining&&trial.target?`<p class="evolution-next-boss">次の討伐目標：${html(trial.target.name)}。この仲間と一緒にボスを倒そう。</p>`:''}</section>
-      <p id="detail-feedback" role="status">${html(message)}</p>
-      ${owned?`<div class="character-actions"><button type="button" id="open-training" class="button button-primary">この仲間を育てる</button><button type="button" class="button button-ghost" data-select-monster="${id}" ${save.selectedMonster===id?'disabled':''}>${save.selectedMonster===id?'ホームに表示中':'一緒に冒険する'}</button></div>`:''}
+      </details>
     </div>`;
     all('[data-pronounce-word]').forEach(b => b.addEventListener('click',()=>{
       const feedback = $('#pronounce-feedback');

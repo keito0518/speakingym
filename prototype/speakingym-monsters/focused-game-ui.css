@@ -51,6 +51,17 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .collection-archive[open]>.phrase-head,
 .collection-archive[open]>.phrase-grid{margin-left:12px;margin-right:12px}
 
+/* A companion's primary action should precede encyclopaedia copy. */
+.character-sheet .character-actions{margin:14px 0 7px}
+.character-sheet #detail-feedback:empty{display:none}
+.character-more{margin:17px 0 4px;border:1px solid #99b4ab;border-radius:14px;overflow:hidden;background:#e8f0e8;color:#294c3e}
+.character-more>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:49px;padding:11px 15px;cursor:pointer;list-style:none;font-weight:900;font-size:14px}
+.character-more>summary::-webkit-details-marker{display:none}
+.character-more>summary span{font-size:20px}
+.character-more[open]>summary span{transform:rotate(45deg)}
+.character-more>summary:focus-visible{outline:3px solid #d9a95b;outline-offset:-4px}
+.character-more>.character-section{margin:12px;padding:13px;background:#fffdf4;border-radius:12px}
+
 /* Gacha card hierarchy: money -> summon -> optional sale -> equipment.
    Loot moves ahead of the draw only when there is actually something to sell. */
 #collection-shop{display:flex;flex-direction:column;gap:11px;margin:5px 0 16px;padding:16px;scroll-margin-top:8px}
