@@ -682,6 +682,10 @@ const path=require('node:path');
     await enterHomePanel(gymPage,'daily');
     assert.equal(await gymPage.locator('#start-daily-gym').isVisible(),true);
     assert.match(await gymPage.locator('#daily-plan-status').innerText(),/8問/);
+    assert.equal(await gymPage.locator('.daily-gym-progress').isVisible(),false,
+      'The empty progress panel should not distract first-time daily trainees');
+    assert.equal(await gymPage.locator('.daily-gym-copy > p').count(),1,
+      'The daily launch presents only the actual daily goal, not tutorial prose');
     await enterHomePanel(gymPage,'daily');
     await gymPage.locator('#start-daily-gym').click();
     assert.match(await gymPage.locator('#play-mode-label').innerText(),/今日の5分ジム/);
@@ -724,12 +728,19 @@ const path=require('node:path');
     await enterHomePanel(gymPage,'daily');
     assert.match(await gymPage.locator('#daily-plan-status').innerText(),/ボーナス.*獲得済み/);
     assert.match(await gymPage.locator('#daily-last-rate').innerText(),/100%/);
+    assert.equal(await gymPage.locator('.daily-gym-progress').isVisible(),true,
+      'Real progress is visible immediately after a completed lesson');
     await gymContext.close();
     // Verify English-only task cards at both higher difficulties and narrow widths.
     for (const width of [320,375,390,430]) {
       const {context:levelContext,page:levelPage}=await boot(width);
       for (const difficulty of ['normal','hard']) {
         await enterHomePanel(levelPage,'training');
+        assert.equal(await levelPage.locator('#home-destination-training h1').innerText(),'スピーキング道場');
+        assert.equal(await levelPage.locator('#difficulty-description').isVisible(),false,
+          'Difficulty buttons explain themselves without repeated copy');
+        assert.equal(await levelPage.locator('#hero-next-level').isVisible(),false,
+          'Growth details live with companions, not on the exercise launch screen');
         await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
         await levelPage.getByRole('button',{name:/スピーキングを始める/}).click();
