@@ -676,7 +676,7 @@ const path=require('node:path');
     await recallPage.reload();
     await enterHomePanel(recallPage,'review');
     assert.equal(await recallPage.locator('#start-retention-review').isEnabled(),true);
-    assert.match(await recallPage.locator('#retention-due-label').innerText(),/1問/);
+    assert.match(await recallPage.locator('#start-retention-review').innerText(),/1問/);
     await recallPage.locator('#start-retention-review').click();
     assert.match(await recallPage.locator('#play-mode-label').innerText(),/定着チェック/);
     assert.equal(await recallPage.locator('#forest-journey').isVisible(),false);
