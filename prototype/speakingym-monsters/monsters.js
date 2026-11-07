@@ -2669,7 +2669,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#result-title').textContent=ended.roleplay?`${ended.roleplay.title} · 会話完了！`:ended.mode==='saved'?'保存した英語を復習したよ！':ended.mode==='transfer-review'?'場面チェンジの復習完了！':ended.mode==='retention'?'定着チェック完了！':ended.mode==='skill-focus'?SKILL_LABELS[ended.focusKind]+'の集中練習完了！':ended.mode==='daily'?'今日の5分ジム完了！':ended.mode==='listening'?'リスニング道場クリア！':ended.mode==='speaking'?'スピーキング道場クリア！':ended.mode==='forest'?
     (defeated?'ダンジョン挑戦終了':ended.endless?'∞ エンドレス WAVE '+ended.wave:dungeonAreaFor(ended.areaId)?.world==='ruins'?'星影の遺跡のボスを討伐！':dungeonAreaFor(ended.areaId)?.world==='city'?'雪灯りの街のボスを討伐！':'森のボスを討伐！'):
     ended.smooth>=4?'すごい！言葉が出てきたね。':'今日の一歩、しっかり前進。';
-  $('#result-description').textContent=ended.roleplay?'相手との3回のやり取りを練習したよ。答えた表現は復習記録に反映されるけど、AI自由会話や発音力の採点ではないよ。':ended.mode==='saved'?'自分の力で答えられた問題を確認しよう。ヒントや例文を見た問題は、もう一度練習できるよ。':ended.mode==='transfer-review'?(ended.smooth?'前の会話から時間を空けて、自力で表現を確認できたね！ 次は別の場面でも試そう。':'今日はヒント・例文で確認した段階。明日また1問で復習できるよ。'):ended.mode==='daily'?'練習した表現は、明日や別の場面でまた使ってみよう。自力での正解率はこの端末だけに記録したよ。':ended.mode==='listening'?'聞き取った内容の理解を確認したよ。音声認識や発音の評価はしていません。':ended.mode==='forest'?
+  $('#result-description').textContent=ended.roleplay?'3ターン完了！ どこまで自力で言えたか振り返ろう。':ended.mode==='saved'?'保存した英語を復習したよ。':ended.mode==='transfer-review'?(ended.smooth?'別の場面でも自力で使えたね！':'明日また、自力で言えるか試そう。'):ended.mode==='daily'?'今日の8問完了！ 明日も少しずつ続けよう。':ended.mode==='listening'?'聞き取った内容を確認できたよ。発音の採点はしていません。':ended.mode==='forest'?
     (defeated?ended.tactics?'味方のHPがなくなったよ。学んだ英語は消えないから、仲間の相性や防御を工夫して再挑戦しよう！':'挑戦回数を使い切ったよ。言い換えが簡易判定で通らない場合もあるので、また挑戦してね！':
      ended.endless?'ここまでの冒険の記録！難易度が上がるほどリトライ回数が減るよ。':
      `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
@@ -2829,9 +2829,13 @@ function finishSession(timedOut=false,defeated=false) {
   const canRetry=ended.mode==='forest'&&defeated;
   const canResumeReview=ended.mode==='retention'&&retentionOverview(save,dayKey()).due.length>0;
   renderDungeonVictoryRecap(ended,{nextArea,canContinue});
-  $('#result-quick-summary').hidden=ended.mode!=='forest'||forestFinished;
-  if(ended.mode==='forest')$('#result-quick-summary').textContent=`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体${ended.tactics&&ended.bestCombo>=2?` · 最高 ${ended.bestCombo} CHAIN`:''}`;
-  $('#result-detail-panel').open=ended.mode!=='forest';
+  const quickResult=$('#result-quick-summary');
+  quickResult.hidden=forestFinished;
+  quickResult.textContent=ended.mode==='forest'
+    ?`今回の獲得 ＋${ended.earnedXp} XP · 仲間 ${save.ownedMonsters.length}体${ended.tactics&&ended.bestCombo>=2?` · 最高 ${ended.bestCombo} CHAIN`:''}`
+    :`${ended.roleplay?'自力で返答':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth}/${ended.index} · ＋${ended.earnedXp} XP${ended.dailyGoldAward?` · ＋${ended.dailyGoldAward} G`:''}`;
+  $('#result-detail-panel').open=false;
+  $('#result-detail-panel > summary').textContent=ended.roleplay?'会話の振り返り・参考表現を見る':ended.mode==='saved'?'復習の詳しい記録を見る':'報酬と学習記録を見る';
   $('#result-next-panel').hidden=!canContinue&&!canRetry&&!canResumeReview;
   if(canContinue){
     $('#result-next-message').textContent='次のエリアが解放されたよ！';
