@@ -1513,7 +1513,11 @@ const path=require('node:path');
       await leavePlay(forestPage);
       await forestPage.locator('[data-home-page="collection"]').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Sunleaf/);
-      assert.match(await forestPage.locator('#forest-journal-summary').innerText(),/イベント 0\/8種類/);
+      assert.match(await forestPage.locator('#forest-journal-summary').innerText(),/森 1\/4.*称号 1\/6/);
+      assert.match(await forestPage.locator('#forest-journal-badges .earned').innerText(),/森の一歩/,
+        'Clearing the first chapter must earn an achievable exploration title');
+      assert.equal(await forestPage.locator('#forest-journal-events .forest-journal-entry').count(),0,
+        'Removed branching events are kept only as an archive for older saves');
       await forestPage.reload();
       await forestPage.locator('[data-home-page="collection"]').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Sunleaf/);
