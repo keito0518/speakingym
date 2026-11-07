@@ -45,10 +45,10 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
  move('.forest-invite','forest');
  move('.daily-gym','daily');
  move('.roleplay-hub','roleplay');
+ move('.review-journal','review');
  move('.saved-review','review');
  move('.retention-hub','review');
  move('.hero-grid','training');
- move('.review-journal','review');
  move('.section-head','progress');
  move('.stat-grid','progress');
  move('.skill-growth','progress');
