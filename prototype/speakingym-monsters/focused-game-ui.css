@@ -142,6 +142,52 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .home-feature{min-height:0}
 .home-feature-cta{font-size:clamp(14px,3vw,17px)}
 
+/* A launch screen is a choice, not another encyclopedia. The selected
+   companion is still recognizable; growth, weapon and word lists stay
+   available from 仲間 and its encyclopedia screen. */
+#home-destination-training .hero-grid{min-height:0;grid-template-columns:minmax(0,1fr) 205px;gap:22px;align-items:start;padding:8px 0 22px}
+#home-destination-training .hero-copy{min-width:0}
+#home-destination-training .hero-copy h1{font-size:clamp(25px,3vw,34px);line-height:1.3;margin:4px 0 19px;color:#fff0d1}
+#home-destination-training .difficulty-picker{margin-top:0;max-width:510px}
+#home-destination-training .difficulty-title{color:#f2efdb;font-size:14px}
+#home-destination-training .difficulty-options button{min-height:62px}
+#home-destination-training .difficulty-description{display:none}
+#home-destination-training .hero-buttons{margin:18px 0 16px}
+#home-destination-training .hero-buttons .button{min-height:53px}
+#home-destination-training .companion-showcase{min-height:0;padding:14px 14px 16px;border-radius:21px}
+#home-destination-training .companion-showcase .showcase-top{display:none}
+#home-destination-training .companion-showcase .showcase-glow{width:145px;height:145px;top:10px}
+#home-destination-training .hero-monster-art{height:146px}
+#home-destination-training .hero-monster-art .monster-svg{max-height:140px}
+#home-destination-training .showcase-footer strong{font-size:16px}
+#home-destination-training .showcase-footer span:not(.level-pill),
+#home-destination-training .hero-vocab,
+#home-destination-training .xp-track,
+#home-destination-training #hero-next-level,
+#home-destination-training #hero-weapon-summary,
+#home-destination-training .wallet-link{display:none}
+#home-destination-training .save-note{color:#b7c9c1;line-height:1.5}
+#home-destination-daily .daily-gym{max-width:800px;margin-inline:auto}
+#home-destination-daily .daily-gym[data-has-history="false"]{grid-template-columns:1fr;max-width:610px}
+#home-destination-daily .daily-gym-progress[data-has-history="false"]{display:none}
+#home-destination-daily .daily-gym-copy{gap:13px}
+#home-destination-daily .daily-gym-copy .daily-plan-status{font-size:14px;color:#315c40}
+#home-destination-daily #start-daily-gym{min-height:54px;font-size:15px}
+
+@media(max-width:690px){
+ #home-destination-training .hero-grid{display:flex;flex-direction:column;gap:10px;padding:4px 0 16px}
+ #home-destination-training .hero-copy h1{font-size:clamp(24px,6.5vw,29px);margin:4px 0 17px}
+ #home-destination-training .difficulty-options button{min-height:59px}
+ #home-destination-training .hero-buttons{margin:17px 0 15px}
+ #home-destination-training .hero-buttons .button{min-width:0;padding:12px 11px}
+ #home-destination-training .companion-showcase{width:100%;display:flex;align-items:center;gap:13px;padding:9px 13px;border-radius:16px}
+ #home-destination-training .companion-showcase .showcase-glow{display:none}
+ #home-destination-training .hero-monster-art{height:69px;width:69px;flex:none}
+ #home-destination-training .hero-monster-art .monster-svg{max-height:69px}
+ #home-destination-training .showcase-footer{flex:1;gap:12px}
+ #home-destination-daily .daily-gym{max-width:520px}
+}
+
 @media(max-width:600px){
  #collection-shop{padding:12px;gap:9px}
  #collection-shop .shop-gacha{padding:9px}
