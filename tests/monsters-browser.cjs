@@ -66,11 +66,13 @@ const path=require('node:path');
       });
       await page.goto(base,{waitUntil:'networkidle'});
       assert.equal(await page.locator('#home-navigation').isVisible(),true);
-      assert.equal(await page.locator('#save-warning-live').isVisible(),true,
-        'An unavailable storage getter must show the in-game backup warning');
+      assert.equal(await page.locator('#save-warning-live').getAttribute('hidden'),null,
+        'An unavailable storage getter must prepare an in-game backup warning');
       await page.locator('[data-feature-dungeon]').click();
       assert.equal(await page.locator('#play-view').isVisible(),true,
         'A blocked localStorage getter must not block the first adventure');
+      assert.equal(await page.locator('#save-warning-live').isVisible(),true,
+        'The backup warning must be visible once the full-screen dungeon opens');
       assert.deepEqual(errors,[],'The storage getter must not throw an uncaught browser error');
       await context.close();
     }
