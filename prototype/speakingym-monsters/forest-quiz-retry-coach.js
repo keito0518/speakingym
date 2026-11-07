@@ -46,6 +46,7 @@ const WORD_MEANINGS=Object.freeze({
   connection:'乗り継ぎ・接続',repaired:'修理された',
   suspended:'一時停止された・運休の',transferred:'乗り換えた・移された',
   shelter:'避難場所・雨風を避ける場所',heated:'暖房のある',
+  forecast:'天気予報・予測',warning:'警告・注意報',
   reserved:'予約済みの',emergency:'緊急事態',
   appointment:'予約・約束',open:'開いている',
   impassable:'通行できない',accessible:'利用しやすい・通行できる',

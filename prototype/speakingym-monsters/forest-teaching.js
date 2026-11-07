@@ -7,6 +7,8 @@ const LESSONS=Object.freeze({
   'entry-trail-notice': ['sign は案内表示、arrow は方向を示す矢印、detour は通れない道を避ける迂回路。示されている情報の種類を見分けよう。','At a station or airport, follow the arrow on the sign. If an exit is closed, ask about a detour.'],
   'entry-arrival-update': ['遅れる時間は five minutes late のように late の前に置く。because は遅れる理由、so はその結果につなげる。','At work, say: The train is delayed, so I will be about ten minutes late. I will call when I arrive.'],
   'entry-check-the-route': ['Could you + 動詞の原形で丁寧に質問できる。which や whether の後の間接疑問文では主語と動詞を倒置しない。','When travelling, ask: Could you tell me which platform we should use? Could you confirm whether this is the right train?'],
+  'entry-weather-shelter': ['shelter は雨風を避ける場所、forecast は天気予報、warning は危険を知らせる警告。予測と安全上の注意を区別しよう。','On a trip, check the weather forecast before leaving. If there is a flood warning, find a safe shelter instead of crossing a river.'],
+  'entry-choose-safe-route': ['would rather + 動詞、prefer + 名詞。because は理由、although は逆接をつなぐので、道の選択と理由を分けて組み立てよう。','In a new city, say: Although the bus is faster, I prefer walking because the route is easier to follow.'],
   'forest-vocab-ticket': ['動詞が「買う・取り消す・返金する」のどれを表すか、場面から判断しよう。','buy a ticket / cancel a ticket / request a refund のように、行動によって使い分けよう。'],
   'forest-vocab-order': ['丁寧な注文では、相手に物を頼む自然な動詞を選ぼう。','Could I have a coffee? は注文。Can I borrow ...? は借りるときの表現。'],
   'forest-vocab-transfer': ['電車に乗る・乗り損ねる・乗り換えるはそれぞれ違う行動。','change trains は乗り換える、board a train は乗車する、miss a train は乗り遅れる。'],

@@ -8,15 +8,15 @@ import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teachin
 
 const seeded=initial=>{let state=initial;return ()=>((state=(state*1664525+1013904223)>>>0)/4294967296);};
 
-test('first forest gate teaches 18 distinct, chapter-specific real-world tasks at three levels',()=>{
-  assert.equal(FOREST_ENTRY_PROMPTS.length,18);
-  assert.equal(new Set(FOREST_ENTRY_PROMPTS.map(p=>p.id)).size,18);
+test('first forest gate teaches 30 distinct, chapter-specific real-world tasks at three levels',()=>{
+  assert.equal(FOREST_ENTRY_PROMPTS.length,30);
+  assert.equal(new Set(FOREST_ENTRY_PROMPTS.map(p=>p.id)).size,30);
   for(const difficulty of ['easy','normal','hard']){
     const level=FOREST_ENTRY_PROMPTS.filter(p=>p.difficulty===difficulty);
-    assert.equal(level.length,6);
-    assert.equal(level.filter(p=>p.kind==='vocab').length,2);
-    assert.equal(level.filter(p=>p.kind==='grammar').length,2);
-    assert.equal(level.filter(p=>p.kind==='speak').length,2);
+    assert.equal(level.length,10);
+    assert.equal(level.filter(p=>p.kind==='vocab').length,3);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,3);
+    assert.equal(level.filter(p=>p.kind==='speak').length,4);
     assert.ok(level.every(p=>p.world==='entry'&&p.cue&&p.hint&&p.tip));
     assert.ok(level.every(p=>ALL_PROMPTS.filter(other=>other.id===p.id).length===1));
     for(const prompt of level){
@@ -36,7 +36,7 @@ test('first forest gate teaches 18 distinct, chapter-specific real-world tasks a
       }
     }
   }
-  assert.equal(new Set(FOREST_ENTRY_PROMPTS.map(p=>p.baseId)).size,6);
+  assert.equal(new Set(FOREST_ENTRY_PROMPTS.map(p=>p.baseId)).size,10);
 });
 
 test('entrance encounters actually show local English without overriding overdue questions or leaking worlds',()=>{
