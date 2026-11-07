@@ -3020,13 +3020,16 @@ function renderEquipmentCollection(){
    </div></details>`:''}
    <div class="equipment-item-grid">${cards||(inventory.length?' <p class="equipment-item-empty">条件に合う武器がありません。</p>':'<p class="equipment-item-empty">武器はまだありません。冒険やガチャで入手できます。</p>')}</div></div>
   <div class="equipment-select-sync"><label for="equipment-weapon-choice">武器選択</label><select id="equipment-weapon-choice"><option value="">武器なし · 攻撃＋0</option>${inventory.map(weapon=>`<option value="${weapon.id}" ${weapon.id===current?.id?'selected':''}>${escapeHtml(weapon.name)} · 攻撃＋${weaponAttack(save,weapon)} · ${WEAPON_RARITY_LABELS[weapon.rarity]}</option>`).join('')}</select></div>
-  <section class="weapon-awakening" aria-label="重複武器で覚醒"><div class="weapon-awakening-heading"><strong>武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'装備武器を選択'}</span></div>
+  ${current&&!awaken.canAwaken?`<details class="equipment-awakening-more"><summary>武器覚醒 <span>${awaken.maxed?'MAX':`欠片 ${awaken.shards}/${awaken.requirement}`}</span></summary>`:''}
+  <section class="weapon-awakening" aria-label="重複武器で覚醒" ${current?'':'hidden'}><div class="weapon-awakening-heading"><strong>武器覚醒</strong><span>${current?`覚醒 ${awaken.rank} / 3`:'装備武器を選択'}</span></div>
     <p>同じ武器を引くと色と追撃が変化。欠片を集めて覚醒すると変化が定着し、次の段階へ進めます（最大3段階）。レア度の強さは逆転しません。</p>
     ${current?`<div class="weapon-awakening-track"><span>欠片 ${awaken.shards} ${awaken.maxed?'· MAX':`/ ${awaken.requirement}`}</span><div class="weapon-awakening-meter"><span style="width:${awaken.maxed?100:Math.min(100,Math.round(100*awaken.shards/awaken.requirement))}%"></span></div></div><button type="button" id="weapon-awaken" ${awaken.canAwaken?'':'disabled'}>${awaken.maxed?'最大覚醒に到達':awaken.canAwaken?'欠片を使って覚醒する':`覚醒まであと ${awaken.requirement-awaken.shards} 個`}</button>${upcoming?`<details class="weapon-resonance-preview"><summary>次の共鳴で変わる効果</summary><p>共鳴 ${upcoming.rank}/3 · ${escapeHtml(upcoming.effect)}</p>${upcoming.technique?`<p>武器技：${escapeHtml(upcoming.technique)}</p>`:''}</details>`:''}`:'<small>武器を装備すると、覚醒に必要な欠片を確認できます。</small>'}
-  </section>`;
- // Keep awakening beside the equipped item; a large inventory should never
- // force the player to scroll through every card to upgrade their weapon.
- panel.querySelector('.equipment-current')?.after(panel.querySelector('.weapon-awakening'));
+  </section>${current&&!awaken.canAwaken?'</details>':''}`;
+ // An actionable awakening belongs beside the companion. A locked awakening
+ // is optional reference material after the weapon cards, not a dead-end CTA.
+ const awakening=panel.querySelector('.equipment-awakening-more')||panel.querySelector('.weapon-awakening');
+ if(awaken?.canAwaken)panel.querySelector('.equipment-current')?.after(awakening);
+ else panel.querySelector('.equipment-item-list')?.after(awakening);
  if(!inventory.length){
   const go=document.createElement('button');
   go.type='button';go.id='equipment-go-gacha';go.className='equipment-empty-cta';go.textContent='武器ガチャへ ›';
