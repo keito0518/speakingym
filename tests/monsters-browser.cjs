@@ -2001,8 +2001,10 @@ const path=require('node:path');
     await evolvedPage.reload();
     assert.match(await evolvedPage.locator('#hero-monster-name').innerText(),/Sunnyolk.*進化済み/);
     await enterHomePanel(evolvedPage,'collection');
-    assert.match(await evolvedPage.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv\.3.*第2進化：Lv\.10/s,
-      'The collection must retain the old evolved form while showing its new next trial');
+    assert.match(await evolvedPage.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv\.3/s,
+      'The collection must retain the old evolved form without filling every card with trial instructions');
+    assert.match(await evolvedPage.locator('[data-open-monster="medamago"] .catalog-evolution').textContent(),/第2進化：Lv\.10/,
+      'The earned companion retains its next trial details for the focused detail view');
     await evolvedPage.locator('[data-open-monster="medamago"]').click();
     assert.match(await evolvedPage.locator('#detail-content h1').innerText(),/Sunnyolk/);
     assert.match(await evolvedPage.locator('.character-badge').innerText(),/Lv\.3.*進化済み/);

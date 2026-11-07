@@ -171,6 +171,8 @@ const path=require('node:path');
       await page.screenshot({path:path.join(shots,`training-${engine}-${width}-level.png`),fullPage:true});
       await page.locator('[data-feed-amount="all"]').click();
       assert.equal(await page.locator('[data-evolve-monster]').isEnabled(),true);
+      assert.equal(await page.locator('#training-earn-xp').count(),0,
+        'Ready evolution takes priority over an unrelated earn-XP action');
       assert.equal(await page.locator('.training-sheet h1').innerText(),'Yolkie','feeding only raises the level');
       await page.locator('[data-evolve-monster]').click();
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'evolution');
