@@ -55,7 +55,7 @@ const {chromium,webkit}=require('playwright');
     assert.equal((await saved()).xpWallet,300,'A draw must not consume learning XP');
     await page.locator('#summon-equip').click();
     assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
-    await page.locator('#collection-home').click();
+    await page.locator('#game-tabs [data-game-tab="home"]').click();
     assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1);
     await assertNoOverflow('equipped home');
     cases++;

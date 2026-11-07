@@ -1,0 +1,98 @@
+/* App-like navigation: one task per screen. Help and completion records remain
+   accessible through explicit buttons/disclosures instead of appearing in-line. */
+
+/* A player entering the Gacha tab should see the draw, not the entire codex. */
+body[data-game-tab="forge"] #collection-view .collection-head,
+body[data-game-tab="forge"] #collection-view .collection-sortbar,
+body[data-game-tab="forge"] #collection-view .collection-grid,
+body[data-game-tab="forge"] #collection-view .collection-archive,
+body[data-game-tab="forge"][data-collection-focus="gacha"] #collection-weapons,
+body[data-game-tab="forge"][data-collection-focus="equipment"] #collection-shop {display:none!important}
+
+/* Friends are the first thing on the Friends tab. Equipment is one tap away. */
+body[data-game-tab="party"] #collection-shop,
+body[data-game-tab="party"][data-collection-focus="roster"] #collection-weapons,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-head,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-sortbar,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-grid,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-archive {display:none!important}
+
+#collection-equipment-back[hidden],
+body:not([data-collection-focus="equipment"]) #collection-equipment-back {display:none!important}
+.collection-equipment-back{display:block;width:max-content;min-height:44px;padding:10px 16px;margin:7px 0 12px;border:1px solid #88b6a6;border-radius:12px;background:#284b60;color:#fff6db;font-size:14px;font-weight:900;cursor:pointer}
+.collection-equipment-back:focus-visible{outline:3px solid #f7cf7d;outline-offset:3px}
+
+#collection-view .collection-head{padding:7px 0 12px}
+#collection-view .collection-head .tiny-caps,
+#collection-view .collection-head>p,
+#collection-view .wallet-balance small{display:none}
+#collection-view .collection-head h1{font-size:clamp(25px,6vw,34px);margin:5px 0 10px}
+#collection-view .wallet-balance{padding:10px 14px}
+#collection-view .collection-grid{margin:12px 0 22px}
+#collection-view .catalog-card:not(.locked):not(.evolution-ready) .catalog-evolution{display:none}
+
+/* Optional achievements stay a single recognizable destination, not several
+   screens of text below the companion cards. */
+.collection-archive{margin:12px 0 32px;border:1px solid #789cac;border-radius:16px;background:#152c43;color:#ffebbe;overflow:hidden}
+.collection-archive>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:14px 17px;list-style:none;cursor:pointer;font-size:15px;font-weight:900}
+.collection-archive>summary::-webkit-details-marker{display:none}
+.collection-archive>summary span{font-size:21px;line-height:1}
+.collection-archive[open]>summary span{transform:rotate(45deg)}
+.collection-archive>summary:focus-visible{outline:3px solid #f1d389;outline-offset:-4px}
+.collection-archive[open]>.forest-treasures,
+.collection-archive[open]>.boss-medal-collection,
+.collection-archive[open]>.forest-journal,
+.collection-archive[open]>.phrase-head,
+.collection-archive[open]>.phrase-grid{margin-left:12px;margin-right:12px}
+
+/* Gacha card hierarchy: money -> summon -> optional sale -> equipment.
+   Loot moves ahead of the draw only when there is actually something to sell. */
+#collection-shop{display:flex;flex-direction:column;gap:11px;margin:5px 0 16px;padding:16px;scroll-margin-top:8px}
+#collection-shop>.shop-heading{order:0}
+#collection-shop>.shop-heading h2{margin:0;font-size:clamp(25px,6vw,32px);color:#fff2c7}
+#collection-shop>.shop-wallet{order:1;margin:0}
+#collection-shop>.shop-gacha{order:2;margin:0}
+#collection-shop>.shop-bag{order:3;margin:0}
+#collection-shop>.shop-open-inventory{order:4;margin:0;min-height:47px}
+#collection-shop>.shop-bag[data-has-loot="false"]{display:none}
+#collection-shop:has(.shop-bag[data-has-loot="true"])>.shop-bag{order:2}
+#collection-shop:has(.shop-bag[data-has-loot="true"])>.shop-gacha{order:3}
+#collection-shop .shop-wallet{padding:9px 13px;justify-content:space-between}
+#collection-shop .shop-wallet strong{font-size:25px}
+#collection-shop .shop-wallet small{font-size:11px}
+#collection-shop .shop-gacha{display:flex;flex-direction:column;padding:12px;gap:9px}
+#collection-shop .shop-gacha>.shop-section-heading{display:none}
+#collection-shop .shop-gacha>.summon-banner{order:0;margin:0;height:clamp(140px,22vw,190px)}
+#collection-shop .shop-gacha>.shop-draw-options{order:1;margin:0}
+#collection-shop .shop-gacha>.shop-next-adventure{order:2;margin:0}
+#collection-shop .shop-gacha>.shop-collection-track{order:3;margin:0}
+#collection-shop .shop-gacha>.shop-gacha-result{order:4;margin:0}
+#collection-shop .shop-gacha>#shop-gacha-catalog{order:5;margin:0}
+#collection-shop .shop-gacha>#shop-gacha-details{order:6;margin:0}
+#collection-shop .shop-collection-track>small{display:none}
+#collection-shop .shop-open-inventory{background:#264c61;color:#fff5d6;border-color:#6f9eae}
+#collection-shop .shop-open-inventory span{background:#efce81;color:#213649}
+
+/* Optional game instructions are in the ? guide. Keep question, choices,
+   attack and weakness unobstructed during every battle turn. */
+.forest-attack-select .dungeon-choice-guide{display:none}
+
+/* Main mission is already a pictorial call to action: extra prose competes
+   with the button. The current destination stays in the progress meter. */
+.home-navigation-head>p,
+.home-feature-content>p,
+.home-feature-progress,
+.home-navigation-grid.home-main-actions .home-navigation-copy small{display:none!important}
+.home-navigation-head{margin-bottom:8px!important}
+.home-feature-content h2{margin-top:6px!important;margin-bottom:14px!important}
+.home-feature{min-height:0}
+.home-feature-cta{font-size:clamp(14px,3vw,17px)}
+
+@media(max-width:600px){
+ #collection-shop{padding:12px;gap:9px}
+ #collection-shop .shop-gacha{padding:9px}
+ #collection-shop .shop-gacha>.summon-banner{height:150px}
+ .collection-archive>summary{font-size:13px;padding:12px}
+ .home-navigation-grid.home-main-actions .home-navigation-tile{min-height:61px}
+ .home-navigation-head h1{font-size:25px!important}
+}

@@ -69,7 +69,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
  const menu=document.createElement('section');
  menu.className='home-navigation';menu.id='home-navigation';
  const head=document.createElement('div');head.className='home-navigation-head';
- head.innerHTML='<span class="tiny-caps">ADVENTURE BASE · 冒険の拠点</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1><p>知っている英語を、話せる英語に。仲間を育てて、まだ見ぬ世界へ。</p>';
+ head.innerHTML='<span class="tiny-caps">ADVENTURE BASE</span><h1><span class="home-title-phrase">英語で戦って、</span><em class="home-title-phrase">仲間と冒険へ。</em></h1>';
  const chapter=document.createElement('div');chapter.className='home-chapter-status';
  chapter.innerHTML='<span class="home-chapter-label">CURRENT STORY <b id="home-chapter-counter">01 / 10</b></span><strong id="home-chapter-area">緑風の森</strong><div class="home-chapter-progress" role="meter" aria-label="攻略済みエリアの割合" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="home-chapter-progress"></span></div>';
  // Optional lower-motion UI for iPhone users; CSS still honors system
@@ -91,7 +91,7 @@ export function setupHomeNavigation({home,startMode,showCollection,onHuntTarget}
  applyMotion();head.append(motionToggle);
  const feature=document.createElement('section');feature.className='home-feature';
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
- <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2><p>英語で攻撃して、ボスを倒せばクリア。<br>まずは森の入口から！</p>
+ <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
  <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-formation-link" data-feature-formation hidden>仲間を編成して出発</button><button type="button" class="home-world-link home-armory-link" data-feature-armory>武器ガチャ</button><button type="button" class="home-world-link" data-feature-worlds>エリア・出撃設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;

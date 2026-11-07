@@ -22,7 +22,7 @@ export const SUMMON_TIMINGS=Object.freeze({
 const rarityOrder=['common','rare','epic','legend'];
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
-export function createGachaCinematic({onEquip,onPlayWithWeapon,onRepeat,onRepeatTen}){
+export function createGachaCinematic({onEquip,onShowEquipment,onPlayWithWeapon,onRepeat,onRepeatTen}){
  let root=null,active=null,previousFocus=null;
  let soundEnabled=false,audioContext=null;
  let lastTurnCue=0;
@@ -125,7 +125,7 @@ export function createGachaCinematic({onEquip,onPlayWithWeapon,onRepeat,onRepeat
   });
   root.querySelector('#summon-equip').addEventListener('click',()=>{
    if(!active||root.dataset.phase!=='reveal')return;
-   if(onEquip(active.weapon)){close();document.querySelector('#collection-weapons')?.scrollIntoView({block:'start',behavior:'instant'});}
+   if(onEquip(active.weapon)){close();onShowEquipment?.();}
   });
   root.querySelector('#summon-equip-play').addEventListener('click',()=>{
    if(!active||root.dataset.phase!=='reveal'||active.results)return;
@@ -138,7 +138,7 @@ export function createGachaCinematic({onEquip,onPlayWithWeapon,onRepeat,onRepeat
    if(!button||!active?.results||root.dataset.phase!=='reveal')return;
    const item=active.results[Number(button.dataset.batchEquip)];
    if(item&&onEquip(item.weapon)){
-    close();document.querySelector('#collection-weapons')?.scrollIntoView({block:'start',behavior:'instant'});
+    close();onShowEquipment?.();
    }
   });
   root.querySelector('#summon-repeat').addEventListener('click',()=>{

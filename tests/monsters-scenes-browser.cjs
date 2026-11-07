@@ -58,6 +58,10 @@ const path=require('node:path');
       // without scrolling past the armory or forty-three hidden silhouettes.
       await page.locator('#game-tabs [data-game-tab="party"]').click();
       assert.equal(await page.locator('[data-open-monster]').count(),1,`${width}: party shows owned companions by default`);
+      assert.equal(await page.locator('#collection-shop').isVisible(),false,
+        `${width}: the companion tab is not preceded by the entire gacha`);
+      assert.equal(await page.locator('#collection-weapons').isVisible(),false,
+        `${width}: equipment is a separate one-tap destination`);
       assert.equal(await page.locator('[data-catalog-filter="owned"]').getAttribute('aria-pressed'),'true');
       await page.waitForFunction(()=>{
         const bounds=document.querySelector('.collection-sortbar').getBoundingClientRect();
@@ -74,6 +78,9 @@ const path=require('node:path');
       assert.ok(await page.locator('#collection-weapons').evaluate(el=>{
         const bounds=el.getBoundingClientRect();return bounds.top>=0&&bounds.top<window.innerHeight*.65;
       }),`${width}: party can still reach equipment with one tap`);
+      await page.locator('#collection-equipment-back').click();
+      assert.equal(await page.locator('#collection-weapons').isVisible(),false,
+        `${width}: equipment has an obvious return to the roster`);
       await page.locator('[data-catalog-filter="all"]').click();
       assert.equal(await page.locator('[data-open-monster]').count(),44,'Full discovery catalog remains available');
       await page.locator('[data-catalog-filter="owned"]').click();
@@ -105,8 +112,11 @@ const path=require('node:path');
         'Removed branching story targets must not clutter a fresh save');
       assert.equal(await page.locator('#forest-story-archive-heading').isVisible(),false);
       assert.equal(await page.locator('#forest-journal-badges .forest-journal-badge').count(),6);
+      assert.equal(await page.locator('#collection-archive').getAttribute('open'),null,
+        'Achievements and detailed learning records start folded');
+      await page.locator('#collection-archive summary').click();
       assert.match(await page.locator('#forest-journal-badges').innerText(),/三世界の踏破者/);
-      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').innerText(),/Lv\.5 · ボス 1\/1 · あと280 XP/);
+      assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').textContent(),/Lv\.5 · ボス 1\/1 · あと280 XP/);
       await noOverflow(page,`${width} catalog`);
       await page.waitForTimeout(300); // Let the entry fade finish before visual QA.
       await page.screenshot({path:path.join(shots,`catalog-${engine}-${width}.png`),fullPage:true});

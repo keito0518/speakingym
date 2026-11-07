@@ -293,7 +293,7 @@ const path=require('node:path');
     const {context:quickContext,page:quickPage}=await boot(390);
     assert.equal(await quickPage.locator('#home-next-quest').isVisible(),false,
       'A first-time player gets just one prominent adventure choice, not a competing lesson CTA');
-    assert.match(await quickPage.locator('#home-feature-progress').innerText(),/最初の目的地「森の入口」/);
+    assert.match(await quickPage.locator('#home-feature-progress').textContent(),/最初の目的地「森の入口」/);
     await quickPage.locator('[data-feature-dungeon]').click();
     assert.equal(await quickPage.locator('#play-view').isVisible(),true,
       'Main CTA enters the actual adventure in one tap, bypassing the area catalogue');
@@ -479,8 +479,8 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('[data-home-page="forest"]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-menu-art svg').count(),1);
     assert.match(await menuPage.locator('.home-feature h2').innerText(),/English\s*ダンジョン/);
-    assert.match(await menuPage.locator('.home-navigation-head p').innerText(),/知っている英語を、話せる英語に/,
-      'The first impression should explain the actual learning benefit beyond being a monster game');
+    assert.equal(await menuPage.locator('.home-navigation-head>p').count(),0,
+      'A clear primary adventure button replaces introductory exposition');
     assert.equal(await menuPage.locator('[data-feature-dungeon]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-feature-practice').isVisible(),true,'First-time visitors see a practice shortcut');
     assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),1,'Only the one unlocked starter companion walks');
@@ -633,7 +633,7 @@ const path=require('node:path');
         localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
       });
       await progressPage.reload();
-      assert.match(await progressPage.locator('#home-feature-progress').innerText(),/8\/10 エリア攻略.*星屑の回廊/);
+      assert.match(await progressPage.locator('#home-feature-progress').textContent(),/8\/10 エリア攻略.*星屑の回廊/);
       assert.match(await progressPage.locator('[data-feature-dungeon]').innerText(),/つづきから冒険/);
       await enterHomePanel(progressPage,'forest');
       assert.match(await progressPage.locator('#dungeon-next-area').innerText(),/星屑の回廊/);
@@ -645,7 +645,7 @@ const path=require('node:path');
         localStorage.setItem(STORAGE_KEY,JSON.stringify(saved));
       });
       await progressPage.reload();
-      assert.match(await progressPage.locator('#home-feature-progress').innerText(),/全10エリア攻略/);
+      assert.match(await progressPage.locator('#home-feature-progress').textContent(),/全10エリア攻略/);
       assert.match(await progressPage.locator('[data-feature-dungeon]').innerText(),/もう一度冒険/);
       await progressContext.close();
     }
@@ -1512,6 +1512,7 @@ const path=require('node:path');
         'Opening a medal rematch must not award extra XP');
       await leavePlay(forestPage);
       await forestPage.locator('[data-home-page="collection"]').click();
+      await forestPage.locator('#collection-archive summary').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Sunleaf/);
       assert.match(await forestPage.locator('#forest-journal-summary').innerText(),/森 1\/4.*称号 1\/6/);
       assert.match(await forestPage.locator('#forest-journal-badges .earned').innerText(),/森の一歩/,
@@ -1520,6 +1521,7 @@ const path=require('node:path');
         'Removed branching events are kept only as an archive for older saves');
       await forestPage.reload();
       await forestPage.locator('[data-home-page="collection"]').click();
+      await forestPage.locator('#collection-archive summary').click();
       assert.match(await forestPage.locator('#forest-collection-relics').innerText(),/Sunleaf/);
       await forestPage.locator('#collection-home').click();
       assert.match(await forestPage.locator('#forest-home-progress').innerText(),/森 1\/4/);

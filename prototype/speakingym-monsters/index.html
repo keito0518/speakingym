@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="./gacha-storybook.css">
   <link rel="stylesheet" href="./equipment-inventory.css">
   <link rel="stylesheet" href="./weapon-battle-effects.css">
+  <link rel="stylesheet" href="./focused-game-ui.css">
   <script src="../../analytics-config.js"></script>
   <script type="module" src="./monsters.js"></script>
 </head>
@@ -280,8 +281,9 @@
       </section>
 
       <section id="collection-view" class="view" hidden>
-        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><span class="tiny-caps">YOUR LITTLE WORLD</span><h1>ふしぎな、なかまたち。</h1><p>英語を話せるようになるほど、出会える仲間が増えていく。</p><div class="wallet-balance"><span>育成に使えるXP</span><strong id="collection-wallet">0 XP</strong><small>問題でためたXPは、仲間をタップして、育成画面であげられます。</small></div></div>
+        <div class="collection-head"><button class="back-button" id="collection-home">← ホームへ</button><h1>仲間</h1><div class="wallet-balance"><span>育成XP</span><strong id="collection-wallet">0 XP</strong></div></div>
         <section id="collection-shop" class="collection-shop" aria-label="戦利品の売却と武器ガチャ"></section>
+        <button type="button" id="collection-equipment-back" class="collection-equipment-back" hidden>← 仲間に戻る</button>
         <section id="collection-weapons" class="collection-weapons" aria-label="武器の装備と変更"></section>
         <div class="collection-sortbar" aria-label="仲間図鑑の絞り込み">
           <p id="collection-progress" aria-live="polite">仲間 0 / 44体</p>
@@ -291,9 +293,11 @@
             <button type="button" data-catalog-filter="undiscovered" aria-pressed="false">未所持</button>
             <button type="button" data-catalog-filter="rare" aria-pressed="false">レア</button>
           </div>
-          <button type="button" id="collection-open-equipment" class="collection-roster-equipment">武器・装備を変更する</button>
+          <button type="button" id="collection-open-equipment" class="collection-roster-equipment">武器・装備 ›</button>
         </div>
         <div id="collection-grid" class="collection-grid"></div>
+        <details id="collection-archive" class="collection-archive">
+          <summary>冒険の記録・称号・英語の成長 <span aria-hidden="true">＋</span></summary>
         <section class="forest-treasures" aria-labelledby="forest-treasures-title">
           <div class="forest-treasures-heading"><span class="tiny-caps">FOREST EXPEDITION</span><h2 id="forest-treasures-title">森で見つけた宝物</h2><p id="forest-collection-count">まだ見つけていないよ。</p></div>
           <div id="forest-collection-relics" class="forest-collection-relics"></div>
@@ -316,6 +320,7 @@
         </section>
         <div class="section-head phrase-head"><div><span class="tiny-caps">LANGUAGE GROWTH</span><h2>ことばの成長記録</h2></div></div>
         <div id="phrase-grid" class="phrase-grid"></div>
+        </details>
       </section>
       <section id="detail-view" class="view character-view" hidden aria-label="モンスターの詳細">
         <button type="button" id="detail-back" class="back-button">← なかま・図鑑へ</button>

@@ -30,6 +30,10 @@ const {chromium,webkit}=require('playwright');
   assert.match(await page.locator('[data-feature-armory]').innerText(),/今すぐ引ける/,'The hub should celebrate when enough earned G is ready');
   await page.locator('[data-feature-armory]').click();
   assert.equal(await page.locator('#collection-shop').isVisible(),true);
+  assert.equal(await page.locator('#collection-weapons').isVisible(),false,
+   'Gacha draws stay in focus until equipment is explicitly opened');
+  assert.equal(await page.locator('#collection-archive').isVisible(),false,
+   'The gacha is not followed by the entire game compendium');
   assert.match(await page.locator('#shop-coins').innerText(),/240 G/);
   assert.equal(await page.locator('#shop-draw').isEnabled(),true);
   assert.equal(await page.locator('#shop-gacha-details').getAttribute('open'),null,'Odds stay collapsed until requested');
@@ -73,6 +77,9 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#equipment-weapon-choice option').count(),2);
   await page.locator('#summon-equip').click();
   assert.equal(await page.locator('#summon-screen').isHidden(),true);
+  assert.equal(await page.locator('#collection-weapons').isVisible(),true,
+   'Equipping after a draw opens the dedicated equipment screen');
+  assert.equal(await page.locator('#collection-shop').isVisible(),false);
   assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
   assert.equal(await page.locator('.equipment-monster-preview [data-equipped-weapon="eternal_crest"]').count(),1,
    'The equipped weapon must be rendered on the actual character');
@@ -91,11 +98,12 @@ const {chromium,webkit}=require('playwright');
    'Re-equipping from the image card should restore the combat item');
   await assertNoOverflow('equipped forge');
 
+  await page.locator('#collection-equipment-back').click();
   await page.locator('#shop-sell-all').click();
   assert.match(await page.locator('#shop-coins').innerText(),/230 G/);
   assert.equal(await page.locator('#shop-sell-all').isDisabled(),true);
   assert.equal(await page.locator('[data-sell-treasure]').count(),0);
-  await page.locator('#collection-home').click();
+  await page.locator('#game-tabs [data-game-tab="home"]').click();
   assert.equal(await page.locator('#hero-monster-art [data-equipped-weapon="eternal_crest"]').count(),1,
    'Equipment preview must match the home character');
   assert.match(await page.locator('[data-feature-armory]').innerText(),/今すぐ引ける/,'The hub projection must refresh after trading loot');
@@ -106,6 +114,9 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#collection-shop').isVisible(),true);
   assert.equal(await page.locator('#game-tabs [data-game-tab="forge"]').getAttribute('aria-current'),'page');
   await page.locator('#game-tabs [data-game-tab="party"]').click();
+  assert.equal(await page.locator('#collection-weapons').isVisible(),false,
+    'The party tab shows companions first, without an equipment wall');
+  await page.locator('#collection-open-equipment').click();
   assert.equal(await page.locator('#collection-weapons').isVisible(),true);
   assert.equal(await page.locator('#game-tabs [data-game-tab="party"]').getAttribute('aria-current'),'page');
   await page.locator('#game-tabs [data-game-tab="review"]').click();

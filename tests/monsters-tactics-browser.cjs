@@ -76,8 +76,8 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('#forest-formation-status').innerText(),/仲間が増えたら/);
      await page.locator('#forest-explore-continue').click();
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Player selects the attack type before seeing a question');
-     assert.match(await page.locator('.forest-attack-select > strong').innerText(),/① まず攻撃を選ぼう/,
-       'The first fight explains the first action without a blocking tutorial');
+     assert.match(await page.locator('.forest-attack-select > strong').innerText(),/攻撃を選ぶ/,
+       'The attack buttons must communicate the first action without a paragraph');
      assert.match(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),/^(opening|idle)$/,
        'The monster scene is ready before the player chooses an attack');
      assert.equal(await page.locator('#play-card').isVisible(),false,'No arbitrary question is shown before type selection');
@@ -378,6 +378,7 @@ const assert=require('node:assert/strict');
    await gearPage.reload({waitUntil:'networkidle'});
    assert.match(await gearPage.locator('#hero-weapon-summary').innerText(),/旅立ちの木剣.*攻撃\+1/);
    await gearPage.getByRole('button',{name:'なかま・図鑑',exact:true}).click();
+   await gearPage.locator('#collection-open-equipment').click();
    assert.equal(await gearPage.locator('#equipment-filters').getAttribute('open'),null,
      'Inventory filters start folded to keep the item list uncluttered');
    await gearPage.locator('#equipment-filters summary').click();
@@ -415,6 +416,7 @@ const assert=require('node:assert/strict');
    });
    await traitPage.reload({waitUntil:'networkidle'});
    await traitPage.getByRole('button',{name:'なかま・図鑑',exact:true}).click();
+   await traitPage.locator('#collection-open-equipment').click();
    assert.match(await traitPage.locator('#equipment-weapon-status').innerText(),/レア.*Speakを自力正解で追撃＋1/);
    await traitPage.reload({waitUntil:'networkidle'});
    await traitPage.locator('[data-feature-worlds]').click();
@@ -813,12 +815,12 @@ const assert=require('node:assert/strict');
    await counterPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
    await counterPage.locator('#start-forest-tactics').click();
    await counterPage.locator('#forest-explore-continue').click();
-   assert.match(await counterPage.locator('.forest-attack-select').innerText(),/リスニングで攻撃するとダメージアップ！/);
+   assert.match(await counterPage.locator('.forest-attack-select').innerText(),/攻撃を選ぶ/);
    assert.equal(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('data-weak'),'true','Enemy weakness must be highlighted on the actionable attack button');
    assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('aria-label'),/敵の弱点・ダメージアップ/);
-   assert.match(await counterPage.locator('.forest-attack-select .dungeon-choice-guide').innerText(),/迷ったら「リスニング」/,
-     'The first tactical decision should identify a single recommended action');
-   assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"] small').innerText(),/おすすめ/);
+   assert.equal(await counterPage.locator('.forest-attack-select .dungeon-choice-guide').count(),0,
+     'Weakness is visible directly on the attack button without an explanatory paragraph');
+   assert.match(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"] small').innerText(),/WEAK/);
    const attackButtons=await counterPage.locator('.forest-attack-select [data-tactic-kind]').evaluateAll(buttons=>buttons.map(button=>({
      kind:button.dataset.tacticKind,width:Math.round(button.getBoundingClientRect().width),height:Math.round(button.getBoundingClientRect().height)
    })));
