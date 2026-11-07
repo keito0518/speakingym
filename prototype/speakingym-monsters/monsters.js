@@ -3000,7 +3000,8 @@ function renderEquipmentCollection(){
   return `<article class="equipment-item${isEquipped?' is-equipped':''}" data-item-id="${weapon.id}" data-rarity="${weapon.rarity}">
    <div class="equipment-item-image" aria-hidden="true">${summonWeaponArtwork({...weapon,awakeningRank:rank},{instance:`inventory-${weapon.id}`,decorative:true})}</div>
    <div class="equipment-item-details"><span class="equipment-item-rarity">${WEAPON_RARITY_LABELS[weapon.rarity]}${weapon.shape?` · ${WEAPON_SHAPE_LABELS[weapon.shape]||'武器'}`:''}${rank?` · 共鳴 ${rank}/3`:''}</span><h3>${escapeHtml(weapon.name)}</h3>
-    <dl><div><dt>攻撃</dt><dd>＋${weaponAttack(save,weapon)}</dd></div><div><dt>追加効果</dt><dd>${escapeHtml(weaponEffectDescription(save,weapon))}</dd></div>${weaponTechniqueDescription(weapon,save)?`<div><dt>武器技</dt><dd>${escapeHtml(weaponTechniqueDescription(weapon,save))}</dd></div>`:''}</dl>
+    <dl><div><dt>攻撃</dt><dd>＋${weaponAttack(save,weapon)}</dd></div><div><dt>追加効果</dt><dd>${escapeHtml(weaponEffectDescription(save,weapon))}</dd></div></dl>
+    ${weaponTechniqueDescription(weapon,save)?`<details class="equipment-item-technique"><summary>武器技</summary><p>${escapeHtml(weaponTechniqueDescription(weapon,save))}</p></details>`:''}
     <small>${weapon.source==='gacha'?'ガチャ限定':'冒険で入手'}</small>
    </div>
    <button type="button" data-equip-weapon="${weapon.id}" ${isEquipped?'disabled':''} aria-label="${escapeHtml(weapon.name)}を${isEquipped?'装備中':'装備する'}">${isEquipped?'装備中':'装備する'}</button>
