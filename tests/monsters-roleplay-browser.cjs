@@ -215,6 +215,7 @@ const assert=require('node:assert/strict');
    }
    assert.match(await page.locator('#result-title').innerText(),/会話完了/);
    assert.equal(await page.locator('.roleplay-recap-turn').count(),3);
+   await page.locator('#result-detail-panel > summary').click();
    await page.locator('#roleplay-transfer > summary').click();
    assert.match(await page.locator('.roleplay-transfer-scenes').innerText(),
      scene==='hotel'?/宿泊予約.*美容室/s:/crowded stall.*pizza restaurant/s);
