@@ -597,6 +597,8 @@ function renderHome() {
   $('#retention-stable-label').textContent=`7日後チェック達成 ${recall.stable.length}問`;
   $('#retention-transfer-label').textContent=`別の場面で応用 ${recallPlan.transferIds.length}問`;
   $('#start-retention-review').disabled=!recall.due.length;
+  $('.retention-hub').dataset.hasHistory=String(Object.keys(save.retention||{}).length>0);
+  $('.retention-hub').dataset.hasDue=String(recall.due.length>0);
   $('#start-retention-review').textContent=`今日の定着チェック（${recall.due.length}問）`;
   $('#retention-next').textContent=recall.due.length
     ?`リスニングは意味の選択だけ。${recallPlan.transferIds.length?'覚えた表現は違う場面でも使ってみよう。':'ヒントなしで再挑戦しよう。'} 解説は自分のペースで読めるよ。`
@@ -604,6 +606,7 @@ function renderHome() {
     :'最初の問題を解くと、翌日の定着チェックがここに届くよ。';
   const bookmarked=savedReviewQueue(save);
   const needsReview=bookmarked.filter(item=>item.due);
+  $('.saved-review').dataset.hasSaved=String(bookmarked.length>0);
   $('#start-saved-review').disabled=!bookmarked.length;
   $('#start-saved-review').textContent=`保存した問題を解く（${bookmarked.length}問）`;
   $('#start-due-saved-review').disabled=!needsReview.length;
@@ -661,6 +664,7 @@ function renderHome() {
   $('#stat-independent').innerHTML = `${summary.independent}<span> / ${summary.total}</span>`;
   $('#stat-review').textContent = summary.reviewCount;
   const journal=reviewOverview(save);
+  $('.review-journal').dataset.hasHistory=String((save.totalAnswers||0)>0);
   $('#review-due-count').textContent=String(journal.due.length);
   $('#review-upcoming-count').textContent=String(journal.upcoming.length);
   $('#review-mastered-count').textContent=String(journal.mastered);
