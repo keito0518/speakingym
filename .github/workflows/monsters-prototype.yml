@@ -32,7 +32,7 @@ jobs:
           node --check tests/monsters-weapon-motion-browser.cjs
           node --check prototype/speakingym-monsters/weapon-battle-sound.js
       - name: Curriculum, mastery and reward tests
-        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs tests/monsters-formation.test.mjs tests/monsters-economy.test.mjs tests/monsters-new-companions.test.mjs tests/monsters-save-recovery.test.mjs
+        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs tests/monsters-formation.test.mjs tests/monsters-economy.test.mjs tests/monsters-new-companions.test.mjs tests/monsters-save-recovery.test.mjs tests/monsters-adventure-titles.test.mjs
       - name: Install Playwright
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - uses: actions/cache@v4

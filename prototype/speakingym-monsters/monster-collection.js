@@ -44,13 +44,18 @@ function unlockText(c,save){
  return c.forestAreas?`${language} · 森の攻略 ${p.areaCount}/${p.requiredAreas}エリア${recall}。すべて達成で仲間になるよ。`:`${language} で出会えるよ。`;
 }
 const chapterMarks=Object.freeze([
- {name:'森の一歩',goal:'最初のエリアを攻略',condition:f=>FOREST_AREAS.some(area=>f.completedAreas.includes(area.id))},
- {name:'分かれ道の探検家',goal:'両方の道を歩く',condition:f=>f.routes.length===2},
- {name:'物語の収集家',goal:'異なる4つのイベントを記録',condition:f=>new Set(f.journal.map(x=>x.eventId)).size>=4},
- {name:'森の守護者',goal:'4エリアを攻略',condition:f=>FOREST_AREAS.every(area=>f.completedAreas.includes(area.id))},
- {name:'冒険の語り部',goal:'8つのイベントすべてを記録',condition:f=>new Set(f.journal.map(x=>x.eventId)).size>=8},
- {name:'もうひとつの物語',goal:'全16種類の選択を見届ける',condition:f=>f.journal.length===16}
+ {name:'森の一歩',goal:'森の1章を攻略',condition:f=>FOREST_AREAS.some(area=>f.completedAreas.includes(area.id))},
+ {name:'森の探検家',goal:'森の2章を攻略',condition:f=>FOREST_AREAS.filter(area=>f.completedAreas.includes(area.id)).length>=2},
+ {name:'森の守護者',goal:'森の4章をすべて攻略',condition:f=>FOREST_AREAS.every(area=>f.completedAreas.includes(area.id))},
+ {name:'雪の旅人',goal:'雪の街の2章を攻略',condition:f=>CITY_AREAS.filter(area=>f.completedAreas.includes(area.id)).length>=2},
+ {name:'遺跡の探究者',goal:'星影の遺跡の1章を攻略',condition:f=>RUINS_AREAS.some(area=>f.completedAreas.includes(area.id))},
+ {name:'三世界の踏破者',goal:'全10章を攻略',condition:f=>[...FOREST_AREAS,...CITY_AREAS,...RUINS_AREAS].every(area=>f.completedAreas.includes(area.id))}
 ]);
+// Titles follow the current, single-route adventure. Legacy branching choices
+// remain in old saves as a readable archive, but cannot gate new achievements.
+export function adventureTitleProgress(forest){
+ return chapterMarks.map(mark=>({name:mark.name,goal:mark.goal,earned:mark.condition(forest)}));
+}
 function powerFor(id) {
   const skill=allySkill(id),specialty=BATTLE_LABELS[allyAffinity(id).strong];
   const legacy=id==='medamago'?' 従来の森モードでは進化後のDouble Yolkも使える。':
@@ -79,28 +84,33 @@ export function createCollectionViews({getSave, persist, showView, stopAudio}) {
       }).join('');
       return `<article class="boss-medal-collection-area"><strong>${html(area.name)}</strong><div class="boss-medal-slots">${levels}</div></article>`;
     }).join('');
-    const seenEvents=new Set(forest.journal.map(row=>row.eventId));
-    const earnedBadges=chapterMarks.filter(mark=>mark.condition(forest));
+    const legacyEvents=new Set(forest.journal.map(row=>row.eventId));
+    const titles=adventureTitleProgress(forest);
+    const earnedBadges=titles.filter(mark=>mark.earned);
     const forestCount=FOREST_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
     const cityCount=CITY_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
     const ruinsCount=RUINS_AREAS.filter(area=>forest.completedAreas.includes(area.id)).length;
     const cityOpen=new Set(unlockedCityAreas(save).map(area=>area.id));
     const ruinsOpen=new Set(unlockedRuinsAreas(save).map(area=>area.id));
-    $('#forest-journal-summary').textContent=`森 ${forestCount}/4 · 街 ${cityCount}/4 · 遺跡 ${ruinsCount}/2エリア · イベント ${seenEvents.size}/8種類 · 称号 ${earnedBadges.length}/6`;
+    $('#forest-journal-summary').textContent=`森 ${forestCount}/4 · 街 ${cityCount}/4 · 遺跡 ${ruinsCount}/2エリア · 称号 ${earnedBadges.length}/6${legacyEvents.size?` · 旧探索記録 ${legacyEvents.size}件`:''}`;
     $('#forest-journal-areas').innerHTML=FOREST_AREAS.map((area,index)=>
       `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">CHAPTER ${index+1}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':index<=forest.completedAreas.length?'未攻略':'未解放'}</span></article>`).join('');
     $('#city-journal-areas').innerHTML=CITY_AREAS.map((area,index)=>
       `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">CITY ${String(index+1).padStart(2,'0')}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':cityOpen.has(area.id)?'挑戦可能':'未解放'}</span></article>`).join('');
     $('#ruins-journal-areas').innerHTML=RUINS_AREAS.map((area,index)=>
       `<article class="forest-journal-area ${forest.completedAreas.includes(area.id)?'is-cleared':'is-locked'}"><span class="journal-number">RUINS ${String(index+1).padStart(2,'0')}</span><strong>${html(area.name)}</strong><small>${html(area.goal)}</small><span class="journal-status">${forest.completedAreas.includes(area.id)?'攻略済み':ruinsOpen.has(area.id)?'挑戦可能':'未解放'}</span></article>`).join('');
-    $('#forest-journal-events').innerHTML=FOREST_AREAS.flatMap(area=>FOREST_ROUTES.map(route=>{
+    const archivedStories=FOREST_AREAS.flatMap(area=>FOREST_ROUTES.map(route=>{
       const event=FOREST_EVENTS[area.id][route.id], choices=forest.journal.filter(x=>x.eventId===event.id);
-      const title=seenEvents.has(event.id)?event.title:'未発見の物語';
+      if(!choices.length)return '';
+      const title=event.title;
       const revealed=choices.map(entry=>event.options.find(opt=>opt.id===entry.choiceId)).filter(Boolean);
       return `<article class="forest-journal-entry ${revealed.length?'is-found':'is-hidden'}"><span class="journal-number">${html(area.name)} · ${html(route.name)}</span><strong>${html(title)}</strong><div class="forest-journal-choices">${revealed.length?revealed.map(choice=>`<p><b>${html(choice.memento)}</b><span>${html(choice.outcome)}</span></p>`).join(''):'<p>この道を冒険して、物語を発見しよう。</p>'}</div><small>選択 ${revealed.length}/2</small></article>`;
-    })).join('');
-    $('#forest-journal-badges').innerHTML=chapterMarks.map(mark=>
-      `<article class="forest-journal-badge ${mark.condition(forest)?'earned':'locked'}"><strong>${html(mark.name)}</strong><span>${html(mark.goal)}</span><small>${mark.condition(forest)?'獲得済み':'未達成'}</small></article>`).join('');
+    })).filter(Boolean);
+    $('#forest-journal-events').innerHTML=archivedStories.join('');
+    $('#forest-journal-events').hidden=archivedStories.length===0;
+    $('#forest-story-archive-heading').hidden=archivedStories.length===0;
+    $('#forest-journal-badges').innerHTML=titles.map(mark=>
+      `<article class="forest-journal-badge ${mark.earned?'earned':'locked'}"><strong>${html(mark.name)}</strong><span>${html(mark.goal)}</span><small>${mark.earned?'獲得済み':'未達成'}</small></article>`).join('');
     const ownedCount=MONSTERS.filter(c=>save.ownedMonsters.includes(c.id)).length;
     const catalogVisible=MONSTERS.filter(c=>catalogFilter==='all'||
       (catalogFilter==='owned'&&save.ownedMonsters.includes(c.id))||

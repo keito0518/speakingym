@@ -93,8 +93,11 @@ const path=require('node:path');
       assert.equal(await page.locator('[data-open-monster]').count(),44);
       assert.equal(await page.locator('#collection-grid .word-row, #collection-grid [data-feed-monster]').count(),0);
       assert.equal(await page.locator('#forest-journal-areas .forest-journal-area').count(),4);
-      assert.equal(await page.locator('#forest-journal-events .forest-journal-entry').count(),8);
+      assert.equal(await page.locator('#forest-journal-events .forest-journal-entry').count(),0,
+        'Removed branching story targets must not clutter a fresh save');
+      assert.equal(await page.locator('#forest-story-archive-heading').isVisible(),false);
       assert.equal(await page.locator('#forest-journal-badges .forest-journal-badge').count(),6);
+      assert.match(await page.locator('#forest-journal-badges').innerText(),/三世界の踏破者/);
       assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').innerText(),/Lv\.5 · ボス 1\/1 · あと280 XP/);
       await noOverflow(page,`${width} catalog`);
       await page.waitForTimeout(300); // Let the entry fade finish before visual QA.
