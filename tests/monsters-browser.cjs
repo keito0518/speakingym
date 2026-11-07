@@ -795,6 +795,16 @@ const path=require('node:path');
     assert.equal(await listenPage.locator('#play-card').getAttribute('data-prompt-id'),'late-call');
     assert.equal(await listenPage.locator('#answer-area').isVisible(),false);
     assert.equal(await listenPage.locator('#listening-response').isVisible(),false);
+    const audioRecovery=listenPage.locator('.listening-fallback-options');
+    assert.equal(await audioRecovery.evaluate(el=>el.open),false,
+      'Audio troubleshooting must not obscure the initial listening task');
+    assert.equal(await listenPage.locator('#listening-native-audio').isVisible(),false);
+    await audioRecovery.locator('summary').click();
+    assert.equal(await listenPage.locator('#listening-native-audio').isVisible(),true,
+      'Direct native player remains reachable when audio is unavailable');
+    assert.equal(await listenPage.locator('#reveal-transcript').isVisible(),true,
+      'Transcript fallback remains available, but counts as a hint');
+    await audioRecovery.locator('summary').click();
     const realAudio=listenPage.waitForResponse(response=>
       /\/audio\/listening\/late-call-[a-f0-9]{12}\.mp3$/.test(response.url())&&response.status()===200,
     {timeout:15000});
@@ -1899,7 +1909,9 @@ const path=require('node:path');
       'iPhone fallback must be present before a browser recognition failure');
     assert.equal(await iosPage.locator('#native-ios-dictation').evaluate(e=>e.tagName),'BUTTON');
     assert.equal(await iosPage.locator('#native-ios-dictation').getAttribute('type'),'button');
-    assert.match(await iosPage.locator('#speech-helper').innerText(),/「話す」はブラウザ音声認識/);
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/「話す」で録音/);
+    assert.equal(await iosPage.locator('#speech-alternatives').evaluate(el=>el.open),false,
+      'Alternative instructions must remain collapsed until needed');
     const iosContrast=await iosPage.evaluate(()=>{
       const helper=document.querySelector('#speech-helper');
       const field=document.querySelector('#spoken-answer');
