@@ -217,6 +217,9 @@ const path=require('node:path');
       assert.match(await page.locator('.training-level').innerText(),/Lv\.5/);
       assert.equal(await page.locator('#training-wallet').innerText(),'20 XP');
       assert.equal(await page.locator('[data-evolve-monster]').isEnabled(),true,'Boss mark and level are both required');
+      assert.match(await page.locator('.training-sheet > .training-next').first().innerText(),/進化の準備ができた/);
+      assert.equal(await page.locator('.training-feed').count(),0,
+        'Ready evolution takes the only main growth action; incidental XP cannot distract from it');
       assert.equal(await page.locator('[data-feed-amount="evolution"]').count(),0,'Reached levels must not offer another identical shortcut');
       await noOverflow(page,`${width} exact first evolution feed`);
       await context.close();
