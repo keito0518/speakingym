@@ -78,6 +78,10 @@ const path=require('node:path');
       assert.ok(await page.locator('#collection-weapons').evaluate(el=>{
         const bounds=el.getBoundingClientRect();return bounds.top>=0&&bounds.top<window.innerHeight*.65;
       }),`${width}: party can still reach equipment with one tap`);
+      assert.equal(await page.locator('.weapon-awakening').isVisible(),false,
+        `${width}: an empty weapon bag must not show awakening instructions`);
+      assert.equal(await page.locator('#equipment-go-gacha').isVisible(),true,
+        `${width}: an empty bag points to a useful next action`);
       await page.locator('#collection-equipment-back').click();
       assert.equal(await page.locator('#collection-weapons').isVisible(),false,
         `${width}: equipment has an obvious return to the roster`);

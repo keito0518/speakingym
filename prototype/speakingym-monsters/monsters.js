@@ -2887,6 +2887,7 @@ function renderEconomyShop(){
  const bag=save.treasureBag||{};
  const goods=TREASURES.filter(item=>bag[item.id]>0);
  const totalValue=treasureValue(save);
+ panel.dataset.needsSale=String((save.coins||0)<GACHA_COST&&totalValue>0);
  const nextGacha=summonProgress(save);
  const odds=gachaPoolSummary();
  const pity=summonPityProgress(save);
@@ -2907,6 +2908,13 @@ function renderEconomyShop(){
  <div class="shop-odds">${odds.map(item=>`<span data-tier="${item.rarity}">${WEAPON_RARITY_LABELS[item.rarity]} ${item.odds}%<small>${item.count}種</small></span>`).join('')}</div>
  <div class="shop-pity-tracks" aria-label="レアリティ確定までの最長回数"><div class="shop-pity-row"><div class="shop-pity-copy"><strong>RARE+ 確定</strong><span>最大あと ${pity.rare.remaining} 回 · ${pity.rare.current} / ${pity.rare.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="レア以上の確定までのガチャ記録" aria-valuemin="0" aria-valuemax="${pity.rare.limit}" aria-valuenow="${pity.rare.current}"><span style="width:${pity.rare.percent}%"></span></div></div><div class="shop-pity-row"><div class="shop-pity-copy"><strong>EPIC+ 確定</strong><span>最大あと ${pity.epic.remaining} 回 · ${pity.epic.current} / ${pity.epic.limit}</span></div><div class="shop-pity-meter" role="progressbar" aria-label="エピック以上の確定までのガチャ記録" aria-valuemin="0" aria-valuemax="${pity.epic.limit}" aria-valuenow="${pity.epic.current}"><span style="width:${pity.epic.percent}%"></span></div></div></div>
  <p class="shop-pity">早めにレア武器が出た場合は対応する確定カウントがリセットされます。重複すると20〜90 Gを返還し、欠片が1個増えます。欠片を1個入手した時点で色と追撃が変わり、覚醒すると次の変化を解放できます。</p><p>10連は単発10回と同じ抽選・確定カウントを使い、${GACHA_TEN_PULL_COST} Gを消費します。割引や別の確定枠はありません。</p><p>ゲーム内ゴールド専用。現金購入・課金ガチャ・換金はできません。装備によって英語の正誤判定・XP・ボスの必須3問は変わりません。</p></div></details></div>`;
+ // Visual order and keyboard/tab order must agree. Put the draw first when
+ // affordable; otherwise surface sellable loot before the disabled draw.
+ const needsSale=panel.dataset.needsSale==='true';
+ const priority=['.gacha-qa-notice','.shop-heading','.shop-wallet',
+  ...(needsSale?['.shop-bag','.shop-gacha']:['.shop-gacha','.shop-bag']),
+  '#shop-open-inventory'];
+ for(const selector of priority){const element=panel.querySelector(selector);if(element)panel.append(element);}
  panel.querySelector('#shop-gacha-details')?.addEventListener('toggle',event=>{shopInfoOpen=event.currentTarget.open;});
  panel.querySelector('#shop-gacha-catalog')?.addEventListener('toggle',event=>{shopCatalogOpen=event.currentTarget.open;});
  const commitResult=(next,successMessage)=>{
@@ -2967,6 +2975,7 @@ function renderEquipmentCollection(){
  const panel=$('#collection-weapons');
  const current=equippedWeapon(save);
  const inventory=filteredWeaponInventory(save);
+ panel.dataset.hasWeapons=String(inventory.length>0);
  const shown=filteredWeaponInventory(save,equipmentView);
  const awaken=current?awakeningProgress(save,current.id):null;
  const upcoming=current?nextWeaponResonancePreview(save,current.id):null;
@@ -3003,6 +3012,12 @@ function renderEquipmentCollection(){
  // Keep awakening beside the equipped item; a large inventory should never
  // force the player to scroll through every card to upgrade their weapon.
  panel.querySelector('.equipment-current')?.after(panel.querySelector('.weapon-awakening'));
+ if(!inventory.length){
+  const go=document.createElement('button');
+  go.type='button';go.id='equipment-go-gacha';go.className='equipment-empty-cta';go.textContent='武器ガチャへ ›';
+  go.addEventListener('click',openForge);
+  panel.querySelector('.equipment-item-list')?.append(go);
+ }
  panel.querySelector('#equipment-filters')?.addEventListener('toggle',event=>{
   // A rerender can detach this disclosure before its deferred toggle fires.
   // Ignore stale events instead of closing the freshly rendered filters.

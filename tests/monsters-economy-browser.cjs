@@ -34,6 +34,11 @@ const {chromium,webkit}=require('playwright');
    'Gacha draws stay in focus until equipment is explicitly opened');
   assert.equal(await page.locator('#collection-archive').isVisible(),false,
    'The gacha is not followed by the entire game compendium');
+  const gachaOrder=await page.locator('#collection-shop > *').evaluateAll(elements=>elements.map(el=>el.className));
+  assert.ok(gachaOrder.findIndex(name=>name.includes('shop-wallet'))<gachaOrder.findIndex(name=>name.includes('shop-gacha')),
+   'Current funds must appear before the draw');
+  assert.ok(gachaOrder.findIndex(name=>name.includes('shop-gacha'))<gachaOrder.findIndex(name=>name.includes('shop-bag')),
+   'A player who can already draw should not be forced past the treasure seller');
   assert.match(await page.locator('#shop-coins').innerText(),/240 G/);
   assert.equal(await page.locator('#shop-draw').isEnabled(),true);
   assert.equal(await page.locator('#shop-gacha-details').getAttribute('open'),null,'Odds stay collapsed until requested');

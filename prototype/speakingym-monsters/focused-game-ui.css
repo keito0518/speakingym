@@ -21,6 +21,12 @@ body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view 
 body:not([data-collection-focus="equipment"]) #collection-equipment-back {display:none!important}
 .collection-equipment-back{display:block;width:max-content;min-height:44px;padding:10px 16px;margin:7px 0 12px;border:1px solid #88b6a6;border-radius:12px;background:#284b60;color:#fff6db;font-size:14px;font-weight:900;cursor:pointer}
 .collection-equipment-back:focus-visible{outline:3px solid #f7cf7d;outline-offset:3px}
+#collection-weapons[data-has-weapons="false"] .weapon-awakening,
+#collection-weapons[data-has-weapons="false"] .equipment-select-sync{display:none}
+#collection-weapons .weapon-awakening>p{display:none}
+#collection-weapons .equipment-item-list-heading>span{display:none}
+.equipment-empty-cta{display:block;width:100%;min-height:48px;margin-top:15px;padding:12px 16px;border:1px solid #e4bc77;border-radius:12px;background:linear-gradient(#ffe4a1,#d6a95a);color:#312a21;font-weight:950;font-size:15px;cursor:pointer}
+.equipment-empty-cta:focus-visible{outline:3px solid #fff1ba;outline-offset:3px}
 
 #collection-view .collection-head{padding:7px 0 12px}
 #collection-view .collection-head .tiny-caps,
@@ -48,15 +54,12 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 /* Gacha card hierarchy: money -> summon -> optional sale -> equipment.
    Loot moves ahead of the draw only when there is actually something to sell. */
 #collection-shop{display:flex;flex-direction:column;gap:11px;margin:5px 0 16px;padding:16px;scroll-margin-top:8px}
-#collection-shop>.shop-heading{order:0}
 #collection-shop>.shop-heading h2{margin:0;font-size:clamp(25px,6vw,32px);color:#fff2c7}
-#collection-shop>.shop-wallet{order:1;margin:0}
-#collection-shop>.shop-gacha{order:2;margin:0}
-#collection-shop>.shop-bag{order:3;margin:0}
-#collection-shop>.shop-open-inventory{order:4;margin:0;min-height:47px}
+#collection-shop>.shop-wallet{margin:0}
+#collection-shop>.shop-gacha{margin:0}
+#collection-shop>.shop-bag{margin:0}
+#collection-shop>.shop-open-inventory{margin:0;min-height:47px}
 #collection-shop>.shop-bag[data-has-loot="false"]{display:none}
-#collection-shop:has(.shop-bag[data-has-loot="true"])>.shop-bag{order:2}
-#collection-shop:has(.shop-bag[data-has-loot="true"])>.shop-gacha{order:3}
 #collection-shop .shop-wallet{padding:9px 13px;justify-content:space-between}
 #collection-shop .shop-wallet strong{font-size:25px}
 #collection-shop .shop-wallet small{font-size:11px}
@@ -82,6 +85,7 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .home-navigation-head>p,
 .home-feature-content>p,
 .home-feature-progress,
+.home-next-quest-copy>p,
 .home-navigation-grid.home-main-actions .home-navigation-copy small{display:none!important}
 .home-navigation-head{margin-bottom:8px!important}
 .home-feature-content h2{margin-top:6px!important;margin-bottom:14px!important}
