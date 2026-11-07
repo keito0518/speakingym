@@ -96,6 +96,12 @@ const {chromium,webkit}=require('playwright');
   assert.match(await ownedCard.innerText(),/攻撃\s*＋13/);
   assert.match(await ownedCard.innerText(),/文法を自力正解で追撃＋2/);
   assert.equal(await ownedCard.locator('[data-equip-weapon]').isDisabled(),true);
+  assert.equal(await page.locator('.equipment-awakening-more').getAttribute('open'),null,
+   'Awakening without duplicate shards belongs in optional details after inventory');
+  assert.equal(await page.locator('#weapon-awaken').isVisible(),false,
+   'An unaffordable awakening must not compete with the weapon selection actions');
+  assert.equal(await page.locator('.equipment-item-list').evaluate(el=>el.compareDocumentPosition(document.querySelector('.equipment-awakening-more'))&Node.DOCUMENT_POSITION_FOLLOWING),4,
+   'Unavailable awakening should appear after owned weapons');
   await page.locator('#equipment-unequip').click();
   assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'','Unequipping should update the save');
   await page.locator('[data-equip-weapon="eternal_crest"]').click();
