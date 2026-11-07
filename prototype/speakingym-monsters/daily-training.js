@@ -4,8 +4,13 @@
 import { ALL_PROMPTS } from './monster-data.js';
 import { dayKey, quizWeaknessOverview } from './monster-engine.js';
 import { nextSkillFocusFor } from './skill-progress.js';
+import { normalizeEconomy } from './monster-economy.js';
 
 const QUIZ_KINDS=new Set(['vocab','grammar']);
+export const DAILY_GOLD_BONUS=12;
+export const DAILY_GOLD_MIN_INDEPENDENT=6;
+const MAX_GOLD=999999;
+const dailyRewardKey=date=>`daily-gold:${date}`;
 const eligible=(p,level)=>!p.bossOnly&&(p.difficulty||'easy')===level&&Boolean(p.answer)&&
   ['speak','listen','read','vocab','grammar'].includes(p.kind);
 const baseId=p=>p.baseId||p.id;
@@ -24,10 +29,13 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
    throw Error('Invalid daily training options');
  const pool=ALL_PROMPTS.filter(p=>eligible(p,difficulty)).sort((a,b)=>a.id.localeCompare(b.id));
  const focus=nextSkillFocusFor(save,{difficulty,today});
+ const yesterdayTime=Date.parse(`${today}T12:00:00Z`)-86400000;
+ const yesterday=Number.isFinite(yesterdayTime)?new Date(yesterdayTime).toISOString().slice(0,10):'';
  const weak=new Set(quizWeaknessOverview(save,today).due.map(q=>q.id));
  const review=new Set(Object.entries(save.reviewPrompts||{}).filter(([,due])=>due<=today).map(([id])=>id));
  const hasPracticed=p=>Boolean(save.progress?.[p.phraseId]?.attempts);
  const practicedToday=p=>save.progress?.[p.phraseId]?.lastDay===today||save.quizProgress?.[p.id]?.lastCleanDay===today;
+ const practicedYesterday=p=>save.progress?.[p.phraseId]?.lastDay===yesterday||save.quizProgress?.[p.id]?.lastCleanDay===yesterday;
  const due=p=>weak.has(p.id)||review.has(p.id)||Boolean(save.retention?.[p.id]?.nextDay&&save.retention[p.id].nextDay<=today)||Boolean(save.progress?.[p.phraseId]?.nextReviewDay&&save.progress[p.phraseId].nextReviewDay<=today);
  const transfer=p=>hasPracticed(p)&&!QUIZ_KINDS.has(p.kind)&&
    !(save.progress?.[p.phraseId]?.smoothContexts||[]).includes(baseId(p));
@@ -42,6 +50,7 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
      (kinds.has(p.kind)?4:0)+
      (focus&&p.kind===focus.kind&&selections.filter(chosen=>chosen.kind===focus.kind).length<2?-12:0)+
      (category==='review'?(weak.has(p.id)?-12:review.has(p.id)||Boolean(save.retention?.[p.id]?.nextDay&&save.retention[p.id].nextDay<=today)?-10:0):practicedToday(p)?35:0)+
+     (category==='mixed'&&practicedYesterday(p)?18:0)+
      ((save.savedPromptIds||[]).includes(p.id)?-1:0)
     );
     return score(a)-score(b)||dailyRank(today,difficulty,a.id)-dailyRank(today,difficulty,b.id)||a.id.localeCompare(b.id);
@@ -68,6 +77,10 @@ export function dailyTrainingPlan(save,{difficulty=save.difficulty||'easy',today
   mixed:phases.filter(p=>p==='mixed').length
  }};
 }
+export function dailyGoldStatus(save,date=dayKey()){
+ const claimed=(save.rewardedDays||[]).includes(dailyRewardKey(date));
+ return {claimed,bonus:DAILY_GOLD_BONUS,required:DAILY_GOLD_MIN_INDEPENDENT};
+}
 // Bounded, non-identifying daily completion record. Do not store transcript,
 // microphone data, or network analytics. Incomplete sessions do not count.
 export function recordDailyCompletion(save,{difficulty=save.difficulty||'easy',date=dayKey(),total,independent,hinted=0,elapsedSeconds}){
@@ -78,7 +91,15 @@ export function recordDailyCompletion(save,{difficulty=save.difficulty||'easy',d
   !Number.isFinite(elapsedSeconds)||elapsedSeconds<0)
   throw Error('Invalid completed training metrics');
  const record={date,difficulty,total,independent,hinted,elapsedSeconds:Math.min(86400,Math.round(elapsedSeconds))};
- return {...save,dailyHistory:[...(save.dailyHistory||[]),record].slice(-40)};
+ // A perfect score is not required, but only independently verified answers
+ // count. Replays, difficulty switching and page reloads cannot mint a second
+ // daily reward; the ledger survives the existing save validation path.
+ const key=dailyRewardKey(date),claimed=(save.rewardedDays||[]).includes(key);
+ const earned=total===8&&independent>=DAILY_GOLD_MIN_INDEPENDENT&&!claimed;
+ const coins=normalizeEconomy(save).coins;
+ return {...save,coins:Math.min(MAX_GOLD,coins+(earned?DAILY_GOLD_BONUS:0)),
+   rewardedDays:earned?[...(save.rewardedDays||[]),key].slice(-250):[...(save.rewardedDays||[])],
+   dailyHistory:[...(save.dailyHistory||[]),record].slice(-40)};
 }
 export function dailyGrowthSummary(save){
  const records=Array.isArray(save.dailyHistory)?save.dailyHistory:[];

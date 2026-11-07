@@ -40,7 +40,8 @@ export function nextLearningQuestFor(save,today=dayKey()){
   button:'保存した問題を復習'
  };
  const plan=dailyTrainingPlan(save,{today});
- if(plan.counts.review>0)return {
+ const finishedToday=(save.dailyHistory||[]).some(row=>row.date===today&&row.difficulty===(save.difficulty||'easy'));
+ if(plan.counts.review>0&&!finishedToday)return {
   kind:'review',action:'daily',title:'苦手を倒して、もう一段強く！',
   detail:`今日の8問には復習 ${plan.counts.review}問入り。新しい問題も一緒に練習できるよ。`,
   button:'今日の8問に挑戦'
@@ -69,7 +70,6 @@ export function nextLearningQuestFor(save,today=dayKey()){
   detail:`あと${needed} XPを仲間にあげればレベル条件を達成！ ボス試練 ${growth.trialCount}/${growth.requiredTrials}エリア。`,
   button:'仲間を育てに行く'
  };
- const finishedToday=(save.dailyHistory||[]).some(row=>row.date===today&&row.difficulty===(save.difficulty||'easy'));
  if(finishedToday)return {
   kind:'forest',action:'forest',title:'今日のジムはクリア！ 次は実戦へ',
   detail:'ダンジョンで英語を使って、仲間と次のボスに挑戦しよう。',

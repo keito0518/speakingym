@@ -92,4 +92,7 @@ test('completed daily training leads back to adventure when no review is due',()
  const mission=nextLearningQuestFor(save,today);
  assert.equal(mission.kind,'forest');
  assert.equal(mission.action,'forest');
+ const quiz=first('grammar'),withWeakness={...save,quizProgress:{[quiz.id]:{misses:1,nextReviewDay:today,resolved:false}}};
+ assert.notEqual(nextLearningQuestFor(withWeakness,today).action,'daily',
+  'A finished daily mission must not immediately recommend the same eight-question routine again');
 });

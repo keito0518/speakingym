@@ -712,12 +712,17 @@ const path=require('node:path');
     assert.equal(new Set(allDaily).size,8);
     assert.match(await gymPage.locator('#result-title').innerText(),/今日の5分ジム完了/);
     assert.match(await gymPage.locator('#result-rewards').innerText(),/ヒントなし正解率/);
+    assert.match(await gymPage.locator('#result-rewards').innerText(),/今日のごほうび ＋12 G/);
     const gymSaved=await gymPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
     assert.equal(gymSaved.dailyHistory.length,1);
     assert.equal(gymSaved.dailyHistory[0].total,8);
     assert.equal(gymSaved.dailyHistory[0].independent,8);
+    assert.equal(gymSaved.coins,12,'Independent daily training awards earned-only gold');
+    assert.equal(gymSaved.rewardedDays.filter(key=>key.startsWith('daily-gold:')).length,1);
     assert.equal(gymSaved.savedPromptIds.length,1);
     await gymPage.locator('#result-home').click();
+    await enterHomePanel(gymPage,'daily');
+    assert.match(await gymPage.locator('#daily-plan-status').innerText(),/ボーナス.*獲得済み/);
     assert.match(await gymPage.locator('#daily-last-rate').innerText(),/100%/);
     await gymContext.close();
     // Verify English-only task cards at both higher difficulties and narrow widths.

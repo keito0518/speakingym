@@ -453,6 +453,13 @@ test('five-minute gym mixes new, due and transfer tasks without duplicates or pa
  assert.equal(tomorrow.prompts.length,8);
  assert.notDeepEqual(tomorrow.prompts.map(p=>p.id),fresh.prompts.map(p=>p.id),
   'Untouched daily plans rotate by date instead of repeating alphabetic tasks forever');
+ const latest=dailyTrainingPlan(createSave(),{today:'2026-11-07'});
+ const practicedYesterday={...createSave(),progress:Object.fromEntries(latest.prompts.map(prompt=>[
+  prompt.phraseId,{attempts:1,lastDay:'2026-11-06'}]))};
+ const varied=dailyTrainingPlan(practicedYesterday,{today:'2026-11-07'});
+ assert.ok(varied.prompts.filter((prompt,index)=>varied.phases[index]==='mixed'&&
+   practicedYesterday.progress[prompt.phraseId]?.lastDay==='2026-11-06').length===0,
+  'Mixed practice should prefer fresh situations over yesterday’s expressions when alternatives exist');
  save=recordAnswer(save,'think-cafe','smooth','2026-10-26').save;
  save=recordAnswer(save,'repeat-station','again','2026-10-20').save;
  const mixed=dailyTrainingPlan(save,{today});
@@ -489,6 +496,31 @@ test('daily gym stores safe local-only verified summaries and 7-day same-level c
  assert.equal(validateSave(c).dailyHistory.length,3);
  assert.deepEqual(validateSave({...base,dailyHistory:[{date:'bad',difficulty:'easy',total:999}]}).dailyHistory,[]);
  assert.throws(()=>recordDailyCompletion(base,{date:'2026-10-27',total:8,independent:9,hinted:0,elapsedSeconds:99}),/Invalid/);
+});
+test('daily earned-gold reward requires six independent answers and cannot be farmed',()=>{
+ const base=createSave(),date='2026-11-07';
+ const attempt=(save,values)=>recordDailyCompletion(save,{date,total:8,independent:values.independent,
+  hinted:8-values.independent,elapsedSeconds:240,difficulty:values.difficulty||'easy'});
+ const practice=attempt(base,{independent:5});
+ assert.equal(practice.coins,0,'Answering fewer than six independently must not award gold');
+ assert.deepEqual(practice.rewardedDays,[]);
+ assert.equal(recordDailyCompletion(practice,{date,total:7,independent:7,hinted:0,elapsedSeconds:200}).coins,0,
+  'A shorter or unfinished daily plan cannot mint the full daily bonus');
+ const earned=attempt(practice,{independent:6});
+ assert.equal(earned.coins,12);
+ assert.deepEqual(earned.rewardedDays,['daily-gold:'+date]);
+ const difficultySwitch=attempt(earned,{independent:8,difficulty:'hard'});
+ assert.equal(difficultySwitch.coins,12,'Repeating or switching difficulty is not a second claim');
+ assert.deepEqual(difficultySwitch.rewardedDays,['daily-gold:'+date]);
+ const reloaded=validateSave(difficultySwitch);
+ assert.equal(attempt(reloaded,{independent:8}).coins,12,'A reloaded save still blocks the duplicate');
+ const tomorrow=recordDailyCompletion(reloaded,{date:'2026-11-08',total:8,
+  independent:8,hinted:0,elapsedSeconds:240});
+ assert.equal(tomorrow.coins,24,'A new calendar day can earn another modest bonus');
+ const capped=attempt({...base,coins:999995},{independent:8});
+ assert.equal(capped.coins,999999,'Daily rewards obey the gold wallet cap');
+ assert.equal(attempt({...capped,coins:999000},{independent:8}).coins,999000,
+  'Spending after claiming cannot claim the same day twice');
 });
 test('curated speech checks cannot reward conflicting key details',()=>{
  const prompt=id=>ALL_PROMPTS.find(item=>item.id===id);

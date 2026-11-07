@@ -2,7 +2,7 @@ import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './mons
 import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, nextChainChest, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
-import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary} from './monster-economy.js';
+import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
@@ -29,7 +29,7 @@ import { forestLearningPulseFor } from './forest-learning-pulse.js';
 import { conversationPolishFor } from './conversation-polish.js';
 import { speakingHintSteps, beginnerClozeFor } from './speaking-guidance.js';
 import { forestBossPhase } from './forest-boss-phases.js';
-import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from './daily-training.js';
+import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary, dailyGoldStatus } from './daily-training.js';
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
@@ -567,8 +567,10 @@ function renderHome() {
   const gym=dailyTrainingPlan(save);
   const dailyGrowth=dailyGrowthSummary(save);
   const skillFocus=nextSkillFocusFor(save,{difficulty:save.difficulty,today:dayKey()});
-  $('#daily-plan-status').textContent=`今日の8問：復習 ${gym.counts.review} · 応用 ${gym.counts.transfer} · 新しい問題 ${gym.counts.new}${gym.counts.mixed?' · その他 '+gym.counts.mixed:''}`;
-  if(gym.focus)$('#daily-plan-status').textContent+=` · 今日の強化：${gym.focus.label}`;
+  const dailyGold=dailyGoldStatus(save);
+  $('#daily-plan-status').textContent=dailyGold.claimed
+    ?`今日のボーナス ＋${dailyGold.bonus} G 獲得済み`
+    :`今日の8問 · 自力${dailyGold.required}問で ＋${dailyGold.bonus} G`;
   $('#start-daily-gym').disabled=!gym.prompts.length;
   $('#daily-last-rate').textContent=dailyGrowth.lastRate===null?'―':`${dailyGrowth.lastRate}%`;
   $('#daily-growth-note').textContent=dailyGrowth.changeSevenDays!==null
@@ -2639,9 +2641,11 @@ function finishSession(timedOut=false,defeated=false) {
   }
   if(ended.mode==='challenge')persist(finishRound(save,ended.smooth));
   if(ended.mode==='daily'&&ended.index>=ended.prompts.length){
-    persist(recordDailyCompletion(save,{difficulty:ended.difficulty,date:dayKey(),
+    const beforeGold=normalizeEconomy(save).coins;
+    const recorded=recordDailyCompletion(save,{difficulty:ended.difficulty,date:dayKey(),
       total:ended.prompts.length,independent:ended.smooth,hinted:ended.hintedCount,
-      elapsedSeconds:(Date.now()-ended.startedAt)/1000}));
+      elapsedSeconds:(Date.now()-ended.startedAt)/1000});
+    ended.dailyGoldAward=persist(recorded)?normalizeEconomy(recorded).coins-beforeGold:0;
   }
   $('#play-view').classList.remove('forest-active','review-only');
   $('#result-view').classList.toggle('forest-results',ended.mode==='forest');
@@ -2701,7 +2705,7 @@ function finishSession(timedOut=false,defeated=false) {
     savedResult.innerHTML=`<span class="tiny-caps">YOUR ENGLISH RECALL</span><h2>${recap.independent===recap.total?'全問、自力で確認！':'自力で確認 '+recap.independent+' / '+recap.total+'問'}</h2><div class="saved-review-meter" role="meter" aria-label="今回の自力確認率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${recap.percentage}"><span style="width:${recap.percentage}%"></span></div><p>ヒントあり ${recap.supported}問 · 例文・字幕で確認 ${recap.review}問${recap.pending?' · 未回答 '+recap.pending+'問':''}</p>${trendNote}${recap.retryIds.length?`<button type="button" id="retry-saved-weak" class="button button-primary">自力で再挑戦する（${recap.retryIds.length}問）</button>`:'<p class="saved-review-next">よくできたね！ 次は日を空けてもう一度、自力で思い出してみよう。</p>'}<small>今回の教材内での確認結果だよ。ヒント・字幕・例文だけでは自力正解に含めません。</small>`;
     savedResult.querySelector('#retry-saved-weak')?.addEventListener('click',()=>startSession('saved',null,false,false,[...recap.retryIds]));
   }
-  $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
+  $('#result-rewards').innerHTML=`${ended.mode==='daily'?`<span class="reward-pill">ヒントなし正解率 ${Math.round(100*ended.smooth/ended.prompts.length)}%（全${ended.prompts.length}問）</span>${ended.dailyGoldAward?`<span class="reward-pill">今日のごほうび ＋${ended.dailyGoldAward} G</span>`:''}`:''}<span class="reward-pill">${ended.mode==='forest'?'自力で正解':ended.mode==='listening'?'自力で聞き取れた':'自力で正解'} ${ended.smooth} / ${ended.index}</span>${ended.assistedGates?`<span class="reward-pill">練習ルート ${ended.assistedGates}関門 · 0 XP</span>`:''}<span class="reward-pill">+${ended.earnedXp} XP ストック！</span><span class="reward-pill">使えるXP ${save.xpWallet}</span><span class="reward-pill">仲間 ${save.ownedMonsters.length} / ${MONSTERS.length}</span>`;
   const medal=ended.bossMedal;
   if(medal?.bonusXp)$('#result-rewards').insertAdjacentHTML('beforeend',`<span class="reward-pill boss-bonus-pill">ボス勲章 初回・昇格報酬 ＋${medal.bonusXp} XP</span>`);
   const medalDisplay=medal?`<section class="boss-medal-result" data-medal-rank="${medal.rank}"><span class="boss-medal-symbol" aria-hidden="true"></span><div><span class="tiny-caps">BOSS MASTERY · ${escapeHtml(difficultyCopy[medal.difficulty].label)}</span><h2>${medal.rank?`${BOSS_MEDAL_NAMES[medal.rank]}ランク${medal.upgraded?'獲得！':'でクリア！'}`:'練習クリア · 勲章は次の挑戦で'}</h2><p>章の問題 ${medal.independent}/${medal.total}問を自力で確認 · ボス ${medal.verifiedBoss}/3問を確認。${medal.rank===3?'全問自力でクリア！':medal.rank===2?'全問自力で金ランクを目指そう。':medal.rank===1?'75%以上を自力で確認し、ボスも2問以上自力で銀ランクへ。':'ボス3問をヒントありでも確認すると銅ランクを獲得できるよ。'}</p>${medal.best>medal.rank?`<small>この難易度の最高記録は${BOSS_MEDAL_NAMES[medal.best]}ランクのまま保存したよ。</small>`:''}</div></section>`:'';
