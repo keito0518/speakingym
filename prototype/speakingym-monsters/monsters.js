@@ -2846,7 +2846,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
   showView('result');
 }
-const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio});
+const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio,onStartAdventure:()=>startMainDungeon()});
 const {renderDetail,renderTraining}=collectionViews;
 let forgeMessage='';
 let drawNextSummon=()=>null;

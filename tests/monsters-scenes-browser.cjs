@@ -147,6 +147,9 @@ const path=require('node:path');
       await page.locator('#open-training').click();
       assert.equal(await page.locator('#detail-view').isVisible(),false);
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'idle');
+      assert.equal(await page.locator('#training-evolution-notes').getAttribute('open'),null,
+        'Detailed evolution rules should start folded, behind the actual growth action');
+      await page.locator('#training-evolution-notes summary').click();
       assert.match(await page.locator('.training-sheet').innerText(),/第1進化：Lv\.5（累計280 XP）＋ボス攻略 1\/1エリア。残り280 XP/);
       assert.match(await page.locator('.growth-roadmap > summary').innerText(),/次の成長：Lv\.4/);
       assert.equal(await page.locator('[data-evolve-monster]').isDisabled(),true);
@@ -175,7 +178,9 @@ const path=require('node:path');
       assert.match(await page.locator('.training-sheet h1').innerText(),/Sunnyolk/);
       assert.match(await page.locator('#growth-feedback').innerText(),/進化/);
       assert.equal(await page.locator('#training-wallet').innerText(),'0 XP');
-      assert.equal(await page.locator('[data-feed-amount="all"]').isDisabled(),true);
+      assert.equal(await page.locator('[data-feed-amount="all"]').count(),0,
+        'Zero XP should not leave useless disabled feed buttons on the main screen');
+      assert.equal(await page.locator('#training-earn-xp').isVisible(),true);
       await page.waitForTimeout(1400);
       await page.screenshot({path:path.join(shots,`training-${engine}-${width}-evolution.png`),fullPage:true});
       const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
@@ -269,6 +274,7 @@ const path=require('node:path');
       assert.match(await page.locator('.training-level').innerText(),/Lv\.10/);
       assert.equal(await page.locator('#training-wallet').innerText(),'10 XP');
       assert.equal(await page.locator('[data-evolve-monster]').isDisabled(),true,'XP cannot bypass the three distinct boss marks');
+      await page.locator('#training-evolution-notes summary').click();
       assert.match(await page.locator('.evolution-trial').innerText(),/ボス攻略 1\/3エリア/);
       await noOverflow(page,`${width} exact second evolution feed`);
       await context.close();
@@ -288,11 +294,29 @@ const path=require('node:path');
       assert.equal(await page.locator('.training-sheet').getAttribute('data-growth'),'level');
       assert.equal(await page.locator('#training-wallet').innerText(),'5 XP');
       assert.equal(await page.locator('[data-feed-amount="next"]').count(),0,'Unaffordable next level is not offered');
-      assert.equal(await page.locator('[data-feed-amount="10"]').isDisabled(),true);
+      assert.equal(await page.locator('[data-feed-amount="10"]').count(),0,
+        'Unaffordable ten-XP action should not take space from the affordable option');
+      assert.equal(await page.locator('[data-feed-amount="all"]').isEnabled(),true);
       const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
       assert.equal(saved.monsterXp.medamago,70);
       assert.equal(saved.xpWallet,5);
       await noOverflow(page,`${width} smart level-up`);
+      await context.close();
+    }
+    // A new player with zero XP needs an obvious route into the game instead
+    // of a screen made entirely of disabled training buttons.
+    for(const width of [320,390]){
+      const {context,page}=await boot(width);
+      await page.locator('[data-home-page="collection"]').click();
+      await page.locator('[data-open-monster="medamago"]').click();
+      await page.locator('#open-training').click();
+      assert.equal(await page.locator('.training-feed').count(),0);
+      assert.equal(await page.locator('#growth-feedback').innerText(),'');
+      assert.equal(await page.locator('#training-earn-xp').isVisible(),true);
+      await page.locator('#training-earn-xp').click();
+      assert.equal(await page.locator('#play-view').isVisible(),true,
+        'Earn XP should open the playable dungeon immediately');
+      await noOverflow(page,`${width} earn XP route`);
       await context.close();
     }
     // Level milestones announce the *actual* bonuses already used in combat,
