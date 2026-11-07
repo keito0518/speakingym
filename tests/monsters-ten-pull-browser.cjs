@@ -76,8 +76,11 @@ const {chromium,webkit}=require('playwright');
    assert.equal(await page.locator('#equipment-weapon-choice').inputValue(),'eternal_crest');
    assert.match(await page.locator('.equipment-current-technique').innerText(),/双閃.*必殺ゲージ＋1/,
     'The equipped weapon presents its tactical signature next to its regular effect');
+   assert.equal(await page.locator('.equipment-item-technique').first().getAttribute('open'),null,
+    'Tactical details must not crowd the inventory until the player asks to see them');
+   await page.locator('.equipment-item-technique summary').first().click();
    assert.match(await page.locator('.equipment-item').first().innerText(),/武器技.*双閃/s,
-    'The inventory makes each shape-specific tactical effect visible before equipping');
+    'Players can still inspect the shape-specific tactical effect before equipping');
 
    let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
    assert.equal(saved.coins,1710);
