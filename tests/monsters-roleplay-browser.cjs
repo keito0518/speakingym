@@ -93,6 +93,10 @@ const assert=require('node:assert/strict');
   await answer();
   await page.locator('#next-question').click();
   assert.match(await page.locator('#result-title').innerText(),/レストランで伝え切る · 会話完了/);
+  assert.match(await page.locator('#result-quick-summary').innerText(),/自力で返答 2\/3/);
+  assert.equal(await page.locator('#result-detail-panel').getAttribute('open'),null,
+    'The three-turn reward should not start with an overwhelming recap');
+  await page.locator('#result-detail-panel > summary').click();
   assert.match(await page.locator('.roleplay-result').innerText(),/2 \/ 3ターンを自力で返答/);
   assert.equal(await page.locator('.roleplay-recap-track > div').count(),3);
   assert.equal(await page.locator('.roleplay-recap-track > [data-recap-status="skipped"]').count(),1);
