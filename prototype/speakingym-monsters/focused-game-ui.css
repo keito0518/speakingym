@@ -111,6 +111,9 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
    Keep a real accessible label and iPhone audio recovery without displaying
    generic tutorial copy on every encounter. */
 #play-view .play-card .question-caption{margin-top:8px;line-height:1.5}
+#play-view:not(.forest-active) .play-card h1{color:#213f34}
+#play-view:not(.forest-active) .play-card .question-caption{color:#3b5c4d}
+#play-view:not(.forest-active) .play-card .question-top{color:#466053}
 #play-view .play-card .task-panel{margin-top:12px;padding:11px 14px}
 #play-view .play-card .task-panel p{margin:0;line-height:1.5}
 #play-view #answer-area .answer-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
