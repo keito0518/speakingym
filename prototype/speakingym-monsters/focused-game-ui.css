@@ -192,6 +192,34 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 #home-destination-roleplay .roleplay-about summary:focus-visible{outline:3px solid #dcae54;outline-offset:2px}
 #home-destination-roleplay .roleplay-disclaimer{margin:3px 0 6px}
 
+/* Review starts with an available practice action. Empty saved/due lists do
+   not render dead buttons, while actual history stays one tap away. */
+#home-destination-review .review-journal{max-width:860px;margin:5px auto 17px;padding:18px 20px}
+#home-destination-review .review-journal-head{gap:12px;align-items:center}
+#home-destination-review .review-journal-head h2{margin:0;font-size:clamp(22px,3vw,28px);color:#254b3b}
+#home-destination-review .review-journal-action{min-height:48px;font-size:13px}
+#home-destination-review .review-journal-list{display:block;margin-top:12px}
+#home-destination-review .review-journal-empty{margin:0;color:#405c4b;font-size:13px}
+#home-destination-review .review-journal-records,
+#home-destination-review .retention-records{margin-top:14px;border-top:1px solid #c3d9c6;color:#365946}
+#home-destination-review .review-journal-records>summary,
+#home-destination-review .retention-records>summary{min-height:42px;padding:11px 4px;cursor:pointer;font-size:12px;font-weight:850}
+#home-destination-review .review-journal-records>summary:focus-visible,
+#home-destination-review .retention-records>summary:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
+#home-destination-review .review-journal[data-has-history="false"] .review-journal-records{display:none}
+#home-destination-review .saved-review[data-has-saved="false"],
+#home-destination-review .retention-hub[data-has-history="false"]{display:none}
+#home-destination-review .saved-review,#home-destination-review .retention-hub{max-width:860px;margin:0 auto 17px;padding:18px 20px}
+#home-destination-review .saved-review-heading h2,
+#home-destination-review .retention-hub h2{margin:0 0 9px;font-size:clamp(19px,2.7vw,24px);color:#244838}
+#home-destination-review .saved-review-heading{gap:9px}
+#home-destination-review .saved-review-heading button{min-height:47px}
+#home-destination-review #start-due-saved-review:disabled,
+#home-destination-review #start-retention-review:disabled{display:none}
+#home-destination-review .retention-hub .retention-next{margin:6px 0 0;color:#435f50}
+#home-destination-review .retention-hub-metrics{margin-top:9px}
+#home-destination-review .retention-bond-status{margin-top:10px}
+
 @media(max-width:690px){
  #home-destination-training .hero-grid{display:flex;flex-direction:column;gap:10px;padding:4px 0 16px}
  #home-destination-training .hero-copy h1{font-size:clamp(24px,6.5vw,29px);margin:4px 0 17px}
@@ -206,6 +234,10 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
  #home-destination-daily .daily-gym{max-width:520px}
  #home-destination-roleplay .roleplay-hub{padding:13px}
  #home-destination-roleplay .roleplay-option{min-height:69px}
+ #home-destination-review .review-journal,
+ #home-destination-review .saved-review,
+ #home-destination-review .retention-hub{padding:16px 13px}
+ #home-destination-review .review-journal-head h2{font-size:21px}
 }
 @media(max-width:400px){
  #home-destination-roleplay .roleplay-option button{min-width:86px}
