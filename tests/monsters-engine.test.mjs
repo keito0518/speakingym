@@ -1,0 +1,2414 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from '../prototype/speakingym-monsters/monster-data.js';
+import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_STAGES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, DUNGEON_AREAS, unlockedForestAreas, unlockedCityAreas, unlockedRuinsAreas, unlockedDungeonAreas, nextForestArea, nextDungeonArea, finishForest, getForestPrompts, recordForestEvent } from '../prototype/speakingym-monsters/forest-engine.js';
+import { BOSS_MEDAL_NAMES, bossTrainingBonus, cleanBossMedals, evaluateBossMedal } from '../prototype/speakingym-monsters/boss-mastery.js';
+import { forestWorldArt } from '../prototype/speakingym-monsters/forest-world.js';
+import { buildForestWave, forestLevel, DIFFICULTY_TRIES, opponentFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, regularEncountersFor, forestWaveLengthFor, BOSS_HITS, specialStrike, FOREST_TACTICS, enemyTacticFor } from '../prototype/speakingym-monsters/forest-battle.js';
+import { enemyArt } from '../prototype/speakingym-monsters/forest-enemies.js';
+import { gradeLocalResponse } from '../prototype/speakingym-monsters/monster-grader.js';
+import { gradeDelayMeaning } from '../prototype/speakingym-monsters/speaking-meaning.js';
+import { ROLEPLAY_SCENARIOS, roleplayFor, recommendedRoleplay, roleplayRecapFor } from '../prototype/speakingym-monsters/roleplay-scenarios.js';
+import { quizControlsHtml, wireQuizControls } from '../prototype/speakingym-monsters/forest-quiz-ui.js';
+import { listeningChallengeFor } from '../prototype/speakingym-monsters/listening-challenges.js';
+import { LISTENING_AUDIO } from '../prototype/speakingym-monsters/listening-audio-manifest.js';
+import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teaching.js';
+import { quizRetryCoachFor, missingQuizWordMeanings } from '../prototype/speakingym-monsters/forest-quiz-retry-coach.js';
+import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
+import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
+import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
+import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
+import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
+import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, getEvolutionTrialGuide, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+
+import { speakingFeedbackFor, conversationFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
+import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
+import { monsterArt } from '../prototype/speakingym-monsters/monster-art.js';
+import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary } from '../prototype/speakingym-monsters/daily-training.js';
+import { recordRetention, retentionOverview, retentionPracticePlan, sanitizeRetention, retentionTitle } from '../prototype/speakingym-monsters/retention.js';
+
+const rate = (save, promptId, rating = 'smooth', date = '2026-10-26') => recordAnswer(save, promptId, rating, date);
+
+test('every speaking turn uses evidence-bound feedback with explicit next steps and no early answer leak',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ const prompt=byId('prefer-city-normal');
+ const partial='I prefer the train.';
+ const review=gradeLocalResponse(prompt,partial);
+ assert.equal(review.status,'review');
+ assert.deepEqual(review.checks.met,['電車を希望する']);
+ assert.deepEqual(review.checks.missing,['理由を伝える']);
+ const note=conversationFeedbackFor(prompt,partial,review);
+ assert.equal(note.confirmed,false);
+ assert.match(note.verdict,/保留/);
+ assert.deepEqual(note.checked,review.checks.met);
+ assert.deepEqual(note.missing,review.checks.missing);
+ assert.equal(note.example,null,'An unverified attempt cannot expose the model before a rewarded retry');
+ assert.ok(note.next.length>10);
+ assert.match(note.next,/理由を伝える/,'The first unconfirmed authored condition should drive the retry');
+ assert.match(note.next,/誤答とは断定していない/,'A local keyword miss cannot be described as proven wrong English');
+ const reveal=conversationFeedbackFor(prompt,partial,review,{revealExample:true});
+ assert.equal(reveal.example,prompt.answer);
+ const exact=prompt.answer;
+ const correct=conversationFeedbackFor(prompt,exact,gradeLocalResponse(prompt,exact));
+ assert.equal(correct.confirmed,true);
+ assert.equal(correct.example,exact);
+ assert.deepEqual(correct.missing,[]);
+ assert.match(correct.next,/別の言葉/);
+ const incomplete=conversationFeedbackFor(byId('prefer-window-easy'),'I am prefer a window seat.',
+  gradeLocalResponse(byId('prefer-window-easy'),'I am prefer a window seat.'));
+ assert.equal(incomplete.confirmed,false);
+ assert.match(incomplete.correction.label,/be 動詞/);
+ const uncertain=conversationFeedbackFor(prompt,'An unconventional but plausible expression.',{
+  status:'review',reasons:['未登録の表現'],method:'example-review'});
+ assert.deepEqual(uncertain.checked,[],'Unknown paraphrases must not receive fabricated credit');
+ assert.deepEqual(uncertain.missing,[],'Unknown paraphrases must not be declared definitely incomplete');
+ assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),' ',{status:'empty'}).hasAnswer,false);
+ assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),'test',{status:'correct'},{hinted:true}).hinted,true);
+ assert.equal(conversationFeedbackFor(byId('prefer-window-easy'),'text',{status:'correct'},{hinted:true}).verdict.includes('ヒント'),true);
+ assert.equal(conversationFeedbackFor(ALL_PROMPTS.find(p=>p.kind==='vocab'),'foo',{status:'correct'}),null);
+ assert.equal(conversationFeedbackFor(null,'x',{status:'correct'}),null);
+});
+
+test('uncertain speaking feedback prioritizes missing authored conditions without inventing a diagnosis',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer,firstMissing,remaining] of [
+  ['prefer-city-normal','I prefer the train.','理由を伝える',0],
+  ['help-bag-hard','Could you carry both suitcases?','エレベーターが使えない理由',0],
+  ['help-bag-hard','Please carry my bag.','2個の荷物の手伝いを頼む',2]
+ ]){
+  const prompt=byId(id),grade=gradeLocalResponse(prompt,answer);
+  assert.equal(grade.status,'review',id);
+  assert.equal(grade.method,'curated-criteria',id);
+  const feedback=conversationFeedbackFor(prompt,answer,grade);
+  assert.equal(feedback.confirmed,false);
+  assert.match(feedback.next,new RegExp(firstMissing),id);
+  assert.match(feedback.next,/教材の照合で見つからなかっただけ/,id);
+  if(remaining)assert.match(feedback.next,new RegExp(`ほかの${remaining}項目`));
+  assert.equal(feedback.example,null,'Do not leak a model answer during an XP-eligible retry');
+ }
+ const prompt=byId('order-extra-normal');
+ const unclear=gradeLocalResponse(prompt,'Would you assist me, please?');
+ assert.equal(unclear.method,'example-review');
+ const feedback=conversationFeedbackFor(prompt,'Would you assist me, please?',unclear);
+ assert.deepEqual(feedback.missing,[],'No source of per-condition evidence means no fabricated missing items');
+ assert.doesNotMatch(feedback.next,/ほかの\d+項目|教材の照合で見つからなかっただけ/);
+});
+
+test('personal battle chain records survive reload and discard invalid values',()=>{
+ const oldSave=createSave();
+ delete oldSave.bestBattleChain;
+ assert.equal(validateSave(oldSave).bestBattleChain,0);
+ assert.equal(validateSave({...oldSave,bestBattleChain:7}).bestBattleChain,7);
+ assert.equal(validateSave({...oldSave,bestBattleChain:'999999'}).bestBattleChain,0);
+ assert.equal(validateSave({...oldSave,bestBattleChain:999999}).bestBattleChain,999);
+});
+
+test('beginner speaking uses short communicative goals, fill-in hints, and safe natural variants',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ const easyBoss=byId('boss-delay-apology-easy');
+ assert.match(easyBoss.cue,/バスが遅れている。待っている相手に謝ろう。/);
+ assert.doesNotMatch(easyBoss.cue+easyBoss.scene,/トゲ王|Thorn King/,
+   'Speaking tasks should describe an everyday situation without using the enemy as a conversation partner');
+ assert.ok(bossConversationFor(1,'easy').every(turn=>!/トゲ王|Thorn King/.test(turn.title+turn.context)),
+   'Boss dialogue instructions should focus on the real-world task, not the opponent name');
+ assert.ok(easyBoss.answer.split(/\s+/).length<=6,'First boss should not demand a three-part speech in easy mode');
+ assert.equal(gradeLocalResponse(easyBoss,'Sorry, my bus is late.').status,'correct');
+ assert.equal(gradeLocalResponse(easyBoss,'I am sorry, the bus is delayed.').status,'correct');
+ assert.equal(gradeLocalResponse(easyBoss,'Sorry, my bus is delayed. Please wait inside.').status,'correct','Old saved answer remains valid');
+ assert.notEqual(gradeLocalResponse(easyBoss,'Sorry, my bus is on time.').status,'correct','Opposite meaning cannot win a boss');
+ assert.notEqual(gradeLocalResponse(easyBoss,'Sorry.').status,'correct','An apology alone is not a delay message');
+ const normalBoss=byId('boss-delay-apology-normal');
+ assert.notEqual(gradeLocalResponse(normalBoss,'Sorry, my bus is late.').status,'correct','Normal still requires a practical next step');
+ assert.match(speakingHintSteps(byId('apology-noise'),PHRASES.find(p=>p.id==='apology'))[0].detail,/空欄/);
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at eleven?').status,'correct');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at 11?').status,'correct',
+   'Spoken numeral 11 and model word eleven have identical meaning');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Excuse me, is the checkout time 11?').status,'correct',
+   'A polite direct confirmation with a numeric time must count');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Please tell me if check-out is at 11.').status,'correct',
+   'A different natural request to confirm the same hotel checkout time must count');
+ assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Excuse me, is the checkout time 10?').status,'correct',
+   'The polite wrapper may not hide a wrong checkout time');
+ assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Is checkout not at eleven?').status,'correct',
+   'A negated question must not be credited as affirmative confirmation');
+ assert.notEqual(gradeLocalResponse(byId('clarify-hotel'),'Is checkout at 10?').status,'correct',
+   'A different hour must not earn XP');
+ const checkoutBlank=beginnerClozeFor(byId('clarify-hotel'));
+ assert.equal(checkoutBlank.word,'eleven');
+ assert.equal(normalizeEnglishNumbers('11'),normalizeEnglishNumbers(checkoutBlank.word),
+   'The easy-level one-word cloze accepts numeric 11 for eleven');
+ assert.equal(normalizeEnglishNumbers('3'),normalizeEnglishNumbers('three'),
+   'Other ordinary numeral/word surface variants remain equivalent');
+ assert.notEqual(normalizeEnglishNumbers('12'),normalizeEnglishNumbers('eleven'),
+   'Different quantities must stay distinct');
+ assert.equal(gradeLocalResponse(byId('clarify-hotel'),'Just to make sure, checkout is at eleven, right?').status,'correct');
+ for(const [id,old] of [
+  ['repeat-announcement-easy','Could you say the announcement again?'],
+  ['agree-location-easy','Meeting at the station works for me.'],
+  ['clarify-charge-easy','Just to confirm, the total is thirty dollars, right?'],
+  ['order-extra',"I'd like a pizza with extra cheese, please."],
+  ['booking-haircut','Could I book a haircut for Saturday?'],
+  ['decline-overtime',"Sorry, I can't work late today."],
+  ['decline-invite',"I'm afraid I can't come after class."]
+ ])assert.equal(gradeLocalResponse(byId(id),old).status,'correct',`${id}: old vetted response must survive easier model`);
+ for(const prompt of ALL_PROMPTS.filter(p=>p.kind==='speak'&&(!p.difficulty||p.difficulty==='easy'))){
+  const phrase=PHRASES.find(p=>p.id===prompt.phraseId);
+  const steps=speakingHintSteps(prompt,phrase);
+  assert.equal(steps.length,1);
+  assert.ok(steps[0].detail.length>4&&steps[0].cloze?.template.includes('____'),`${prompt.id} has a one-word blank`);
+  assert.ok(steps[0].cloze?.word,`${prompt.id} cloze has an answer key`);
+  assert.notEqual(steps[0].detail, prompt.answer,`${prompt.id}: first hint should never give the exact answer`);
+  assert.notEqual(steps[0].cloze.template,prompt.answer,`${prompt.id}: blank must not expose the full answer`);
+ }
+ assert.equal(beginnerClozeFor(byId('prefer-window-easy')).template,"I'd prefer a ____ seat.");
+ assert.equal(beginnerClozeFor(byId('prefer-window-easy')).word,'window');
+ assert.equal(beginnerClozeFor(byId('prefer-window-normal')),null);
+ assert.equal(speakingHintSteps(byId('prefer-window-normal'),PHRASES.find(p=>p.id==='prefer')).length,2);
+});
+
+test('speaking starters follow the exact question, not unrelated phrase-wide templates',()=>{
+ const transfer=ALL_PROMPTS.find(p=>p.id==='direction-transfer');
+ assert.ok(transfer,'Transfer question is in the curriculum');
+ const steps=speakingHintSteps(transfer,PHRASES.find(p=>p.id==='direction'));
+ assert.match(steps[0].detail,/乗り換え|transfer|change trains/i);
+ assert.equal(steps[1].detail,'Where do I ...?');
+ assert.doesNotMatch(steps.map(s=>s.detail).join(' '),/How do I get to/i);
+ for(const prompt of ALL_PROMPTS.filter(p=>p.kind==='read'||p.kind==='speak'&&(p.difficulty||'easy')!=='easy')){
+  const opening=speakingHintSteps(prompt,PHRASES.find(p=>p.id===prompt.phraseId)).at(-1).detail;
+  assert.equal(opening,answerAlignedOpening(prompt.answer),`${prompt.id}: starter must come from this answer`);
+  assert.notEqual(opening,prompt.answer,`${prompt.id}: starter should not expose the whole answer`);
+ }
+});
+
+test('article omissions that preserve the entire intended answer pass with explicit language coaching',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.id==='prefer-window-easy');
+ const result=gradeLocalResponse(prompt,"I'd prefer window seat");
+ assert.equal(result.status,'correct');
+ assert.equal(result.method,'article-tolerant');
+ assert.match(result.coaching,/冠詞/);
+ assert.equal(result.preferredAnswer,"I'd prefer a window seat.");
+ assert.notEqual(gradeLocalResponse(prompt,"I'd prefer no window seat").status,'correct');
+ assert.notEqual(gradeLocalResponse(prompt,"I'd prefer an aisle seat").status,'correct');
+ assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-easy'),"I'll be ten minutes late").status,'correct');
+});
+
+test('all evolved creatures have distinct physical forms, beyond a glow or name change',()=>{
+ for(const monster of MONSTERS){
+  const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
+  assert.notEqual(young,grown,monster.id);
+  if(young.includes('pixel-companions.png')){
+   assert.doesNotMatch(young,/monster-evolution-morph/);
+   assert.match(grown,/monster-evolution-morph monster-evolution-back/);
+   assert.match(grown,/monster-evolution-morph monster-evolution-front/);
+   assert.ok(grown.length-young.length>180,`${monster.id} evolution needs visually significant features`);
+  }else{
+   assert.match(young,/shape-rendering="crispEdges"/,monster.id);
+   assert.match(grown,/data-evolved="true"/,monster.id);
+   assert.match(grown,/scale\(1\.035\)/,`${monster.id} trained silhouette must expand`);
+  }
+ }
+});
+
+test('every companion has a genuine third pixel form and a unique second-evolution name',()=>{
+ assert.equal(SECOND_EVOLUTION_XP,630,'Lv.10 is the second evolution level gate');
+ assert.equal(new Set(MONSTERS.map(monster=>monster.ascendedName)).size,MONSTERS.length);
+ for(const monster of MONSTERS){
+  const first=monsterArt(monster.id,1),second=monsterArt(monster.id,2);
+  assert.equal(monsterFormName(monster,0),monster.name);
+  assert.equal(monsterFormName(monster,1),monster.evolvedName);
+  assert.equal(monsterFormName(monster,2),monster.ascendedName);
+  assert.notEqual(first,second);
+  assert.match(first,/data-stage="1"/);
+  assert.match(second,/data-stage="2"/);
+  if(first.includes('pixel-companions.png'))assert.match(second,/y="-88"/);
+  else assert.match(second,/scale\(1\.08\)/);
+  assert.match(second,/monster-ascended/);
+ }
+});
+
+test('full companion collection keeps each evolution, boss trial and bond across a portable save',()=>{
+ const ids=MONSTERS.map(monster=>monster.id);
+ assert.ok(ids.length>=35,'The expanded companion catalog must not shrink');
+ const base=createSave();
+ const progress={...base,ownedMonsters:ids,selectedMonster:ids.at(-1),xpWallet:937,
+  monsterXp:Object.fromEntries(ids.map((id,index)=>[id,index%2===0?630:280])),
+  monsterEvolution:Object.fromEntries(ids.map((id,index)=>[id,index%2===0?2:1])),
+  monsterTrials:Object.fromEntries(ids.map(id=>[id,['entry','glade','thicket']])),
+  monsterBonds:Object.fromEntries(ids.map((id,index)=>[id,index%11]))};
+ const restored=validateSave(JSON.parse(JSON.stringify(progress)));
+ assert.ok(restored);
+ assert.equal(restored.ownedMonsters.length,ids.length);
+ assert.equal(restored.selectedMonster,ids.at(-1));
+ assert.equal(restored.xpWallet,937);
+ for(const id of ids){
+  assert.deepEqual(restored.monsterTrials[id],['entry','glade','thicket']);
+  assert.equal(restored.monsterEvolution[id],progress.monsterEvolution[id]);
+  assert.equal(restored.monsterXp[id],progress.monsterXp[id]);
+  assert.equal(restored.monsterBonds[id],progress.monsterBonds[id]);
+  assert.equal(getMonsterProgress(restored,id).stage,progress.monsterEvolution[id]);
+ }
+ assert.deepEqual(validateSave(JSON.parse(JSON.stringify(restored))),restored,
+  'Repeated export/import must not silently reset high-level companions');
+});
+
+test('second evolution needs Lv.10, three distinct boss trials and a deliberate evolve action',()=>{
+ const save={...createSave(),xpWallet:2,monsterXp:{medamago:629},
+  monsterEvolution:{medamago:1},monsterTrials:{medamago:['entry','glade','thicket']}};
+ const before=getMonsterProgress(save);
+ assert.equal(before.level,9);
+ assert.equal(before.stage,1);
+ assert.equal(before.ascended,false);
+ const first=feedMonster(save,'medamago',1);
+ assert.equal(first.reward.ascended,false,'XP itself must not trigger evolution');
+ assert.equal(first.reward.evolved,false);
+ assert.equal(first.reward.before.stage,1);
+ assert.equal(first.reward.after.stage,1);
+ assert.equal(first.reward.after.level,10);
+ assert.equal(first.reward.after.canEvolve,true);
+ assert.equal(first.save.xpWallet,1);
+ const evolved=evolveMonster(first.save,'medamago');
+ assert.equal(evolved.reward.ascended,true);
+ assert.equal(evolved.reward.before.stage,1);
+ assert.equal(evolved.reward.after.stage,2);
+ assert.equal(evolved.save.xpWallet,1,'evolution ceremony never spends extra XP');
+ assert.throws(()=>evolveMonster(evolved.save,'medamago'),/すでに第2進化/);
+ const loaded=validateSave(JSON.parse(JSON.stringify(evolved.save)));
+ assert.ok(loaded);
+ assert.equal(loaded.version,save.version);
+ assert.equal(getMonsterProgress(loaded).stage,2,'the earned form persists after save reload');
+});
+
+test('boss trials require distinct chapters, never endless waves or XP alone; legacy forms stay earned',()=>{
+ const start={...createSave(),monsterXp:{medamago:EVOLUTION_XP}};
+ assert.deepEqual(getEvolutionTrialGuide(start),{earned:[],remaining:1,target:{id:'entry',name:'森の入口'}});
+ assert.equal(getMonsterProgress(start).canEvolve,false);
+ assert.throws(()=>evolveMonster(start,'medamago'),/進化には/);
+ const firstReward=finishForest(start,'sunlit','medamago','entry');
+ assert.equal(firstReward.trialEarned,true,'first chapter boss grants a visible new trial seal');
+ const first=firstReward.save;
+ assert.deepEqual(getEvolutionTrialGuide(first).earned,[{id:'entry',name:'森の入口'}]);
+ assert.equal(getEvolutionTrialGuide(first).remaining,0);
+ assert.deepEqual(getMonsterProgress(first).trialAreas,['entry']);
+ assert.equal(getMonsterProgress(first).canEvolve,true);
+ const repeatedReward=finishForest(first,'moss','medamago','entry');
+ assert.equal(repeatedReward.trialEarned,false,'farming one boss never grants a second seal');
+ const repeated=repeatedReward.save;
+ assert.equal(getMonsterProgress(repeated).trialCount,1,'repeating the easiest boss cannot inflate the trial count');
+ const endlessReward=finishForest(repeated,'sunlit','medamago','glade',[],false);
+ assert.equal(endlessReward.trialEarned,false,'endless waves never issue chapter seals');
+ const endless=endlessReward.save;
+ assert.equal(getMonsterProgress(endless).trialCount,1,'endless never mints chapter trial credit');
+ const firstEvolution=evolveMonster(endless,'medamago').save;
+ assert.equal(getMonsterProgress(firstEvolution).stage,1);
+ assert.deepEqual(getEvolutionTrialGuide(firstEvolution).target,{id:'glade',name:'木漏れ日の小道'});
+ const newCompanion={...firstEvolution,ownedMonsters:['medamago','katappo'],monsterXp:{...firstEvolution.monsterXp,katappo:0},monsterEvolution:{...firstEvolution.monsterEvolution,katappo:0}};
+ assert.deepEqual(getEvolutionTrialGuide(newCompanion,'katappo').target,{id:'entry',name:'森の入口'},'each companion has their own unearned boss marks');
+ const rich={...firstEvolution,monsterXp:{medamago:SECOND_EVOLUTION_XP}};
+ assert.equal(getMonsterProgress(rich).canEvolve,false,'second form still needs two more distinct chapters');
+ const second=finishForest(rich,'sunlit','medamago','glade').save;
+ assert.equal(getMonsterProgress(second).canEvolve,false);
+ const third=finishForest(second,'sunlit','medamago','thicket').save;
+ assert.equal(getMonsterProgress(third).canEvolve,true);
+ assert.equal(getEvolutionTrialGuide(third).remaining,0);
+ assert.equal(evolveMonster(third,'medamago').reward.ascended,true);
+
+ const legacy={...createSave(),monsterXp:{medamago:420}};
+ delete legacy.monsterEvolution;delete legacy.monsterTrials;
+ const migrated=validateSave(legacy);
+ assert.equal(getMonsterProgress(migrated).stage,2,'old second forms must never be rolled back');
+ assert.equal(getMonsterProgress(validateSave({...legacy,monsterXp:{medamago:160}})).stage,1);
+ const tampered=validateSave({...third,monsterTrials:{medamago:['entry','entry','not-real','glade','thicket']},monsterEvolution:{medamago:99}});
+ assert.deepEqual(tampered.monsterTrials.medamago,['entry','glade','thicket']);
+ assert.equal(tampered.monsterEvolution.medamago,2);
+});
+
+test('dungeon reports verified learning honestly and never count assisted route as success',()=>{
+ const outcomes=[
+   {promptId:'repeat-station',kind:'listen',outcome:'independent'},
+   {promptId:'repeat-class',kind:'speak',outcome:'supported'},
+   {promptId:'think-cafe',kind:'speak',outcome:'review'},
+   {promptId:'think-trip',kind:'listen',outcome:'independent'},
+   {promptId:'think-cafe',kind:'speak',outcome:'review'}
+ ];
+ const report=summarizeDungeonAttempt('entry',outcomes);
+ assert.equal(report.total,5);
+ assert.equal(report.independent,2);
+ assert.equal(report.supported,1);
+ assert.equal(report.review,2);
+ assert.deepEqual(report.retryIds,['repeat-class','think-cafe']);
+ assert.equal(report.weakest.kind,'speak');
+ assert.equal(report.strongest.kind,'listen');
+ assert.equal(report.complete,true);
+ assert.equal(report.groups.find(s=>s.kind==='speak').independent,0);
+ assert.equal(DUNGEON_SKILLS.listen.goal,'英語の要点を聞き取る');
+ assert.deepEqual(summarizeDungeonAttempt('glade',[]).retryIds,[]);
+ assert.equal(summarizeDungeonAttempt('glade',[]).complete,false);
+ assert.throws(()=>summarizeDungeonAttempt('unverified',[]),/Unknown/);
+ assert.throws(()=>summarizeDungeonAttempt('entry',null),/Invalid/);
+});
+test('all ten dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
+ assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,10);
+ for(const area of DUNGEON_AREAS){
+   const expected=['listen','vocab','speak'];
+   assert.ok(DUNGEON_CHAPTER_SKILLS[area.id].headline.length>=8);
+   assert.equal(DUNGEON_CHAPTER_SKILLS[area.id].boss.length,3);
+   for(let turn=1;turn<=3;turn++){
+     const brief=dungeonBossBrief(area.id,turn);
+     assert.equal(brief.phase,turn);
+     assert.ok(brief.objective.length>3);
+     assert.ok(brief.message.length>2);
+   }
+   assert.equal(dungeonBossBrief(area.id,4),null);
+   const wave=buildForestWave({areaId:area.id,difficulty:'easy',progression:'story',random:()=>.53,bossConversation:true});
+   const regular=regularEncountersFor(area.id);
+   assert.deepEqual(wave.prompts.slice(regular).map(p=>p.kind),[
+     'listen',['thicket','entry','city','city-market','city-blizzard','ruins-core'].includes(area.id)?'grammar':'vocab','speak'
+   ]);
+   if(area.id!=='entry'){
+     const last=wave.prompts.at(-1);
+     const focused=new Set(area.focus);
+     const alternatives=ALL_PROMPTS.filter(p=>p.kind==='speak'&&p.difficulty==='easy'&&focused.has(p.phraseId)&&!p.bossOnly);
+     if(alternatives.length)assert.ok(focused.has(last.phraseId),'Final boss should apply the chapter topic: '+area.id);
+   }
+ }
+});
+test('later chapter bosses examine the same taught themes in a fresh speaking situation',()=>{
+ for(const area of FOREST_AREAS.slice(1)){
+  for(const difficulty of DIFFICULTIES){
+   const finalScenes=new Set();
+   for(let seed=1;seed<=20;seed++){
+    let state=seed;
+    const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+    const wave=buildForestWave({areaId:area.id,difficulty,progression:'story',bossConversation:true,
+     // Due unrelated expressions belong to normal review, not the final exam.
+     reviewPromptIds:['order-coffee'],random});
+    const regular=regularEncountersFor(area.id);
+    const practiced=wave.prompts.slice(0,regular),boss=wave.prompts.slice(regular);
+    assert.equal(new Set(wave.prompts.map(p=>p.id)).size,wave.prompts.length);
+    assert.ok(boss.every(p=>area.focus.includes(p.phraseId)),`${area.id}/${difficulty}: boss left its curriculum`);
+    const reply=boss.at(-1);
+    assert.equal(reply.kind,'speak');
+    assert.ok(practiced.some(p=>p.phraseId===reply.phraseId&&(p.baseId||p.id)!==(reply.baseId||reply.id)),
+     `${area.id}/${difficulty}: speaking boss must apply previously encountered language in a new scene`);
+    finalScenes.add(reply.id);
+   }
+   assert.ok(finalScenes.size>=3,`${area.id}/${difficulty}: boss speaking should not repeat one scripted answer`);
+  }
+ }
+});
+test('full four-chapter campaigns select 44 distinct questions across randomized routes',()=>{
+ for(const difficulty of DIFFICULTIES){
+  for(let seed=1;seed<=100;seed++){
+   let state=seed;
+   const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+   const previousIds=[];
+   for(const [index,area] of FOREST_AREAS.entries()){
+    const wave=buildForestWave({areaId:area.id,difficulty,progression:'story',wave:index+1,
+     previousIds,bossConversation:true,random});
+    assert.equal(wave.prompts.length,forestWaveLengthFor(area.id));
+    for(const prompt of wave.prompts){
+     assert.ok(!previousIds.includes(prompt.id),`${difficulty}/seed${seed}/${area.id}: repeated ${prompt.id}`);
+     previousIds.push(prompt.id);
+    }
+   }
+   assert.equal(previousIds.length,44);
+  }
+ }
+});
+test('repeat adventures rotate expressions, not merely question IDs, while keeping due reviews',()=>{
+ const seeded=seed=>()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
+ for(const areaId of ['entry','glade','city']){
+  let withMemory=0,withoutMemory=0;
+  for(let seed=1;seed<=96;seed++){
+   const earlier=buildForestWave({areaId,progression:'story',wave:1,random:seeded(seed)}).prompts;
+   const recent=new Set(earlier.map(prompt=>prompt.phraseId));
+   const next=buildForestWave({areaId,progression:'story',wave:2,
+    previousIds:earlier.map(prompt=>prompt.id),random:seeded(seed+4000)}).prompts;
+   const unbalanced=buildForestWave({areaId,progression:'story',wave:2,random:seeded(seed+4000)}).prompts;
+   withMemory+=next.filter(prompt=>recent.has(prompt.phraseId)).length;
+   withoutMemory+=unbalanced.filter(prompt=>recent.has(prompt.phraseId)).length;
+  }
+  assert.ok(withMemory<withoutMemory*.82,
+   `${areaId}: repeated expressions must noticeably decrease between adventures`);
+ }
+ const due=buildForestWave({difficulty:'easy',areaId:'entry',random:()=>.3,
+  previousIds:['forest-vocab-ticket-easy'],reviewPromptIds:['forest-vocab-ticket-easy']});
+ assert.ok(due.prompts.some(prompt=>prompt.id==='forest-vocab-ticket-easy'),
+  'Overdue review is more important than avoiding a recent phrase');
+});
+test('five-minute gym mixes new, due and transfer tasks without duplicates or paid AI calls',()=>{
+ const today='2026-10-27';
+ let save=createSave();
+ const fresh=dailyTrainingPlan(save,{today});
+ assert.equal(fresh.prompts.length,8);
+ assert.equal(new Set(fresh.prompts.map(p=>p.id)).size,8);
+ assert.ok(fresh.prompts.every(p=>(p.difficulty||'easy')==='easy'));
+ assert.equal(fresh.counts.review,0);
+ assert.equal(fresh.counts.transfer,0);
+ assert.equal(fresh.counts.new,3);
+ assert.equal(fresh.counts.mixed,5);
+ assert.deepEqual(dailyTrainingPlan(save,{today}).prompts.map(p=>p.id),fresh.prompts.map(p=>p.id));
+ const tomorrow=dailyTrainingPlan(save,{today:'2026-10-28'});
+ assert.equal(tomorrow.prompts.length,8);
+ assert.notDeepEqual(tomorrow.prompts.map(p=>p.id),fresh.prompts.map(p=>p.id),
+  'Untouched daily plans rotate by date instead of repeating alphabetic tasks forever');
+ const latest=dailyTrainingPlan(createSave(),{today:'2026-11-07'});
+ const practicedYesterday={...createSave(),progress:Object.fromEntries(latest.prompts.map(prompt=>[
+  prompt.phraseId,{attempts:1,lastDay:'2026-11-06'}]))};
+ const varied=dailyTrainingPlan(practicedYesterday,{today:'2026-11-07'});
+ assert.ok(varied.prompts.filter((prompt,index)=>varied.phases[index]==='mixed'&&
+   practicedYesterday.progress[prompt.phraseId]?.lastDay==='2026-11-06').length===0,
+  'Mixed practice should prefer fresh situations over yesterday’s expressions when alternatives exist');
+ save=recordAnswer(save,'think-cafe','smooth','2026-10-26').save;
+ save=recordAnswer(save,'repeat-station','again','2026-10-20').save;
+ const mixed=dailyTrainingPlan(save,{today});
+ assert.equal(mixed.prompts.length,8);
+ assert.equal(new Set(mixed.prompts.map(p=>p.id)).size,8);
+ assert.ok(mixed.prompts.some(p=>p.id==='repeat-station'));
+ assert.ok(mixed.phases.includes('review'));
+ assert.ok(mixed.phases.includes('transfer'));
+ assert.ok(mixed.phases.includes('new'));
+ for(const difficulty of ['normal','hard']){
+  const plan=dailyTrainingPlan(save,{difficulty,today});
+  assert.equal(plan.prompts.length,8);
+  assert.ok(plan.prompts.every(p=>p.difficulty===difficulty));
+  assert.equal(new Set(plan.prompts.map(p=>p.id)).size,8);
+ }
+ assert.throws(()=>dailyTrainingPlan(save,{difficulty:'impossible',today}),/Invalid/);
+});
+test('daily gym stores safe local-only verified summaries and 7-day same-level comparison',()=>{
+ const base=createSave();
+ assert.deepEqual(base.dailyHistory,[]);
+ const a=recordDailyCompletion(base,{date:'2026-10-20',difficulty:'easy',total:8,independent:3,hinted:1,elapsedSeconds:322.4});
+ assert.equal(a.dailyHistory[0].elapsedSeconds,322);
+ assert.equal(a.dailyHistory[0].independent,3);
+ assert.deepEqual(base.dailyHistory,[]);
+ assert.equal(dailyGrowthSummary(a).changeSevenDays,null);
+ const b=recordDailyCompletion(a,{date:'2026-10-27',difficulty:'normal',total:8,independent:7,hinted:0,elapsedSeconds:240});
+ assert.equal(dailyGrowthSummary(b).changeSevenDays,null,'Do not compare different levels');
+ const c=recordDailyCompletion(b,{date:'2026-10-27',difficulty:'easy',total:8,independent:6,hinted:1,elapsedSeconds:280});
+ const stats=dailyGrowthSummary(c);
+ assert.equal(stats.sessions,3);
+ assert.equal(stats.weekBeforeRate,38);
+ assert.equal(stats.lastRate,75);
+ assert.equal(stats.changeSevenDays,37);
+ assert.equal(validateSave(c).dailyHistory.length,3);
+ assert.deepEqual(validateSave({...base,dailyHistory:[{date:'bad',difficulty:'easy',total:999}]}).dailyHistory,[]);
+ assert.throws(()=>recordDailyCompletion(base,{date:'2026-10-27',total:8,independent:9,hinted:0,elapsedSeconds:99}),/Invalid/);
+});
+test('daily earned-gold reward requires six independent answers and cannot be farmed',()=>{
+ const base=createSave(),date='2026-11-07';
+ const attempt=(save,values)=>recordDailyCompletion(save,{date,total:8,independent:values.independent,
+  hinted:8-values.independent,elapsedSeconds:240,difficulty:values.difficulty||'easy'});
+ const practice=attempt(base,{independent:5});
+ assert.equal(practice.coins,0,'Answering fewer than six independently must not award gold');
+ assert.deepEqual(practice.rewardedDays,[]);
+ assert.equal(recordDailyCompletion(practice,{date,total:7,independent:7,hinted:0,elapsedSeconds:200}).coins,0,
+  'A shorter or unfinished daily plan cannot mint the full daily bonus');
+ const earned=attempt(practice,{independent:6});
+ assert.equal(earned.coins,12);
+ assert.deepEqual(earned.rewardedDays,['daily-gold:'+date]);
+ const difficultySwitch=attempt(earned,{independent:8,difficulty:'hard'});
+ assert.equal(difficultySwitch.coins,12,'Repeating or switching difficulty is not a second claim');
+ assert.deepEqual(difficultySwitch.rewardedDays,['daily-gold:'+date]);
+ const reloaded=validateSave(difficultySwitch);
+ assert.equal(attempt(reloaded,{independent:8}).coins,12,'A reloaded save still blocks the duplicate');
+ const tomorrow=recordDailyCompletion(reloaded,{date:'2026-11-08',total:8,
+  independent:8,hinted:0,elapsedSeconds:240});
+ assert.equal(tomorrow.coins,24,'A new calendar day can earn another modest bonus');
+ const capped=attempt({...base,coins:999995},{independent:8});
+ assert.equal(capped.coins,999999,'Daily rewards obey the gold wallet cap');
+ assert.equal(attempt({...capped,coins:999000},{independent:8}).coins,999000,
+  'Spending after claiming cannot claim the same day twice');
+});
+test('curated speech checks cannot reward conflicting key details',()=>{
+ const prompt=id=>ALL_PROMPTS.find(item=>item.id===id);
+ for(const [id,answers] of [
+  ['booking-table', ['Could I book a table for two or five?', 'Can I reserve a table for two but actually four people?']],
+  ['order-coffee', ['Can I have an iced coffee instead of hot tea?', 'I would like an iced coffee but actually I want tea.']],
+  ['direction-station', ['Where is the train station rather than the airport?', 'Could you show me the way to the station and bus stop?']],
+  ['agree-friend', ['Saturday at five sounds good.', 'Saturday at three or Sunday at three works for me.']],
+  ['agree-work', ['Friday or Saturday sounds good to me.']],
+  ['prefer-city', ['I prefer the train but actually I want the bus.']]
+ ]){
+  for(const answer of answers){
+   const result=gradeLocalResponse(prompt(id),answer);
+   assert.notEqual(result.status,'correct',id+': '+answer);
+   assert.ok(result.reasons.length>0);
+  }
+ }
+ for(const [id,text] of [
+  ['booking-table','Could I reserve a table for two?'],
+  ['order-coffee','Could I have an iced coffee?'],
+  ['direction-station','Could you show me the way to the station?'],
+  ['agree-friend','That works for me.'],
+  ['prefer-city','I prefer the train because it is faster than the bus.']
+ ])assert.equal(gradeLocalResponse(prompt(id),text).status,'correct',id+': '+text);
+});
+test('arrival meaning distinguishes natural replies, missing time, contradiction and uncertainty',()=>{
+ for(const [answer,status] of [
+   ["I'll be ten minutes late.",'correct'],
+   ["I'm running ten minutes late.",'correct'],
+   ['I will arrive 10 minutes late.','correct'],
+   ["I'm delayed by ten minutes.",'correct'],
+   ["I'll be late.",'incomplete'],
+   ["I'll be there in ten minutes.",'review'],
+   ["I won't be ten minutes late.",'incorrect'],
+   ["I will not be ten minutes late.",'incorrect'],
+   ["I'm ten minutes early.",'incorrect'],
+   ["I'll be twenty minutes late.",'incorrect'],
+   ["I'm not sure if I'll be ten minutes late.",'review'],
+   ['The bus is ten minutes late.','review']
+ ])assert.equal(gradeDelayMeaning(answer,10).status,status,answer);
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const answer of ["I'm running five minutes late.","I'm delayed by 5 minutes."])
+   assert.equal(gradeLocalResponse(byId('late-traffic-easy'),answer).status,'correct',answer);
+ for(const [answer,status] of [
+   ["I'll be late.",'incomplete'],
+   ["I'll be there in five minutes.",'review'],
+   ["I won't be five minutes late.",'incorrect'],
+   ["I'll be ten minutes late.",'incorrect']
+ ])assert.equal(gradeLocalResponse(byId('late-traffic-easy'),answer).status,status,answer);
+ for(const [answer,status] of [
+   ["I'll be ten minutes late.",'correct'],
+   ["I'm running ten minutes late.",'correct'],
+   ["I'm delayed by ten minutes.",'correct'],
+   ["I'll be late.",'incomplete'],
+   ["I'll be there in ten minutes.",'review'],
+   ["I won't be ten minutes late.",'incorrect'],
+   ["I'll be twenty minutes late.",'incorrect']
+ ])assert.equal(gradeLocalResponse(byId('late-call-normal'),answer).status,status,`late-call-normal: ${answer}`);
+ assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be thirty minutes late.").status,'review','More conditions are required at hard difficulty');
+ assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be twenty minutes late.").status,'incorrect');
+});
+
+test('natural everyday replies pass meaning checks without exact model wording',()=>{
+ const get=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,examples] of [
+  ['apology-late',[
+   "Sorry I'm late.",'Sorry for keeping you waiting.',"I'm really sorry I kept you waiting.",
+   'I apologize for the wait.','Sorry I made you wait.','Sorry it took me so long.'
+  ]],
+  ['help-bag',['Can you help me with this bag?','Could you give me a hand with my suitcase?','Can I get some help with my luggage?']],
+  ['order-coffee',['I would like an iced coffee.','Could I get an iced coffee?','One iced coffee please.']],
+  ['direction-station',['Where is the train station?','How can I get to the station?']],
+  ['booking-table',['Can I reserve a table for two?','I would like to book a table for 2.']],
+  ['price-ticket',['How much is the ticket?','What is the entry fee?']]
+ ]){
+  const prompt=get(id);
+  assert.ok(prompt,'Missing source prompt '+id);
+  for(const answer of examples)assert.equal(gradeLocalResponse(prompt,answer).status,'correct',id+': '+answer);
+ }
+ // A mere apology, an opposite claim or unrelated words may NOT mint XP.
+ for(const answer of ['Sorry.','I never kept you waiting.','Sorry I was not late.']){
+  assert.notEqual(gradeLocalResponse(get('apology-late'),answer).status,'correct',answer);
+ }
+ assert.notEqual(gradeLocalResponse(get('booking-table'),'Can I book a table for five?').status,'correct');
+ assert.notEqual(gradeLocalResponse(get('order-coffee'),'I would like hot tea.').status,'correct');
+ // Hard tasks have additional context; easy rubrics do not leak upward.
+ assert.notEqual(gradeLocalResponse(get('apology-late-hard'),'Sorry I am late.').status,'correct');
+});
+test('all listening prompts have a real, matching and locally hosted humanlike AI voice clip',()=>{
+  const prompts=ALL_PROMPTS.filter(prompt=>prompt.kind==='listen');
+  assert.equal(prompts.length,81);
+  assert.equal(Object.keys(LISTENING_AUDIO).length,prompts.length);
+  const voices=new Set();
+  const australian=new Map();
+  for(const prompt of prompts){
+    const clip=LISTENING_AUDIO[prompt.id];
+    assert.ok(clip,'Missing voice clip for '+prompt.id);
+    assert.equal(clip.text,listeningChallengeFor(prompt).audio,'Audio and transcript must match: '+prompt.id);
+    assert.match(clip.src,/^\.\/audio\/listening\/[a-z0-9-]+-[a-f0-9]{12}\.mp3$/);
+    const path=new URL('../prototype/speakingym-monsters/'+clip.src.slice(2),import.meta.url);
+    assert.equal(existsSync(path),true,'Missing hosted audio: '+clip.src);
+    assert.ok(statSync(path).size>5000,'Audio clip is unexpectedly empty: '+prompt.id);
+    const header=readFileSync(path).subarray(0,3).toString('ascii');
+    assert.equal(header,'ID3','MP3 metadata header is missing: '+prompt.id);
+    voices.add(clip.voice);
+    if(clip.voice.startsWith('au_')){
+      const scene=prompt.baseId||prompt.id.replace(/-(normal|hard)$/,'');
+      australian.set(scene,(australian.get(scene)||0)+1);
+      assert.match(clip.src,/-au-[a-f0-9]{12}\.mp3$/,'Australian audio must bust stale US/UK caches: '+prompt.id);
+    }
+  }
+  assert.equal([...australian.values()].reduce((sum,count)=>sum+count,0),18);
+  assert.equal(australian.size,6,'Australian accent must be mixed into six distinct scenarios');
+  assert.ok([...australian.values()].every(count=>count===3),'Keep the same AU voice at all difficulties of each scene');
+  assert.ok(voices.has('au_magdalena')&&voices.has('au_timothy_ferguson'));
+  assert.ok(voices.size>=6,'Listening should include six distinct English voices including both Australian narrators');
+});
+
+test('curriculum includes 4 Snowlit City chapters with authored local quizzes and speaking tasks', () => {
+  assert.equal(PHRASES.length,16);assert.equal(PROMPTS.length,52);assert.equal(MONSTERS.length,44);
+  assert.deepEqual(DIFFICULTIES,['easy','normal','hard']);
+  assert.equal(ALL_PROMPTS.length,414);
+  for(const difficulty of ['normal','hard']) {
+    const level=ALL_PROMPTS.filter(p=>p.difficulty===difficulty);
+    assert.equal(level.length,138);
+    assert.equal(new Set(level.map(p=>p.id)).size,138);
+    assert.ok(level.every(p=>p.task&&p.hint&&p.tip&&['speak','listen','read','vocab','grammar'].includes(p.kind)));
+    assert.equal(level.filter(p=>p.kind==='vocab').length,31);
+    assert.equal(level.filter(p=>p.kind==='grammar').length,27);
+    assert.ok(level.filter(p=>p.kind==='listen').length>=8);
+    assert.ok(level.filter(p=>p.kind==='read').length>=8);
+    assert.ok(level.every(p=>[...p.cue+p.task].every(char=>char.charCodeAt(0)<128)));
+    assert.ok(level.every(p=>p.bossOnly||p.extraAdventure||['vocab','grammar'].includes(p.kind)||PROMPTS.some(e=>e.id===p.baseId&&e.phraseId===p.phraseId)));
+  }
+  const averageLength = level => {const prompts=ALL_PROMPTS.filter(p=>p.difficulty===level);return prompts.reduce((sum,p)=>sum+p.cue.length+p.task.length,0)/prompts.length;};
+  assert.ok(averageLength('hard')>averageLength('normal')*1.1);
+  assert.equal(new Set(PROMPTS.map(p => p.id)).size,52);
+  assert.equal(new Set(MONSTERS.map(m => m.id)).size,MONSTERS.length);
+  assert.ok(MONSTERS.every(monster=>monster.name&&monster.kind&&monster.note));
+  assert.ok(MONSTERS.every(monster => /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(monster.name) && monster.japaneseName && monster.evolvedName));
+  assert.equal(new Set(MONSTERS.map(monster=>monster.name)).size,MONSTERS.length);
+  assert.ok(MONSTERS.every(monster => monster.roots.length>=1 && monster.roots.every(root=>root.word&&root.meaning)));
+  assert.ok(MONSTERS.every(monster => monster.skill?.name && monster.skill?.description));
+  assert.deepEqual(MONSTERS.find(monster=>monster.id==='medamago').roots.map(root=>root.word),['yolk','sunny-side up']);
+  for(const phrase of PHRASES) {
+    assert.equal(PROMPTS.filter(prompt=>prompt.phraseId===phrase.id).length,phrase.id==='think'||['repeat','agree','late','clarify','prefer'].includes(phrase.id)?2:4);
+    assert.ok(phrase.hint&&phrase.tip);
+  }
+  for(const prompt of PROMPTS) {assert.ok(prompt.scene&&prompt.cue&&prompt.answer);if(prompt.kind==='listen')assert.ok(prompt.audio);}
+});
+
+test('eight new speaking contexts each grow from one simple idea into a different advanced task',()=>{
+  assert.equal(SPEAKING_ADVENTURES.length,24);
+  assert.equal(new Set(SPEAKING_ADVENTURES.map(p=>p.id)).size,24);
+  const names=new Set(SPEAKING_ADVENTURES.map(p=>p.baseId));
+  assert.equal(names.size,8);
+  for(const baseId of names){
+    const tasks=DIFFICULTIES.map(level=>SPEAKING_ADVENTURES.find(p=>p.baseId===baseId&&p.difficulty===level));
+    assert.ok(tasks.every(Boolean),'Missing difficulty in '+baseId);
+    assert.equal(new Set(tasks.map(p=>p.answer)).size,3,'Difficulty must change what learners say: '+baseId);
+    assert.ok(tasks[2].cue.length>tasks[1].cue.length&&tasks[1].cue.length>15,'Hard must describe a richer scenario: '+baseId);
+    assert.ok(tasks[2].answer.length>tasks[0].answer.length*1.2,'Hard answers must do more than repeat an easy phrase: '+baseId);
+    assert.ok(/[\u3040-\u30ff\u3400-\u9fff]/.test(tasks[0].cue),'Easy requires Japanese guidance: '+baseId);
+    for(const task of tasks){
+      assert.equal(task.kind,'speak');
+      assert.equal(task.extraAdventure,true);
+      assert.ok(PHRASES.some(p=>p.id===task.phraseId));
+      assert.ok(task.scene&&task.cue&&task.task&&task.hint&&task.tip);
+      assert.ok(task.alternatives.length>=1);
+      assert.ok(ALL_PROMPTS.some(p=>p.id===task.id));
+      assert.equal(gradeLocalResponse(task,task.answer).status,'correct');
+      assert.equal(gradeLocalResponse(task,task.alternatives[0]).status,'correct');
+      assert.equal(gradeLocalResponse(task,'I have no idea.').status,'review');
+    }
+  }
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-easy'),"I'll be five minutes late.").status,'correct');
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='late-traffic-hard'),"I'll be five minutes late.").status,'incorrect');
+  assert.equal(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='help-locker-hard'),'Could you help me open this locker?').status,'review');
+  // The extra story pool can appear in a shuffled Forest without replacing
+  // its required five foe skills or the three connected boss turns.
+  let foundNew=false;
+  for(let i=1;i<=24;i++){
+    const wave=buildForestWave({difficulty:'easy',wave:1,bossConversation:true,random:()=>i/25});
+    if(wave.prompts.slice(0,5).some(p=>p.extraAdventure))foundNew=true;
+    assert.deepEqual(wave.prompts.map(p=>p.kind),['speak','listen','vocab','grammar','speak','listen','grammar','speak']);
+  }
+  assert.ok(foundNew,'New situation prompts must be reachable during Forest encounters');
+});
+
+test('every reading encounter has an authored passage, including higher difficulty levels', () => {
+  const reading=ALL_PROMPTS.filter(prompt=>prompt.kind==='read');
+  assert.ok(reading.length>=24);
+  for(const prompt of reading) {
+    assert.ok(typeof prompt.readText==='string' && prompt.readText.length>=30, `Missing passage for ${prompt.id}`);
+    assert.ok(prompt.answer && prompt.phraseId);
+    assert.ok(!prompt.readText.includes('<script') && !prompt.readText.includes('<img') && !prompt.readText.includes('http://') && !prompt.readText.includes('https://'));
+  }
+  for(const level of ['normal','hard']) {
+    const set=reading.filter(prompt=>prompt.difficulty===level);
+    assert.ok(set.length>=8);
+    for(const prompt of set) {
+      const simpler=ALL_PROMPTS.find(other=>other.id===prompt.baseId);
+      assert.ok(simpler?.readText);
+      assert.notEqual(prompt.readText,simpler.readText,`Difficulty passage was duplicated for ${prompt.id}`);
+    }
+  }
+});
+
+test('every listening task requires an authored audio-first meaning check at its own difficulty',()=>{
+  const listening=ALL_PROMPTS.filter(p=>p.kind==='listen');
+  assert.equal(listening.length,81);
+  for(const level of ['easy','normal','hard'])assert.equal(listening.filter(p=>(p.difficulty||'easy')===level).length,27);
+  for(const prompt of listening){
+    const challenge=listeningChallengeFor(prompt);
+    assert.ok(challenge.audio.length>=prompt.audio.length,`Audio must not be shorter at higher levels: ${prompt.id}`);
+    if(prompt.difficulty)assert.notEqual(challenge.audio,prompt.audio,`Unique audio is required for ${prompt.id}`);
+    assert.equal(challenge.level,prompt.difficulty||'easy');
+    assert.equal(challenge.options.length,challenge.level==='hard'?4:3);
+    assert.equal(new Set(challenge.options).size,challenge.options.length,`Duplicate choices for ${prompt.id}`);
+    assert.ok(challenge.options.every(choice=>choice.length>5));
+    assert.ok(challenge.correctIndex>=0&&challenge.correctIndex<challenge.options.length);
+    assert.equal(challenge.options.filter(choice=>choice===challenge.options[challenge.correctIndex]).length,1);
+    if(challenge.level==='easy')assert.ok(challenge.options.every(choice=>/[ぁ-んァ-ン一-龯]/.test(choice)));
+    else assert.ok(challenge.options.every(choice=>!/[^\x00-\x7F]/.test(choice)));
+    assert.ok(challenge.options.every(choice=>!choice.includes(prompt.answer)));
+  }
+  assert.equal(listeningChallengeFor(ALL_PROMPTS.find(p=>p.kind==='speak')),null);
+  assert.notEqual(listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='problem-wifi-normal')).correctIndex,
+    listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='problem-wifi-hard')).correctIndex);
+});
+
+test('advanced listening checks details that are actually heard, without a second true answer',()=>{
+  const examples=[
+    ['think-trip','only a booking can hold one'],
+    ['repeat-station','fifteen minutes earlier'],
+    ['agree-work','occupied on Thursday'],
+    ['late-call','Everyone else is at the main entrance'],
+    ['clarify-office','before lunch to review the figures'],
+    ['prefer-friend','a train soon after'],
+    ['help-phone','looking at your phone for a while'],
+    ['help-ticket','struggling with the machine'],
+    ['order-coffee','new iced drinks as well as regular coffee'],
+    ['order-breakfast','tea, coffee, or juice'],
+    ['direction-station','checking street signs'],
+    ['direction-museum','offer directions or another kind of help'],
+    ['recommend-food','kitchen closes in about forty minutes'],
+    ['recommend-gift','local handmade items'],
+    ['booking-table','busy after seven'],
+    ['booking-tour','Tomorrow morning'],
+    ['apology-late','twenty minutes ago'],
+    ['apology-email','updated schedule on Monday'],
+    ['decline-dinner','new restaurant tonight'],
+    ['decline-purchase','discount ends this evening'],
+    ['price-ticket','one admission ticket rather than two'],
+    ['price-rental','Short and weekly rentals'],
+    ['change-time','two this afternoon'],
+    ['change-seat','before security'],
+    ['problem-bill','breakfast and room charges'],
+    ['problem-wifi','room needs attention'],
+    ['problem-train','help planning your journey']
+  ];
+  assert.equal(examples.length,27,'Every authored advanced listening scenario needs a precise check');
+  for(const [id,detail] of examples){
+    const hard=ALL_PROMPTS.find(p=>p.id===id+'-hard');
+    const normal=ALL_PROMPTS.find(p=>p.id===id+'-normal');
+    assert.ok(hard&&normal,id);
+    const advanced=listeningChallengeFor(hard),intermediate=listeningChallengeFor(normal);
+    const correct=advanced.options[advanced.correctIndex];
+    assert.ok(correct.includes(detail),id+' must test a meaning-bearing detail of the longer audio');
+    assert.notEqual(correct,intermediate.options[intermediate.correctIndex],id+' must not repeat the normal-level gist');
+    assert.equal(advanced.options.length,4);
+    assert.equal(new Set(advanced.options).size,4);
+    assert.equal(intermediate.coaching,null,'Normal listening must not inherit hard-only coaching');
+    assert.ok(advanced.coaching?.focus.length>8,id+' needs an actionable listening focus after a mistake');
+    assert.ok(advanced.audio.includes(advanced.coaching.quote),id+' evidence must be spoken verbatim');
+    assert.ok(advanced.coaching.meaning.length>5,id+' evidence needs a concrete explanation');
+    assert.ok(!advanced.options.some(option=>option.includes(advanced.coaching.meaning)),
+      id+' must not put the answer in the retry cue');
+  }
+  const food=listeningChallengeFor(ALL_PROMPTS.find(p=>p.id==='recommend-food-hard'));
+  assert.match(food.audio,/kitchen will close in about forty minutes/);
+  assert.ok(food.options.filter((option,index)=>index!==food.correctIndex).every(option=>
+    !/^They tell you the kitchen is closing\.$/.test(option)),
+    'A distractor must not also be true just because the longer recording adds a kitchen closing time');
+});
+
+test('the illustrated adventure scene has distinct accessible route art and stable landmarks', () => {
+  const before=forestWorldArt();
+  const moss=forestWorldArt('moss');
+  const sun=forestWorldArt('sunlit');
+  for(const svg of [before,moss,sun]){
+    assert.ok(svg.startsWith('<svg'));
+    assert.ok(svg.endsWith('</svg>'));
+    assert.equal((svg.match(/forest-landmark/g)||[]).length,3);
+    assert.match(svg,/viewBox="0 0 720 270"/);
+    assert.match(svg,/aria-label="深い森/);
+    assert.ok(!/https?:\/\//.test(svg.replace('http://www.w3.org/2000/svg','')));
+  }
+  assert.match(moss,/forest-world-moss/);
+  assert.match(sun,/forest-world-sunlit/);
+  assert.notEqual(moss,sun);
+});
+test('randomized 5-mob + three-hit boss wave: varied tasks and escalating endless difficulty',()=>{
+ assert.equal(REGULAR_ENCOUNTERS,5);
+ assert.equal(BOSS_HITS,3);
+ assert.equal(FOREST_WAVE_LENGTH,8);
+ assert.deepEqual(DIFFICULTY_TRIES,{easy:3,normal:2,hard:1});
+ const seeded=initial=>{let state=initial;return ()=>((state=(state*1664525+1013904223)>>>0)/4294967296);};
+ const a=buildForestWave({difficulty:'easy',wave:1,random:seeded(99)});
+ const b=buildForestWave({difficulty:'easy',wave:1,random:seeded(12345)});
+ assert.equal(a.prompts.length,8);
+ assert.equal(new Set(a.prompts.map(x=>x.id)).size,8);
+ assert.notDeepEqual(a.prompts.map(x=>x.id),b.prompts.map(x=>x.id));
+ assert.ok(a.prompts.every(x=>!x.difficulty||x.difficulty==='easy'));
+ assert.ok(a.prompts.some(x=>x.kind==='listen'));
+ assert.ok(a.prompts.some(x=>x.kind==='vocab'));
+ assert.ok(a.prompts.some(x=>x.kind==='grammar'));
+ assert.equal(a.prompts[5].kind,'listen');
+ assert.equal(a.prompts[6].kind,'grammar');
+ assert.equal(a.prompts[7].kind,'speak');
+ assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=7);
+ assert.ok(new Set(a.prompts.map(x=>x.phraseId)).size>=6);
+ assert.equal(forestLevel('easy',1),'easy');
+ assert.equal(forestLevel('easy',2),'easy');
+ assert.equal(forestLevel('easy',3),'normal');
+ assert.equal(forestLevel('easy',5),'hard');
+ assert.equal(forestLevel('normal',3),'hard');
+ assert.equal(forestLevel('hard',100),'hard');
+ const boosted=buildForestWave({difficulty:'easy',wave:3,previousIds:a.prompts.map(x=>x.id),random:()=>0.2});
+ assert.equal(boosted.level,'normal');
+ assert.ok(boosted.prompts.every(x=>x.difficulty==='normal'));
+ const reviewWave=buildForestWave({difficulty:'easy',wave:2,reviewPhraseIds:['booking','price'],random:()=>0.31});
+ assert.ok(reviewWave.prompts.some(p=>p.phraseId==='booking'));
+ assert.ok(reviewWave.prompts.some(p=>p.phraseId==='price'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='listen'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='vocab'));
+ assert.ok(reviewWave.prompts.some(p=>p.kind==='grammar'));
+ assert.equal(opponentFor(0,1).id,'mossling');
+ assert.equal(opponentFor(4,1).id,'mothum');
+ assert.equal(opponentFor(5,1).id,'thornking');
+ assert.match(enemyArt('thornking'),/<svg/);
+ for(let i=0;i<5;i++)assert.match(enemyArt(opponentFor(i).id),/forest-enemy-svg/);
+ assert.deepEqual(specialStrike({companionId:'medamago',evolved:true,boss:true}),{strikes:2,ability:'DOUBLE YOLK',usedPower:true});
+ assert.equal(specialStrike({companionId:'medamago',evolved:true,boss:true,usedPower:true}).strikes,1);
+ assert.equal(specialStrike({companionId:'katappo',evolved:true,boss:true}).strikes,1);
+ assert.throws(()=>forestLevel('extreme'),/Invalid/);
+});
+test('Speaking Forest is three authored speaking gates across all difficulty levels', () => {
+  assert.equal(FOREST_STAGES.length,3);
+  assert.equal(FOREST_ROUTES.length,2);
+  const start=createSave();
+  for(const level of DIFFICULTIES){
+    const prompts=getForestPrompts(start,level);
+    assert.equal(prompts.length,3);
+    assert.equal(new Set(prompts.map(x=>x.phraseId)).size,3);
+    assert.deepEqual(prompts.map(x=>x.phraseId),['think','repeat','prefer']);
+    assert.ok(prompts.every(x=>(x.difficulty||'easy')===level));
+  }
+  assert.deepEqual(getForestPrompts(start,'easy').map(x=>x.id),['think-cafe','repeat-station','prefer-city']);
+  assert.deepEqual(getForestPrompts({...start,forest:{clears:1}},'easy').map(x=>x.id),['think-trip','repeat-class','prefer-friend']);
+  assert.throws(()=>getForestPrompts(start,'expert'),/Invalid forest difficulty/);
+});
+test('Forest stamp unlocks only on full route completion; evolved companions find extra cosmetic relics', () => {
+  const initial=createSave();
+  assert.deepEqual(cleanForest(null),{clears:0,bestWave:0,routes:[],relics:[],completedAreas:[],medals:{},recentPromptIds:[],journal:[]});
+  assert.throws(()=>finishForest(initial,'unknown','medamago'),/Invalid forest route/);
+  assert.throws(()=>finishForest(initial,'moss','katappo'),/not owned/);
+  const one=finishForest(initial,'sunlit','medamago');
+  assert.equal(one.save.forest.clears,1);
+  assert.deepEqual(one.discovered,['sunlit-leaf']);
+  assert.deepEqual(initial.forest.relics,[]);
+  assert.equal(one.save.xpWallet,0);
+  const repeated=finishForest(one.save,'sunlit','medamago');
+  assert.equal(repeated.save.forest.clears,2);
+  assert.deepEqual(repeated.discovered,[]);
+  const two=finishForest(repeated.save,'moss','medamago');
+  assert.deepEqual(two.save.forest.routes,['sunlit','moss']);
+  assert.deepEqual(two.discovered,['moss-lantern']);
+  assert.equal(two.save.xpWallet,0);
+  const evolved={...two.save,monsterEvolution:{...two.save.monsterEvolution,medamago:1}};
+  const secret=finishForest(evolved,'sunlit','medamago');
+  assert.deepEqual(secret.discovered,['golden-yolk']);
+  assert.equal(secret.save.forest.relics.length,3);
+  const soxie={...initial,ownedMonsters:['medamago','katappo'],monsterEvolution:{medamago:0,katappo:1}};
+  assert.deepEqual(finishForest(soxie,'moss','katappo').discovered,['moss-lantern','lost-button']);
+  assert.equal(FOREST_RELICS['lost-button'].name,'Lost Button');
+});
+test('Forest souvenirs persist when old saves are loaded without a forest field', () => {
+ const initial=createSave();
+ assert.deepEqual(validateSave({...initial,forest:undefined}).forest,cleanForest(null));
+ const completed=finishForest(initial,'sunlit','medamago').save;
+ assert.deepEqual(validateSave(completed).forest,completed.forest);
+ const polluted=validateSave({...completed,forest:{clears:-1,relics:['sunlit-leaf','x','sunlit-leaf'],routes:['sunlit','bad']}});
+ assert.deepEqual(polluted.forest,{clears:0,bestWave:0,relics:['sunlit-leaf'],routes:['sunlit'],completedAreas:[],medals:{},recentPromptIds:[],journal:[]});
+});
+test('repeated Forest prompts refresh their position in bounded recent history',()=>{
+ assert.deepEqual(cleanForest({recentPromptIds:['think-cafe','repeat-station','think-cafe','unknown']}).recentPromptIds,
+  ['repeat-station','think-cafe']);
+ const initial=createSave();
+ const first=finishForest(initial,'sunlit','medamago','entry',['think-cafe','repeat-station']).save;
+ const second=finishForest(first,'sunlit','medamago','entry',['think-cafe']).save;
+ assert.deepEqual(second.forest.recentPromptIds,['repeat-station','think-cafe']);
+});
+
+test('boss medals require three verified boss questions and reward real independent chapter clears',()=>{
+ const prompts=Array.from({length:8},(_,index)=>({id:`stage-${index}`}));
+ const correct=prompts.map(prompt=>({promptId:prompt.id,outcome:'independent'}));
+ const award=outcomes=>evaluateBossMedal(prompts,outcomes);
+ assert.equal(award(correct).rank,3);
+ assert.equal(award(correct).independent,8);
+ const supported=[...correct];supported[0]={...correct[0],outcome:'supported'};
+ assert.equal(award(supported).rank,2,'one supported task cannot earn gold');
+ const bronze=correct.map((row,index)=>index<3?{...row,outcome:'supported'}:row);
+ assert.equal(award(bronze).rank,1,'multiple hints on the route reduce the earned rank');
+ const reviewBoss=correct.map((row,index)=>index===7?{...row,outcome:'review'}:row);
+ assert.equal(award(reviewBoss).rank,0,'ungraded boss skip never earns an award');
+ assert.equal(award([...correct,{promptId:'defense-extra',outcome:'independent'}]).rank,3,
+  'an extra reactive-defense answer cannot inflate the rank');
+ assert.equal(award([...correct,{promptId:'stage-7',outcome:'review'}]).rank,2,
+  'once an assisted route was used, a later answer cannot erase that history and fake gold');
+ assert.throws(()=>evaluateBossMedal([],[]),/Invalid/);
+ assert.deepEqual(BOSS_MEDAL_NAMES,['未獲得','銅','銀','金']);
+});
+
+test('boss medal bests persist per chapter and difficulty, never downgrade, never rewrite old saves',()=>{
+ const initial=createSave();
+ const earned=finishForest(initial,'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:2});
+ assert.deepEqual(initial.forest.medals,{},'historical collection must not be mutated');
+ assert.deepEqual(earned.save.forest.medals,{entry:{easy:2}});
+ assert.deepEqual(earned.medal,{difficulty:'easy',rank:2,best:2,upgraded:true,bonusXp:20});
+ assert.equal(earned.save.xpWallet,20,'first silver trophy credits XP that may be spent on any companion');
+ const replay=finishForest(earned.save,'moss','medamago','entry',[],true,{difficulty:'easy',rank:1});
+ assert.equal(replay.medal.upgraded,false);
+ assert.equal(replay.medal.best,2);
+ assert.equal(replay.medal.bonusXp,0,'downgrading or farming the same medal cannot mint more XP');
+ assert.equal(replay.save.xpWallet,20);
+ const gold=finishForest(replay.save,'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:3});
+ assert.equal(gold.medal.bonusXp,16,'upgrading silver to gold awards only the difference');
+ assert.equal(gold.save.xpWallet,36,'cumulative bronze/silver/gold bonus cannot exceed the gold tier');
+ const harder=finishForest(replay.save,'sunlit','medamago','entry',[],true,{difficulty:'hard',rank:3});
+ assert.deepEqual(harder.save.forest.medals,{entry:{easy:2,hard:3}});
+ assert.equal(harder.save.xpWallet,84,'hard rewards are independent from easy rewards');
+ assert.deepEqual(validateSave(harder.save).forest.medals,harder.save.forest.medals);
+ assert.deepEqual(finishForest(harder.save,'sunlit','medamago','entry',[],false,{difficulty:'normal',rank:3}).save.forest.medals,
+  harder.save.forest.medals,'endless never awards story medals');
+ assert.deepEqual(cleanBossMedals({entry:{easy:3,hard:4,normal:'3'},intruder:{easy:3}},['entry']),{entry:{easy:3}},
+  'unknown chapters, malformed levels and suspicious ranks are stripped');
+ assert.deepEqual(validateSave({...createSave(),forest:undefined}).forest.medals,{},'v1 saves need no migration prompt');
+ assert.equal(bossTrainingBonus('normal',1,3),36);
+ assert.equal(bossTrainingBonus('hard',3,1),0);
+ assert.throws(()=>bossTrainingBonus('hard',0,9),/Invalid/);
+ const unverified=finishForest(createSave(),'sunlit','medamago','entry',[],true,{difficulty:'easy',rank:0});
+ assert.equal(unverified.save.xpWallet,0,'unverified practice route cannot award battle training XP');
+ assert.deepEqual(unverified.save.forest.medals,{});
+});
+
+test('four Forest areas unlock one at a time, preserve earlier progress and avoid recent repeats',()=>{
+ assert.equal(FOREST_AREAS.length,4);
+ let save=createSave();
+ const visitedIds=new Set(),bosses=new Set(),enemies=new Set();
+ assert.deepEqual(unlockedForestAreas(save).map(a=>a.id),['entry']);
+ assert.throws(()=>finishForest(save,'sunlit','medamago','sanctuary'),/locked/);
+ for(let i=0;i<FOREST_AREAS.length;i++){
+   const area=FOREST_AREAS[i];
+   assert.equal(nextForestArea(save).id,area.id);
+   const run=buildForestWave({difficulty:'easy',wave:i+1,areaId:area.id,progression:'story',
+     previousIds:save.forest.recentPromptIds,random:()=>.47,bossConversation:true});
+   assert.equal(run.level,'easy','Story chapters preserve the chosen learner difficulty');
+   assert.equal(run.prompts.length,forestWaveLengthFor(area.id));
+   assert.equal(new Set(run.prompts.map(p=>p.id)).size,run.prompts.length);
+   assert.ok(['speak','listen','vocab','grammar','read'].every(kind=>run.prompts.some(p=>p.kind===kind)||area.id==='entry'&&kind==='read'));
+   for(const prompt of run.prompts){
+     assert.ok(!visitedIds.has(prompt.id),`Reused ${prompt.id} with unused questions still available`);
+     visitedIds.add(prompt.id);
+   }
+   const boss=opponentFor(regularEncountersFor(area.id),i+1,area.id);
+   bosses.add(boss.id);
+   assert.match(enemyArt(boss.id),/forest-enemy-svg/);
+   for(let j=0;j<regularEncountersFor(area.id);j++){
+     const foe=opponentFor(j,i+1,area.id);
+     enemies.add(foe.id);
+     assert.equal(run.prompts[j].kind,enemyTacticFor(j,i+1,area.id).preferredKind);
+     assert.match(enemyArt(foe.id),/forest-enemy-svg/);
+   }
+   assert.match(forestWorldArt('sunlit',area.id),new RegExp(`forest-world-area-${area.id}`));
+   save=finishForest(save,i%2?'moss':'sunlit','medamago',area.id,run.prompts.map(p=>p.id)).save;
+   assert.equal(save.forest.completedAreas.length,i+1);
+   assert.equal(unlockedForestAreas(save).length,Math.min(i+2,4));
+   assert.ok(save.forest.recentPromptIds.length>=8);
+   assert.deepEqual(validateSave(save).forest,save.forest);
+ }
+ assert.equal(visitedIds.size,44,'Four chapters should deliver 44 distinct prompts on a fresh campaign');
+ assert.equal(bosses.size,4);
+ assert.equal(enemies.size,20);
+ assert.equal(save.forest.relics.length,5,'Three chapter relics plus two route relics');
+ assert.equal(nextForestArea(save).id,'sanctuary','After victory, replay the finale');
+ const endless=finishForest(createSave(),'sunlit','medamago','thicket',[],false);
+ assert.deepEqual(endless.save.forest.completedAreas,[],'Endless should not bypass story chapter unlocks');
+ const legacy=validateSave({...createSave(),forest:{clears:3,routes:['moss'],relics:['moss-lantern']}});
+ assert.deepEqual(legacy.forest.completedAreas,['entry']);
+ assert.deepEqual(unlockedForestAreas(legacy).map(area=>area.id),['entry','glade']);
+});
+
+test('City is a fully gated second world, with its own routes, art and save-compatible rewards',async()=>{
+ assert.equal(FOREST_AREAS.length,4);
+ assert.equal(CITY_AREAS.length,4);
+ assert.equal(DUNGEON_AREAS.length,10);
+ assert.deepEqual(CITY_ROUTES.map(route=>route.id),['market','station']);
+ let save=createSave();
+ assert.deepEqual(unlockedCityAreas(save),[]);
+ assert.deepEqual(unlockedDungeonAreas(save).map(area=>area.id),['entry']);
+ assert.equal(nextDungeonArea(save).id,'entry');
+ assert.throws(()=>finishForest(save,'market','medamago','city'),/locked/);
+ assert.throws(()=>finishForest(save,'sunlit','medamago','city'),/route/);
+ for(const area of FOREST_AREAS){
+  assert.equal(nextDungeonArea(save).id,area.id);
+  save=finishForest(save,'sunlit','medamago',area.id).save;
+ }
+ assert.equal(nextDungeonArea(save).id,'city');
+ assert.deepEqual(unlockedCityAreas(save).map(area=>area.id),['city']);
+ assert.equal(unlockedForestAreas(save).length,4);
+ const before=structuredClone(save);
+ const reward=finishForest(save,'market','medamago','city',['city-vocab-city-platform-easy']);
+ assert.deepEqual(reward.discovered,['market-stamp','city-pass']);
+ assert.equal(reward.route.id,'market');
+ assert.deepEqual(save,before,'City rewards must never mutate prior saves');
+ const resumed=validateSave(reward.save);
+ assert.deepEqual(resumed.forest,reward.save.forest);
+ assert.deepEqual(resumed.forest.completedAreas,['entry','glade','thicket','sanctuary','city']);
+ assert.ok(resumed.forest.recentPromptIds.includes('city-vocab-city-platform-easy'));
+ assert.equal(nextDungeonArea(resumed).id,'city-market','Clearing the first City chapter opens the market');
+ assert.deepEqual(unlockedCityAreas(resumed).map(area=>area.id),['city','city-market']);
+ assert.throws(()=>finishForest(resumed,'market','medamago','city-terminal'),/locked/);
+ let citySave=resumed;
+ const expected=[['city-market','market-bell'],['city-terminal','terminal-ticket'],['city-blizzard','snow-crystal']];
+ for(const [areaId,relicId] of expected){
+   assert.equal(nextDungeonArea(citySave).id,areaId);
+   const finished=finishForest(citySave,'station','medamago',areaId);
+   assert.ok(finished.discovered.includes(relicId),`${areaId} has a distinct souvenir`);
+   citySave=validateSave(finished.save);
+ }
+ assert.equal(unlockedCityAreas(citySave).length,4);
+ assert.equal(nextDungeonArea(citySave).id,'ruins-gate','Completed City opens the Starlit Ruins');
+ assert.equal(unlockedForestAreas(resumed).length,4,'City clears do not create a fifth Forest chapter');
+ const rare=MONSTERS.find(monster=>monster.forestAreas===4);
+ assert.ok(rare);
+ assert.equal(companionUnlockProgress(resumed,rare,'2026-10-28').areaCount,4,'City may not shortcut Forest recruitment');
+ const second=finishForest(resumed,'station','medamago','city');
+ assert.deepEqual(second.discovered,['station-stamp']);
+ assert.ok(second.save.forest.relics.includes('market-stamp'));
+ const {battleArenaArt,relicArt}=await import('../prototype/speakingym-monsters/game-visuals.js');
+ for(const route of CITY_ROUTES){
+  const art=forestWorldArt(route.id,'city');
+  assert.match(art,/city-world-svg/);
+  assert.match(art,/雪の積もった街/,'City exploration must visibly represent winter and urban scenery');
+  assert.match(art,/fill="#ebf8ff"/,'City rooftops must have snow accents');
+  assert.doesNotMatch(art,/forest-world-area-entry/);
+  assert.match(relicArt(route.id==='market'?'market-stamp':'station-stamp'),/<svg/);
+ }
+ assert.equal(CITY_AREAS[0].name,'雪灯りの街・中央広場');
+ assert.equal(CITY_AREAS[0].english,'SNOWLIT CITY');
+ assert.match(battleArenaArt(true,'city'),/data-arena="metro-nexus"/);
+ assert.match(battleArenaArt(false,'city'),/data-arena="city-platform"/);
+ assert.match(battleArenaArt(false,'city'),/SNOW CITY/);
+ assert.match(enemyArt('metroguardian'),/街の敵モンスター/);
+ assert.notEqual(enemyArt('metroguardian'),enemyArt('thornking'));
+});
+
+test('City supplies 13 unique skill-mixed encounters at all levels, including original town-language puzzles',()=>{
+ for(const difficulty of DIFFICULTIES){
+  for(let seed=1;seed<=40;seed++){
+   let state=seed;
+   const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+   const previous=[];
+   for(const area of FOREST_AREAS){
+    const round=buildForestWave({areaId:area.id,difficulty,progression:'story',previousIds:previous,bossConversation:true,random});
+    assert.ok(round.prompts.every(p=>!p.world||p.world===area.id),'Chapter-specific material must stay in its own area');
+    previous.push(...round.prompts.map(p=>p.id));
+   }
+   const city=buildForestWave({areaId:'city',difficulty,progression:'story',previousIds:previous,bossConversation:true,random});
+   assert.equal(city.prompts.length,13);
+   assert.equal(new Set(city.prompts.map(p=>p.id)).size,13);
+   assert.ok(city.prompts.every(p=>!previous.includes(p.id)),`Repeated Forest prompt in City: ${difficulty}/${seed}`);
+   assert.deepEqual(city.prompts.slice(10).map(p=>p.kind),['listen','grammar','speak']);
+   for(const kind of ['listen','speak','read','vocab','grammar'])assert.ok(city.prompts.some(p=>p.kind===kind));
+   assert.ok(city.prompts.some(p=>p.world==='city'&&p.kind==='vocab'));
+   assert.ok(city.prompts.some(p=>p.world==='city'&&p.kind==='grammar'));
+   assert.ok(CITY_AREAS[0].focus.includes(city.prompts.at(-1).phraseId));
+   assert.ok(city.prompts.slice(0,10).some(p=>p.phraseId===city.prompts.at(-1).phraseId&&(p.baseId||p.id)!==(city.prompts.at(-1).baseId||city.prompts.at(-1).id)));
+  }
+ }
+});
+test('later Snowlit City chapters teach their own useful English and unlock only in order',()=>{
+ const ids=CITY_AREAS.map(area=>area.id);
+ assert.deepEqual(ids,['city','city-market','city-terminal','city-blizzard']);
+ for(const difficulty of DIFFICULTIES){
+   for(const area of CITY_AREAS.slice(1)){
+     const original=ALL_PROMPTS.filter(prompt=>prompt.world===area.id&&prompt.difficulty===difficulty);
+     assert.equal(original.length,7,`${area.id} has 4 original quizzes and 3 new speaking situations at ${difficulty}`);
+     assert.deepEqual(original.filter(p=>p.kind==='vocab').length,2);
+     assert.deepEqual(original.filter(p=>p.kind==='grammar').length,2);
+     for(let seed=1;seed<=30;seed++){
+       let state=seed;
+       const random=()=>((state=(state*1664525+1013904223)>>>0)/4294967296);
+       const wave=buildForestWave({areaId:area.id,difficulty,progression:'story',random});
+       assert.equal(wave.prompts.length,13);
+       assert.equal(new Set(wave.prompts.map(p=>p.id)).size,13);
+       assert.ok(wave.prompts.every(p=>!p.world||p.world===area.id),'Other City chapters never leak into this chapter');
+       assert.ok(wave.prompts.filter(p=>p.world===area.id).length>=3,`${area.id} needs visible chapter-specific learning`);
+       assert.equal(opponentFor(12,1,area.id).hp,3);
+       assert.match(forestWorldArt('market',area.id),/city-world-svg/);
+     }
+   }
+ }
+ let save=createSave();
+ for(const area of FOREST_AREAS)save=finishForest(save,'sunlit','medamago',area.id).save;
+ assert.deepEqual(unlockedCityAreas(save).map(x=>x.id),['city']);
+ for(const area of CITY_AREAS){
+   assert.equal(nextDungeonArea(save).id,area.id);
+   save=finishForest(save,'market','medamago',area.id).save;
+   assert.ok(save.forest.completedAreas.includes(area.id));
+ }
+ const restored=validateSave(save);
+ assert.deepEqual(unlockedCityAreas(restored).map(x=>x.id),ids);
+ assert.deepEqual(restored.forest.completedAreas,[...FOREST_AREAS,...CITY_AREAS].map(a=>a.id));
+});
+test('new Snowlit City expressions enter the same 1/3/7-day review and preserve older saves',()=>{
+ const id='city-blizzard-speak-shelter-easy';
+ assert.equal(ALL_PROMPTS.find(p=>p.id===id).world,'city-blizzard');
+ let save=rate(createSave(),id,'smooth','2026-10-20').save;
+ assert.ok(save.retention[id]);
+ assert.equal(save.retention[id].nextDay,'2026-10-21');
+ assert.equal(save.retention[id].stage,1);
+ save=rate(save,id,'smooth','2026-10-20').save;
+ assert.equal(save.retention[id].stage,1,'Repeated same-day practice cannot fake retention');
+ save=rate(save,id,'smooth','2026-10-21').save;
+ assert.equal(save.retention[id].stage,2);
+ assert.equal(save.retention[id].nextDay,'2026-10-24');
+ const hint=rate(save,id,'hint','2026-10-24').save;
+ assert.equal(hint.retention[id].stage,2,'Hints never make the word mastered');
+ assert.ok(retentionOverview(hint,'2026-10-25').due.some(row=>row.id===id));
+ assert.equal(validateSave(hint).retention[id].stage,2);
+ const legacy=createSave();
+ assert.deepEqual(validateSave(legacy).forest.completedAreas,[]);
+ assert.equal(unlockedCityAreas(legacy).length,0);
+});
+
+test('fresh save has a fried-egg companion and does not call account or AI APIs', () => {
+  const save=createSave();
+  assert.equal(STORAGE_KEY,'speakingym-monsters-prototype-v1');
+  assert.deepEqual(save.ownedMonsters,['medamago']);assert.equal(save.selectedMonster,'medamago');
+  assert.equal(save.xpWallet,0);
+  assert.equal(save.difficulty,'easy');
+  assert.equal(learningSummary(save,'2026-10-26').independent,0);
+  assert.deepEqual(validateSave(save),save);
+});
+
+test('spaced retention stages need real 1/3/7-day revisits, not repeated tapping',()=>{
+ let state=createSave();
+ assert.deepEqual(retentionOverview(state,'2026-10-27').due,[]);
+ let result=recordAnswer(state,'think-cafe','smooth','2026-10-26');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,1);
+ assert.equal(result.reward.nextRetentionDay,'2026-10-27');
+ assert.equal(result.reward.bondGained,0);
+ assert.equal(retentionOverview(state,'2026-10-26').due.length,0);
+ assert.equal(retentionOverview(state,'2026-10-27').due.length,1);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-26');
+ assert.equal(result.reward.retentionAdvanced,false);
+ assert.equal(result.save.monsterBonds.medamago,0);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-27');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,2);
+ assert.equal(result.reward.nextRetentionDay,'2026-10-30');
+ assert.equal(result.reward.bondGained,1);
+ assert.equal(state.monsterBonds.medamago,1);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-28');
+ assert.equal(result.reward.retentionAdvanced,false);
+ assert.equal(result.reward.bondGained,0);
+ result=recordAnswer(state,'think-cafe','smooth','2026-10-30');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,3);
+ assert.equal(result.reward.nextRetentionDay,'2026-11-06');
+ assert.equal(state.monsterBonds.medamago,3);
+ assert.equal(retentionOverview(state,'2026-10-31').stable.length,0,'7-day retention is not earned after just three days');
+ assert.equal(retentionTitle(3),'3日後チェック達成');
+ result=recordAnswer(state,'think-cafe','smooth','2026-11-06');
+ state=result.save;
+ assert.equal(result.reward.retentionStage,4);
+ assert.equal(result.reward.nextRetentionDay,'2026-11-20');
+ assert.equal(result.reward.bondGained,3);
+ assert.equal(state.monsterBonds.medamago,6);
+ assert.equal(retentionOverview(state,'2026-11-07').stable.length,1);
+ assert.equal(retentionTitle(4),'7日後チェック達成');
+ assert.deepEqual(validateSave(state).retention,state.retention);
+ assert.deepEqual(validateSave(createSave()).retention,{});
+ const hint=recordAnswer(state,'think-cafe','hint','2026-11-20');
+ assert.equal(hint.reward.bondGained,0);
+ assert.equal(hint.save.retention['think-cafe'].nextDay,'2026-11-21');
+ const fail=recordAnswer(state,'think-cafe','again','2026-11-20');
+ assert.equal(fail.save.retention['think-cafe'].stage,0);
+ assert.equal(fail.reward.xp,0);
+ const tampered=validateSave({...state,retention:{'fake-task':{stage:3,lastDay:'bad',nextDay:'bad'},'think-cafe':{stage:99,lastDay:'2026-10-26',nextDay:'2026-10-27'}}});
+ assert.deepEqual(tampered.retention,{});
+ assert.throws(()=>recordRetention({},'fake-task','smooth','2026-10-27'),/Invalid/);
+ assert.deepEqual(sanitizeRetention(null),{});
+});
+test('hints pause stable retention until a new spaced recovery, without erasing legacy achievements',()=>{
+ let save=createSave();
+ for(const date of ['2026-10-01','2026-10-02','2026-10-05','2026-10-12'])
+  save=rate(save,'think-cafe','smooth',date).save;
+ assert.equal(retentionOverview(save,'2026-10-13').stable.length,1);
+ const earnedBond=save.monsterBonds.medamago;
+ save=rate(save,'think-cafe','hint','2026-10-26').save;
+ assert.equal(save.retention['think-cafe'].stage,4,'Do not delete earned milestones');
+ assert.equal(save.retention['think-cafe'].recoveryPhase,'retry');
+ assert.equal(retentionOverview(save,'2026-10-27').stable.length,0,'Hint cannot count as independent stable recall');
+ assert.equal(validateSave(save).retention['think-cafe'].recoveryPhase,'retry');
+ let attempt=rate(save,'think-cafe','smooth','2026-10-26');
+ assert.equal(attempt.reward.retentionAdvanced,false,'Same-day repeat is not a checkpoint');
+ assert.equal(attempt.save.retention['think-cafe'].recoveryPhase,'retry');
+ attempt=rate(save,'think-cafe','smooth','2026-10-27');
+ save=attempt.save;
+ assert.equal(attempt.reward.retentionAdvanced,false,'Next-day retrieval only starts recovery');
+ assert.equal(save.retention['think-cafe'].recoveryPhase,'wait');
+ assert.equal(save.retention['think-cafe'].nextDay,'2026-11-03','Require a fresh seven-day interval');
+ attempt=rate(save,'think-cafe','smooth','2026-10-28');
+ assert.equal(attempt.save.retention['think-cafe'].recoveryPhase,'wait','Early practice cannot skip a week');
+ attempt=rate(save,'think-cafe','smooth','2026-11-03');
+ save=attempt.save;
+ assert.equal(attempt.reward.retentionAdvanced,false,'Recovery does not mint a duplicate milestone');
+ assert.equal(attempt.reward.bondGained,0);
+ assert.equal(save.monsterBonds.medamago,earnedBond);
+ assert.equal(retentionOverview(save,'2026-11-04').stable.length,1);
+ assert.equal(save.retention['think-cafe'].recoveryPhase,undefined);
+ const legacy={...createSave(),retention:{'think-cafe':{stage:3,lastDay:'2026-10-12',nextDay:'2026-10-19'}}};
+ assert.deepEqual(validateSave(legacy).retention,legacy.retention,'Old saved records remain valid');
+ const fake={...legacy,retention:{'think-cafe':{...legacy.retention['think-cafe'],recoveryPhase:'forged'}}};
+ assert.equal(validateSave(fake).retention['think-cafe'].recoveryPhase,undefined);
+});
+test('due retention adds limited real-world expression transfer, never faking an original checkpoint',()=>{
+ let save=rate(createSave(),'think-cafe','smooth','2026-10-26').save;
+ let plan=retentionPracticePlan(save,'2026-10-27');
+ assert.deepEqual(plan.dueIds,['think-cafe']);
+ assert.deepEqual(plan.transferIds,[],'A first-day memory needs exact recall before transfer');
+ save=rate(save,'think-cafe','smooth','2026-10-27').save;
+ plan=retentionPracticePlan(save,'2026-10-30');
+ assert.deepEqual(plan.dueIds,['think-cafe']);
+ assert.equal(plan.transferIds.length,1,'Same expression, a different speaking context');
+ assert.equal(plan.prompts[1].phraseId,plan.prompts[0].phraseId);
+ assert.notEqual(plan.prompts[1].baseId||plan.prompts[1].id,plan.prompts[0].baseId||plan.prompts[0].id);
+ assert.equal(save.retention[plan.transferIds[0]],undefined,'Building a plan cannot award mastery or XP');
+ assert.equal(new Set(plan.prompts.map(p=>p.id)).size,2);
+ assert.deepEqual(retentionPracticePlan(save,'2026-10-30',{limit:1}).transferIds,[],'Due work takes priority over bonuses');
+ const hinted=rate(save,'think-cafe','hint','2026-10-30').save;
+ assert.deepEqual(retentionPracticePlan(hinted,'2026-10-31').transferIds,[],'Recovery must be independent first');
+ assert.throws(()=>retentionPracticePlan(save,'2026-10-30',{limit:99}),/Invalid/);
+});
+test('companion bond is cosmetic and cannot recruit locked creatures or spend XP',()=>{
+ const original=createSave();
+ const p=recordAnswer(original,'think-cafe','smooth','2026-10-26').save;
+ const next=recordAnswer(p,'think-cafe','smooth','2026-10-27').save;
+ assert.equal(next.monsterBonds.medamago,1);
+ assert.equal(original.monsterBonds.medamago,0);
+ assert.deepEqual(original.ownedMonsters,['medamago']);
+ assert.deepEqual(next.ownedMonsters,['medamago']);
+ assert.ok(next.xpWallet>original.xpWallet);
+ assert.equal(validateSave({...next,monsterBonds:{medamago:-10}}).monsterBonds.medamago,0);
+});
+test('study journal accurately summarizes due, upcoming and learned expressions',()=>{
+  const initial=createSave();
+  const empty=reviewOverview(initial,'2026-10-27');
+  assert.equal(empty.due.length,0);
+  assert.equal(empty.upcoming.length,0);
+  assert.equal(empty.learned,0);
+  assert.equal(empty.mastered,0);
+  assert.equal(empty.total,PHRASES.length);
+  let save=recordAnswer(initial,'think-cafe','smooth','2026-10-26').save;
+  save=flagUncertainReview(save,'help-bag','2026-10-26');
+  save=flagUncertainReview(save,'help-form','2026-10-26');
+  save=flagUncertainReview(save,'booking-table','2026-10-27');
+  const now=reviewOverview(save,'2026-10-27');
+  assert.equal(now.due.length,2); // overnight recall (think) + uncertain help
+  assert.deepEqual(new Set(now.due.map(item=>item.phraseId)),new Set(['think','help']));
+  assert.equal(now.upcoming.length,1);
+  assert.equal(now.learned,1);
+  assert.equal(now.mastered,0);
+  assert.ok(now.scheduled.every((item,i,array)=>i===0||item.due>=array[i-1].due));
+  assert.deepEqual(save.reviewPrompts['booking-table'],'2026-10-28');
+  assert.equal(learningSummary(save,'2026-10-27').reviewCount,2);
+  const later=reviewOverview(save,'2026-10-30');
+  assert.equal(later.due.length,3);
+});
+test('enemy identity determines which English skill appears at each of five mob gates',()=>{
+  for(const difficulty of DIFFICULTIES){
+    for(const wave of [1,2,3]){
+      const picked=buildForestWave({difficulty,wave,random:()=>0.31});
+      for(let i=0;i<REGULAR_ENCOUNTERS;i++){
+        const tactic=enemyTacticFor(i,wave);
+        assert.equal(picked.prompts[i].kind,tactic.preferredKind,
+          `Wave ${wave} foe ${opponentFor(i,wave).id} did not receive ${tactic.preferredKind}`);
+      }
+      assert.equal(picked.prompts.length,FOREST_WAVE_LENGTH);
+      assert.equal(new Set(picked.prompts.map(p=>p.id)).size,FOREST_WAVE_LENGTH);
+    }
+  }
+});
+test('every forest monster advertises its own visual tactic with immutable battle reward rules',()=>{
+  const names=new Set();
+  const guards=new Set();
+  for(let i=0;i<REGULAR_ENCOUNTERS+BOSS_HITS;i++){
+    const foe=opponentFor(i);
+    const tactic=enemyTacticFor(i);
+    assert.deepEqual(tactic,FOREST_TACTICS[foe.id]);
+    assert.ok(tactic.name&&tactic.tell&&tactic.guard);
+    names.add(tactic.name);
+    guards.add(tactic.guard);
+  }
+  assert.equal(names.size,6);
+  assert.equal(guards.size,6);
+  assert.equal(enemyTacticFor(0,2).name,FOREST_TACTICS.thistlet.name);
+  assert.deepEqual(specialStrike({companionId:'katappo',evolved:false,boss:false}),{strikes:1,ability:null,usedPower:false});
+});
+test('practice and challenge pick distinct expressions and prioritize overdue reviews', () => {
+  let save=createSave();
+  const round=selectRoundPrompts(save,6,()=>0,'2026-10-26');
+  assert.equal(round.length,6);assert.equal(new Set(round.map(p=>p.phraseId)).size,6);
+  save=rate(save,'think-cafe','again','2026-10-23').save;
+  const review=selectRoundPrompts(save,1,()=>0,'2026-10-26');
+  assert.equal(review[0].phraseId,'think');
+  assert.throws(()=>selectRoundPrompts(save,17),/Choose/);
+});
+
+test('uncertain answers are revisited without awarding XP or erasing mastery', () => {
+  const fresh=createSave();
+  const flagged=flagUncertainReview(fresh,'help-bag','2026-10-26');
+  assert.deepEqual(fresh.reviewPrompts,{});
+  assert.equal(flagged.xpWallet,0);
+  assert.equal(flagged.totalAnswers,0);
+  assert.equal(flagged.progress.help,undefined);
+  assert.equal(flagged.reviewPrompts['help-bag'],'2026-10-27');
+  assert.equal(learningSummary(flagged,'2026-10-26').reviewCount,0);
+  assert.equal(learningSummary(flagged,'2026-10-27').reviewCount,1);
+  const due=selectRoundPrompts(flagged,1,()=>0,'2026-10-27','easy');
+  assert.equal(due[0].id,'help-bag');
+  const repeated=flagUncertainReview(flagged,'help-bag','2026-10-27');
+  assert.equal(repeated.reviewPrompts['help-bag'],'2026-10-27');
+  const passed=recordAnswer(flagged,'help-bag','smooth','2026-10-27');
+  assert.equal(passed.reward.xp,16);
+  assert.equal(passed.save.reviewPrompts['help-bag'],'2026-10-30');
+  assert.equal(learningSummary(passed.save,'2026-10-27').reviewCount,0);
+  const viewed=recordAnswer(flagged,'help-bag','again','2026-10-27');
+  assert.equal(viewed.reward.xp,0);
+  assert.equal(viewed.save.reviewPrompts['help-bag'],'2026-10-28');
+  assert.equal(viewed.save.xpWallet,0);
+  assert.equal(validateSave(passed.save).reviewPrompts['help-bag'],'2026-10-30');
+  assert.deepEqual(validateSave({...fresh,reviewPrompts:{'fake-id':'2026-10-28','help-bag':'invalid'}}).reviewPrompts,{});
+  assert.throws(()=>flagUncertainReview(fresh,'not-a-prompt'),/Invalid/);
+  assert.throws(()=>flagUncertainReview(fresh,'help-bag','tomorrow'),/Invalid/);
+});
+test('review-focused forest waves retain listening and reading attacks', () => {
+  const wave=buildForestWave({difficulty:'easy',random:()=>0.43,reviewPromptIds:['booking-table','help-bag']});
+  assert.ok(wave.prompts.some(p=>p.id==='booking-table'));
+  assert.ok(wave.prompts.some(p=>p.id==='help-bag'));
+  assert.ok(wave.prompts.some(p=>p.kind==='listen'));
+  assert.ok(wave.prompts.some(p=>p.kind==='vocab'));
+ assert.ok(wave.prompts.some(p=>p.kind==='grammar'));
+  assert.equal(new Set(wave.prompts.map(p=>p.id)).size,8);
+});
+test('narrow natural paraphrases are accepted but contradictory meanings stay unresolved', () => {
+  const prompt=id=>ALL_PROMPTS.find(p=>p.id===id);
+  for(const [id,reply] of [
+    ['help-bag','Could you give me a hand with this bag?'],
+    ['help-phone','Would you mind helping me with my phone?'],
+    ['order-coffee','May I have an iced coffee, please?'],
+    ['direction-station','Could you show me the way to the station?'],
+    ['booking-table','Could I reserve a table for two?'],
+    ['change-room','Would it be possible to move to another room?'],
+    ['problem-wifi','I cannot get the Wi-Fi to work in my room.']
+  ]) {
+    assert.equal(gradeLocalResponse(prompt(id),reply).status,'correct',id);
+  }
+  assert.equal(gradeLocalResponse(prompt('order-coffee'),'I would like a hot tea.').status,'review');
+  assert.equal(gradeLocalResponse(prompt('booking-table'),'Could I reserve a table for six?').status,'review');
+  assert.equal(gradeLocalResponse(prompt('problem-wifi'),'The Wi-Fi is working perfectly.').status,'review');
+});
+test('speaking rubrics accept natural requests but require every normal/hard scene detail',()=>{
+ const prompt=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['order-coffee',"I'd like to order an iced coffee, please."],
+  ['direction-station',"What's the quickest way to the train station?"],
+  ['booking-table',"I'd like a reservation for two, please."],
+  ['think-cafe','Could I have a bit more time to decide?'],
+  ['repeat-station','Would you mind repeating the platform number?'],
+  ['direction-station-normal','Could you tell me how to get to the closest train station?'],
+  ['booking-table-normal',"I'd like a reservation for two for dinner."],
+  ['price-ticket-normal','How much is admission for an adult?'],
+  ['price-ticket-normal','How much does an adult ticket cost?'],
+  ['help-bag-hard','Could you carry both suitcases? The lift is broken.'],
+  ['help-bag-hard','Could you help me carry these two suitcases? The elevator is not working.'],
+  ['order-coffee-hard',"I'd like to order a large iced coffee with no sugar to go."],
+  ['direction-station-hard',"What's the quickest way to the nearest station without using stairs?"],
+  ['direction-station-hard','How do I get to the closest train station with no stairs?'],
+  ['booking-table-hard','Could I make a reservation for two at seven tonight, at a table away from the door?'],
+  ['booking-table-hard','Can I reserve a table for two at seven, not near the entrance?'],
+  ['price-ticket-hard','How much would two adult tickets and one student ticket cost? Is there a student discount?'],
+  ['apology-late-hard',"I'm sorry I kept you waiting twenty minutes. The train was delayed. Thank you for waiting."]
+ ])assert.equal(gradeLocalResponse(prompt(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['order-coffee-hard','Could I have a large iced coffee to go?'],
+  ['order-coffee-hard','Could I have a large iced coffee with sugar to go?'],
+  ['order-coffee-hard',"I don't want a large iced coffee without sugar to go."],
+  ['help-bag-hard','Could you not help me carry these two suitcases? The elevator is not working.'],
+  ['booking-table-normal','Can I book a table for two?'],
+  ['price-ticket-normal',"How much is a child ticket? I'm an adult."],
+  ['booking-table-hard',"I don't want a table for two at seven, not near the door."],
+  ['booking-table-hard','Can I reserve a table for two at seven tonight near the door?'],
+  ['direction-station-normal','Where is the station?'],
+  ['direction-station-hard','How do I get to the nearest train station?'],
+  ['direction-station-hard','How do I get to the bus stop without stairs?'],
+  ['help-bag-hard','Could you carry one suitcase? The elevator is broken.'],
+  ['price-ticket-hard','How much is one adult ticket and one student ticket? Is there a student discount?'],
+  ['apology-late-hard','Sorry for being late by twenty minutes. Thanks for waiting.']
+ ])assert.notEqual(gradeLocalResponse(prompt(id),answer).status,'correct',id+' / '+answer);
+});
+test('advanced daily-life situations accept vetted rephrasing but reject incomplete or altered requests',()=>{
+ const advancedIds=[
+  'help-form-normal','help-form-hard','order-veg-normal','order-veg-hard','order-extra-normal','order-extra-hard',
+  'direction-bus-normal','direction-bus-hard','direction-transfer-normal','direction-transfer-hard',
+  'recommend-visit-normal','recommend-visit-hard','recommend-drink-normal','recommend-drink-hard',
+  'booking-hotel-normal','booking-hotel-hard','booking-haircut-normal','booking-haircut-hard',
+  'apology-spill-normal','apology-spill-hard','apology-noise-normal','apology-noise-hard',
+  'decline-invite-normal','decline-invite-hard','price-delivery-normal','price-delivery-hard',
+  'price-service-normal','price-service-hard','change-room-normal','change-room-hard',
+  'change-date-normal','change-date-hard','problem-food-normal','problem-food-hard'
+ ];
+ for(const id of advancedIds){
+  const prompt=ALL_PROMPTS.find(p=>p.id===id),reply=VETTED_LEVEL_PARAPHRASES[id]?.[0];
+  assert.ok(prompt&&reply,`Missing vetted scenario ${id}`);
+  assert.equal(gradeLocalResponse(prompt,reply).status,'correct',id+' / '+reply);
+ }
+ for(const [id,reply] of [
+  ['help-form-hard','Can you help me fill out a form?'],
+  ['order-veg-hard','Could I have the vegetable plate with fish sauce?'],
+  ['order-extra-hard','Can I have a margherita pizza with extra cheese on both halves?'],
+  ['direction-bus-hard','Where is the stop for the local airport bus?'],
+  ['booking-hotel-hard','Could I book a room for one night?'],
+  ['recommend-drink-hard','Can I have a hot coffee with sugar?'],
+  ['change-room-hard','Could I change rooms?'],
+  ['change-date-hard','Can I move it to Tuesday?'],
+  ['problem-food-hard','The meat dish is great, thank you.']
+ ])assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id===id),reply).status,'correct',id+' must keep all authored constraints');
+});
+test('difficulty selection preserves progress and rewards, and variants share scene mastery', () => {
+  const start=createSave();
+  assert.throws(()=>chooseDifficulty(start,'extreme'),/Invalid difficulty/);
+  const normal=chooseDifficulty(start,'normal');
+  assert.equal(normal.difficulty,'normal');assert.equal(start.difficulty,'easy');
+  const normalRound=selectRoundPrompts(normal,4,()=>0,'2026-10-26');
+  assert.equal(normalRound.length,4);assert.ok(normalRound.every(p=>p.difficulty==='normal'));
+  const hard=chooseDifficulty(normal,'hard');
+  const hardRound=selectRoundPrompts(hard,3,()=>0,'2026-10-26');
+  assert.ok(hardRound.every(p=>p.difficulty==='hard'));
+  assert.throws(()=>selectRoundPrompts(hard,3,()=>0,'2026-10-26','extreme'),/Invalid difficulty/);
+  const first=rate(normal,'think-cafe-normal','smooth','2026-10-26');
+  assert.equal(first.reward.xp,24);
+  assert.equal(first.save.xpWallet,24);
+  const second=rate(first.save,'think-cafe-hard','smooth','2026-10-27');
+  assert.equal(second.reward.xp,32);
+  assert.equal(second.save.progress.think.smoothContexts.length,1);
+  assert.equal(masteryLevel(second.save.progress.think),2);
+  const third=rate(second.save,'think-trip-hard','smooth','2026-10-27');
+  assert.equal(masteryLevel(third.save.progress.think),3);
+  assert.equal(third.save.xpWallet,88);
+  assert.equal(validateSave(third.save).difficulty,'normal');
+  assert.equal(validateSave({...third.save,difficulty:'invalid'}).difficulty,'easy');
+  assert.equal(rate(start,'late-bus-hard','hint').reward.xp,16);
+  assert.equal(rate(start,'late-bus-normal','again').reward.xp,0);
+});
+
+test('example matching is intentionally narrow, not a claim to grade free-form speech', () => {
+  const prompt=PROMPTS.find(p=>p.id==='late-bus');
+  assert.equal(compareWithExamples(prompt,"I'm running a little late!").matchesExample,true);
+  assert.equal(compareWithExamples(prompt,'I am running a little late').matchesExample,true);
+  assert.equal(compareWithExamples(PROMPTS.find(p=>p.id==='help-bag'),'Excuse me, can you help me with this bag, please?').matchesExample,true);
+  assert.equal(compareWithExamples(PROMPTS.find(p=>p.id==='help-bag'),'Can you NOT help me with this bag?').matchesExample,false);
+  assert.equal(compareWithExamples(prompt,'I might not arrive on time').matchesExample,false);
+  assert.equal(compareWithExamples(prompt,'').empty,true);
+  assert.equal(normalizeEnglish('  THAT works for me!  '),'that works for me');
+});
+
+test('speech-recognition spelling variants pass vetted examples without reversing their meaning',()=>{
+  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+  assert.equal(compareWithExamples(byId('late-traffic-easy'),'I will be 5 minutes late.').matchesExample,true);
+  assert.equal(gradeLocalResponse(byId('late-traffic-easy'),'I will be 5 minutes late.').status,'correct');
+  assert.equal(compareWithExamples(byId('late-traffic-easy'),"I'll be late five minutes.").matchesExample,false);
+  assert.notEqual(gradeLocalResponse(byId('late-traffic-easy'),"I'll be late five minutes.").status,'correct');
+  assert.equal(gradeLocalResponse(byId('problem-ticket-easy'),'I have not received my e ticket.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),"Sorry, the bus was canceled, so I will be 20 minutes late. You can wait indoors.").status,'correct');
+  assert.notEqual(gradeLocalResponse(byId('late-call'),"I won't be ten minutes late.").status,'correct');
+  assert.notEqual(gradeLocalResponse(byId('late-call'),'I will not be ten minutes late.').status,'correct');
+  assert.notEqual(gradeLocalResponse(byId('prefer-city-normal'),'I prefer the bus, not the train, because it is faster.').status,'correct');
+});
+
+test('speaking review gives specific corrective clues but never decides correctness',()=>{
+  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+  for(const [id,answer,expected] of [
+    ['late-traffic-easy',"I'll be late five minutes",/ten minutes late/],
+    ['prefer-window-easy','I am prefer a window seat',/I am prefer/],
+    ['problem-ticket-easy',"I didn't received my ticket",/didn't receive/],
+    ['direction-station','Could you tell me where is the station?',/where \+ 主語/],
+    ['repeat-class','Could you repeat me the instructions?',/repeat that for me/]
+  ]){
+    const feedback=speakingFeedbackFor(byId(id),answer);
+    assert.equal(feedback.specific,true,id);
+    assert.match(feedback.clue+feedback.detail,expected,id);
+  }
+  const unclear=speakingFeedbackFor(byId('help-bag'),'Can you carry this for me?');
+  assert.equal(unclear.specific,false);
+  assert.match(unclear.clue,/手伝/);
+  assert.equal(speakingFeedbackFor(byId('forest-vocab-ticket-easy'),'buy'),null);
+  assert.equal(speakingFeedbackFor(byId('late-traffic-easy'),' '),null);
+});
+
+test('all 52 easy speaking situations recognize reviewed natural paraphrases without guessing contradictory answers',()=>{
+  assert.equal(Object.keys(VETTED_PARAPHRASES).length,PROMPTS.length);
+  for(const prompt of PROMPTS){
+    const replies=VETTED_PARAPHRASES[prompt.id];
+    assert.ok(Array.isArray(replies)&&replies.length>=1,'Missing curated paraphrase: '+prompt.id);
+    const unique=new Set(replies.map(normalizeEnglish));
+    assert.equal(unique.size,replies.length,'Duplicate paraphrase: '+prompt.id);
+    for(const reply of replies){
+      assert.equal(compareWithExamples(prompt,reply).matchesExample,true,prompt.id+' / '+reply);
+      const graded=gradeLocalResponse(prompt,reply);
+      assert.equal(graded.status,'correct',prompt.id+' / '+reply);
+      assert.equal(graded.method,'registered-example',prompt.id);
+    }
+  }
+  const overtime=PROMPTS.find(p=>p.id==='decline-overtime');
+  assert.equal(gradeLocalResponse(overtime,"I can't work overtime today.").status,'correct');
+  for(const reply of ['I can work overtime today.',"I can't work overtime tomorrow.","I can't work overtime today, but I can stay late today."]){
+    assert.notEqual(gradeLocalResponse(overtime,reply).status,'correct','Do not reward a contradictory / changed / unvetted response: '+reply);
+  }
+  const help=PROMPTS.find(p=>p.id==='help-bag');
+  assert.equal(gradeLocalResponse(help,'Would you mind giving me a hand with my suitcase?').status,'correct');
+  assert.notEqual(gradeLocalResponse(help,'I do not need help with my suitcase.').status,'correct');
+  assert.notEqual(gradeLocalResponse(PROMPTS.find(p=>p.id==='direction-station'),'Could you show me the way to the bus stop?').status,'correct');
+  assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='decline-overtime-hard'),"I can't work overtime today.").status,'correct','Hard tasks have additional requirements');
+});
+
+test('beginner and higher-level scenes accept vetted alternate wording without weakening hard tasks',()=>{
+  const entries=Object.entries(VETTED_LEVEL_PARAPHRASES);
+  assert.ok(entries.length>=39);
+  const easyEntries=entries.filter(([id])=>id.endsWith('-easy'));
+  assert.equal(easyEntries.length,16,'Cover all new beginner forest/city speaking scenes');
+  for(const [id,replies] of entries){
+    const prompt=ALL_PROMPTS.find(p=>p.id===id);
+    assert.ok(prompt&&['easy','normal','hard'].includes(prompt.difficulty),'Invalid level-specific scene: '+id);
+    for(const reply of replies){
+      assert.equal(gradeLocalResponse(prompt,reply).status,'correct',id+' / '+reply);
+      assert.equal(compareWithExamples(prompt,reply).matchesExample,true,id+' / '+reply);
+    }
+  }
+  const hard=ALL_PROMPTS.find(p=>p.id==='decline-overtime-hard');
+  assert.notEqual(gradeLocalResponse(hard,"Sorry, I can't work overtime today.").status,'correct','Hard refusal requires reason and alternative');
+  assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='booking-table-hard'),'Can I reserve a table for two for dinner?').status,'correct','Hard booking requires time and seating preference');
+  assert.notEqual(gradeLocalResponse(ALL_PROMPTS.find(p=>p.id==='prefer-city-hard'),'I prefer taking the train.').status,'correct','Hard travel preference needs bus tradeoff and reason');
+});
+
+test('beginner speech accepts realistic request variation and missing articles but does not accept reversed intent',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['prefer-window-easy','May I have window seat, please?'],
+  ['prefer-window-easy','Can I sit by the window?'],
+  ['city-market-speak-order-easy','May I have hot tea, please?'],
+  ['city-terminal-speak-ticket-easy','Could I please move my ticket to tomorrow?'],
+  ['city-blizzard-speak-shelter-easy','Can you please tell me where I can wait safely?'],
+  ['order-extra','May I have pizza with extra cheese, please?'],
+  ['direction-bus','Where can I catch the bus to the airport?'],
+  ['recommend-drink',"Could you suggest something that's not too sweet?"],
+  ['booking-haircut','Do you have a haircut appointment available on Saturday?'],
+  ['price-delivery',"What's the shipping fee for this parcel?"],
+  ['problem-food',"This isn't what I ordered."]
+ ])assert.equal(gradeLocalResponse(byId(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['prefer-window-easy','Could I have an aisle seat?'],
+  ['city-market-speak-order-easy','Could I have a cold tea?'],
+  ['city-terminal-speak-ticket-easy','Could I move my ticket to today?'],
+  ['city-blizzard-speak-shelter-easy','Where can I wait unsafely?'],
+  ['city-blizzard-speak-reschedule-easy','Can we meet today instead?'],
+  ['clarify-charge-easy','Is the total forty dollars?'],
+  ['order-extra','A pizza without cheese please.'],
+  ['direction-bus','Where is the train station?'],
+  ['booking-haircut','Can I book a haircut for Sunday?'],
+  ['problem-ticket-easy','I have already received my e-ticket.']
+ ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','Different meaning must not receive XP: '+id+' / '+answer);
+});
+
+
+test('objective local checks accept authored examples and some natural paraphrases, abstain on ambiguous content', () => {
+  for(const prompt of ALL_PROMPTS) {
+    const graded=gradeLocalResponse(prompt,prompt.answer);
+    assert.equal(graded.status,'correct',prompt.id);
+    assert.equal(graded.method,['vocab','grammar'].includes(prompt.kind)?'exact-quiz':'registered-example');
+  }
+  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+  assert.equal(gradeLocalResponse(byId('think-cafe'),'Can I have a moment to decide?').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus'),'I might arrive a little late.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('prefer-city-normal'),'I prefer the train since it is quicker.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'Sorry! My bus has been cancelled, so I will be around 20 minutes late. Please wait inside.').status,'correct');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'My bus was canceled.').status,'review');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'I have no idea.').status,'review');
+  assert.equal(gradeLocalResponse(byId('help-bag'),'Could you help me with this bag?').status,'correct');
+  assert.equal(gradeLocalResponse(byId('help-bag'),'Would you mind giving me a hand with my suitcase?').status,'correct');
+  assert.equal(gradeLocalResponse(byId('booking-table-hard'),'I do not know').status,'review');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'').status,'empty');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'OK').status,'empty');
+  assert.equal(gradeLocalResponse(null,'hello').status,'ungraded');
+  assert.equal(gradeLocalResponse(byId('late-bus-hard'),'No '.repeat(400)).status,'ungraded');
+  assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
+});
+test('three-turn real-world roleplays use independently graded speaking tasks at every difficulty',()=>{
+ assert.equal(ROLEPLAY_SCENARIOS.length,4);
+ for(const scenario of ROLEPLAY_SCENARIOS){
+  for(const difficulty of ['easy','normal','hard']){
+   const play=roleplayFor(scenario.id,difficulty);
+   assert.equal(play.turns.length,3);
+   assert.equal(new Set(play.turns.map(turn=>turn.prompt.id)).size,3);
+   for(const turn of play.turns){
+    assert.equal(turn.prompt.kind,'speak');
+    assert.equal(turn.prompt.difficulty||'easy',difficulty);
+    assert.equal(gradeLocalResponse(turn.prompt,turn.prompt.answer).status,'correct');
+    assert.notEqual(gradeLocalResponse(turn.prompt,'I have no idea.').status,'correct',
+      'A random reply cannot clear the roleplay or award XP');
+   }
+  }
+ }
+ assert.equal(roleplayFor('unknown','easy'),null);
+ assert.throws(()=>roleplayFor('restaurant','unsupported'),/difficulty/);
+ assert.throws(()=>roleplayFor('station','easy',[]),/Missing authored roleplay task/);
+});
+test('roleplay suggestion prefers actually overdue phrases without an AI call',()=>{
+ const save=createSave();
+ assert.deepEqual(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}),{
+  id:'restaurant',reason:'最初の3ターン会話におすすめ'
+ });
+ const station=roleplayFor('station','easy');
+ save.reviewPrompts={[station.turns[0].prompt.id]:'2026-11-01'};
+ assert.deepEqual(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}),{
+  id:'station',reason:'復習期日の表現を1つ含む'
+ });
+ assert.equal(recommendedRoleplay(save,{difficulty:'hard',today:'2026-11-02'}).id,'restaurant',
+  'An easy-level due item should not displace the hard-level curriculum');
+});
+test('roleplay recommendations rotate into new scenes and return to due speaking without shortening spaced review',()=>{
+ let save=createSave();
+ const restaurant=roleplayFor('restaurant','easy');
+ for(const turn of restaurant.turns)save=recordAnswer(save,turn.prompt.id,'smooth','2026-11-02').save;
+ assert.equal(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}).id,'station',
+  'A completed scene should not remain the default when new expressions are available');
+ const later=recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-05'});
+ assert.equal(later.id,'restaurant');
+ assert.match(later.reason,/復習期日/);
+ let saveAfterSkip=createSave();
+ saveAfterSkip=recordAnswer(saveAfterSkip,'booking-hotel','again','2026-11-02').save;
+ assert.equal(recommendedRoleplay(saveAfterSkip,{difficulty:'easy',today:'2026-11-02'}).id,'restaurant',
+  'An example-only response schedules a future review, not an immediate repeat');
+ assert.equal(recommendedRoleplay(saveAfterSkip,{difficulty:'easy',today:'2026-11-03'}).id,'hotel',
+  'When due, an exact missed speaking prompt becomes the recommended conversation');
+});
+test('conversation recap distinguishes verified speaking, hints and example-only practice',()=>{
+ const scenario=roleplayFor('restaurant','easy');
+ const recap=roleplayRecapFor({...scenario,history:[
+  {outcome:'smooth',answer:scenario.turns[0].prompt.answer,checked:['窓側の席を希望する']},
+  {outcome:'skipped',answer:'',checked:['fabricated']},
+  {outcome:'hint',answer:scenario.turns[2].prompt.answer,checked:[]}
+ ]});
+ assert.equal(recap.independent,1);
+ assert.equal(recap.hinted,1);
+ assert.equal(recap.skipped,1);
+ assert.equal(recap.rows.length,3);
+ assert.deepEqual(recap.rows[0].elements,['窓側の席を希望する']);
+ assert.equal(recap.rows[1].confirmed,false);
+ assert.deepEqual(recap.rows[1].elements,[],'example review is never presented as verified ability');
+ assert.equal(recap.rows[1].answer,'');
+ assert.equal(recap.focus.status,'skipped');
+ assert.match(recap.next,/例文を見ず/);
+ assert.match(recap.next,/頼んだ料理と違う/,'the next task must name a specific speaking goal, not only a broad location');
+ assert.match(recap.rows[1].coaching.why,/注文と違う点/);
+ assert.match(recap.rows[1].next,/I ordered/);
+ assert.equal(recap.rows[2].confirmed,true);
+ assert.deepEqual(recap.rows[2].elements,[],'fallback grade must not invent itemized feedback');
+ assert.ok(recap.rows.every(row=>row.next.length>10&&row.example.length>10));
+ const perfect=roleplayRecapFor({...scenario,history:scenario.turns.map(turn=>({outcome:'smooth',answer:turn.prompt.answer}))});
+ assert.equal(perfect.independent,3);
+ assert.equal(perfect.skipped,0);
+ assert.match(perfect.headline,/3ターンを自力/);
+ assert.equal(perfect.focus.status,'smooth');
+ assert.equal(roleplayRecapFor(null),null);
+});
+test('common polite English paraphrases count without granting credit for changed destinations or hard-level omissions',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['help-bag','Would you be able to help me carry this bag?'],
+  ['help-bag','Could you please help me to carry my suitcase?'],
+  ['booking-table','Could we book a table for two, please?'],
+  ['direction-station','Could you tell me how to reach the nearest station?'],
+  ['direction-station','What is the easiest route to the nearest train station?']
+ ])assert.equal(gradeLocalResponse(byId(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['help-bag-hard','Would you be able to help me carry this bag?'],
+  ['booking-table-hard','Could we book a table for two, please?'],
+  ['direction-station-hard','What is the easiest route to the nearest train station?'],
+  ['direction-station','Could you tell me how to reach the bus stop?'],
+  ['help-bag','I do not need help with this bag.']
+ ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','No XP without the requested meaning: '+id+' / '+answer);
+});
+test('positive no-worries agreements and suits-me phrasing retain timing safeguards',()=>{
+ const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
+ for(const [id,answer] of [
+  ['agree-friend','No worries, that suits me perfectly.'],
+  ['agree-work-normal','No problem, Friday suits me fine.'],
+  ['agree-work-hard','No worries, Friday at nine works for me. Could you send the agenda beforehand?'],
+  ['agree-work-normal','I am happy with Friday.']
+ ])assert.equal(gradeLocalResponse(byId(id),answer).status,'correct',id+' / '+answer);
+ for(const [id,answer] of [
+  ['agree-work-normal','No problem, Friday does not work for me.'],
+  ['agree-work-normal','No worries, Thursday suits me fine.'],
+  ['agree-friend','No worries.'],
+  ['agree-work-hard','No problem, Friday at nine suits me fine.'],
+  ['agree-work-hard','No worries, Friday at nine is fine but I cannot attend. Could you send the agenda?']
+ ])assert.notEqual(gradeLocalResponse(byId(id),answer).status,'correct','Do not reward missing or opposite intent: '+id+' / '+answer);
+});
+test('forest, city and ruins objective questions grade deterministically and never reward incorrect taps',()=>{
+  for(const difficulty of DIFFICULTIES){
+    const quizzes=ALL_PROMPTS.filter(p=>p.difficulty===difficulty&&['vocab','grammar'].includes(p.kind));
+    assert.equal(quizzes.length,58);
+    assert.equal(quizzes.filter(p=>p.kind==='vocab').length,31);
+    assert.equal(quizzes.filter(p=>p.kind==='grammar').length,27);
+    assert.deepEqual(new Set(quizzes.filter(p=>p.kind==='vocab').map(p=>p.options.indexOf(p.answer))),new Set([0,1,2]));
+    for(const p of quizzes){
+      assert.equal(gradeLocalResponse(p,p.answer).status,'correct');
+      assert.equal(gradeLocalResponse(p,'').status,'empty');
+      assert.equal(gradeLocalResponse(p,'a very wrong answer').status,'incorrect');
+      if(p.kind==='vocab'){
+        assert.equal(p.options.length,3);
+        assert.ok(p.options.includes(p.answer));
+        assert.equal(new Set(p.options).size,3);
+      }else{
+        assert.ok(p.tokens.length>=4);
+        const original=p.answer.replace(/[.!?]/g,'').split(' ');
+        assert.deepEqual([...p.tokens].sort(),[...original].sort());
+        assert.notDeepEqual(p.tokens,original,`Grammar tiles should not already be solved: ${p.id}`);
+      }
+      const earned=recordAnswer(createSave(),p.id,'smooth','2026-10-27');
+      assert.ok(earned.reward.xp>0);
+      assert.equal(masteryLevel(earned.save.progress[p.phraseId]),1,'Quiz XP must not create spoken fluency mastery');
+      assert.equal(learningSummary(earned.save,'2026-10-27').independent,0);
+      const miss=recordAnswer(createSave(),p.id,'again','2026-10-27');
+      assert.equal(miss.reward.xp,0);
+      assert.equal(miss.save.reviewPrompts[p.id],'2026-10-27');
+      assert.equal(validateSave(miss.save).reviewPrompts[p.id],'2026-10-27');
+    }
+  }
+});
+test('objective quiz weaknesses are stored safely and survive old-save migration',()=>{
+  const initial=createSave();
+  assert.deepEqual(initial.quizProgress,{});
+  assert.deepEqual(validateSave({...initial,quizProgress:undefined}).quizProgress,{});
+  const wrong=rate(initial,'forest-vocab-ticket-easy','again','2026-10-27').save;
+  assert.equal(wrong.quizProgress['forest-vocab-ticket-easy'].misses,1);
+  assert.equal(wrong.quizProgress['forest-vocab-ticket-easy'].nextReviewDay,'2026-10-27');
+  assert.deepEqual(quizWeaknessOverview(wrong,'2026-10-27').due.map(entry=>entry.id),['forest-vocab-ticket-easy']);
+  assert.equal(quizWeaknessOverview(wrong,'2026-10-26').upcoming.length,1);
+  assert.deepEqual(validateSave(JSON.parse(JSON.stringify(wrong))).quizProgress,wrong.quizProgress);
+  const legacy=validateSave({...initial,reviewPrompts:{'forest-grammar-yesterday-easy':'2026-10-25'}});
+  assert.deepEqual(quizWeaknessOverview(legacy,'2026-10-27').due.map(entry=>entry.id),['forest-grammar-yesterday-easy']);
+  const polluted=validateSave({...wrong,quizProgress:{
+    'forest-vocab-ticket-easy':{misses:999999999,cleanStreak:45,lastMissDay:'javascript:bad',lastCleanDay:'2026-10-27',nextReviewDay:'not-a-date',resolved:true},
+    'think-cafe':{misses:100},'fake-quiz':{misses:100}
+  }});
+  assert.deepEqual(Object.keys(polluted.quizProgress),['forest-vocab-ticket-easy']);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].misses,10000);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].cleanStreak,2);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].lastMissDay,null);
+  assert.equal(polluted.quizProgress['forest-vocab-ticket-easy'].nextReviewDay,null);
+});
+
+test('quiz mastery takes two clean spaced reviews, not same-day retries or hints',()=>{
+  const id='forest-vocab-ticket-easy';
+  const empty=createSave();
+  assert.equal(quizWeaknessOverview(rate(empty,id,'smooth','2026-10-27').save,'2026-10-27').total,0);
+  let save=rate(empty,id,'again','2026-10-27').save;
+  save=rate(save,id,'hint','2026-10-27').save;
+  assert.equal(save.quizProgress[id].cleanStreak,0);
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-27');
+  save=rate(save,id,'smooth','2026-10-27').save;
+  assert.equal(save.quizProgress[id].cleanStreak,0);
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-28');
+  save=rate(save,id,'smooth','2026-10-27').save;
+  assert.equal(save.quizProgress[id].cleanStreak,0);
+  save=rate(save,id,'smooth','2026-10-28').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1);
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-31');
+  save=rate(save,id,'smooth','2026-10-29').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1,'Replaying before the scheduled date is not a spaced review');
+  assert.equal(save.quizProgress[id].nextReviewDay,'2026-10-31');
+  save=rate(save,id,'hint','2026-10-31').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1,'Hinted answer cannot count toward mastery');
+  save=rate(save,id,'smooth','2026-10-31').save;
+  assert.equal(save.quizProgress[id].cleanStreak,1,'Earlier hint on the same day disqualifies a clean review');
+  save=rate(save,id,'smooth','2026-11-01').save;
+  assert.equal(save.quizProgress[id].cleanStreak,2);
+  assert.equal(save.quizProgress[id].resolved,true);
+  assert.equal(save.reviewPrompts[id],undefined);
+  assert.equal(quizWeaknessOverview(save,'2026-11-01').resolved.length,1);
+  assert.equal(quizWeaknessOverview(save,'2026-11-01').due.length,0);
+  const relapsed=rate(save,id,'again','2026-11-02').save;
+  assert.equal(relapsed.quizProgress[id].cleanStreak,0);
+  assert.equal(relapsed.quizProgress[id].resolved,false);
+  assert.equal(quizWeaknessOverview(relapsed,'2026-11-02').due.length,1);
+});
+
+test('an overdue word or grammar point takes priority in a later forest encounter',()=>{
+  const repeatVocabulary=buildForestWave({difficulty:'easy',wave:1,quizWeaknessIds:['forest-vocab-ticket-easy'],random:()=>.25});
+  assert.equal(repeatVocabulary.prompts[2].id,'forest-vocab-ticket-easy');
+  const repeatGrammar=buildForestWave({difficulty:'easy',wave:1,quizWeaknessIds:['forest-grammar-yesterday-easy'],random:()=>.25});
+  assert.equal(repeatGrammar.prompts[3].id,'forest-grammar-yesterday-easy');
+  const harder=buildForestWave({difficulty:'normal',wave:1,quizWeaknessIds:['forest-vocab-ticket-easy'],random:()=>.25});
+  assert.equal(harder.prompts[2].baseId,'forest-vocab-ticket');
+  assert.equal(harder.prompts[2].difficulty,'normal');
+  assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
+});
+test('all 174 objective quiz questions have a why, comparison and transfer lesson',()=>{
+  const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
+  assert.equal(quizzes.length,174);
+  for(const prompt of quizzes){
+    const lesson=quizTeachingFor(prompt);
+    assert.ok(lesson?.label&&lesson.clue.length>=22,`Missing explanatory clue: ${prompt.id}`);
+    assert.ok(lesson.detail.length>=16,`Missing example reasoning: ${prompt.id}`);
+    assert.ok(lesson.transfer.length>=30,`Missing transfer context: ${prompt.id}`);
+    assert.ok(!lesson.clue.includes('<')&&!lesson.transfer.includes('<'),`Unsafe markup in ${prompt.id}`);
+  }
+  const order=quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-arrive-easy'));
+  assert.match(order.clue,/late の前/);
+  assert.match(order.transfer,/late ten minutes/);
+  const advancedPrice=quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-price-hard'));
+  assert.match(advancedPrice.clue,/複数形/);
+  assert.equal(quizTeachingFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak')),null);
+});
+test('every wrong vocabulary option has a safe individual meaning, and grammar retries point to the mismatch',()=>{
+ const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
+ assert.deepEqual(missingQuizWordMeanings(quizzes),[],'No authored word distractor may lack a meaning');
+ for(const prompt of quizzes.filter(prompt=>prompt.kind==='vocab')){
+  for(const option of prompt.options.filter(option=>option.toLowerCase()!==prompt.answer.toLowerCase())){
+   const cue=quizRetryCoachFor(prompt,option);
+   assert.equal(cue.kind,'vocab');
+   assert.equal(cue.selected,option);
+   assert.match(cue.message,/文の場面と意味が合うか/);
+   assert.ok(cue.message.includes('「'+option+'」'));
+   assert.ok(!cue.message.includes('「'+prompt.answer+'」'),
+    'Retry coaching cannot name the correct choice before the learner tries again');
+  }
+  assert.equal(quizRetryCoachFor(prompt,prompt.answer),null);
+ }
+ const grammar=ALL_PROMPTS.find(prompt=>prompt.id==='forest-grammar-arrive-easy');
+ const swapped=quizRetryCoachFor(grammar,'I will be late ten minutes.');
+ assert.equal(swapped.kind,'grammar');
+ assert.equal(swapped.matchingPrefix,3);
+ assert.match(swapped.message,/最初の3語/);
+ assert.doesNotMatch(swapped.message,/ten minutes late/, 'Do not leak the correct order');
+ const missing=quizRetryCoachFor(grammar,'I will be');
+ assert.match(missing.message,/3語少ない/);
+ assert.equal(quizRetryCoachFor(grammar,grammar.answer),null);
+ assert.equal(quizRetryCoachFor(grammar,''),null);
+ assert.equal(quizRetryCoachFor(ALL_PROMPTS.find(prompt=>prompt.kind==='speak'),'refund'),null);
+});
+test('every chapter and route has a meaningful but grade-neutral choice event',()=>{
+ assert.deepEqual(Object.keys(FOREST_EVENTS),FOREST_AREAS.map(area=>area.id));
+ const ids=new Set(),outcomes=new Set();
+ for(const area of FOREST_AREAS){
+  for(const route of FOREST_ROUTES){
+   const event=forestEventFor({areaId:area.id,route:route.id,index:4});
+   assert.ok(event,area.id+'/'+route.id);
+   assert.ok(!ids.has(event.id),'Each story chapter and route must be distinct');
+   ids.add(event.id);
+   assert.ok(event.title.length>=5&&event.story.length>=15);
+   const npc=forestNpcDialogueFor(event);
+   assert.ok(npc?.name&&npc.line.length>=30&&npc.meaning.length>=10,
+     `Each Forest encounter needs a contextual English NPC line: ${event.id}`);
+   assert.equal(event.options.length,2);
+   assert.equal(new Set(event.options.map(o=>o.id)).size,2);
+   assert.deepEqual(Object.keys(npc.replies).sort(),event.options.map(o=>o.id).sort());
+   for(const option of event.options){
+    assert.equal(forestEventChoice(event,option.id),option);
+    assert.ok(option.outcome.length>=25&&option.memento.length>=5);
+    assert.ok(!outcomes.has(option.outcome),'Player options should have distinct story consequences');
+    outcomes.add(option.outcome);
+    assert.equal(Object.hasOwn(option,'xp'),false);
+    assert.equal(Object.hasOwn(option,'grade'),false);
+    const reply=npc.replies[option.id];
+    assert.ok(reply.answer.length>=12&&reply.reaction.length>=20,
+      `Choice and response should be useful English, not filler: ${event.id}/${option.id}`);
+    assert.equal(Object.hasOwn(reply,'xp'),false);
+    assert.equal(Object.hasOwn(reply,'grade'),false);
+   }
+   assert.equal(forestEventFor({areaId:area.id,route:route.id,index:3}),null);
+   assert.equal(forestEventChoice(event,'not-a-choice'),null);
+  }
+ }
+ assert.equal(ids.size,8);
+ assert.deepEqual(Object.keys(FOREST_NPC_DIALOGUES).sort(),[...ids].sort());
+ assert.equal(outcomes.size,16);
+ assert.equal(forestEventFor({areaId:'unknown',route:'sunlit',index:4}),null);
+ assert.equal(forestEventFor({areaId:'entry',route:'unknown',index:4}),null);
+ assert.equal(forestEventFor({areaId:'entry',route:'sunlit',index:5}),null);
+ assert.equal(forestEventChoice(null,'inspect'),null);
+ assert.equal(forestNpcDialogueFor(null),null);
+});
+test('all ten chapter bosses stage listening, language puzzle and speaking with honest narrative',()=>{
+  assert.deepEqual(Object.keys(FOREST_BOSS_CHAPTERS),DUNGEON_AREAS.map(a=>a.id));
+  assert.deepEqual(Object.keys(FOREST_BOSS_SIGNATURES),DUNGEON_AREAS.map(a=>a.id));
+  for(const area of DUNGEON_AREAS){
+    for(const level of DIFFICULTIES){
+      const wave=buildForestWave({difficulty:level,wave:1,areaId:area.id,progression:'story',bossConversation:true,random:()=>.44});
+      const start=regularEncountersFor(area.id);
+      const phases=wave.prompts.slice(start).map((prompt,i)=>forestBossPhase({areaId:area.id,index:i+start,wave:1,level,prompt}));
+      assert.equal(phases.length,3);
+      assert.deepEqual(phases.map(p=>p.turn),[1,2,3]);
+      assert.deepEqual(phases.map(p=>p.kind),['listen',['entry','thicket','city','city-market','city-blizzard','ruins-core'].includes(area.id)?'grammar':'vocab','speak']);
+      assert.ok(phases.every(p=>p.areaId===area.id&&p.title&&p.context&&p.chapter));
+      assert.equal(new Set(phases.map(p=>p.signature.id)).size,3,'Boss moves change with each phase');
+      assert.ok(phases.every(p=>p.signature.name&&p.signature.tell&&p.signature.guard));
+      assert.equal(new Set(phases.map(p=>p.phaseKey)).size,3);
+      assert.ok(phases.every(p=>!p.context.includes(wave.prompts[p.turn-1+start].answer)),'Dialogue cannot reveal answers');
+      if(area.id==='entry')assert.ok(phases.every(p=>p.authored),'Entrance retains hand-authored dialogue');
+      else assert.ok(phases.every(p=>!p.authored),'Other chapters use their own non-answer reveals');
+      if(level!=='easy'&&area.id!=='entry')assert.match(phases[0].context,/Listen/);
+    }
+  }
+  const prompt=buildForestWave({difficulty:'easy',random:()=>.5}).prompts[5];
+  assert.equal(forestBossPhase({areaId:'bad',index:5,prompt}),null);
+  assert.equal(forestBossPhase({areaId:'entry',index:4,prompt}),null);
+  assert.equal(forestBossPhase({areaId:'entry',index:8,prompt}),null);
+  assert.equal(forestBossPhase({areaId:'entry',index:5,prompt:{kind:'speak'}}),null);
+});
+test('first-wave boss conversation joins listening, word order and speaking without duplicating encounters',()=>{
+  for(const level of DIFFICULTIES){
+    const turns=bossConversationFor(1,level);
+    assert.equal(turns.length,3);
+    assert.deepEqual(turns.map(turn=>turn.turn),[1,2,3]);
+    for(const [i,kind] of ['listen','grammar','speak'].entries()){
+      const prompt=ALL_PROMPTS.find(item=>item.id===turns[i].id);
+      assert.ok(prompt,`Missing ${level} boss turn ${i+1}`);
+      assert.equal(prompt.kind,kind);
+      assert.equal(prompt.difficulty||'easy',level);
+      assert.ok(turns[i].title&&turns[i].context);
+      assert.deepEqual(bossConversationTurn(1,level,i+5),turns[i]);
+    }
+    const reply=ALL_PROMPTS.find(prompt=>prompt.id===turns[2].id);
+    assert.equal(reply.bossOnly,true);
+    assert.equal(gradeLocalResponse(reply,reply.answer).status,'correct');
+    assert.equal(gradeLocalResponse(reply,'I have no idea.').status,'review','Unverified natural speech must never be labeled objectively wrong');
+    const wave=buildForestWave({difficulty:level,wave:1,bossConversation:true,random:()=>.99});
+    assert.deepEqual(wave.prompts.slice(5).map(p=>p.id),turns.map(t=>t.id));
+    assert.equal(new Set(wave.prompts.map(p=>p.id)).size,8);
+    assert.deepEqual(wave.prompts.map(p=>p.kind),['speak','listen','vocab','grammar','speak','listen','grammar','speak']);
+  }
+  assert.equal(bossConversationFor(2,'easy'),null);
+  assert.equal(bossConversationTurn(1,'easy',4),null);
+  assert.equal(bossConversationTurn(1,'easy',8),null);
+  assert.equal(bossConversationFor(1,'invalid'),null);
+  const later=buildForestWave({difficulty:'easy',wave:2,bossConversation:true,random:()=>.51});
+  assert.equal(later.prompts[6].kind,'vocab','Endless later waves retain alternating boss skills');
+  assert.ok(!later.prompts.some(prompt=>prompt.bossOnly));
+  const normal=ALL_PROMPTS.find(prompt=>prompt.id==='boss-delay-apology-normal');
+  assert.equal(gradeLocalResponse(normal,'Sorry, the bus is running late, please go inside.').status,'correct');
+  assert.equal(gradeLocalResponse(normal,'I am having a lovely day.').status,'review');
+  const hard=ALL_PROMPTS.find(prompt=>prompt.id==='boss-delay-apology-hard');
+  assert.equal(gradeLocalResponse(hard,'Sorry, my bus was canceled. I will be 20 minutes late. Please stay inside.').status,'correct');
+  for(const level of DIFFICULTIES){
+    const selected=selectRoundPrompts(createSave(),16,()=>.5,'2026-10-27',level);
+    assert.ok(selected.every(prompt=>!prompt.bossOnly),`${level} normal practice must not include boss-only dialogue`);
+  }
+});
+test('expanded dungeon quizzes change targets across levels and explain the language point',()=>{
+  const quizzes=ALL_PROMPTS.filter(p=>['vocab','grammar'].includes(p.kind));
+  assert.equal(quizzes.length,174);
+  assert.equal(new Set(quizzes.map(p=>p.id)).size,174);
+  const baseIds=new Set(quizzes.map(p=>p.baseId));
+  assert.equal(baseIds.size,58);
+  for(const baseId of baseIds){
+    const variants=quizzes.filter(p=>p.baseId===baseId);
+    assert.deepEqual(variants.map(p=>p.difficulty),['easy','normal','hard']);
+    for(const p of variants){
+      assert.ok(p.hint.length>=12,`${p.id} needs a useful hint`);
+      assert.ok(p.tip.length>=24,`${p.id} needs a useful explanation`);
+      assert.ok(!p.cue.includes('<')&&!p.tip.includes('<'),`${p.id} must remain plain text`);
+    }
+  }
+  // Harder *new* topics are not a padded restatement of the same answer.
+  for(const baseId of ['forest-vocab-bill','forest-vocab-route','forest-vocab-allergy','forest-vocab-timing','forest-vocab-agreement','forest-vocab-preference','forest-vocab-arrival-update','forest-vocab-suggestion','forest-vocab-hotel','forest-vocab-details']){
+    assert.equal(new Set(quizzes.filter(p=>p.baseId===baseId).map(p=>p.answer)).size,3,baseId);
+  }
+  const drink=ALL_PROMPTS.find(p=>p.id==='recommend-drink');
+  assert.match(drink.cue,/甘すぎない/);
+  assert.match(drink.answer,/not?\s+too\s+sweet|isn't\s+too\s+sweet/i);
+  assert.ok(drink.alternatives.every(answer=>/not too sweet|isn't too sweet/i.test(answer)),
+    'All model answers must retain the key sweetness constraint');
+  assert.equal(gradeLocalResponse(drink,drink.answer).status,'correct');
+  assert.equal(gradeLocalResponse(drink,'Could you recommend a drink that is not too sweet?').status,'correct',
+    'A natural meaning-preserving drink request must not interrupt the battle as uncertain');
+  assert.notEqual(gradeLocalResponse(drink,'Could you recommend a drink that is very sweet?').status,'correct',
+    'Removing the sweetness restriction must not earn XP');
+});
+test('forest quiz controls respect English-only difficulty and keep typed vocabulary choices in sync',()=>{
+  for(const difficulty of DIFFICULTIES){
+    const vocab=ALL_PROMPTS.find(p=>p.kind==='vocab'&&p.difficulty===difficulty);
+    const grammar=ALL_PROMPTS.find(p=>p.kind==='grammar'&&p.difficulty===difficulty);
+    const vocabHtml=quizControlsHtml(vocab),grammarHtml=quizControlsHtml(grammar);
+    assert.match(vocabHtml,/data-vocab-option="2"/);
+    assert.match(grammarHtml,/data-grammar-piece="0"/);
+    if(difficulty==='easy'){
+      assert.match(vocabHtml,/単語を選ぼう/);
+      assert.match(grammarHtml,/単語を順番にタップ/);
+    }else{
+      assert.match(vocabHtml,/Find the word that completes/);
+      assert.match(grammarHtml,/Tap the words to build/);
+      assert.doesNotMatch(vocabHtml+grammarHtml,/[ぁ-んァ-ン一-龯]/);
+    }
+  }
+  const prompt=ALL_PROMPTS.find(p=>p.kind==='vocab'&&p.difficulty==='normal');
+  const makeButton=i=>({dataset:{vocabOption:String(i)},attrs:{},handlers:{},
+    addEventListener(type,handler){this.handlers[type]=handler;},
+    setAttribute(name,value){this.attrs[name]=value;}});
+  const buttons=prompt.options.map((_,i)=>makeButton(i));
+  const input={value:'',handlers:{},addEventListener(type,handler){this.handlers[type]=handler;}};
+  wireQuizControls(prompt,{querySelector:()=>input,querySelectorAll:()=>buttons});
+  buttons[1].handlers.click();
+  assert.equal(input.value,prompt.options[1]);
+  assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','true','false']);
+  input.value='another answer';input.handlers.input();
+  assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','false']);
+  input.value=prompt.options[2].toUpperCase();input.handlers.input();
+  assert.deepEqual(buttons.map(b=>b.attrs['aria-pressed']),['false','false','true']);
+});
+test('saved review orders due or missed tasks first without duplicating records',()=>{
+ const base=createSave();
+ const save={...base,savedPromptIds:['think-cafe','repeat-station','forest-vocab-ticket-easy'],
+   reviewPrompts:{'repeat-station':'2026-10-20'},
+   quizProgress:{'forest-vocab-ticket-easy':{misses:2,cleanStreak:0,nextReviewDay:'2026-10-25',resolved:false}}};
+ const work=savedReviewQueue(save,'2026-10-27');
+ assert.deepEqual(new Set(work.map(x=>x.prompt.id)),new Set(save.savedPromptIds));
+ assert.equal(work.filter(x=>x.due).length,2);
+ assert.deepEqual(new Set(work.slice(0,2).map(x=>x.prompt.id)),new Set(['repeat-station','forest-vocab-ticket-easy']));
+ assert.equal(work.at(-1).due,false);
+ assert.equal(savedReviewPrompts(save,'2026-10-27').length,3);
+ assert.equal(savedReviewQueue(validateSave(createSave()),'2026-10-27').length,0);
+});
+test('user-selected review stores exact questions without breaking older saves',()=>{
+ const original=createSave();
+ assert.deepEqual(original.savedPromptIds,[]);
+ assert.deepEqual(savedReviewPrompts(original),[]);
+ const marked=toggleSavedPrompt(original,'repeat-station');
+ assert.deepEqual(marked.savedPromptIds,['repeat-station']);
+ assert.deepEqual(original.savedPromptIds,[]);
+ assert.deepEqual(savedReviewPrompts(marked).map(p=>p.id),['repeat-station']);
+ const twice=toggleSavedPrompt(marked,'repeat-station');
+ assert.deepEqual(twice.savedPromptIds,[]);
+ const restored=validateSave({...marked,savedPromptIds:['repeat-station','repeat-station','unknown','think-cafe']});
+ assert.deepEqual(new Set(restored.savedPromptIds),new Set(['repeat-station','think-cafe']));
+ assert.deepEqual(validateSave({...original,savedPromptIds:undefined}).savedPromptIds,[]);
+ assert.throws(()=>toggleSavedPrompt(marked,'nonsense'),/Unknown prompt/);
+});
+test('rare forest recruits need language, real spaced recall and cleared chapters',()=>{
+  const rare=MONSTERS.filter(c=>['fuwari','kompass','pikap','mokuryu'].includes(c.id));
+  assert.deepEqual(rare.map(c=>c.forestAreas),[1,2,3,4]);
+  assert.equal(new Set(rare.map(c=>c.id)).size,4);
+  let save=createSave();
+  // The base authored prompts cover all 16 expression groups (unlike a
+  // compact listening-only sample of the extended curriculum).
+  const independent=PROMPTS.filter((p,index)=>index%2===0);
+  for(const p of independent)save=rate(save,p.id,'smooth','2026-10-26').save;
+  assert.equal(learningSummary(save).independent,16);
+  assert.equal(rare.filter(c=>save.ownedMonsters.includes(c.id)).length,0,'Language alone cannot unlock forest rares');
+  save=finishForest(save,'sunlit','medamago','entry',[],true).save;
+  assert.equal(captureEligibleMonsters(save).captured.filter(id=>rare.some(c=>c.id===id)).length,0,
+    'A Forest clear and one-day cramming are not enough for the original rare recruits');
+  assert.equal(companionUnlockProgress(save,rare[0]).currentRecall,0);
+  save=rate(save,'think-cafe','smooth','2026-10-27').save;
+  assert.ok(save.ownedMonsters.includes('fuwari'));
+  assert.equal(save.ownedMonsters.includes('kompass'),false);
+  save=finishForest(save,'sunlit','medamago','glade',[],true).save;
+  assert.equal(save.ownedMonsters.includes('kompass'),false,'Chapter two still needs a second separately retained expression');
+  save=rate(save,'repeat-station','smooth','2026-10-27').save;
+  assert.ok(save.ownedMonsters.includes('kompass'));
+  assert.equal(save.ownedMonsters.includes('pikap'),false,'Mastery and chapter 3 required');
+  assert.equal(save.ownedMonsters.includes('mokuryu'),false,'Last boss and multiple mastered phrases required');
+  assert.equal(companionUnlockProgress(save,rare[1]).currentRecall,2);
+  assert.equal(companionUnlockProgress(save,rare[2]).currentRecall,0);
+  save=rate(save,'think-cafe','hint','2026-10-30').save;
+  assert.equal(companionUnlockProgress(save,rare[1]).currentRecall,1,'Hints pause current retention; previously owned allies remain owned');
+  assert.ok(save.ownedMonsters.includes('kompass'));
+  assert.deepEqual(captureEligibleMonsters(save).captured,[],'Award is idempotent');
+  const legacy=validateSave({...save,forest:{clears:2,completedAreas:['entry','glade']}});
+  assert.ok(legacy.ownedMonsters.includes('fuwari'));
+  assert.ok(legacy.ownedMonsters.includes('kompass'));
+  assert.equal(companionUnlockProgress(createSave(),rare[0]).ready,false);
+  assert.equal(companionUnlockProgress(save,rare[1]).ready,false,'New capture would wait for independent recovery');
+});
+test('the twelve new companions have earned, location-specific recruitment and unique art at every stage',()=>{
+ const forestIds=['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko'];
+ const cityIds=['kippu','kofuu','mafura','yukidama','tegami','tokirin'];
+ const expansion=MONSTERS.filter(c=>[...forestIds,...cityIds].includes(c.id));
+ assert.equal(expansion.length,12);
+ assert.equal(new Set(expansion.map(c=>c.ascendedName)).size,12);
+ for(const monster of expansion){
+  assert.equal(Boolean(monster.cityAreas),cityIds.includes(monster.id),monster.id);
+  assert.equal(Boolean(monster.forestAreas),forestIds.includes(monster.id),monster.id);
+  assert.equal(companionUnlockProgress(createSave(),monster).ready,false,`${monster.id} starts locked`);
+  const states=[0,1,2].map(stage=>monsterArt(monster.id,stage));
+  assert.equal(new Set(states).size,3,`${monster.id} has distinct pixel evolution states`);
+  for(const [stage,art] of states.entries()){
+   assert.match(art,new RegExp(`data-pixel-sprite="${monster.id}"`));
+   assert.match(art,new RegExp(`data-stage="${stage}"`));
+   assert.match(art,/shape-rendering="crispEdges"/);
+  }
+ }
+ for(const id of ['hoshiri','hiokko','yukidama','tegami','tokirin']){
+  const monster=expansion.find(c=>c.id===id);
+  assert.ok(monster.retentionStage>=3&&monster.retentionUnlock>=2,`${id} must earn rare recruitment over multiple days`);
+ }
+});
+test('Snowlit City recruits require real chapter clears and spaced retention, not XP shortcuts',()=>{
+ const bell=MONSTERS.find(creature=>creature.id==='yukibell');
+ const fox=MONSTERS.find(creature=>creature.id==='railfox');
+ assert.equal(bell.cityAreas,2);assert.equal(fox.cityAreas,4);
+ assert.equal(companionUnlockProgress(createSave(),bell).ready,false);
+ let save=createSave();
+ // Existing records remain valid and eight expressions have actually been
+ // used in two contexts on separate days; city chapters cannot replace this.
+ const mastered=Object.fromEntries(PHRASES.slice(0,8).map(phrase=>[phrase.id,{
+   attempts:2,smoothContexts:['scene-a','scene-b'],smoothDays:['2026-10-20','2026-10-21']
+ }]));
+ save={...save,progress:mastered,retention:Object.fromEntries(['think-cafe','repeat-station','prefer-city'].map(id=>
+   [id,{stage:3,lastDay:'2026-10-25',nextDay:'2026-10-28'}]))};
+ assert.equal(companionUnlockProgress(save,bell).ready,false,'Language and retention alone do not unlock city rares');
+ for(const area of [...FOREST_AREAS,...CITY_AREAS.slice(0,2)])
+   save=finishForest(save,area.world==='city'?'market':'sunlit','medamago',area.id).save;
+ assert.equal(companionUnlockProgress(save,bell).ready,true);
+ assert.equal(companionUnlockProgress(save,fox).ready,false);
+ let awarded=captureEligibleMonsters(save);
+ assert.ok(awarded.captured.includes('yukibell'));
+ assert.ok(!awarded.captured.includes('railfox'));
+ save=awarded.save;
+ for(const area of CITY_AREAS.slice(2))save=finishForest(save,'station','medamago',area.id).save;
+ assert.equal(companionUnlockProgress(save,fox).ready,true);
+ awarded=captureEligibleMonsters(save);
+ assert.ok(awarded.captured.includes('railfox'));
+ assert.equal(captureEligibleMonsters(awarded.save).captured.length,0,'No repeat recruitment on replay');
+ assert.ok(validateSave(awarded.save).ownedMonsters.includes('railfox'));
+});
+test('highest-rarity creatures need multiple 3-day and 7-day checkpoints across distinct expressions',()=>{
+ let save=createSave();
+ const contexts=[['think-cafe','think-trip'],['repeat-station','repeat-class'],
+  ['help-bag','help-phone'],['late-bus','late-call'],['prefer-city','prefer-friend']];
+ for(const [first] of contexts)save=rate(save,first,'smooth','2026-10-26').save;
+ for(const [first,second] of contexts){
+  save=rate(save,first,'smooth','2026-10-27').save;
+  save=rate(save,second,'smooth','2026-10-27').save;
+ }
+ for(const [first] of contexts)save=rate(save,first,'smooth','2026-10-30').save;
+ for(const id of ['entry','glade','thicket','sanctuary'])
+  save=finishForest(save,'moss','medamago',id,[],true).save;
+ save=captureEligibleMonsters(save).save;
+ assert.ok(save.ownedMonsters.includes('pikap'),'3-day checkpoints + three areas unlock epic creature');
+ assert.equal(save.ownedMonsters.includes('mokuryu'),false,'Legendary must wait for seven days');
+ for(const [first] of contexts)save=rate(save,first,'smooth','2026-11-06').save;
+ assert.ok(save.ownedMonsters.includes('mokuryu'),'Three distinct week-old recalls + all four areas unlock legendary');
+ assert.equal(companionUnlockProgress(save,MONSTERS.find(c=>c.id==='mokuryu')).currentRecall,5);
+ assert.deepEqual(captureEligibleMonsters(save).captured,[]);
+});
+test('exploration journal preserves story choices across clears and old saves, without XP',()=>{
+ let save=createSave();
+ assert.deepEqual(cleanForest(save.forest).journal,[]);
+ const x=recordForestEvent(save,'entry-sunlit','inspect');
+ assert.equal(x.discovered,true);
+ assert.equal(x.save.xpWallet,0);
+ assert.equal(x.save.ownedMonsters.length,1);
+ assert.equal(x.save.forest.journal.length,1);
+ assert.deepEqual(save.forest.journal,[],'Source save stays unmodified');
+ assert.equal(recordForestEvent(x.save,'entry-sunlit','inspect').discovered,false);
+ save=recordForestEvent(x.save,'entry-sunlit','follow').save;
+ save=finishForest(save,'sunlit','medamago').save;
+ assert.equal(save.forest.journal.length,2);
+ const reload=validateSave(save);
+ assert.equal(reload.forest.journal.length,2);
+ assert.equal(cleanForest({...save.forest,journal:[...save.forest.journal,{eventId:'untrusted',choiceId:'bad'},null]}).journal.length,2);
+ assert.throws(()=>recordForestEvent(save,'entry-sunlit','unknown'),/Unknown/);
+ assert.deepEqual(validateSave({...createSave(),forest:{clears:0}}).forest.journal,[]);
+});
+test('a genuine new expression grows the companion and unlocks the odd sock', () => {
+  const initial=createSave();
+  const first=rate(initial,'think-cafe');
+  assert.equal(first.reward.xp,16);assert.equal(first.reward.mastery,2);
+  assert.equal(first.save.xpWallet,16);
+  assert.equal(first.save.monsterXp.medamago,0);
+  assert.equal(initial.progress.think,undefined); // input is not mutated
+  const second=rate(first.save,'repeat-class');
+  assert.deepEqual(second.reward.captured,[],'Two independent expressions should not instantly unlock a companion');
+  const third=rate(second.save,'agree-friend');
+  const fourth=rate(third.save,'help-bag');
+  assert.deepEqual(fourth.reward.captured,['katappo']);
+  assert.equal(learningSummary(fourth.save).independent,4);
+  assert.ok(fourth.save.ownedMonsters.includes('katappo'));
+  const selected=selectMonster(fourth.save,'katappo');assert.equal(selected.selectedMonster,'katappo');
+  assert.throws(()=>selectMonster(fourth.save,'cone'),/まだ仲間/);
+});
+
+test('correct completions stock XP, skips do not, and familiar phrases can be practised', () => {
+  let save=rate(createSave(),'think-cafe','again').save;
+  const current=save.xpWallet;
+  const another=rate(save,'think-trip','smooth');
+  assert.equal(another.reward.xp,16);
+  assert.equal(another.save.xpWallet,current+16);
+  assert.equal(another.save.monsterXp.medamago,0);
+  assert.equal(another.reward.mastery,2);
+  assert.equal(another.save.progress.think.attempts,2);
+});
+
+test('saved XP may be freely allocated to any owned companion', () => {
+  let save=createSave();
+  save=rate(save,'think-cafe','smooth').save;
+  save=rate(save,'repeat-class','smooth').save;
+  assert.equal(save.xpWallet,32);
+  // Feeding is a separate feature: start from an existing owned companion.
+  save={...save,ownedMonsters:['medamago','katappo'],monsterXp:{...save.monsterXp,katappo:0}};
+  const first=feedMonster(save,'katappo',10);
+  assert.equal(first.save.xpWallet,22);
+  assert.equal(first.save.monsterXp.katappo,10);
+  assert.equal(first.save.monsterXp.medamago,0);
+  assert.equal(save.xpWallet,32);
+  const second=feedMonster(first.save,'medamago',22);
+  assert.equal(second.save.xpWallet,0);
+  assert.equal(second.save.monsterXp.medamago,22);
+  assert.throws(()=>feedMonster(second.save,'katappo',1),/足りません/);
+  assert.throws(()=>feedMonster(save,'cone',1),/まだ仲間/);
+  assert.throws(()=>feedMonster(save,'katappo',0),/整数/);
+  assert.throws(()=>feedMonster(save,'katappo',1.5),/整数/);
+});
+
+test('mastery needs independent speaking in another context on another day', () => {
+  let save=rate(createSave(),'think-cafe','smooth','2026-10-26').save;
+  save=rate(save,'think-trip','smooth','2026-10-26').save;
+  assert.equal(masteryLevel(save.progress.think),2);
+  save=rate(save,'think-trip','smooth','2026-10-27').save;
+  assert.equal(masteryLevel(save.progress.think),3);
+  assert.equal(save.progress.think.nextReviewDay,'2026-11-03');
+  assert.equal(learningSummary(save,'2026-11-03').reviewCount,1);
+});
+
+test('monsters unlock through skill growth; feeding XP needs a boss trial and explicit evolution', () => {
+  let save=createSave();
+  const dayOne=PROMPTS.filter((p,index)=>index%2===0);
+  for(const prompt of dayOne)save=rate(save,prompt.id).save;
+  assert.equal(learningSummary(save).independent,16);
+  assert.ok(save.ownedMonsters.includes('purupun'));
+  assert.ok(save.ownedMonsters.includes('nororo'));
+  assert.ok(save.ownedMonsters.includes('keshipon'));
+  assert.ok(save.ownedMonsters.includes('amekurage'));
+  assert.equal(getMonsterProgress(save).evolved,false);
+  for(const prompt of PROMPTS.filter((p,index)=>index%2===1))save=rate(save,prompt.id,'smooth','2026-10-27').save;
+  assert.equal(learningSummary(save,'2026-10-27').mastered,16);
+  assert.ok(save.ownedMonsters.includes('koge'));
+  assert.ok(save.ownedMonsters.includes('cone'));
+  assert.ok(save.ownedMonsters.includes('donako'));
+  assert.ok(save.xpWallet>=EVOLUTION_XP);
+  assert.equal(getMonsterProgress(save).evolved,false);
+  const given=feedMonster(save,'purupun',EVOLUTION_XP);
+  assert.equal(given.reward.evolved,false);
+  assert.equal(given.reward.leveledUp,true);
+  assert.equal(getMonsterProgress(given.save,'purupun').evolved,false);
+  const trial=finishForest(given.save,'sunlit','purupun').save;
+  assert.equal(getMonsterProgress(trial,'purupun').canEvolve,true);
+  const evolved=evolveMonster(trial,'purupun');
+  assert.equal(evolved.reward.evolved,true);
+  assert.equal(getMonsterProgress(evolved.save,'purupun').evolved,true);
+  assert.equal(getMonsterProgress(given.save,'medamago').evolved,false);
+});
+
+test('manual and hinted ratings keep review due, and a completed challenge tracks a personal best', () => {
+  let save=rate(createSave(),'prefer-city','hint','2026-10-26').save;
+  assert.equal(masteryLevel(save.progress.prefer),1);
+  assert.equal(save.progress.prefer.nextReviewDay,'2026-10-27');
+  assert.equal(addDays('2026-12-31',1),'2027-01-01');
+  save=finishRound(save,3);save=finishRound(save,1);
+  assert.equal(save.completedRuns,2);assert.equal(save.bestSmooth,3);
+  assert.throws(()=>finishRound(save,PHRASES.length+1),/Invalid/);
+});
+
+test('unknown save formats are rejected, while old pre-wallet saves migrate safely', () => {
+  const legacy={...createSave(),monsterXp:undefined,rewardedDays:undefined,progress:{think:{attempts:1,smoothContexts:['think-cafe','bad'],smoothDays:['2026-10-26'],lastRating:'smooth'}}};
+  delete legacy.xpWallet;
+  const safe=validateSave(legacy);
+  assert.equal(safe.monsterXp.medamago,0);
+  assert.equal(safe.xpWallet,0);
+  assert.deepEqual(safe.progress.think.smoothContexts,['think-cafe']);
+  assert.deepEqual(safe.rewardedDays,[]);
+  assert.equal(validateSave({...createSave(),version:2}),null);
+  assert.equal(validateSave({...createSave(),ownedMonsters:['unknown']}),null);
+});
+
+test('battle arena is independent artwork and game assets contain no platform pictographs', async () => {
+  const {battleArenaArt,guardArt,relicArt}=await import('../prototype/speakingym-monsters/game-visuals.js');
+  const {readdir,readFile}=await import('node:fs/promises');
+  const mob=battleArenaArt(), boss=battleArenaArt(true);
+  assert.match(mob,/data-arena="moonstone-court"/);
+  assert.match(boss,/data-arena="thorn-vault"/);
+  assert.notEqual(mob,boss);
+  for(const arena of [mob,boss]) {
+    assert.doesNotMatch(arena,/class="forest-world-svg"|data-landmark=|forest-world-trail/);
+    assert.notEqual(arena,forestWorldArt());
+  }
+  assert.match(guardArt(),/<svg/);
+  for(const id of Object.keys(FOREST_RELICS))assert.match(relicArt(id),/<svg/);
+  const dir=new URL('../prototype/speakingym-monsters/',import.meta.url);
+  for(const file of (await readdir(dir)).filter(f=>/\.(js|html|css)$/.test(f))) {
+    assert.doesNotMatch(await readFile(new URL(file,dir),'utf8'),/\p{Extended_Pictographic}/u,`${file} must not contain platform emoji`);
+  }
+});
+
+test('save import validation prevents non-finite XP, counters and impossible monster levels',()=>{
+ const broken={...createSave(),xpWallet:'Infinity',monsterXp:{medamago:'1e309'},
+  completedRuns:Infinity,bestSmooth:'1e309',totalAnswers:'-1e309',
+  progress:{think:{attempts:'1e309',smoothContexts:[],smoothDays:[]}}};
+ const cleaned=validateSave(broken);
+ assert.equal(cleaned.xpWallet,0);
+ assert.equal(cleaned.monsterXp.medamago,0);
+ assert.equal(cleaned.completedRuns,0);
+ assert.equal(cleaned.bestSmooth,0);
+ assert.equal(cleaned.totalAnswers,0);
+ assert.equal(cleaned.progress.think.attempts,0);
+ assert.equal(getMonsterProgress(cleaned).level,1);
+ const huge=validateSave({...createSave(),xpWallet:10**20,monsterXp:{medamago:10**20},
+  completedRuns:10**20,bestSmooth:10**20,totalAnswers:10**20,
+  progress:{think:{attempts:10**20}}});
+ assert.equal(huge.xpWallet,1_000_000_000);
+ assert.equal(huge.monsterXp.medamago,1_000_000_000);
+ assert.equal(huge.completedRuns,1_000_000_000);
+ assert.equal(huge.bestSmooth,999);
+ assert.equal(huge.totalAnswers,1_000_000_000);
+ assert.equal(huge.progress.think.attempts,1_000_000_000);
+ const legacy={...createSave(),xpWallet:24,monsterXp:{medamago:160},
+  completedRuns:5,totalAnswers:28,progress:{think:{attempts:3}}};
+ delete legacy.monsterEvolution;
+ const valid=validateSave(legacy);
+ assert.equal(valid.xpWallet,24);
+ assert.equal(valid.monsterXp.medamago,160);
+ assert.equal(getMonsterProgress(valid).evolved,true);
+ assert.equal(valid.progress.think.attempts,3);
+});
+
+test('original companions use the pixel atlas and expanded companions have original pixel SVG art',()=>{
+ const path='../prototype/speakingym-monsters/';
+ const companions=readFileSync(new URL(path+'pixel-companions.png',import.meta.url));
+ const enemies=readFileSync(new URL(path+'pixel-enemies.png',import.meta.url));
+ for(const [bytes,width,height] of [[companions,720,132],[enemies,720,48]]){
+  assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+  assert.equal(bytes.readUInt32BE(16),width);
+  assert.equal(bytes.readUInt32BE(20),height);
+  assert.ok(bytes.length<50_000,'the compressed pixel-art atlas stays under 50 KB');
+ }
+ for(const monster of MONSTERS){
+  const young=monsterArt(monster.id,false),grown=monsterArt(monster.id,true);
+  assert.match(young,/class="monster-svg pixel-art /,monster.id);
+  if(['tsubomi','kinokko','shizurin','hoshiri','pipino','hiokko','kippu','kofuu','mafura','yukidama','tegami','tokirin','runerun','gearbat','shardling','astrowisp','namihana','michiru','sorella','kometta','kohan','domoro','lumika','pofuyu','neonko','shirobue','runezo','orbitto','tokeru'].includes(monster.id)){
+   assert.match(young,/shape-rendering="crispEdges"/,monster.id);
+   assert.match(grown,/data-stage="1"/,monster.id);
+   assert.doesNotMatch(young,/pixel-companions.png/,monster.id);
+  }else{
+   assert.match(young,/href="\.\/pixel-companions.png"/,monster.id);
+   assert.match(grown,/href="\.\/pixel-companions.png"/,monster.id);
+   assert.match(grown,/y="-44"/,monster.id);
+   assert.match(grown,/<clipPath /,monster.id);
+  }
+  assert.notEqual(young,grown,monster.id);
+ }
+ for(const id of ['mossling','thistlet','spookap','bramblet','mothum','thornking','sunwarden','mistknight','elderroot','signbit','tickety','signalyn','parceloo','lanternet','metroguardian','sunmoss','fogling','rootlet','marketwarden','railkeeper','blizzardking']){
+  assert.match(enemyArt(id),/href="\.\/pixel-enemies.png"/,id);
+ }
+});

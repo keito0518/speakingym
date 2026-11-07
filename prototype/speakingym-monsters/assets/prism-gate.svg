@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" width="900" height="1600">
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="29%" r="78%"><stop stop-color="#165d97"/><stop offset=".28" stop-color="#103366"/><stop offset=".7" stop-color="#091938"/><stop offset="1" stop-color="#03091c"/></radialGradient>
+    <radialGradient id="aura" cx="50%" cy="43%" r="54%"><stop stop-color="#d0ffff" stop-opacity=".94"/><stop offset=".1" stop-color="#6fffff" stop-opacity=".7"/><stop offset=".33" stop-color="#22a0e3" stop-opacity=".37"/><stop offset=".65" stop-color="#3c55cd" stop-opacity=".11"/><stop offset="1" stop-color="#050c25" stop-opacity="0"/></radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b8ffff" stop-opacity=".85"/><stop offset=".19" stop-color="#4fc4f7" stop-opacity=".22"/><stop offset=".45" stop-color="#2539aa" stop-opacity=".55"/><stop offset=".74" stop-color="#43f5ff" stop-opacity=".12"/><stop offset="1" stop-color="#defdff" stop-opacity=".69"/></linearGradient>
+    <linearGradient id="prism" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#eaffff"/><stop offset=".13" stop-color="#7affed"/><stop offset=".35" stop-color="#2db7ff"/><stop offset=".63" stop-color="#7158e9"/><stop offset=".82" stop-color="#bb7fff"/><stop offset="1" stop-color="#f3efff"/></linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b3275" stop-opacity=".2"/><stop offset=".55" stop-color="#1a2e75" stop-opacity=".9"/><stop offset="1" stop-color="#030b22"/></linearGradient>
+    <linearGradient id="beam" x1="0" x2="1"><stop stop-color="#44ecff" stop-opacity="0"/><stop offset=".5" stop-color="#78ebff" stop-opacity=".62"/><stop offset="1" stop-color="#44ecff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="rail" x1="0" x2="1"><stop stop-color="#2446a4"/><stop offset=".5" stop-color="#6be9ff"/><stop offset="1" stop-color="#2446a4"/></linearGradient>
+    <pattern id="grid" width="88" height="88" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M 88 0 L 0 0 0 88" fill="none" stroke="#5bbbf4" stroke-opacity=".16" stroke-width="2"/></pattern>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h900v1600H0z"/>
+  <path fill="url(#aura)" d="M0 0h900v1600H0z"/>
+  <!-- Sleek architectural inlays; no columns or old-world arches. -->
+  <path d="M0 0H190L275 195 155 430 0 555Z" fill="#143862" opacity=".73"/>
+  <path d="M900 0H710L625 195 745 430 900 555Z" fill="#143862" opacity=".73"/>
+  <path d="M0 0h69l105 235L0 495Zm900 0h-69L726 235l174 260Z" fill="url(#glass)" opacity=".55"/>
+  <path d="M0 550 158 405l72 58L54 733 0 753Zm900 0L742 405l-72 58 176 270 54 20Z" fill="#29659e" opacity=".44"/>
+  <path d="M0 755 158 520l-33 349L0 1010Zm900 0L742 520l33 349 125 141Z" fill="#142952" opacity=".84"/>
+  <path d="M90 0 186 220 112 370M810 0 714 220l74 150M5 741 159 518l-19 303M895 741 741 518l19 303" fill="none" stroke="#65dcfc" stroke-width="5" opacity=".65"/>
+  <path d="M94 0 190 220 116 370M806 0 710 220l74 150" fill="none" stroke="#d2f9ff" stroke-width="2" opacity=".88"/>
+  <path d="M115 70h52l58 125-62 142h-40l62-142Zm670 0h-52l-58 125 62 142h40l-62-142Z" fill="#72e8ff" opacity=".06"/>
+  <!-- Volumetric crystalline corridor and precise horizontal energy rails. -->
+  <path d="M-45 590H945M-45 638H945M-45 686H945" stroke="#68c6ff" stroke-width="2" opacity=".16"/>
+  <path d="M0 735h248l51 72h302l51-72h248" stroke="#55cfff" stroke-width="7" opacity=".45" fill="none"/>
+  <path d="M0 741h245l51 72h308l51-72h245" stroke="#d3faff" stroke-width="2" opacity=".7" fill="none"/>
+  <path d="M450 110 170 820l280 170 280-170Z" stroke="#4ed9fa" stroke-width="3" opacity=".22" fill="url(#glass)"/>
+  <path d="M450 205 252 724l198 111 198-111Z" stroke="#d0fcff" stroke-width="2" opacity=".36" fill="none"/>
+  <!-- Beams cross from off-screen and frame the core. -->
+  <path d="M-120 160 450 715 1020 160" stroke="url(#beam)" stroke-width="13" fill="none" opacity=".4"/>
+  <path d="M450 0v980" stroke="url(#beam)" stroke-width="34" opacity=".15"/>
+  <path d="M450 0v980" stroke="#99eaff" stroke-width="2" opacity=".25"/>
+  <!-- Precision-reactor haloes, hexagonal perimeter and moving-light geometry. -->
+  <g transform="translate(450 485)" fill="none">
+    <circle r="280" stroke="#4bc0f7" stroke-opacity=".32" stroke-width="3"/>
+    <circle r="248" stroke="#9defff" stroke-opacity=".25" stroke-width="1.7" stroke-dasharray="10 16 35 21"/>
+    <circle r="208" stroke="#66edff" stroke-opacity=".5" stroke-width="3" stroke-dasharray="120 15 24 15"/>
+    <path d="M0-296 257-148v296L0 296-257 148v-296Z" stroke="url(#prism)" stroke-width="5" opacity=".48"/>
+    <path d="M0-267 231-133v266L0 267-231 133v-266Z" stroke="#9df2ff" stroke-width="2" opacity=".45"/>
+    <path d="M0-335v40M0 296v40M-335 0h40M295 0h40" stroke="#e6fdff" stroke-width="5" opacity=".7"/>
+    <path d="M-195-195-145-145M195 195l-50-50M195-195l-50 50M-195 195l50-50" stroke="#67f4ff" stroke-width="5" opacity=".53"/>
+    <circle r="169" stroke="#dcfbff" stroke-opacity=".6" stroke-width="2.5" stroke-dasharray="3 9"/>
+  </g>
+  <!-- Luminous faceted floating prism, suspended within the machinery. -->
+  <g transform="translate(450 485)">
+    <path d="M0-163 112-89 135 75 0 166-135 75-112-89Z" fill="#0b3469" stroke="#89f6ff" stroke-width="7"/>
+    <path d="M0-163 112-89 0 22-112-89Z" fill="url(#glass)"/>
+    <path d="M0 22 112-89 135 75 0 166Z" fill="url(#prism)" opacity=".65"/>
+    <path d="M0 22-112-89-135 75 0 166Z" fill="#2f90da" opacity=".63"/>
+    <path d="M0-163v185m0 0v144m0-144 112-111M0 22-112-89" stroke="#d5ffff" stroke-opacity=".84" stroke-width="4" fill="none"/>
+    <path d="M0-106 60-53 50 49 0 91-50 49-60-53Z" fill="url(#prism)" opacity=".83"/>
+    <path d="M0-74 30-29 24 36 0 65-24 36-30-29Z" fill="#ebffff" opacity=".94"/>
+    <path d="M0-178v-33M151 75l29 12M-151 75l-29 12" stroke="#f4ffff" stroke-width="4"/>
+  </g>
+  <!-- Layered perspective stage and digital floor; quiet lower area for UI. -->
+  <path d="M0 915 450 750 900 915v685H0Z" fill="url(#floor)"/>
+  <path d="M0 915 450 750 900 915" stroke="#8ef1ff" stroke-width="4" opacity=".7" fill="none"/>
+  <path d="M-140 1110 450 846 1040 1110M-140 1260 450 930 1040 1260M-140 1450 450 1015 1040 1450" stroke="#40b6f5" stroke-width="2" opacity=".22" fill="none"/>
+  <path d="M450 750v850M150 850-115 1600M750 850l265 750M275 815 150 1600M625 815l125 785" stroke="#58c4f4" stroke-width="2" opacity=".23" fill="none"/>
+  <path fill="url(#grid)" opacity=".33" d="M0 1050h900v550H0z"/>
+  <path d="M0 1075h900v525H0Z" fill="#040d29" opacity=".45"/>
+  <!-- Fine refractive specks add depth without large blur filters. -->
+  <g fill="#c5ffff">
+    <path d="m90 330 4 13 13 4-13 4-4 13-4-13-13-4 13-4Z" opacity=".88"/>
+    <path d="m785 282 3 10 10 3-10 3-3 10-3-10-10-3 10-3Z" opacity=".76"/>
+    <path d="m178 715 3 10 10 3-10 3-3 10-3-10-10-3 10-3Z" opacity=".6"/>
+    <path d="m721 665 4 13 13 4-13 4-4 13-4-13-13-4 13-4Z" opacity=".88"/>
+    <circle cx="270" cy="180" r="3" opacity=".8"/><circle cx="605" cy="121" r="4" opacity=".7"/>
+    <circle cx="664" cy="815" r="3" opacity=".9"/><circle cx="150" cy="590" r="5" opacity=".5"/>
+    <circle cx="731" cy="180" r="3" opacity=".7"/><circle cx="290" cy="665" r="2" opacity=".65"/>
+  </g>
+</svg>

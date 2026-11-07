@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1280" shape-rendering="crispEdges" aria-hidden="true">
+ <defs>
+  <pattern id="sky-dots" width="120" height="120" patternUnits="userSpaceOnUse">
+   <rect x="12" y="24" width="5" height="5" fill="#dceeff" opacity=".7"/>
+   <rect x="74" y="91" width="4" height="4" fill="#ffe8ac" opacity=".7"/>
+   <rect x="99" y="28" width="3" height="3" fill="#fff8dd" opacity=".7"/>
+  </pattern>
+ </defs>
+ <rect width="960" height="1280" fill="#355c8b"/>
+ <rect width="960" height="790" fill="#456e9f"/>
+ <path d="M0 0H960V450H0Z" fill="#577da6"/>
+ <path d="M0 0H960V210H0Z" fill="#6084ac"/>
+ <rect width="960" height="800" fill="url(#sky-dots)"/>
+ <!-- Soft blocky clouds, never a Gothic vault or machinery -->
+ <g fill="#bfd5df" opacity=".42">
+  <path d="M72 171h56v-18h29v-17h52v17h25v18h70v23H72Z"/>
+  <path d="M650 115h64v-19h50V79h39v17h28v19h59v23H650Z"/>
+  <path d="M351 324h50v-15h38v-21h57v21h36v15h53v19H351Z"/>
+ </g>
+ <!-- A few chunky lucky stars; the chest is the centrepiece -->
+ <g fill="#ffe6a0">
+  <path d="M145 304h13v-20h11v20h18v11h-18v20h-11v-20h-13Z"/>
+  <path d="M780 277h10v-15h10v15h16v10h-16v15h-10v-15h-10Z"/>
+  <path d="M280 490h9v-13h9v13h13v9h-13v13h-9v-13h-9Z"/>
+  <path d="M695 476h12v-16h10v16h15v10h-15v16h-10v-16h-12Z"/>
+ </g>
+ <g fill="#fff1cb" opacity=".8">
+  <rect x="430" y="94" width="8" height="8"/><rect x="527" y="245" width="6" height="6"/>
+  <rect x="203" y="414" width="5" height="5"/><rect x="826" y="405" width="7" height="7"/>
+ </g>
+ <!-- Forest ridge in three pixel-built layers -->
+ <path d="M0 860h80v-33h42v-34h44v-39h53v-36h62v48h51v42h70v37h153v-26h73v-35h77v-48h43v-27h69v44h49v42h52v30h62v26h41v409H0Z" fill="#365b7c"/>
+ <path d="M0 933h53v-32h65v-34h51v-42h54v29h44v40h52v23h80v32h180v-29h57v-41h44v-40h62v28h48v42h51v29h119v342H0Z" fill="#244d66"/>
+ <path d="M0 1026h93v-43h72v-27h64v28h75v34h106v-37h82v-22h73v28h78v25h61v-45h51v-30h79v40h126v303H0Z" fill="#163d5b"/>
+ <!-- Tall friendly pines frame the action, never conceal the centre -->
+ <g>
+  <rect x="90" y="690" width="29" height="500" fill="#473d62"/>
+  <path d="M104 433 0 698h64L0 834h82L0 951h204L207 834h77L207 698h65Z" fill="#296d70"/>
+  <path d="M102 476 21 677h45L15 822h69L30 925h154l-47-103h69l-49-145h45Z" fill="#388a76"/>
+  <path d="M75 688h15v20H75Zm38 66h15v19h-15Zm-67 83h18v19H46Z" fill="#80ac88"/>
+  <rect x="835" y="690" width="29" height="500" fill="#473d62"/>
+  <path d="M849 433 738 698h73l-90 136h96l-95 117h238l-91-117h91l-88-136h70Z" fill="#296d70"/>
+  <path d="M849 469 770 680h43l-60 147h60l-53 97h180l-55-97h66l-60-147h50Z" fill="#388a76"/>
+  <path d="M838 631h17v19h-17Zm39 107h16v18h-16Zm-57 92h18v18h-18Z" fill="#80ac88"/>
+ </g>
+ <!-- Bright ground flowers, mushrooms and fireflies -->
+ <path d="M0 1138h960v142H0Z" fill="#1d4757"/>
+ <g fill="#76b994">
+  <path d="M138 1186h14v-29h8v29h19v8h-41Z"/>
+  <path d="M341 1223h12v-31h8v31h20v8h-40Z"/>
+  <path d="M667 1190h11v-28h8v28h20v8h-39Z"/>
+  <path d="M819 1214h13v-30h7v30h18v8h-38Z"/>
+ </g>
+ <g fill="#f7c385">
+  <rect x="210" y="1114" width="11" height="11"/><rect x="238" y="1142" width="9" height="9"/>
+  <rect x="728" y="1106" width="12" height="12"/><rect x="753" y="1154" width="9" height="9"/>
+  <rect x="453" y="1211" width="12" height="12"/>
+ </g>
+ <g>
+  <path d="M275 1158h32v13h14v20h-60v-20h14Z" fill="#f5ad88"/>
+  <rect x="272" y="1184" width="39" height="21" fill="#f8e5ca"/>
+  <rect x="291" y="1173" width="6" height="8" fill="#fff3dd"/>
+  <path d="M711 1151h35v13h12v23h-60v-23h13Z" fill="#eaa2c6"/>
+  <rect x="711" y="1185" width="35" height="20" fill="#f8e5ca"/>
+ </g>
+</svg>

@@ -1,0 +1,254 @@
+/* App-like navigation: one task per screen. Help and completion records remain
+   accessible through explicit buttons/disclosures instead of appearing in-line. */
+
+/* A player entering the Gacha tab should see the draw, not the entire codex. */
+body[data-game-tab="forge"] #collection-view .collection-head,
+body[data-game-tab="forge"] #collection-view .collection-sortbar,
+body[data-game-tab="forge"] #collection-view .collection-grid,
+body[data-game-tab="forge"] #collection-view .collection-archive,
+body[data-game-tab="forge"][data-collection-focus="gacha"] #collection-weapons,
+body[data-game-tab="forge"][data-collection-focus="equipment"] #collection-shop {display:none!important}
+
+/* Friends are the first thing on the Friends tab. Equipment is one tap away. */
+body[data-game-tab="party"] #collection-shop,
+body[data-game-tab="party"][data-collection-focus="roster"] #collection-weapons,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-head,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-sortbar,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-grid,
+body[data-game-tab="party"][data-collection-focus="equipment"] #collection-view .collection-archive {display:none!important}
+
+#collection-equipment-back[hidden],
+body:not([data-collection-focus="equipment"]) #collection-equipment-back {display:none!important}
+.collection-equipment-back{display:block;width:max-content;min-height:44px;padding:10px 16px;margin:7px 0 12px;border:1px solid #88b6a6;border-radius:12px;background:#284b60;color:#fff6db;font-size:14px;font-weight:900;cursor:pointer}
+.collection-equipment-back:focus-visible{outline:3px solid #f7cf7d;outline-offset:3px}
+#collection-weapons[data-has-weapons="false"] .weapon-awakening,
+#collection-weapons[data-has-weapons="false"] .equipment-select-sync{display:none}
+#collection-weapons .weapon-awakening>p{display:none}
+#collection-weapons .equipment-item-list-heading>span{display:none}
+.equipment-empty-cta{display:block;width:100%;min-height:48px;margin-top:15px;padding:12px 16px;border:1px solid #e4bc77;border-radius:12px;background:linear-gradient(#ffe4a1,#d6a95a);color:#312a21;font-weight:950;font-size:15px;cursor:pointer}
+.equipment-empty-cta:focus-visible{outline:3px solid #fff1ba;outline-offset:3px}
+
+#collection-view .collection-head{padding:7px 0 12px}
+#collection-view .collection-head .tiny-caps,
+#collection-view .collection-head>p,
+#collection-view .wallet-balance small{display:none}
+#collection-view .collection-head h1{font-size:clamp(25px,6vw,34px);margin:5px 0 10px}
+#collection-view .wallet-balance{padding:10px 14px}
+#collection-view .collection-grid{margin:12px 0 22px}
+#collection-view .catalog-card:not(.locked):not(.evolution-ready) .catalog-evolution{display:none}
+
+/* Optional achievements stay a single recognizable destination, not several
+   screens of text below the companion cards. */
+.collection-archive{margin:12px 0 32px;border:1px solid #789cac;border-radius:16px;background:#152c43;color:#ffebbe;overflow:hidden}
+.collection-archive>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:14px 17px;list-style:none;cursor:pointer;font-size:15px;font-weight:900}
+.collection-archive>summary::-webkit-details-marker{display:none}
+.collection-archive>summary span{font-size:21px;line-height:1}
+.collection-archive[open]>summary span{transform:rotate(45deg)}
+.collection-archive>summary:focus-visible{outline:3px solid #f1d389;outline-offset:-4px}
+.collection-archive[open]>.forest-treasures,
+.collection-archive[open]>.boss-medal-collection,
+.collection-archive[open]>.forest-journal,
+.collection-archive[open]>.phrase-head,
+.collection-archive[open]>.phrase-grid{margin-left:12px;margin-right:12px}
+
+/* A companion's primary action should precede encyclopaedia copy. */
+.character-sheet,.training-sheet{color:#284239}
+.character-sheet .character-description{color:#495d4f}
+.character-sheet .character-badge{color:#31533c;background:#deebd4}
+.character-sheet .character-actions .button:disabled{opacity:1!important;color:#496452!important;background:#e1e9df!important;border-color:#c6d7c7!important}
+.character-view>.back-button{display:inline-flex;align-items:center;min-height:44px;padding:9px 13px;border:1px solid #739cac;border-radius:11px;background:#294d64;color:#fff0c7!important;font-weight:900}
+.character-view>.back-button:focus-visible{outline:3px solid #f5d18b;outline-offset:3px}
+.character-sheet .character-actions{margin:14px 0 7px}
+.character-sheet #detail-feedback:empty{display:none}
+.character-more{margin:17px 0 4px;border:1px solid #99b4ab;border-radius:14px;overflow:hidden;background:#e8f0e8;color:#294c3e}
+.character-more>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:49px;padding:11px 15px;cursor:pointer;list-style:none;font-weight:900;font-size:14px}
+.character-more>summary::-webkit-details-marker{display:none}
+.character-more>summary span{font-size:20px}
+.character-more[open]>summary span{transform:rotate(45deg)}
+.character-more>summary:focus-visible{outline:3px solid #d9a95b;outline-offset:-4px}
+.character-more>.character-section{margin:12px;padding:13px;background:#fffdf4;border-radius:12px}
+.training-sheet #growth-feedback:empty{display:none}
+.training-earn-xp{width:100%;min-height:52px}
+.training-evolution-more{margin:16px 0 8px;border:1px solid #9cae9a;border-radius:14px;background:#edf2e6;overflow:hidden;color:#2b4936}
+.training-evolution-more>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:12px 16px;list-style:none;cursor:pointer;font-size:14px;font-weight:900}
+.training-evolution-more>summary::-webkit-details-marker{display:none}
+.training-evolution-more>summary span{font-size:20px}
+.training-evolution-more[open]>summary span{transform:rotate(45deg)}
+.training-evolution-more>summary:focus-visible{outline:3px solid #d7a663;outline-offset:-4px}
+.training-evolution-more>.evolution-path,.training-evolution-more>.evolution-trial,.training-evolution-more>.training-next{margin:12px}
+.training-sheet .training-feed .button:disabled{opacity:1;color:#4b6255;background:#e0e6d8;border-color:#bdcebb}
+
+/* Gacha card hierarchy: money -> summon -> optional sale -> equipment.
+   Loot moves ahead of the draw only when there is actually something to sell. */
+#collection-shop{display:flex;flex-direction:column;gap:11px;margin:5px 0 16px;padding:16px;scroll-margin-top:8px}
+#collection-shop>.shop-heading h2{margin:0;font-size:clamp(25px,6vw,32px);color:#fff2c7}
+#collection-shop>.shop-wallet{margin:0}
+#collection-shop>.shop-gacha{margin:0}
+#collection-shop>.shop-bag{margin:0}
+#collection-shop>.shop-open-inventory{margin:0;min-height:47px}
+#collection-shop>.shop-bag[data-has-loot="false"]{display:none}
+#collection-shop .shop-wallet{padding:9px 13px;justify-content:space-between}
+#collection-shop .shop-wallet strong{font-size:25px}
+#collection-shop .shop-wallet small{font-size:11px}
+#collection-shop .shop-gacha{display:flex;flex-direction:column;padding:12px;gap:9px}
+#collection-shop .shop-gacha>.shop-section-heading{display:none}
+#collection-shop .shop-gacha>.summon-banner{order:0;margin:0;height:clamp(140px,22vw,190px)}
+#collection-shop .shop-gacha>.shop-draw-options{order:1;margin:0}
+#collection-shop .shop-gacha>.shop-next-adventure{order:2;margin:0}
+#collection-shop .shop-gacha>.shop-collection-track{order:3;margin:0}
+#collection-shop .shop-gacha>.shop-gacha-result{order:4;margin:0}
+#collection-shop .shop-gacha>#shop-gacha-catalog{order:5;margin:0}
+#collection-shop .shop-gacha>#shop-gacha-details{order:6;margin:0}
+#collection-shop .shop-collection-track>small{display:none}
+#collection-shop .shop-open-inventory{background:#264c61;color:#fff5d6;border-color:#6f9eae}
+#collection-shop .shop-open-inventory span{background:#efce81;color:#213649}
+
+/* Optional game instructions are in the ? guide. Keep question, choices,
+   attack and weakness unobstructed during every battle turn. */
+.forest-attack-select .dungeon-choice-guide{display:none}
+
+/* Learning is also one action at a time: content, input, then judgement.
+   Keep a real accessible label and iPhone audio recovery without displaying
+   generic tutorial copy on every encounter. */
+#play-view .play-card .question-caption{margin-top:8px;line-height:1.5}
+#play-view:not(.forest-active) .play-card h1{color:#213f34}
+#play-view:not(.forest-active) .play-card .question-caption{color:#3b5c4d}
+#play-view:not(.forest-active) .play-card .question-top{color:#466053}
+#play-view .play-card .task-panel{margin-top:12px;padding:11px 14px}
+#play-view .play-card .task-panel p{margin:0;line-height:1.5}
+#play-view #answer-area .answer-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+#play-view #answer-area .answer-helper:empty{display:none}
+#play-view #answer-area .answer-quick-help{justify-content:flex-end;align-items:center;margin:6px 0;padding:0;border:0;background:transparent}
+#play-view #answer-area .answer-quick-help .speaking-hint-action{min-width:91px;min-height:41px}
+#play-view #answer-area .learning-controls{margin-top:5px}
+#play-view .listening-status:empty{display:none}
+#play-view .listening-fallback-options{margin:12px 0 2px;font-size:12px;color:#456d59}
+#play-view .listening-fallback-options>summary{display:list-item;width:max-content;max-width:100%;min-height:40px;padding:10px 4px;cursor:pointer;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+#play-view .listening-fallback-options>summary:focus-visible{outline:3px solid #f0b958;outline-offset:3px}
+#play-view .listening-fallback-options .listening-native{margin:5px 0 0}
+#play-view .listening-fallback-options .listening-fallback{min-height:40px;margin-top:5px;padding:8px 4px}
+#play-view.scene-battle #forest-arena-console .listening-fallback-options,
+#play-view.scene-battle #forest-arena-console .listening-fallback-options>summary{color:#e1f8e8}
+
+/* Main mission is already a pictorial call to action: extra prose competes
+   with the button. The current destination stays in the progress meter. */
+.home-navigation-head>p,
+.home-feature-content>p,
+.home-feature-progress,
+.home-next-quest-copy>p,
+.home-navigation-grid.home-main-actions .home-navigation-copy small{display:none!important}
+.home-navigation-head{margin-bottom:8px!important}
+.home-feature-content h2{margin-top:6px!important;margin-bottom:14px!important}
+.home-feature{min-height:0}
+.home-feature-cta{font-size:clamp(14px,3vw,17px)}
+
+/* A launch screen is a choice, not another encyclopedia. The selected
+   companion is still recognizable; growth, weapon and word lists stay
+   available from 仲間 and its encyclopedia screen. */
+#home-destination-training .hero-grid{min-height:0;grid-template-columns:minmax(0,1fr) 205px;gap:22px;align-items:start;padding:8px 0 22px}
+#home-destination-training .hero-copy{min-width:0}
+#home-destination-training .hero-copy h1{font-size:clamp(25px,3vw,34px);line-height:1.3;margin:4px 0 19px;color:#fff0d1}
+#home-destination-training .difficulty-picker{margin-top:0;max-width:510px}
+#home-destination-training .difficulty-title{color:#f2efdb;font-size:14px}
+#home-destination-training .difficulty-options button{min-height:62px}
+#home-destination-training .difficulty-description{display:none}
+#home-destination-training .hero-buttons{margin:18px 0 16px}
+#home-destination-training .hero-buttons .button{min-height:53px}
+#home-destination-training .companion-showcase{min-height:0;padding:14px 14px 16px;border-radius:21px}
+#home-destination-training .companion-showcase .showcase-top{display:none}
+#home-destination-training .companion-showcase .showcase-glow{width:145px;height:145px;top:10px}
+#home-destination-training .hero-monster-art{height:146px}
+#home-destination-training .hero-monster-art .monster-svg{max-height:140px}
+#home-destination-training .showcase-footer strong{font-size:16px;color:#294b3c}
+#home-destination-training .showcase-footer span:not(.level-pill),
+#home-destination-training .hero-vocab,
+#home-destination-training .xp-track,
+#home-destination-training #hero-next-level,
+#home-destination-training #hero-weapon-summary,
+#home-destination-training .wallet-link{display:none}
+#home-destination-training .save-note{color:#b7c9c1;line-height:1.5}
+#home-destination-daily .daily-gym{max-width:800px;margin-inline:auto}
+#home-destination-daily .daily-gym[data-has-history="false"]{grid-template-columns:1fr;max-width:610px}
+#home-destination-daily .daily-gym-progress[data-has-history="false"]{display:none}
+#home-destination-daily .daily-gym-copy{gap:13px}
+#home-destination-daily .daily-gym-copy .daily-plan-status{font-size:14px;color:#315c40}
+#home-destination-daily #start-daily-gym{min-height:54px;font-size:15px}
+
+/* Each conversation is a scene choice. Four equal oversized CTAs and a
+   duplicated recommendation used to obscure the choices on a phone. */
+#home-destination-roleplay .roleplay-hub{max-width:860px;margin:0 auto 20px;padding:17px}
+#home-destination-roleplay .roleplay-hub-head h2{margin:2px 0 13px}
+#home-destination-roleplay .roleplay-recommendation{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+#home-destination-roleplay .roleplay-difficulties{margin:4px 0 16px}
+#home-destination-roleplay .roleplay-options{gap:10px}
+#home-destination-roleplay .roleplay-option{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:13px;min-height:78px}
+#home-destination-roleplay .roleplay-option[data-recommended="true"]{padding:12px}
+#home-destination-roleplay .roleplay-option strong{flex:1 1 160px;line-height:1.45;font-size:15px}
+#home-destination-roleplay .roleplay-option p{display:none}
+#home-destination-roleplay .roleplay-option button{width:auto;min-width:92px;min-height:44px;margin-left:auto;padding:9px 11px;font-size:13px}
+#home-destination-roleplay .roleplay-option .roleplay-badge{margin:0;font-size:10px}
+#home-destination-roleplay .roleplay-about{margin-top:13px;color:#35564a}
+#home-destination-roleplay .roleplay-about summary{width:max-content;min-height:38px;padding:9px 3px;font-size:12px;font-weight:800;cursor:pointer}
+#home-destination-roleplay .roleplay-about summary:focus-visible{outline:3px solid #dcae54;outline-offset:2px}
+#home-destination-roleplay .roleplay-disclaimer{margin:3px 0 6px}
+
+/* Review starts with an available practice action. Empty saved/due lists do
+   not render dead buttons, while actual history stays one tap away. */
+#home-destination-review .review-journal{max-width:860px;margin:5px auto 17px;padding:18px 20px}
+#home-destination-review .review-journal-head{gap:12px;align-items:center}
+#home-destination-review .review-journal-head h2{margin:0;font-size:clamp(22px,3vw,28px);color:#254b3b}
+#home-destination-review .review-journal-action{min-height:48px;font-size:13px}
+#home-destination-review .review-journal-list{display:block;margin-top:12px}
+#home-destination-review .review-journal-empty{margin:0;color:#405c4b;font-size:13px}
+#home-destination-review .review-journal-records,
+#home-destination-review .retention-records{margin-top:14px;border-top:1px solid #c3d9c6;color:#365946}
+#home-destination-review .review-journal-records>summary,
+#home-destination-review .retention-records>summary{min-height:42px;padding:11px 4px;cursor:pointer;font-size:12px;font-weight:850}
+#home-destination-review .review-journal-records>summary:focus-visible,
+#home-destination-review .retention-records>summary:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
+#home-destination-review .review-journal[data-has-history="false"] .review-journal-records{display:none}
+#home-destination-review .saved-review[data-has-saved="false"],
+#home-destination-review .retention-hub[data-has-history="false"]{display:none}
+#home-destination-review .saved-review,#home-destination-review .retention-hub{max-width:860px;margin:0 auto 17px;padding:18px 20px}
+#home-destination-review .saved-review-heading h2,
+#home-destination-review .retention-hub h2{margin:0 0 9px;font-size:clamp(19px,2.7vw,24px);color:#244838}
+#home-destination-review .saved-review-heading{gap:9px}
+#home-destination-review .saved-review-heading button{min-height:47px}
+#home-destination-review #start-due-saved-review:disabled,
+#home-destination-review #start-retention-review:disabled{display:none}
+#home-destination-review .retention-hub .retention-next{margin:6px 0 0;color:#435f50}
+#home-destination-review .retention-hub-metrics{margin-top:9px}
+#home-destination-review .retention-bond-status{margin-top:10px}
+
+@media(max-width:690px){
+ #home-destination-training .hero-grid{display:flex;flex-direction:column;gap:10px;padding:4px 0 16px}
+ #home-destination-training .hero-copy h1{font-size:clamp(24px,6.5vw,29px);margin:4px 0 17px}
+ #home-destination-training .difficulty-options button{min-height:59px}
+ #home-destination-training .hero-buttons{margin:17px 0 15px}
+ #home-destination-training .hero-buttons .button{min-width:0;padding:12px 11px}
+ #home-destination-training .companion-showcase{width:100%;display:flex;align-items:center;gap:13px;padding:9px 13px;border-radius:16px}
+ #home-destination-training .companion-showcase .showcase-glow{display:none}
+ #home-destination-training .hero-monster-art{height:69px;width:69px;flex:none}
+ #home-destination-training .hero-monster-art .monster-svg{max-height:69px}
+ #home-destination-training .showcase-footer{flex:1;gap:12px}
+ #home-destination-daily .daily-gym{max-width:520px}
+ #home-destination-roleplay .roleplay-hub{padding:13px}
+ #home-destination-roleplay .roleplay-option{min-height:69px}
+ #home-destination-review .review-journal,
+ #home-destination-review .saved-review,
+ #home-destination-review .retention-hub{padding:16px 13px}
+ #home-destination-review .review-journal-head h2{font-size:21px}
+}
+@media(max-width:400px){
+ #home-destination-roleplay .roleplay-option button{min-width:86px}
+ #home-destination-roleplay .roleplay-option strong{flex-basis:140px}
+}
+
+@media(max-width:600px){
+ #collection-shop{padding:12px;gap:9px}
+ #collection-shop .shop-gacha{padding:9px}
+ #collection-shop .shop-gacha>.summon-banner{height:150px}
+ .collection-archive>summary{font-size:13px;padding:12px}
+ .home-navigation-grid.home-main-actions .home-navigation-tile{min-height:61px}
+ .home-navigation-head h1{font-size:25px!important}
+}

@@ -1,0 +1,117 @@
+name: Speakingym Monsters prototype QA
+on:
+  pull_request:
+    paths:
+      - 'prototype/speakingym-monsters/**'
+      - 'tests/monsters-*'
+      - '.github/workflows/monsters-prototype.yml'
+jobs:
+  node-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse-check browser entry and learning modules
+        run: |
+          node --check prototype/speakingym-monsters/monsters.js
+          node --check prototype/speakingym-monsters/home-navigation.js
+          node --check prototype/speakingym-monsters/battle-tactics.js
+          node --check prototype/speakingym-monsters/forest-quizzes.js
+          node --check prototype/speakingym-monsters/forest-quizzes-extra.js
+          node --check prototype/speakingym-monsters/listening-challenges.js
+          node --check prototype/speakingym-monsters/roleplay-scenarios.js
+          node --check tests/monsters-gacha-growth-browser.cjs
+          node --check tests/monsters-ten-pull-browser.cjs
+          node --check tests/monsters-gacha-demo-browser.cjs
+          node --check tests/monsters-gashapon-browser.cjs
+          node --check tests/monsters-weapon-motion-browser.cjs
+          node --check prototype/speakingym-monsters/weapon-battle-sound.js
+      - name: Curriculum, mastery and reward tests
+        run: node --test tests/monsters-engine.test.mjs tests/monsters-beta.test.mjs tests/monsters-tactics.test.mjs tests/monsters-ruins.test.mjs tests/monsters-formation.test.mjs tests/monsters-economy.test.mjs tests/monsters-new-companions.test.mjs tests/monsters-save-recovery.test.mjs tests/monsters-adventure-titles.test.mjs
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-speakingym-monsters-playwright-1.62.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Start local preview
+        run: python3 -m http.server 8766 >/tmp/monsters-preview.log 2>&1 &
+      - name: WebKit animated battle interaction
+        timeout-minutes: 2
+        run: timeout 90s node tests/monsters-webkit-interaction.cjs
+      - name: Three-turn speaking conversations (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 60s node tests/monsters-roleplay-browser.cjs
+          timeout 60s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-roleplay-browser.cjs
+      - name: Gold, weapon gacha and visible equipment (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 70s node tests/monsters-economy-browser.cjs
+          timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-economy-browser.cjs
+      - name: Player acceptance - gacha, level-up and evolution (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 70s node tests/monsters-gacha-growth-browser.cjs
+          timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-gacha-growth-browser.cjs
+      - name: Ten-pull gacha cinematic and persistence (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 70s node tests/monsters-ten-pull-browser.cjs
+          timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-ten-pull-browser.cjs
+      - name: Celestial vault swipe, scrolling and awakening (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 75s node tests/monsters-gashapon-browser.cjs
+          timeout 75s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-gashapon-browser.cjs
+      - name: Isolated gacha tester link (Chromium + WebKit)
+        timeout-minutes: 3
+        run: |
+          timeout 70s node tests/monsters-gacha-demo-browser.cjs
+          timeout 70s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-gacha-demo-browser.cjs
+      - name: Turn-based tactics browser QA (Chromium + WebKit)
+        timeout-minutes: 6
+        run: |
+          timeout 135s node tests/monsters-tactics-browser.cjs
+          timeout 135s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-tactics-browser.cjs
+          timeout 105s node tests/monsters-boss-cover-browser.cjs
+          timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-cover-browser.cjs
+      - name: Equipped weapon motion and FX (Chromium + WebKit)
+        timeout-minutes: 4
+        run: |
+          timeout 100s node tests/monsters-weapon-motion-browser.cjs
+          timeout 100s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-weapon-motion-browser.cjs
+      - name: Boss formation synergy browser QA (Chromium + WebKit)
+        timeout-minutes: 4
+        run: |
+          timeout 105s node tests/monsters-boss-formation-browser.cjs
+          timeout 105s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-boss-formation-browser.cjs
+      - name: Chromium mobile and learning QA
+        timeout-minutes: 8
+        run: |
+          timeout 160s node tests/monsters-browser.cjs
+          timeout 210s node tests/monsters-scenes-browser.cjs
+          timeout 90s node tests/monsters-beta-browser.cjs
+      - name: WebKit mobile and learning QA
+        # WebKit replays the full four-viewport/save-recovery suite and is
+        # notably slower than Chromium on shared GitHub runners. Keep every
+        # scenario covered instead of letting the 160s per-process gate kill
+        # an otherwise advancing browser run near its final page load.
+        timeout-minutes: 12
+        run: |
+          timeout 300s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
+          timeout 210s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-scenes-browser.cjs
+          timeout 90s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-beta-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: speakingym-monsters-screenshots
+          path: qa-screenshots/
+

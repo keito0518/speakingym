@@ -1,0 +1,142 @@
+/* Equipment is an inventory of readable items, not a long text dropdown.
+   The exact pixel artwork used for summon rewards is reused on every card. */
+.collection-weapons .forest-treasures-heading{margin-bottom:16px}
+.collection-shop .shop-open-inventory{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+ min-height:52px;margin:12px 0;padding:10px 14px;border:2px solid #b9d7d4;
+ border-radius:13px;background:#244e61;color:#fff7dc;font-size:15px;font-weight:900;
+ cursor:pointer;text-align:left;box-shadow:0 4px 0 #18354a}
+.collection-shop .shop-open-inventory span{flex:none;padding:4px 9px;border-radius:8px;background:#ffe4a1;color:#32465a;font-size:12px}
+.collection-shop .shop-open-inventory:focus-visible{outline:3px solid #f8d68a;outline-offset:4px}
+
+/* A quiet summon screen: details and reveal spoilers stay folded away. */
+.shop-gacha-result:empty{display:none}
+.shop-gacha-disclosure{margin:12px 0 0;min-width:0;border:1px solid #718b97;border-radius:13px;background:#122b3e;color:#f4edda;overflow:hidden}
+.shop-gacha-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:50px;padding:11px 13px;cursor:pointer;list-style:none;font-size:14px;font-weight:900;color:#fdf0cc}
+.shop-gacha-disclosure>summary::-webkit-details-marker{display:none}
+.shop-gacha-disclosure>summary::after{content:'＋';font-size:20px;line-height:1;color:#ebcf99;flex:none}
+.shop-gacha-disclosure[open]>summary::after{content:'−'}
+.shop-gacha-disclosure>summary span{margin-left:auto;font-size:11px;color:#c7dfe1;text-align:right;line-height:1.35;font-weight:700}
+.shop-gacha-disclosure>summary:focus-visible{outline:3px solid #fae1a3;outline-offset:-4px}
+.shop-gacha-disclosure-content{padding:0 13px 14px;border-top:1px solid #4c6b78;min-width:0}
+.shop-gacha-disclosure-content>p{font-size:12px!important;line-height:1.7!important;color:#e2edf0!important}
+.shop-gacha-disclosure-content .shop-odds{margin:12px 0}
+.shop-gacha-disclosure-content .shop-pity-tracks{margin:12px 0}
+.shop-gacha-disclosure-content .shop-pity{padding:11px 12px}
+.shop-catalog-tier{margin-top:15px}
+.shop-catalog-tier h4{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 9px;font-size:13px;color:#f7e6bb}
+.shop-catalog-tier h4 span{font-size:12px;color:#c3dbe3}
+.shop-catalog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.shop-catalog-card{display:flex;flex-direction:column;min-width:0;align-items:center;gap:4px;padding:8px 5px 11px;border:1px solid #607e8c;border-radius:10px;background:#254056;color:#f5f0dc;text-align:center}
+.shop-catalog-card.is-mystery{background:#1b3549;border-style:dashed;color:#e5e6db}
+.shop-catalog-card.is-found[data-catalog-rarity="rare"]{border-color:#7cb7d9}
+.shop-catalog-card.is-found[data-catalog-rarity="epic"]{border-color:#bc94d2}
+.shop-catalog-card.is-found[data-catalog-rarity="legend"]{border-color:#e8c075}
+.shop-catalog-image{display:grid;place-items:center;width:68px;max-width:100%;height:75px;overflow:hidden}
+.shop-catalog-image svg{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.shop-unknown-weapon{display:grid;place-items:center;width:47px;height:51px;border:2px solid #68869a;border-radius:8px;background:#2e4b5e;color:#d6ded2;font-size:27px;font-weight:900;line-height:1}
+.shop-catalog-card strong{font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.shop-catalog-card small{font-size:10px;line-height:1.35;color:#c9e2e1;overflow-wrap:anywhere}
+.shop-discovery-rewards{margin-top:16px;padding:11px 12px;border:1px solid #72827c;border-radius:12px;background:#273e50}
+.shop-discovery-rewards>strong{font-size:13px;color:#fff1c5}
+.shop-discovery-rewards>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.shop-discovery-rewards span{min-width:0;padding:9px 6px;border:1px solid #70868d;border-radius:8px;color:#e0e9e8;font-size:11px;text-align:center;font-weight:800}
+.shop-discovery-rewards span.is-earned{border-color:#d6b975;background:#3b4a43;color:#ffe6a3}
+.catalog-card.locked .catalog-portrait svg,.character-portrait.unowned svg{filter:none;opacity:1}
+.catalog-card.locked{border-style:dashed;border-color:#a1b4b6;background:#e4ece9;color:#355362}
+.catalog-card.locked .catalog-portrait{background:radial-gradient(ellipse at 50% 82%,#d6e2d9,transparent 65%)}
+.catalog-card.locked .catalog-evolution{color:#486475}
+.character-mystery .character-portrait{background:radial-gradient(ellipse,#e0efe8,#f7f4e3 70%)}
+@media(min-width:620px){.shop-catalog-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:350px){.shop-gacha-disclosure>summary{padding:10px;font-size:13px}.shop-gacha-disclosure>summary span{font-size:10px}.shop-catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.collection-weapons .forest-treasures-heading h2{font-size:clamp(21px,4.7vw,26px);letter-spacing:.01em}
+.collection-weapons .forest-treasures-heading p{max-width:620px;line-height:1.6}
+.collection-weapons .equipment-current{
+ padding:14px;border:2px solid #9db8a9;border-radius:15px;
+ background:#142e43;color:#fff7de;box-shadow:0 4px 0 #102132}
+.collection-weapons .equipment-current-title{display:block;margin-bottom:9px;color:#fff0be;font-size:16px;font-weight:900}
+.collection-weapons .equipment-monster-preview{margin:0 0 10px;background:#24465a;border:1px solid #749a9e}
+.collection-weapons .equipment-monster-preview span{color:#fffaf0;font-size:16px}
+.collection-weapons .equipment-monster-preview small{color:#d2e5e4;font-size:12px;font-weight:650}
+.collection-weapons #equipment-weapon-status,
+.collection-weapons #equipment-weapon-status[data-rarity="none"]{
+ margin:0;padding:9px 11px;background:#244c5a;border:1px solid #72a4a2;
+ border-radius:9px;color:#f5fff8;font-size:13px;line-height:1.6;text-shadow:none}
+.collection-weapons .equipment-current-technique{margin:9px 1px 0;color:#e1eee6;font-size:12px;font-weight:750;line-height:1.6}
+.collection-weapons #equipment-unequip{
+ min-height:38px;margin-top:11px;padding:6px 14px;border:2px solid #799bb1;
+ border-radius:9px;background:#234355;color:#f0f9fb;font-size:13px;font-weight:800;cursor:pointer}
+.collection-weapons #equipment-unequip:focus-visible{outline:3px solid #f7d08b;outline-offset:2px}
+.collection-weapons .equipment-item-list{margin-top:21px}
+.collection-weapons .equipment-item-list-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:5px 12px;margin-bottom:12px}
+.collection-weapons .equipment-item-list-heading strong{font-size:17px;color:#fff2c7}
+.collection-weapons .equipment-item-list-heading strong span{font-size:21px;color:#ffe09a}
+.collection-weapons .equipment-item-list-heading>span{color:#d2e3df;font-size:12px;font-weight:650}
+.collection-weapons .equipment-filter-disclosure{margin:0 0 13px;border:1px solid #718f9e;border-radius:11px;background:#19394c;color:#fff4d6;min-width:0}
+.collection-weapons .equipment-filter-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:44px;padding:10px 12px;cursor:pointer;font-size:13px;font-weight:850;list-style:none}
+.collection-weapons .equipment-filter-disclosure>summary::-webkit-details-marker{display:none}
+.collection-weapons .equipment-filter-disclosure>summary::before{content:'＋';color:#f4d28b;font-size:17px}
+.collection-weapons .equipment-filter-disclosure[open]>summary::before{content:'−'}
+.collection-weapons .equipment-filter-disclosure>summary span{margin-left:auto;color:#d6e5e7;font-size:12px;font-weight:700}
+.collection-weapons .equipment-filter-disclosure>summary:focus-visible{outline:3px solid #f9d392;outline-offset:2px}
+.collection-weapons .equipment-filter-controls{display:grid;grid-template-columns:1fr;gap:9px;padding:12px;border-top:1px solid #496c7d}
+.collection-weapons .equipment-filter-controls label{display:grid;gap:5px;min-width:0;color:#e9f0eb;font-size:12px;font-weight:850}
+.collection-weapons .equipment-filter-controls select{min-width:0;width:100%;min-height:40px;padding:8px 9px;border:1px solid #8eb3ba;border-radius:8px;background:#f6f4e9;color:#223c4b;font-size:14px;font-weight:750}
+.collection-weapons .equipment-filter-controls select:focus-visible{outline:3px solid #f9d392;outline-offset:2px}
+.collection-weapons .equipment-item-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.collection-weapons .equipment-item{
+ display:grid;grid-template-columns:91px minmax(0,1fr);grid-template-rows:auto auto;
+ column-gap:13px;row-gap:10px;align-items:start;min-width:0;padding:12px;
+ border:2px solid #8aa7a9;border-radius:15px;background:#f5f4e9;
+ box-shadow:0 4px 0 #173344;color:#253d4b}
+.collection-weapons .equipment-item.is-equipped{border-color:#e6b35f;background:#fff5d9;box-shadow:0 4px 0 #7b603b,inset 0 0 0 2px #f5dca3}
+.collection-weapons .equipment-item[data-rarity="rare"]{border-color:#77b3d5}
+.collection-weapons .equipment-item[data-rarity="epic"]{border-color:#b49bdb}
+.collection-weapons .equipment-item[data-rarity="legend"]{border-color:#d6aa66}
+.collection-weapons .equipment-item.is-equipped{outline:2px solid #f9e0a1;outline-offset:0}
+.collection-weapons .equipment-item-image{
+ grid-column:1;grid-row:1 / 3;display:grid;place-items:center;align-self:stretch;
+ min-width:0;min-height:124px;border:2px solid #a9c1b9;border-radius:11px;
+ background:#e3eee6;overflow:hidden}
+.collection-weapons .equipment-item-image svg{width:83px;height:115px;max-width:100%;max-height:100%;image-rendering:pixelated}
+.collection-weapons .equipment-item-details{grid-column:2;min-width:0}
+.collection-weapons .equipment-item-rarity{display:inline-block;color:#426d83;font-size:11px;font-weight:900;letter-spacing:.03em}
+.collection-weapons .equipment-item[data-rarity="epic"] .equipment-item-rarity{color:#79518c}
+.collection-weapons .equipment-item[data-rarity="legend"] .equipment-item-rarity{color:#9d6429}
+.collection-weapons .equipment-item-details h3{margin:3px 0 9px;color:#223948;font-size:clamp(14px,3.8vw,16px);line-height:1.3;overflow-wrap:anywhere}
+.collection-weapons .equipment-item-details dl{display:grid;gap:5px;margin:0}
+.collection-weapons .equipment-item-details dl>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px}
+.collection-weapons .equipment-item-details dt{min-width:44px;color:#506a71;font-size:11px;font-weight:850}
+.collection-weapons .equipment-item-details dd{margin:0;color:#203b4d;font-size:13px;line-height:1.45;font-weight:850}
+.collection-weapons .equipment-item-details small{display:block;margin-top:7px;color:#536875;font-size:11px;font-weight:650}
+.collection-weapons .equipment-item button{
+ grid-column:2;min-width:114px;min-height:40px;justify-self:start;margin:0;
+ padding:7px 14px;border:2px solid #315a76;border-radius:10px;background:#447da5;
+ color:#fff;font-size:13px;font-weight:950;box-shadow:0 3px 0 #23445e;cursor:pointer}
+.collection-weapons .equipment-item button:disabled{
+ background:#3f624b;border-color:#577d64;box-shadow:none;color:#f5fff4;cursor:default}
+.collection-weapons .equipment-item button:focus-visible{outline:3px solid #e5a959;outline-offset:4px}
+.collection-weapons .equipment-item-empty{grid-column:1/-1;padding:16px;color:#fff7df;font-weight:750}
+/* Keep the native select synchronized for accessibility and existing save QA,
+   while visual interaction is through labeled image cards. */
+.collection-weapons .equipment-select-sync{
+ position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
+ margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;
+ white-space:nowrap!important;border:0!important}
+.collection-weapons .weapon-awakening{margin-top:22px}
+.collection-weapons .weapon-awakening-heading strong{font-size:16px}
+.collection-weapons .weapon-resonance-preview{min-width:0;margin-top:13px;border:1px solid #7798a5;border-radius:10px;background:#213f52;color:#f0f5eb;overflow:hidden}
+.collection-weapons .weapon-resonance-preview>summary{padding:11px 12px;cursor:pointer;color:#fff0bd;font-size:13px;font-weight:850;list-style-position:inside}
+.collection-weapons .weapon-resonance-preview>summary:focus-visible{outline:3px solid #f6ce86;outline-offset:-3px}
+.collection-weapons .weapon-resonance-preview>p{margin:0;padding:8px 12px;border-top:1px solid #506d79;font-size:12px;line-height:1.6;color:#e4f1ee;overflow-wrap:anywhere}
+@media(min-width:770px){
+ .collection-weapons .equipment-filter-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .collection-weapons .equipment-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:370px){
+ .collection-weapons .equipment-current{padding:11px}
+ .collection-weapons .equipment-item{grid-template-columns:76px minmax(0,1fr);gap:8px;padding:9px}
+ .collection-weapons .equipment-item-image{min-height:117px}
+ .collection-weapons .equipment-item-image svg{width:70px;height:105px}
+ .collection-weapons .equipment-item-details dd{font-size:12px}
+}

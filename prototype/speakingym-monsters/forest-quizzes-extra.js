@@ -1,0 +1,198 @@
+// Twenty additional authored topics across the Forest and City, each with three
+// level-specific tasks. The same topic changes its language target as the
+// difficulty rises; it is not the same blank repeated with longer filler.
+const LEVELS = ['easy', 'normal', 'hard'];
+const ENGLISH_TASK = {
+  vocab: 'Choose the word that best completes the sentence in this situation.',
+  grammar: 'Arrange the words into a natural English sentence.'
+};
+
+// The tiles are generated from the *authored* canonical answer to prevent a
+// typo in the tiles from making a valid grammar question impossible to solve.
+function wordTiles(answer) {
+  const words = answer.replace(/[.!?]$/, '').split(' ');
+  return [...words.filter((_, i) => i % 2 === 1).reverse(), ...words.filter((_, i) => i % 2 === 0).reverse()];
+}
+
+const TOPICS = [
+  {
+    id: 'bill', kind: 'vocab', phraseId: 'price',
+    levels: [
+      {scene:'レストラン', cue:'食事が終わったので、お会計をお願いしよう。 Could we have the _____, please?', answer:'bill', options:['menu','bill','tip'], hint:'支払う金額をまとめた紙を指す名詞。', tip:'bill は請求書・お会計。menu はメニュー、tip は追加で渡す心づけ。'},
+      {scene:'A restaurant bill', cue:'A restaurant has added an extra fee for table service. The bill includes a service _____.', answer:'charge', options:['receipt','charge','discount'], hint:'service とセットで「追加料金」を表す語。', tip:'service charge はサービス料。discount は値引きなので請求額が増える状況とは逆。'},
+      {scene:'A group reservation', cue:'Your party has eight guests, and the restaurant adds ten percent to the listed total. The bill includes a group _____.', answer:'surcharge', options:['surcharge','discount','deposit'], hint:'基本料金の上に加算される費用を指す語。', tip:'surcharge は追加料金。discount は割引、deposit は予約時などに預ける前金。'}
+    ]
+  },
+  {
+    id:'route', kind:'vocab', phraseId:'direction',
+    levels:[
+      {scene:'道案内', cue:'角を右に曲がるように案内された。 Please _____ right at the corner.', answer:'turn', options:['cross','turn','pass'], hint:'角で進行方向を右に変える動詞。', tip:'turn right は右に曲がる。cross は横断する、pass は通り過ぎる。'},
+      {scene:'Walking through town', cue:'Two streets meet at the traffic lights. Turn left at the next _____.', answer:'intersection', options:['platform','intersection','entrance'], hint:'道路が交わる場所を表す名詞。', tip:'intersection は交差点。platform は乗り場、entrance は入口。'},
+      {scene:'A road closure', cue:'The bridge is closed for repairs, so the sign directs drivers along a longer alternative route. Follow the signed _____.', answer:'detour', options:['shortcut','transfer','detour'], hint:'工事などで通常の道を避けて通る迂回路。', tip:'detour は迂回路。shortcut は近道で、この場面の「通行止めによる別ルート」とは違う。'}
+    ]
+  },
+  {
+    id:'allergy', kind:'vocab', phraseId:'order',
+    levels:[
+      {scene:'食事の相談', cue:'ピーナッツを食べると体調を崩す。 I am _____ to peanuts.', answer:'allergic', options:['allergic','hungry','spicy'], hint:'食物アレルギーを伝える形容詞。', tip:'be allergic to ... は「〜にアレルギーがある」。hungry は空腹、spicy は辛い。'},
+      {scene:'Checking a menu', cue:'Before ordering, you want to know everything used to make the dish. Could you tell me the _____?', answer:'ingredients', options:['portions','ingredients','utensils'], hint:'料理を作るときに使うものの一覧。', tip:'ingredients は原材料。portions は一人分などの量、utensils は調理器具。'},
+      {scene:'A severe food allergy', cue:'The kitchen uses the same cutting board for nuts and other food, creating a risk even if the dish has no nuts listed. Ask about cross-_____.', answer:'contamination', options:['contamination','reservation','preparation'], hint:'別の食材が意図せず混ざること。', tip:'cross-contamination は交差接触・意図しない混入。原材料表にないアレルゲンにも注意が必要。'}
+    ]
+  },
+  {
+    id:'timing', kind:'vocab', phraseId:'late',
+    levels:[
+      {scene:'電車の遅れ', cue:'列車は運行しているが10分遅れている。 There is a ten-minute _____.', answer:'delay', options:['delay','cancellation','departure'], hint:'中止ではなく、予定より遅れること。', tip:'delay は遅延。cancellation は運休・中止、departure は出発。'},
+      {scene:'A late appointment', cue:'The doctor is unavailable today, but the appointment will happen next week instead. It has been _____.', answer:'postponed', options:['confirmed','postponed','canceled'], hint:'なくなるのではなく、後の日程にずれる。', tip:'postponed は延期された。canceled は中止された、confirmed は確定した。'},
+      {scene:'Changing a meeting', cue:'You cannot attend the original meeting on Tuesday, and you want to agree on a new date instead. Could we _____ it for Thursday?', answer:'reschedule', options:['reschedule','confirm','refund'], hint:'新しい日時を決め直す動詞。', tip:'reschedule は日程を組み直す。postpone は単に後に延ばすことで、新しい日程を決めない場合もある。'}
+    ]
+  },
+  {
+    id:'agreement', kind:'vocab', phraseId:'agree',
+    levels:[
+      {scene:'友人との相談', cue:'友人が提案した予定に賛成している。 I _____ with your plan.', answer:'agree', options:['forget','agree','refuse'], hint:'意見に賛成するとき、with と組み合わせる動詞。', tip:'agree with a plan は計画に賛成する。refuse は断る、forget は忘れる。'},
+      {scene:'Choosing a meeting date', cue:'After discussing several possible dates, everyone has accepted Friday. We have finally _____ on Friday.', answer:'agreed', options:['argued','arrived','agreed'], hint:'have finally の後ろは過去分詞。全員が同じ日程に同意した。', tip:'agree on a date は日程について合意する。現在完了では have agreed とする。argue は言い争う。'},
+      {scene:'A group decision', cue:'Five teammates discussed two competing plans, and all five now support the same one. The team has reached a _____.', answer:'consensus', options:['consensus','deadline','disagreement'], hint:'複数人が話し合った結果として達した、共通の合意。', tip:'reach a consensus は話し合いで合意に達する。deadline は期限、disagreement は意見の相違。'}
+    ]
+  },
+  {
+    id:'preference', kind:'vocab', phraseId:'prefer',
+    levels:[
+      {scene:'移動手段を選ぶ', cue:'バスより電車の方が好きだと伝えよう。 I _____ the train to the bus.', answer:'prefer', options:['cancel','borrow','prefer'], hint:'AをBより好むとき、A to B の前に置く動詞。', tip:'prefer A to B は「BよりAを好む」。prefer the train to the bus の形で比較できる。'},
+      {scene:'A quieter place to stay', cue:'You want a calm hotel instead of a crowded hostel. I would _____ stay somewhere quiet.', answer:'rather', options:['prefer','rather','possibly'], hint:'would の直後に置いて「むしろ〜したい」を表す語。', tip:'would rather + 動詞の原形 は「むしろ〜したい」。would prefer の後には to stay が必要。'},
+      {scene:'Picking between two departures', cue:'Both trains work, but the early one fits your plans better. My personal _____ would be the earlier train.', answer:'preference', options:['permission','preference','promise'], hint:'二つの候補から自分がより望む方を指す名詞。', tip:'my preference would be ... は自分がより望む選択肢を丁寧に表す。permission は許可、promise は約束。'}
+    ]
+  },
+  {
+    id:'arrival-update', kind:'vocab', phraseId:'late',
+    levels:[
+      {scene:'バスを待つ', cue:'予定時刻を過ぎてもバスが来ない。 The bus is _____.', answer:'late', options:['early','late','empty'], hint:'予定の時刻より後になっている状態。', tip:'be late は「遅れている」。early は早い、empty は空っぽで、運行時刻とは関係しない。'},
+      {scene:'An updated train notice', cue:'The train is currently _____ fifteen minutes behind schedule because of heavy snow.', answer:'running', options:['waiting','driving','running'], hint:'電車が現在、予定より遅れて運行していることを表す。', tip:'The train is running fifteen minutes behind schedule. は「列車が15分遅れで運行中」。running は交通機関にも使える。'},
+      {scene:'A delayed delivery', cue:'The courier was due at noon, but heavy traffic means the estimated arrival is now 12:25. The delivery is _____ by about 25 minutes.', answer:'delayed', options:['booked','advanced','delayed'], hint:'予定より25分後になること。by about 25 minutes と続けよう。', tip:'be delayed by about 25 minutes は「約25分遅延する」。advanced は前倒しの意味で、今の状況とは逆。'}
+    ]
+  },
+  {
+    id:'suggestion', kind:'vocab', phraseId:'recommend',
+    levels:[
+      {scene:'おすすめを聞く', cue:'地元の人に良い店を紹介してほしい。 What restaurant would you _____?', answer:'recommend', options:['recommend','cancel','refund'], hint:'相手によい選択肢をすすめてもらう動詞。', tip:'What would you recommend? はおすすめを聞く自然な形。cancel はキャンセル、refund は返金。'},
+      {scene:'Advice for a first visit', cue:'Your friend is visiting for the first time. I _____ visiting the morning market.', answer:'suggest', options:['refuse','suggest','postpone'], hint:'suggest の後は visiting のように動名詞を続けられる。', tip:'I suggest visiting ... は「〜に行くことを提案する」。I suggest to visit ... とは通常言わない。'},
+      {scene:'A particularly good option', cue:'The local guide is confident that this route suits families better than the alternatives. I _____ recommend the lakeside walk.', answer:'highly', options:['barely','nearly','highly'], hint:'recommend を強めて「強くおすすめする」という副詞。', tip:'highly recommend は「強くおすすめする」。barely は「かろうじて／ほとんど〜ない」、nearly は「ほぼ」。'}
+    ]
+  },
+  {
+    id:'hotel', kind:'vocab', phraseId:'booking',
+    levels:[
+      {scene:'ホテル予約', cue:'今夜泊まれる部屋があるか確認したい。 Is a room _____ tonight?', answer:'available', options:['available','occupied','closed'], hint:'空いていて使える状態を表す語。', tip:'available は利用可能・空きがある。occupied は使用中・満室側の意味。'},
+      {scene:'Hotel facilities', cue:'The hotel provides breakfast to guests at no extra cost. Breakfast is _____.', answer:'complimentary', options:['mandatory','complimentary','refundable'], hint:'ホテルで「無料サービスとして付く」と言うときの形容詞。', tip:'complimentary はサービスとして無料の。mandatory は義務的な、refundable は返金可能な。'},
+      {scene:'Reading booking conditions', cue:'The discounted hotel rate will not return any money if you cancel, even a month in advance. The rate is _____.', answer:'non-refundable', options:['transferable','complimentary','non-refundable'], hint:'キャンセル後に代金が戻らない予約条件。', tip:'non-refundable は返金不可。transferable は他人などに譲渡できる、complimentary は無料サービス。'}
+    ]
+  },
+  {
+    id:'details', kind:'vocab', phraseId:'clarify',
+    levels:[
+      {scene:'予約の確認', cue:'予約が確かに入っているか確認したい。 Could you _____ my booking?', answer:'confirm', options:['cancel','confirm','forget'], hint:'予約が確定しているか確かめる動詞。', tip:'confirm a booking は予約を確認・確定する。cancel は取り消す。'},
+      {scene:'Asking for an explanation', cue:'An email says "come early," but you do not know how many minutes early. Could you _____ what you mean by "early"?', answer:'clarify', options:['estimate','clarify','translate'], hint:'あいまいな説明をより明確にする動詞。', tip:'clarify ははっきり説明する。estimate は概算する、translate は翻訳する。'},
+      {scene:'Confirming requirements', cue:'The form says "bring identification," but you need to know which exact documents are accepted. Could you _____ which types of ID are valid?', answer:'specify', options:['specify','predict','guarantee'], hint:'一般的な説明から、対象を具体的に指定する動詞。', tip:'specify は具体的に明示する。predict は予測する、guarantee は保証する。'}
+    ]
+  },
+  {
+    id:'embedded-direction', kind:'grammar', phraseId:'direction',
+    levels:[
+      {scene:'駅を探す', cue:'「最寄りの駅はどこですか？」を英文にしよう。', answer:'Where is the nearest station?', hint:'Where のあとに be動詞を置こう。', tip:'直接疑問文は Where + is + 主語 ? の順。nearest は「最寄りの」。'},
+      {scene:'Finding a station', cue:'Ask politely if someone can tell you where the nearest station is.', answer:'Could you tell me where the nearest station is?', hint:'Could you tell me のあとは、where + 主語 + 動詞。', tip:'間接疑問文では where is the station ではなく where the station is の語順になる。'},
+      {scene:'Catching a late train', cue:'You need to find the place where you can board the last train. Ask a staff member politely using an indirect question.', answer:'Could you tell me where I can catch the last train?', hint:'疑問文全体は Could you ...?、埋め込む部分は where I can ...。', tip:'where I can catch ... は間接疑問文の平叙文語順。where can I catch ... にはしない。'}
+    ]
+  },
+  {
+    id:'diet', kind:'grammar', phraseId:'order',
+    levels:[
+      {scene:'食べられないもの', cue:'「私は肉を食べません」を英文にしよう。', answer:"I don't eat meat.", hint:"現在の習慣を否定するときは I don't ...。", tip:"I don't eat meat. は日頃の食習慣。I'm not eating meat. は今だけ食べていない場合にも使う。"},
+      {scene:'Reading a restaurant menu', cue:'Ask whether a dish contains any meat.', answer:'Does this dish contain any meat?', hint:'三人称単数 this dish を主語にする疑問文。', tip:'Does + 主語 + 動詞の原形。Does を使うので contain に -s を付けない。'},
+      {scene:'Checking a hidden ingredient', cue:'The sauce ingredients are not on the menu. Politely ask the server to check whether it contains any meat.', answer:'Could you check whether this sauce contains any meat?', hint:'Could you check whether ... のあとに平叙文語順を置く。', tip:'whether this sauce contains ... は間接疑問文。this sauce は単数なので contains。'}
+    ]
+  },
+  {
+    id:'meet', kind:'grammar', phraseId:'change',
+    levels:[
+      {scene:'待ち合わせ', cue:'「明日会えますか？」を英文にしよう。', answer:'Can we meet tomorrow?', hint:'Can + 主語 + 動詞の原形 + 時間。', tip:'Can we meet ...? は予定を相談するときに使える。meet の後ろに tomorrow を置く。'},
+      {scene:'Suggesting a meeting', cue:'Ask whether tomorrow afternoon would be convenient for the other person.', answer:'Would tomorrow afternoon work for you?', hint:'予定が相手にとって都合がよいか聞く work for you。', tip:'Would + 日時 + work for you? で都合を丁寧に確認できる。'},
+      {scene:'Offering another date', cue:'You prefer Friday, but if Friday is too busy, suggest Monday instead in one conditional question.', answer:'If Friday is too busy, could we meet on Monday instead?', hint:'If + 条件、could we + 提案の形。', tip:'If Friday is too busy が条件節、could we meet ... が提案。instead は「代わりに」。'}
+    ]
+  },
+  {
+    id:'forgot', kind:'grammar', phraseId:'apology',
+    levels:[
+      {scene:'忘れ物', cue:'「切符を忘れました」を英文にしよう。', answer:'I forgot my ticket.', hint:'forget の過去形は forgot。', tip:'過去に忘れたことを伝えるので forgot。my ticket は忘れた物。'},
+      {scene:'At the station gate', cue:'Apologize for forgetting to bring your ticket.', answer:"I'm sorry I forgot to bring my ticket.", hint:"I'm sorry + 主語 + 過去形 で理由を伝える。", tip:'forgot to bring は「持ってくるのを忘れた」。forgot bringing は「持ってきたこと自体を忘れた」と違う意味。'},
+      {scene:'Explaining a missed document', cue:'Make a formal apology for not bringing the reservation confirmation to check-in.', answer:'I apologize for forgetting to bring the booking confirmation.', hint:'apologize for の後ろは -ing の動名詞。', tip:'apologize for + 動名詞。forgetting to bring と続けると「持参し忘れたことを謝る」。'}
+    ]
+  },
+  {
+    id:'included', kind:'grammar', phraseId:'price',
+    levels:[
+      {scene:'朝食の料金', cue:'「朝食は料金に含まれていますか？」を英文にしよう。', answer:'Is breakfast included in the price?', hint:'受け身は be動詞 + 過去分詞。', tip:'be included は「料金などに含まれている」。breakfast が主語なので Is。'},
+      {scene:'Asking about hotel costs', cue:'Ask whether the listed price includes breakfast.', answer:'Does the price include breakfast?', hint:'Does + the price + 動詞の原形。', tip:'the price が単数なので Does。疑問文内の動詞は includes でなく include。'},
+      {scene:'Clarifying an accommodation offer', cue:'Politely ask for confirmation of whether breakfast is included in the advertised price.', answer:'Could you confirm whether breakfast is included in the price?', hint:'confirm whether のあとに breakfast is included ...。', tip:'whether 以下は平叙文語順。is included は受け身で「含まれている」。'}
+    ]
+  },
+  {
+    id:'wifi', kind:'grammar', phraseId:'problem',
+    levels:[
+      {scene:'ホテルのWi-Fi', cue:'「Wi-Fiが使えません」を英文にしよう。', answer:'The Wi-Fi is not working.', hint:'現在の状態を is not working で表そう。', tip:'is not working は「今、正常に動いていない」。機器・通信の不調によく使う。'},
+      {scene:'Reporting a persistent problem', cue:'Tell the front desk the Wi-Fi has not worked since yesterday.', answer:'The Wi-Fi has not worked since yesterday.', hint:'昨日から今まで続くので現在完了形。', tip:'has not worked since yesterday で「昨日からずっと使えない」。since は起点を示す。'},
+      {scene:'Describing a technical issue', cue:'Explain that even after restarting the router, the internet connection is still unstable.', answer:'Although I restarted the router, the connection is still unstable.', hint:'Although + 過去の行動、現在も続く状態。', tip:'Although は「〜したにもかかわらず」。restart は過去形、is still unstable は現在の状態。'}
+    ]
+  },
+  {
+    id:'city-schedule', world:'city', kind:'vocab', phraseId:'change',
+    levels:[
+      {scene:'街の予約窓口',cue:'金曜日に予約を変更したい。 I would like to _____ my booking to Friday.',answer:'change',options:['change','borrow','close'],hint:'予約の日程を「変更する」動詞。',tip:'change a booking to Friday は予約の日を金曜日に変える。borrow は借りる、close は閉じる。'},
+      {scene:'Rescheduling at the counter',cue:'You cannot attend the original appointment, but you still want to come on another date. Could I _____ my appointment?',answer:'reschedule',options:['reschedule','refund','deliver'],hint:'予約を取り消さず、日程を改めて決める。',tip:'reschedule an appointment は日時を組み直す。refund は返金する、deliver は届ける。'},
+      {scene:'An updated appointment',cue:'The meeting was originally set for Tuesday, but both people agreed to meet on Thursday instead. It has been _____ for Thursday.',answer:'rescheduled',options:['rescheduled','cancelled','delivered'],hint:'日時の合意済み変更なので、現在完了の受け身。',tip:'has been rescheduled for Thursday は木曜日に日程が変更された。cancelled は会議自体の中止。'}
+    ]
+  },
+  {
+    id:'city-platform', world:'city', kind:'vocab', phraseId:'direction',
+    levels:[
+      {scene:'地下鉄の駅',cue:'駅員に電車の乗り場を聞く。 Which _____ does the train leave from?',answer:'platform',options:['platform','kitchen','receipt'],hint:'列車を待つホームのこと。',tip:'platform は駅のホーム。Which platform does ... leave from? で乗り場を確認できる。'},
+      {scene:'A change of trains',cue:'You need to change from the blue line to the green line. Where do I _____?',answer:'transfer',options:['transfer','refund','collect'],hint:'別の路線に「乗り換える」。',tip:'transfer は乗り換える。Where do I transfer? と聞けば乗換駅を確認できる。'},
+      {scene:'A closed train line',cue:'The direct line is closed, so you ask staff for another way to the museum. Is there an _____ route?',answer:'alternative',options:['alternative','identical','expensive'],hint:'元の道が使えないときの「別の」経路。',tip:'an alternative route は代わりの経路。an が付くのは alternative が母音で始まるため。'}
+    ]
+  },
+  {
+    id:'city-clarification', world:'city', kind:'grammar', phraseId:'clarify',
+    levels:[
+      {scene:'お店の料金を確認',cue:'「この料金を説明していただけますか？」を英文にしよう。',answer:'Could you explain this fee?',hint:'Could you + 動詞の原形 で丁寧な依頼。',tip:'Could you explain this fee? は不明な料金について理由を説明してもらう自然な聞き方。'},
+      {scene:'Unexpected extra costs',cue:'Politely ask why the price has changed using an indirect question.',answer:'Could you tell me why the price changed?',hint:'Could you tell me の後は why + 主語 + 動詞の順。',tip:'why the price changed は間接疑問文。why did the price change と倒置しない。'},
+      {scene:'A higher invoice',cue:'The final bill is higher than the amount you were quoted. Politely request an explanation using Would you mind.',answer:'Would you mind explaining why the total is higher than the quoted price?',hint:'Would you mind のあとは動名詞 explaining。',tip:'Would you mind + -ing は丁寧な依頼。why the total is higher は間接疑問文で平叙文語順。'}
+    ]
+  },
+  {
+    id:'city-arrangement', world:'city', kind:'grammar', phraseId:'booking',
+    levels:[
+      {scene:'待ち合わせ場所を決める',cue:'「駅で会えますか？」を英文にしよう。',answer:'Can we meet at the station?',hint:'Can we + 動詞の原形 + 場所。',tip:'Can we meet at the station? の at は集合する場所を示す。'},
+      {scene:'A changed dinner booking',cue:'Politely ask whether it would be possible to move your reservation to Friday.',answer:'Would it be possible to move our booking to Friday?',hint:'Would it be possible to + 動詞の原形。',tip:'Would it be possible to ...? は相手の都合に配慮した丁寧な依頼。'},
+      {scene:'Finding another time slot',cue:'Ask to reschedule for the afternoon if the morning slot is unavailable.',answer:'If the morning slot is unavailable, could we reschedule for the afternoon?',hint:'If + 条件、could we + 動詞の原形。',tip:'If the morning slot is unavailable が条件。could we reschedule ... で代替案を丁寧に相談する。'}
+    ]
+  }
+];
+
+export const EXTRA_FOREST_QUIZZES = Object.freeze(TOPICS.flatMap(topic => topic.levels.map((level, index) => {
+  const difficulty = LEVELS[index];
+  const baseId = `${topic.world||'forest'}-${topic.kind}-${topic.id}`;
+  return Object.freeze({
+    id: `${baseId}-${difficulty}`,
+    baseId,
+    phraseId: topic.phraseId,
+    ...(topic.world ? {world:topic.world} : {}),
+    kind: topic.kind,
+    difficulty,
+    scene: level.scene,
+    cue: level.cue,
+    ...(difficulty === 'easy' ? {} : {task: ENGLISH_TASK[topic.kind]}),
+    answer: level.answer,
+    ...(topic.kind === 'vocab' ? {options: level.options} : {tokens: wordTiles(level.answer)}),
+    hint: level.hint,
+    tip: level.tip
+  });
+})));
