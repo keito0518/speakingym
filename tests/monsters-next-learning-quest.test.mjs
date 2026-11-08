@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ALL_PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { createSave, EVOLUTION_XP } from '../prototype/speakingym-monsters/monster-engine.js';
 import { recordRetention } from '../prototype/speakingym-monsters/retention.js';
-import { nextLearningQuestFor, learningProofFor, nextReturnCueFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
+import { nextLearningQuestFor, learningProofFor, nextReturnCueFor, homeLearningSignalFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
 
 const today='2026-11-02';
 const first=kind=>ALL_PROMPTS.find(p=>p.kind===kind&&(p.difficulty||'easy')==='easy'&&!p.bossOnly);
@@ -74,6 +74,28 @@ test('return cue is backed by scheduled practice, never a made-up daily streak',
  assert.equal(cue.count,1);
  assert.match(cue.title,/明日、1問/);
  assert.equal(nextReturnCueFor(save,'2026-11-03',[firstId]),null,'A due task is actionable now, not a future plan');
+});
+
+test('home shows one short upcoming recall badge, hides it once recall becomes due',()=>{
+ const id=first('speak').id;
+ let save=createSave();
+ assert.equal(homeLearningSignalFor(save,today),null,'No scheduled task means no return promise');
+ save=recordRetention(save,id,'smooth',today).save;
+ assert.deepEqual(homeLearningSignalFor(save,today),{kind:'return',label:'明日 · 復習 1問'});
+ assert.equal(homeLearningSignalFor(save,'2026-11-03'),null,'Today-due recall already has its own primary action');
+});
+
+test('home growth badge compares genuine same-level sessions at least seven days apart',()=>{
+ const session=(date,difficulty,independent)=>({date,difficulty,total:8,independent,hinted:0,elapsedSeconds:240});
+ const earlier=session('2026-10-01','easy',1);
+ const nearest=session('2026-11-02','easy',4);
+ const latest=session('2026-11-09','easy',6);
+ const save={...createSave(),dailyHistory:[earlier,nearest,session('2026-11-03','hard',8),latest]};
+ assert.deepEqual(homeLearningSignalFor(save,'2026-11-09'),{
+  kind:'growth',label:'自力正解率 50% → 75%（同じ難易度・7日以上）'
+ });
+ assert.equal(homeLearningSignalFor({...createSave(),dailyHistory:[nearest,latest]},'2026-11-08'),null,
+  'A future session must not be used to claim current progress');
 });
 
 test('scheduled saved lines get a direct review action without counting all bookmarks as due',()=>{

@@ -40,7 +40,7 @@ import { createWeaponBattleSoundPlayer } from './weapon-battle-sound.js';
 import { summonWeaponArtwork } from './summon-weapon-art.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
-import { nextLearningQuestFor, learningProofFor, nextReturnCueFor } from './next-learning-quest.js';
+import { nextLearningQuestFor, learningProofFor, nextReturnCueFor, homeLearningSignalFor } from './next-learning-quest.js';
 import { savedReviewRecap, savedReviewTrend, rememberSavedReview } from './saved-review-coach.js';
 import { createBetaTelemetry, betaSessionFields } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
@@ -733,7 +733,8 @@ function renderHome() {
     areasCleared:forestCount,cityAreasCleared:cityCount,ruinsAreasCleared:ruinsCount,totalAreas:DUNGEON_AREAS.length,
     nextAreaName:nextArea.name,bondRank:bond.rank,summon:summonProgress(save)
   });
-  homeNavigation?.updateQuest(nextLearningQuestFor(save),learningProofFor(save));
+  const homeQuest=nextLearningQuestFor(save);
+  homeNavigation?.updateQuest(homeQuest,learningProofFor(save),homeLearningSignalFor(save,dayKey(),homeQuest));
   // Reuse art for already recruited creatures only; never preview locked ones.
   // Pick the selected companion first so that the home genuinely reflects
   // the user's own team, and cap moving sprites at three for mobile performance.

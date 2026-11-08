@@ -2,7 +2,7 @@
 // Unlike a proficiency prediction, these decisions only use scheduled review,
 // XP already earned and the authored daily lesson plan.
 import { dayKey, getMonsterProgress, getEvolutionTrialGuide, savedReviewQueue } from './monster-engine.js';
-import { dailyTrainingPlan } from './daily-training.js';
+import { dailyTrainingPlan, dailyGrowthSummary } from './daily-training.js';
 import { retentionOverview } from './retention.js';
 import { retentionMilestoneSummary } from './retention.js';
 import { dueRoleplayTransfers } from './roleplay-transfer.js';
@@ -34,6 +34,23 @@ export function nextReturnCueFor(save,today=dayKey()){
  return {date:nextDate,count,when,
   title:`${when}、${count}問の復習に挑戦`,
   detail:'もう一度ヒントなしで答えられるか確認しよう。'};
+}
+
+// One compact home badge, not another explanation card. An upcoming review
+// must be backed by the existing spaced-recall schedule; a comparison must
+// use independently answered tasks at the SAME difficulty at least 7 days
+// apart. Never manufacture a streak or call this a language proficiency score.
+export function homeLearningSignalFor(save,today=dayKey(),next=nextLearningQuestFor(save,today)){
+ if(['retention','transfer','saved'].includes(next.kind))return null;
+ const upcoming=nextReturnCueFor(save,today);
+ if(upcoming)return {kind:'return',label:`${upcoming.when} · 復習 ${upcoming.count}問`};
+ // Imported/local saves can contain later dated sessions. A future attempt
+ // cannot be evidence of progress as of the date the player is viewing.
+ const history=(Array.isArray(save.dailyHistory)?save.dailyHistory:[])
+  .filter(row=>row&&typeof row.date==='string'&&row.date<=today);
+ const growth=dailyGrowthSummary({...save,dailyHistory:history});
+ if(growth.changeSevenDays===null)return null;
+ return {kind:'growth',label:`自力正解率 ${growth.weekBeforeRate}% → ${growth.lastRate}%（同じ難易度・7日以上）`};
 }
 
 export function nextLearningQuestFor(save,today=dayKey()){

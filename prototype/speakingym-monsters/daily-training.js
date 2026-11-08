@@ -105,9 +105,12 @@ export function dailyGrowthSummary(save){
  const records=Array.isArray(save.dailyHistory)?save.dailyHistory:[];
  const first=records[0]||null,last=records.at(-1)||null;
  const percentage=r=>r?Math.round(r.independent/r.total*100):null;
- // Compare like-for-like difficulty only, and require seven calendar days.
- const earlier=last?records.find(r=>r.difficulty===last.difficulty&&
-   (new Date(last.date+'T12:00:00').getTime()-new Date(r.date+'T12:00:00').getTime())/86400000>=7):null;
+ // Compare with the closest eligible earlier session, not the oldest one.
+ // Otherwise a player with months of history always sees the very first
+ // attempt as their "week before" rate even after new weeks of practice.
+ const earlier=last?records.filter(r=>r.difficulty===last.difficulty&&
+   (Date.parse(last.date+'T12:00:00Z')-Date.parse(r.date+'T12:00:00Z'))/86400000>=7)
+   .sort((a,b)=>b.date.localeCompare(a.date))[0]||null:null;
  return {sessions:records.length,lastRate:percentage(last),firstRate:percentage(first),
    weekBeforeRate:percentage(earlier),changeSevenDays:earlier?percentage(last)-percentage(earlier):null,
    lastDuration:last?.elapsedSeconds??null};

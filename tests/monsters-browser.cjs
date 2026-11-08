@@ -529,15 +529,17 @@ const path=require('node:path');
       const {context:proofContext,page:proofPage}=await boot(width);
       assert.equal(await proofPage.locator('#home-learning-proof').isVisible(),false);
       await proofPage.evaluate(async()=>{
-        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const {createSave,STORAGE_KEY,dayKey,addDays}=await import('./monster-engine.js');
         const {ALL_PROMPTS}=await import('./monster-data.js');
         const prompt=ALL_PROMPTS.find(item=>item.kind==='speak'&&!item.bossOnly);
         localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),totalAnswers:4,
-          retention:{[prompt.id]:{stage:4,lastDay:'2026-10-30',nextDay:'2026-11-13'}}}));
+          retention:{[prompt.id]:{stage:4,lastDay:'2026-10-30',nextDay:addDays(dayKey(),1)}}}));
       });
       await proofPage.reload();
       assert.match(await proofPage.locator('#home-learning-proof').innerText(),/7日後もヒントなしで確認できた 1問/);
       assert.equal(await proofPage.locator('#home-learning-proof').isVisible(),true);
+      assert.match(await proofPage.locator('#home-learning-signal').innerText(),/明日 · 復習 1問/);
+      assert.equal(await proofPage.locator('#home-learning-signal').isVisible(),true);
       const proofWidth=await proofPage.evaluate(()=>({viewport:innerWidth,content:document.documentElement.scrollWidth}));
       assert.ok(proofWidth.content<=proofWidth.viewport+1,`${engine}/${width} proof button must fit mobile: ${JSON.stringify(proofWidth)}`);
       await proofPage.locator('#home-learning-proof').click();

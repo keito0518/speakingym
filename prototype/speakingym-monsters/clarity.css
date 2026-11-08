@@ -406,6 +406,8 @@
 .home-next-quest-kicker{display:block;margin-bottom:3px;color:#84672e;font-size:9px;font-weight:900;letter-spacing:.06em}
 .home-next-quest h2{margin:0 0 3px;font-size:14px;line-height:1.45;color:#2e5b40;font-weight:900;overflow-wrap:anywhere}
 .home-next-quest p{margin:0;color:#5c7562;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+#home-learning-signal{display:inline-block;max-width:100%;margin:5px 0 0;padding:3px 8px;border-radius:99px;border:1px solid #779da5;background:#253e4c;color:#f5e2b6;font-size:11px;font-weight:850;line-height:1.4;overflow-wrap:anywhere}
+#home-learning-signal[hidden]{display:none!important}
 .home-next-quest #home-learning-proof{display:block;max-width:100%;min-height:36px;margin-top:7px;padding:5px 9px;border:1px solid #8ebc9b;border-radius:8px;background:#edf7e9;color:#295b3d;text-align:left;font-size:11px;font-weight:850;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
 .home-next-quest #home-learning-proof[hidden]{display:none!important}
 .home-next-quest #home-learning-proof:focus-visible{outline:3px solid #d8aa50;outline-offset:2px}

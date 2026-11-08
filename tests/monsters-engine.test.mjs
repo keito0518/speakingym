@@ -493,6 +493,10 @@ test('daily gym stores safe local-only verified summaries and 7-day same-level c
  assert.equal(stats.weekBeforeRate,38);
  assert.equal(stats.lastRate,75);
  assert.equal(stats.changeSevenDays,37);
+ const d=recordDailyCompletion(c,{date:'2026-11-03',difficulty:'easy',total:8,independent:5,hinted:0,elapsedSeconds:220});
+ const e=recordDailyCompletion(d,{date:'2026-11-10',difficulty:'easy',total:8,independent:7,hinted:0,elapsedSeconds:200});
+ assert.equal(dailyGrowthSummary(e).weekBeforeRate,63,'Compare the closest eligible week, never the first-ever attempt');
+ assert.equal(dailyGrowthSummary(e).changeSevenDays,25);
  assert.equal(validateSave(c).dailyHistory.length,3);
  assert.deepEqual(validateSave({...base,dailyHistory:[{date:'bad',difficulty:'easy',total:999}]}).dailyHistory,[]);
  assert.throws(()=>recordDailyCompletion(base,{date:'2026-10-27',total:8,independent:9,hinted:0,elapsedSeconds:99}),/Invalid/);
