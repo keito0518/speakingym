@@ -61,6 +61,36 @@ export const ROLEPLAY_LESSONS=Object.freeze({
   skill:'買った商品の問題を伝える',start:'This is broken ...',
   why:'壊れた箇所と、交換などしてほしいことを分けて話すと伝わりやすい。',
   stretch:'次は壊れた箇所を一つ具体的に言い、交換できるか聞いてみよう。'
+ },
+ 'think-cafe':{
+  skill:'注文前に考える時間をもらう',start:'Could I have a moment ...',
+  why:'急いで注文する必要はないので、相手を待たせるときの短い依頼を先に伝えよう。',
+  stretch:'次は「まだ決めていません」と「少し考えたい」を別の自然な言い方で伝えてみよう。'
+ },
+ 'recommend-drink':{
+  skill:'甘さの希望を伝えておすすめを聞く',start:'Could you recommend ...',
+  why:'ただおすすめを聞くだけでなく、甘さなど自分の好みを添えると答えが具体的になる。',
+  stretch:'次は甘さ以外にも冷たさやカフェインの希望を一つ加えて尋ねてみよう。'
+ },
+ 'apology-spill':{
+  skill:'飲み物をこぼしたことを謝る',start:"I'm sorry I spilled ...",
+  why:'何をしてしまったか短く伝え、必要な場合は片付けを申し出ると会話が進みやすい。',
+  stretch:'次は謝ったあとに、タオルを借りたいことも落ち着いて伝えてみよう。'
+ },
+ 'direction-bus':{
+  skill:'空港行きバスの乗り場を尋ねる',start:'Where can I catch ...',
+  why:'行きたい場所を明確にしたうえで、どのバス停・乗り場か尋ねると取り違えを防げる。',
+  stretch:'次は空港行きに加えて、急行か普通便かも確認する言い方に挑戦しよう。'
+ },
+ 'city-terminal-speak-transfer':{
+  skill:'乗り換える場所を確認する',start:'Where do I transfer ...',
+  why:'乗り換え場所が分からないときは、路線や行き先を添えて質問すると案内しやすい。',
+  stretch:'次は何番ホームで乗り換えるか、行き先を含めて聞いてみよう。'
+ },
+ 'city-terminal-speak-ticket':{
+  skill:'切符の日付変更を相談する',start:'Could I change my ticket ...',
+  why:'日付の変更を希望していることと、変更先の日付を一緒に言えば必要な手続きにつながる。',
+  stretch:'次は変更の可否を聞いたあと、追加料金も確認する質問を考えてみよう。'
  }
 });
 

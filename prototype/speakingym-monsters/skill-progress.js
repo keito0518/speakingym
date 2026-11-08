@@ -7,6 +7,7 @@ import {retentionOverview} from './retention.js';
 export const SKILL_KINDS=Object.freeze(['speak','listen','vocab','grammar']);
 export const SKILL_LABELS=Object.freeze({speak:'スピーキング',listen:'リスニング',vocab:'単語',grammar:'文法'});
 const RATINGS=new Set(['smooth','hint','again']);
+const INPUT_SOURCES=new Set(['microphone','keyboard','unknown']);
 const dayValid=day=>typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day)&&Number.isFinite(Date.parse(day+'T12:00:00Z'));
 const PROMPTS_BY_ID=new Map(ALL_PROMPTS.map(prompt=>[prompt.id,prompt]));
 
@@ -16,17 +17,19 @@ export function sanitizeSkillAttempts(raw){
   const source=Array.isArray(raw[kind])?raw[kind]:[];
   const items=source.filter(row=>row&&typeof row==='object'&&!Array.isArray(row)&&
    PROMPTS_BY_ID.get(row.id)?.kind===kind&&dayValid(row.day)&&RATINGS.has(row.rating))
-   .slice(-20).map(row=>({id:row.id,day:row.day,rating:row.rating}));
+   .slice(-20).map(row=>({id:row.id,day:row.day,rating:row.rating,
+     inputSource:kind==='speak'&&INPUT_SOURCES.has(row.inputSource)?row.inputSource:'unknown'}));
   return [kind,items];
  }));
 }
-export function appendSkillAttempt(raw,prompt,rating,day){
+export function appendSkillAttempt(raw,prompt,rating,day,inputSource='unknown'){
  if(!prompt||!RATINGS.has(rating)||!dayValid(day))throw Error('Invalid skill attempt');
  const attempts=sanitizeSkillAttempts(raw);
  // Reading and other authored task kinds remain playable; they are not
  // falsely counted as one of the four advertised dashboard skills.
  if(!SKILL_KINDS.includes(prompt.kind))return attempts;
- attempts[prompt.kind]=[...attempts[prompt.kind],{id:prompt.id,day,rating}].slice(-20);
+ attempts[prompt.kind]=[...attempts[prompt.kind],{id:prompt.id,day,rating,
+   inputSource:prompt.kind==='speak'&&INPUT_SOURCES.has(inputSource)?inputSource:'unknown'}].slice(-20);
  return attempts;
 }
 function dueIdSet(save,today){
@@ -45,10 +48,16 @@ export function skillProgressFor(save,today){
   const recent=attempts[kind]||[];
   const independentlyConfirmed=recent.filter(row=>row.rating==='smooth').length;
   const assisted=recent.filter(row=>row.rating==='hint').length;
+  // A speech transcript recognized by the browser is evidence of microphone
+  // use, NOT proof of pronunciation, spontaneous fluency or comprehension.
+  // iOS keyboard dictation is indistinguishable from typing on the Web.
+  const microphone=kind==='speak'?recent.filter(row=>row.inputSource==='microphone').length:0;
+  const keyboard=kind==='speak'?recent.filter(row=>row.inputSource==='keyboard').length:0;
   const needsReview=[...due].filter(id=>PROMPTS_BY_ID.get(id)?.kind===kind).length;
   const spaced=Object.entries(save.retention||{}).filter(([id,row])=>PROMPTS_BY_ID.get(id)?.kind===kind&&
     row&&Number.isInteger(row.stage)&&row.stage>=2&&!row.recoveryPhase).length;
   return {kind,label:SKILL_LABELS[kind],sample:recent.length,independent:independentlyConfirmed,
+    microphone,keyboard,
     assisted,needsReview,spaced,
     percent:recent.length?Math.round(100*independentlyConfirmed/recent.length):null};
  });

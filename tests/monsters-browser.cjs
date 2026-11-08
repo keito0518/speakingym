@@ -971,6 +971,29 @@ const path=require('node:path');
     assert.equal(await blockedPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),beforeSubtitled,
       'Reading a transcript cannot change spaced recall or earned progress');
     await blockedContext.close();
+    // Some iPhone WebKit builds fire speechSynthesis.onend without ever
+    // emitting onstart or audible audio. That must not unlock a listening win.
+    const {context:silentContext,page:silentPage}=await boot(375);
+    await silentPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      const seeded=createSave();seeded.reviewPrompts['late-call']='2020-01-01';
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+    });
+    await silentPage.reload();
+    await enterHomePanel(silentPage,'listening');
+    await silentPage.evaluate(()=>{
+      HTMLMediaElement.prototype.play=()=>Promise.reject(new Error('No audible audio'));
+      Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+        cancel(){},speak(utterance){queueMicrotask(()=>utterance.onend?.());}
+      }});
+    });
+    await silentPage.locator('#play-audio').click();
+    await silentPage.locator('#transcript').waitFor({state:'visible',timeout:7000});
+    assert.equal(await silentPage.locator('#listening-meaning').isVisible(),true,
+      'Silent playback may only show the transcript practice fallback');
+    assert.match(await silentPage.locator('#listening-status').innerText(),/再生できなかった/);
+    assert.equal(await silentPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).xpWallet),0);
+    await silentContext.close();
     // Safari may throw from HTMLMediaElement.play() synchronously rather than
     // reject a Promise. Clean up the native player before falling back.
     const {context:throwContext,page:throwPage}=await boot(375);
@@ -1856,6 +1879,8 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#speech-alternatives').evaluate(el=>el.open),true);
     await micPage.locator('#spoken-answer').fill('Let me think about it.');
     await micPage.locator('#show-answer').click();
+    assert.equal(await micPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).skillAttempts.speak.at(-1).inputSource),'keyboard',
+      'Editing a microphone transcript must be reported as typed, not verified captured speech');
     assert.equal(await micButton.isVisible(),false);
     await micPage.locator('#next-question').click();
     assert.equal(await micPage.locator('#play-card').getAttribute('data-prompt-id'),'repeat-class');
@@ -1912,6 +1937,16 @@ const path=require('node:path');
       'A synchronous permission failure must restore a usable retry button');
     assert.match(await micPage.locator('#speech-helper').innerText(),/許可されていません/);
     assert.equal(await micPage.locator('#speech-alternatives').isVisible(),true);
+    await micPage.evaluate(()=>{
+      window.SpeechRecognition=class{
+        start(){this.onresult?.({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]});}
+        abort(){}
+      };
+    });
+    await micPage.locator('#mic-button').click();
+    await micPage.locator('#show-answer').click();
+    assert.equal(await micPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).skillAttempts.speak.at(-1).inputSource),'microphone',
+      'A complete browser speech-recognition result must be tracked independently of typed attempts');
     await leavePlay(micPage);
     await micContext.close();
     // Simulate an iPhone embedded browser which exposes SpeechRecognition but

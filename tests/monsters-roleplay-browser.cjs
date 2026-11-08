@@ -3,7 +3,8 @@ const assert=require('node:assert/strict');
 
 (async()=>{
  const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
- const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+ const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true,
+  ...(process.env.MONSTERS_BROWSER_EXECUTABLE_PATH?{executablePath:process.env.MONSTERS_BROWSER_EXECUTABLE_PATH}:{})});
  const url=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
  const page=await browser.newPage({viewport:{width:375,height:844},isMobile:engine==='webkit',hasTouch:true});
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -21,8 +22,10 @@ const assert=require('node:assert/strict');
   await page.goto(url,{waitUntil:'networkidle'});
   await page.locator('[data-home-page="roleplay"]').click();
   assert.equal(await page.locator('.roleplay-hub').isVisible(),true);
-  assert.equal(await page.locator('[data-roleplay-card]').count(),4,
-    'Four different situations must be discoverable without hidden navigation');
+  assert.equal(await page.locator('[data-roleplay-card]').count(),6,
+    'Six different situations must be discoverable without hidden navigation');
+  assert.equal(await page.locator('[data-roleplay="cafe"]').count(),1);
+  assert.equal(await page.locator('[data-roleplay="transport"]').count(),1);
   assert.equal(await page.locator('.roleplay-option p').first().isVisible(),false,
     'Scene names carry the menu without long descriptions in every card');
   assert.equal(await page.locator('.roleplay-about').getAttribute('open'),null,

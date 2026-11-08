@@ -374,9 +374,10 @@ function micView(mode='ready') {
   const button=$('#mic-button'), retry=$('#retry-mic');
   if(button){
     const unavailable=button.dataset.speechUnavailable==='true';
+    const readyLabel=play?.mode==='forest'&&play.tactics?.turn==='player'&&currentPrompt()?.kind==='speak'?'声で攻撃':'話す';
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.innerHTML=mode==='finishing'?'<span>確定中…</span>':mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':'<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span>';
+    button.innerHTML=mode==='finishing'?'<span>確定中…</span>':mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':`<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${readyLabel}</span>`;
     button.title=mode==='finishing'?'音声の文字起こしを確定中':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する';
     button.setAttribute('aria-label',mode==='finishing'?'文字起こしを確定中':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する');
     button.hidden=mode==='done'||unavailable;
@@ -681,7 +682,8 @@ function renderHome() {
   $('#skill-growth-list').innerHTML=skillStats.map(stat=>{
     const measured=stat.sample>0;
     const evidence=measured?`直近${stat.sample}回答：自力で確認 ${stat.independent}回（${stat.percent}%）`:'自力での確認率はまだ記録なし';
-    const detail=measured?`ヒントあり ${stat.assisted}回 · ${stat.sample}回答に基づく${stat.sample<4?'（少数のため参考値）':''}`:'この更新後の回答から集計するよ';
+    const voiceEvidence=stat.kind==='speak'&&measured?` · ブラウザのマイクで文字化した回答 ${stat.microphone}/${stat.sample}回`:'';
+    const detail=(measured?`ヒントあり ${stat.assisted}回 · ${stat.sample}回答に基づく${stat.sample<4?'（少数のため参考値）':''}`:'この更新後の回答から集計するよ')+voiceEvidence;
     return `<article class="skill-growth-card" data-skill="${stat.kind}" data-learning-priority="${String(skillFocus?.kind===stat.kind)}"><div class="skill-growth-head"><strong>${escapeHtml(stat.label)}${skillFocus?.kind===stat.kind?' · 今日の重点':''}</strong><span>${stat.needsReview?'要復習 '+stat.needsReview+'問':'復習予定なし'}</span></div>
       <p class="skill-growth-count">${escapeHtml(evidence)}</p>
       <div class="skill-growth-track" aria-hidden="true"><span style="width:${stat.percent??0}%"></span></div>
@@ -1432,7 +1434,7 @@ function renderQuestion() {
   $('#play-card').hidden=false;
   $('#answer-area').classList.remove('listening-result-only');
   $('#forest-journey').classList.remove('forest-victory');
-  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.quizMissRecorded=false;play.quizMistake='';play.justDroppedWeapon=null;
+  play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.micTranscript=false;play.quizMissRecorded=false;play.quizMistake='';play.justDroppedWeapon=null;
   if(play.mode==='forest'){
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
@@ -1562,13 +1564,15 @@ function renderQuestion() {
     $('#play-card').querySelector('.question-top').after(dialogue);
   }
   const guidedCloze=beginnerClozeFor(prompt);
+  const voiceAttack=play.mode==='forest'&&play.tactics?.turn==='player'&&prompt.kind==='speak';
+  const answerAction=play.mode==='forest'?(play.tactics?.turn==='enemy'?'答えて防御':'答えて攻撃'):play.roleplay?'返答を確認':'答えを判定';
   $('#answer-area').innerHTML=`${quizControlsHtml(prompt)}
     <label class="answer-label" for="spoken-answer">${quizMode?'選んだ答え':'英語の回答'}</label>
-    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" lang="en" inputmode="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話す / 入力"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>話す</span></button></div>
+    <div class="answer-row"><textarea id="spoken-answer" class="answer-input" rows="3" lang="en" inputmode="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="話す / 入力"></textarea><button id="mic-button" type="button" class="mic-button" title="マイクで話す" aria-label="マイクで話す" aria-pressed="false"><span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${voiceAttack?'声で攻撃':'話す'}</span></button></div>
     <p id="speech-helper" class="answer-helper" role="status" aria-live="polite"></p>
     <div class="answer-quick-help"><button class="hint-button speaking-hint-action" id="show-hint" type="button" aria-controls="hint-panel" aria-expanded="false">${guidedCloze?'穴埋めヒント':'ヒント'}</button></div>
     <div id="hint-panel" class="hint-box speaking-hint-panel" role="status" aria-live="polite" hidden></div>
-    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないとき</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">キーボードの音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">英語キーボードのマイクからも入力できるよ。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">答える</button></div><div id="feedback-panel"></div>`;
+    <button id="retry-mic" type="button" class="retry-mic" hidden>↻ 録音し直す</button><details id="speech-alternatives" class="speech-alternatives" hidden><summary>マイクが使えないとき</summary><div class="speech-alternatives-actions"><button type="button" id="native-dictation" class="speech-native-button">キーボードの音声入力を使う</button><button type="button" id="copy-safari-url" class="speech-copy-button">URLをコピーしてSafariで開く</button><p id="speech-alternative-help">英語キーボードのマイクからも入力できるよ。</p></div></details><div class="learning-controls"><button class="reveal-button" id="show-answer">${answerAction}</button></div><div id="feedback-panel"></div>`;
   if(quizMode){
     $('#mic-button').hidden=true;
     $('#mic-button').disabled=true;
@@ -1578,6 +1582,7 @@ function renderQuestion() {
   $('#retry-mic').addEventListener('click',()=>{
     if(!play || play.revealed)return;
     $('#spoken-answer').value='';
+    play.micTranscript=false;
     $('#spoken-answer').classList.remove('transcript-interim');
     micView('ready');startRecognition();
   });
@@ -1628,6 +1633,9 @@ function renderQuestion() {
     }
   });
   $('#spoken-answer').addEventListener('input',()=>{
+    // An edited recognition result may be correct English, but we can no
+    // longer attribute that entire answer to captured speech alone.
+    if(play)play.micTranscript=false;
     $('#spoken-answer').classList.remove('transcript-interim');
     if(!recognition&&!quizMode)micView('ready');
   });
@@ -1771,7 +1779,12 @@ function browserSpeakLine(line,onUnavailable,level='easy',onStart=()=>{},generat
       if(generation!==playbackGeneration||finished)return;
       started=true;clearTimeout(watchdog);onStart();
     };
-    utterance.onend=()=>{finished=true;clearTimeout(watchdog);};
+    utterance.onend=()=>{
+      if(finished)return;
+      finished=true;clearTimeout(watchdog);
+      // Some WebKit speech engines silently end without ever starting audio.
+      if(!started&&generation===playbackGeneration)onUnavailable?.();
+    };
     utterance.onerror=()=>{
       if(generation!==playbackGeneration||finished)return;
       finished=true;clearTimeout(watchdog);
@@ -1807,6 +1820,7 @@ function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{},ra
         started=true;clearTimeout(watchdog);onStart();
       };
       audio.onended=()=>{
+        if(!started){fallback();return;}
         clearTimeout(watchdog);
         if(spokenAudio===audio)spokenAudio=null;
         audio.onerror=null;audio.onplaying=null;
@@ -1834,6 +1848,7 @@ function startRecognition() {
     finishRecognition();
     return;
   }
+  play.micTranscript=false;
   // Release the preceding listening clip before opening a microphone.
   // This can mitigate an iOS WebKit audio-session conflict but is not a
   // substitute for native speech recognition in restricted in-app browsers.
@@ -1887,6 +1902,7 @@ function startRecognition() {
       // Display partial recognition immediately, without counting it as a final answer.
       // The orange recording button stays only while recognition is actually active.
       const finalized=segments.length>0 && segments.every(result=>result.isFinal===true);
+      if(finalized)play.micTranscript=true;
       const field=$('#spoken-answer');
       field.value=transcript;
       field.classList.toggle('transcript-interim',!finalized);
@@ -2171,7 +2187,8 @@ async function gradeAnswer() {
   // verified boss seal when media playback was unavailable.
   const rating=transcriptPractice?'practice':play.hintUsed?'hint':'smooth';
   const wasQuizResolved=save.quizProgress?.[prompt.id]?.resolved===true;
-  const {save:next,reward}=transcriptPractice?{save:save,reward:{xp:0,captured:[]}}:recordAnswer(save,prompt.id,rating);
+  const inputSource=prompt.kind==='speak'?(play.micTranscript?'microphone':'keyboard'):'unknown';
+  const {save:next,reward}=transcriptPractice?{save:save,reward:{xp:0,captured:[]}}:recordAnswer(save,prompt.id,rating,dayKey(),inputSource);
   if(!transcriptPractice)persist(next);
   play.earnedXp+=reward.xp;
   play.captured.push(...reward.captured);
@@ -2428,7 +2445,9 @@ async function gradeAnswer() {
   const streakNote=streak?.chain>=1
     ?`<p class="forest-chain-result${streak.milestone?' forest-chain-milestone':''}" data-chain-start="${streak.chain===1}"><strong>${streak.chain} CHAIN</strong><span>${!play.endless&&chainChestAt(save,streak.chain,play.areaId)?'このエリアの宝箱を発見！ 冒険終了時に獲得':streak.chain===1?'コンボ開始！':play.tactics&&streak.chain>(save.bestBattleChain||0)?'自己ベスト更新！':streak.milestone?'攻守連続成功！':'連続正解！'}</span></p>`:'';
   const lootPulse=play.justDroppedWeapon?`<p class="forest-drop-flash"><strong>EPIC DROP!</strong><span>${escapeHtml(play.justDroppedWeapon.name)}を獲得！ 図鑑で装備できるよ。</span></p>`:'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
+  const voiceStrike=autoForest&&!defending&&prompt.kind==='speak'&&inputSource==='microphone'&&rating==='smooth'
+    ?'<p class="forest-voice-strike"><strong>VOICE STRIKE</strong><span>マイクで英語を答えて攻撃！</span></p>':'';
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);

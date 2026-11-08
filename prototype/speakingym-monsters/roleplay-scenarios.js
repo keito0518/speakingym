@@ -65,6 +65,36 @@ export const ROLEPLAY_SCENARIOS=Object.freeze([
     openingBranches:{alternate:{text:'We have checked the charges. Is there also a problem with an item you bought?',ja:'料金の確認ができました。買った品物にも問題がありますか？'},supported:{text:'We can finish checking the bill later. Do you need help with something you bought?',ja:'お会計はあとで確認できます。買った品物でお困りですか？'}},
     replyBranches:{alternate:{text:'Thanks for explaining. Let me check whether we can exchange it.',ja:'ご説明ありがとうございます。交換できるか確認しますね。'},supported:{text:'Let us look at the item and the receipt together first.',ja:'まず品物とレシートを一緒に確認しましょう。'}}})
   ])
+ }),
+ Object.freeze({
+  id:'cafe',title:'カフェで注文する',partner:'店員・ノア',
+  description:'考える時間をもらう → おすすめを聞く → こぼした飲み物を謝る',
+  setting:'急いで注文せず、自分の希望を伝えてトラブルにも対応しよう。',
+  turns:Object.freeze([
+   Object.freeze({baseId:'think-cafe',npc:'Welcome! Are you ready to order?',npcJa:'いらっしゃいませ。ご注文はお決まりですか？',response:'Of course. Take your time.',responseJa:'もちろんです。ゆっくりお選びください。',
+    replyBranches:{alternate:{text:'No problem! I can give you another moment.',ja:'大丈夫ですよ。もう少しお待ちしますね。'},supported:{text:'Take your time. You can look at the menu first.',ja:'ゆっくりで大丈夫。まずメニューをご覧ください。'}}}),
+   Object.freeze({baseId:'recommend-drink',npc:'Would you like a recommendation from our drinks menu?',npcJa:'お飲み物でおすすめをご紹介しましょうか？',response:'I would recommend our less-sweet iced tea.',responseJa:'甘さ控えめのアイスティーがおすすめです。',
+    openingBranches:{alternate:{text:'You have had a moment to choose. What kind of drink would you like?',ja:'少しお考えいただけましたね。どんな飲み物がよろしいですか？'},supported:{text:'Let me help with the menu. What drink would you prefer?',ja:'メニューをご案内しますね。どんな飲み物をご希望ですか？'}},
+    replyBranches:{alternate:{text:'Good choice. Our lighter drinks might suit you!',ja:'いいですね。すっきりした飲み物が合いそうです！'},supported:{text:'We can compare the sweetness of the drinks together.',ja:'飲み物の甘さを一緒に見比べましょう。'}}}),
+   Object.freeze({baseId:'apology-spill',npc:'Oh! Did you spill some of your drink?',npcJa:'あっ、飲み物をこぼされましたか？',response:'That is all right. I will bring a towel.',responseJa:'大丈夫ですよ。タオルをお持ちします。',
+    openingBranches:{alternate:{text:'Here is your drink. Oh! Did some of it spill?',ja:'お飲み物をどうぞ。あっ、少しこぼれましたか？'},supported:{text:'We can choose your drink later. First, did you spill something?',ja:'飲み物は後で決められます。まず、何かこぼしましたか？'}},
+    replyBranches:{alternate:{text:'Do not worry. Let me clean that up for you.',ja:'お気になさらず。こちらで片付けますね。'},supported:{text:'It happens. Let us clean up the counter.',ja:'よくあることです。一緒にカウンターを片付けましょう。'}}})
+  ])
+ }),
+ Object.freeze({
+  id:'transport',title:'旅の移動トラブル',partner:'案内係・サム',
+  description:'空港バス停を探す → 乗り換えを確認 → 切符を変更する',
+  setting:'旅行先で、目的地への行き方から予定変更まで英語で対応しよう。',
+  turns:Object.freeze([
+   Object.freeze({baseId:'direction-bus',npc:'Hi! Are you looking for a bus?',npcJa:'こんにちは。バスをお探しですか？',response:'The airport bus leaves from the stop across the road.',responseJa:'空港バスは向かい側のバス停から出ます。',
+    replyBranches:{alternate:{text:'Yes, the airport bus is right over there.',ja:'はい、空港行きのバスはあちらです。'},supported:{text:'I can show you the bus stops on this map.',ja:'地図でバス停をご案内できますよ。'}}}),
+   Object.freeze({baseId:'city-terminal-speak-transfer',npc:'You have reached the terminal. Do you need to transfer?',npcJa:'ターミナルに着きました。乗り換えが必要ですか？',response:'Let me check which platform you need.',responseJa:'必要なホームを確認しますね。',
+    openingBranches:{alternate:{text:'Glad you found the bus. Where do you need to transfer now?',ja:'バスが見つかってよかったです。次はどこで乗り換えますか？'},supported:{text:'We can keep looking for the bus. If you transfer, where would you go?',ja:'バス探しも続けられます。乗り換えるならどこへ行きますか？'}},
+    replyBranches:{alternate:{text:'I will guide you to the correct transfer platform.',ja:'正しい乗り換えホームへご案内します。'},supported:{text:'Let us check the route together before you move.',ja:'移動する前に一緒に経路を確認しましょう。'}}}),
+   Object.freeze({baseId:'city-terminal-speak-ticket',npc:'Can I help you with your ticket?',npcJa:'切符についてお手伝いしましょうか？',response:'I will check whether we can change the date.',responseJa:'日付を変更できるか確認しますね。',
+    openingBranches:{alternate:{text:'Now that we have checked the transfer, do you need to change your ticket?',ja:'乗り換えを確認しました。切符の変更も必要ですか？'},supported:{text:'Let us look at the ticket first. Would you like to change your plans?',ja:'まず切符を確認しましょう。予定を変更したいですか？'}},
+    replyBranches:{alternate:{text:'I will see if there is a ticket available for tomorrow.',ja:'明日の切符に空きがあるか確認します。'},supported:{text:'We can review the conditions for changing your ticket.',ja:'切符の変更条件を一緒に確認しましょう。'}}})
+  ])
  })
 ]);
 

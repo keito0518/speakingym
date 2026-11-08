@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {ROLEPLAY_SCENARIOS,roleplayFor,roleplayRecapFor} from '../prototype/speakingym-monsters/roleplay-scenarios.js';
 import {ROLEPLAY_LESSONS,roleplayCoachingFor} from '../prototype/speakingym-monsters/roleplay-feedback.js';
 
-test('all 12 authored roleplay situations have concrete, distinct guidance at every difficulty',()=>{
+test('all 18 authored roleplay situations have concrete, distinct guidance at every difficulty',()=>{
  const bases=new Set(ROLEPLAY_SCENARIOS.flatMap(s=>s.turns.map(t=>t.baseId)));
- assert.equal(bases.size,12);
+ assert.equal(bases.size,18);
  assert.deepEqual(new Set(Object.keys(ROLEPLAY_LESSONS)),bases);
  for(const scenario of ROLEPLAY_SCENARIOS){
   for(const difficulty of ['easy','normal','hard']){

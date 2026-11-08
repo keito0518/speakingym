@@ -34,6 +34,21 @@ test('legacy retention milestones survive and are not invented from historical a
  assert.equal(speak.sample,0);
  assert.equal(speak.percent,null);
 });
+test('speaking progress reports microphone transcript evidence separately from typed correctness',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.kind==='speak'&&!p.bossOnly);
+ let save=createSave();
+ save=recordAnswer(save,prompt.id,'smooth','2026-11-04','microphone').save;
+ save=recordAnswer(save,prompt.id,'smooth','2026-11-04','keyboard').save;
+ save=recordAnswer(save,prompt.id,'hint','2026-11-04').save;
+ let speech=skillProgressFor(save,'2026-11-04').find(row=>row.kind==='speak');
+ assert.deepEqual([speech.sample,speech.independent,speech.microphone,speech.keyboard],[3,2,1,1]);
+ const restored=validateSave(save);
+ speech=skillProgressFor(restored,'2026-11-04').find(row=>row.kind==='speak');
+ assert.equal(speech.microphone,1);
+ assert.equal(speech.keyboard,1);
+ const malformed=sanitizeSkillAttempts({speak:[{id:prompt.id,day:'2026-11-04',rating:'smooth',inputSource:'pretend-voice'}]});
+ assert.equal(malformed.speak[0].inputSource,'unknown','Unrecognized source cannot impersonate a microphone result');
+});
 test('recent evidence is bounded to 20, tied to vetted prompt kind and requires valid days',()=>{
  const id=ALL_PROMPTS.find(p=>p.kind==='speak').id;
  const bad={speak:[{id,day:'no',rating:'smooth'},{id,day:'2026-11-01',rating:'madeup'},...Array.from({length:30},()=>({id,day:'2026-11-01',rating:'smooth'}))],listen:[{id,day:'2026-11-01',rating:'smooth'}],invalid:[{id,day:'2026-11-01',rating:'smooth'}]};

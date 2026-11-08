@@ -626,7 +626,7 @@ export function compareWithExamples(prompt, answer) {
   return {matchesExample:false,empty:false};
 }
 
-export function recordAnswer(save, promptId, rating, today = dayKey()) {
+export function recordAnswer(save, promptId, rating, today = dayKey(), inputSource = 'unknown') {
   const prompt = ALL_PROMPTS.find(item => item.id === promptId);
   if (!prompt || !VALID_RATINGS.includes(rating) || !/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error('Invalid learning result.');
   const next = clone(save);
@@ -688,7 +688,7 @@ export function recordAnswer(save, promptId, rating, today = dayKey()) {
     else if(quiz)next.reviewPrompts[promptId]=quiz.nextReviewDay;
   }
   next.totalAnswers++;
-  next.skillAttempts=appendSkillAttempt(next.skillAttempts,prompt,rating,today);
+  next.skillAttempts=appendSkillAttempt(next.skillAttempts,prompt,rating,today,inputSource);
   const retentionRecord=recordRetention(next,prompt.id,rating,today);
   next.retention=retentionRecord.save.retention;
   // Reward a *verified spaced revisit* with a purely cosmetic bond milestone.

@@ -1643,7 +1643,7 @@ test('objective local checks accept authored examples and some natural paraphras
   assert.equal(rate(createSave(),'think-cafe','again').reward.xp,0);
 });
 test('three-turn real-world roleplays use independently graded speaking tasks at every difficulty',()=>{
- assert.equal(ROLEPLAY_SCENARIOS.length,4);
+ assert.equal(ROLEPLAY_SCENARIOS.length,6);
  for(const scenario of ROLEPLAY_SCENARIOS){
   for(const difficulty of ['easy','normal','hard']){
    const play=roleplayFor(scenario.id,difficulty);
@@ -1679,7 +1679,7 @@ test('roleplay recommendations rotate into new scenes and return to due speaking
  let save=createSave();
  const restaurant=roleplayFor('restaurant','easy');
  for(const turn of restaurant.turns)save=recordAnswer(save,turn.prompt.id,'smooth','2026-11-02').save;
- assert.equal(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}).id,'station',
+ assert.notEqual(recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-02'}).id,'restaurant',
   'A completed scene should not remain the default when new expressions are available');
  const later=recommendedRoleplay(save,{difficulty:'easy',today:'2026-11-05'});
  assert.equal(later.id,'restaurant');
