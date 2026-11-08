@@ -2769,8 +2769,11 @@ function finishSession(timedOut=false,defeated=false) {
   const newWins=improvementHighlightsFor(save,{today:dayKey(),limit:80})
     .filter(row=>attemptedIds.has(row.id)&&!previousWins.has(row.id));
   resultImprovement.hidden=!newWins.length;
+  resultImprovement.dataset.tier=newWins.length>=3?'gold':newWins.length===2?'silver':newWins.length===1?'bronze':'none';
   if(newWins.length){
-    resultImprovement.innerHTML=`<strong>成長の証！ 前は苦手だった${newWins.length}問を、別の日に自力で正解したよ。</strong><ul>${newWins.slice(0,3).map(row=>`<li>${escapeHtml(row.label)} · ${escapeHtml(row.kind==='speak'?row.expression:row.cue)}</li>`).join('')}</ul><small>同じ教材の回答記録による確認で、発音や会話力の採点ではないよ。</small>`;
+    // This medal is visual recognition of documented, later-day improvement.
+    // It does not mint coins/XP or claim permanent language proficiency.
+    resultImprovement.innerHTML=`<div class="result-improvement-medal" aria-hidden="true"><span class="result-improvement-star"></span><strong>${newWins.length}</strong><small>COMEBACK</small></div><div class="result-improvement-copy"><span class="result-improvement-kicker">ENGLISH COMEBACK</span><strong>リベンジ成功！</strong><p>前に苦手だった${newWins.length}問を、別の日に自力で正解！</p><details class="result-improvement-proof"><summary>成長の記録を見る</summary><ul>${newWins.slice(0,3).map(row=>`<li>${escapeHtml(row.label)} · ${escapeHtml(row.kind==='speak'?row.expression:row.cue)}</li>`).join('')}</ul><small>同じ教材での自力正解の記録です。発音や会話力の採点ではありません。</small></details></div>`;
   }
   let nextReturn=$('#result-next-return');
   if(!nextReturn){

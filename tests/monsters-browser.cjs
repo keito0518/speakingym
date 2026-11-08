@@ -778,9 +778,13 @@ const path=require('node:path');
       const {context:shortContext,page:shortPage}=await boot(375);
       await shortPage.evaluate(async()=>{
         const {ALL_PROMPTS}=await import('./monster-data.js');
-        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
-        const ids=ALL_PROMPTS.filter(p=>p.kind==='speak'&&(p.difficulty||'easy')==='easy'&&!p.bossOnly).slice(0,4).map(p=>p.id);
-        const seeded={...createSave(),totalAnswers:4,retention:Object.fromEntries(ids.map(id=>[id,{stage:1,lastDay:'2026-10-01',nextDay:'2026-10-02'}]))};
+        const {createSave,STORAGE_KEY,dayKey,addDays}=await import('./monster-engine.js');
+        const {appendSkillAttempt}=await import('./skill-progress.js');
+        const prompts=ALL_PROMPTS.filter(p=>p.kind==='speak'&&(p.difficulty||'easy')==='easy'&&!p.bossOnly).slice(0,4);
+        const previousDay=addDays(dayKey(),-1);
+        let attempts=createSave().skillAttempts;
+        for(const prompt of prompts)attempts=appendSkillAttempt(attempts,prompt,'again',previousDay,'keyboard');
+        const seeded={...createSave(),totalAnswers:4,skillAttempts:attempts,retention:Object.fromEntries(prompts.map(p=>[p.id,{stage:1,lastDay:'2026-10-01',nextDay:'2026-10-02'}]))};
         localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
       });
       await shortPage.reload();
@@ -799,6 +803,18 @@ const path=require('node:path');
       }
       assert.match(await shortPage.locator('#result-retention-summary').innerText(),/自力で確認 3\/3問/);
       assert.match(await shortPage.locator('#result-retention-summary').innerText(),/未確認の復習 1問/);
+      const comeback=shortPage.locator('#result-improvement');
+      assert.equal(await comeback.isVisible(),true,'Only proven later-day wins show the comeback medal');
+      assert.equal(await comeback.getAttribute('data-tier'),'gold');
+      assert.match(await comeback.innerText(),/リベンジ成功！/);
+      assert.match(await comeback.innerText(),/前に苦手だった3問/);
+      assert.equal(await shortPage.locator('.result-improvement-proof').getAttribute('open'),null,
+        'Proof stays collapsed so a mobile result is not buried in explanations');
+      assert.equal(await shortPage.locator('.result-improvement-proof li').count(),3);
+      await shortPage.locator('.result-improvement-proof summary').click();
+      assert.match(await shortPage.locator('.result-improvement-proof').innerText(),/発音や会話力の採点ではありません/);
+      const comebackBounds=await shortPage.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(comebackBounds.scroll<=comebackBounds.width+1,'Comeback medal must not overflow at 375px');
       assert.equal(await shortPage.locator('#result-next-return').isVisible(),false,
         'Remaining due work is actionable now, so no future visit claim should compete with it');
       await shortPage.locator('#result-next').click();
