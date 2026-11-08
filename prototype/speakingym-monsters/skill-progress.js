@@ -62,6 +62,39 @@ export function skillProgressFor(save,today){
     percent:recent.length?Math.round(100*independentlyConfirmed/recent.length):null};
  });
 }
+
+/**
+ * Show real before/after examples, never a guessed fluency score. A task must
+ * first need help (or be missed), then be completed without help on a later
+ * calendar day. Same-day retries do not prove spaced improvement. Only the
+ * latest attempt for that exact task is eligible, so a later miss removes it.
+ */
+export function improvementHighlightsFor(save,{today,limit=3}={}){
+ if(!dayValid(today)||!Number.isInteger(limit)||limit<1||limit>80)throw Error('Invalid improvement options');
+ const history=sanitizeSkillAttempts(save.skillAttempts),highlights=[];
+ for(const kind of SKILL_KINDS){
+  const byId=new Map();
+  for(const row of history[kind]){
+   if(row.day>today)continue;
+   if(!byId.has(row.id))byId.set(row.id,[]);
+   byId.get(row.id).push(row);
+  }
+  for(const [id,rows] of byId){
+   const chronological=rows.map((row,index)=>({...row,index})).sort((a,b)=>a.day.localeCompare(b.day)||a.index-b.index);
+   const latest=chronological.at(-1);
+   if(latest.rating!=='smooth')continue;
+   const previous=chronological.slice(0,-1).reverse().find(row=>row.day<latest.day&&row.rating!=='smooth');
+   if(!previous)continue;
+   const prompt=PROMPTS_BY_ID.get(id);
+   highlights.push({id,kind,label:SKILL_LABELS[kind],scene:prompt.scene||'',
+    cue:prompt.cue||'',expression:kind==='speak'?prompt.answer||'':'',
+    before:previous.rating,previousDay:previous.day,afterDay:latest.day,
+    inputSource:kind==='speak'?latest.inputSource:'unknown'});
+  }
+ }
+ return highlights.sort((a,b)=>b.afterDay.localeCompare(a.afterDay)||
+   a.previousDay.localeCompare(b.previousDay)||a.id.localeCompare(b.id)).slice(0,limit);
+}
 // One-tap targeted drill: due tasks first, then untried tasks, then the least
 // recently practiced. No repeated difficulty variant of the same base task.
 export function skillFocusPrompts(save,kind,{difficulty='easy',today,size=6}={}){

@@ -236,6 +236,8 @@ const path=require('node:path');
       assert.equal(await skillPage.locator('#skill-growth-list .skill-growth-card').count(),4);
       assert.equal(await skillPage.locator('#skill-growth-list').isVisible(),true,'Skill dashboard belongs in Learning Records, not under the menu');
       assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/記録なし/);
+      assert.equal(await skillPage.locator('#improvement-highlights').isVisible(),false,
+        'A fresh learner must not get a fabricated before/after achievement');
       const screen=await skillPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(screen.scroll<=screen.inner+1,'320px skill progress cards must not overflow');
       for(const kind of ['speak','listen','vocab','grammar']){
@@ -263,6 +265,34 @@ const path=require('node:path');
       }
       assert.match(await skillPage.locator('[data-skill="speak"] .skill-growth-count').innerText(),/自力で確認 1回/);
       await skillContext.close();
+    }
+    // Same-question evidence from separate days earns a visible, honest
+    // learning win. Typing cannot be mislabeled as microphone speaking.
+    {
+      const {context:winContext,page:winPage}=await boot(320);
+      await winPage.evaluate(async()=>{
+        const {createSave,STORAGE_KEY,dayKey}=await import('./monster-engine.js');
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const {appendSkillAttempt}=await import('./skill-progress.js');
+        const today=dayKey();
+        const earlier=new Date(Date.parse(today+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+        const prompt=ALL_PROMPTS.find(p=>p.kind==='speak'&&!p.bossOnly);
+        const save=createSave();
+        save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'again',earlier);
+        save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'smooth',today,'keyboard');
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
+      });
+      await winPage.reload();
+      await enterHomePanel(winPage,'progress');
+      assert.equal(await winPage.locator('#improvement-highlights').isVisible(),true);
+      assert.equal(await winPage.locator('.improvement-highlight').count(),1);
+      const winText=await winPage.locator('#improvement-highlights').innerText();
+      assert.match(winText,/前は間違えた/);
+      assert.match(winText,/ヒントなしで正解 · 文字で回答/);
+      assert.doesNotMatch(winText,/マイクで回答/);
+      const screen=await winPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+      assert.ok(screen.scroll<=screen.inner+1,'320px before/after card must not overflow');
+      await winContext.close();
     }
     // With enough task-level evidence, the home quest enters the real
     // weakness drill without falsely creating due reviews, XP or AI grades.

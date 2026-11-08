@@ -33,7 +33,7 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary, dailyGold
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
-import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor } from './skill-progress.js';
+import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor, improvementHighlightsFor } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { createGachaCinematic } from './gacha-cinematic.js';
 import { createWeaponBattleSoundPlayer } from './weapon-battle-sound.js';
@@ -694,6 +694,19 @@ function renderHome() {
       <p class="skill-growth-detail">${escapeHtml(detail)} · 翌日以降に自力で確認 ${stat.spaced}問</p>
       <button type="button" data-skill-start="${stat.kind}" class="skill-growth-start">${escapeHtml(stat.label)}を練習する</button></article>`;
   }).join('');
+  const improvementRows=improvementHighlightsFor(save,{today:dayKey()});
+  const improvementPanel=$('#improvement-highlights');
+  improvementPanel.hidden=improvementRows.length===0;
+  if(improvementRows.length){
+    $('#improvement-highlights-count').textContent=`${improvementRows.length}件の成長記録`;
+    $('#improvement-highlights-list').innerHTML=improvementRows.map(row=>{
+      const first=row.before==='again'?'前は間違えた':'前はヒントが必要だった';
+      const method=row.kind==='speak'?(row.inputSource==='microphone'?' · マイクで回答':row.inputSource==='keyboard'?' · 文字で回答':' · 回答手段は未記録'):'';
+      return `<article class="improvement-highlight"><span class="improvement-highlight-kind">${escapeHtml(row.label)} · ${escapeHtml(row.scene)}</span>
+        <strong>${escapeHtml(row.kind==='speak'?row.expression:row.cue)}</strong>
+        <p><span>${escapeHtml(row.previousDay)}：${first}</span><span class="improvement-highlight-arrow" aria-hidden="true">→</span><span>${escapeHtml(row.afterDay)}：ヒントなしで正解${escapeHtml(method)}</span></p></article>`;
+    }).join('');
+  }
   $('#stat-monsters').innerHTML = `${save.ownedMonsters.length}<span> / ${MONSTERS.length}</span>`;
   $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
@@ -772,9 +785,10 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   const openingCharge=tactical?formationResonance(roster,Object.fromEntries(roster.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge:0;
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
+  const improvementsAtStart=improvementHighlightsFor(save,{today:dayKey(),limit:80}).map(row=>row.id);
   play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,tradeDrops:[],
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
-    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],eliteDrops:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],earnedXp:0,captured:[],hintUsed:false,
+    bossHits:0,usedPower:false,usedShield:false,forestRelics:[],eliteDrops:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],improvementsAtStart,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
     // The expedition follows one clear route. Decorative story/NPC choices
     // did not change grading or outcomes and interrupted every battle.
@@ -2719,6 +2733,21 @@ function finishSession(timedOut=false,defeated=false) {
      `${dungeonAreaFor(ended.areaId).name}を攻略！ ${nextDungeonArea(save).id!==ended.areaId?'次のエリアの扉が開いたよ。':'学んだ表現を別の場面や後日の復習でも使ってみよう。'}`):
     timedOut?'60秒おつかれさま！ 言えなかった表現は、次の練習で取り戻そう。':
     '練習した表現は、別の場面や後日の復習でも使ってみよう。';
+  let resultImprovement=$('#result-improvement');
+  if(!resultImprovement){
+    resultImprovement=document.createElement('section');
+    resultImprovement.id='result-improvement';resultImprovement.className='result-improvement';
+    resultImprovement.setAttribute('aria-label','今回増えた自力正解の記録');
+    $('#result-detail-panel').before(resultImprovement);
+  }
+  const previousWins=new Set(ended.improvementsAtStart||[]);
+  const attemptedIds=new Set(ended.prompts.map(prompt=>prompt.id));
+  const newWins=improvementHighlightsFor(save,{today:dayKey(),limit:80})
+    .filter(row=>attemptedIds.has(row.id)&&!previousWins.has(row.id));
+  resultImprovement.hidden=!newWins.length;
+  if(newWins.length){
+    resultImprovement.innerHTML=`<strong>成長の証！ 前は苦手だった${newWins.length}問を、別の日に自力で正解したよ。</strong><ul>${newWins.slice(0,3).map(row=>`<li>${escapeHtml(row.label)} · ${escapeHtml(row.kind==='speak'?row.expression:row.cue)}</li>`).join('')}</ul><small>同じ教材の回答記録による確認で、発音や会話力の採点ではないよ。</small>`;
+  }
   let recallResult=$('#result-retention-summary');
   if(!recallResult){
     recallResult=document.createElement('section');

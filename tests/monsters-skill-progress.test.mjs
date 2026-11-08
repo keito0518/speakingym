@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave,recordAnswer} from '../prototype/speakingym-monsters/monster-engine.js';
-import {SKILL_KINDS,skillProgressFor,skillFocusPrompts,nextSkillFocusFor,appendSkillAttempt,sanitizeSkillAttempts} from '../prototype/speakingym-monsters/skill-progress.js';
+import {SKILL_KINDS,skillProgressFor,skillFocusPrompts,nextSkillFocusFor,improvementHighlightsFor,appendSkillAttempt,sanitizeSkillAttempts} from '../prototype/speakingym-monsters/skill-progress.js';
 import {ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
 test('four skills use real answers, not a guessed legacy speaking accuracy',()=>{
@@ -48,6 +48,40 @@ test('speaking progress reports microphone transcript evidence separately from t
  assert.equal(speech.keyboard,1);
  const malformed=sanitizeSkillAttempts({speak:[{id:prompt.id,day:'2026-11-04',rating:'smooth',inputSource:'pretend-voice'}]});
  assert.equal(malformed.speak[0].inputSource,'unknown','Unrecognized source cannot impersonate a microphone result');
+});
+test('before/after highlights require the same question on different days with a later independent success',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.kind==='speak'&&!p.bossOnly);
+ let save=createSave();
+ assert.deepEqual(improvementHighlightsFor(save,{today:'2026-11-08'}),[]);
+ save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'again','2026-11-05');
+ save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'smooth','2026-11-05','microphone');
+ assert.deepEqual(improvementHighlightsFor(save,{today:'2026-11-08'}),[], 'Same-day retries are not spaced growth');
+ save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'smooth','2026-11-08','keyboard');
+ const wins=improvementHighlightsFor(validateSave(save),{today:'2026-11-08'});
+ assert.equal(wins.length,1);
+ assert.deepEqual([wins[0].id,wins[0].before,wins[0].previousDay,wins[0].afterDay,wins[0].inputSource],
+  [prompt.id,'again','2026-11-05','2026-11-08','keyboard']);
+ assert.equal(wins[0].expression,prompt.answer);
+ assert.deepEqual(improvementHighlightsFor(save,{today:'2026-11-07'}),[], 'Future answers do not count yet');
+ save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'again','2026-11-08');
+ assert.deepEqual(improvementHighlightsFor(save,{today:'2026-11-08'}),[], 'A later miss revokes the claimed win');
+});
+test('before/after highlights distinguish listening evidence, hint use and malformed imports',()=>{
+ const listen=ALL_PROMPTS.find(p=>p.kind==='listen'&&!p.bossOnly);
+ const vocab=ALL_PROMPTS.find(p=>p.kind==='vocab'&&!p.bossOnly);
+ const grammar=ALL_PROMPTS.find(p=>p.kind==='grammar'&&!p.bossOnly);
+ let save=createSave();
+ for(const prompt of [listen,vocab,grammar]){
+  save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'hint','2026-11-04');
+  save.skillAttempts=appendSkillAttempt(save.skillAttempts,prompt,'smooth','2026-11-07');
+ }
+ let wins=improvementHighlightsFor(save,{today:'2026-11-08',limit:2});
+ assert.equal(wins.length,2);
+ assert.ok(wins.every(row=>row.before==='hint'&&row.expression===''));
+ assert.ok(wins.every(row=>row.kind!=='speak'));
+ assert.throws(()=>improvementHighlightsFor(save,{today:'2026-11-08',limit:0}),/Invalid improvement/);
+ const malformed=validateSave({...save,skillAttempts:{listen:[{id:'injected',day:'2026-11-04',rating:'again'},{id:'injected',day:'2026-11-08',rating:'smooth'}]}});
+ assert.deepEqual(improvementHighlightsFor(malformed,{today:'2026-11-08'}),[]);
 });
 test('recent evidence is bounded to 20, tied to vetted prompt kind and requires valid days',()=>{
  const id=ALL_PROMPTS.find(p=>p.kind==='speak').id;

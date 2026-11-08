@@ -756,6 +756,24 @@ html[lang="ja"] button{word-break:normal;overflow-wrap:break-word;line-break:str
 .skill-growth{margin:20px 0 24px;padding:21px;border-radius:20px;border:1px solid #d6e5d6;background:#f8fbf4;color:#2a4938}
 .skill-growth-intro h2{font-size:clamp(19px,3vw,25px);line-height:1.3;margin:5px 0 7px;color:#294a39}
 .skill-growth-intro p,.skill-growth-caveat{font-size:12px;line-height:1.65;color:#556c5d;margin:0}
+.improvement-highlights{margin:15px 0 5px;padding:15px;border:1px solid #91c0a2;border-radius:15px;background:linear-gradient(115deg,#e4f6e8,#fff6dd);color:#294c3a}
+.improvement-highlights[hidden]{display:none!important}
+.improvement-highlights-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.improvement-highlights-head .tiny-caps{color:#327e54;font-size:10px}
+.improvement-highlights-head h3{font-size:clamp(16px,3vw,20px);line-height:1.4;margin:4px 0 0;color:#225c40;word-break:keep-all}
+.improvement-highlights-head>span{font-size:11px;font-weight:850;color:#356c4d}
+.improvement-highlights-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px;margin:12px 0 9px}
+.improvement-highlight{min-width:0;padding:11px 12px;background:#fffcf3;border:1px solid #cadfc9;border-radius:11px}
+.improvement-highlight-kind{display:block;margin-bottom:5px;font-size:11px;font-weight:800;color:#437054}
+.improvement-highlight strong{font-size:13px;line-height:1.5;color:#254e38;overflow-wrap:anywhere}
+.improvement-highlight p{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:7px 0 0;font-size:10px;font-weight:750;line-height:1.5;color:#3d5d4b}
+.improvement-highlight-arrow{font-size:14px;color:#238656}
+.improvement-highlights>p{margin:0;font-size:10px;line-height:1.55;color:#4e6955}
+.result-improvement{margin:12px 0;padding:14px 16px;border:2px solid #e1b65b;border-radius:15px;background:linear-gradient(110deg,#fff3cd,#e9f7e7);color:#31523c;box-shadow:0 6px 18px #a184371a}
+.result-improvement[hidden]{display:none!important}
+.result-improvement strong{display:block;font-size:15px;line-height:1.5;color:#386046;word-break:keep-all}
+.result-improvement ul{margin:7px 0;padding-left:19px;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
+.result-improvement small{display:block;font-size:10px;line-height:1.5;color:#526c59}
 .skill-growth-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:16px 0 12px}
 .skill-growth-card{padding:15px;border:1px solid #d9e4d7;border-radius:14px;background:#fffefa;min-width:0;display:flex;flex-direction:column;gap:8px}
 .skill-growth-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px}
