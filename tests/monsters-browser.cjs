@@ -826,10 +826,17 @@ const path=require('node:path');
     const audioRecovery=listenPage.locator('.listening-fallback-options');
     assert.equal(await audioRecovery.evaluate(el=>el.open),false,
       'Audio troubleshooting must not obscure the initial listening task');
-    assert.equal(await listenPage.locator('#listening-native-audio').isVisible(),false);
-    await audioRecovery.locator('summary').click();
+    const iosBrowser=await listenPage.evaluate(()=>/iPad|iPhone|iPod/i.test(navigator.userAgent)||
+      (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
+    assert.equal(await listenPage.locator('#listening-native-audio').isVisible(),iosBrowser,
+      'iPhone native playback must be visible without opening troubleshooting');
+    assert.equal(await listenPage.locator('#listening-native-audio').count(),1,
+      'Only one native audio element may own a listening clip');
+    if(!iosBrowser)await audioRecovery.locator('summary').click();
     assert.equal(await listenPage.locator('#listening-native-audio').isVisible(),true,
       'Direct native player remains reachable when audio is unavailable');
+    if(iosBrowser)assert.match(await listenPage.locator('.listening-native label').innerText(),/iPhone標準プレーヤー/);
+    if(iosBrowser)await audioRecovery.locator('summary').click();
     assert.equal(await listenPage.locator('#reveal-transcript').isVisible(),true,
       'Transcript fallback remains available, but counts as a hint');
     await audioRecovery.locator('summary').click();

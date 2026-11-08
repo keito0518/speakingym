@@ -28,6 +28,13 @@
 .roleplay-line strong{display:block;margin-bottom:2px;color:#244a3a;font-size:12px}
 .roleplay-line.player{margin-left:12px;background:#d9ecdf;border-color:#9fbea8}
 .roleplay-line.current{border:2px solid #9b793c;background:#fff5d9}
+.roleplay-npc-audio{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;padding:9px 16px;border:1px solid #155943;border-radius:9px;background:#216e51;color:#fff;font-size:13px;font-weight:850;cursor:pointer}
+.roleplay-npc-audio:focus-visible,.roleplay-npc-transcript summary:focus-visible{outline:3px solid #d9a841;outline-offset:3px}
+.roleplay-npc-status{margin:6px 0;color:#385a49;font-size:12px;font-weight:700;line-height:1.6}
+.roleplay-npc-status:empty{display:none}
+.roleplay-npc-transcript{margin:8px 0;padding:7px 10px;border:1px solid #bdcebf;border-radius:8px;background:#fffef8;color:#244a3a;font-size:13px}
+.roleplay-npc-transcript summary{min-height:32px;display:flex;align-items:center;cursor:pointer;font-weight:800}
+.roleplay-npc-transcript p{margin:4px 0;line-height:1.6}
 .roleplay-gloss{margin:7px 0 0;font-size:12px;color:#634b2f}
 .roleplay-translation{margin-top:8px;padding:6px 8px;border:1px solid #b09a6e;border-radius:7px;background:#fffef6;color:#4a4538;font-size:12px}
 .roleplay-translation summary{min-height:32px;display:flex;align-items:center;cursor:pointer;font-weight:800}

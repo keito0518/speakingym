@@ -113,9 +113,13 @@ function roleplayIntroMarkup(){
  if(!turn)return '';
  const opening=roleplayOpeningFor(roleplay,play.index);
  const history=roleplay.history.map((row,index)=>`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · ${index+1}</strong><span lang="en">${escapeHtml(row.npc)}</span></div><div class="roleplay-line player"><strong>あなた · ${row.outcome==='skipped'?'例文で確認':row.outcome==='hint'?'ヒントあり':'自力'}</strong><span lang="en">${row.outcome==='skipped'?'例文を確認（XPなし）':escapeHtml(row.answer)}</span></div>${row.response?`<div class="roleplay-line"><strong>${escapeHtml(roleplay.partner)} · 返事</strong><span lang="en">${escapeHtml(row.response)}</span></div>`:''}`).join('');
+ // Listen first at normal/hard difficulty. Reading is always available when
+ // TTS cannot start; the speaking answer must never depend on device audio.
+ const npcLine=play.difficulty==='easy'?`<span lang="en">${escapeHtml(opening.npc)}</span>`:
+  `<details id="roleplay-npc-transcript" class="roleplay-npc-transcript"><summary>相手の英文を見る（ヒント）</summary><p lang="en">${escapeHtml(opening.npc)}</p></details>`;
  const translation=play.difficulty==='easy'?`<p class="roleplay-gloss">${escapeHtml(opening.npcJa)}</p>`:
   `<details id="roleplay-translation" class="roleplay-translation"><summary>相手の日本語を確認（ヒント扱い）</summary><p>${escapeHtml(opening.npcJa)}</p></details>`;
- return `<section class="roleplay-conversation" aria-label="3ターンの会話履歴"><div class="roleplay-progress">会話 ${play.index+1} / ${roleplay.turns.length}<span style="--roleplay-progress:${100*play.index/roleplay.turns.length}%"></span></div><h2>${escapeHtml(roleplay.title)}</h2><p class="roleplay-scene">${escapeHtml(roleplay.setting)}</p>${history}<div class="roleplay-line current"><strong>${escapeHtml(roleplay.partner)} · 今のひと言</strong><span lang="en">${escapeHtml(opening.npc)}</span>${translation}</div></section>`;
+ return `<section class="roleplay-conversation" aria-label="3ターンの会話履歴"><div class="roleplay-progress">会話 ${play.index+1} / ${roleplay.turns.length}<span style="--roleplay-progress:${100*play.index/roleplay.turns.length}%"></span></div><h2>${escapeHtml(roleplay.title)}</h2><p class="roleplay-scene">${escapeHtml(roleplay.setting)}</p>${history}<div class="roleplay-line current"><strong>${escapeHtml(roleplay.partner)} · 今のひと言</strong><button type="button" id="roleplay-npc-audio" class="roleplay-npc-audio">相手の声を聞く</button><p id="roleplay-npc-status" class="roleplay-npc-status" role="status" aria-live="polite"></p>${npcLine}${translation}</div></section>`;
 }
 const phraseFor = id => PHRASES.find(phrase => phrase.id === id);
 const monsterFor = id => MONSTERS.find(monster => monster.id === id);
@@ -1500,11 +1504,33 @@ function renderQuestion() {
     : `<h1 lang="ja">${escapeHtml(prompt.cue)}</h1><p class="question-caption">${escapeHtml(prompt.scene)}</p>`;
   $('#play-card').dataset.promptId=prompt.id;
   const readingPassage=prompt.kind==='read'&&prompt.readText?`<div class="reading-passage" lang="en"><span>READ THE MESSAGE</span><p>${escapeHtml(prompt.readText)}</p></div>`:'';
-  const nativeAudio=listenClip?`<div class="listening-native"><audio id="listening-native-audio" controls preload="none" playsinline src="${escapeHtml(listenClip.src)}" aria-label="リスニング音声を直接再生"></audio></div>`:'';
-  const listeningBody=listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play audio':'英語を聞く'}</button><button type="button" class="listen-control listening-slow" id="play-slow-audio" hidden>${englishMode?'0.8× (hint)':'ゆっくり聞く（ヒント）'}</button><p id="listening-status" class="listening-status" role="status" aria-live="polite"></p><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div></div><details class="listening-fallback-options"><summary>${englishMode?'No sound?':'音が出ないとき'}</summary>${nativeAudio}<button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Show transcript (hint)':'英文を見る（ヒント）'}</button></details><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:'';
+  const nativeAudio=listenClip?`<div class="listening-native"><label for="listening-native-audio">${isIOSDevice()?'音が出ないときはiPhone標準プレーヤー':'標準プレーヤーで再生'}</label><audio id="listening-native-audio" controls preload="none" playsinline src="${escapeHtml(listenClip.src)}" aria-label="リスニング音声を直接再生"></audio></div>`:'';
+  // A visible native player on iPhone keeps playback one tap away. On other
+  // devices it stays in the troubleshooting drawer; never duplicate the ID.
+  const nativeFirst=Boolean(listenClip&&isIOSDevice());
+  const listeningBody=listenMode?`<div class="listening-first" id="listening-first" data-level="${comprehension.level}"><button type="button" class="listen-control listening-play" id="play-audio"><span class="audio-glyph" aria-hidden="true"></span> ${englishMode?'Play audio':'英語を聞く'}</button><button type="button" class="listen-control listening-slow" id="play-slow-audio" hidden>${englishMode?'0.8× (hint)':'ゆっくり聞く（ヒント）'}</button>${nativeFirst?nativeAudio:''}<p id="listening-status" class="listening-status" role="status" aria-live="polite"></p><div id="listening-meaning" class="listening-meaning" hidden><p class="listening-check-title">${escapeHtml(comprehension.question)}</p><div class="listening-choices" role="group" aria-label="音声の意味を選択">${comprehension.options.map((choice,index)=>`<button type="button" class="listening-choice" data-listening-choice="${index}" lang="${englishMode?'en':'ja'}">${escapeHtml(choice)}</button>`).join('')}</div></div><details class="listening-fallback-options"><summary>${englishMode?'No sound?':'音が出ないとき'}</summary>${nativeFirst?'':nativeAudio}<button type="button" class="hint-button listening-fallback" id="reveal-transcript">${englishMode?'Show transcript (hint)':'英文を見る（ヒント）'}</button></details><p class="transcript-fallback" id="transcript" lang="en" hidden></p></div>`:'';
   $('#play-card').innerHTML=`<div class="question-top"><span>${play.mode==='forest'&&play.tactics?.turn==='enemy'?'ENEMY TURN':play.mode==='forest'?(play.index>=regularCount()?'BOSS ATTACK':'ENCOUNTER'):'QUESTION'} ${play.mode==='forest'?(play.index>=regularCount()?play.bossHits+1:play.index+1):play.index+1} / ${play.mode==='forest'?(play.index>=regularCount()?BOSS_HITS:regularCount()):play.prompts.length}</span><span class="question-tag">${play.mode==='forest'&&prompt.kind==='listen'?'聞いて選ぶ':play.mode==='forest'&&prompt.kind==='read'?'読んで答える':prompt.kind==='vocab'?'単語を選ぶ':prompt.kind==='grammar'?'文法の問題':englishMode?'英語 → 英語':prompt.kind==='listen'?'リスニング':'日本語 → 英語'}</span></div>${listenMode?listeningBody:`${readingPassage}${questionBody}`}`;
   if(play.roleplay){
+    const session=play,turnIndex=play.index,npc=roleplayOpeningFor(play.roleplay,turnIndex).npc;
     $('#play-card').insertAdjacentHTML('afterbegin',roleplayIntroMarkup());
+    $('#roleplay-npc-audio')?.addEventListener('click',()=>{
+      const status=$('#roleplay-npc-status');
+      status.textContent='音声を準備中…';
+      speakLine(npc,()=>{
+        if(play!==session||play.index!==turnIndex)return;
+        const transcript=$('#roleplay-npc-transcript');
+        if(transcript){transcript.dataset.audioFallback='true';transcript.open=true;}
+        status.textContent='音声を再生できなかったため英文を表示したよ。ヒント扱いにはしないよ。';
+      },session.difficulty,'',()=>{
+        if(play===session&&play.index===turnIndex)status.textContent='相手の声を再生中。聞き取って英語で返そう。';
+      });
+    });
+    $('#roleplay-npc-transcript')?.addEventListener('toggle',event=>{
+      if(!event.target.open||play!==session||play.index!==turnIndex||play.revealed)return;
+      // An automatic fallback is not the learner asking for a text hint.
+      if(event.target.dataset.audioFallback==='true')delete event.target.dataset.audioFallback;
+      else play.hintUsed=true;
+    });
     $('#roleplay-translation')?.addEventListener('toggle',event=>{
       if(event.target.open&&play&&!play.revealed)play.hintUsed=true;
     });
