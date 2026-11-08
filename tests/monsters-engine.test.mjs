@@ -1575,7 +1575,7 @@ test('beginner and higher-level scenes accept vetted alternate wording without w
   const entries=Object.entries(VETTED_LEVEL_PARAPHRASES);
   assert.ok(entries.length>=39);
   const easyEntries=entries.filter(([id])=>id.endsWith('-easy'));
-  assert.equal(easyEntries.length,16,'Cover all new beginner forest/city speaking scenes');
+  assert.equal(easyEntries.length,20,'Cover the four entrance-forest conversations plus the existing beginner forest/city scenes');
   for(const [id,replies] of entries){
     const prompt=ALL_PROMPTS.find(p=>p.id===id);
     assert.ok(prompt&&['easy','normal','hard'].includes(prompt.difficulty),'Invalid level-specific scene: '+id);

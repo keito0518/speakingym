@@ -492,6 +492,21 @@ export const VETTED_PARAPHRASES=Object.freeze({
 export const VETTED_LEVEL_PARAPHRASES=Object.freeze({
   // Hand-reviewed alternatives for beginner dungeon tasks. They preserve
   // the specific place, date, object or amount required by each scene.
+  // Entrance-forest speaking: reward *equivalent intentions*, not a particular
+  // model wording. Easy, normal and hard each have their own requirements;
+  // future promises, changed locations and dropped hard details stay review.
+  'entry-speak-meet-at-gate-easy':["I'm waiting next to the gate.","I'm standing by the gate, waiting.","I'm beside the gate waiting for you."],
+  'entry-speak-find-the-way-easy':['Can you show me how to find the entrance?','Could you help me get to the entrance?','Can you help me locate the entrance?'],
+  'entry-speak-check-bridge-safety-easy':['Is it safe to cross this bridge?','Can I cross this bridge safely?','Would it be safe for us to cross this bridge?'],
+  'entry-speak-offer-trail-help-easy':['Would you like me to carry your bag?','Do you need a hand with your bag?','I can help you carry that bag.'],
+  'entry-speak-meet-at-gate-normal':["I'm at the wooden bridge. Could you come here?","I'm here at the wooden bridge. Can we meet here?"],
+  'entry-speak-find-the-way-normal':['I think I went the wrong way. Can you tell me how to get back?','I may have taken the wrong trail. Could you help me return?'],
+  'entry-speak-check-bridge-safety-normal':['After the rain, is the bridge safe to use? Is there a different route?','Is it safe to cross the bridge after the rain, or should we use another path?'],
+  'entry-speak-offer-trail-help-normal':["You seem tired. Shall we rest for a bit? I can carry your bag.","Are you tired? Let's take a short break. I'll help you with your bag."],
+  'entry-speak-meet-at-gate-hard':["I'm near the wooden bridge. The main route is closed, so can we meet at the entrance?",'The main trail is blocked near the wooden bridge. Could we meet at the entrance instead?'],
+  'entry-speak-find-the-way-hard':['I followed the sign to the lake and got lost. Could you direct me back to the main trail?',"I took the lake trail as the sign said but I'm lost. How can I reach the main path again?"],
+  'entry-speak-check-bridge-safety-hard':['My bags are heavy and the bridge is wet. Is it safe to use, or is there a safer route?',"The bridge is wet and we're carrying heavy bags. Would a different path be safer?"],
+  'entry-speak-offer-trail-help-hard':['Your ankle is hurt. We should stop here. I can call for help while I stay with you.',"Let's stop walking since your ankle hurts. I can phone for help and wait with you."],
   'think-phone-easy':['Could I have a minute to decide?','Let me think about it for a moment.',"I'd like some time to think, please."],
   'repeat-announcement-easy':['Could you repeat the announcement?','Can you say that one more time?','Sorry, could you repeat that?'],
   'agree-location-easy':['The station works for me.',"Sure, let's meet at the train station.",'That sounds good. See you at the station.'],
