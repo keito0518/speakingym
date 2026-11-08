@@ -1504,7 +1504,8 @@ const path=require('node:path');
           assert.equal(await forestPage.locator('.forest-teaching-title').isVisible(),true,
             'Learners can choose to inspect the full teaching content');
           assert.match(await forestPage.locator('.forest-teaching-title').innerText(),mob===3?/なぜこの単語を使う/:/なぜこの語順になる/);
-          assert.match(await forestPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
+          assert.equal(await forestPage.locator('#forest-auto-status').count(),0,
+            'The result shows its next action without a duplicate explanation');
           assert.equal(await forestPage.locator('#pause-auto').count(),0);
           assert.ok((await forestPage.locator('.feedback-note').innerText()).length>35,'Objective quizzes should explain the answer, not only mark it right');
         }
@@ -1803,7 +1804,8 @@ const path=require('node:path');
     await autoPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await autoPage.locator('#start-forest-simple').click();
     await autoPage.locator('#forest-explore-continue').click();
     await autoAnswer();
-    assert.match(await autoPage.locator('#forest-auto-status').innerText(),/準備ができたら次へ/);
+    assert.equal(await autoPage.locator('#forest-auto-status').count(),0,
+      'The next button is self-explanatory and needs no extra instructions');
     assert.equal(await autoPage.locator('#forest-success-explanation').getAttribute('open'),null);
     const pinnedNext=await autoPage.evaluate(()=>{
       const button=document.querySelector('#next-question');

@@ -12,7 +12,7 @@ import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
 import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, battleChainTier, pickBattleSpectacle, strikeFor, incomingHit, shouldCounterPlayerMiss, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
-import { battleImpactFor } from './battle-impact.js';
+import { battleImpactFor, battlePayoffFor } from './battle-impact.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import {plannedBattleFormation,formationResonance,recommendBattleFormation} from './battle-formation.js';
 import { enemyArt } from './forest-enemies.js';
@@ -106,6 +106,13 @@ function syncBattleAura(){
   $('#forest-combo').textContent=chain>=1?`${chain} CHAIN`:'';
 }
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+function battlePayoffHtml(payoff){
+ if(!payoff)return '';
+ return `<div class="forest-hit-payoff" data-payoff-turn="${payoff.turn}" data-payoff-impact="${escapeHtml(payoff.impact)}" role="group" aria-label="${escapeHtml(payoff.title+' '+payoff.amountLabel+' '+payoff.remainder)}">
+   <div class="forest-hit-payoff-head"><strong>${escapeHtml(payoff.title)}</strong><b>${escapeHtml(payoff.amountLabel)}</b></div>
+   <div class="forest-hit-payoff-progress"><span class="forest-hit-payoff-meter" role="meter" aria-label="${payoff.turn==='defense'?'味方の残りHP':'敵の残りHPまたはボスの封印'}" aria-valuemin="0" aria-valuemax="${payoff.max}" aria-valuenow="${payoff.current}"><i style="width:${payoff.percent}%"></i></span><small>${escapeHtml(payoff.remainder)}</small></div>
+ </div>`;
+}
 function roleplayIntroMarkup(){
  const roleplay=play?.roleplay;
  if(!roleplay)return '';
@@ -2254,6 +2261,7 @@ async function gradeAnswer() {
   }
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
+  let battlePayoff=null;
   if(play.mode==='forest'&&play.tactics?.turn==='enemy'){
     const t=play.tactics;
     const hit=t.defenseHitTaken?{damage:0,blocked:false}:
@@ -2277,6 +2285,8 @@ async function gradeAnswer() {
     awardTacticalCharge(rating);
     updateEnemyHealth();
     renderTacticalControls();
+    battlePayoff=battlePayoffFor({turn:'defense',damage:t.lastHitDamage,partyHp:t.hp,
+      partyMax:t.maxHp,covered:Boolean(rescue?.partnerId||t.lastCoverNote)});
   }
   if(play.mode==='forest'&&play.tactics?.turn!=='enemy'){
     const boss=play.index>=regularCount();
@@ -2314,6 +2324,7 @@ async function gradeAnswer() {
     const weaponBonus=t?weaponAffinityBonus(save,attackKind,{independent:rating==='smooth'}):0;
     let weaponTechnique=null,weaponTechniqueHeal=0;
     const special=t?{...rawSpecial,damage:scaledStrikeDamage(rawSpecial.damage,form.level,save,{kind:attackKind,independent:rating==='smooth'})}:rawSpecial;
+    let actualHitDamage=special.damage;
     const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0)+(mastery?.heal||0),t.maxHp-t.hp):0;
     let foeShiftNow=false;
     let eliteLoot=null;
@@ -2345,6 +2356,7 @@ async function gradeAnswer() {
       if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+1);
       else{
         const previousHp=t.enemyHp;
+        actualHitDamage=Math.min(previousHp,special.damage);
         t.enemyHp=Math.max(0,t.enemyHp-special.damage);
         if(rating==='smooth')t.eliteIndependentHits++;
         if(previousHp>0&&t.enemyHp===0){
@@ -2419,6 +2431,8 @@ async function gradeAnswer() {
     $('#forest-world-stage').dataset.attack=play.companionId;
     const impact=t?battleImpactFor({damage:special.damage,ultimate:usedUltimate,weak:special.weak,
       pierce:special.pierce,resist:special.resist,boss,sealsBroken:play.bossHits,sealsTotal:BOSS_HITS}):null;
+    if(t)battlePayoff=battlePayoffFor({turn:'attack',damage:actualHitDamage,impact:impact.kind,
+      enemyHp:t.enemyHp,enemyMax:t.enemyMax,boss,sealsBroken:play.bossHits,sealsTotal:BOSS_HITS});
     stage.dataset.impact=impact?.kind||'normal';
     $('#forest-damage').dataset.impactLabel=impact?.label||'';
     $('#forest-damage').textContent=impact?impact.damageText:'−'+special.strikes;
@@ -2470,7 +2484,6 @@ async function gradeAnswer() {
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
     ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
   const learningPulse=autoForest&&!transcriptPractice?forestLearningPulseHtml(prompt,raw,grade,{hinted:rating==='hint'}):'';
-  const autoNote=autoForest?`<p class="forest-auto-status" id="forest-auto-status" role="status">準備ができたら次へ。詳しい解説は必要なときに開けるよ。</p>`:'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
   const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
   const answerPreview=prompt.kind==='listen'
@@ -2490,7 +2503,7 @@ async function gradeAnswer() {
   const lootPulse=play.justDroppedWeapon?`<p class="forest-drop-flash"><strong>EPIC DROP!</strong><span>${escapeHtml(play.justDroppedWeapon.name)}を獲得！ 図鑑で装備できるよ。</span></p>`:'';
   const voiceStrike=autoForest&&!defending&&prompt.kind==='speak'&&inputSource==='microphone'&&rating==='smooth'
     ?'<p class="forest-voice-strike"><strong>VOICE STRIKE</strong><span>マイクで英語を答えて攻撃！</span></p>':'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${autoNote}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${battlePayoffHtml(battlePayoff)}${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
@@ -3426,7 +3439,6 @@ document.addEventListener('visibilitychange',()=>{
     cancelAutoAdvance();
     if(recognition)stopRecognition();
     pauseInterruptedListening();
-    if($('#forest-auto-status'))$('#forest-auto-status').textContent='戻ってきたら「今すぐ次へ」で再開できるよ。';
   }
 });
 renderHome();

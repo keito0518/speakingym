@@ -212,6 +212,15 @@ const assert=require('node:assert/strict');
      assert.match(await page.locator('.forest-tactic-kinds').textContent(),/リスニング.*文法/s);
      assert.match(await page.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：文法/,'Enemy forecast remains available in tactical details');
      await answer(page);
+     const payoff=page.locator('.forest-hit-payoff');
+     assert.equal(await payoff.getAttribute('data-payoff-turn'),'attack',
+       `${engine}/${width}: the attack result stays by the answer, even when the arena animation is offscreen`);
+     assert.match(await payoff.innerText(),/−3 DMG[\s\S]*敵 HP 2\/5/,
+       'The first real attack reduces a five-HP monster to two HP');
+     assert.equal(await payoff.locator('[role="meter"]').getAttribute('aria-valuenow'),'2',
+       'The accessible meter uses actual enemy HP, not a decorative number');
+     assert.equal(await page.locator('#forest-auto-status').count(),0,
+       'A redundant continue instruction should not compete with the next-turn button');
      assert.equal(await page.locator('.forest-learning-pulse').count(),1,
        `${engine}/${width}: the first verified hit must immediately offer a learning takeaway`);
      for(const field of ['achieved','tip','next']){
@@ -288,11 +297,15 @@ const assert=require('node:assert/strict');
        assert.ok(afterMiss<12,`Enemy must deal damage on objective miss (${afterMiss})`);
        await answer(page);
        assert.equal(Number(await page.locator('#forest-party-hp').getAttribute('aria-valuenow')),afterMiss,'Correction does not erase first hit or double-charge');
+       assert.match(await payoff.innerText(),new RegExp(`HIT TAKEN[\\s\\S]*味方 HP ${afterMiss}\\/12`),
+         'Correcting after damage keeps the actual reduced HP visible beside the answer');
        assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'1','A mistake followed by correction must not fill the gauge');
        assert.equal(await page.locator('.forest-chain-result').count(),0,'Corrections after an error cannot create a streak');
      }else{
        await answer(page);
        assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),'12','Independent defense blocks enemy damage');
+       assert.match(await payoff.innerText(),/GUARD![\s\S]*0 DAMAGE[\s\S]*味方 HP 12\/12/,
+         'Clean defense gives instant blocked-damage feedback by the answer');
        assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'2');
        assert.match(await page.locator('.forest-chain-result').innerText(),/2 CHAIN/,'Defending correctly must extend the attack streak');
        assert.equal(await page.locator('#forest-world-stage').getAttribute('data-chain-tier'),'1',
@@ -328,6 +341,9 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),width===390?'2':'3');
      assert.equal(await page.locator('[data-tactic-action="skill"]').isEnabled(),width!==390);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
+     assert.match(await payoff.innerText(),/K\.O\.![\s\S]*敵を撃破！/,
+       'The finishing blow announces a real knockout and an empty HP meter');
+     assert.equal(await payoff.locator('[role="meter"]').getAttribute('aria-valuenow'),'0');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),'victory',
        'Defeating the foe triggers a unique knockout cut-in');
      assert.notEqual(await page.locator('#forest-world-stage').getAttribute('data-fx-variant'),firstFxVariant,

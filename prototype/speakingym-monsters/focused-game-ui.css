@@ -120,6 +120,27 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
    attack and weakness unobstructed during every battle turn. */
 .forest-attack-select .dungeon-choice-guide{display:none}
 
+/* Keep a verified battle hit beside the answer on phones. The arena's large
+   animation can be off-screen while the learner is reading their feedback. */
+#play-view .forest-hit-payoff{display:grid;gap:7px;margin:10px 0 6px;padding:10px 12px;
+ border:1px solid #85bba3;border-radius:13px;background:linear-gradient(110deg,#ddf5e4,#f1f7dc);
+ color:#204c37;box-shadow:inset 0 1px 0 #fff8}
+#play-view .forest-hit-payoff-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:3px 10px}
+#play-view .forest-hit-payoff-head strong{font-size:clamp(17px,4.5vw,22px);font-weight:950;letter-spacing:.025em;line-height:1.15;color:#206b45}
+#play-view .forest-hit-payoff-head b{font-size:clamp(17px,4.5vw,22px);font-weight:950;font-variant-numeric:tabular-nums;line-height:1.15;color:#234935}
+#play-view .forest-hit-payoff-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px}
+#play-view .forest-hit-payoff-progress small{font-size:11px;font-weight:850;color:#355b42;white-space:nowrap}
+#play-view .forest-hit-payoff-meter{display:block;height:8px;border-radius:99px;background:#b9d2be;overflow:hidden}
+#play-view .forest-hit-payoff-meter i{display:block;height:100%;background:linear-gradient(90deg,#d76c5b,#f4b46e);
+ border-radius:inherit;transform-origin:left;animation:forest-payoff-fill .35s ease-out both}
+#play-view .forest-hit-payoff[data-payoff-turn="defense"]{border-color:#95b8d1;background:linear-gradient(110deg,#e3f2fa,#edf5e7)}
+#play-view .forest-hit-payoff[data-payoff-turn="defense"] .forest-hit-payoff-head strong{color:#285a79}
+#play-view .forest-hit-payoff[data-payoff-turn="defense"] .forest-hit-payoff-meter i{background:linear-gradient(90deg,#418ac1,#75b5c2)}
+#play-view .forest-hit-payoff[data-payoff-impact="weak"] .forest-hit-payoff-head strong,
+#play-view .forest-hit-payoff[data-payoff-impact="ultimate"] .forest-hit-payoff-head strong{color:#96511f}
+@keyframes forest-payoff-fill{from{transform:scaleX(.72)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){#play-view .forest-hit-payoff-meter i{animation:none}}
+
 /* Teach the first attack in place, without a modal or instructions on every
    encounter. The gold weakness card calls attention only during this step. */
 #play-view.scene-battle .forest-attack-select .forest-first-attack-hint{
