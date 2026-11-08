@@ -125,6 +125,15 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 #play-view.scene-battle .forest-attack-select .forest-first-attack-hint{
  color:#f7ebd2;font-size:12px;font-weight:750;line-height:1.45;
  margin-top:-5px;overflow-wrap:break-word;text-wrap:pretty}
+
+/* A real calendar follow-up, never a manufactured login streak. It sits
+   beside the main result actions and remains a single glance on phones. */
+.result-next-return{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 10px;
+ padding:11px 14px;margin:12px 0;border:1px solid #c4dcc4;border-radius:13px;
+ background:#edf7e9;color:#28543d;line-height:1.5}
+.result-next-return[hidden]{display:none!important}
+.result-next-return strong{font-size:14px;color:#1c563b}
+.result-next-return span{font-size:12px;color:#41634e}
 #play-view.scene-battle .forest-attack-select[data-first-fight="true"] .forest-tactic-kinds button[data-weak="true"]{
  animation:forest-first-weak-glow 1.45s ease-out 2}
 @keyframes forest-first-weak-glow{

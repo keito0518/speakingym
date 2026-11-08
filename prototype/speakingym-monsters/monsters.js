@@ -40,7 +40,7 @@ import { createWeaponBattleSoundPlayer } from './weapon-battle-sound.js';
 import { summonWeaponArtwork } from './summon-weapon-art.js';
 import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
-import { nextLearningQuestFor, learningProofFor } from './next-learning-quest.js';
+import { nextLearningQuestFor, learningProofFor, nextReturnCueFor } from './next-learning-quest.js';
 import { savedReviewRecap, savedReviewTrend, rememberSavedReview } from './saved-review-coach.js';
 import { createBetaTelemetry, betaSessionFields } from './beta-telemetry.js';
 import { setupBetaFeedback } from './beta-feedback.js';
@@ -754,7 +754,7 @@ function tacticalReviewTargets(){
 // The main dungeon starts immediately with the player's current companions.
 // Party formation remains optional in the advanced battle mode.
 function startMainDungeon(areaId=null,{formation=false}={}){startSession('forest-tactics',areaId,false,!formation);}
-function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null) {
+function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null,{reviewLimit=null}={}) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const focusKind=mode==='skill-focus'?requestedAreaId:null;
   if(mode==='skill-focus'&&!SKILL_KINDS.includes(focusKind)){renderHome();return;}
@@ -770,7 +770,8 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   const gym=mode==='daily'?dailyTrainingPlan(save,{difficulty}):null;
   const roleplay=mode==='roleplay'?roleplayFor(requestedAreaId,difficulty):null;
   if(mode==='roleplay'&&!roleplay){renderHome();return;}
-  const recallPlan=mode==='retention'?retentionPracticePlan(save,dayKey()):null;
+  const quickRetention=mode==='retention'&&reviewLimit===3;
+  const recallPlan=mode==='retention'?retentionPracticePlan(save,dayKey(),quickRetention?{limit:3,maxTransfers:0}:undefined):null;
   if(mode==='dungeon-review'&&!lastDungeonReviewIds.length){renderHome();return;}
   const focused=mode==='skill-focus'?skillFocusPrompts(save,focusKind,{difficulty,today:dayKey()}):
     mode==='transfer-review'?[transferPick.prompt]:mode==='retention'?recallPlan.prompts:
@@ -786,7 +787,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   const openingCharge=tactical?formationResonance(roster,Object.fromEntries(roster.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge:0;
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
   const improvementsAtStart=improvementHighlightsFor(save,{today:dayKey(),limit:80}).map(row=>row.id);
-  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,tradeDrops:[],
+  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),quickRetention,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,tradeDrops:[],
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],eliteDrops:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],improvementsAtStart,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
@@ -798,7 +799,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
       formationPending:!quickStart,formationIds:[...battleTeam.roster],attackPrompt:null,defensePrompt:null,usedPromptIds:new Set(),lastEnemyKind:null,enemyKind:null,
       encounterIndex:-1,pendingAdvance:false,defenseHitTaken:false,bonusChargeUsed:false,comboUsed:false,lastAttackKind:null,lastIndependentKind:null,weaponTechniqueUsed:false,nextEnemyKind:null,eliteIndependentHits:0,
       bossCounterUsed:false,bossLinkUsed:false,counterShield:0,bossCoverUsed:false,lastCoverNote:'',bossReactionCompleted:false,styleShieldIntact:true,foeShifted:false,masteryUsed:false,playerMissCountered:false,kindRerolled:false,attackCommitted:false,attackKindChosen:false}:null};
-  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='transfer-review'?'場面チェンジの復習':mode==='skill-focus'?SKILL_LABELS[focusKind]+'集中練習':mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?'1・3・7日の定着チェック':'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
+  $('#play-mode-label').textContent=`${forestMode?(endless?'∞ 森のエンドレス':tactical&&!quickStart?'戦略バトル · '+area.name:area.name):mode==='roleplay'?roleplay.title:mode==='transfer-review'?'場面チェンジの復習':mode==='skill-focus'?SKILL_LABELS[focusKind]+'集中練習':mode==='challenge'?'60秒チャレンジ':mode==='daily'?'今日の5分ジム':mode==='listening'?'リスニング道場':mode==='speaking'?'スピーキング道場':mode==='dungeon-review'?'ダンジョンの復習':mode==='saved'?'保存した問題の復習':mode==='retention'?(quickRetention?'3問の定着チェック':'1・3・7日の定着チェック'):'練習モード'} · ${mode==='retention'?'難易度ミックス':difficultyCopy[difficulty].label}`;
   $('#open-battle-guide').hidden=!forestMode;
   $('#forest-journey').hidden=!forestMode;
   $('#forest-battle-log').hidden=!forestMode;
@@ -2750,6 +2751,16 @@ function finishSession(timedOut=false,defeated=false) {
   if(newWins.length){
     resultImprovement.innerHTML=`<strong>成長の証！ 前は苦手だった${newWins.length}問を、別の日に自力で正解したよ。</strong><ul>${newWins.slice(0,3).map(row=>`<li>${escapeHtml(row.label)} · ${escapeHtml(row.kind==='speak'?row.expression:row.cue)}</li>`).join('')}</ul><small>同じ教材の回答記録による確認で、発音や会話力の採点ではないよ。</small>`;
   }
+  let nextReturn=$('#result-next-return');
+  if(!nextReturn){
+    nextReturn=document.createElement('section');nextReturn.id='result-next-return';
+    nextReturn.className='result-next-return';
+    nextReturn.setAttribute('aria-label','次の復習予定');
+    $('#result-detail-panel').before(nextReturn);
+  }
+  const returnCue=nextReturnCueFor(save,dayKey());
+  nextReturn.hidden=!returnCue;
+  if(returnCue)nextReturn.innerHTML=`<strong>${escapeHtml(returnCue.title)}</strong><span>${escapeHtml(returnCue.detail)}</span>`;
   let recallResult=$('#result-retention-summary');
   if(!recallResult){
     recallResult=document.createElement('section');
@@ -3205,7 +3216,7 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
 $$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
  const target=button.dataset.gameTab;
  if(target==='adventure'){startMainDungeon();return;}

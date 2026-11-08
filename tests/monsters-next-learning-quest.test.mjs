@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ALL_PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
 import { createSave, EVOLUTION_XP } from '../prototype/speakingym-monsters/monster-engine.js';
 import { recordRetention } from '../prototype/speakingym-monsters/retention.js';
-import { nextLearningQuestFor, learningProofFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
+import { nextLearningQuestFor, learningProofFor, nextReturnCueFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
 
 const today='2026-11-02';
 const first=kind=>ALL_PROMPTS.find(p=>p.kind===kind&&(p.difficulty||'easy')==='easy'&&!p.bossOnly);
@@ -49,8 +49,31 @@ test('due 1/3/7-day recall has highest priority over XP and new adventures',()=>
  const save={...base,xpWallet:EVOLUTION_XP,retention:{[id]:{stage:1,lastDay:'2026-10-31',nextDay:'2026-11-01'}}};
  const mission=nextLearningQuestFor(save,today);
  assert.equal(mission.kind,'retention');
- assert.equal(mission.action,'retention');
- assert.match(mission.detail,/1件/);
+ assert.equal(mission.action,'retention-quick');
+ assert.match(mission.detail,/1問/);
+});
+
+test('next-day mission stays bite-sized even if twelve or more reviews are due',()=>{
+ const ids=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')==='easy'&&!p.bossOnly).slice(0,15).map(p=>p.id);
+ const save={...createSave(),totalAnswers:15,retention:Object.fromEntries(ids.map(id=>[id,{stage:1,lastDay:'2026-11-01',nextDay:'2026-11-02'}]))};
+ const mission=nextLearningQuestFor(save,today);
+ assert.equal(mission.action,'retention-quick');
+ assert.match(mission.detail,/15問.*3問だけ/);
+ assert.match(mission.button,/3問だけ/);
+ assert.equal(nextReturnCueFor(save,today,ids),null,'Unfinished due reviews take precedence over future promises');
+});
+
+test('return cue is backed by scheduled practice, never a made-up daily streak',()=>{
+ const firstId=first('speak').id;
+ let save=createSave();
+ assert.equal(nextReturnCueFor(save,'2026-11-02',[firstId]),null);
+ save=recordRetention(save,firstId,'smooth','2026-11-02').save;
+ const cue=nextReturnCueFor(save,'2026-11-02',[firstId]);
+ assert.equal(cue.date,'2026-11-03');
+ assert.equal(cue.when,'明日');
+ assert.equal(cue.count,1);
+ assert.match(cue.title,/明日、1問/);
+ assert.equal(nextReturnCueFor(save,'2026-11-03',[firstId]),null,'A due task is actionable now, not a future plan');
 });
 
 test('scheduled saved lines get a direct review action without counting all bookmarks as due',()=>{

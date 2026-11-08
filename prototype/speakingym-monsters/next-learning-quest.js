@@ -20,6 +20,22 @@ export function learningProofFor(save,today=dayKey()){
  return {...reached,label:`${reached.days===1?'翌日':reached.days+'日後'}もヒントなしで確認できた ${reached.count}問 · 記録を見る`};
 }
 
+// Give learners a concrete reason to return, based only on work that is
+// actually scheduled. This is an in-app reminder, not a push notification or
+// a claim that an expression has already been retained.
+export function nextReturnCueFor(save,today=dayKey()){
+ const overview=retentionOverview(save,today);
+ if(overview.due.length||!overview.upcoming.length)return null;
+ const nextDate=overview.upcoming[0].nextDay;
+ const count=overview.upcoming.filter(row=>row.nextDay===nextDate).length;
+ const tomorrow=new Date(`${today}T12:00:00Z`);
+ tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+ const when=tomorrow.toISOString().slice(0,10)===nextDate?'明日':`${Number(nextDate.slice(5,7))}月${Number(nextDate.slice(8,10))}日`;
+ return {date:nextDate,count,when,
+  title:`${when}、${count}問の復習に挑戦`,
+  detail:'もう一度ヒントなしで答えられるか確認しよう。'};
+}
+
 export function nextLearningQuestFor(save,today=dayKey()){
  const transfer=dueRoleplayTransfers(save,today)[0];
  if(transfer)return {
@@ -29,9 +45,9 @@ export function nextLearningQuestFor(save,today=dayKey()){
  };
  const due=retentionOverview(save,today).due;
  if(due.length)return {
-  kind:'retention',action:'retention',title:'今日は忘れかけた英語を取り戻そう',
-  detail:`復習タイミングが来た表現 ${due.length}件。まず${Math.min(due.length,12)}問を確認しよう。`,
-  button:'定着チェックへ'
+  kind:'retention',action:'retention-quick',title:'前に覚えた英語、まだ言える？',
+  detail:`今日の復習 ${due.length}問 · まずは${Math.min(due.length,3)}問だけ。`,
+  button:`${Math.min(due.length,3)}問だけ復習する`
  };
  const savedDue=savedReviewQueue(save,today).filter(row=>row.due);
  if(savedDue.length)return {

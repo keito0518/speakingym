@@ -717,7 +717,45 @@ const path=require('node:path');
     const afterReview=await recallPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
     assert.equal(afterReview.monsterBonds.medamago,1);
     assert.equal(afterReview.retention['think-cafe'].stage,2);
+    assert.equal(await recallPage.locator('#result-next-return').isVisible(),true,
+      'An actual next spaced-review date is visible on the result, without inventing a streak');
+    assert.match(await recallPage.locator('#result-next-return').innerText(),/復習に挑戦/);
     await recallContext.close();
+    // Returning learners need a short, one-tap entry. The full review remains
+    // available; a short session cannot silently erase the other due tasks.
+    {
+      const {context:shortContext,page:shortPage}=await boot(375);
+      await shortPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+        const ids=ALL_PROMPTS.filter(p=>p.kind==='speak'&&(p.difficulty||'easy')==='easy'&&!p.bossOnly).slice(0,4).map(p=>p.id);
+        const seeded={...createSave(),totalAnswers:4,retention:Object.fromEntries(ids.map(id=>[id,{stage:1,lastDay:'2026-10-01',nextDay:'2026-10-02'}]))};
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
+      });
+      await shortPage.reload();
+      assert.match(await shortPage.locator('#home-next-quest-detail').innerText(),/4問.*3問だけ/);
+      assert.match(await shortPage.locator('#home-next-quest-button').innerText(),/3問だけ復習/);
+      await shortPage.locator('#home-next-quest-button').click();
+      assert.match(await shortPage.locator('#play-mode-label').innerText(),/3問の定着チェック/);
+      for(let index=0;index<3;index++){
+        const answer=await shortPage.evaluate(async()=>{
+          const {ALL_PROMPTS}=await import('./monster-data.js');
+          return ALL_PROMPTS.find(p=>p.id===document.querySelector('#play-card').dataset.promptId).answer;
+        });
+        await shortPage.locator('#spoken-answer').fill(answer);
+        await shortPage.locator('#show-answer').click();
+        await shortPage.locator('#next-question').click();
+      }
+      assert.match(await shortPage.locator('#result-retention-summary').innerText(),/自力で確認 3\/3問/);
+      assert.match(await shortPage.locator('#result-retention-summary').innerText(),/未確認の復習 1問/);
+      assert.equal(await shortPage.locator('#result-next-return').isVisible(),false,
+        'Remaining due work is actionable now, so no future visit claim should compete with it');
+      await shortPage.locator('#result-next').click();
+      assert.match(await shortPage.locator('#play-mode-label').innerText(),/1・3・7日の定着チェック/);
+      assert.equal(await shortPage.locator('#play-card').isVisible(),true,
+        'The full review resumes the one remaining scheduled item');
+      await shortContext.close();
+    }
     // Daily five-minute workout stays calm, explains answers and records
     // completed offline work without a hard timer or a battle animation.
     const {context:gymContext,page:gymPage}=await boot(390);
