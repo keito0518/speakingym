@@ -56,6 +56,7 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
    layer alone can scroll, so an English question never hides the monsters. */
 #play-view.scene-battle #forest-world-stage{
  --scene-top:clamp(137px,26dvh,244px);
+ --scene-hud-height:40px;
  flex:1;min-height:0;width:100%;height:auto!important;position:relative;isolation:isolate;
  padding:0!important;margin:0!important;border:0;border-radius:0;overflow:hidden;
  background:#16374e;
@@ -65,10 +66,11 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 #play-view.scene-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:15px;right:8%}
 #play-view.scene-battle #forest-world-stage .forest-world-trail-label{top:6px;left:8px}
 #play-view.scene-battle #forest-world-stage .forest-battle-info{
- position:absolute;z-index:14;top:calc(var(--scene-top) - 47px);left:8px;right:8px;
+ /* A dedicated HUD row BELOW the sprites, not painted over their feet. */
+ position:absolute;z-index:14;top:var(--scene-top);left:0;right:0;height:var(--scene-hud-height);box-sizing:border-box;
  display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:5px;
- padding:4px 7px!important;margin:0!important;min-height:0;
- background:#092b38db;border:1px solid #71a99fa3;border-radius:8px;
+ padding:4px 8px!important;margin:0!important;min-height:0;
+ background:#092b38;border-top:1px solid #71a99fa3;border-bottom:1px solid #71a99fa3;border-radius:0;
  color:#fce9bf;
 }
 #play-view.scene-battle #forest-world-stage .forest-foe-name{
@@ -125,7 +127,7 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
 }
 
 #play-view.scene-battle #forest-arena-console{
- position:absolute;inset:var(--scene-top) 0 0;z-index:16;
+ position:absolute;inset:calc(var(--scene-top) + var(--scene-hud-height)) 0 0;z-index:16;
  display:flex;flex-direction:column;gap:4px;min-height:0;min-width:0;
  /* Leave room for the always-visible battle action. The English content may
     scroll, but the learner must never have to hunt for the submit button. */
