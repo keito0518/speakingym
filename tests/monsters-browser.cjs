@@ -255,6 +255,8 @@ const path=require('node:path');
           });
           await skillPage.locator('#spoken-answer').fill(answer);
           await skillPage.locator('#show-answer').click();
+          assert.equal(await skillPage.locator('.forest-learning-win').count(),0,
+            'A first-ever correct answer must not pretend the learner improved from a past attempt');
           const stats=await skillPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).skillAttempts);
           assert.equal(stats.speak.length,1);
           assert.equal(stats.speak[0].rating,'smooth');
@@ -293,6 +295,41 @@ const path=require('node:path');
       const screen=await winPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(screen.scroll<=screen.inner+1,'320px before/after card must not overflow');
       await winContext.close();
+    }
+    // A real later-day correction should feel rewarding at the exact moment
+    // of success, without inventing a speaking fluency or microphone score.
+    {
+      const {context:growthContext,page:growthPage}=await boot(375);
+      await growthPage.evaluate(async()=>{
+        const {createSave,recordAnswer,STORAGE_KEY,dayKey}=await import('./monster-engine.js');
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const today=dayKey();
+        const yesterday=new Date(Date.parse(today+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+        const target=ALL_PROMPTS.find(p=>p.kind==='speak'&&!p.bossOnly&&(p.difficulty||'easy')==='easy');
+        const save=recordAnswer(createSave(),target.id,'hint',yesterday,'keyboard').save;
+        save.reviewPrompts[target.id]=today;
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(save));
+      });
+      await growthPage.reload();
+      await enterHomePanel(growthPage,'progress');
+      await growthPage.locator('[data-skill-start="speak"]').click();
+      const task=await growthPage.evaluate(async()=>{
+        const {ALL_PROMPTS}=await import('./monster-data.js');
+        const id=document.querySelector('#play-card').dataset.promptId;
+        return ALL_PROMPTS.find(p=>p.id===id);
+      });
+      assert.ok(task?.answer);
+      const previousId=await growthPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).skillAttempts.speak[0].id);
+      assert.equal(task.id,previousId,'The focus drill starts with the exact due task from yesterday');
+      await growthPage.locator('#spoken-answer').fill(task.answer);
+      await growthPage.locator('#show-answer').click();
+      const win=growthPage.locator('.forest-learning-win');
+      assert.equal(await win.count(),1,'Later independent success receives one immediate growth badge');
+      assert.match(await win.innerText(),/GROWTH![\s\S]*前はヒントあり[\s\S]*今日はヒントなし/);
+      assert.equal(await win.getAttribute('aria-label'),'別の日の同じ問題で自力正解');
+      const width=await growthPage.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
+      assert.ok(width.scroll<=width.viewport+1,'Growth badge must not add horizontal scrolling on a phone');
+      await growthContext.close();
     }
     // With enough task-level evidence, the home quest enters the real
     // weakness drill without falsely creating due reviews, XP or AI grades.

@@ -95,6 +95,16 @@ export function improvementHighlightsFor(save,{today,limit=3}={}){
  return highlights.sort((a,b)=>b.afterDay.localeCompare(a.afterDay)||
    a.previousDay.localeCompare(b.previousDay)||a.id.localeCompare(b.id)).slice(0,limit);
 }
+
+/** Celebrate only the new, verified change caused by this answer. A prior
+ * win, a same-day retry, another question, or a failed save earns no badge. */
+export function earnedImprovementFor(beforeSave,afterSave,promptId,today){
+ if(!dayValid(today)||!PROMPTS_BY_ID.has(promptId))return null;
+ const options={today,limit:80};
+ if(improvementHighlightsFor(beforeSave,options).some(row=>row.id===promptId))return null;
+ return improvementHighlightsFor(afterSave,options)
+  .find(row=>row.id===promptId&&row.afterDay===today)||null;
+}
 // One-tap targeted drill: due tasks first, then untried tasks, then the least
 // recently practiced. No repeated difficulty variant of the same base task.
 export function skillFocusPrompts(save,kind,{difficulty='easy',today,size=6}={}){

@@ -33,7 +33,7 @@ import { dailyTrainingPlan, recordDailyCompletion, dailyGrowthSummary, dailyGold
 import { roleplayFor, recommendedRoleplay, roleplayRecapFor, roleplayReplyFor, roleplayOpeningFor } from './roleplay-scenarios.js';
 import { roleplayTransferFor, roleplayTransferFeedbackFor, scheduleRoleplayTransfer, dueRoleplayTransfers } from './roleplay-transfer.js';
 import { retentionOverview, retentionPracticePlan, retentionTitle, retentionMilestoneSummary, retentionCheckpointLabel } from './retention.js';
-import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor, improvementHighlightsFor } from './skill-progress.js';
+import { SKILL_KINDS, SKILL_LABELS, skillProgressFor, skillFocusPrompts, nextSkillFocusFor, improvementHighlightsFor, earnedImprovementFor } from './skill-progress.js';
 import { setupHomeNavigation } from './home-navigation.js';
 import { createGachaCinematic } from './gacha-cinematic.js';
 import { createWeaponBattleSoundPlayer } from './weapon-battle-sound.js';
@@ -112,6 +112,11 @@ function battlePayoffHtml(payoff){
    <div class="forest-hit-payoff-head"><strong>${escapeHtml(payoff.title)}</strong><b>${escapeHtml(payoff.amountLabel)}</b></div>
    <div class="forest-hit-payoff-progress"><span class="forest-hit-payoff-meter" role="meter" aria-label="${payoff.turn==='defense'?'味方の残りHP':'敵の残りHPまたはボスの封印'}" aria-valuemin="0" aria-valuemax="${payoff.max}" aria-valuenow="${payoff.current}"><i style="width:${payoff.percent}%"></i></span><small>${escapeHtml(payoff.remainder)}</small></div>
  </div>`;
+}
+function learningWinHtml(win){
+ if(!win)return '';
+ const before=win.before==='again'?'前はつまずいた':'前はヒントあり';
+ return `<div class="forest-learning-win" role="note" aria-label="別の日の同じ問題で自力正解"><strong>GROWTH!</strong><span>${before}<b aria-hidden="true">→</b>今日はヒントなし</span></div>`;
 }
 function roleplayIntroMarkup(){
  const roleplay=play?.roleplay;
@@ -2238,8 +2243,10 @@ async function gradeAnswer() {
   const rating=transcriptPractice?'practice':play.hintUsed?'hint':'smooth';
   const wasQuizResolved=save.quizProgress?.[prompt.id]?.resolved===true;
   const inputSource=prompt.kind==='speak'?(play.micTranscript?'microphone':'keyboard'):'unknown';
+  const beforeAnswerSave=save;
   const {save:next,reward}=transcriptPractice?{save:save,reward:{xp:0,captured:[]}}:recordAnswer(save,prompt.id,rating,dayKey(),inputSource);
-  if(!transcriptPractice)persist(next);
+  const answerSaved=!transcriptPractice&&persist(next);
+  const learningWin=answerSaved&&rating==='smooth'?earnedImprovementFor(beforeAnswerSave,save,prompt.id,dayKey()):null;
   play.earnedXp+=reward.xp;
   play.captured.push(...reward.captured);
   if(rating==='smooth')play.smooth++;
@@ -2503,7 +2510,7 @@ async function gradeAnswer() {
   const lootPulse=play.justDroppedWeapon?`<p class="forest-drop-flash"><strong>EPIC DROP!</strong><span>${escapeHtml(play.justDroppedWeapon.name)}を獲得！ 図鑑で装備できるよ。</span></p>`:'';
   const voiceStrike=autoForest&&!defending&&prompt.kind==='speak'&&inputSource==='microphone'&&rating==='smooth'
     ?'<p class="forest-voice-strike"><strong>VOICE STRIKE</strong><span>マイクで英語を答えて攻撃！</span></p>':'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${battlePayoffHtml(battlePayoff)}${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${battlePayoffHtml(battlePayoff)}${learningWinHtml(learningWin)}${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);

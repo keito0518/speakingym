@@ -141,6 +141,18 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 @keyframes forest-payoff-fill{from{transform:scaleX(.72)}to{transform:scaleX(1)}}
 @media(prefers-reduced-motion:reduce){#play-view .forest-hit-payoff-meter i{animation:none}}
 
+/* A small celebration for documented improvement on this exact English task,
+   never for an initial success, a same-day retry or a failed save. */
+#play-view .forest-learning-win{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;
+ margin:9px 0;padding:9px 11px;border:1px solid #c79c4c;border-radius:11px;
+ background:linear-gradient(110deg,#ffecc1,#fff8e4);color:#5b451d;line-height:1.35;
+ animation:forest-learning-win-in .35s ease-out both}
+#play-view .forest-learning-win strong{font-size:16px;letter-spacing:.03em;font-weight:950;color:#77521c}
+#play-view .forest-learning-win span{font-size:12px;font-weight:850;color:#544321}
+#play-view .forest-learning-win b{margin:0 6px;color:#a26a21;font-weight:950}
+@keyframes forest-learning-win-in{from{opacity:.65;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){#play-view .forest-learning-win{animation:none}}
+
 /* Teach the first attack in place, without a modal or instructions on every
    encounter. The gold weakness card calls attention only during this step. */
 #play-view.scene-battle .forest-attack-select .forest-first-attack-hint{

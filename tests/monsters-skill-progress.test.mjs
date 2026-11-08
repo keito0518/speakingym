@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSave,validateSave,recordAnswer} from '../prototype/speakingym-monsters/monster-engine.js';
-import {SKILL_KINDS,skillProgressFor,skillFocusPrompts,nextSkillFocusFor,improvementHighlightsFor,appendSkillAttempt,sanitizeSkillAttempts} from '../prototype/speakingym-monsters/skill-progress.js';
+import {SKILL_KINDS,skillProgressFor,skillFocusPrompts,nextSkillFocusFor,improvementHighlightsFor,earnedImprovementFor,appendSkillAttempt,sanitizeSkillAttempts} from '../prototype/speakingym-monsters/skill-progress.js';
 import {ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
 
 test('four skills use real answers, not a guessed legacy speaking accuracy',()=>{
@@ -82,6 +82,29 @@ test('before/after highlights distinguish listening evidence, hint use and malfo
  assert.throws(()=>improvementHighlightsFor(save,{today:'2026-11-08',limit:0}),/Invalid improvement/);
  const malformed=validateSave({...save,skillAttempts:{listen:[{id:'injected',day:'2026-11-04',rating:'again'},{id:'injected',day:'2026-11-08',rating:'smooth'}]}});
  assert.deepEqual(improvementHighlightsFor(malformed,{today:'2026-11-08'}),[]);
+});
+
+test('the immediate growth badge is earned once by this exact spaced, unassisted answer',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.kind==='speak'&&!p.bossOnly);
+ const other=ALL_PROMPTS.find(p=>p.kind==='listen'&&!p.bossOnly);
+ const fresh=createSave();
+ const first=recordAnswer(fresh,prompt.id,'smooth','2026-11-08','keyboard').save;
+ assert.equal(earnedImprovementFor(fresh,first,prompt.id,'2026-11-08'),null,'First-time success is not an improvement claim');
+ let before=recordAnswer(fresh,prompt.id,'hint','2026-11-07','keyboard').save;
+ let after=recordAnswer(before,prompt.id,'smooth','2026-11-08','keyboard').save;
+ const win=earnedImprovementFor(before,after,prompt.id,'2026-11-08');
+ assert.ok(win);
+ assert.deepEqual([win.before,win.afterDay,win.inputSource],['hint','2026-11-08','keyboard']);
+ assert.equal(earnedImprovementFor(before,after,other.id,'2026-11-08'),null,'Another task cannot claim this win');
+ assert.equal(earnedImprovementFor(after,after,prompt.id,'2026-11-08'),null,'Reload or repeated rendering grants no new win');
+ const repeated=recordAnswer(after,prompt.id,'smooth','2026-11-08','keyboard').save;
+ assert.equal(earnedImprovementFor(after,repeated,prompt.id,'2026-11-08'),null,'Repeating a win the same day has no new badge');
+ before=recordAnswer(fresh,prompt.id,'hint','2026-11-08','keyboard').save;
+ after=recordAnswer(before,prompt.id,'smooth','2026-11-08','keyboard').save;
+ assert.equal(earnedImprovementFor(before,after,prompt.id,'2026-11-08'),null,'Same-day retry is not spaced improvement');
+ const assisted=recordAnswer(before,prompt.id,'hint','2026-11-09','keyboard').save;
+ assert.equal(earnedImprovementFor(before,assisted,prompt.id,'2026-11-09'),null,'Hint-dependent answers cannot earn a win');
+ assert.equal(earnedImprovementFor(before,after,prompt.id,'bad-date'),null);
 });
 test('recent evidence is bounded to 20, tied to vetted prompt kind and requires valid days',()=>{
  const id=ALL_PROMPTS.find(p=>p.kind==='speak').id;
