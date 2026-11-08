@@ -2768,8 +2768,8 @@ function finishSession(timedOut=false,defeated=false) {
       const after=current?.count??0;
       if(captured||after>ended.huntBefore){
         const panel=document.createElement('div');panel.className='result-chain-chest';
-        const heading=document.createElement('strong');heading.textContent=captured?`モンスターハント成功！ ${hunted.name}が仲間に！`:'未発見の仲間に近づいた';
-        const detail=document.createElement('p');detail.textContent=captured?'図鑑で新しい仲間を確認しよう。':`獲得条件 ${ended.huntBefore} → ${after}。ホームで残りの条件を確認して、次の冒険を決めよう。`;
+        const heading=document.createElement('strong');heading.textContent=captured?`新しい仲間を発見！ ${hunted.name}が仲間に！`:'未発見の仲間に近づいた';
+        const detail=document.createElement('p');detail.textContent=captured?'図鑑で新しい仲間を確認しよう。':`獲得条件 ${ended.huntBefore} → ${after}。冒険と復習を続けて、新しい仲間との出会いを目指そう。`;
         panel.append(heading,detail);chaseReward.append(panel);
       }
     }
