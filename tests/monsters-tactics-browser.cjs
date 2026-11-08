@@ -3,7 +3,8 @@ const assert=require('node:assert/strict');
 
 (async()=>{
  const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
- const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+ const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true,
+   ...(process.env.MONSTERS_BROWSER_EXECUTABLE_PATH?{executablePath:process.env.MONSTERS_BROWSER_EXECUTABLE_PATH}:{})});
  const url=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
  const answer=async page=>{
    if(await page.locator('.forest-attack-select').isVisible())
@@ -117,6 +118,20 @@ const assert=require('node:assert/strict');
        `${engine}/${width}: the live question, answer and HP must share the illustrated arena (${JSON.stringify(tacticalLayout)})`);
      assert.equal(tacticalLayout.sticky,false,'The integrated battlefield must scroll naturally instead of covering the question');
      assert.equal(tacticalLayout.separateConsole,'none','No duplicate command window can appear below the arena');
+     const hpStrip=await page.evaluate(()=>{
+       const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+       const hud=rect('#forest-world-stage .forest-battle-info');
+       const console=rect('#forest-arena-console');
+       const cinematic=rect('#forest-cinematic-layer');
+       const foe=rect('#forest-enemy');
+       const ally=rect('#forest-party');
+       return {hudTop:hud.top,hudBottom:hud.bottom,consoleTop:console.top,
+         cinematicBottom:cinematic.bottom,foeBottom:foe.bottom,allyBottom:ally.bottom};
+     });
+     assert.ok(hpStrip.hudTop>=hpStrip.cinematicBottom-1&&
+       hpStrip.hudTop>=Math.max(hpStrip.foeBottom,hpStrip.allyBottom)-1&&
+       hpStrip.hudBottom<=hpStrip.consoleTop+1,
+       `${engine}/${width}: enemy and party HP strip must sit BELOW both characters, outside the scenic art (${JSON.stringify(hpStrip)})`);
      const shieldLayout=await page.evaluate(()=>{
        const shield=document.querySelector('#forest-guard').getBoundingClientRect();
        const cinematic=document.querySelector('#forest-cinematic-layer').getBoundingClientRect();
