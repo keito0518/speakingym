@@ -5,7 +5,8 @@ const path=require('node:path');
 
 (async()=>{
   const engine=process.env.MONSTERS_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
-  const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+  const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true,
+    ...(process.env.MONSTERS_BROWSER_EXECUTABLE_PATH?{executablePath:process.env.MONSTERS_BROWSER_EXECUTABLE_PATH}:{})});
   const shots=path.join(process.cwd(),'qa-screenshots');fs.mkdirSync(shots,{recursive:true});
   const pageErrors=[];
   const base=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
@@ -76,31 +77,28 @@ const path=require('node:path');
       assert.deepEqual(errors,[],'The storage getter must not throw an uncaught browser error');
       await context.close();
     }
-    // A game-minded player can pick a specific locked creature to hunt.
-    // The chase remains after reload, without revealing its artwork or
-    // obscuring the single beginner CTA before the first attempt.
+    // The retired monster-target panel must stay gone for new and returning
+    // players. Collecting creatures and earning chain chests still work in
+    // the adventure; they do not need a second home dashboard.
     {
       const {context:huntContext,page:huntPage}=await boot(390);
-      assert.equal(await huntPage.locator('#home-monster-hunt').isVisible(),false);
+      assert.equal(await huntPage.locator('#home-monster-hunt').count(),0);
       await huntPage.evaluate(async()=>{
         const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
         const seeded={...createSave(),totalAnswers:1};
         localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
       });
       await huntPage.reload();
-      assert.equal(await huntPage.locator('#home-monster-hunt').isVisible(),true);
-      assert.match(await huntPage.locator('#hunt-next-chest').innerText(),/3 CHAIN/);
-      assert.ok(await huntPage.locator('#hunt-target-select option').count()>20);
-      await huntPage.locator('#hunt-target-select').selectOption('tokirin');
-      assert.equal(await huntPage.locator('#hunt-target-select').inputValue(),'tokirin');
-      assert.equal(await huntPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).huntTargetId),'tokirin');
+      assert.equal(await huntPage.locator('#home-monster-hunt').count(),0);
+      assert.equal(await huntPage.locator('#hunt-target-select').count(),0);
+      assert.equal(await huntPage.locator('[data-feature-dungeon]').isVisible(),true);
+      assert.equal(await huntPage.locator('#home-next-quest').isVisible(),true);
       await huntPage.reload();
-      assert.equal(await huntPage.locator('#hunt-target-select').inputValue(),'tokirin');
-      assert.match(await huntPage.locator('#hunt-requirements').innerText(),/雪の街のボス/);
-      assert.match(await huntPage.locator('#hunt-requirements').innerText(),/日を空けた復習/);
-      assert.equal(await huntPage.locator('#home-monster-hunt img').count(),0,'Locked creatures use an honest silhouette');
+      assert.equal(await huntPage.locator('#home-monster-hunt').count(),0);
+      assert.equal(await huntPage.locator('#hunt-requirements').count(),0);
+      assert.equal(await huntPage.locator('[data-feature-dungeon]').isVisible(),true);
       const huntWidth=await huntPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
-      assert.ok(huntWidth.scroll<=huntWidth.inner+1,`390px hunt must not cause horizontal overflow: ${JSON.stringify(huntWidth)}`);
+      assert.ok(huntWidth.scroll<=huntWidth.inner+1,`390px home must not cause horizontal overflow: ${JSON.stringify(huntWidth)}`);
       await huntContext.close();
     }
     // A future-version / damaged local save must not silently disappear when
