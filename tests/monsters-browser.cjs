@@ -523,7 +523,7 @@ const path=require('node:path');
     assert.match(await menuPage.locator('#tutorial-tips').innerText(),/自力正解3問以上/);
     assert.match(await menuPage.locator('#tutorial-counter').innerText(),/STEP 8 \/ 10/);
     await menuPage.locator('#tutorial-next').click();
-    assert.match(await menuPage.locator('#tutorial-heading').innerText(),/狙う仲間と連勝宝箱/);
+    assert.match(await menuPage.locator('#tutorial-heading').innerText(),/仲間の発見と連勝宝箱/);
     assert.match(await menuPage.locator('#tutorial-counter').innerText(),/STEP 9 \/ 10/);
     await menuPage.locator('#tutorial-previous').click();
     await menuPage.locator('#tutorial-try-battle').click();
