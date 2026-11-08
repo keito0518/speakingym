@@ -122,6 +122,15 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 
 /* Keep a verified battle hit beside the answer on phones. The arena's large
    animation can be off-screen while the learner is reading their feedback. */
+/* Once a turn is resolved, retire the controls that can no longer be used.
+   The English cue stays in view, while the damage/HP result rises into the
+   same phone viewport without forcing a scroll or adding another overlay. */
+#play-view.scene-battle #forest-arena-console #answer-area:has(#next-question)>:not(#feedback-panel){display:none!important}
+#play-view.scene-battle #forest-arena-console:has(#next-question) #play-card .bookmark-question,
+#play-view.scene-battle #forest-arena-console:has(#next-question) #play-card .listening-meaning,
+#play-view.scene-battle #forest-arena-console:has(#next-question) #play-card .listening-fallback-options,
+#play-view.scene-battle #forest-arena-console:has(#next-question) #play-card .listening-status{display:none!important}
+#play-view.scene-battle #forest-arena-console #answer-area:has(#next-question){padding-top:0!important}
 #play-view .forest-hit-payoff{display:grid;gap:7px;margin:10px 0 6px;padding:10px 12px;
  border:1px solid #85bba3;border-radius:13px;background:linear-gradient(110deg,#ddf5e4,#f1f7dc);
  color:#204c37;box-shadow:inset 0 1px 0 #fff8}

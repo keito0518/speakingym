@@ -426,6 +426,18 @@ const path=require('node:path');
     await quickPage.locator('#show-answer').click();
     assert.match(await quickPage.locator('.forest-chain-result').innerText(),/1 CHAIN[\s\S]*コンボ開始！/,
       'The first independently verified battle answer should feel rewarding beside the answer');
+    const firstHitLayout=await quickPage.evaluate(()=>{
+      const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+      const payoff=rect('.forest-hit-payoff'),dock=rect('#next-question');
+      return {payoffTop:payoff.top,payoffBottom:payoff.bottom,dockTop:dock.top,
+        answerHidden:getComputedStyle(document.querySelector('.answer-row')).display==='none',
+        hintHidden:getComputedStyle(document.querySelector('.answer-quick-help')).display==='none',
+        duplicateBookmarkHidden:getComputedStyle(document.querySelector('#bookmark-question')).display==='none',
+        feedbackVisible:getComputedStyle(document.querySelector('#feedback-panel')).display!=='none'};
+    });
+    assert.ok(firstHitLayout.answerHidden&&firstHitLayout.hintHidden&&firstHitLayout.duplicateBookmarkHidden&&
+      firstHitLayout.feedbackVisible&&firstHitLayout.payoffTop>0&&firstHitLayout.payoffBottom<=firstHitLayout.dockTop-4,
+      `A 390px phone should show damage and remaining enemy HP before the fixed Next button, without obsolete inputs: ${JSON.stringify(firstHitLayout)}`);
     const quickPromptId=await quickPage.locator('#play-card').getAttribute('data-prompt-id');
     assert.match(await quickPage.locator('#feedback-bookmark').innerText(),/この問題を復習に保存/,
       'Learners can save a question immediately after a successful turn');
@@ -1461,6 +1473,10 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-guard svg').count(),1);
       assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'1');
       await forestPage.locator('#show-example').click();
+      assert.equal(await forestPage.locator('.answer-row').isVisible(),false,
+        'Revealed examples should replace the dead input, not leave a second task on screen');
+      assert.equal(await forestPage.locator('#feedback-panel .feedback-answer').isVisible(),true,
+        'Compact reviewed turns still show the actual English answer');
       await moveOn();
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
       await answer();
