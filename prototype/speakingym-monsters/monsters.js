@@ -1096,9 +1096,11 @@ function renderAttackChoice(panel,t){
  const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:false});
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
  const focus=nextSkillFocusFor(save,{difficulty:play.difficulty,today:dayKey()});
+ const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0;
  panel.dataset.turn='choose';
- panel.innerHTML=`<div class="forest-attack-select" role="group" aria-label="攻撃タイプを先に選ぶ">
-  <strong>あなたのターン · 攻撃を選ぶ</strong>
+ panel.innerHTML=`<div class="forest-attack-select" data-first-fight="${firstFight}" role="group" aria-label="攻撃タイプを先に選ぶ" ${firstFight?'aria-describedby="forest-first-attack-hint"':''}>
+  <strong>${firstFight?'① 攻撃を選ぶ':'あなたのターン · 攻撃を選ぶ'}</strong>
+  ${firstFight?'<span id="forest-first-attack-hint" class="forest-first-attack-hint">金色のWEAKは敵の弱点。正解するとダメージUP！</span>':''}
   ${focus?`<details class="forest-learning-focus"><summary>苦手の復習候補：${escapeHtml(focus.label)}</summary><p>${escapeHtml(focus.detail)} 敵の弱点を狙うか、苦手を練習するか選べるよ。</p></details>`:''}
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>WEAK</small>':''}${focus?.kind===kind?'<small>復習</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',event=>{

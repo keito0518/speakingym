@@ -79,6 +79,15 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Player selects the attack type before seeing a question');
      assert.match(await page.locator('.forest-attack-select > strong').innerText(),/攻撃を選ぶ/,
        'The attack buttons must communicate the first action without a paragraph');
+     assert.match(await page.locator('.forest-attack-select > strong').innerText(),/①/,
+       'Only the first battle explains step one before choosing an English task');
+     assert.match(await page.locator('#forest-first-attack-hint').innerText(),/WEAK.*弱点.*ダメージUP/,
+       'The first battle explains the gold weakness option in a single short line');
+     assert.equal(await page.locator('.forest-attack-select').getAttribute('aria-describedby'),'forest-first-attack-hint');
+     const firstWeak=page.locator('.forest-attack-select [data-weak="true"]');
+     assert.equal(await firstWeak.count(),1,'Beginners see one actionable weakness option');
+     assert.equal((await firstWeak.evaluate(el=>getComputedStyle(el).animationName)).includes('forest-first-weak-glow'),width!==375,
+       'The first weakness should glow twice, except for users preferring reduced motion');
      assert.match(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),/^(opening|idle)$/,
        'The monster scene is ready before the player chooses an attack');
      assert.equal(await page.locator('#play-card').isVisible(),false,'No arbitrary question is shown before type selection');
@@ -336,6 +345,9 @@ const assert=require('node:assert/strict');
      await page.locator('#next-question').click();
      assert.equal(await page.locator('#forest-explore-options').isVisible(),false,'Completed encounter continues without an irrelevant route decision');
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Encounter 2 begins with attack choice, not a preselected question');
+     assert.equal(await page.locator('#forest-first-attack-hint').count(),0,
+       'The first-battle hint disappears after the initial enemy; normal fights stay uncluttered');
+     assert.equal(await page.locator('.forest-attack-select').getAttribute('data-first-fight'),'false');
      assert.equal(await page.locator('#play-card').isVisible(),false,'The new encounter keeps its question hidden until chosen');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-encounter'),'2');
      if(width===375){

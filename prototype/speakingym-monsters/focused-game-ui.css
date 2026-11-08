@@ -120,6 +120,19 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
    attack and weakness unobstructed during every battle turn. */
 .forest-attack-select .dungeon-choice-guide{display:none}
 
+/* Teach the first attack in place, without a modal or instructions on every
+   encounter. The gold weakness card calls attention only during this step. */
+#play-view.scene-battle .forest-attack-select .forest-first-attack-hint{
+ color:#f7ebd2;font-size:12px;font-weight:750;line-height:1.45;
+ margin-top:-5px;overflow-wrap:break-word;text-wrap:pretty}
+#play-view.scene-battle .forest-attack-select[data-first-fight="true"] .forest-tactic-kinds button[data-weak="true"]{
+ animation:forest-first-weak-glow 1.45s ease-out 2}
+@keyframes forest-first-weak-glow{
+ 0%,100%{filter:brightness(1);box-shadow:inset 0 1px 0 #fff9d8,0 0 12px #e6bd5a66,0 5px 14px #020d2060}
+ 45%{filter:brightness(1.12);box-shadow:inset 0 1px 0 #fff9d8,0 0 25px #ffe08ccc,0 5px 14px #020d2060}}
+@media(prefers-reduced-motion:reduce){
+ #play-view.scene-battle .forest-attack-select[data-first-fight="true"] .forest-tactic-kinds button[data-weak="true"]{animation:none}}
+
 /* Learning is also one action at a time: content, input, then judgement.
    Keep a real accessible label and iPhone audio recovery without displaying
    generic tutorial copy on every encounter. */
