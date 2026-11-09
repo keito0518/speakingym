@@ -293,6 +293,9 @@ let lastStoredSaveRaw=null,storageConflict=false;
 let save = loadSave() || (gachaTestMode?{...createSave(),coins:2400}:createSave());
 let lastDungeonReviewIds = [];
 let play = null, timer = null, recognition = null, recognitionStartTimer = null, recognitionWatchdog = null, recognitionNoResultTimer = null, recognitionStopping = false, recognitionFailures = 0, autoAdvanceTimer = null, spokenAudio = null, playbackGeneration = 0, homeNavigation = null;
+// WebKit may still own the microphone after a final result or an error. Do not
+// start a second recognizer until the previous session actually fires onend.
+let retiringRecognition = null, recognitionRetireTimer = null, queuedRecognitionSession = null;
 const betaTelemetry=createBetaTelemetry();
 setupBetaFeedback(betaTelemetry);
 
@@ -428,7 +431,16 @@ function openNativeDictation(){
   const help=$('#speech-alternative-help');
   if(help)help.textContent='英語キーボードに切り替え、キーボード上のマイクをタップ。英文が入力欄に出たら「答えを判定する」を押してね。Webページから標準のマイクを自動起動することはできません。';
 }
-function stopRecognition(mode='ready') {
+function recognitionReleased(active) {
+  if(retiringRecognition!==active)return;
+  retiringRecognition=null;
+  if(recognitionRetireTimer)clearTimeout(recognitionRetireTimer);
+  recognitionRetireTimer=null;
+  const requested=queuedRecognitionSession;
+  queuedRecognitionSession=null;
+  if(requested&&play===requested&&!play.revealed&&$('#mic-button'))startRecognition();
+}
+function stopRecognition(mode='ready', options={}) {
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
   if(recognitionNoResultTimer)clearTimeout(recognitionNoResultTimer);
@@ -438,9 +450,23 @@ function stopRecognition(mode='ready') {
   const active=recognition;
   recognition=null; // Disarm callbacks before abort: Safari fires onend asynchronously.
   recognitionStopping=false;
-  if(active)try{active.abort();}catch{}
+  if(mode==='done')queuedRecognitionSession=null;
   if(mode==='done')$('#spoken-answer')?.classList.remove('transcript-interim');
   micView(mode);
+  if(active&&!options.ended){
+    // A finalized transcript must close with stop(), never abort(): Safari
+    // sometimes keeps the audio service busy if a final result is aborted.
+    if(recognitionRetireTimer)clearTimeout(recognitionRetireTimer);
+    retiringRecognition=active;
+    active.onend=()=>recognitionReleased(active);
+    recognitionRetireTimer=setTimeout(()=>recognitionReleased(active),2000);
+    if(!options.alreadyStopping){
+      try{
+        if(options.graceful)active.stop();
+        else active.abort();
+      }catch{recognitionReleased(active);}
+    }
+  }
 }
 function finishRecognition(){
   // A deliberate STOP must call stop(), not abort(): on iOS/WebKit abort()
@@ -1924,7 +1950,20 @@ function startRecognition() {
     finishRecognition();
     return;
   }
+  if(retiringRecognition){
+    // A quick retry after a wrong answer is common on iPhone. Queue exactly
+    // one restart while WebKit releases the previous microphone session.
+    queuedRecognitionSession=play;
+    micView('finishing');
+    if(helper)helper.textContent='マイクを準備中… 前の録音が終わり次第、もう一度録音します。';
+    return;
+  }
+  queuedRecognitionSession=null;
   play.micTranscript=false;
+  // The previous (possibly incorrect) answer is NOT a transcript of this
+  // attempt. Keeping it also defeats the silence watchdog on subsequent taps.
+  const previousAnswer=$('#spoken-answer');
+  if(previousAnswer){previousAnswer.value='';previousAnswer.classList.remove('transcript-interim');}
   // Release the preceding listening clip before opening a microphone.
   // This can mitigate an iOS WebKit audio-session conflict but is not a
   // substitute for native speech recognition in restricted in-app browsers.
@@ -1986,7 +2025,7 @@ function startRecognition() {
       if(helper)helper.textContent=finalized
         ?'聞き取った英文を表示しました。確認して「答えを判定する」を押してね。'
         :'聞き取り中… 英文がリアルタイムで表示されています（まだ確定前）。';
-      if(finalized) stopRecognition('captured');
+      if(finalized)stopRecognition('captured',{graceful:true,alreadyStopping:recognitionStopping});
     };
     instance.onerror=event=>{
       if(recognition!==instance || play!==session)return;
@@ -2010,7 +2049,7 @@ function startRecognition() {
       $('#spoken-answer')?.classList.remove('transcript-interim');
       if(!transcript){recognitionFailures++;showSpeechFallback();}
       else recognitionFailures=0;
-      stopRecognition(transcript?'captured':'ready');
+      stopRecognition(transcript?'captured':'ready',{ended:true});
       if(helper)helper.textContent=transcript
         ?'音声認識が終了しました。表示された英文を確認してから判定してね。'
         :recognitionFailures>=2?'このブラウザは声を文字にできていません。iPhone標準音声入力かSafariを使ってね。':'声を文字にできませんでした。下に別の入力方法があるよ。';

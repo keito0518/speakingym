@@ -2016,6 +2016,9 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Let me think about it.');
     assert.equal(await micPage.locator('#spoken-answer').evaluate(el=>el.classList.contains('transcript-interim')),false);
     await micPage.locator('#retry-mic').click();
+    assert.match(await micButton.innerText(),/確定中/,
+      'A quick re-record should wait for the previous speech session to release its microphone');
+    await micPage.evaluate(()=>window.__activeMic.onend());
     assert.equal(await micButton.getAttribute('aria-pressed'),'true');
     await micPage.evaluate(()=>window.__activeMic.onresult({results:[Object.assign([{transcript:'Could you'}],{isFinal:false})]}));
     await micButton.click(); // stop(), NOT abort(): still waiting for WebKit's final transcript.
@@ -2029,6 +2032,7 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#spoken-answer').inputValue(),'Could you help me?');
     assert.equal(await micButton.isEnabled(),true);
     assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
+    await micPage.evaluate(()=>window.__activeMic.onend());
     await micButton.click();
     await micPage.evaluate(()=>window.__activeMic.onerror?.({error:'not-allowed'}));
     assert.equal(await micButton.getAttribute('aria-pressed'),'false');
@@ -2159,9 +2163,58 @@ const path=require('node:path');
     assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
     assert.equal(await iosPage.locator('#native-ios-dictation').isVisible(),true);
     assert.equal(await iosPage.locator('#speech-alternatives').evaluate(el=>el.open),true);
+    await iosPage.evaluate(()=>window.__silentSpeech.onend?.());
     await iosPage.locator('#native-ios-dictation').click();
     assert.equal(await iosPage.locator('#spoken-answer').evaluate(e=>document.activeElement===e),true);
     await iosPage.locator('#spoken-answer').fill('That is fine with me.');
+    // Regression: On iPhone a final (wrong) answer may arrive before WebKit's
+    // onend. Retry must wait for the previous audio session, then actually
+    // capture NEW speech instead of displaying the previous failed attempt.
+    await iosPage.evaluate(()=>{
+      window.__iosMicBusy=false;
+      window.__iosMicInstances=[];
+      window.SpeechRecognition=class BusySpeech{
+        start(){
+          if(window.__iosMicBusy)throw new Error('WebKit audio service still in use');
+          window.__iosMicBusy=true;
+          window.__iosMicInstances.push(this);
+          this.onstart?.();
+        }
+        stop(){this.stopped=true;}
+        abort(){this.aborted=true;}
+      };
+    });
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),1);
+    await iosPage.evaluate(()=>window.__iosMicInstances[0].onresult({results:[Object.assign([{transcript:'I want a blue elephant.'}],{isFinal:true})]}));
+    assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'I want a blue elephant.');
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances[0].stopped),true,
+      'A completed final result should release via stop(), not abort()');
+    await iosPage.locator('#show-answer').click();
+    assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'I want a blue elephant.');
+    assert.equal(await iosPage.locator('#mic-button').isEnabled(),true,
+      'A rejected speaking answer must allow the learner to try speaking again');
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),1,
+      'Retry must not start while the old recognizer still owns the microphone');
+    assert.match(await iosPage.locator('#mic-button').innerText(),/確定中/);
+    await iosPage.evaluate(()=>{window.__iosMicBusy=false;window.__iosMicInstances[0].onend();});
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),2,
+      'The queued retry must start as soon as the previous session releases');
+    assert.equal(await iosPage.locator('#spoken-answer').inputValue() ,'',
+      'The prior wrong transcript must be cleared before retry');
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+    await iosPage.evaluate(()=>window.__iosMicInstances[1].onerror({error:'no-speech'}));
+    assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'false');
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),2,
+      'An error followed by a rapid retry also must not open overlapping recognizers');
+    await iosPage.evaluate(()=>{window.__iosMicBusy=false;window.__iosMicInstances[1].onend();});
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),3);
+    await iosPage.evaluate(()=>window.__iosMicInstances[2].onresult({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]}));
+    assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'Let me think about it.',
+      'Speech must still be recognized after a wrong answer and a failed retry');
+    await iosPage.evaluate(()=>{window.__iosMicBusy=false;window.__iosMicInstances[2].onend();});
     await leavePlay(iosPage);
     await enterHomePanel(iosPage,'forest');
     await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();
