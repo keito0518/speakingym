@@ -186,7 +186,11 @@ const path=require('node:path');
       await staleTab.locator('[data-difficulty="normal"]').click();
       assert.equal(await staleTab.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).difficulty),'hard',
         'The old tab must not overwrite newer difficulty/progress');
-      await staleTab.locator('#save-transfer').evaluate(el=>{el.open=true;});
+      await staleTab.locator('.home-destination:not([hidden]) .home-menu-back').click();
+      await enterHomePanel(staleTab,'save');
+      assert.equal(await staleTab.locator('#save-destination-title').innerText(),'セーブの引き継ぎ');
+      assert.equal(await staleTab.locator('#home-destination-training').isVisible(),false,
+        'Backup screen must not show unrelated speaking practice controls');
       assert.equal(await staleTab.locator('#save-conflict-notice').isVisible(),true);
       const oldDownload=staleTab.waitForEvent('download');
       await staleTab.locator('#save-download').click();
@@ -2255,6 +2259,8 @@ const path=require('node:path');
     await evolvedPage.locator('[data-home-page="save"]').click();
     assert.equal(await evolvedPage.locator('#save-transfer').isVisible(),true);
     assert.equal(await evolvedPage.locator('#save-transfer').getAttribute('open'),'');
+    assert.equal(await evolvedPage.locator('#save-destination-title').innerText(),'セーブの引き継ぎ');
+    assert.equal(await evolvedPage.locator('#home-destination-training').isVisible(),false);
     await evolvedPage.locator('#save-export').click();
     const portableSave=await evolvedPage.locator('#save-import').inputValue();
     assert.match(portableSave,/"medamago":160/);
@@ -2279,6 +2285,10 @@ const path=require('node:path');
     restorePage.once('dialog',dialog=>dialog.accept());
     await restorePage.locator('#save-import-button').click();
     assert.match(await restorePage.locator('#save-transfer-status').textContent(),/復元できた/);
+    assert.equal(await restorePage.locator('#home-destination-save').isVisible(),true,
+      'Successful restore stays on the dedicated backup screen');
+    await restorePage.locator('#home-destination-save .home-menu-back').click();
+    await enterHomePanel(restorePage,'training');
     assert.match(await restorePage.locator('#hero-monster-name').innerText(),/Sunnyolk/);
     assert.equal(JSON.parse(portableSave).monsterXp.medamago,160,'Text copy workflow remains available');
     await restoreContext.close();

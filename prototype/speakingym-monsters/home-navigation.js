@@ -29,6 +29,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   daily:document.createElement('section'),
   roleplay:document.createElement('section'),
   training:document.createElement('section'),
+  save:document.createElement('section'),
   forest:document.createElement('section'),
   review:document.createElement('section'),
   progress:document.createElement('section')
@@ -49,6 +50,14 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  move('.saved-review','review');
  move('.retention-hub','review');
  move('.hero-grid','training');
+ // Backup/restore is its own task. Showing it underneath Speaking practice
+ // made the heading and difficulty controls misleading, especially on phones.
+ move('#save-transfer','save');
+ sections.save.setAttribute('aria-labelledby','save-destination-title');
+ const saveHeading=document.createElement('div');
+ saveHeading.className='save-destination-heading';
+ saveHeading.innerHTML='<h1 id="save-destination-title">セーブの引き継ぎ</h1><p>別のブラウザへ移す前に、今の記録を保存しよう。</p>';
+ sections.save.querySelector('.home-menu-back').after(saveHeading);
  move('.section-head','progress');
  move('.stat-grid','progress');
  move('.skill-growth','progress');
@@ -63,7 +72,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
   {id:'challenge',icon:'05',title:'60秒チャレンジ',desc:'瞬発力を鍛える短時間練習',action:()=>startMode('challenge')},
   {id:'collection',icon:'06',title:'なかま・図鑑',desc:'仲間と冒険の記録を確認',action:showCollection},
   {id:'progress',icon:'07',title:'学習記録',desc:'復習や定着度を確認する',action:()=>showPage('progress')},
-  {id:'save',icon:'10',title:'セーブの引き継ぎ',desc:'進化や学習記録を別のURLへ移す',action:()=>{showPage('training');const transfer=document.querySelector('#save-transfer');transfer.open=true;transfer.scrollIntoView({block:'start',behavior:'instant'});}},
+  {id:'save',icon:'10',title:'セーブの引き継ぎ',desc:'進化や学習記録を別のURLへ移す',action:()=>{showPage('save');document.querySelector('#save-transfer').open=true;}},
   {id:'tutorial',icon:'08',title:'遊び方ガイド',desc:'英語の問題・戦闘・育成を図解で確認',action:openTutorial}
  ];
  const menu=document.createElement('section');

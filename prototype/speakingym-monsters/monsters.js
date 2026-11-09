@@ -3360,7 +3360,7 @@ $('#save-recovery-reset').addEventListener('click',()=>{
     save=previous;
     $('#save-transfer-status').textContent='保存できず、元のセーブは上書きしていません。';return;
   }
-  renderHome();$('#save-transfer').open=true;
+  renderHome();homeNavigation?.showPage('save');$('#save-transfer').open=true;
   $('#save-transfer-status').textContent='新しい記録で始められるよ。';
 });
 function downloadCurrentSave(status){
@@ -3446,7 +3446,7 @@ $('#save-import-button').addEventListener('click',()=>{
   $('#save-import-file').value='';
   renderHome();
   // Keep the restore result visible instead of sending the player to the home menu.
-  homeNavigation?.showPage('training');
+  homeNavigation?.showPage('save');
   $('#save-transfer').open=true;
   status.textContent='復元できたよ。図鑑でも進化状態を確認してね。';
   status.scrollIntoView({block:'center',behavior:'instant'});
@@ -3477,8 +3477,7 @@ document.addEventListener('visibilitychange',()=>{
 renderHome();
 if(gachaTestMode&&!unreadableSaveStatus)openForge();
 if(unreadableSaveStatus){
-  // The save panel lives in the Training section after home navigation moves
-  // it. Opening <details> alone leaves it invisible behind the main menu.
-  homeNavigation?.showPage('training');
+  // The standalone backup panel must be visible when recovery is required.
+  homeNavigation?.showPage('save');
   $('#save-transfer').open=true;
 }

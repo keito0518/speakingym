@@ -91,6 +91,7 @@ const fs=require('node:fs');
         assert.equal(safe.xpWallet,0,'Non-finite imported wallet must be sanitized');
         assert.equal(safe.monsterXp.medamago,0,'Non-finite imported XP must be sanitized');
         assert.match(await page.locator('#save-transfer-status').innerText(),/復元できた/);
+        assert.equal(await page.locator('#home-destination-save').isVisible(),true);
         assert.equal(await page.locator('#save-import').isVisible(),true,
           'The restore screen must stay open so the success message is visible');
         assert.equal(await page.locator('#save-transfer-status').isVisible(),true);
