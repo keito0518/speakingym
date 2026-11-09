@@ -498,7 +498,7 @@ export const VETTED_LEVEL_PARAPHRASES=Object.freeze({
   'entry-speak-meet-at-gate-easy':["I'm waiting next to the gate.","I'm standing by the gate, waiting.","I'm beside the gate waiting for you."],
   'entry-speak-find-the-way-easy':['Can you show me how to find the entrance?','Could you help me get to the entrance?','Can you help me locate the entrance?'],
   'entry-speak-check-bridge-safety-easy':['Is it safe to cross this bridge?','Can I cross this bridge safely?','Would it be safe for us to cross this bridge?'],
-  'entry-speak-offer-trail-help-easy':['Would you like me to carry your bag?','Do you need a hand with your bag?','I can help you carry that bag.'],
+  'entry-speak-offer-trail-help-easy':['Would you like me to carry your bag?','Do you need a hand with your bag?','I can help you carry that bag.','Can I help you carry that?'],
   'entry-speak-meet-at-gate-normal':["I'm at the wooden bridge. Could you come here?","I'm here at the wooden bridge. Can we meet here?"],
   'entry-speak-find-the-way-normal':['I think I went the wrong way. Can you tell me how to get back?','I may have taken the wrong trail. Could you help me return?'],
   'entry-speak-check-bridge-safety-normal':['After the rain, is the bridge safe to use? Is there a different route?','Is it safe to cross the bridge after the rain, or should we use another path?'],

@@ -1,10 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {BATTLE_KINDS,BATTLE_LABELS,ULTIMATE_MAX,MASTERY_LEVEL,foeAffinity,allyAffinity,allySkill,masterySkillFor,masteryEffectFor,supportPartnerFor,supportComboFor,evolvedSupportTalent,advanceUltimate,advanceBattleChain,battleChainTier,pickBattleSpectacle,strikeFor,nextEnemyKind,foeStyleFor,foeBattleAffinity,foeStyledStrike,foePlannedAttack,foeAttackPressure,bossAttackFor,bossCounterFor,bossReserveCoverFor,bossFormationLinkPlan,bossFormationLinkFor,incomingHit,shouldCounterPlayerMiss,pickBattlePrompt} from '../prototype/speakingym-monsters/battle-tactics.js';
 
 import {AREA_BOSSES} from '../prototype/speakingym-monsters/forest-battle.js';
 import {createBattleParty,applyFighterDamage} from '../prototype/speakingym-monsters/battle-party.js';
 import {MONSTERS,ALL_PROMPTS} from '../prototype/speakingym-monsters/monster-data.js';
+
+test('attack choice has one combined badge when Weak and review point to the same skill',()=>{
+ const ui=readFileSync(new URL('../prototype/speakingym-monsters/monsters.js',import.meta.url),'utf8');
+ assert.match(ui,/kind===affinity\.weak&&focus\?\.kind===kind\?'<small>WEAK · 復習<\/small>'/);
+ assert.match(ui,/firstFight=play\.wave===1&&play\.index===0&&save\.completedRuns===0&&!t\.usedPromptIds\.size/g);
+ assert.match(ui,/grading-review-details/);
+ assert.match(ui,/\$\{practiceButton\}\$\{feedbackExplanation\}/);
+});
 
 test('every confirmed player miss triggers a counter, but uncertainty and empties do not',()=>{
  for(const status of ['incorrect','incomplete'])

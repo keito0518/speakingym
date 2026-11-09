@@ -55,6 +55,15 @@ test('all twelve forest conversations accept verified natural rewording without 
   }
 });
 
+test('offering to carry the bag accepts a natural demonstrative without rewarding opposite intent',()=>{
+  const prompt=FOREST_ENTRY_PROMPTS.find(item=>item.id==='entry-speak-offer-trail-help-easy');
+  const natural=gradeLocalResponse(prompt,'Can I help you carry that?');
+  assert.equal(natural.status,'correct');
+  assert.equal(natural.method,'registered-example');
+  assert.notEqual(gradeLocalResponse(prompt,'Can I borrow that?').status,'correct');
+  assert.notEqual(gradeLocalResponse(prompt,"I can't help you carry that.").status,'correct');
+});
+
 test('forest speaking never credits changed place, action, polarity or omitted advanced details',()=>{
   const prompt=id=>FOREST_ENTRY_PROMPTS.find(item=>item.id===`entry-speak-${id}`);
   for(const [id,reply] of [

@@ -1129,14 +1129,14 @@ function renderAttackChoice(panel,t){
  const style=foeStyleFor({areaId:play.areaId,index:play.index,wave:play.wave,boss:false});
  const affinity=foeBattleAffinity({foeId:foe.id,style,shifted:t.foeShifted});
  const focus=nextSkillFocusFor(save,{difficulty:play.difficulty,today:dayKey()});
- const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0;
+ const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0&&!t.usedPromptIds.size;
  panel.dataset.turn='choose';
  // The small '復習' badge on an attack button already communicates the focus.
  // A second explanatory accordion made the choice screen feel like a manual.
  panel.innerHTML=`<div class="forest-attack-select" data-first-fight="${firstFight}" role="group" aria-label="攻撃タイプを先に選ぶ" ${firstFight?'aria-describedby="forest-first-attack-hint"':''}>
   <strong>${firstFight?'① あなたのターン · 攻撃を選ぶ':'あなたのターン · 攻撃を選ぶ'}</strong>
   ${firstFight?'<span id="forest-first-attack-hint" class="forest-first-attack-hint">金色のWEAKは敵の弱点。正解するとダメージUP！</span>':''}
-  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>WEAK</small>':''}${focus?.kind===kind?'<small>復習</small>':''}</button>`).join('')}</div></div>`;
+  <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}${focus?.kind===kind?'：復習対象':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak&&focus?.kind===kind?'<small>WEAK · 復習</small>':kind===affinity.weak?'<small>WEAK</small>':focus?.kind===kind?'<small>復習</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',event=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
   const kind=button.dataset.tacticKind;
@@ -1186,7 +1186,7 @@ function renderTacticalControls(){
  if(weak){weak.hidden=false;weak.textContent=`Weak: ${WEAK_BADGE_LABELS[element.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[element.weak]}`);weak.dataset.kind=element.weak;}
  const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
  const incoming=t.turn==='enemy';
- const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0;
+ const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0&&!t.usedPromptIds.size;
  const party=battleParty();
  const attackKind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
  const supportId=!incoming?supportPartnerFor({kind:attackKind,activeId:play.companionId,party:t.party}):null;
@@ -2223,8 +2223,10 @@ async function gradeAnswer() {
     // Give story-mode learners an explicit opt-in practice route instead of
     // trapping them in a gate that the offline scorer cannot recognize.
     const allowPractice=play.mode==='forest'&&!play.endless&&uncertain&&Boolean(raw)&&!['vocab','grammar'].includes(prompt.kind);
-    const practiceButton=allowPractice?'<button type="button" class="grading-skip" id="continue-as-practice">判定できない表現として先へ進む（XPなし） →</button>':'';
-    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'登録された条件と食い違う部分があるよ。必要な情報を確認して言い直してみよう。':incomplete?'必要な情報が一部確認できなかったよ。条件を足してもう一度試そう。':uncertain?'自然な別表現の可能性があります。誤答扱いも挑戦回数の消費もしません。音声認識の文字起こしを確認してね。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${quizContrast}${nudge}${grade.reasons.length&&(!speakingNudge||!grade.checks?.missing?.length)?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}${practiceButton}</div>`;
+    const practiceButton=allowPractice?'<button type="button" class="grading-skip" id="continue-as-practice">判定保留のまま次のターンへ（XPなし） →</button>':'';
+    const feedbackReasons=`${quizContrast}${nudge}${grade.reasons.length&&(!speakingNudge||!grade.checks?.missing?.length)?`<ul class="grading-reasons">${grade.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul>`:''}${speakingNudge}${aidedNote}`;
+    const feedbackExplanation=allowPractice?`<details class="grading-review-details"><summary>判定の理由を見る</summary>${feedbackReasons}</details>`:feedbackReasons;
+    $('#feedback-panel').innerHTML=`<div class="feedback-box grading-review" role="status"><div class="feedback-head">${empty?'英語を入力してみよう':incomplete?'大事な情報が足りないよ':incorrect?'伝わる意味が違うよ':'判定保留 · もう一度確認'}</div><p class="grading-intro">${incorrect?'登録された条件と食い違う部分があるよ。必要な情報を確認して言い直してみよう。':incomplete?'必要な情報が一部確認できなかったよ。条件を足してもう一度試そう。':uncertain?'別の言い方かもしれません。誤答・HP減少にはしないよ。':'入力や音声認識に失敗しても、英語力の評価には含みません。'}</p>${practiceButton}${feedbackExplanation}${empty?'':`<button type="button" class="grading-skip" id="show-example">${teaching||speakingLesson?'正解と理由を見る（XPなし）':'例文を見て次へ（XPなし）'}</button>`}</div>`;
     if(!empty)attachFeedbackBookmark(prompt);
     if(!empty)$('#show-example').addEventListener('click',skipAnswer);
     if(allowPractice)$('#continue-as-practice').addEventListener('click',()=>{
