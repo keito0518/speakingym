@@ -2091,7 +2091,7 @@ const path=require('node:path');
     assert.match(await micPage.locator('#speech-helper').innerText(),/聞き取った英文を表示/);
     await micPage.evaluate(()=>{
       window.SpeechRecognition=class{
-        start(){this.onerror?.({error:'not-allowed'});}
+        start(){window.__deniedMic=this;this.onerror?.({error:'not-allowed'});}
         abort(){this.aborted=true;}
       };
     });
@@ -2107,6 +2107,9 @@ const path=require('node:path');
       };
     });
     await micPage.locator('#mic-button').click();
+    assert.match(await micPage.locator('#mic-button').innerText(),/確定中/,
+      'Retry after a permission error must wait for WebKit microphone cleanup');
+    await micPage.evaluate(()=>window.__deniedMic.onend());
     await micPage.locator('#show-answer').click();
     assert.equal(await micPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).skillAttempts.speak.at(-1).inputSource),'microphone',
       'A complete browser speech-recognition result must be tracked independently of typed attempts');
