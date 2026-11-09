@@ -78,6 +78,8 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.forest-boss-link').getAttribute('data-link-used'),'true');
   await page.locator('#next-question').click();
   assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
+  assert.match(await page.locator('.forest-tactic-strategy > summary').innerText(),/敵のターン.*文法/,
+   'The enemy attack type stays clear even when advanced combat details are collapsed');
   const before=Number(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'));
   await page.locator('#spoken-answer').fill('wrong answer');
   await page.locator('#show-answer').click();

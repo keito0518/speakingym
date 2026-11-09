@@ -1093,7 +1093,9 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  const ready=t.ultimate>=ULTIMATE_MAX;
  const status=!incoming&&ready?'必殺技が使える！':!incoming&&supportReady?'連携チャンス！':`必殺 ${t.ultimate}/${ULTIMATE_MAX}`;
  const kind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
- summary.innerHTML=`<span>${incoming?'敵の攻撃を確認':`攻撃：${BATTLE_LABELS[kind]} · 確定`}</span><small>${status}</small>`;
+ // Even with the detail drawer closed, the defender must instantly know
+ // which English skill the enemy is using; never hide that in a long note.
+ summary.innerHTML=`<span>${incoming?`敵のターン · ${BATTLE_LABELS[t.enemyKind]}を防ぐ`:`攻撃：${BATTLE_LABELS[kind]} · 確定`}</span><small>${status}</small>`;
  strategy.append(summary);
  [...panel.children].filter(child=>child!==strategy&&
    !child.matches('.forest-turn-task'))
