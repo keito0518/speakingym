@@ -2176,26 +2176,49 @@ const path=require('node:path');
     await iosPage.evaluate(()=>{
       window.__silentSpeechClass=window.SpeechRecognition;
       window.__iosMicBusy=false;
+      window.__iosMicPoisoned=false;
       window.__iosMicInstances=[];
+      // WebKit 27's reported successful workaround includes a short TTS cue
+      // between naturally ended recognition sessions.
+      Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,value:class{
+        constructor(text){this.text=text;}
+      }});
+      Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+        cancel(){},speak(utterance){window.__iosRetryCue=utterance;}
+      }});
       // The initial iPhone mock is a non-writable own property in WebKit.
       // Redefine it explicitly; an assignment silently leaves SilentSpeech.
       Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:class BusySpeech{
         start(){
           if(window.__iosMicBusy)throw new Error('WebKit audio service still in use');
+          if(window.__iosMicPoisoned)throw new Error('iOS 27 recognizes no speech after interrupted final');
           window.__iosMicBusy=true;
           window.__iosMicInstances.push(this);
           this.onstart?.();
         }
-        stop(){this.stopped=true;}
+        stop(){
+          this.stopped=true;
+          // Reproduces the iOS 27 regression: explicitly stopping a session
+          // after its final result poisons all later recognizers.
+          if(this.finalReceived)window.__iosMicPoisoned=true;
+        }
         abort(){this.aborted=true;}
       }});
     });
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),1);
-    await iosPage.evaluate(()=>window.__iosMicInstances[0].onresult({results:[Object.assign([{transcript:'I want a blue elephant.'}],{isFinal:true})]}));
+    assert.equal(await iosPage.locator('#mic-button').isDisabled(),true,
+      'iPhone must not offer manual stop while WebKit can poison later recognition sessions');
+    assert.equal(await iosPage.locator('#show-answer').isDisabled(),true,
+      'Tapping grade while the iPhone recognizer is active must not force stop()');
+    await iosPage.evaluate(()=>{
+      window.__iosMicInstances[0].finalReceived=true;
+      window.__iosMicInstances[0].onresult({results:[Object.assign([{transcript:'I want a blue elephant.'}],{isFinal:true})]});
+    });
     assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'I want a blue elephant.');
-    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances[0].stopped),true,
-      'A completed final result should release via stop(), not abort()');
+    assert.equal(await iosPage.locator('#show-answer').isEnabled(),true);
+    assert.equal(await iosPage.evaluate(()=>Boolean(window.__iosMicInstances[0].stopped||window.__iosMicInstances[0].aborted)),false,
+      'iOS must let a finalized recognizer end naturally; stop/abort can make every later session deaf');
     await iosPage.locator('#show-answer').click();
     assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'I want a blue elephant.');
     assert.equal(await iosPage.locator('#mic-button').isEnabled(),true,
@@ -2205,8 +2228,16 @@ const path=require('node:path');
       'Retry must not start while the old recognizer still owns the microphone');
     assert.match(await iosPage.locator('#mic-button').innerText(),/確定中/);
     await iosPage.evaluate(()=>{window.__iosMicBusy=false;window.__iosMicInstances[0].onend();});
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),1,
+      'iOS retry must wait for a fresh user gesture after the natural end');
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/もう一度「話す」/);
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),1,
+      'A second iPhone session should play the WebKit recovery cue before the recognizer starts');
+    assert.equal(await iosPage.evaluate(()=>window.__iosRetryCue.text),'Ready');
+    await iosPage.evaluate(()=>window.__iosRetryCue.onend());
     assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),2,
-      'The queued retry must start as soon as the previous session releases');
+      'The fresh tapped retry should launch after speech-synthesis recovery completes');
     assert.equal(await iosPage.locator('#spoken-answer').inputValue() ,'',
       'The prior wrong transcript must be cleared before retry');
     assert.equal(await iosPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
@@ -2216,13 +2247,33 @@ const path=require('node:path');
     assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),2,
       'An error followed by a rapid retry also must not open overlapping recognizers');
     await iosPage.evaluate(()=>{window.__iosMicBusy=false;window.__iosMicInstances[1].onend();});
-    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),3);
-    await iosPage.evaluate(()=>window.__iosMicInstances[2].onresult({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]}));
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),2,
+      'Even an error must not restart speech asynchronously without a new iPhone tap');
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),3,
+      'A restart after a no-speech error still requires a new user tap');
+    await iosPage.evaluate(()=>{
+      window.__iosMicInstances[2].finalReceived=true;
+      window.__iosMicInstances[2].onresult({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]});
+    });
     assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'Let me think about it.',
       'Speech must still be recognized after a wrong answer and a failed retry');
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicPoisoned),false);
     await iosPage.evaluate(()=>{
       window.__iosMicBusy=false;
       window.__iosMicInstances[2].onend();
+    });
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),3);
+    await iosPage.evaluate(()=>window.__iosRetryCue.onerror?.());
+    assert.equal(await iosPage.locator('#mic-button').isEnabled(),true,
+      'A failed iPhone recovery cue must restore the tap-to-record button');
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),4,
+      'The user can still start speech directly after a failed cue');
+    await iosPage.evaluate(()=>{
+      window.__iosMicBusy=false;
+      window.__iosMicInstances[3].onend();
       Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:window.__silentSpeechClass});
     });
     await leavePlay(iosPage);

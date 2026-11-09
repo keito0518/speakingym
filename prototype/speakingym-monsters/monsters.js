@@ -296,6 +296,10 @@ let play = null, timer = null, recognition = null, recognitionStartTimer = null,
 // WebKit may still own the microphone after a final result or an error. Do not
 // start a second recognizer until the previous session actually fires onend.
 let retiringRecognition = null, recognitionRetireTimer = null, queuedRecognitionSession = null;
+// iOS 27 has a WebKit regression where a second recognition session can be
+// deaf. A short speech-synthesis cue between naturally ended sessions is a
+// best-effort browser workaround; native iPhone dictation stays available.
+let iosSpeechCueDue = false, iosSpeechCue = null, iosSpeechCueTimer = null;
 const betaTelemetry=createBetaTelemetry();
 setupBetaFeedback(betaTelemetry);
 
@@ -393,15 +397,21 @@ function micView(mode='ready') {
   const button=$('#mic-button'), retry=$('#retry-mic');
   if(button){
     const unavailable=button.dataset.speechUnavailable==='true';
+    const iOSNatural=isIOSDevice()&&mode==='listening';
     const readyLabel=play?.mode==='forest'&&play.tactics?.turn==='player'&&currentPrompt()?.kind==='speak'?'声で攻撃':'話す';
     button.classList.toggle('active',mode==='listening');
     button.setAttribute('aria-pressed',String(mode==='listening'));
-    button.innerHTML=mode==='finishing'?'<span>確定中…</span>':mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':`<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${readyLabel}</span>`;
-    button.title=mode==='finishing'?'音声の文字起こしを確定中':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する';
-    button.setAttribute('aria-label',mode==='finishing'?'文字起こしを確定中':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する');
+    button.innerHTML=mode==='finishing'?'<span>確定中…</span>':iOSNatural?'<span>聞き取り中…</span>':mode==='listening'?'<span class="mic-glyph mic-glyph-stop" aria-hidden="true"></span><span>停止</span>':`<span class="mic-glyph mic-glyph-talk" aria-hidden="true"></span><span>${readyLabel}</span>`;
+    button.title=mode==='finishing'?'音声の文字起こしを確定中':iOSNatural?'iPhoneで音声認識中。話し終えると自動で確定します':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する';
+    button.setAttribute('aria-label',mode==='finishing'?'文字起こしを確定中':iOSNatural?'音声認識中。話し終えると自動で確定します':mode==='listening'?'録音を停止する':'マイクで音声認識を開始する');
     button.hidden=mode==='done'||unavailable;
-    button.disabled=mode==='done'||mode==='finishing'||unavailable;
+    // On iOS, manually stopping a successful session can permanently mute
+    // subsequent Web Speech sessions (WebKit 321436). Wait for natural end.
+    button.disabled=mode==='done'||mode==='finishing'||iOSNatural||unavailable;
   }
+  const submit=$('#show-answer');
+  if(submit&&isIOSDevice()&&!play?.revealed&&!play?.grading)
+    submit.disabled=mode==='listening'||mode==='finishing';
   const keyboard=$('#native-ios-dictation');
   if(keyboard)keyboard.hidden=mode==='done';
   if(retry) retry.hidden=mode!=='captured';
@@ -438,7 +448,22 @@ function recognitionReleased(active) {
   recognitionRetireTimer=null;
   const requested=queuedRecognitionSession;
   queuedRecognitionSession=null;
-  if(requested&&play===requested&&!play.revealed&&$('#mic-button'))startRecognition();
+  if(requested&&play===requested&&!play.revealed&&$('#mic-button')){
+    if(isIOSDevice()){
+      // In iOS 27, WebKit can leave every subsequent recognizer deaf even
+      // though onend fired. An automatic restart inside this async callback
+      // also loses the learner's tap. Require a fresh explicit gesture.
+      micView('ready');
+      const helper=$('#speech-helper');
+      if(helper)helper.textContent='録音の準備ができました。もう一度「話す」を押してね。';
+    }else startRecognition();
+  }
+}
+function clearIOSSpeechCue(){
+  if(iosSpeechCueTimer!==null)clearTimeout(iosSpeechCueTimer);
+  iosSpeechCueTimer=null;
+  if(iosSpeechCue){iosSpeechCue.onend=null;iosSpeechCue.onerror=null;}
+  iosSpeechCue=null;
 }
 function stopRecognition(mode='ready', options={}) {
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
@@ -450,7 +475,11 @@ function stopRecognition(mode='ready', options={}) {
   const active=recognition;
   recognition=null; // Disarm callbacks before abort: Safari fires onend asynchronously.
   recognitionStopping=false;
-  if(mode==='done')queuedRecognitionSession=null;
+  if(mode==='done'){
+    queuedRecognitionSession=null;
+    iosSpeechCueDue=false;
+    clearIOSSpeechCue();
+  }
   if(mode==='done')$('#spoken-answer')?.classList.remove('transcript-interim');
   micView(mode);
   if(active&&!options.ended){
@@ -459,8 +488,19 @@ function stopRecognition(mode='ready', options={}) {
     if(recognitionRetireTimer)clearTimeout(recognitionRetireTimer);
     retiringRecognition=active;
     active.onend=()=>recognitionReleased(active);
-    recognitionRetireTimer=setTimeout(()=>recognitionReleased(active),2000);
-    if(!options.alreadyStopping){
+    recognitionRetireTimer=setTimeout(()=>{
+      if(retiringRecognition!==active)return;
+      if(options.natural){
+        // A natural ending is preferred on iOS, but never trap the learner
+        // indefinitely if a buggy recognizer refuses to dispatch `end`.
+        try{active.stop();}catch{}
+        showSpeechFallback();
+        const helper=$('#speech-helper');
+        if(helper)helper.textContent='iPhone側で録音の終了を確認できません。下のiPhone標準音声入力でも続けられます。';
+      }
+      recognitionReleased(active);
+    },options.natural?5500:2000);
+    if(!options.alreadyStopping&&!options.natural){
       try{
         if(options.graceful)active.stop();
         else active.abort();
@@ -1943,7 +1983,7 @@ function speakLine(line,onUnavailable,level='easy',promptId='',onStart=()=>{},ra
   }
   browserSpeakLine(line,onUnavailable,level,onStart,generation,rateMultiplier);
 }
-function startRecognition() {
+function startRecognition(options={}) {
   if(!play || play.revealed)return;
   const helper=$('#speech-helper');
   if(recognition){
@@ -1959,6 +1999,38 @@ function startRecognition() {
     return;
   }
   queuedRecognitionSession=null;
+  if(isIOSDevice()&&iosSpeechCueDue&&!options.skipIOSCue&&
+    window.speechSynthesis&&window.SpeechSynthesisUtterance){
+    // iOS 27 WebKit reports successful repeated dictation when a TTS phrase
+    // precedes each session, provided the previous result ended naturally.
+    // Play it from the learner's actual tap; never silently start a mic in
+    // the old recognition callback. If Safari hangs on TTS, show recovery.
+    iosSpeechCueDue=false;
+    stopListeningPlayback();
+    clearIOSSpeechCue();
+    const cue=new window.SpeechSynthesisUtterance('Ready');
+    cue.lang='en-US';cue.rate=1.7;cue.volume=.55;
+    iosSpeechCue=cue;
+    const session=play;
+    const resume=(succeeded)=>{
+      if(iosSpeechCue!==cue)return;
+      clearIOSSpeechCue();
+      if(play!==session||play.revealed)return;
+      if(succeeded)startRecognition({skipIOSCue:true});
+      else{
+        micView('ready');showSpeechFallback();
+        const help=$('#speech-helper');
+        if(help)help.textContent='音声入力の準備が止まりました。もう一度「話す」を押すか、iPhone音声入力を使ってね。';
+      }
+    };
+    cue.onend=()=>resume(true);
+    cue.onerror=()=>resume(false);
+    iosSpeechCueTimer=setTimeout(()=>resume(false),2300);
+    micView('finishing');
+    if(helper)helper.textContent='マイクを準備中… 合図が聞こえたら英語を話してね。';
+    try{window.speechSynthesis.speak(cue);}catch{resume(false);}
+    return;
+  }
   play.micTranscript=false;
   // The previous (possibly incorrect) answer is NOT a transcript of this
   // attempt. Keeping it also defeats the silence watchdog on subsequent taps.
@@ -1967,7 +2039,7 @@ function startRecognition() {
   // Release the preceding listening clip before opening a microphone.
   // This can mitigate an iOS WebKit audio-session conflict but is not a
   // substitute for native speech recognition in restricted in-app browsers.
-  stopListeningPlayback();
+  if(!options.skipIOSCue)stopListeningPlayback();
   const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Constructor){
     micView('ready');
@@ -1990,7 +2062,9 @@ function startRecognition() {
       // A late onstart after the learner pressed Stop must not arm a second
       // watchdog over the stop/final-transcript timeout.
       if(recognitionStopping)return;
-      if(helper&&!recognitionStopping)helper.textContent='音声認識中です。英語が文字にならなければ標準の音声入力に切り替えられます。';
+      if(helper&&!recognitionStopping)helper.textContent=isIOSDevice()
+        ?'話し終えると自動で文字になります。反応しないときはiPhone音声入力を使ってね。'
+        :'音声認識中です。英語が文字にならなければ標準の音声入力に切り替えられます。';
       recognitionNoResultTimer=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
         if(helper)helper.textContent='まだ英文が届いていません。内蔵ブラウザではマイク認識が使えない場合があります。';
@@ -2025,7 +2099,15 @@ function startRecognition() {
       if(helper)helper.textContent=finalized
         ?'聞き取った英文を表示しました。確認して「答えを判定する」を押してね。'
         :'聞き取り中… 英文がリアルタイムで表示されています（まだ確定前）。';
-      if(finalized)stopRecognition('captured',{graceful:true,alreadyStopping:recognitionStopping});
+      if(finalized){
+        if(isIOSDevice())iosSpeechCueDue=true;
+        // iOS 27 WebKit regression: calling stop()/abort() on a successful
+        // session can poison the microphone for every later session, even
+        // if a new recognizer starts after `end`. With continuous=false,
+        // allow Safari to end successful recognition on its own instead.
+        stopRecognition('captured',isIOSDevice()&&!recognitionStopping
+          ?{natural:true}:{graceful:true,alreadyStopping:recognitionStopping});
+      }
     };
     instance.onerror=event=>{
       if(recognition!==instance || play!==session)return;
