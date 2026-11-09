@@ -2174,6 +2174,7 @@ const path=require('node:path');
     // onend. Retry must wait for the previous audio session, then actually
     // capture NEW speech instead of displaying the previous failed attempt.
     await iosPage.evaluate(()=>{
+      window.__silentSpeechClass=window.SpeechRecognition;
       window.__iosMicBusy=false;
       window.__iosMicInstances=[];
       window.SpeechRecognition=class BusySpeech{
@@ -2217,7 +2218,11 @@ const path=require('node:path');
     await iosPage.evaluate(()=>window.__iosMicInstances[2].onresult({results:[Object.assign([{transcript:'Let me think about it.'}],{isFinal:true})]}));
     assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'Let me think about it.',
       'Speech must still be recognized after a wrong answer and a failed retry');
-    await iosPage.evaluate(()=>{window.__iosMicBusy=false;window.__iosMicInstances[2].onend();});
+    await iosPage.evaluate(()=>{
+      window.__iosMicBusy=false;
+      window.__iosMicInstances[2].onend();
+      window.SpeechRecognition=window.__silentSpeechClass;
+    });
     await leavePlay(iosPage);
     await enterHomePanel(iosPage,'forest');
     await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();
