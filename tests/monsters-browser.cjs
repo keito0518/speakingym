@@ -2271,6 +2271,9 @@ const path=require('node:path');
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),4,
       'The user can still start speech directly after a failed cue');
+    await iosPage.locator('#spoken-answer').fill('Let me type this instead.');
+    assert.equal(await iosPage.locator('#show-answer').isEnabled(),true,
+      'Typing while an iPhone recognizer is stuck must unblock normal answer grading');
     await iosPage.evaluate(()=>{
       window.__iosMicBusy=false;
       window.__iosMicInstances[3].onend();

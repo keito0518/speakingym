@@ -1779,6 +1779,10 @@ function renderQuestion() {
     // longer attribute that entire answer to captured speech alone.
     if(play)play.micTranscript=false;
     $('#spoken-answer').classList.remove('transcript-interim');
+    // A user who types while an iPhone recognizer is silent has chosen the
+    // fallback. Release that recognizer and re-enable judging their text;
+    // otherwise the disabled submit button traps the entire battle.
+    if(recognition&&isIOSDevice())stopRecognition('ready');
     if(!recognition&&!quizMode)micView('ready');
   });
   if(!quizMode){
