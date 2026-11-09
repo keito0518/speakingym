@@ -60,8 +60,9 @@ const fs=require('node:fs');
       assert.equal(events[1][2].reaction,'grading');
       assert.equal(Object.prototype.hasOwnProperty.call(events[1][2],'transcript'),false);
       await page.locator('[data-feature-dungeon]').click();
-      assert.equal(await page.locator('#forest-explore-screen').isVisible(),true,
-        'Primary CTA enters the dungeon without an extra selection step');
+      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,
+        'Primary CTA goes straight to attack selection, with no second start button');
+      assert.equal(await page.locator('#forest-explore-screen').isVisible(),false);
       const started=await page.evaluate(()=>window.dataLayer.map(args=>Array.from(args)).filter(args=>args[1]==='monsters_beta_start'));
       assert.equal(started.length,1);
       assert.equal(started[0][2].mode,'forest');
@@ -115,7 +116,7 @@ const fs=require('node:fs');
         assert.equal(await page.locator('#save-warning-live').isVisible(),true,
           'Storage failure must warn the player during an ongoing adventure');
         assert.match(await page.locator('#save-warning-live').innerText(),/セーブを保管/);
-        await page.locator('#forest-explore-continue').click();
+        assert.equal(await page.locator('.forest-attack-select').isVisible(),true);
         await page.locator('.forest-attack-select [data-tactic-kind="vocab"]').click();
         const endangeredPrompt=await page.locator('#play-card').getAttribute('data-prompt-id');
         await page.locator('#bookmark-question').click();

@@ -766,8 +766,8 @@ function tacticalReviewTargets(){
 }
 // The main dungeon starts immediately with the player's current companions.
 // Party formation remains optional in the advanced battle mode.
-function startMainDungeon(areaId=null,{formation=false}={}){startSession('forest-tactics',areaId,false,!formation);}
-function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null,{reviewLimit=null}={}) {
+function startMainDungeon(areaId=null,{formation=false,skipOpening=false}={}){startSession('forest-tactics',areaId,false,!formation,null,{skipOpening});}
+function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null,{reviewLimit=null,skipOpening=false}={}) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const focusKind=mode==='skill-focus'?requestedAreaId:null;
   if(mode==='skill-focus'&&!SKILL_KINDS.includes(focusKind)){renderHome();return;}
@@ -829,7 +829,24 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   }
   showView('play');
   betaTelemetry.track('monsters_beta_start',betaSessionFields(play));
-  if(forestMode)showForestExplore(false);
+  // The primary adventure button already means "start". Going through a
+  // second "start adventure" screen before choosing an attack adds a tap
+  // without a decision. Keep exploration between encounters and optional
+  // party formation intact, but begin a quick-start battle immediately.
+  if(forestMode){
+    if(tactical&&quickStart&&skipOpening){
+      // A fresh run may follow a cancelled exploration on this same page.
+      // Discard stale map actions instead of carrying them into the battle.
+      $('#forest-explore-options').hidden=true;
+      $('#forest-explore-options').replaceChildren();
+      $('#forest-explore-event').hidden=true;
+      $('#forest-explore-event').replaceChildren();
+      $('#forest-party-formation').hidden=true;
+      $('#forest-world-stage').dataset.action='idle';
+      renderQuestion();
+    }
+    else showForestExplore();
+  }
   else renderQuestion();
   if (mode === 'challenge') timer = setInterval(updateClock,200);
   updateClock();
@@ -1112,10 +1129,11 @@ function renderAttackChoice(panel,t){
  const focus=nextSkillFocusFor(save,{difficulty:play.difficulty,today:dayKey()});
  const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0;
  panel.dataset.turn='choose';
+ // The small '復習' badge on an attack button already communicates the focus.
+ // A second explanatory accordion made the choice screen feel like a manual.
  panel.innerHTML=`<div class="forest-attack-select" data-first-fight="${firstFight}" role="group" aria-label="攻撃タイプを先に選ぶ" ${firstFight?'aria-describedby="forest-first-attack-hint"':''}>
   <strong>${firstFight?'① あなたのターン · 攻撃を選ぶ':'あなたのターン · 攻撃を選ぶ'}</strong>
   ${firstFight?'<span id="forest-first-attack-hint" class="forest-first-attack-hint">金色のWEAKは敵の弱点。正解するとダメージUP！</span>':''}
-  ${focus?`<details class="forest-learning-focus"><summary>苦手の復習候補：${escapeHtml(focus.label)}</summary><p>${escapeHtml(focus.detail)} 敵の弱点を狙うか、苦手を練習するか選べるよ。</p></details>`:''}
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak?'<small>WEAK</small>':''}${focus?.kind===kind?'<small>復習</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',event=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
@@ -1202,7 +1220,7 @@ function renderTacticalControls(){
    if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=foePlannedAttack({style:foeStyle,activeId:play.companionId,last:t.lastEnemyKind});
  }
- panel.innerHTML=`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${firstFight?(incoming?'③ 敵の反撃を防ごう':'② 問題に答えて攻撃しよう'):incoming?'敵のターン · 反撃！':'あなたのターン · 攻撃！'}</strong><span>${incoming?`${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。`:'正解で攻撃、間違えたら敵が反撃！'}</span></p><div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
+ panel.innerHTML=`${firstFight?`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'③ 敵の反撃を防ごう':'② 問題に答えて攻撃しよう'}</strong><span>${incoming?`${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。`:'正解で攻撃、間違えたら敵が反撃！'}</span></p>`:''}<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
@@ -3240,10 +3258,10 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon():mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon(null,{skipOpening:true}):mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
 $$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
  const target=button.dataset.gameTab;
- if(target==='adventure'){startMainDungeon();return;}
+ if(target==='adventure'){startMainDungeon(null,{skipOpening:true});return;}
  if(target==='forge'){openForge();return;}
  if(target==='party'){
   renderCollection();

@@ -364,10 +364,14 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#forest-first-attack-hint').count(),0,
        'The first-battle hint disappears after the initial enemy; normal fights stay uncluttered');
      assert.equal(await page.locator('.forest-attack-select').getAttribute('data-first-fight'),'false');
+     assert.equal(await page.locator('.forest-learning-focus').count(),0,
+       'A small review badge is enough; do not add another explanation accordion');
      assert.equal(await page.locator('#play-card').isVisible(),false,'The new encounter keeps its question hidden until chosen');
      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-encounter'),'2');
      if(width===375){
        await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
+       assert.equal(await page.locator('.forest-turn-task').count(),0,
+         'After the first tutorial, repeated turn instructions must disappear');
        const initialHp=Number(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'));
        await page.locator('.forest-ultimate-shortcut').focus();
        await page.locator('.forest-ultimate-shortcut').click();

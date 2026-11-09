@@ -362,11 +362,10 @@ const path=require('node:path');
     await quickPage.locator('[data-feature-dungeon]').click();
     assert.equal(await quickPage.locator('#play-view').isVisible(),true,
       'Main CTA enters the actual adventure in one tap, bypassing the area catalogue');
-    assert.equal(await quickPage.locator('#forest-explore-continue').isVisible(),true);
-    assert.equal(await quickPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
-      'Portrait exploration must fill the scenery behind the readable route map');
-    await quickPage.locator('#forest-explore-continue').click();
-    assert.equal(await quickPage.locator('.forest-attack-select').isVisible(),true,'Main adventure shows attack choices before any English question');
+    assert.equal(await quickPage.locator('#forest-explore-screen').isVisible(),false,
+      'The main adventure must not stop on a second introduction screen');
+    assert.equal(await quickPage.locator('.forest-attack-select').isVisible(),true,
+      'Main adventure shows attack choices after a single tap, before any English question');
     assert.equal(await quickPage.locator('#play-card').isVisible(),false,'No arbitrary first question is revealed');
     await quickPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
     assert.equal(await quickPage.locator('#forest-world-stage').getAttribute('data-tactics'),'true',
@@ -648,6 +647,8 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#monsters-practice-battle').isVisible(),false);
     assert.equal(await menuPage.locator('#forest-explore-screen').isVisible(),true,
       'Beginner practice leads to the main story dungeon, not advanced tactics');
+    assert.equal(await menuPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
+      'Exploration between battles still fills a portrait screen after quick-start changes');
     assert.equal(await menuPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),practiceSaveAfter,
       'The practice must not award XP or change save data');
     await leavePlay(menuPage,{stay:true});
@@ -698,6 +699,10 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#saved-review-title').isVisible(),false,
       'A player without saved questions does not see an empty disabled panel');
     assert.equal(await menuPage.locator('#review-journal-title').isVisible(),true);
+    await menuPage.locator('[data-game-tab="adventure"]').click();
+    assert.equal(await menuPage.locator('.forest-attack-select').isVisible(),true,
+      'The persistent Adventure tab also reaches attack selection in one tap');
+    assert.equal(await menuPage.locator('#forest-explore-screen').isVisible(),false);
     await menuContext.close();
     // A first-time player sees one meaningful practice action, not three
     // empty statistics boards and unusable review buttons.
@@ -2240,7 +2245,7 @@ const path=require('node:path');
     await evolvedPage.locator('#detail-back').click();
     await evolvedPage.locator('#collection-home').click();
     await evolvedPage.locator('[data-feature-dungeon]').click();
-    await evolvedPage.locator('#forest-explore-continue').click();
+    assert.equal(await evolvedPage.locator('.forest-attack-select').isVisible(),true);
     assert.match(await evolvedPage.locator('#forest-companion-name').innerText(),/Sunnyolk/);
     assert.equal(await evolvedPage.locator('#forest-party').getAttribute('data-evolved'),'true');
     await leavePlay(evolvedPage);
