@@ -510,7 +510,8 @@ const assert=require('node:assert/strict');
    await loadoutPage.locator('[data-feature-dungeon]').click();
    assert.equal(await loadoutPage.locator('#forest-party-formation').isVisible(),false,
      'The ordinary one-tap adventure bypasses extra planning screens');
-   await loadoutPage.locator('#forest-explore-continue').click();
+   assert.equal(await loadoutPage.locator('.forest-attack-select').isVisible(),true,
+     'The ordinary adventure also bypasses the redundant intro confirmation');
    await loadoutPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
    assert.equal(await loadoutPage.locator('[data-tactic-ally="purupun"]').count(),1,
      'Previously selected reserves appear again in the next quick-start expedition');
