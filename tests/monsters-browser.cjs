@@ -2177,7 +2177,9 @@ const path=require('node:path');
       window.__silentSpeechClass=window.SpeechRecognition;
       window.__iosMicBusy=false;
       window.__iosMicInstances=[];
-      window.SpeechRecognition=class BusySpeech{
+      // The initial iPhone mock is a non-writable own property in WebKit.
+      // Redefine it explicitly; an assignment silently leaves SilentSpeech.
+      Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:class BusySpeech{
         start(){
           if(window.__iosMicBusy)throw new Error('WebKit audio service still in use');
           window.__iosMicBusy=true;
@@ -2186,7 +2188,7 @@ const path=require('node:path');
         }
         stop(){this.stopped=true;}
         abort(){this.aborted=true;}
-      };
+      }});
     });
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),1);
@@ -2221,7 +2223,7 @@ const path=require('node:path');
     await iosPage.evaluate(()=>{
       window.__iosMicBusy=false;
       window.__iosMicInstances[2].onend();
-      window.SpeechRecognition=window.__silentSpeechClass;
+      Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:window.__silentSpeechClass});
     });
     await leavePlay(iosPage);
     await enterHomePanel(iosPage,'forest');
