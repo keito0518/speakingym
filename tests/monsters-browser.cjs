@@ -645,10 +645,10 @@ const path=require('node:path');
     assert.match(await menuPage.locator('[data-practice-action="begin"]').innerText(),/本編の冒険を始める/);
     await menuPage.locator('[data-practice-action="begin"]').click();
     assert.equal(await menuPage.locator('#monsters-practice-battle').isVisible(),false);
-    assert.equal(await menuPage.locator('#forest-explore-screen').isVisible(),true,
-      'Beginner practice leads to the main story dungeon, not advanced tactics');
-    assert.equal(await menuPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
-      'Exploration between battles still fills a portrait screen after quick-start changes');
+    assert.equal(await menuPage.locator('.forest-attack-select').isVisible(),true,
+      'After the practice tutorial, the player goes straight to the real adventure attack choice');
+    assert.equal(await menuPage.locator('#forest-party-formation').isVisible(),false,
+      'Beginner practice never requires advanced party setup');
     assert.equal(await menuPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),practiceSaveAfter,
       'The practice must not award XP or change save data');
     await leavePlay(menuPage,{stay:true});
@@ -1291,6 +1291,8 @@ const path=require('node:path');
     assert.match(await weakPage.locator('#forest-weakness-summary').innerText(),/苦手の復習 1問/);
     await enterHomePanel(weakPage,'forest');
     await weakPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await weakPage.locator('#start-forest-simple').click();
+    assert.equal(await weakPage.locator('.forest-explore-depth .forest-depth-svg').getAttribute('preserveAspectRatio'),'xMidYMid slice',
+      'Optional exploration still fills the portrait screen after quick-start changes');
     await weakPage.locator('#forest-explore-continue').click();
     const firstAnswer=await weakPage.evaluate(async()=>{
       const {ALL_PROMPTS}=await import('./monster-data.js');
