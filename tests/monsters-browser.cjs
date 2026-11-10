@@ -2303,6 +2303,7 @@ const path=require('node:path');
     await iosPage.locator('#mic-button').click();
     await iosPage.evaluate(()=>window.__silentSpeech.onerror({error:'network'}));
     assert.match(await iosPage.locator('#speech-helper').innerText(),/接続できません/);
+    await iosPage.evaluate(()=>window.__silentSpeech.onend());
     await iosPage.locator('#spoken-answer').fill('Let me think about it.');
     assert.equal(await iosPage.locator('#show-answer').isEnabled(),true);
     await leavePlay(iosPage);
