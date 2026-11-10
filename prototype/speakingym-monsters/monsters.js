@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, recordLethalBattleReview, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
@@ -2202,13 +2202,10 @@ function showHint() {
 // An incomplete reply is review-worthy but is not a proven incorrect answer.
 function finishMissedBattle(status){
   const prompt=currentPrompt();
-  if(status==='incorrect'&&!play.quizMissRecorded){
-    const source=prompt.kind==='speak'?(play.micTranscript?'microphone':'keyboard'):'unknown';
-    persist(recordAnswer(save,prompt.id,'again',dayKey(),source).save);
-    play.quizMissRecorded=true;
-  }else if(status!=='incorrect'){
-    persist(flagUncertainReview(save,prompt.id));
-  }
+  const source=prompt.kind==='speak'?(play.micTranscript?'microphone':'keyboard'):'unknown';
+  const retained=recordLethalBattleReview(save,prompt.id,{status,alreadyRecorded:play.quizMissRecorded,inputSource:source});
+  if(retained.save!==save)persist(retained.save);
+  if(retained.recorded)play.quizMissRecorded=true;
   play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});
   finishSession(false,true);
   return 'finished';

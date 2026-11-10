@@ -619,6 +619,17 @@ export function flagUncertainReview(save,promptId,today=dayKey()) {
   if(!next.reviewPrompts[promptId]||next.reviewPrompts[promptId]>due)next.reviewPrompts[promptId]=due;
   return next;
 }
+// A terminal wrong answer bypasses the ordinary grading path. Persist the
+// exact missed exercise once, without treating an incomplete expression as a
+// confident English error or duplicating an earlier miss in the same turn.
+export function recordLethalBattleReview(save,promptId,{status,alreadyRecorded=false,today=dayKey(),inputSource='unknown'}={}){
+  if(!['incorrect','incomplete'].includes(status))throw Error('Invalid terminal battle result.');
+  if(status==='incorrect'){
+    if(alreadyRecorded)return {save,recorded:false};
+    return {save:recordAnswer(save,promptId,'again',today,inputSource).save,recorded:true};
+  }
+  return {save:flagUncertainReview(save,promptId,today),recorded:false};
+}
 export function compareWithExamples(prompt, answer) {
   const normalized = normalizeEnglish(answer);
   if (!normalized) return { matchesExample: false, empty: true };

@@ -20,7 +20,7 @@ import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '.
 import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, attemptedDungeonPromptIds, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
-import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, getEvolutionTrialGuide, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
+import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, getEvolutionTrialGuide, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, recordLethalBattleReview, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
 
 import { speakingFeedbackFor, conversationFeedbackFor } from '../prototype/speakingym-monsters/speaking-feedback.js';
 import { speakingHintSteps, beginnerClozeFor, answerAlignedOpening } from '../prototype/speakingym-monsters/speaking-guidance.js';
@@ -1888,6 +1888,23 @@ test('a lethal battle mistake stays in the saved next-day adventure and needs sp
     'One later-day correct answer does not instantly erase a confirmed weakness');
   assert.equal(clean.reviewPrompts[id],'2026-11-14',
     'The learner gets another later-day check rather than a same-day completion badge');
+});
+test('defeat records a fresh lethal miss exactly once and distinguishes incomplete replies',()=>{
+  const id='forest-grammar-yesterday-easy';
+  const first=recordLethalBattleReview(createSave(),id,{status:'incorrect',today:'2026-11-10'});
+  assert.equal(first.recorded,true);
+  assert.equal(first.save.totalAnswers,1,'A terminal mistake is not lost on an early defeat return');
+  assert.equal(first.save.quizProgress[id].misses,1);
+  assert.equal(first.save.reviewPrompts[id],'2026-11-10');
+  const repeated=recordLethalBattleReview(first.save,id,{status:'incorrect',alreadyRecorded:true,today:'2026-11-10'});
+  assert.equal(repeated.recorded,false);
+  assert.strictEqual(repeated.save,first.save,'An additional same-turn miss must not double-count learning attempts');
+  const partial=recordLethalBattleReview(createSave(),id,{status:'incomplete',today:'2026-11-10'});
+  assert.equal(partial.recorded,false);
+  assert.equal(partial.save.totalAnswers,0,'An incomplete answer is not a confirmed incorrect quiz');
+  assert.equal(partial.save.quizProgress[id],undefined);
+  assert.equal(partial.save.reviewPrompts[id],'2026-11-11','Incomplete language is still due for later recall');
+  assert.throws(()=>recordLethalBattleReview(createSave(),id,{status:'review'}),/Invalid terminal/);
 });
 test('all 174 objective quiz questions have a why, comparison and transfer lesson',()=>{
   const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
