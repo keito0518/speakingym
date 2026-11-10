@@ -1877,7 +1877,7 @@ function renderQuestion() {
         if(!play.quizMissRecorded){persist(recordAnswer(save,prompt.id,'again').save);play.quizMissRecorded=true;}
         if(play.mode==='forest'){
           play.encounterHelp=true;play.combo=0;syncBattleAura();
-          const outcome=play.tactics?.turn==='enemy'?counterEnemyDefenseMiss():counterPlayerMiss('incorrect');
+          const outcome=play.tactics?.turn==='enemy'?counterEnemyDefenseMiss('incorrect'):counterPlayerMiss('incorrect');
           if(outcome==='finished')return;
           if(outcome)$('#listening-status').textContent='聞き取り失敗！ 敵の攻撃を受けたよ。意味を確認して再挑戦しよう。';
         }
@@ -2197,9 +2197,18 @@ function showHint() {
   if(play.tactics?.turn==='player'){play.tactics.attackCommitted=true;renderTacticalControls();}
   renderHintPanel(steps,step);
 }
-// A lethal counter exits before normal grading records the question.
-function finishMissedBattle(){
+// A lethal counter exits before normal grading records the question. Preserve
+// its *exact* authored task for a later-day replay before ending the session.
+// An incomplete reply is review-worthy but is not a proven incorrect answer.
+function finishMissedBattle(status){
   const prompt=currentPrompt();
+  if(status==='incorrect'&&!play.quizMissRecorded){
+    const source=prompt.kind==='speak'?(play.micTranscript?'microphone':'keyboard'):'unknown';
+    persist(recordAnswer(save,prompt.id,'again',dayKey(),source).save);
+    play.quizMissRecorded=true;
+  }else if(status!=='incorrect'){
+    persist(flagUncertainReview(save,prompt.id));
+  }
   play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});
   finishSession(false,true);
   return 'finished';
@@ -2228,10 +2237,10 @@ function counterPlayerMiss(status){
   $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'BLOCK!';
   $('#forest-battle-log').textContent=`${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
   if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
-  if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle();
+  if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle(status);
   return true;
 }
-function counterEnemyDefenseMiss(){
+function counterEnemyDefenseMiss(status){
   const t=play?.mode==='forest'&&play.tactics?.turn==='enemy'?play.tactics:null;
   if(!t)return false;
   t.lastIndependentKind=null;
@@ -2250,7 +2259,7 @@ function counterEnemyDefenseMiss(){
     ?`${t.lastCoverNote} 正解にはならないので、英語は確認しよう。`
     :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
   if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
-  if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle();
+  if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle(status);
   return true;
 }
 async function gradeAnswer() {
@@ -2303,7 +2312,7 @@ async function gradeAnswer() {
     if(missResult==='finished')return;
     const playerCounteredNow=missResult===true;
     if(defending&&raw&&['incorrect','incomplete'].includes(grade.status)){
-      if(counterEnemyDefenseMiss()==='finished')return;
+      if(counterEnemyDefenseMiss(grade.status)==='finished')return;
     }
     if(['review','incomplete'].includes(grade.status) && raw)persist(flagUncertainReview(save,prompt.id));
     if(grade.status==='incomplete' && raw){

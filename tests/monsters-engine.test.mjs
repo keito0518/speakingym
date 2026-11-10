@@ -1862,6 +1862,26 @@ test('an overdue word or grammar point takes priority in a later forest encounte
   assert.equal(harder.prompts[2].difficulty,'normal');
   assert.equal(new Set(harder.prompts.map(prompt=>prompt.id)).size,8);
 });
+test('a lethal battle mistake stays in the saved next-day adventure and needs spaced independent recall',()=>{
+  const id='forest-grammar-yesterday-easy';
+  const lost=recordAnswer(createSave(),id,'again','2026-11-10').save;
+  const restored=validateSave(JSON.parse(JSON.stringify(lost)));
+  const tomorrow='2026-11-11';
+  assert.equal(restored.reviewPrompts[id],'2026-11-10');
+  const dueIds=Object.entries(restored.reviewPrompts).filter(([,due])=>due<=tomorrow).map(([promptId])=>promptId);
+  const weaknessIds=quizWeaknessOverview(restored,tomorrow).due.map(item=>item.id);
+  const nextWave=buildForestWave({difficulty:'easy',wave:1,areaId:'entry',
+    reviewPromptIds:dueIds,quizWeaknessIds:weaknessIds,random:()=>.25});
+  assert.ok(nextWave.prompts.some(prompt=>prompt.id===id),
+    'The original missed grammar question is replayed rather than only its topic');
+  const clean=recordAnswer(restored,id,'smooth',tomorrow).save;
+  assert.equal(clean.quizProgress[id].cleanStreak,1,
+    'A corrected answer on a later day counts as one real spaced recall');
+  assert.equal(clean.quizProgress[id].resolved,false,
+    'One later-day correct answer does not instantly erase a confirmed weakness');
+  assert.equal(clean.reviewPrompts[id],'2026-11-14',
+    'The learner gets another later-day check rather than a same-day completion badge');
+});
 test('all 174 objective quiz questions have a why, comparison and transfer lesson',()=>{
   const quizzes=ALL_PROMPTS.filter(prompt=>['vocab','grammar'].includes(prompt.kind));
   assert.equal(quizzes.length,174);

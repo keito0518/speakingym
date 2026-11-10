@@ -921,12 +921,14 @@ const assert=require('node:assert/strict');
    // until HP reaches zero; a fixed six misses is not enough on every engine.
    const wrongReplies=['I am a banana.','The sky is green.','That is my chair.',
      'We walk in the city.','This is my hat.','I like apples.'];
+   let finalMissedPromptId=null;
    for(let attempt=0;attempt<24;attempt++){
      if(await counterPage.locator('#result-view').isVisible())break;
      if(await counterPage.locator('.forest-attack-select').isVisible()){
        await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
      }
      if(await counterPage.locator('#show-answer').isVisible()){
+       finalMissedPromptId=await counterPage.locator('#play-card').getAttribute('data-prompt-id');
        await counterPage.locator('#spoken-answer').fill(wrongReplies[attempt%wrongReplies.length]);
        await counterPage.locator('#show-answer').click();
      }else if(await counterPage.locator('#next-question').isVisible()){
@@ -937,9 +939,23 @@ const assert=require('node:assert/strict');
      'A solo fighter is defeated once cumulative missed answers remove all HP');
    assert.equal(await counterPage.locator('#result-kicker').innerText(),'BATTLE LOST',
      'A defeat must not incorrectly be labeled training complete');
+   assert.ok(finalMissedPromptId,'The defeated learner attempted a specific authored question');
+   const missedReviewDue=await counterPage.evaluate(id=>{
+     const saved=JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1'));
+     return saved?.reviewPrompts?.[id]||null;
+   },finalMissedPromptId);
+   assert.match(missedReviewDue||'',/^\d{4}-\d{2}-\d{2}$/,
+     'The exact question that dealt a lethal counter must survive as a scheduled review');
    await counterPage.locator('#result-targeted-review').click();
    assert.equal(await counterPage.locator('#play-card').getAttribute('data-prompt-id'),missedGrammar,
      'Defeat review starts with the actual grammar attack that needed a correction');
+   await counterPage.reload({waitUntil:'networkidle'});
+   const restoredReviewDue=await counterPage.evaluate(id=>{
+     const saved=JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1'));
+     return saved?.reviewPrompts?.[id]||null;
+   },finalMissedPromptId);
+   assert.equal(restoredReviewDue,missedReviewDue,
+     'Defeat replay scheduling must persist after the game reloads');
    await counterContext.close();
    // Each different wrong listening meaning costs HP, while the same option
    // cannot be tapped twice to manufacture another attack.
