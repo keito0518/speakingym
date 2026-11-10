@@ -17,7 +17,7 @@ import { quizTeachingFor } from '../prototype/speakingym-monsters/forest-teachin
 import { quizRetryCoachFor, missingQuizWordMeanings } from '../prototype/speakingym-monsters/forest-quiz-retry-coach.js';
 import { bossConversationFor, bossConversationTurn } from '../prototype/speakingym-monsters/forest-boss-story.js';
 import { forestBossPhase, FOREST_BOSS_CHAPTERS, FOREST_BOSS_SIGNATURES } from '../prototype/speakingym-monsters/forest-boss-phases.js';
-import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
+import { DUNGEON_SKILLS, DUNGEON_CHAPTER_SKILLS, summarizeDungeonAttempt, attemptedDungeonPromptIds, dungeonBossBrief } from '../prototype/speakingym-monsters/dungeon-learning.js';
 import { FOREST_EVENTS, FOREST_NPC_DIALOGUES, forestEventFor, forestEventChoice, forestNpcDialogueFor } from '../prototype/speakingym-monsters/forest-events.js';
 import { SPEAKING_ADVENTURES } from '../prototype/speakingym-monsters/speaking-adventures.js';
 import { DIFFICULTIES, EVOLUTION_XP, SECOND_EVOLUTION_XP, STORAGE_KEY, VETTED_PARAPHRASES, VETTED_LEVEL_PARAPHRASES, addDays, chooseDifficulty, companionUnlockProgress, captureEligibleMonsters, compareWithExamples, createSave, feedMonster, evolveMonster, finishRound, getMonsterProgress, getEvolutionTrialGuide, learningSummary, reviewOverview, quizWeaknessOverview, masteryLevel, normalizeEnglish, normalizeEnglishNumbers, recordAnswer, flagUncertainReview, selectMonster, selectRoundPrompts, toggleSavedPrompt, savedReviewQueue, savedReviewPrompts, validateSave } from '../prototype/speakingym-monsters/monster-engine.js';
@@ -346,6 +346,13 @@ test('dungeon reports verified learning honestly and never count assisted route 
  assert.equal(summarizeDungeonAttempt('glade',[]).complete,false);
  assert.throws(()=>summarizeDungeonAttempt('unverified',[]),/Unknown/);
  assert.throws(()=>summarizeDungeonAttempt('entry',null),/Invalid/);
+});
+test('the victory comeback includes dynamically selected tactical answers outside the opening deck',()=>{
+  const ids=attemptedDungeonPromptIds({prompts:[{id:'repeat-station'}],
+    dungeonOutcomes:[{promptId:'forest-grammar-yesterday-easy',kind:'grammar',outcome:'independent'},
+      {promptId:'forest-vocab-ticket-easy',kind:'vocab',outcome:'review'}]});
+  assert.deepEqual([...ids],['repeat-station','forest-grammar-yesterday-easy','forest-vocab-ticket-easy']);
+  assert.equal(ids.has('unattempted-question'),false);
 });
 test('all ten dungeon bosses have three grounded learning objectives, not new mandatory story',()=>{
  assert.equal(Object.keys(DUNGEON_CHAPTER_SKILLS).length,10);

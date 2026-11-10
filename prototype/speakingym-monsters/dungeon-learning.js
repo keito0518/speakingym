@@ -23,6 +23,16 @@ export const DUNGEON_CHAPTER_SKILLS=Object.freeze({
  'ruins-core':Object.freeze({headline:'時間・順番・条件を正確に伝える',boss:['時間の条件を聞く','変更条件を組み立てる','誤解を防いで頼みごとをする']})
 });
 export const DUNGEON_OUTCOME_VALUES=Object.freeze(['independent','supported','review']);
+// Tactical player attacks and enemy defenses can replace the authored chapter
+// deck. Include those ACTUAL tasks when crediting a later-day comeback on the
+// result screen; otherwise the learner's hard-won recall remains invisible.
+export function attemptedDungeonPromptIds(ended){
+ const ids=new Set((ended.prompts||[]).map(prompt=>prompt?.id).filter(Boolean));
+ for(const outcome of ended.dungeonOutcomes||[]){
+  if(typeof outcome?.promptId==='string')ids.add(outcome.promptId);
+ }
+ return ids;
+}
 export function summarizeDungeonAttempt(areaId,encounters=[]){
  const area=DUNGEON_AREAS.find(a=>a.id===areaId);
  if(!area)throw Error('Unknown dungeon chapter');

@@ -38,7 +38,7 @@ import { setupHomeNavigation } from './home-navigation.js';
 import { createGachaCinematic } from './gacha-cinematic.js';
 import { createWeaponBattleSoundPlayer } from './weapon-battle-sound.js';
 import { summonWeaponArtwork } from './summon-weapon-art.js';
-import { summarizeDungeonAttempt, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
+import { summarizeDungeonAttempt, attemptedDungeonPromptIds, dungeonBossBrief, DUNGEON_SKILLS } from './dungeon-learning.js';
 import { dungeonVictoryRecapFor } from './dungeon-victory-recap.js';
 import { nextLearningQuestFor, learningProofFor, nextReturnCueFor, homeLearningSignalFor } from './next-learning-quest.js';
 import { savedReviewRecap, savedReviewTrend, rememberSavedReview } from './saved-review-coach.js';
@@ -2944,7 +2944,7 @@ function finishSession(timedOut=false,defeated=false) {
     $('#result-detail-panel').before(resultImprovement);
   }
   const previousWins=new Set(ended.improvementsAtStart||[]);
-  const attemptedIds=new Set(ended.prompts.map(prompt=>prompt.id));
+  const attemptedIds=attemptedDungeonPromptIds(ended);
   const newWins=improvementHighlightsFor(save,{today:dayKey(),limit:80})
     .filter(row=>attemptedIds.has(row.id)&&!previousWins.has(row.id));
   resultImprovement.hidden=!newWins.length;
