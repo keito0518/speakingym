@@ -2271,12 +2271,33 @@ const path=require('node:path');
     await iosPage.locator('#mic-button').click();
     assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),4,
       'The user can still start speech directly after a failed cue');
+    await iosPage.evaluate(()=>{
+      const fourth=window.__iosMicInstances[3];
+      fourth.finalReceived=true;
+      fourth.onresult({results:[Object.assign([{transcript:'One more try.'}],{isFinal:true})]});
+      window.__iosMicBusy=false;
+      fourth.onend();
+    });
+    await iosPage.locator('#mic-button').click();
+    const lateCue=await iosPage.evaluateHandle(()=>window.__iosRetryCue.onend);
+    await iosPage.locator('#native-ios-dictation').click();
+    await iosPage.locator('#spoken-answer').fill('Keep this answer.');
+    await lateCue.evaluate(callback=>callback());
+    assert.equal(await iosPage.locator('#spoken-answer').inputValue(),'Keep this answer.');
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),4,
+      'A late cue after keyboard handoff must never open another microphone');
+    await iosPage.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true})));
+    await iosPage.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));
+    assert.equal(await iosPage.locator('#mic-button').isVisible(),true,
+      'A page restored from the back-forward cache must still offer the microphone');
+    await iosPage.locator('#mic-button').click();
+    assert.equal(await iosPage.evaluate(()=>window.__iosMicInstances.length),5);
     await iosPage.locator('#spoken-answer').fill('Let me type this instead.');
     assert.equal(await iosPage.locator('#show-answer').isEnabled(),true,
       'Typing while an iPhone recognizer is stuck must unblock normal answer grading');
     await iosPage.evaluate(()=>{
       window.__iosMicBusy=false;
-      window.__iosMicInstances[3].onend();
+      window.__iosMicInstances[4].onend();
       Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:window.__silentSpeechClass});
     });
     await leavePlay(iosPage);

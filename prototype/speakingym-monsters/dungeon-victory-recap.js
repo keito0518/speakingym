@@ -65,7 +65,7 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
  const medalXp=safeAmount(ended.bossMedal?.bonusXp);
  const report=summarizeDungeonAttempt(ended.areaId,outcomes);
  const medalGoal=nextBossMedalGoal(ended.bossMedal);
- const needsReview=report.groups.find(group=>group.supported+group.review>0);
+ const needsReview=report.weakest;
  const recommendation=growth.canEvolve
   ?`${monsterName}の試練達成！「仲間を育てる」から進化させよう。`
   :goal!==null&&remaining<=wallet&&growth.trialCount<growth.requiredTrials
@@ -74,7 +74,7 @@ export function dungeonVictoryRecapFor(ended,save,{nextArea=null,canContinue=fal
   ?`${monsterName}の進化に必要なXPがあるよ！「仲間を育てる」で使おう。`
   :canContinue&&nextArea
   ?`次は「${nextArea.name}」へ！ 新しい英語の場面に挑戦しよう。`
-  :needsReview
+  :needsReview && needsReview.independent<needsReview.total
   ?`次は${needsReview.label}の復習がおすすめ。下の学習レポートから確認しよう。`
   :'次は難易度を上げるか、同じ場面を別の言い方で試そう。';
  return {

@@ -131,3 +131,9 @@ test('medal rematch shows accurate next-rank requirements and only the upgrade X
  assert.equal(dungeonVictoryRecapFor(scenario(),createSave()).medalGoal,null,
   'A historical or partial medal record must not invent a reachable rank');
 });
+
+test('victory review recommends the weakest practiced skill, regardless of display order',()=>{
+ const ended=scenario();
+ ended.dungeonOutcomes.push({kind:'listen',promptId:prompt('listen').id,outcome:'supported'});
+ assert.match(dungeonVictoryRecapFor(ended,createSave()).recommendation,/単語の復習/);
+});

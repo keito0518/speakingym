@@ -432,7 +432,8 @@ function openNativeDictation(){
   // iOS does not allow websites to press the keyboard's microphone button.
   // Focus must happen inside a real user tap; describe the remaining tap
   // honestly instead of pretending the browser recognizer is recording.
-  if(recognition)finishRecognition();
+  if(isIOSDevice())cancelPendingSpeech();
+  else if(recognition)finishRecognition();
   const field=$('#spoken-answer');
   if(!field||field.disabled)return;
   field.focus({preventScroll:false});
@@ -465,6 +466,17 @@ function clearIOSSpeechCue(){
   if(iosSpeechCue){iosSpeechCue.onend=null;iosSpeechCue.onerror=null;}
   iosSpeechCue=null;
 }
+// Keyboard input and page suspension supersede every outstanding mic request,
+// including a retry waiting for the cue or the previous recognizer's end.
+function cancelPendingSpeech(){
+  const pending=recognition||iosSpeechCue||queuedRecognitionSession;
+  queuedRecognitionSession=null;
+  if(iosSpeechCue){
+    clearIOSSpeechCue();
+    window.speechSynthesis?.cancel();
+  }
+  if(pending)stopRecognition();
+}
 function stopRecognition(mode='ready', options={}) {
   if(recognitionStartTimer)clearTimeout(recognitionStartTimer);
   if(recognitionWatchdog)clearTimeout(recognitionWatchdog);
@@ -486,6 +498,7 @@ function stopRecognition(mode='ready', options={}) {
     // A finalized transcript must close with stop(), never abort(): Safari
     // sometimes keeps the audio service busy if a final result is aborted.
     if(recognitionRetireTimer)clearTimeout(recognitionRetireTimer);
+    const answerField=$('#spoken-answer');
     retiringRecognition=active;
     active.onend=()=>recognitionReleased(active);
     recognitionRetireTimer=setTimeout(()=>{
@@ -494,9 +507,11 @@ function stopRecognition(mode='ready', options={}) {
         // A natural ending is preferred on iOS, but never trap the learner
         // indefinitely if a buggy recognizer refuses to dispatch `end`.
         try{active.stop();}catch{}
-        showSpeechFallback();
-        const helper=$('#speech-helper');
-        if(helper)helper.textContent='iPhone側で録音の終了を確認できません。下のiPhone標準音声入力でも続けられます。';
+        if(answerField && answerField===$('#spoken-answer') && !play?.revealed && !answerField.disabled){
+          showSpeechFallback();
+          const helper=$('#speech-helper');
+          if(helper)helper.textContent='iPhone側で録音の終了を確認できません。下のiPhone標準音声入力でも続けられます。';
+        }
       }
       recognitionReleased(active);
     },options.natural?5500:2000);
@@ -1201,7 +1216,7 @@ function renderAttackChoice(panel,t){
  // A second explanatory accordion made the choice screen feel like a manual.
  panel.innerHTML=`<div class="forest-attack-select" data-first-fight="${firstFight}" role="group" aria-label="攻撃タイプを先に選ぶ" ${firstFight?'aria-describedby="forest-first-attack-hint"':''}>
   <strong>${firstFight?'① あなたのターン · 攻撃を選ぶ':'あなたのターン · 攻撃を選ぶ'}</strong>
-  ${firstFight?'<span id="forest-first-attack-hint" class="forest-first-attack-hint">金色のWEAKは敵の弱点。正解するとダメージUP！</span>':''}
+  ${firstFight?'<span id="forest-first-attack-hint" class="forest-first-attack-hint">WEAKは敵の弱点。正解でダメージUP。</span>':''}
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}${focus?.kind===kind?'：復習対象':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak&&focus?.kind===kind?'<small>WEAK · 復習</small>':kind===affinity.weak?'<small>WEAK</small>':focus?.kind===kind?'<small>復習</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',event=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
@@ -1288,7 +1303,7 @@ function renderTacticalControls(){
    if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=foePlannedAttack({style:foeStyle,activeId:play.companionId,last:t.lastEnemyKind});
  }
- panel.innerHTML=`${firstFight?`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'③ 敵の反撃を防ごう':'② 問題に答えて攻撃しよう'}</strong><span>${incoming?`${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。`:'正解で攻撃、間違えたら敵が反撃！'}</span></p>`:''}<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
+ panel.innerHTML=`${firstFight?`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'③ 敵の反撃を防ごう':'② 正解で攻撃、ミスで反撃'}</strong>${incoming?`<span>${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。</span>`:''}</p>`:''}<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
@@ -1748,7 +1763,7 @@ function renderQuestion() {
     $('#speech-helper').after(keyboardButton);
     keyboardButton.addEventListener('click',openNativeDictation);
     $('#spoken-answer').addEventListener('focus',()=>{
-      if(recognition)stopRecognition();
+      cancelPendingSpeech();
       $('#speech-helper').textContent='入力欄が選ばれたよ。英語キーボードに切り替えて、キーボードのマイクを押してね。';
     });
     if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
@@ -1782,7 +1797,7 @@ function renderQuestion() {
     // A user who types while an iPhone recognizer is silent has chosen the
     // fallback. Release that recognizer and re-enable judging their text;
     // otherwise the disabled submit button traps the entire battle.
-    if(recognition&&isIOSDevice())stopRecognition('ready');
+    if(isIOSDevice())cancelPendingSpeech();
     if(!recognition&&!quizMode)micView('ready');
   });
   if(!quizMode){
@@ -1999,7 +2014,7 @@ function startRecognition(options={}) {
     // one restart while WebKit releases the previous microphone session.
     queuedRecognitionSession=play;
     micView('finishing');
-    if(helper)helper.textContent='マイクを準備中… 前の録音が終わり次第、もう一度録音します。';
+    if(helper)helper.textContent=isIOSDevice()?'前の録音を終了中です。準備ができたら「話す」を押してください。':'前の録音が終わるまでお待ちください。';
     return;
   }
   queuedRecognitionSession=null;
@@ -2101,7 +2116,7 @@ function startRecognition(options={}) {
       field.classList.toggle('transcript-interim',!finalized);
       field.setAttribute('aria-label',finalized?'音声認識が確定した英文':'リアルタイムで聞き取った英文（認識中）');
       if(helper)helper.textContent=finalized
-        ?'聞き取った英文を表示しました。確認して「答えを判定する」を押してね。'
+        ?'英文を確認して回答を送ってください。'
         :'聞き取り中… 英文がリアルタイムで表示されています（まだ確定前）。';
       if(finalized){
         if(isIOSDevice())iosSpeechCueDue=true;
@@ -3583,7 +3598,7 @@ window.addEventListener('storage',event=>{
   syncUnreadableSaveUI();
 });
 window.addEventListener('pagehide',()=>{
-  cancelAutoAdvance();stopRecognition('done');pauseInterruptedListening();
+  cancelAutoAdvance();cancelPendingSpeech();pauseInterruptedListening();
 });
 $('#battle-sound-toggle').addEventListener('click',()=>{
   const button=$('#battle-sound-toggle');
@@ -3595,7 +3610,7 @@ $('#battle-sound-toggle').addEventListener('click',()=>{
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
     cancelAutoAdvance();
-    if(recognition)stopRecognition();
+    cancelPendingSpeech();
     pauseInterruptedListening();
   }
 });
