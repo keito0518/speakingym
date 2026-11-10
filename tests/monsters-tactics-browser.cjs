@@ -538,8 +538,8 @@ const assert=require('node:assert/strict');
    assert.equal(await loadoutPage.locator('[data-tactic-action="assist"]').count(),0,
      'No team-up option appears in solo mode');
    assert.match(await loadoutPage.locator('.forest-tactic-strategy > summary').innerText(),/必殺 0\/3/);
-   assert.equal(await loadoutPage.locator('#forest-party-hp').getAttribute('aria-valuemax'),'9',
-     'Solo Lv.4 ally retains its own HP growth but not the party resonance bonus');
+   assert.equal(await loadoutPage.locator('#forest-party-hp').getAttribute('aria-valuemax'),'13',
+     'Solo Lv.4 ally uses the 12 HP solo baseline plus its own Lv.4 growth, without team resonance');
    const soloSave=await loadoutPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
    assert.equal(soloSave.selectedMonster,'katappo','Solo adventure keeps the selected companion');
    assert.deepEqual(soloSave.battleFormation,storedLoadout.battleFormation,
