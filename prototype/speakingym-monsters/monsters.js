@@ -12,7 +12,7 @@ import { BOSS_MEDAL_NAMES, evaluateBossMedal } from './boss-mastery.js';
 import { forestWorldArt } from './forest-world.js';
 import { buildForestWave, DIFFICULTY_TRIES, opponentFor, enemyTacticFor, FOREST_WAVE_LENGTH, REGULAR_ENCOUNTERS, AREA_BOSSES, BOSS_HITS, specialStrike, regularEncountersFor, forestWaveLengthFor } from './forest-battle.js';
 import { BATTLE_KINDS, BATTLE_LABELS, ULTIMATE_MAX, MASTERY_LEVEL, foeAffinity, allyAffinity, allySkill, masterySkillFor, masteryEffectFor, supportPartnerFor, supportComboFor, evolvedSupportTalent, advanceUltimate, advanceBattleChain, battleChainTier, pickBattleSpectacle, strikeFor, incomingHit, shouldCounterPlayerMiss, nextEnemyKind, foeStyleFor, foeBattleAffinity, foeStyledStrike, foePlannedAttack, foeAttackPressure, bossAttackFor, bossCounterFor, bossReserveCoverFor, bossFormationLinkPlan, bossFormationLinkFor, pickBattlePrompt } from './battle-tactics.js';
-import { battleImpactFor, battlePayoffFor } from './battle-impact.js';
+import { battleImpactFor, battlePayoffFor, battleLogSummaryFor } from './battle-impact.js';
 import { createBattleParty, levelHpBonus, editBattleFormation, fighterHealth, applyFighterDamage, healFighter, firstStandingAlly, consumeTacticalSwap, canTacticalSwap, restorePartyForNextWave, encounterVitality } from './battle-party.js';
 import {plannedBattleFormation,formationResonance,recommendBattleFormation} from './battle-formation.js';
 import { enemyArt } from './forest-enemies.js';
@@ -2444,7 +2444,7 @@ async function gradeAnswer() {
   }
   stopAudio();
   $('#show-answer').disabled=true;$('#show-hint').disabled=true;$('#spoken-answer').disabled=true;micView('done');
-  let battlePayoff=null;
+  let battlePayoff=null,battleDetailLog='';
   if(play.mode==='forest'&&play.tactics?.turn==='enemy'){
     const t=play.tactics;
     const hit=t.defenseHitTaken?{damage:0,blocked:false}:
@@ -2640,6 +2640,10 @@ async function gradeAnswer() {
     $('#forest-battle-log').textContent=t
       ?sealNote+`${companionName}の${usedUltimate?'必殺技！':`${BATTLE_LABELS[attackKind]}攻撃！`} ${ascensionNote}${weaponNote}${techniqueNote}${duoNote}${masteryNote}${counterNote}${linkNote}${special.pierce?'耐性を突破！ ':special.weak?'弱点をついた！ ':special.resist?'敵に耐性あり！ ':''}${styled?.mitigated?'敵の殻に威力を1防がれた！ ':''}${special.repeatPenalty?'連続攻撃で威力−1。 ':''}${special.damage}ダメージ。${boss?`封印を1枚解除（${play.bossHits}/${BOSS_HITS}、ダメージとは別）。 `:''}${bossUltimateBarrier?'必殺バリア発動！ 次の敵の反撃を2軽減。 ':''}${shiftNote}${healed?`味方HP＋${healed}。 `:''}${defeated?` ${foe.name}をたおした！`:t.playerMissCountered?'敵はすでに反撃済み。次は味方の攻撃！':'次は敵の反撃！'}${dropNote}`
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
+    if(t){
+      battleDetailLog=$('#forest-battle-log').textContent;
+      $('#forest-battle-log').textContent=`${battleLogSummaryFor(battlePayoff)} ${battleDetailLog}`;
+    }
     if(t)renderTacticalControls();
   }
   // Count clean attack AND defense answers. A tactical round alternates the
@@ -2668,7 +2672,8 @@ async function gradeAnswer() {
     ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong></div>':'';
   const learningPulse=autoForest&&!transcriptPractice?forestLearningPulseHtml(prompt,raw,grade,{hinted:rating==='hint'}):'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
-  const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
+  const battleDetailHtml=battleDetailLog?`<p class="forest-checking-note"><strong>戦闘効果の内訳</strong> ${escapeHtml(battleDetailLog)}</p>`:'';
+  const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}${battleDetailHtml}`;
   const answerPreview=prompt.kind==='listen'
     ?(autoForest?`<div class="feedback-answer forest-listen-answer">${escapeHtml(listeningChallengeFor(prompt).options[listeningChallengeFor(prompt).correctIndex])}</div>`:'')
     :`<div class="feedback-answer">${escapeHtml(prompt.answer)}</div>`;

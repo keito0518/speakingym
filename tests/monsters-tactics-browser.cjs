@@ -395,6 +395,14 @@ const assert=require('node:assert/strict');
          'A large impact badge must distinguish the ultimate from ordinary hits');
        assert.equal(Number(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow')),Math.max(0,initialHp-damage));
        assert.match(await page.locator('#forest-battle-log').innerText(),new RegExp(`${damage}ダメージ`));
+       const compactLog=await page.locator('#forest-battle-log').textContent();
+       assert.match(compactLog,/^敵に\d+ダメージ！ (?:残りHP \d+\/\d+|撃破！)/,
+         'The clipped mobile battle log must lead with actual damage and remaining HP');
+       assert.equal(await page.locator('#forest-success-explanation').evaluate(el=>el.open),false,
+         'Verbose battle mechanics must stay behind the optional learning detail');
+       await page.locator('#forest-success-explanation > summary').click();
+       assert.match(await page.locator('#forest-success-explanation').innerText(),/戦闘効果の内訳.*必殺技！/s,
+         'The full tactical log must remain available to curious learners');
      }
      if(width===320){
        // The simple and tactical dungeon share the same full-screen arena;

@@ -37,3 +37,16 @@ export function battlePayoffFor({turn='attack',damage=0,impact='normal',
  return {turn:turn==='defense'?'defense':'attack',impact,title,amountLabel,remainder,
   current:hp,max,percent:Math.round(100*hp/max)};
 }
+
+// The arena console is clipped to two lines on phones. Lead with the verified
+// outcome rather than a list of passive bonuses that hides the damage/HP.
+// Keep the full turn log in the optional explanation for interested players.
+export function battleLogSummaryFor(payoff){
+ if(!payoff||payoff.turn!=='attack')return '';
+ if(payoff.title==='SEAL BREAK!'){
+  const cleared=payoff.max-payoff.current;
+  return `封印 ${cleared}/${payoff.max} 解除！${payoff.current?'':'ボス突破！'}`;
+ }
+ const amount=Number(String(payoff.amountLabel).match(/\d+/)?.[0]||0);
+ return `敵に${amount}ダメージ！ ${payoff.current?`残りHP ${payoff.current}/${payoff.max}`:'撃破！'}`;
+}
