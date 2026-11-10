@@ -930,7 +930,10 @@ const assert=require('node:assert/strict');
    const hpAfter=Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
    assert.ok(hpAfter<hpBefore,'Confirmed mistake triggers an immediate enemy attack before any correct answer');
    assert.equal(await counterPage.locator('#forest-world-stage').getAttribute('data-cinematic'),'enemy');
-   assert.match(await counterPage.locator('#forest-battle-log').textContent(),/反撃！/);
+   const firstCounterLog=await counterPage.locator('#forest-battle-log').textContent();
+   assert.match(firstCounterLog,new RegExp(`^敵の攻撃で${hpBefore-hpAfter}ダメージ！ 味方HP ${hpAfter}/`),
+     'The small battle log leads with actual damage and remaining HP');
+   assert.match(firstCounterLog,/反撃！/);
    await counterPage.locator('#spoken-answer').fill('still wrong');
    await counterPage.locator('#show-answer').click();
    const hpAfterSecond=Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));

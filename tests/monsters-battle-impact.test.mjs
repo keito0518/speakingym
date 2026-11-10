@@ -52,7 +52,11 @@ test('mobile battle log starts with real damage and remaining HP before optional
   assert.equal(battleLogSummaryFor(battlePayoffFor({boss:true,sealsBroken:3,sealsTotal:3,damage:5})),
     '封印 3/3 解除！ボス突破！');
   assert.equal(battleLogSummaryFor(battlePayoffFor({turn:'defense',damage:1,partyHp:2,partyMax:3})),
-    '','defense reports its own outcome instead of a false damage-to-enemy line');
+    '敵の攻撃で1ダメージ！ 味方HP 2/3','defense reports damage to the ally, not to the enemy');
+  assert.equal(battleLogSummaryFor(battlePayoffFor({turn:'defense',damage:0,partyHp:3,partyMax:3})),
+    '敵の攻撃を防御！ 味方HP 3/3','a full block still shows current ally HP');
+  assert.equal(battleLogSummaryFor(battlePayoffFor({turn:'defense',damage:0,partyHp:3,partyMax:3,covered:true})),
+    '仲間が援護！ 味方HP 3/3','legacy cover cases do not fabricate damage');
 });
 
 test('defense payoff reflects blocked, damaged and covered outcomes separately',()=>{

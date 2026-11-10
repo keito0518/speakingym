@@ -42,7 +42,15 @@ export function battlePayoffFor({turn='attack',damage=0,impact='normal',
 // outcome rather than a list of passive bonuses that hides the damage/HP.
 // Keep the full turn log in the optional explanation for interested players.
 export function battleLogSummaryFor(payoff){
- if(!payoff||payoff.turn!=='attack')return '';
+ if(!payoff)return '';
+ if(payoff.turn==='defense'){
+  const health=`味方HP ${payoff.current}/${payoff.max}`;
+  if(payoff.title==='COVER!')return `仲間が援護！ ${health}`;
+  if(payoff.title==='GUARD!')return `敵の攻撃を防御！ ${health}`;
+  const amount=Number(String(payoff.amountLabel).match(/\d+/)?.[0]||0);
+  return `敵の攻撃で${amount}ダメージ！ ${health}`;
+ }
+ if(payoff.turn!=='attack')return '';
  if(payoff.title==='SEAL BREAK!'){
   const cleared=payoff.max-payoff.current;
   return `封印 ${cleared}/${payoff.max} 解除！${payoff.current?'':'ボス突破！'}`;

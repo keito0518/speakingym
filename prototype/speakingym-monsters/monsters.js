@@ -2210,6 +2210,12 @@ function finishMissedBattle(status){
   finishSession(false,true);
   return 'finished';
 }
+function defenseOutcomeHeadline(damage,covered=false){
+  const t=play?.tactics;
+  if(!t)return '';
+  return battleLogSummaryFor(battlePayoffFor({turn:'defense',damage,
+    partyHp:t.hp,partyMax:t.maxHp,covered}));
+}
 function counterPlayerMiss(status){
   const t=play?.mode==='forest'&&play.tactics?.turn==='player'?play.tactics:null;
   if(!t||!shouldCounterPlayerMiss({status,hasInput:true,turn:t.turn}))return false;
@@ -2232,7 +2238,7 @@ function counterPlayerMiss(status){
   if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
   playBattleCinematic('enemy');
   $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'BLOCK!';
-  $('#forest-battle-log').textContent=`${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
+  $('#forest-battle-log').textContent=`${defenseOutcomeHeadline(rescue.activeDamage,Boolean(rescue.partnerId)&&!rescue.activeDamage)} ${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
   if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
   if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle(status);
   return true;
@@ -2252,9 +2258,9 @@ function counterEnemyDefenseMiss(status){
   if(rescue.activeDamage)arena.classList.add('forest-player-damaged');
   playBattleCinematic('enemy');
   $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'GUARDED';
-  $('#forest-battle-log').textContent=rescue.partnerId
+  $('#forest-battle-log').textContent=`${defenseOutcomeHeadline(rescue.activeDamage,Boolean(rescue.partnerId)&&!rescue.activeDamage)} ${rescue.partnerId
     ?`${t.lastCoverNote} 正解にはならないので、英語は確認しよう。`
-    :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
+    :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`}`;
   if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
   if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle(status);
   return true;
@@ -2469,7 +2475,7 @@ async function gradeAnswer() {
     updateEnemyHealth();
     renderTacticalControls();
     battlePayoff=battlePayoffFor({turn:'defense',damage:t.lastHitDamage,partyHp:t.hp,
-      partyMax:t.maxHp,covered:Boolean(rescue?.partnerId||t.lastCoverNote)});
+      partyMax:t.maxHp,covered:!t.lastHitDamage&&Boolean(rescue?.partnerId||t.lastCoverNote)});
   }
   if(play.mode==='forest'&&play.tactics?.turn!=='enemy'){
     const boss=play.index>=regularCount();
@@ -2645,6 +2651,10 @@ async function gradeAnswer() {
       $('#forest-battle-log').textContent=`${battleLogSummaryFor(battlePayoff)} ${battleDetailLog}`;
     }
     if(t)renderTacticalControls();
+  }
+  if(battlePayoff?.turn==='defense'){
+    battleDetailLog=$('#forest-battle-log').textContent;
+    $('#forest-battle-log').textContent=`${battleLogSummaryFor(battlePayoff)} ${battleDetailLog}`;
   }
   // Count clean attack AND defense answers. A tactical round alternates the
   // two, so resetting on each enemy turn made its old combo effect unreachable.
