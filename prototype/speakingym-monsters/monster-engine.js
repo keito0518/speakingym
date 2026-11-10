@@ -495,10 +495,10 @@ export const VETTED_LEVEL_PARAPHRASES=Object.freeze({
   // Entrance-forest speaking: reward *equivalent intentions*, not a particular
   // model wording. Easy, normal and hard each have their own requirements;
   // future promises, changed locations and dropped hard details stay review.
-  'entry-speak-meet-at-gate-easy':["I'm waiting next to the gate.","I'm standing by the gate, waiting.","I'm beside the gate waiting for you."],
-  'entry-speak-find-the-way-easy':['Can you show me how to find the entrance?','Could you help me get to the entrance?','Can you help me locate the entrance?'],
-  'entry-speak-check-bridge-safety-easy':['Is it safe to cross this bridge?','Can I cross this bridge safely?','Would it be safe for us to cross this bridge?'],
-  'entry-speak-offer-trail-help-easy':['Would you like me to carry your bag?','Do you need a hand with your bag?','I can help you carry that bag.','Can I help you carry that?'],
+  'entry-speak-meet-at-gate-easy':["I'm waiting next to the gate.","I'm standing by the gate, waiting.","I'm beside the gate waiting for you.","I'm waiting right by the gate."],
+  'entry-speak-find-the-way-easy':['Can you show me how to find the entrance?','Could you help me get to the entrance?','Can you help me locate the entrance?','Could you show me the way to the entrance?'],
+  'entry-speak-check-bridge-safety-easy':['Is it safe to cross this bridge?','Can I cross this bridge safely?','Would it be safe for us to cross this bridge?','Is this bridge safe to walk across?'],
+  'entry-speak-offer-trail-help-easy':['Would you like me to carry your bag?','Do you need a hand with your bag?','I can help you carry that bag.','Can I help you carry that?','Shall I carry your bag for you?'],
   'entry-speak-meet-at-gate-normal':["I'm at the wooden bridge. Could you come here?","I'm here at the wooden bridge. Can we meet here?"],
   'entry-speak-find-the-way-normal':['I think I went the wrong way. Can you tell me how to get back?','I may have taken the wrong trail. Could you help me return?'],
   'entry-speak-check-bridge-safety-normal':['After the rain, is the bridge safe to use? Is there a different route?','Is it safe to cross the bridge after the rain, or should we use another path?'],

@@ -223,12 +223,17 @@ const assert=require('node:assert/strict');
        'A redundant continue instruction should not compete with the next-turn button');
      assert.equal(await page.locator('.forest-learning-pulse').count(),1,
        `${engine}/${width}: the first verified hit must immediately offer a learning takeaway`);
+     const details=page.locator('#forest-success-explanation');
+     assert.equal(await details.getAttribute('open'),null);
+     assert.equal(await details.locator('.forest-learning-pulse').isVisible(),false);
+     assert.equal(await page.locator('#next-question').isVisible(),true);
+     await details.locator('summary').click();
      for(const field of ['achieved','tip','next']){
-       assert.ok((await page.locator(`.forest-learning-pulse [data-field="${field}"]`).innerText()).length>10,
-         `${engine}/${width}: ${field} gives specific study guidance`);
+       const line=details.locator(`.forest-learning-pulse [data-field="${field}"]`);
+       assert.equal(await line.isVisible(),true);
+       assert.ok((await line.innerText()).length>10);
      }
-     assert.equal(await page.locator('#forest-success-explanation').getAttribute('open'),null,
-       'The full explanation should be optional');
+     await details.locator('summary').click();
      const takeawayLayout=await page.evaluate(()=>{
        const next=document.querySelector('#next-question');
        const takeaway=document.querySelector('.forest-learning-pulse');
@@ -894,6 +899,7 @@ const assert=require('node:assert/strict');
      `WEAK label must never cover the monster sprite: ${JSON.stringify(weaknessLayout)}`);
    await counterPage.locator('.forest-tactic-strategy > summary').click();
    await counterPage.locator('.forest-tactic-strategy > summary').click();
+   const missedGrammar=await counterPage.locator('#play-card').getAttribute('data-prompt-id');
    const hpBefore=Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow'));
    await counterPage.locator('#spoken-answer').fill('wrong answer');
    await counterPage.locator('#show-answer').click();
@@ -931,6 +937,9 @@ const assert=require('node:assert/strict');
      'A solo fighter is defeated once cumulative missed answers remove all HP');
    assert.equal(await counterPage.locator('#result-kicker').innerText(),'BATTLE LOST',
      'A defeat must not incorrectly be labeled training complete');
+   await counterPage.locator('#result-targeted-review').click();
+   assert.equal(await counterPage.locator('#play-card').getAttribute('data-prompt-id'),missedGrammar,
+     'Defeat review starts with the actual grammar attack that needed a correction');
    await counterContext.close();
    // Each different wrong listening meaning costs HP, while the same option
    // cannot be tapped twice to manufacture another attack.

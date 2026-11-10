@@ -240,7 +240,7 @@ function forestLearningPulseHtml(prompt,learnerAnswer,grade,{hinted=false}={}){
  const pulse=forestLearningPulseFor(prompt,grade,{answer:learnerAnswer,hinted});
  if(!pulse)return '';
  return `<section class="forest-learning-pulse" aria-label="今回の英語の学び" data-learning-kind="${escapeHtml(pulse.kind)}">
-  <div class="forest-learning-pulse-head"><strong>今回の学びをゲット！</strong><span>${escapeHtml(pulse.badge)}</span></div>
+  <div class="forest-learning-pulse-head"><strong>今回の表現</strong><span>${escapeHtml(pulse.badge)}</span></div>
   <p data-field="achieved"><strong>${escapeHtml(pulse.achievedLabel)}</strong><span>${escapeHtml(pulse.achieved)}</span></p>
   <p data-field="tip"><strong>表現のコツ</strong><span>${escapeHtml(pulse.tip)}</span></p>
   <p data-field="next"><strong>次の一歩</strong><span>${escapeHtml(pulse.next)}</span></p>
@@ -2197,6 +2197,13 @@ function showHint() {
   if(play.tactics?.turn==='player'){play.tactics.attackCommitted=true;renderTacticalControls();}
   renderHintPanel(steps,step);
 }
+// A lethal counter exits before normal grading records the question.
+function finishMissedBattle(){
+  const prompt=currentPrompt();
+  play.dungeonOutcomes.push({promptId:prompt.id,kind:prompt.kind,outcome:'review'});
+  finishSession(false,true);
+  return 'finished';
+}
 function counterPlayerMiss(status){
   const t=play?.mode==='forest'&&play.tactics?.turn==='player'?play.tactics:null;
   if(!t||!shouldCounterPlayerMiss({status,hasInput:true,turn:t.turn}))return false;
@@ -2221,7 +2228,7 @@ function counterPlayerMiss(status){
   $('#forest-world-fx').textContent=rescue.partnerId?'COVER!':rescue.activeDamage?`−${rescue.activeDamage} HP`:'BLOCK!';
   $('#forest-battle-log').textContent=`${foe.name}の反撃！ ${BATTLE_LABELS[attack]}で味方HP−${rescue.activeDamage}。答えを直して反撃しよう。`;
   if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
-  if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return 'finished';}
+  if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle();
   return true;
 }
 function counterEnemyDefenseMiss(){
@@ -2243,7 +2250,7 @@ function counterEnemyDefenseMiss(){
     ?`${t.lastCoverNote} 正解にはならないので、英語は確認しよう。`
     :`敵の${BATTLE_LABELS[t.enemyKind]}攻撃！ 味方HP−${rescue.activeDamage}。英語を確認して言い直そう。`;
   if(rescue.autoSwitchedTo)$('#forest-battle-log').textContent+=` ${monsterFor(rescue.autoSwitchedTo).name}が交代！`;
-  if(!firstStandingAlly(t.party,play.companionId)){finishSession(false,true);return 'finished';}
+  if(!firstStandingAlly(t.party,play.companionId))return finishMissedBattle();
   return true;
 }
 async function gradeAnswer() {
@@ -2652,7 +2659,7 @@ async function gradeAnswer() {
   const checkingNote=transcriptPractice?'音声の再生を確認できなかったため、字幕を読んで意味を練習したよ。聞き取りの実績・XP・定着記録には含めていません。':prompt.kind==='listen'?'音声を聞き、正しい意味を選べたかを確認したよ。スピーキングや発音の判定はしていません。':objectiveQuiz?'この問題では登録された単語・語順との一致を確認しているよ。':grade.method==='semantic-beta'?'AIによる意味の確認（試験運用）です。発音評価ではありません。':'教材ごとの簡易判定です。発音や自由な言い回しを完全に採点するものではありません。';
   const expressionCoaching=grade.coaching?`<div class="speaking-natural-coaching"><strong>意味はOK！ もっと自然に言うなら</strong><p>${escapeHtml(grade.coaching)}</p><span lang="en">${escapeHtml(grade.preferredAnswer||prompt.answer)}</span></div>`:'';
   const acceptedVariant=!objectiveQuiz&&prompt.kind!=='listen'&&grade.method==='registered-example'&&normalizeEnglish(raw)!==normalizeEnglish(prompt.answer)
-    ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong><p>登録済みの言い換えとして意味を確認できたよ。表示された例文だけが正解ではないよ。</p></div>':'';
+    ?'<div class="speaking-natural-coaching"><strong>その言い方でもOK！</strong></div>':'';
   const learningPulse=autoForest&&!transcriptPractice?forestLearningPulseHtml(prompt,raw,grade,{hinted:rating==='hint'}):'';
   const defending=autoForest&&play.tactics?.turn==='enemy';
   const correctBody=`${explanationHtml}<p class="forest-checking-note">${checkingNote}</p>${retentionNote}${quizLearningNote}`;
@@ -2662,7 +2669,7 @@ async function gradeAnswer() {
   const nextLabel=defending?'自分のターンへ →':autoForest&&play.tactics?'次のターンへ →':autoForest?'今すぐ次へ →':'次の問題へ →';
   const nextButton=`<button id="next-question" class="grading-next">${nextLabel}</button>`;
   const learningDetails=autoForest
-    ?`<details id="forest-success-explanation" class="forest-success-explanation"><summary>解説・復習のポイントを見る</summary><div class="forest-success-explanation-body">${correctBody}</div></details>`
+    ?`<details id="forest-success-explanation" class="forest-success-explanation"><summary>解説・復習のポイントを見る</summary><div class="forest-success-explanation-body">${learningPulse}${correctBody}</div></details>`
     :correctBody;
   const roleplayReaction=play.roleplay?.history[play.index];
   const roleplayReply=roleplayReaction?`<p class="roleplay-reply" data-roleplay-branch="${roleplayReaction.branch}"><strong>${escapeHtml(play.roleplay.partner)}：${roleplayReaction.branch==='alternate'?'言い換えに反応！':''}</strong><span lang="en">${escapeHtml(roleplayReaction.response)}</span><small>${escapeHtml(roleplayReaction.responseJa)} · 次の会話へ進もう。</small></p>`:'';
@@ -2673,7 +2680,7 @@ async function gradeAnswer() {
   const lootPulse=play.justDroppedWeapon?`<p class="forest-drop-flash"><strong>EPIC DROP!</strong><span>${escapeHtml(play.justDroppedWeapon.name)}を獲得！ 図鑑で装備できるよ。</span></p>`:'';
   const voiceStrike=autoForest&&!defending&&prompt.kind==='speak'&&inputSource==='microphone'&&rating==='smooth'
     ?'<p class="forest-voice-strike"><strong>VOICE STRIKE</strong><span>マイクで英語を答えて攻撃！</span></p>':'';
-  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${battlePayoffHtml(battlePayoff)}${learningWinHtml(learningWin)}${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningPulse}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
+  $('#feedback-panel').innerHTML=`<div class="feedback-box grading-correct" role="status"><div class="feedback-head">${transcriptPractice?'字幕で意味を復習したよ！':defending?'防御を確認！':autoForest&&play.tactics?(play.tactics.pendingAdvance?'関門突破！':'攻撃成功！'):autoForest?'関門突破！':'内容を確認できた！'} +${reward.xp} XP</div>${battlePayoffHtml(battlePayoff)}${learningWinHtml(learningWin)}${voiceStrike}${streakNote}${lootPulse}${answerPreview}${acceptedVariant}${expressionCoaching}${roleplayReply}${autoForest?`${nextButton}${learningDetails}`:`${learningDetails}${nextButton}${conversationPolishHtml(prompt)}`}</div>`;
   attachFeedbackBookmark(prompt);
   if(!autoForest)wireConversationPolish(prompt,raw);
   $('#next-question').addEventListener('click',defending?finishEnemyTurn:advanceQuestion);
@@ -2812,7 +2819,8 @@ function renderDungeonLearningReport(ended){
  region.hidden=ended.mode!=='forest';
  if(region.hidden){region.replaceChildren();return;}
  const report=summarizeDungeonAttempt(ended.areaId,ended.dungeonOutcomes||[]);
- const replayable=new Set(ended.prompts.map(p=>p.id));
+ // Tactical attacks and defenses can draw outside the initial chapter deck.
+ const replayable=new Set(ALL_PROMPTS.map(p=>p.id));
  lastDungeonReviewIds=report.retryIds.filter(id=>replayable.has(id));
  const groups=report.groups.map(row=>{
    const ratio=Math.round(100*row.independent/row.total);

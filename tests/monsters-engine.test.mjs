@@ -2420,3 +2420,17 @@ test('original companions use the pixel atlas and expanded companions have origi
   assert.match(enemyArt(id),/href="\.\/pixel-enemies.png"/,id);
  }
 });
+
+test('opening forest accepts everyday alternatives but preserves roles, timing and destinations',()=>{
+ const cases=[
+  ['meet-at-gate',"I'm waiting right by the gate.","I'll wait by the gate tomorrow."],
+  ['find-the-way','Could you show me the way to the entrance?','Could you show me the way to the exit?'],
+  ['check-bridge-safety','Is this bridge safe to walk across?','This bridge is unsafe to walk across.'],
+  ['offer-trail-help','Shall I carry your bag for you?','Will you carry my bag for me?']
+ ];
+ for(const [scene,alternative,changedMeaning] of cases){
+   const task=ALL_PROMPTS.find(item=>item.id===`entry-speak-${scene}-easy`);
+   assert.equal(gradeLocalResponse(task,alternative).status,'correct',alternative);
+   assert.notEqual(gradeLocalResponse(task,changedMeaning).status,'correct',changedMeaning);
+ }
+});
