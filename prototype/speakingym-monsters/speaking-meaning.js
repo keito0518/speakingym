@@ -28,7 +28,11 @@ export function gradeDelayMeaning(raw, requiredMinutes){
  if(match){
    const minutes=numberValue(match[1]||match[2]);
    // Time information must concern *the speaker's arrival*, not someone else.
-   const speaker=/\b(?:i|i'll|i'm|my arrival|running)\b/.test(text);
+   // Bind the speaker to the delay clause. "I think the bus is running
+   // ten minutes late" describes the bus, despite containing both I and running.
+   const beforeTime=text.slice(0,match.index).trimEnd();
+   const speaker=/\b(?:i(?:'m| am|'ll| will| should| expect to)|my arrival (?:is|will be))(?: (?:be|arrive|arriving|get there|be there|running))?(?: (?:about|around|roughly|approximately))?$/.test(beforeTime) ||
+     /^(?:sorry )?running(?: (?:about|around|roughly|approximately))?$/.test(beforeTime);
    if(!speaker)return {status:'review',reasons:['誰が遅れるのか明確にしてみよう。']};
    if(/\b(?:not sure|don't know|might|maybe|perhaps|if)\b/.test(text))
      return {status:'review',reasons:['遅れる見込みが確定しているか確認しよう。']};

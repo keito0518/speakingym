@@ -2088,7 +2088,7 @@ const path=require('node:path');
     assert.equal(await micPage.locator('#mic-button').getAttribute('aria-pressed'),'false',
       'A synchronous final transcript must not leave an orange active microphone');
     assert.equal(await micPage.locator('#retry-mic').isVisible(),true);
-    assert.match(await micPage.locator('#speech-helper').innerText(),/聞き取った英文を表示/);
+    assert.match(await micPage.locator('#speech-helper').innerText(),/英文を確認して回答を送って/);
     await micPage.evaluate(()=>{
       window.SpeechRecognition=class{
         start(){window.__deniedMic=this;this.onerror?.({error:'not-allowed'});}
@@ -2300,6 +2300,11 @@ const path=require('node:path');
       window.__iosMicInstances[4].onend();
       Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:window.__silentSpeechClass});
     });
+    await iosPage.locator('#mic-button').click();
+    await iosPage.evaluate(()=>window.__silentSpeech.onerror({error:'network'}));
+    assert.match(await iosPage.locator('#speech-helper').innerText(),/接続できません/);
+    await iosPage.locator('#spoken-answer').fill('Let me think about it.');
+    assert.equal(await iosPage.locator('#show-answer').isEnabled(),true);
     await leavePlay(iosPage);
     await enterHomePanel(iosPage,'forest');
     await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();

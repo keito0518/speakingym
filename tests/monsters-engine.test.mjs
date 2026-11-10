@@ -563,7 +563,10 @@ test('arrival meaning distinguishes natural replies, missing time, contradiction
    ["I'm ten minutes early.",'incorrect'],
    ["I'll be twenty minutes late.",'incorrect'],
    ["I'm not sure if I'll be ten minutes late.",'review'],
-   ['The bus is ten minutes late.','review']
+   ['The bus is ten minutes late.','review'],
+   ['The bus is running ten minutes late.','review'],
+   ['I think the bus is ten minutes late.','review'],
+   ['Sorry, I am running about ten minutes late.','correct']
  ])assert.equal(gradeDelayMeaning(answer,10).status,status,answer);
  const byId=id=>ALL_PROMPTS.find(p=>p.id===id);
  for(const answer of ["I'm running five minutes late.","I'm delayed by 5 minutes."])
@@ -581,7 +584,8 @@ test('arrival meaning distinguishes natural replies, missing time, contradiction
    ["I'll be late.",'incomplete'],
    ["I'll be there in ten minutes.",'review'],
    ["I won't be ten minutes late.",'incorrect'],
-   ["I'll be twenty minutes late.",'incorrect']
+   ["I'll be twenty minutes late.",'incorrect'],
+   ['I think the bus is running ten minutes late.','review']
  ])assert.equal(gradeLocalResponse(byId('late-call-normal'),answer).status,status,`late-call-normal: ${answer}`);
  assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be thirty minutes late.").status,'review','More conditions are required at hard difficulty');
  assert.equal(gradeLocalResponse(byId('late-traffic-hard'),"I'll be twenty minutes late.").status,'incorrect');
