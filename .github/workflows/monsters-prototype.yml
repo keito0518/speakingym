@@ -99,11 +99,36 @@ jobs:
           timeout 160s node tests/monsters-browser.cjs
           timeout 210s node tests/monsters-scenes-browser.cjs
           timeout 90s node tests/monsters-beta-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: speakingym-monsters-screenshots
+          path: qa-screenshots/
+
+  # The combined QA job hit its 20-minute ceiling while WebKit was still
+  # running. Test the same mobile scenarios in parallel so neither engine's
+  # coverage is silently cancelled by the other engine's setup and tests.
+  webkit-mobile-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ubuntu-24.04-${{ runner.arch }}-speakingym-monsters-playwright-1.62.1
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+      - name: Start local preview
+        run: python3 -m http.server 8766 >/tmp/monsters-webkit-preview.log 2>&1 &
       - name: WebKit mobile and learning QA
-        # WebKit replays the full four-viewport/save-recovery suite and is
-        # notably slower than Chromium on shared GitHub runners. Keep every
-        # scenario covered instead of letting the 160s per-process gate kill
-        # an otherwise advancing browser run near its final page load.
         timeout-minutes: 12
         run: |
           timeout 300s env MONSTERS_BROWSER_ENGINE=webkit node tests/monsters-browser.cjs
@@ -112,6 +137,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: speakingym-monsters-screenshots
+          name: speakingym-monsters-webkit-screenshots
           path: qa-screenshots/
 

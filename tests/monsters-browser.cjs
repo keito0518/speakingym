@@ -661,10 +661,14 @@ const path=require('node:path');
     await menuPage.locator('[data-feature-worlds]').click();
     assert.equal(await menuPage.locator('#forest-invite-title').isVisible(),true);
     assert.equal(await menuPage.locator('#forest-invite-title').textContent(),'Englishダンジョン');
+    assert.equal(await menuPage.locator('[data-feature-worlds]').innerText(),'エリア・難易度',
+      'The home link names the settings it actually opens, without suggesting paused party formation');
     assert.equal(await menuPage.locator('.dungeon-now-badge').isVisible(),true);
     assert.match(await menuPage.locator('#dungeon-next-area').innerText(),/次の目的地/);
-    assert.equal(await menuPage.locator('.dungeon-simple-steps li').count(),3,
-      'The main dungeon route should be explained in three short steps');
+    assert.equal(await menuPage.locator('.dungeon-simple-steps').count(),0,
+      'The main start action appears without a redundant three-step instruction list');
+    assert.equal(await menuPage.locator('#open-dungeon-tutorial').isVisible(),true,
+      'Full instructions remain available on demand');
     assert.equal(await menuPage.locator('#dungeon-other-modes').getAttribute('open'),null,'Optional modes start collapsed');
     assert.equal(await menuPage.locator('#start-forest-tactics').isVisible(),false,'Beginner sees only the main start action');
     assert.equal(await menuPage.locator('#start-forest').isVisible(),true,'Main adventure is immediately available');
