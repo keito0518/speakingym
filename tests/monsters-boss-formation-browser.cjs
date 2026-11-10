@@ -41,7 +41,8 @@ const assert=require('node:assert/strict');
   });
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-feature-worlds]').click();
-  await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await page.locator('#start-forest-tactics').click();
+  // The formation engine is archived; access it only through the hidden QA hook.
+  await page.locator('#start-forest-tactics').evaluate(el=>el.click());
   assert.equal(await page.locator('.forest-formation-boss-wrap').getAttribute('open'),null,
     'Boss strategy is optional while forming a team');
   await page.locator('.forest-formation-boss-wrap > summary').click();

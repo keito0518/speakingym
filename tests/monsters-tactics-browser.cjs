@@ -6,6 +6,9 @@ const assert=require('node:assert/strict');
  const browser=await (engine==='webkit'?webkit:chromium).launch({headless:true,
    ...(process.env.MONSTERS_BROWSER_EXECUTABLE_PATH?{executablePath:process.env.MONSTERS_BROWSER_EXECUTABLE_PATH}:{})});
  const url=process.env.MONSTERS_BASE_URL||'http://127.0.0.1:8766/prototype/speakingym-monsters/';
+ // The retired party-mode button is intentionally hidden from players. Exercise
+ // the preserved implementation through its internal QA hook for rollback safety.
+ const openArchivedPartyMode=page=>page.locator('#start-forest-tactics').evaluate(el=>el.click());
  const answer=async page=>{
    if(await page.locator('.forest-attack-select').isVisible())
      await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
@@ -36,8 +39,8 @@ const assert=require('node:assert/strict');
      const errors=[];page.on('pageerror',error=>errors.push(error.message));
      await page.addInitScript(()=>{Math.random=()=>.99;});
      await page.goto(url,{waitUntil:'networkidle'});
-     assert.equal(await page.locator('[data-feature-formation]').isVisible(),false,
-       'Before recruiting allies, beginners see only the normal adventure CTA');
+     assert.equal(await page.locator('[data-feature-formation]').count(),0,
+       'Party formation is absent from the main menu, regardless of collection size');
      await page.locator('[data-feature-worlds]').click();
      // Pale-green onboarding text must not inherit the white font from the dark forest card.
      const hintContrast=await page.locator('.dungeon-first-tip').evaluate(el=>{
@@ -48,12 +51,12 @@ const assert=require('node:assert/strict');
        return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
      });
      assert.ok(hintContrast>=4.5,`${engine}/${width}: beginner hint needs readable contrast, got ${hintContrast.toFixed(2)}:1`);
-     await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await page.locator('#start-forest-tactics').click();
+     await openArchivedPartyMode(page);
      assert.equal(await page.locator('#forest-party-formation').isVisible(),true,'Battle starts with a clear party-formation screen');
      if(width===320){
        await page.locator('#open-battle-guide').click();
        assert.equal(await page.locator('#monsters-tutorial').isVisible(),true,'The game has an on-demand guide without leaving battle');
-       assert.match(await page.locator('#tutorial-heading').innerText(),/仲間を編成/);
+       assert.match(await page.locator('#tutorial-heading').innerText(),/仲間1体で冒険/);
        const guideBounds=await page.locator('.tutorial-dialog').boundingBox();
        assert.ok(guideBounds.width<=width&&guideBounds.y>=0&&guideBounds.y+guideBounds.height<=844,
          `The tutorial must fit the entire iPhone screen (${JSON.stringify(guideBounds)})`);
@@ -487,9 +490,8 @@ const assert=require('node:assert/strict');
    assert.match(await traitPage.locator('#forest-battle-log').innerText(),/武器特性発動！ Speak自力正解で威力＋1/);
    assert.equal(await traitPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
    await traitContext.close();
-   // The main adventure gets a one-tap saved formation option once companions
-   // are recruited. A balanced, trained team really starts with more HP and
-   // charge; next time the main CTA reuses the saved roster automatically.
+   // The advanced party system remains regression-tested for a possible return,
+   // but its public entry is removed and the main adventure always uses one ally.
    const loadoutContext=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:engine==='webkit',reducedMotion:'reduce'});
    const loadoutPage=await loadoutContext.newPage();
    await loadoutPage.addInitScript(()=>{Math.random=()=>.99;});
@@ -501,9 +503,11 @@ const assert=require('node:assert/strict');
      localStorage.setItem(STORAGE_KEY,JSON.stringify(loadout));
    });
    await loadoutPage.reload({waitUntil:'networkidle'});
-   assert.equal(await loadoutPage.locator('[data-feature-formation]').isVisible(),true,
-     'Recruiting a second ally exposes party planning directly beside the main adventure CTA');
-   await loadoutPage.locator('[data-feature-formation]').click();
+   assert.equal(await loadoutPage.locator('[data-feature-formation]').count(),0,
+     'Recruiting another ally must not reintroduce the paused formation mode');
+   assert.equal(await loadoutPage.locator('#start-forest-tactics').isVisible(),false,
+     'The optional-modes menu also hides party formation');
+   await openArchivedPartyMode(loadoutPage);
    assert.match(await loadoutPage.locator('.forest-formation-bonus').innerText(),/出撃HPが全員＋1、開幕必殺ゲージ＋1/);
    assert.equal(await loadoutPage.locator('.forest-formation-bonus').getAttribute('data-opening-charge'),'1');
    await loadoutPage.locator('#forest-formation-recommend').click();
@@ -527,9 +531,21 @@ const assert=require('node:assert/strict');
    assert.equal(await loadoutPage.locator('.forest-attack-select').isVisible(),true,
      'The ordinary adventure also bypasses the redundant intro confirmation');
    await loadoutPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
-   assert.equal(await loadoutPage.locator('[data-tactic-ally="purupun"]').count(),1,
-     'Previously selected reserves appear again in the next quick-start expedition');
-   assert.match(await loadoutPage.locator('.forest-tactic-strategy > summary').innerText(),/必殺 1\/3/);
+   assert.equal(await loadoutPage.locator('[data-tactic-ally]').count(),0,
+     'No reserve or swap control appears in the public solo adventure');
+   assert.equal(await loadoutPage.locator('.forest-party-brief').count(),0,
+     'No companion-switching panel appears in solo mode');
+   assert.equal(await loadoutPage.locator('[data-tactic-action="assist"]').count(),0,
+     'No team-up option appears in solo mode');
+   assert.match(await loadoutPage.locator('.forest-tactic-strategy > summary').innerText(),/必殺 0\/3/);
+   assert.equal(await loadoutPage.locator('#forest-party-hp').getAttribute('aria-valuemax'),'9',
+     'Solo Lv.4 ally retains its own HP growth but not the party resonance bonus');
+   const soloSave=await loadoutPage.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')));
+   assert.equal(soloSave.selectedMonster,'katappo','Solo adventure keeps the selected companion');
+   assert.deepEqual(soloSave.battleFormation,storedLoadout.battleFormation,
+     'Old formation data survives for a possible future redesign');
+   assert.deepEqual(soloSave.ownedMonsters,storedLoadout.ownedMonsters,
+     'Solo adventures preserve all previously collected companions');
    await loadoutContext.close();
    // A saved multi-ally collection must survive unchanged while a battle uses
    // temporary, independent HP. One exchange is allowed in each encounter.
@@ -544,12 +560,12 @@ const assert=require('node:assert/strict');
      localStorage.setItem(STORAGE_KEY,JSON.stringify(seeded));
    });
    await partyPage.reload({waitUntil:'networkidle'});
-   assert.equal(await partyPage.locator('[data-feature-formation]').isVisible(),true);
+   assert.equal(await partyPage.locator('[data-feature-formation]').count(),0);
    const partyHomeLayout=await partyPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
    assert.ok(partyHomeLayout.scroll<=partyHomeLayout.inner+1,
      `The new 320px formation entry must not cause horizontal scrolling: ${JSON.stringify(partyHomeLayout)}`);
    await partyPage.locator('[data-feature-worlds]').click();
-   await partyPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await partyPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(partyPage);
    assert.equal(await partyPage.locator('[data-formation-choice]').count(),4);
    assert.match(await partyPage.locator('#forest-party-formation').innerText(),/出撃メンバー 3 \/ 3体/);
    await partyPage.locator('[data-formation-card="koge"] .forest-formation-creature').click();
@@ -627,7 +643,7 @@ const assert=require('node:assert/strict');
    await knockoutPage.reload({waitUntil:'networkidle'});
    await knockoutPage.locator('[data-feature-worlds]').click();
    await knockoutPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
-   await knockoutPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(knockoutPage);
    await knockoutPage.locator('#forest-explore-continue').click();
    await knockoutPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    assert.equal(await knockoutPage.locator('#forest-party').getAttribute('data-companion'),'medamago');
@@ -659,7 +675,7 @@ const assert=require('node:assert/strict');
    });
    await evolutionPage.reload({waitUntil:'networkidle'});
    await evolutionPage.locator('[data-feature-worlds]').click();
-   await evolutionPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await evolutionPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(evolutionPage);
    const evolvedCard=evolutionPage.locator('[data-formation-card="katappo"]');
    assert.match(await evolvedCard.innerText(),/Lv\.3/);
    assert.equal(await evolvedCard.locator('.forest-formation-monster-more small').isVisible(),false,
@@ -726,7 +742,7 @@ const assert=require('node:assert/strict');
    });
    await recallPage.reload({waitUntil:'networkidle'});
    await recallPage.locator('[data-feature-worlds]').click();
-   await recallPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await recallPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(recallPage);
    await recallPage.locator('#forest-explore-continue').click();
    assert.equal(await recallPage.locator('.forest-tactic-review').isVisible(),false,'Due-review notes should not crowd the first battle screen');
    await recallPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
@@ -760,7 +776,7 @@ const assert=require('node:assert/strict');
    });
    await advancedPage.reload({waitUntil:'networkidle'});
    await advancedPage.locator('[data-feature-worlds]').click();
-   await advancedPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await advancedPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(advancedPage);
    assert.match(await advancedPage.locator('#play-mode-label').innerText(),/木漏れ日の小道/);
    await advancedPage.locator('#forest-explore-continue').click();
    await advancedPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
@@ -800,7 +816,7 @@ const assert=require('node:assert/strict');
    });
    await masteryPage.reload({waitUntil:'networkidle'});
    await masteryPage.locator('[data-feature-worlds]').click();
-   await masteryPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await masteryPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(masteryPage);
    const masteryCard=masteryPage.locator('[data-formation-card="medamago"]');
    assert.match(await masteryCard.innerText(),/Lv\.4/);
    await masteryCard.locator('.forest-formation-monster-more > summary').click();
@@ -839,7 +855,7 @@ const assert=require('node:assert/strict');
    });
    await shiftingPage.reload({waitUntil:'networkidle'});
    await shiftingPage.locator('[data-feature-worlds]').click();
-   await shiftingPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await shiftingPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(shiftingPage);
    assert.match(await shiftingPage.locator('#play-mode-label').innerText(),/雪灯りの街/);
    await shiftingPage.locator('#forest-explore-continue').click();
    await shiftingPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
@@ -875,7 +891,7 @@ const assert=require('node:assert/strict');
    await counterPage.goto(url,{waitUntil:'networkidle'});
    await counterPage.locator('[data-feature-worlds]').click();
    await counterPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
-   await counterPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(counterPage);
    await counterPage.locator('#forest-explore-continue').click();
    assert.match(await counterPage.locator('.forest-attack-select').innerText(),/攻撃を選ぶ/);
    assert.equal(await counterPage.locator('.forest-attack-select [data-tactic-kind="listen"]').getAttribute('data-weak'),'true','Enemy weakness must be highlighted on the actionable attack button');
@@ -972,7 +988,7 @@ const assert=require('node:assert/strict');
    await listenPage.goto(url,{waitUntil:'networkidle'});
    await listenPage.locator('[data-feature-worlds]').click();
    await listenPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
-   await listenPage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(listenPage);
    await listenPage.locator('#forest-explore-continue').click();
    await listenPage.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
    await listenPage.locator('.forest-tactic-strategy > summary').click();
@@ -1028,7 +1044,7 @@ const assert=require('node:assert/strict');
    await defensePage.goto(url,{waitUntil:'networkidle'});
    await defensePage.locator('[data-feature-worlds]').click();
    await defensePage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
-   await defensePage.locator('#start-forest-tactics').click();
+   await openArchivedPartyMode(defensePage);
    await defensePage.locator('#forest-explore-continue').click();
    await defensePage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
    assert.match(await defensePage.locator('.forest-tactic-forecast').textContent(),/次の敵攻撃：リスニング/);

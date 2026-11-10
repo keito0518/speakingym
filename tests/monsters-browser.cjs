@@ -598,7 +598,7 @@ const path=require('node:path');
     assert.equal(await menuPage.locator('#tutorial-tips li').count(),2,'Every step explains a practical action');
     assert.match(await menuPage.locator('#tutorial-scene-main').innerText(),/話す \/ 文字入力/);
     await menuPage.locator('[data-tutorial-chapter="battle"]').click();
-    assert.match(await menuPage.locator('#tutorial-heading').innerText(),/仲間を編成/);
+    assert.match(await menuPage.locator('#tutorial-heading').innerText(),/仲間1体で冒険/);
     assert.equal(await menuPage.locator('[data-tutorial-chapter="battle"]').getAttribute('aria-pressed'),'true');
     await menuPage.locator('#tutorial-next').click();
     assert.match(await menuPage.locator('#tutorial-heading').innerText(),/英語で攻撃/);
@@ -2308,7 +2308,8 @@ const path=require('node:path');
     assert.equal(await iosPage.locator('#show-answer').isEnabled(),true);
     await leavePlay(iosPage);
     await enterHomePanel(iosPage,'forest');
-    await iosPage.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await iosPage.locator('#start-forest-tactics').click();
+    // The archived party mode is available to regression tests, not players.
+    await iosPage.locator('#start-forest-tactics').evaluate(el=>el.click());
     await iosPage.locator('#forest-explore-continue').click();
     await iosPage.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
     assert.equal(await iosPage.locator('#mic-button').evaluate(e=>e.tagName),'BUTTON');

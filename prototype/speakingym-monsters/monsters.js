@@ -845,9 +845,9 @@ function tacticalReviewTargets(){
  return {dueIds:dueForestPromptIds(),weakIds:dueQuizWeaknessIds(),
    duePhraseIds:dueForestPhrases(),recentIds:cleanForest(save.forest).recentPromptIds};
 }
-// The main dungeon starts immediately with the player's current companions.
-// Party formation remains optional in the advanced battle mode.
-function startMainDungeon(areaId=null,{formation=false,skipOpening=false}={}){startSession('forest-tactics',areaId,false,!formation,null,{skipOpening});}
+// The main dungeon is a solo adventure with exactly the selected companion.
+// Legacy formations remain in saves for a future redesign, but do not affect this run.
+function startMainDungeon(areaId=null,{skipOpening=false}={}){startSession('forest-tactics',areaId,false,true,null,{skipOpening});}
 function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,retrySavedIds=null,{reviewLimit=null,skipOpening=false}={}) {
   cancelAutoAdvance();clearTimer(); stopAudio();
   const focusKind=mode==='skill-focus'?requestedAreaId:null;
@@ -876,7 +876,7 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
     .slice(0,6):null;
   const prompts=forestMode?firstWave.prompts:roleplay?roleplay.turns.map(turn=>turn.prompt):focused||(mode==='daily'?gym.prompts:mode==='saved'?savedReviewQueue(save).filter(item=>(!onlyDue||item.due)&&(!retrySavedIds||retrySavedIds.includes(item.prompt.id))).map(item=>item.prompt):selectRoundPrompts(save,promptCount,Math.random,dayKey(),difficulty));
   if(!prompts.length){renderHome();return;}
-  const roster=plannedBattleFormation(save);
+  const roster=tactical&&quickStart?[save.selectedMonster]:plannedBattleFormation(save);
   const battleTeam=tactical?createTrainedBattleParty(roster):null;
   const openingCharge=tactical?formationResonance(roster,Object.fromEntries(roster.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge:0;
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
@@ -1309,8 +1309,8 @@ function renderTacticalControls(){
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
   ${!incoming?`<p class="forest-tactic-weapon">Lv.${getMonsterProgress(save,play.companionId).level} 攻撃成長 +${levelAttackBonus(getMonsterProgress(save,play.companionId).level)} · ${equippedWeapon(save)?`${escapeHtml(equippedWeapon(save).name)} 攻撃+${equippedWeapon(save).attack}`:'素手'}</p>`:''}
   ${boss?`<div class="forest-boss-tactical-plan" role="group" aria-label="ボスの3手の攻撃予告"><strong>ボスの攻撃パターン</strong><ol>${[0,1,2].map(phase=>{const threat=bossAttackFor(foe.id,phase);return `<li data-boss-plan-phase="${phase}" data-current="${String(phase===play.index-regularCount())}"><span>${phase+1}手目</span><b>${BATTLE_LABELS[threat.kind]}</b><small>${phase===2?'撃破で反撃なし':threat.pressure?'強攻撃':'通常攻撃'}</small></li>`;}).join('')}</ol><small>最初の2手は敵が反撃する。3つの英語確認をすべてクリアすると勝利！</small></div>`:''}
-  ${boss?`<p class="forest-boss-link" data-link-ready="${String(!t.bossLinkUsed&&linkPreview?.partnerId&&play.index-regularCount()===bossLink.phase)}" data-link-used="${String(t.bossLinkUsed)}"><strong>連携：${escapeHtml(bossLink.name)}</strong> ${bossLink.phase+1}手目 · 控えの${BATTLE_LABELS[bossLink.kind]}で${bossLink.description}。${t.bossLinkUsed?' 発動済み。':linkPreview?.partnerId?` ${escapeHtml(monsterFor(linkPreview.partnerId).name)}が待機中！`:' 控えが必要。'}</p>`:''}
-  ${boss&&!incoming&&!finalBossStrike?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`}</p>`:''}
+  ${boss&&party.length>1?`<p class="forest-boss-link" data-link-ready="${String(!t.bossLinkUsed&&linkPreview?.partnerId&&play.index-regularCount()===bossLink.phase)}" data-link-used="${String(t.bossLinkUsed)}"><strong>連携：${escapeHtml(bossLink.name)}</strong> ${bossLink.phase+1}手目 · 控えの${BATTLE_LABELS[bossLink.kind]}で${bossLink.description}。${t.bossLinkUsed?' 発動済み。':linkPreview?.partnerId?` ${escapeHtml(monsterFor(linkPreview.partnerId).name)}が待機中！`:' 控えが必要。'}</p>`:''}
+  ${boss&&!incoming&&!finalBossStrike?`<p class="forest-boss-counter" data-counter-ready="${String(counter.matched&&!t.bossCounterUsed)}">${t.bossCounterUsed?'このボスへの迎撃は使用済み。':counter.matched?`迎撃チャンス！ ${escapeHtml(monsterFor(play.companionId).name)}の得意な${BATTLE_LABELS[bossThreat.kind]}で自力正解すると、必殺ゲージ＋1・次の敵攻撃を1軽減${evolved?'・HP＋1':''}（ボス戦で1回）。`:party.length>1?`迎撃するなら${BATTLE_LABELS[bossThreat.kind]}が得意な仲間を出そう。自力正解なら必殺ゲージ＋1と次の敵攻撃−1（ボス戦で1回）。`:`この仲間では迎撃の相性なし。英語に正解して次の反撃を防ごう。`}</p>`:''}
   ${boss&&party.length>1&&!finalBossStrike?`<p class="forest-boss-cover" data-cover-ready="${String(coverPreview?.activated)}">${t.bossCoverUsed?'控えの身代わりはこのボス戦で使用済み。':coverPreview?.activated?`控えの${escapeHtml(monsterFor(coverPreview.partnerId).name)}が身代わり待機。${BATTLE_LABELS[coverKind]}で自力防御を失い、HPが2以上減るときにダメージを2軽減・控えHP−1（ボス戦で1回）。自力正解・判定保留なら発動しない。`:'控えの身代わりは「出撃中の仲間が苦手・控えが得意」な技能の敵攻撃でだけ発動するよ。'}</p>`:''}
   ${incoming?'':`<p class="forest-tactic-forecast"><strong>${finalBossStrike?'最終撃：正解で勝利！':`次の敵攻撃：${BATTLE_LABELS[t.nextEnemyKind]}`}</strong></p>`}
   ${!incoming&&evolved?`<p class="forest-tactic-evolution">進化ボーナス：得意な${BATTLE_LABELS[ally.strong]}の威力＋1 / 同技能の被ダメージ−1</p>`:''}
@@ -3421,7 +3421,7 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon(null,{skipOpening:true}):mode==='forest-formation'?startMainDungeon(null,{formation:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon(null,{skipOpening:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
 $$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
  const target=button.dataset.gameTab;
  if(target==='adventure'){startMainDungeon(null,{skipOpening:true});return;}

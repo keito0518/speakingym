@@ -6,7 +6,7 @@ import { FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, FOREST_ROUTES, un
 import { FOREST_EVENTS } from './forest-events.js';
 import { relicArt } from './game-visuals.js';
 import { BOSS_MEDAL_NAMES } from './boss-mastery.js';
-import { allyAffinity, allySkill, BATTLE_LABELS, MASTERY_LEVEL, masterySkillFor, evolvedSupportTalent } from './battle-tactics.js';
+import { allyAffinity, allySkill, BATTLE_LABELS, MASTERY_LEVEL, masterySkillFor } from './battle-tactics.js';
 import { levelHpBonus } from './battle-party.js';
 
 const html = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -60,7 +60,7 @@ function powerFor(id) {
   const skill=allySkill(id),specialty=BATTLE_LABELS[allyAffinity(id).strong];
   const legacy=id==='medamago'?' 従来の森モードでは進化後のDouble Yolkも使える。':
     id==='katappo'?' 従来のエンドレスでは進化後のLost & Foundも使える。':'';
-  return {name:skill.name,description:`戦略バトルでは${specialty}が得意。${skill.description}。進化後、控えからの連携で「${evolvedSupportTalent(id).name}」が使える。${legacy}`};
+  return {name:skill.name,description:`Englishダンジョンでは${specialty}が得意。${skill.description}。${legacy}`};
 }
 export function createCollectionViews({getSave, persist, showView, stopAudio, onStartAdventure}) {
   let currentId = null;
@@ -163,7 +163,7 @@ export function createCollectionViews({getSave, persist, showView, stopAudio, on
       <section class="character-section"><h2>名前の由来</h2>${c.roots.map(r=>`<div class="word-row"><span><b lang="en">${html(r.word)}</b><small>${html(r.meaning)}</small></span><button type="button" class="word-audio" data-pronounce-word="${html(r.word)}" aria-label="${html(r.word)} の発音を聞く"><span class="audio-glyph" aria-hidden="true"></span>聞く</button></div>`).join('')}<p id="pronounce-feedback" role="status"></p></section>
       <details id="detail-notes" class="character-more"><summary>能力・進化の詳細 <span aria-hidden="true">＋</span></summary>
       <section class="character-section"><h2>この仲間について</h2><p>${html(c.note)}</p></section>
-      <section class="character-section"><h2>固有能力</h2><strong>${html(power.name)}</strong><p>${html(power.description)}</p><small>戦略バトル（開発版）で使用可能。第1進化では連携強化、第2進化では得意攻撃＋1・戦闘HP＋1（英語の採点は変わりません）。</small></section>
+      <section class="character-section"><h2>固有能力</h2><strong>${html(power.name)}</strong><p>${html(power.description)}</p><small>選んだ仲間1体で冒険できます。第2進化では得意攻撃＋1・戦闘HP＋1（英語の採点は変わりません）。</small></section>
       <section class="character-section"><h2>学習で深まる絆</h2><p>絆 Lv.${bond.rank} · ${bond.points}ポイント</p><p>${bond.maxed?'絆レベルMAX！これからも英語を使っていこう。':`次の絆レベルまで ${bond.next}ポイント`}</p><small>翌日・3日後・7日後の定着チェックを、日を空けてヒントなしでクリアすると増えるよ。XPや戦闘力には影響しない。</small></section>
       <section class="character-section"><h2>進化の記録</h2>${evolutionPath(c)}<p>${owned?growthGoal(g):html(unlockText(c,save))}</p>${owned&&trial.remaining&&trial.target?`<p class="evolution-next-boss">次の討伐目標：${html(trial.target.name)}。この仲間と一緒にボスを倒そう。</p>`:''}</section>
       </details>

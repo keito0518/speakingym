@@ -9,14 +9,14 @@ const STEPS=Object.freeze([
   scene:['リスニング','音声を再生','意味を選ぶ'],tips:['単語・文法は選択問題で確認するよ。','リスニングのあとに同じ英文を話す必要はないよ。']},
  {chapter:'basic',title:'3. iPhoneでマイクが使えないとき',body:'話す問題は文字入力でも挑戦できる。認識に失敗しただけで英語の不正解にはならないよ。',
   scene:['スピーキング','話す / 文字入力','回答を確認'],tips:['iPhoneでは「入力を開く」→英語キーボードのマイクで話してね。','自然な別表現は判定保留になることもあるよ。']},
- {chapter:'battle',title:'4. まず仲間を編成しよう',body:'仲間が増えたらホームの「仲間を編成して出発」から最大3体を選ぼう。先頭と控えの得意技能が違うと出撃HPが増え、育てると開幕必殺も強くなるよ。',
-  scene:['出撃編成','先頭 1体 + 控え 2体','この編成で出発'],tips:['おすすめ編成で最初の敵の弱点に合わせられる。手動変更もOK。','出撃編成は次回の冒険にも保存される。戦闘中の交代は1戦に1回。']},
+ {chapter:'battle',title:'4. お気に入りの仲間1体で冒険',body:'ホームの「冒険をはじめる」を押せば、図鑑で選んだ仲間1体が戦うよ。新しい仲間を見つけたら「なかま・図鑑」でいつでも変更できる。',
+  scene:['なかま・図鑑で1体選ぶ','冒険をはじめる','選んだ仲間でバトル'],tips:['仲間のレベル・進化・装備はそのまま使えるよ。','複数の仲間を編成するモードは現在お休み中。集めた仲間の記録は残るよ。']},
  {chapter:'battle',title:'5. 英語で攻撃しよう',body:'自分のターンは、4つから攻撃の種類を選ぼう。その種類の問題に正解すると仲間が自動で攻撃するよ。',
   scene:['問題の種類を選ぶ','問題に答える','正解 → 自動で攻撃'],tips:['攻撃の種類を選んでから問題が出るよ。出題後は種類を変更できない。','敵の弱点は敵の上に表示。正解すればダメージが増えるよ。']},
  {chapter:'battle',title:'6. 敵の反撃は問題で防ぐ',body:'敵が生き残ると反撃。予告された技能の問題に自力正解すれば、HPは減らないよ。',
-  scene:['次の敵攻撃：文法','英語の問題に回答','正解 → ダメージ 0'],tips:['敵の攻撃を予告で確認して仲間を選ぼう。','音声認識エラーや判定保留だけではHPを減らさないよ。']},
- {chapter:'battle',title:'7. 連携・必殺技を使い分ける',body:'詳しい作戦は「戦術・仲間を変更する」を開けば使えるよ。ヒントなしで正解すると必殺ゲージがたまる。',
-  scene:['必殺ゲージ','1 / 3 → 2 / 3 → 3 / 3','必殺技を使う'],tips:['必殺技は使うタイミングが大事。','ボスによって役立つ控えが違う。詳しい相性は攻略メモで見よう。']},
+  scene:['次の敵攻撃：文法','英語の問題に回答','正解 → ダメージ 0'],tips:['敵の攻撃予告を見て、出される問題に答えよう。','音声認識エラーや判定保留だけではHPを減らさないよ。']},
+ {chapter:'battle',title:'7. 必殺技で決めよう',body:'ヒントなしで正解すると必殺ゲージがたまる。満タンになったら、強敵を倒すタイミングで使おう。',
+  scene:['必殺ゲージ','1 / 3 → 2 / 3 → 3 / 3','必殺技を使う'],tips:['仲間のレベルや装備で攻撃が強くなるよ。','ボスの弱点を狙ってダメージを増やそう。']},
  {chapter:'growth',title:'8. 育成と武器で強くなろう',body:'冒険でXPをため、仲間を育てよう。Lv.4・7・10・13で攻撃力が上昇し、Lv.4で熟練技も覚えるよ。武器には英語の得意攻撃による追撃がある。',
   scene:['強敵やボスを倒す','武器をドロップ！','図鑑で装備する'],tips:['自力正解3問以上＋ボス撃破で章の武器を初回確定入手。再挑戦ではレアも狙えるよ。','5体目の強敵は自力攻撃2回以上で限定装備が18%の確率で落ちる。ボスの封印は英語3問のままだよ。']},
  {chapter:'growth',title:'9. 仲間の発見と連勝宝箱',body:'冒険や復習を続けると、新しい仲間を発見できるよ。各エリアで3・5・8 CHAINに初めて到達すると、宝箱から育成XPとガチャに使えるゴールドを獲得。',
@@ -102,10 +102,9 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  feature.innerHTML=`<div class="home-feature-sky" aria-hidden="true"><span class="home-moon"></span><span class="home-mountain mountain-back"></span><span class="home-mountain mountain-front"></span><span class="home-forest-line"></span></div>
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
- <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-formation-link" data-feature-formation hidden>仲間を編成して出発</button><button type="button" class="home-world-link home-armory-link" data-feature-armory>武器ガチャ</button><button type="button" class="home-world-link" data-feature-worlds>エリア・出撃設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
+ <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-armory-link" data-feature-armory>武器ガチャ</button><button type="button" class="home-world-link" data-feature-worlds>エリア・出撃設定</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
  <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
  feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>startMode('forest'));
- feature.querySelector('[data-feature-formation]').addEventListener('click',()=>startMode('forest-formation'));
  feature.querySelector('[data-feature-armory]').addEventListener('click',()=>startMode('armory'));
  feature.querySelector('[data-feature-worlds]').addEventListener('click',()=>showPage('forest'));
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
@@ -148,7 +147,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  extra.append(extraGrid,motionToggle);
  menu.append(head,chapter,feature,quest,label,grid,extra);home.prepend(menu);
  const dialog=document.createElement('div');dialog.className='tutorial-backdrop';dialog.id='monsters-tutorial';dialog.hidden=true;
- dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">戦略バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><button type="button" id="tutorial-try-battle" class="tutorial-try-battle">操作して覚える練習バトル</button><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
+ dialog.innerHTML='<div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-heading"><button type="button" id="tutorial-close" class="tutorial-close" aria-label="チュートリアルを閉じる">✕</button><p class="tiny-caps" id="tutorial-counter"></p><div class="tutorial-chapters" role="group" aria-label="ガイドの項目"><button type="button" data-tutorial-chapter="basic">基本操作</button><button type="button" data-tutorial-chapter="battle">バトル</button><button type="button" data-tutorial-chapter="growth">育成・復習</button></div><div class="tutorial-step-progress" aria-hidden="true"><span id="tutorial-progress-fill"></span></div><h2 id="tutorial-heading"></h2><p id="tutorial-description"></p><div class="tutorial-scene" aria-label="画面操作の例"><span id="tutorial-scene-label"></span><strong id="tutorial-scene-main"></strong><span id="tutorial-scene-result"></span></div><ul id="tutorial-tips" class="tutorial-tips"></ul><button type="button" id="tutorial-try-battle" class="tutorial-try-battle">操作して覚える練習バトル</button><div class="tutorial-actions"><button type="button" id="tutorial-previous">戻る</button><button type="button" id="tutorial-next">次へ</button></div></div>';
  document.body.append(dialog);
  let step=0,lastFocused=null,fromGame=false;
  const close=()=>{dialog.hidden=true;lastFocused?.focus?.({preventScroll:true});};
@@ -326,7 +325,6 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';
      menu.querySelector('[data-feature-dungeon]').firstChild.textContent=allCleared?'もう一度冒険 ':cleared?'つづきから冒険 ':'冒険をはじめる ';
-     menu.querySelector('[data-feature-formation]').hidden=ownedCount<2;
      const armory=menu.querySelector('[data-feature-armory]');
      if(summon){
        armory.textContent=summon.readyNow?'武器ガチャ · 今すぐ引ける！':summon.readyAfterSale?'武器ガチャ · お宝を売れば引ける！':`武器ガチャ · あと${summon.missing} G`;

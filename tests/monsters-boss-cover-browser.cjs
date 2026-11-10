@@ -39,7 +39,8 @@ const assert=require('node:assert/strict');
   });
   await page.reload({waitUntil:'networkidle'});
   await page.locator('[data-feature-worlds]').click();
-  await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});await page.locator('#start-forest-tactics').click();
+  // The formation engine is archived; access it only through the hidden QA hook.
+  await page.locator('#start-forest-tactics').evaluate(el=>el.click());
   assert.equal(await page.locator('.forest-formation-boss-wrap').getAttribute('open'),null,'Long boss advice starts collapsed');
   await page.locator('.forest-formation-boss-wrap > summary').click();
   assert.match(await page.locator('.forest-formation-boss-plan').innerText(),/1手目：文法/);

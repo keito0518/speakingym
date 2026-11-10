@@ -190,7 +190,7 @@ const path=require('node:path');
       assert.equal(before.monsterEvolution.medamago,1);
       await page.locator('#training-back').click();
       await page.locator('#detail-notes summary').click();
-      assert.match(await page.locator('#detail-content').innerText(),/進化後、控えからの連携で「覚醒・追撃」/,
+      assert.match(await page.locator('#detail-content').innerText(),/Englishダンジョンでは.*が得意/,
         'Evolved companion notes should describe the real tactical combo instead of the old placeholder');
       await page.locator('#detail-back').click();
       assert.match(await page.locator('[data-open-monster="medamago"]').innerText(),/Sunnyolk.*Lv.5/s);
