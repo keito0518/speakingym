@@ -12,8 +12,41 @@ const {chromium,webkit}=require('playwright');
   const dimensions=await page.evaluate(()=>({screen:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(dimensions.scroll<=dimensions.screen+1,`${engine} ${where} overflowed: ${JSON.stringify(dimensions)}`);
  };
+ const assertReadableDrawLabels=async(where)=>{
+  const layout=await page.locator('.shop-draw-options').evaluate(options=>
+   [...options.querySelectorAll('button')].map(button=>{
+    const label=button.querySelector('.shop-draw-label');
+    const price=button.querySelector('.shop-draw-caption');
+    const outer=button.getBoundingClientRect(),name=label.getBoundingClientRect(),cost=price.getBoundingClientRect();
+    const css=getComputedStyle(button);
+    return {text:label.textContent,whiteSpace:getComputedStyle(label).whiteSpace,
+     overflow:label.scrollWidth>label.clientWidth+1,inside:name.left>=outer.left-1&&name.right<=outer.right+1,
+     priceBelow:cost.top>=name.bottom-1,opacity:css.opacity,buttonWidth:outer.width};
+   }));
+  assert.equal(layout.length,2,`${where} should offer single and ten pulls`);
+  for(const button of layout){
+   assert.equal(button.whiteSpace,'nowrap',`${where}: ${button.text} must never split ガチャ`);
+   assert.equal(button.overflow,false,`${where}: ${button.text} must fit its button`);
+   assert.equal(button.inside,true,`${where}: ${button.text} must not be clipped`);
+   assert.equal(button.priceBelow,true,`${where}: the price needs its own row`);
+   assert.equal(button.opacity,'1',`${where}: dimming the entire button makes the label unreadable`);
+  }
+ };
  try{
   await page.goto(url,{waitUntil:'networkidle'});
+  // An unexplained fried-egg companion must not greet an empty save.
+  assert.equal(await page.locator('.home-feature.home-awaiting-companion').count(),1);
+  assert.equal(await page.locator('#home-menu-name').innerText(),'まだ見ぬ仲間');
+  assert.equal(await page.locator('#home-menu-art .mystery-monster-art').count(),1);
+  assert.equal(await page.locator('.home-walker').count(),0);
+  await page.locator('#game-tabs [data-game-tab="forge"]').click();
+  assert.equal(await page.locator('#shop-draw').isDisabled(),true);
+  for(const width of [320,375,390]){
+   await page.setViewportSize({width,height:844});
+   await assertReadableDrawLabels(`fresh ${width}px`);
+   await assertNoOverflow(`fresh forge ${width}px`);
+  }
+  await page.setViewportSize({width:320,height:844});
   // Seed only a local test save; the browser test never accesses production data.
   await page.evaluate(async()=>{
    const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
@@ -41,6 +74,7 @@ const {chromium,webkit}=require('playwright');
    'A player who can already draw should not be forced past the treasure seller');
   assert.match(await page.locator('#shop-coins').innerText(),/240 G/);
   assert.equal(await page.locator('#shop-draw').isEnabled(),true);
+  await assertReadableDrawLabels('affordable 320px');
   assert.equal(await page.locator('#shop-gacha-details').getAttribute('open'),null,'Odds stay collapsed until requested');
   assert.equal(await page.locator('.shop-odds').isVisible(),false,'The summon CTA is not buried under probability tables');
   await page.locator('#shop-gacha-details summary').click();

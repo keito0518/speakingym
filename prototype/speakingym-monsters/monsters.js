@@ -4,7 +4,7 @@ import { monsterHuntBoard, chainChestAt, awardChainChests } from './monster-enga
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
-import { monsterArt } from './monster-art.js';
+import { monsterArt, mysteryMonsterArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, DUNGEON_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest } from './forest-engine.js';
@@ -649,6 +649,10 @@ function renderDifficulty() {
 }
 function renderHome() {
   const creature = monsterFor(save.selectedMonster), growth = getMonsterProgress(save), summary = learningSummary(save);
+  // A brand-new player has not met the companion yet. Do not greet them
+  // with an unexplained fried-egg sprite before they enter the first world.
+  const firstEncounterPending = save.totalAnswers===0 && save.completedRuns===0 &&
+    cleanForest(save.forest).completedAreas.length===0 && (save.ownedMonsters||[]).length===1;
   $('#hero-monster-art').innerHTML = monsterArt(creature.id,growth.stage,equippedWeapon(save));
   $('#hero-monster-name').textContent = monsterFormName(creature,growth.stage) + (growth.ascended ? ' / 第2進化' : growth.evolved ? ' / 進化済み' : '');
   $('#hero-monster-species').textContent = `${creature.japaneseName} · ${creature.roots.map(root=>root.word).join(' + ')}`;
@@ -804,7 +808,9 @@ function renderHome() {
   $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
   homeNavigation?.updateHero({
-    art:monsterArt(creature.id,growth.stage,equippedWeapon(save)),name:monsterFormName(creature,growth.stage),
+    art:firstEncounterPending?mysteryMonsterArt():monsterArt(creature.id,growth.stage,equippedWeapon(save)),
+    name:firstEncounterPending?'まだ見ぬ仲間':monsterFormName(creature,growth.stage),
+    firstEncounterPending,
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,ownedCount:save.ownedMonsters.length,
     // Keep imported/legacy review queues reachable even when their older save
     // has no modern answer counter. Only a truly empty save gets the single CTA.
@@ -819,7 +825,7 @@ function renderHome() {
   // Reuse art for already recruited creatures only; never preview locked ones.
   // Pick the selected companion first so that the home genuinely reflects
   // the user's own team, and cap moving sprites at three for mobile performance.
-  const walkingIds=[save.selectedMonster,...save.ownedMonsters.filter(id=>id!==save.selectedMonster)].slice(0,3);
+  const walkingIds=firstEncounterPending?[]:[save.selectedMonster,...save.ownedMonsters.filter(id=>id!==save.selectedMonster)].slice(0,3);
   homeNavigation?.updateWalkers(walkingIds.map(id=>{
     const progress=getMonsterProgress(save,id);
     return {art:monsterArt(id,progress.stage,equippedWeapon(save))};
@@ -1514,8 +1520,11 @@ function showForestExplore() {
   map.dataset.area=play.areaId;
   $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
   $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
+  const meetingFirstCompanion=play.index===0 && save.totalAnswers===0 && save.completedRuns===0 &&
+    (save.ownedMonsters||[]).length===1;
   $('#forest-explore-description').textContent=formation?'この編成で出発できるよ。':
     isBoss?'ボスが待っている！':
+    meetingFirstCompanion?`森の入口で${companion.name}と合流。ここから一緒に戦おう。`:
     play.index===0?(play.quickStart?'次は「おすすめの攻撃」を選んで、英語の問題に答えよう。':'出発して最初の問題に挑もう。'):
     '次の戦闘へ進もう。';
   const eventPanel=$('#forest-explore-event');
@@ -3237,7 +3246,7 @@ function renderEconomyShop(){
  <div class="shop-bag" data-has-loot="${totalValue>0}"><div class="shop-section-heading"><strong>お宝を売る</strong><button type="button" id="shop-sell-all" ${totalValue===0?'disabled':''}>まとめて売る</button></div>${goods.length?goods.map(item=>`<div class="shop-good"><span><strong>${escapeHtml(item.name)} ×${bag[item.id]}</strong><small>1個 ${item.price} G</small></span><button type="button" data-sell-treasure="${item.id}">1個売る</button></div>`).join(''):'<p class="shop-empty">お宝は冒険で手に入ります</p>'}</div>
  <div class="shop-gacha"><div class="shop-section-heading"><strong>武器ガチャ</strong><span class="shop-price">1回 ${GACHA_COST} G</span></div><div class="summon-banner" aria-hidden="true"><span class="summon-banner-ring"></span><span class="summon-banner-title">WEAPON<br><b>GACHA</b></span><span class="summon-banner-spark"></span></div>
  <div class="shop-collection-track" aria-label="限定武器の収集状況"><div class="shop-collection-copy"><strong>WEAPON COLLECTION</strong><span>入手 ${ownedDraws} / ${featured.length} 種</span></div><div class="shop-collection-meter" role="progressbar" aria-label="限定武器の収集率" aria-valuemin="0" aria-valuemax="${featured.length}" aria-valuenow="${ownedDraws}"><span style="width:${Math.round(ownedDraws*100/featured.length)}%"></span></div><small>${discovery.next?`次の図鑑報酬まであと ${discovery.remaining} 種 · ${discovery.next.gold} G`:'全武器を発見・図鑑完成'}</small></div>
- <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-flare" aria-hidden="true"></span>1回ガチャ<span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}>10連ガチャ<span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G</span></button></div>
+ <div class="shop-draw-options"><button type="button" id="shop-draw" class="button button-primary" ${(save.coins||0)<GACHA_COST?'disabled':''}><span class="shop-draw-label">1回ガチャ</span><span class="shop-draw-caption">${GACHA_COST} G</span></button><button type="button" id="shop-draw-ten" ${(save.coins||0)<GACHA_TEN_PULL_COST?'disabled':''}><span class="shop-draw-label">10連ガチャ</span><span class="shop-draw-caption">${GACHA_TEN_PULL_COST} G</span></button></div>
  ${nextGacha.missing>0?`<div class="shop-next-adventure"><span>あと <strong>${nextGacha.missing} G</strong> で1回ガチャ</span><button id="shop-go-quest" type="button">冒険でお宝を集める</button></div>`:''}
  <p class="shop-gacha-result" id="shop-gacha-result" role="status" aria-live="polite">${escapeHtml(forgeMessage||'')}</p>
  <details class="shop-gacha-disclosure shop-catalog-disclosure" id="shop-gacha-catalog" ${shopCatalogOpen?'open':''}><summary>武器図鑑 <span>発見 ${ownedDraws}/${featured.length} 種</span></summary><div class="shop-gacha-disclosure-content"><p>入手した武器だけ、名前・姿・性能を公開します。</p>${gachaCatalogHtml(save,featured)}<div class="shop-discovery-rewards"><strong>発見報酬</strong><div>${WEAPON_DISCOVERY_REWARDS.map(reward=>`<span class="${ownedDraws>=reward.count?'is-earned':''}">${reward.count}種 · ${reward.gold} G ${ownedDraws>=reward.count?'獲得済み':''}</span>`).join('')}</div></div></div></details>

@@ -309,7 +309,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      proofButton.hidden=!proof;
      if(proof)proofButton.textContent=proof.label;
    },
-   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0,summon=null}){
+   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,firstEncounterPending=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0,summon=null}){
      const cleared=areasCleared+cityAreasCleared+ruinsAreasCleared;
      const allCleared=totalAreas>0&&cleared===totalAreas;
      chapter.querySelector('#home-chapter-counter').textContent=String(Math.min(cleared+1,totalAreas)).padStart(2,'0')+' / '+totalAreas;
@@ -318,9 +318,10 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      chapter.querySelector('.home-chapter-progress').setAttribute('aria-valuenow',String(totalAreas?Math.round(cleared/totalAreas*100):0));
      hasPlayed=hasAttempted||cleared>0;
      quest.hidden=!hasPlayed;
+     feature.classList.toggle('home-awaiting-companion',firstEncounterPending);
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
-     menu.querySelector('#home-menu-level').textContent='Lv.'+level+' · 絆 Lv.'+bondRank;
+     menu.querySelector('#home-menu-level').textContent=firstEncounterPending?'冒険で出会う':'Lv.'+level+' · 絆 Lv.'+bondRank;
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';

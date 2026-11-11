@@ -579,7 +579,18 @@ const path=require('node:path');
       'A clear primary adventure button replaces introductory exposition');
     assert.equal(await menuPage.locator('[data-feature-dungeon]').isVisible(),true);
     assert.equal(await menuPage.locator('#home-feature-practice').isVisible(),true,'First-time visitors see a practice shortcut');
-    assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),1,'Only the one unlocked starter companion walks');
+    assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),0,
+      'An unopened adventure must not feature an unexplained fried-egg walker');
+    assert.equal(await menuPage.locator('#home-menu-name').innerText(),'まだ見ぬ仲間');
+    // After an actual attempt, the recruited companion may animate on home.
+    await menuPage.evaluate(async()=>{
+      const {createSave,STORAGE_KEY}=await import('./monster-engine.js');
+      localStorage.setItem(STORAGE_KEY,JSON.stringify({...createSave(),totalAnswers:1}));
+    });
+    await menuPage.reload();
+    await menuPage.locator('#home-extra-modes > summary').click();
+    assert.equal(await menuPage.locator('#home-navigation .home-walker').count(),1,
+      'After the introduction only the one owned companion walks');
     assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'false');
     await menuPage.locator('#toggle-simple-motion').click();
     assert.equal(await menuPage.locator('#toggle-simple-motion').getAttribute('aria-pressed'),'true');

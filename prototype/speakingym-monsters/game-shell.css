@@ -34,7 +34,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;op
  box-shadow:0 -12px 36px #010911bd,inset 0 1px 0 #d7eaff2a;backdrop-filter:blur(16px)}
 .game-tabs button{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;
  min-width:0;min-height:57px;padding:7px 1px 3px;border:0;border-radius:12px;background:transparent;
- color:#a7b9cf;font-size:10px;font-weight:900;letter-spacing:.02em}
+ color:#d1def0;font-size:10px;font-weight:900;letter-spacing:.02em;white-space:nowrap;word-break:keep-all}
 .game-tabs button svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .game-tabs button[aria-current="page"]{color:#ffe6a4;background:linear-gradient(180deg,#eabd7030,#caa34e08)}
 .game-tabs button[aria-current="page"]::before{content:"";position:absolute;top:-7px;left:28%;right:28%;height:3px;border-radius:8px;background:#ffe5a2;box-shadow:0 0 12px #ffdd7d}
@@ -192,19 +192,32 @@ body[data-game-view="play"] .app-shell{padding-bottom:0}
 .summon-banner-title b{font-size:.6em;color:#ffdb86;letter-spacing:.13em}
 .summon-banner-spark{position:absolute;right:21%;top:47%;height:43px;width:43px;transform:rotate(45deg);
  background:radial-gradient(#fffbe3,#e6be79 25%,transparent 70%);filter:drop-shadow(0 0 25px #fff1a6)}
-.shop-gacha #shop-draw{position:relative;overflow:hidden;color:#2e2433;min-height:64px;font-size:clamp(16px,2.5vw,21px);
+.shop-gacha #shop-draw{position:relative;overflow:hidden;color:#2e2433;min-height:77px;font-size:clamp(14px,3.7vw,21px);
  background:linear-gradient(180deg,#fff2c4 0%,#f5ce74 46%,#bc7c35 100%);
  border:2px solid #fff6d7;border-radius:14px;box-shadow:0 5px 0 #6d4f2f,0 11px 23px #050e21;font-weight:950;text-shadow:0 1px #fff7db80}
 .shop-gacha #shop-draw::after{content:"";position:absolute;inset:-100% auto -100% -40%;width:32%;transform:rotate(22deg);
  background:linear-gradient(90deg,transparent,#ffffffa8,transparent);animation:forge-glint 4.5s ease-in-out infinite}
 .shop-gacha #shop-draw:disabled::after{animation:none}
-.shop-draw-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
-.shop-gacha #shop-draw-ten{min-height:64px;padding:9px 8px;color:#fff3d1;font-size:clamp(13px,2.4vw,18px);
+.shop-draw-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.shop-gacha .shop-draw-options>button{display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:4px;width:100%;min-width:0;max-width:100%;min-height:77px;padding:10px 4px;box-sizing:border-box;text-align:center;
+ line-break:strict;word-break:keep-all;overflow-wrap:normal}
+.shop-draw-options .shop-draw-label{display:block;flex:none;max-width:100%;white-space:nowrap;word-break:keep-all;
+ overflow-wrap:normal;letter-spacing:-.025em;line-height:1.25}
+.shop-gacha #shop-draw-ten{min-height:77px;padding:10px 4px;color:#fff3d1;font-size:clamp(14px,3.7vw,18px);
  font-weight:950;line-height:1.3;cursor:pointer;border:2px solid #ffe2a6;border-radius:14px;
  background:linear-gradient(140deg,#55429c,#9e559c 55%,#6a3166);
  box-shadow:0 5px 0 #3c2049,0 11px 23px #050e21;text-shadow:0 1px 8px #24133b}
-.shop-gacha #shop-draw-ten:disabled{opacity:.52;filter:saturate(.6);cursor:not-allowed}
-.shop-draw-options .shop-draw-caption{display:block;font-size:11px;letter-spacing:.03em;opacity:.94}
+.shop-gacha #shop-draw:disabled,.shop-gacha #shop-draw-ten:disabled{opacity:1;filter:saturate(.72);cursor:not-allowed}
+.shop-gacha #shop-draw:disabled{color:#392618;background:linear-gradient(180deg,#ead69f,#dbb96f 60%,#b88955)}
+.shop-gacha #shop-draw-ten:disabled{color:#fff1d1;background:linear-gradient(140deg,#4b367b,#71437b 60%,#59305e)}
+.shop-draw-options .shop-draw-caption{display:block;flex:none;font-size:clamp(12px,3.2vw,15px);
+ font-weight:900;line-height:1.2;letter-spacing:.03em;white-space:nowrap;word-break:keep-all;opacity:1}
+.shop-next-adventure>span{min-width:0;line-break:strict;word-break:keep-all;overflow-wrap:normal}
+.shop-next-adventure button{white-space:nowrap;word-break:keep-all;max-width:100%}
+.shop-gacha #shop-gacha-details>summary,.shop-gacha #shop-gacha-catalog>summary{
+ color:#f5e9cc;line-break:strict;word-break:keep-all}
+@media(max-width:360px){.shop-draw-options{gap:7px}.shop-gacha .shop-draw-options>button{padding-inline:2px}}
 .collection-weapons{background:linear-gradient(125deg,#243d4e,#1b2e43);border:1px solid #678b93;color:#f3edda;box-shadow:0 6px 0 #081522}
 .collection-weapons h2,.collection-weapons .forest-treasures-heading h2{color:#ffe8b3}
 .collection-weapons p{color:#c2d7db}
