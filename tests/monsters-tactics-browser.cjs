@@ -99,8 +99,10 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('#answer-area').isVisible(),false,'There is nothing to answer until a type is chosen');
      await page.locator('.forest-attack-select [data-tactic-kind="speak"]').click();
      assert.equal(await page.locator('#play-card').isVisible(),true,'The question appears only after choosing a type');
-     assert.match(await page.locator('.forest-turn-task > strong').innerText(),/② 正解で攻撃、ミスで反撃/,
-       'All four attack types should use a truthful instruction, including Japanese listening choices');
+     assert.equal(await page.locator('.forest-turn-task').count(),0,
+       'Choosing an attack opens the question directly without another numbered instruction banner');
+     assert.match(await page.locator('.forest-tactic-strategy > summary').innerText(),/攻撃：スピーキング/,
+       'The compact turn status keeps the chosen skill visible');
      assert.equal(await page.locator('#forest-party-formation').isVisible(),false);
      assert.equal(await page.locator('#forest-party-hp').isVisible(),true);
      if(width===320){
@@ -286,7 +288,7 @@ const assert=require('node:assert/strict');
      const livingEnemyOpacity=Number(await page.locator('#forest-enemy').evaluate(el=>getComputedStyle(el).opacity));
      assert.ok(livingEnemyOpacity>.85,`${engine}/${width}: injured enemy disappeared after the first hit (${livingEnemyOpacity})`);
      await page.locator('#next-question').click();
-     assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法を防ぐ/s);
+     assert.match(await page.locator('#forest-tactics').innerText(),/敵の攻撃：文法/);
      assert.equal(await page.locator('.forest-turn-task').count(),0,
        'First-turn explanation stays hidden after the first verified action');
      assert.equal(await page.locator('#play-card').getAttribute('data-prompt-id')!==null,true);
@@ -329,7 +331,7 @@ const assert=require('node:assert/strict');
      assert.ok(browserLayout.scroll<=browserLayout.width+1,`${engine}/${width}: horizontal overflow ${JSON.stringify(browserLayout)}`);
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Next player turn again starts with skill choice');
      await page.locator('.forest-attack-select [data-tactic-kind="listen"]').click();
-     assert.match(await page.locator('.forest-tactic-strategy > summary').innerText(),/攻撃：リスニング.*確定/);
+     assert.match(await page.locator('.forest-tactic-strategy > summary').innerText(),/攻撃：リスニング/);
      await answer(page);
      if(width===390){
        assert.match(await page.locator('.forest-chain-result').innerText(),/1 CHAIN[\s\S]*コンボ開始！/,
@@ -886,7 +888,7 @@ const assert=require('node:assert/strict');
    await shiftingPage.locator('#next-question').click();
    assert.equal(await shiftingPage.locator('.forest-attack-select').isVisible(),true,'Each new attack chooses its type before a question');
    await shiftingPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
-   assert.match(await shiftingPage.locator('.forest-tactic-strategy > summary').innerText(),/攻撃：文法.*確定/);
+   assert.match(await shiftingPage.locator('.forest-tactic-strategy > summary').innerText(),/攻撃：文法/);
    await answer(shiftingPage);
    assert.ok(Number(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'))<=2,
      'The battle continues with the committed skill type until the foe is defeated');

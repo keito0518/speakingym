@@ -87,7 +87,7 @@ const assert=require('node:assert/strict');
    await answer(); // Authored listening boss question: correct English unlocks the first strike.
    await page.locator('#next-question').click();
   }
-  assert.match(await page.locator('#forest-tactics').innerText(),/敵のターン.*文法/s);
+  assert.match(await page.locator('#forest-tactics').innerText(),/敵の攻撃：文法/);
   assert.equal(await page.locator('.forest-boss-cover').getAttribute('data-cover-ready'),'true');
   const before=await page.locator('#forest-party-hp').getAttribute('aria-valuenow');
   await page.locator('#spoken-answer').fill('wrong answer');

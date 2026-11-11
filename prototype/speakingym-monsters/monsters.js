@@ -1177,10 +1177,9 @@ function simplifyTacticalInterface(panel,t,{incoming,supportReady}){
  const kind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
  // Even with the detail drawer closed, the defender must instantly know
  // which English skill the enemy is using; never hide that in a long note.
- summary.innerHTML=`<span>${incoming?`敵のターン · ${BATTLE_LABELS[t.enemyKind]}を防ぐ`:`攻撃：${BATTLE_LABELS[kind]} · 確定`}</span><small>${status}</small>`;
+ summary.innerHTML=`<span>${incoming?`敵の攻撃：${BATTLE_LABELS[t.enemyKind]}`:`攻撃：${BATTLE_LABELS[kind]}`}</span><small>${status}</small>`;
  strategy.append(summary);
- [...panel.children].filter(child=>child!==strategy&&
-   !child.matches('.forest-turn-task'))
+ [...panel.children].filter(child=>child!==strategy)
    .forEach(child=>strategy.append(child));
  panel.append(strategy);
  // Swapping allies matters in battle. Do not bury it under two accordion
@@ -1267,7 +1266,6 @@ function renderTacticalControls(){
  if(weak){weak.hidden=false;weak.textContent=`Weak: ${WEAK_BADGE_LABELS[element.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[element.weak]}`);weak.dataset.kind=element.weak;}
  const finalBossStrike=boss&&play.index===regularCount()+BOSS_HITS-1;
  const incoming=t.turn==='enemy';
- const firstFight=play.wave===1&&play.index===0&&save.completedRuns===0&&!t.usedPromptIds.size;
  const party=battleParty();
  const attackKind=currentPrompt()?.kind==='read'?'speak':currentPrompt()?.kind;
  const supportId=!incoming?supportPartnerFor({kind:attackKind,activeId:play.companionId,party:t.party}):null;
@@ -1303,7 +1301,9 @@ function renderTacticalControls(){
    if(boss)t.nextEnemyKind=finalBossStrike?null:bossThreat.kind;
    else if(!t.nextEnemyKind)t.nextEnemyKind=foePlannedAttack({style:foeStyle,activeId:play.companionId,last:t.lastEnemyKind});
  }
- panel.innerHTML=`${firstFight?`<p class="forest-turn-task" data-turn="${incoming?'enemy':'player'}"><strong>${incoming?'③ 敵の反撃を防ごう':'② 正解で攻撃、ミスで反撃'}</strong>${incoming?`<span>${BATTLE_LABELS[t.enemyKind]}に正解して防ごう。</span>`:''}</p>`:''}<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
+ // The question, battle HUD and optional "遊び方" guide already explain the
+ // turn. Avoid a numbered tutorial banner competing with the answer area.
+ panel.innerHTML=`<div class="forest-tactic-heading"><strong>${incoming?'敵のターン · 防御問題':'味方のターン · 攻撃問題'}</strong><span>${incoming?'正解ならダメージ0':`敵の弱点：${BATTLE_LABELS[element.weak]}　耐性：${BATTLE_LABELS[element.resist]}`}</span></div>
   ${!incoming&&t.autoSwitchedTo?`<p class="forest-tactic-forecast" role="status">前の仲間が倒れたため、${escapeHtml(monsterFor(t.autoSwitchedTo).name)}が出撃！ 続けて英語で戦おう。</p>`:''}
   ${foeStyle?`<p class="forest-tactic-foe-style" data-foe-style="${foeStyle.id}" data-foe-shifted="${String(t.foeShifted)}"><strong>${foeStyle.name}</strong> ${foeStyle.id==='shift'&&t.foeShifted?`弱点変化済み：${BATTLE_LABELS[element.weak]}に弱い · ${BATTLE_LABELS[element.resist]}に耐性`:foeStyle.tip}${foeStyle.id==='shell'&&!t.styleShieldIntact?' · 殻は破れた！':''}</p>`:''}
   <p class="forest-tactic-matchup">${incoming?`${BATTLE_LABELS[t.enemyKind]}が飛んでくる！ 答えれば防げるよ。`:`仲間の得意：${BATTLE_LABELS[ally.strong]} · 苦手：${BATTLE_LABELS[ally.weak]}`}</p>
