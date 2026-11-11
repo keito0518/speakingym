@@ -409,8 +409,8 @@ const path=require('node:path');
       await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
       await page.locator('#start-forest-simple').click();
       assert.equal(await page.locator('#forest-explore-screen').isVisible(),true);
-      assert.equal(await page.locator('#forest-explore-art .mystery-monster-art').count(),1,
-        'A first-time explorer should see a mysterious presence, not an unexplained fried egg');
+      assert.equal(await page.locator('#forest-explore-art .forest-encounter-eyes').count(),1,
+        'The first meeting should show glowing eyes in the woods, not a question-mark tile or a fried egg');
       assert.equal(await page.locator('#forest-explore-art [data-pixel-sprite="medamago"]').count(),0);
       assert.match(await page.locator('#forest-explore-description').innerText(),/小さな影/);
       await page.locator('#forest-explore-continue').click();

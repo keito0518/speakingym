@@ -19,6 +19,12 @@ export function mysteryMonsterArt(){
  return '<svg viewBox="0 0 180 164" class="monster-svg pixel-art mystery-monster-art" role="img" aria-label="未発見の仲間" xmlns="http://www.w3.org/2000/svg"><g shape-rendering="crispEdges"><path d="M50 141h80v8H50z" fill="#b9cfce"/><path d="M62 62h56v16h14v50H48V78h14z" fill="#637f8c"/><path d="M70 44h40v16H70z" fill="#637f8c"/><path d="M54 79h8v43h-8zM118 79h8v43h-8z" fill="#415f72"/><path d="M78 66h24v11H90v12H79v-12h-1zM79 99h11v11H79z" fill="#f8ebbc"/><rect x="37" y="52" width="8" height="8" fill="#b8d8d1"/><rect x="137" y="37" width="6" height="6" fill="#d6e3c5"/><rect x="143" y="96" width="7" height="7" fill="#c9dbcf"/></g></svg>';
 }
 
+// First forest meeting: eyes peeking through foliage feel like a creature in
+// the world, not a placeholder '?' tile standing in for a finished character.
+export function forestEncounterEyesArt(){
+ return '<svg viewBox="0 0 180 164" class="monster-svg pixel-art forest-encounter-eyes" role="img" aria-label="茂みの奥に小さな目が光る" xmlns="http://www.w3.org/2000/svg"><g shape-rendering="crispEdges"><path d="M23 136v-16h12v-22h15V80h16V65h18V51h16v14h18v15h14v18h15v22h12v16z" fill="#1a4235" stroke="#3b7959" stroke-width="5"/><path d="M28 127h20v-20h19V91h46v16h21v20h18v11H28z" fill="#102e2c"/><path d="M38 97h15V78h17V66h15v19H70v17H54v17H38zM108 62h14v17h16v19h13v20h-17V99h-16V85h-10z" fill="#2c6549"/><g class="forest-encounter-gaze"><rect x="61" y="98" width="20" height="11" fill="#e7d993"/><rect x="101" y="98" width="20" height="11" fill="#e7d993"/><rect x="71" y="98" width="7" height="11" fill="#213e32"/><rect x="101" y="98" width="7" height="11" fill="#213e32"/></g><rect x="29" y="52" width="7" height="7" fill="#91bfa1"/><rect x="140" y="67" width="6" height="6" fill="#a5c390"/></g></svg>';
+}
+
 export function monsterArt(id,form=false,weapon=null){
   // Keep the established 15-character atlas intact; new residents have their
   // own authored, crisp-edged silhouettes at the same native pixel scale.

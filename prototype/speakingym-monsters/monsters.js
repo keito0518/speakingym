@@ -4,7 +4,7 @@ import { monsterHuntBoard, chainChestAt, awardChainChests } from './monster-enga
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
-import { monsterArt, mysteryMonsterArt } from './monster-art.js';
+import { monsterArt, mysteryMonsterArt, forestEncounterEyesArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, DUNGEON_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest } from './forest-engine.js';
@@ -1506,7 +1506,7 @@ function showForestExplore() {
   const meetingFirstCompanion=play.firstCompanionMeeting && play.index===0;
   // The first world should reveal its companion during the adventure, not
   // suddenly place an unexplained fried-egg sprite on the opening route.
-  const mapCompanionArt=meetingFirstCompanion?mysteryMonsterArt():monsterArt(companion.id,formStage,equippedWeapon(save));
+  const mapCompanionArt=meetingFirstCompanion?forestEncounterEyesArt():monsterArt(companion.id,formStage,equippedWeapon(save));
   map.innerHTML=forestWorldArt(play.route,play.areaId)+
     '<div class="forest-explore-depth" aria-hidden="true"></div>'+
     '<div class="forest-explore-companion">'+mapCompanionArt+'</div>'+
