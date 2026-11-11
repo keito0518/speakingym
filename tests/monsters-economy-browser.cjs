@@ -40,7 +40,7 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#home-menu-art .mystery-monster-art').count(),1);
   assert.equal(await page.locator('.home-walker').count(),0);
   await page.locator('[data-feature-dungeon]').click();
-  assert.match(await page.locator('#forest-companion-name').innerText(),/森で合流 · Yolkie/,
+  assert.match(await page.locator('#forest-companion-name').innerText(),/初めての仲間 · Yolkie/,
    'The first companion needs an introduction when the battle begins, without another tap');
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('#leave-play').click();

@@ -62,6 +62,15 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  background:#16374e;
 }
 #play-view.scene-battle #forest-world-stage .forest-party{top:clamp(24px,5dvh,45px);left:18%;bottom:auto}
+#play-view.scene-battle #forest-world-stage[data-first-companion="true"]:not(.forest-attack) #forest-player-art .monster-svg{
+ animation:forest-first-ally-arrival 1s cubic-bezier(.18,.76,.3,1) both;
+}
+@keyframes forest-first-ally-arrival{
+ 0%{opacity:0;transform:translateY(27px) scale(.55);filter:brightness(.1) drop-shadow(0 0 1px #c8f3a2)}
+ 45%{opacity:1;filter:brightness(.8) drop-shadow(0 0 14px #d9f19c)}
+ 75%{transform:translateY(-7px) scale(1.12);filter:brightness(1.12) drop-shadow(0 0 11px #fff2b6)}
+ 100%{opacity:1;transform:translateY(0) scale(1);filter:none}
+}
 #play-view.scene-battle #forest-world-stage .forest-enemy{top:clamp(24px,5dvh,45px);right:13%;bottom:auto}
 #play-view.scene-battle #forest-world-stage.forest-boss-stage .forest-enemy{top:15px;right:8%}
 #play-view.scene-battle #forest-world-stage .forest-world-trail-label{top:6px;left:8px}
@@ -626,6 +635,7 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  #play-view.scene-battle .forest-explore-event{max-height:calc(100% - 105px)}
 }
 @media(prefers-reduced-motion:reduce){
+ #play-view.scene-battle #forest-world-stage[data-first-companion="true"] #forest-player-art .monster-svg{animation:none!important}
  #play-view.scene-battle .forest-party::before,
  #play-view.scene-battle .forest-explore-screen,
  #play-view.scene-battle .forest-world-vignette,
@@ -650,6 +660,7 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  #play-view.scene-battle .cinematic-combo-flare{opacity:0!important}
 }
 html.monsters-quiet-motion #play-view.scene-battle .forest-party::before,
+html.monsters-quiet-motion #play-view.scene-battle #forest-world-stage[data-first-companion="true"] #forest-player-art .monster-svg,
 html.monsters-quiet-motion #play-view.scene-battle .forest-world-vignette,
 html.monsters-quiet-motion #play-view.scene-battle .cinematic-chain-halo,
 html.monsters-quiet-motion #play-view.scene-battle .cinematic-speed-trails,

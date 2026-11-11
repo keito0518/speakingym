@@ -4,7 +4,7 @@ import { monsterHuntBoard, chainChestAt, awardChainChests } from './monster-enga
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
 import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
-import { monsterArt, mysteryMonsterArt, forestEncounterEyesArt } from './monster-art.js';
+import { monsterArt, forestEncounterEyesArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
 import { cleanForest, FOREST_ROUTES, CITY_ROUTES, RUINS_ROUTES, FOREST_RELICS, FOREST_AREAS, CITY_AREAS, RUINS_AREAS, DUNGEON_AREAS, unlockedDungeonAreas, nextDungeonArea, dungeonAreaFor, finishForest } from './forest-engine.js';
@@ -808,7 +808,9 @@ function renderHome() {
   $('#hero-vocab').innerHTML = creature.roots.map(root=>`<span class="vocab-chip"><strong>${escapeHtml(root.word)}</strong> <span>${escapeHtml(root.meaning)}</span></span>`).join('');
   renderDifficulty();
   homeNavigation?.updateHero({
-    art:firstEncounterPending?mysteryMonsterArt():monsterArt(creature.id,growth.stage,equippedWeapon(save)),
+    // Tease the SAME eyes that appear on the first forest route. The generic
+    // square mystery tile looked like a missing asset on the opening screen.
+    art:firstEncounterPending?forestEncounterEyesArt():monsterArt(creature.id,growth.stage,equippedWeapon(save)),
     name:firstEncounterPending?'まだ見ぬ仲間':monsterFormName(creature,growth.stage),
     firstEncounterPending,
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,ownedCount:save.ownedMonsters.length,
@@ -970,8 +972,11 @@ function renderForestHud() {
     // Keep the legacy flag for existing battle UI and save-transfer QA.
     $('#forest-party').dataset.evolved=String(evolved);
   }
-  $('#forest-companion-name').textContent=`${play.firstCompanionMeeting?'森で合流 · ':''}${monsterFormName(companion,progress.stage)} · Lv.${progress.level}`;
+  $('#forest-companion-name').textContent=`${play.firstCompanionMeeting?'初めての仲間 · ':''}${monsterFormName(companion,progress.stage)} · Lv.${progress.level}`;
   const world=$('#forest-world-stage');
+  // The opening forest's hidden eyes resolve into an ally when the first
+  // battle opens. Later encounters retain their normal combat presentation.
+  world.dataset.firstCompanion=String(play.firstCompanionMeeting&&play.index===0&&play.wave===1);
   const currentRoute=play.route||'wild';
   const arenaKey=play.areaId+':'+currentRoute+':'+(play.index>=regularCount()?'boss':'mob');
   if(world.dataset.renderedRoute!==arenaKey){

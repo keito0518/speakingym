@@ -405,6 +405,10 @@ const path=require('node:path');
     // sprite before the game has introduced who joins them in the forest.
     {
       const {context,page}=await boot(320,'reduce');
+      assert.equal(await page.locator('#home-menu-art .forest-encounter-eyes').count(),1,
+        'The home teaser and first forest encounter should share the same foliage artwork');
+      assert.equal(await page.locator('#home-menu-art .mystery-monster-art').count(),0,
+        'Do not show the generic square mystery placeholder on the opening home screen');
       await page.locator('[data-feature-worlds]').click();
       await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
       await page.locator('#start-forest-simple').click();
@@ -414,8 +418,15 @@ const path=require('node:path');
       assert.equal(await page.locator('#forest-explore-art [data-pixel-sprite="medamago"]').count(),0);
       assert.match(await page.locator('#forest-explore-description').innerText(),/小さな影/);
       await page.locator('#forest-explore-continue').click();
-      assert.match(await page.locator('#forest-companion-name').innerText(),/森で合流 · Yolkie/,
+      assert.match(await page.locator('#forest-companion-name').innerText(),/初めての仲間 · Yolkie/,
         'The battle itself reveals the companion as part of the first encounter');
+      assert.equal(await page.locator('#forest-world-stage').getAttribute('data-first-companion'),'true',
+        'The starter should have a first-meeting reveal only at the opening fight');
+      assert.equal(await page.locator('#forest-player-art .monster-svg').evaluate(e=>getComputedStyle(e).animationName),'none',
+        'Respect reduced-motion preference during the first reveal');
+      await page.emulateMedia({reducedMotion:'no-preference'});
+      assert.equal(await page.locator('#forest-player-art .monster-svg').evaluate(e=>getComputedStyle(e).animationName),'forest-first-ally-arrival',
+        'Normal motion should give the first ally a one-time appearance animation');
       await context.close();
     }
     // Every owned character uses a distinct actual CSS attack with motion enabled.
