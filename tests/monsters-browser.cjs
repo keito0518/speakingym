@@ -1526,6 +1526,21 @@ const path=require('node:path');
         'The streamlined hint remains easy to tap');
       const battleMetrics=await forestPage.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
       assert.ok(battleMetrics.scroll<=battleMetrics.inner+1,`${engine}/${width} forest battle overflow: ${JSON.stringify(battleMetrics)}`);
+      if(await forestPage.locator('#mic-button').isVisible()){
+        const micLayout=await forestPage.locator('#mic-button').evaluate(button=>{
+          const label=button.querySelector('span:last-child');
+          return {
+            whiteSpace:getComputedStyle(label).whiteSpace,
+            wordBreak:getComputedStyle(label).wordBreak,
+            textWidth:label.getBoundingClientRect().width,
+            buttonWidth:button.getBoundingClientRect().width,
+            labelText:label.textContent
+          };
+        });
+        assert.equal(micLayout.whiteSpace,'nowrap',`${engine}/${width} microphone label must not break vertically`);
+        assert.equal(micLayout.wordBreak,'keep-all');
+        assert.ok(micLayout.textWidth<micLayout.buttonWidth,`${engine}/${width} microphone text must fit: ${JSON.stringify(micLayout)}`);
+      }
       await forestPage.screenshot({path:path.join(shots,`forest-${engine}-${width}-battle.png`),fullPage:true});
       const answer=async()=>{
         if(await forestPage.locator('#play-audio').count()){

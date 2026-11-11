@@ -141,6 +141,22 @@ const path=require('node:path');
       });
       await page.locator('[data-pronounce-word="sunny-side up"]').click();
       assert.deepEqual(await page.evaluate(()=>window.__spoken),[{text:'sunny-side up',lang:'en-US'}]);
+      const evolutionLayout=await page.locator('#detail-content .evolution-path').evaluate(path=>({
+        layout:getComputedStyle(path).display,
+        stages:[...path.querySelectorAll('span[lang="en"]')].map(stage=>({
+          whiteSpace:getComputedStyle(stage).whiteSpace,
+          wordBreak:getComputedStyle(stage).wordBreak,
+          scroll:stage.scrollWidth,
+          width:stage.clientWidth
+        }))
+      }));
+      assert.equal(evolutionLayout.layout,'grid',`${width}px evolution should be a readable vertical path`);
+      assert.equal(evolutionLayout.stages.length,3);
+      for(const stage of evolutionLayout.stages){
+        assert.equal(stage.whiteSpace,'nowrap',`${width}px evolution names must not be split mid-word`);
+        assert.equal(stage.wordBreak,'keep-all');
+        assert.ok(stage.scroll<=stage.width+1,`${width}px evolution stage must fit: ${JSON.stringify(stage)}`);
+      }
       await noOverflow(page,`${width} detail`);
       await page.waitForTimeout(300);
       await page.screenshot({path:path.join(shots,`detail-${engine}-${width}.png`),fullPage:true});

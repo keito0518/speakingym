@@ -242,6 +242,34 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 #home-next-quest #home-next-quest-button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 @media(max-width:540px){#home-next-quest #home-next-quest-button{width:100%}}
 
+/* Narrow battle phones once crushed the microphone label into vertical
+   Japanese characters. Reserve a real tap target without shrinking input. */
+#play-view.scene-battle #forest-arena-console #answer-area:not(.native-ios-speech) .answer-row #mic-button{
+ flex:0 0 76px;min-width:76px;max-width:76px;
+ flex-direction:column;gap:3px;padding:6px 4px;
+ white-space:nowrap;word-break:keep-all;
+}
+#play-view.scene-battle #forest-arena-console #mic-button>span:last-child{
+ display:block;flex:none;white-space:nowrap;word-break:keep-all;line-height:1.25;
+}
+
+/* Evolution names are whole names, not free-break chunks. On phone widths,
+   a short vertical progression reads better than three crushed columns. */
+@media(max-width:600px){
+ .evolution-path{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:10px 12px}
+ .evolution-path>span[lang="en"]{
+  display:grid;justify-items:start;gap:3px;padding:8px 11px;
+  border-radius:9px;background:#fff9ed;color:#254e3f;
+  font-size:13px;line-height:1.4;white-space:nowrap;
+  word-break:keep-all;overflow-wrap:normal;
+ }
+ .evolution-path>span[lang="en"] small{font-size:11px;color:#5a644f;white-space:nowrap}
+ .evolution-path>span[aria-hidden="true"]{
+  display:block;justify-self:center;flex:none;
+  font-size:16px;line-height:1;color:#866e42;transform:rotate(90deg);
+ }
+}
+
 /* A launch screen is a choice, not another encyclopedia. The selected
    companion is still recognizable; growth, weapon and word lists stay
    available from 仲間 and its encyclopedia screen. */
