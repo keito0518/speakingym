@@ -219,6 +219,29 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .home-feature{min-height:0}
 .home-feature-cta{font-size:clamp(14px,3vw,17px)}
 
+/* The returning-player review recommendation inherited pale text from the
+   game shell but a light retention gradient from clarity.css. Keep every
+   recommendation on one dark surface with a clearly contrasting action. */
+#home-next-quest,
+#home-next-quest[data-quest-kind="retention"],
+#home-next-quest[data-quest-kind="review"]{
+ background:linear-gradient(130deg,#263d54,#15293d);
+ border:1px solid #6d8ca2;
+ border-left:4px solid #efb862;
+ color:#f6f9fb;
+}
+#home-next-quest .home-next-quest-kicker{color:#ffe2aa}
+#home-next-quest h2{color:#fff2cf}
+#home-next-quest #home-next-quest-button{
+ max-width:100%;min-height:48px;padding:10px 17px;
+ border:2px solid #fff0c7;border-radius:11px;
+ background:#ffe1a0;color:#172739;
+ font-size:clamp(14px,3.6vw,16px);font-weight:900;line-height:1.4;
+ white-space:nowrap;word-break:keep-all;overflow-wrap:normal;text-shadow:none;
+}
+#home-next-quest #home-next-quest-button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:540px){#home-next-quest #home-next-quest-button{width:100%}}
+
 /* A launch screen is a choice, not another encyclopedia. The selected
    companion is still recognizable; growth, weapon and word lists stay
    available from 仲間 and its encyclopedia screen. */

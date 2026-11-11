@@ -828,6 +828,47 @@ const path=require('node:path');
       await shortPage.reload();
       assert.match(await shortPage.locator('#home-next-quest-detail').innerText(),/4問.*3問だけ/);
       assert.match(await shortPage.locator('#home-next-quest-button').innerText(),/3問だけ復習/);
+      // The spaced-review recommendation was pale-on-pale even though the
+      // regular home mission uses a dark panel. Test the *computed* colors,
+      // including all gradient stops, so CSS cascade regressions are caught.
+      for(const width of [320,375,390]){
+        await shortPage.setViewportSize({width,height:844});
+        const visual=await shortPage.evaluate(()=>{
+          const card=document.querySelector('#home-next-quest');
+          const heading=document.querySelector('#home-next-quest-title');
+          const button=document.querySelector('#home-next-quest-button');
+          const cardStyle=getComputedStyle(card),headingStyle=getComputedStyle(heading),buttonStyle=getComputedStyle(button);
+          const rgb=value=>(value.match(/\d+(?:\.\d+)?/g)||[]).slice(0,3).map(Number);
+          const luminance=color=>{
+            const channels=rgb(color).map(v=>{
+              const fraction=v/255;
+              return fraction<=0.04045?fraction/12.92:((fraction+0.055)/1.055)**2.4;
+            });
+            return channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;
+          };
+          const contrast=(a,b)=>{
+            const [light,dark]=[luminance(a),luminance(b)].sort((a,b)=>b-a);
+            return (light+0.05)/(dark+0.05);
+          };
+          const stops=cardStyle.backgroundImage.match(/rgba?\([^)]+\)/g)||[];
+          return {
+            titleContrast:Math.min(...stops.map(stop=>contrast(headingStyle.color,stop))),
+            actionContrast:contrast(buttonStyle.color,buttonStyle.backgroundColor),
+            actionWhiteSpace:buttonStyle.whiteSpace,
+            actionFontSize:parseFloat(buttonStyle.fontSize),
+            horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+            actionWidth:button.getBoundingClientRect().width,
+            cardWidth:card.getBoundingClientRect().width
+          };
+        });
+        assert.ok(visual.titleContrast>=4.5,`${width}px review heading must have readable contrast: ${JSON.stringify(visual)}`);
+        assert.ok(visual.actionContrast>=7,`${width}px review action must have strong color contrast: ${JSON.stringify(visual)}`);
+        assert.equal(visual.actionWhiteSpace,'nowrap',`${width}px review action must not split mid-label`);
+        assert.ok(visual.actionFontSize>=14,`${width}px review action must remain legible: ${JSON.stringify(visual)}`);
+        assert.ok(visual.horizontalOverflow<=1,`${width}px review must not scroll horizontally: ${JSON.stringify(visual)}`);
+        assert.ok(visual.actionWidth<=visual.cardWidth,`${width}px review action must fit inside card: ${JSON.stringify(visual)}`);
+      }
+      await shortPage.setViewportSize({width:375,height:844});
       await shortPage.locator('#home-next-quest-button').click();
       assert.match(await shortPage.locator('#play-mode-label').innerText(),/3問の定着チェック/);
       for(let index=0;index<3;index++){
