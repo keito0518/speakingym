@@ -37,7 +37,8 @@ const {chromium,webkit}=require('playwright');
   // An unexplained fried-egg companion must not greet an empty save.
   assert.equal(await page.locator('.home-feature.home-awaiting-companion').count(),1);
   assert.equal(await page.locator('#home-menu-name').innerText(),'まだ見ぬ仲間');
-  assert.equal(await page.locator('#home-menu-art .mystery-monster-art').count(),1);
+  assert.equal(await page.locator('#home-menu-art .forest-encounter-eyes').count(),1,
+   'The first home should foreshadow the forest meeting, not show a square placeholder');
   assert.equal(await page.locator('.home-walker').count(),0);
   await page.locator('[data-feature-dungeon]').click();
   assert.match(await page.locator('#forest-companion-name').innerText(),/初めての仲間 · Yolkie/,
