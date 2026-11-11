@@ -2547,7 +2547,6 @@ async function gradeAnswer() {
     const weaponBonus=t?weaponAffinityBonus(save,attackKind,{independent:rating==='smooth'}):0;
     let weaponTechnique=null,weaponTechniqueHeal=0;
     const special=t?{...rawSpecial,damage:scaledStrikeDamage(rawSpecial.damage,form.level,save,{kind:attackKind,independent:rating==='smooth'})}:rawSpecial;
-    let actualHitDamage=special.damage;
     const healed=t?Math.min((usedUltimate&&boss?2:0)+(duo?.extraHeal||0)+(bossCounter?.heal||0)+(mastery?.heal||0),t.maxHp-t.hp):0;
     let foeShiftNow=false;
     let eliteLoot=null;
@@ -2579,7 +2578,6 @@ async function gradeAnswer() {
       if(boss)play.bossHits=Math.min(BOSS_HITS,play.bossHits+1);
       else{
         const previousHp=t.enemyHp;
-        actualHitDamage=Math.min(previousHp,special.damage);
         t.enemyHp=Math.max(0,t.enemyHp-special.damage);
         if(rating==='smooth')t.eliteIndependentHits++;
         if(previousHp>0&&t.enemyHp===0){
@@ -2654,7 +2652,9 @@ async function gradeAnswer() {
     $('#forest-world-stage').dataset.attack=play.companionId;
     const impact=t?battleImpactFor({damage:special.damage,ultimate:usedUltimate,weak:special.weak,
       pierce:special.pierce,resist:special.resist,boss,sealsBroken:play.bossHits,sealsTotal:BOSS_HITS}):null;
-    if(t)battlePayoff=battlePayoffFor({turn:'attack',damage:actualHitDamage,impact:impact.kind,
+    // A finisher still lands for its full verified attack strength even when
+    // the foe has fewer HP left. Match the animation and the optional log.
+    if(t)battlePayoff=battlePayoffFor({turn:'attack',damage:special.damage,impact:impact.kind,
       enemyHp:t.enemyHp,enemyMax:t.enemyMax,boss,sealsBroken:play.bossHits,sealsTotal:BOSS_HITS});
     stage.dataset.impact=impact?.kind||'normal';
     $('#forest-damage').dataset.impactLabel=impact?.label||'';

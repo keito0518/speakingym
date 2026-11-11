@@ -30,7 +30,7 @@ test('answer-adjacent payoff reports the resolved HP and the remaining foe',()=>
     remainder:'敵 HP 2/5',current:2,max:5,percent:40});
   const finishingBlow=battlePayoffFor({damage:2,enemyHp:0,enemyMax:5});
   assert.equal(finishingBlow.title,'K.O.!');
-  assert.equal(finishingBlow.amountLabel,'−2 DMG','Overkill cannot inflate the displayed damage actually taken');
+  assert.equal(finishingBlow.amountLabel,'−2 DMG','Do not invent damage beyond the verified strike');
   assert.equal(finishingBlow.current,0);
   assert.equal(finishingBlow.percent,0);
 });
@@ -47,6 +47,8 @@ test('mobile battle log starts with real damage and remaining HP before optional
   const regular=battlePayoffFor({damage:3,enemyHp:2,enemyMax:5});
   assert.equal(battleLogSummaryFor(regular),'敵に3ダメージ！ 残りHP 2/5');
   assert.equal(battleLogSummaryFor(battlePayoffFor({damage:2,enemyHp:0,enemyMax:5})),'敵に2ダメージ！ 撃破！');
+  assert.equal(battleLogSummaryFor(battlePayoffFor({damage:6,enemyHp:0,enemyMax:5})),
+    '敵に6ダメージ！ 撃破！','a finishing strike displays the same full power as its damage animation');
   assert.equal(battleLogSummaryFor(battlePayoffFor({boss:true,sealsBroken:1,sealsTotal:3,damage:5})),
     '封印 1/3 解除！');
   assert.equal(battleLogSummaryFor(battlePayoffFor({boss:true,sealsBroken:3,sealsTotal:3,damage:5})),
