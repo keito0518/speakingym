@@ -887,7 +887,9 @@ function startSession(mode,requestedAreaId=null,onlyDue=false,quickStart=false,r
   const openingCharge=tactical?formationResonance(roster,Object.fromEntries(roster.map(id=>[id,getMonsterProgress(save,id).level]))).openingCharge:0;
   const huntBefore=forestMode?monsterHuntBoard(save).selected:null;
   const improvementsAtStart=improvementHighlightsFor(save,{today:dayKey(),limit:80}).map(row=>row.id);
-  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),quickRetention,areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,tradeDrops:[],
+  play={mode:forestMode?'forest':mode,focusKind,endless,quickStart:Boolean(tactical&&quickStart),quickRetention,
+    firstCompanionMeeting:forestMode&&save.totalAnswers===0&&save.completedRuns===0&&(save.ownedMonsters||[]).length===1,
+    areaId:area?.id||null,baseDifficulty:difficulty,difficulty:firstWave?.level||difficulty,tradeDrops:[],
     prompts,index:0,wave:1,seenIds:[],remainingTries:0,encounterKey:null,eventChoices:{},eventMemories:[],roleplay:roleplay?{...roleplay,history:[]}:null,
     bossHits:0,usedPower:false,usedShield:false,forestRelics:[],eliteDrops:[],bossMedal:null,bossTrialNewArea:null,huntTargetId:huntBefore?.id||null,huntBefore:huntBefore?.count||0,dungeonOutcomes:[],reviewOutcomes:[],encounterHelp:false,smooth:0,hintedCount:0,dailyPhases:gym?.phases||[],retentionTransferIds:recallPlan?.transferIds||[],retentionDueIds:recallPlan?.dueIds||[],retentionPassedIds:[],improvementsAtStart,earnedXp:0,captured:[],hintUsed:false,
     revealed:false,speechState:'',startedAt:Date.now(),deadline:mode==='challenge'?Date.now()+60000:null,
@@ -968,7 +970,7 @@ function renderForestHud() {
     // Keep the legacy flag for existing battle UI and save-transfer QA.
     $('#forest-party').dataset.evolved=String(evolved);
   }
-  $('#forest-companion-name').textContent=`${monsterFormName(companion,progress.stage)} · Lv.${progress.level}`;
+  $('#forest-companion-name').textContent=`${play.firstCompanionMeeting?'森で合流 · ':''}${monsterFormName(companion,progress.stage)} · Lv.${progress.level}`;
   const world=$('#forest-world-stage');
   const currentRoute=play.route||'wild';
   const arenaKey=play.areaId+':'+currentRoute+':'+(play.index>=regularCount()?'boss':'mob');
@@ -1520,8 +1522,7 @@ function showForestExplore() {
   map.dataset.area=play.areaId;
   $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
   $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
-  const meetingFirstCompanion=play.index===0 && save.totalAnswers===0 && save.completedRuns===0 &&
-    (save.ownedMonsters||[]).length===1;
+  const meetingFirstCompanion=play.firstCompanionMeeting && play.index===0;
   $('#forest-explore-description').textContent=formation?'この編成で出発できるよ。':
     isBoss?'ボスが待っている！':
     meetingFirstCompanion?`森の入口で${companion.name}と合流。ここから一緒に戦おう。`:

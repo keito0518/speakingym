@@ -39,6 +39,11 @@ const {chromium,webkit}=require('playwright');
   assert.equal(await page.locator('#home-menu-name').innerText(),'まだ見ぬ仲間');
   assert.equal(await page.locator('#home-menu-art .mystery-monster-art').count(),1);
   assert.equal(await page.locator('.home-walker').count(),0);
+  await page.locator('[data-feature-dungeon]').click();
+  assert.match(await page.locator('#forest-companion-name').innerText(),/森で合流 · Yolkie/,
+   'The first companion needs an introduction when the battle begins, without another tap');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#leave-play').click();
   await page.locator('#game-tabs [data-game-tab="forge"]').click();
   assert.equal(await page.locator('#shop-draw').isDisabled(),true);
   for(const width of [320,375,390]){
