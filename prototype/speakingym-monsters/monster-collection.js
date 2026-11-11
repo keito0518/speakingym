@@ -62,8 +62,9 @@ function powerFor(id) {
     id==='katappo'?' 従来のエンドレスでは進化後のLost & Foundも使える。':'';
   return {name:skill.name,description:`Englishダンジョンでは${specialty}が得意。${skill.description}。${legacy}`};
 }
-export function createCollectionViews({getSave, persist, showView, stopAudio, onStartAdventure}) {
+export function createCollectionViews({getSave, persist, showView, stopAudio, onStartAdventure, onReturnHome}) {
   let currentId = null;
+  let trainingOpenedFromHome = false;
   // The party tab is primarily for raising and selecting companions. Showing
   // dozens of undiscovered silhouettes first buried the one usable companion.
   // The full mystery catalog remains one tap away under "すべて".
@@ -187,9 +188,11 @@ export function createCollectionViews({getSave, persist, showView, stopAudio, on
     });
     showView('detail');
   }
-  function renderTraining(id, reward=null) {
+  function renderTraining(id, reward=null, {fromHome=false}={}) {
     const c = creatureFor(id), save = getSave();
     if(!c || !save.ownedMonsters.includes(id)) return;
+    trainingOpenedFromHome=fromHome;
+    $('#training-back').textContent=fromHome?'← ホームへ':'← キャラの詳細へ';
     currentId=id; stopAudio();
     const bond=getMonsterBondProgress(save,id),trial=getEvolutionTrialGuide(save,id);
     const g=getMonsterProgress(save,id),effect=reward?(reward.ascended?'ascension':reward.evolved?'evolution':reward.leveledUp?'level':'xp'):'idle';
@@ -253,14 +256,14 @@ export function createCollectionViews({getSave, persist, showView, stopAudio, on
           b.dataset.feedAmount==='evolution'?Math.max(0,(currentGrowth.nextEvolutionXp??0)-currentGrowth.xp):10;
         const result=feedMonster(currentSave,id,amount);
         const persisted=persist(result.save);
-        renderTraining(id,persisted?result.reward:null);
+        renderTraining(id,persisted?result.reward:null,{fromHome:trainingOpenedFromHome});
         if(!persisted)$('#growth-feedback').textContent='XPの変更を保存できませんでした。現在の育成はこのタブだけに反映されています。ページを閉じる前にホームからセーブをファイルに保存してね。';
       } catch(error) { $('#growth-feedback').textContent=error.message; }
     }));
     $('[data-evolve-monster]')?.addEventListener('click',()=>{
       try {
         const result=evolveMonster(getSave(),id),persisted=persist(result.save);
-        renderTraining(id,persisted?result.reward:null);
+        renderTraining(id,persisted?result.reward:null,{fromHome:trainingOpenedFromHome});
         if(!persisted)$('#growth-feedback').textContent='進化を保存できませんでした。このタブの進化記録を残すには、ページを閉じる前にホームからセーブをファイルに保存してね。';
       }
       catch(error){$('#growth-feedback').textContent=error.message;}
@@ -272,6 +275,10 @@ export function createCollectionViews({getSave, persist, showView, stopAudio, on
   all('[data-catalog-filter]').forEach(button=>button.addEventListener('click',()=>{
     catalogFilter=button.dataset.catalogFilter;renderCollection();
   }));
-  $('#training-back').addEventListener('click',()=>renderDetail(currentId));
-  return {renderCollection,renderDetail,renderTraining};
+  $('#training-back').addEventListener('click',()=>trainingOpenedFromHome?onReturnHome():renderDetail(currentId));
+  function trainSelectedFromHome() {
+    const selected=getSave().selectedMonster;
+    if(selected)renderTraining(selected,null,{fromHome:true});
+  }
+  return {renderCollection,renderDetail,renderTraining,trainSelectedFromHome};
 }

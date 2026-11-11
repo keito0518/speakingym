@@ -226,6 +226,10 @@ const path=require('node:path');
     // not expose names, art or evolution spoilers before recruitment.
     {
       const {context:catalogContext,page:catalogPage}=await boot(390);
+      assert.equal(await catalogPage.locator('#home-hero-button').isDisabled(),true,
+        'The first-encounter silhouette must not open the unrevealed companion sheet');
+      assert.equal(await catalogPage.locator('#home-hero-action').isVisible(),false,
+        'The first visit should show no unexplained growth call to action');
       await enterHomePanel(catalogPage,'collection');
       assert.match(await catalogPage.locator('#collection-progress').innerText(),/仲間 1 \/ 44体/);
       assert.equal(await catalogPage.locator('[data-open-monster]').count(),1,
@@ -2686,6 +2690,14 @@ const path=require('node:path');
     await page.locator('#training-back').click();
     await page.locator('#detail-back').click();
     assert.equal(await page.locator('#collection-wallet').innerText(),trainingEarned+' XP');
+    await page.locator('#collection-home').click();
+    assert.match(await page.locator('#home-hero-action').innerText(),/XPで育てる/,
+      'Available XP should make the home companion shortcut immediately useful');
+    await page.locator('#home-hero-button').click();
+    assert.equal(await page.locator('#training-wallet').innerText(),trainingEarned+' XP');
+    await page.locator('#training-back').click();
+    assert.equal(await page.locator('#home-view').isVisible(),true);
+    await enterHomePanel(page,'collection');
     assert.equal(await page.locator('#collection-grid [data-feed-monster]').count(),0);
     await page.locator('[data-open-monster="katappo"]').click();
     assert.equal(await page.locator('#detail-view').isVisible(),true);
@@ -2708,6 +2720,21 @@ const path=require('node:path');
     await page.locator('#collection-home').click();
     assert.ok((await page.locator('#stat-independent').innerText()).includes(' / 16'));
     assert.match(await page.locator('#hero-monster-name').innerText(),/Soxie/);
+    const heroGrowth=page.locator('#home-hero-button');
+    assert.equal(await heroGrowth.isEnabled(),true,
+      'The companion displayed on the home screen should be actionable after the first encounter');
+    assert.match(await heroGrowth.getAttribute('aria-label'),/Soxieを育てる/);
+    await heroGrowth.click();
+    assert.equal(await page.locator('#training-view').isVisible(),true,
+      'Tapping the home companion should open their training in one tap');
+    assert.match(await page.locator('#training-view').innerText(),/Soxie/);
+    assert.match(await page.locator('#training-back').innerText(),/ホームへ/);
+    await page.locator('#training-back').click();
+    assert.equal(await page.locator('#home-view').isVisible(),true,
+      'Back from home-initiated training should return home, not detour through the catalog');
+    const heroGrowthWidth=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert.ok(heroGrowthWidth.scroll<=heroGrowthWidth.inner+1,
+      `390px home growth shortcut must not overflow: ${JSON.stringify(heroGrowthWidth)}`);
     await page.getByRole('button',{name:/60秒チャレンジ/}).click();
     assert.match(await page.locator('#play-clock').innerText(),/残り/);
     let listeningXp=0;

@@ -24,7 +24,7 @@ const STEPS=Object.freeze([
  {chapter:'growth',title:'10. 間違いは復習につなげよう',body:'問題のあとで解説を読もう。「問題を保存」から後日やり直すと、使える英語として定着していくよ。',
   scene:['学習の記録','間違い・保存した問題','復習に挑戦'],tips:['ヒントは使ってOK。ただし自力正解とは区別して記録。','毎日長く遊ぶ必要はないよ。少しずつ続けよう。']}
 ]);
-export function setupHomeNavigation({home,startMode,showCollection}){
+export function setupHomeNavigation({home,startMode,showCollection,openSelectedCompanion}){
  const sections={
   daily:document.createElement('section'),
   roleplay:document.createElement('section'),
@@ -103,11 +103,12 @@ export function setupHomeNavigation({home,startMode,showCollection}){
  <div class="home-feature-content"><span class="home-feature-eyebrow">MAIN ADVENTURE</span><h2>English<br>ダンジョン</h2>
  <div class="home-feature-info"><span id="home-menu-mastered">練習できた表現 0</span><span id="home-menu-due">復習 0</span><span id="home-menu-xp">0 XP</span></div>
  <button type="button" class="home-feature-cta" data-feature-dungeon>冒険をはじめる <span aria-hidden="true">›</span></button><button type="button" class="home-world-link home-armory-link" data-feature-armory>武器ガチャ</button><button type="button" class="home-world-link" data-feature-worlds>エリア・難易度</button><button type="button" id="home-feature-practice" class="home-feature-practice">初めてなら約1分の操作練習</button><p class="home-feature-progress" id="home-feature-progress">森の入口から冒険開始</p></div>
- <div class="home-feature-companion"><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small></div>`;
+ <div class="home-feature-companion"><button type="button" class="home-hero-button" id="home-hero-button" aria-label="仲間を育てる" disabled><div id="home-menu-art" aria-hidden="true"></div><strong id="home-menu-name">Yolkie</strong><small id="home-menu-level">Lv.1 · 今日も一緒に</small><span class="home-hero-action" id="home-hero-action" hidden>仲間を育てる ›</span></button></div>`;
  feature.querySelector('[data-feature-dungeon]').addEventListener('click',()=>startMode('forest'));
  feature.querySelector('[data-feature-armory]').addEventListener('click',()=>startMode('armory'));
  feature.querySelector('[data-feature-worlds]').addEventListener('click',()=>showPage('forest'));
  feature.querySelector('#home-feature-practice').addEventListener('click',()=>startPracticeBattle());
+ feature.querySelector('#home-hero-button').addEventListener('click',()=>openSelectedCompanion?.());
  const quest=document.createElement('section');quest.className='home-next-quest';quest.id='home-next-quest';quest.setAttribute('aria-labelledby','home-next-quest-title');
  quest.innerHTML='<div class="home-next-quest-copy"><span class="home-next-quest-kicker">YOUR NEXT QUEST · 今日のおすすめ</span><h2 id="home-next-quest-title">今日の英語を練習しよう</h2><p id="home-next-quest-detail">学習記録に合わせて、次の練習を案内するよ。</p><span id="home-learning-signal" hidden></span><button type="button" id="home-learning-proof" hidden>日を空けた学習記録を見る</button></div><button type="button" id="home-next-quest-button">練習を始める</button>';
  let questAction='daily',hasPlayed=false;
@@ -309,7 +310,7 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      proofButton.hidden=!proof;
      if(proof)proofButton.textContent=proof.label;
    },
-   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,firstEncounterPending=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0,summon=null}){
+   updateHero({art,name,level,mastered,due,xp,ownedCount=1,hasAttempted=false,firstEncounterPending=false,canEvolve=false,areasCleared=0,cityAreasCleared=0,ruinsAreasCleared=0,totalAreas=10,nextAreaName='森の入口',bondRank=0,summon=null}){
      const cleared=areasCleared+cityAreasCleared+ruinsAreasCleared;
      const allCleared=totalAreas>0&&cleared===totalAreas;
      chapter.querySelector('#home-chapter-counter').textContent=String(Math.min(cleared+1,totalAreas)).padStart(2,'0')+' / '+totalAreas;
@@ -322,6 +323,12 @@ export function setupHomeNavigation({home,startMode,showCollection}){
      menu.querySelector('#home-menu-art').innerHTML=art;
      menu.querySelector('#home-menu-name').textContent=name;
      menu.querySelector('#home-menu-level').textContent=firstEncounterPending?'冒険で出会う':'Lv.'+level+' · 絆 Lv.'+bondRank;
+     const heroButton=menu.querySelector('#home-hero-button');
+     const heroAction=menu.querySelector('#home-hero-action');
+     heroButton.disabled=firstEncounterPending;
+     heroButton.setAttribute('aria-label',firstEncounterPending?'冒険で仲間に出会う':`${name}を育てる`);
+     heroAction.hidden=firstEncounterPending;
+     heroAction.textContent=canEvolve?'進化する ›':xp>0?'XPで育てる ›':'仲間を育てる ›';
      menu.querySelector('#home-menu-mastered').textContent='練習できた表現 '+mastered;
      menu.querySelector('#home-menu-due').textContent='復習 '+due;
      menu.querySelector('#home-menu-xp').textContent=xp+' XP';

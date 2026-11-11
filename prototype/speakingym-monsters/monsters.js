@@ -814,6 +814,7 @@ function renderHome() {
     name:firstEncounterPending?'まだ見ぬ仲間':monsterFormName(creature,growth.stage),
     firstEncounterPending,
     level:growth.level,mastered:summary.independent,due:journal.due.length,xp:save.xpWallet,ownedCount:save.ownedMonsters.length,
+    canEvolve:growth.canEvolve,
     // Keep imported/legacy review queues reachable even when their older save
     // has no modern answer counter. Only a truly empty save gets the single CTA.
     hasAttempted:save.totalAnswers>0||summary.practiced>0||skillStats.some(stat=>stat.sample>0)||
@@ -3201,7 +3202,7 @@ function finishSession(timedOut=false,defeated=false) {
   $('#replay-run').onclick=()=>ended.quickStart?startMainDungeon(ended.areaId):startSession(ended.endless?'forest-endless':ended.tactics?'forest-tactics':ended.mode==='transfer-review'?'speaking':ended.mode,ended.mode==='skill-focus'?ended.focusKind:ended.roleplay?.id||ended.areaId);
   showView('result');
 }
-const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio,onStartAdventure:()=>startMainDungeon()});
+const collectionViews=createCollectionViews({getSave:()=>save,persist,showView,stopAudio,onStartAdventure:()=>startMainDungeon(),onReturnHome:()=>renderHome()});
 const {renderDetail,renderTraining}=collectionViews;
 let forgeMessage='';
 let drawNextSummon=()=>null;
@@ -3470,7 +3471,7 @@ $('#start-due-saved-review').addEventListener('click',()=>startSession('saved',n
 $('#start-daily-gym').addEventListener('click',()=>startSession('daily'));
 $('#start-retention-review').addEventListener('click',()=>startSession('retention'));
 $('#skill-growth-list').addEventListener('click',event=>{const button=event.target.closest('[data-skill-start]');if(button&&SKILL_KINDS.includes(button.dataset.skillStart))startSession('skill-focus',button.dataset.skillStart);});
-homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon(null,{skipOpening:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection()});
+homeNavigation=setupHomeNavigation({home:$('#home-view'),startMode:mode=>mode.startsWith('skill-focus:')?startSession('skill-focus',mode.slice('skill-focus:'.length)):mode==='retention-quick'?startSession('retention',null,false,false,null,{reviewLimit:3}):mode==='forest'?startMainDungeon(null,{skipOpening:true}):mode==='armory'?openForge():mode==='saved-due'?startSession('saved',null,true):mode==='growth'?renderCollection():startSession(mode),showCollection:()=>renderCollection(),openSelectedCompanion:()=>collectionViews.trainSelectedFromHome()});
 $$('#game-tabs [data-game-tab]').forEach(button=>button.addEventListener('click',()=>{
  const target=button.dataset.gameTab;
  if(target==='adventure'){startMainDungeon(null,{skipOpening:true});return;}
