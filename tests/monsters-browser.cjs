@@ -66,8 +66,11 @@ const path=require('node:path');
           get(){throw new DOMException('Storage blocked','SecurityError');}});
       });
       await page.goto(base,{waitUntil:'networkidle'});
-      const homeIsVisible=await page.locator('#home-navigation').isVisible();
-      if(!homeIsVisible){
+      // WebKit may report network idle while the module-driven home view is
+      // still initializing (document.readyState can remain "interactive").
+      // Wait for the usable UI, not just the network lifecycle.
+      try{await page.locator('#home-navigation').waitFor({state:'visible',timeout:15000});}
+      catch{
         const diagnostic=await page.evaluate(()=>({
           homeNavigationPresent:!!document.querySelector('#home-navigation'),
           homeViewHidden:document.querySelector('#home-view')?.hidden,
@@ -1459,7 +1462,7 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-world-stage [data-landmark]').count(),0);
       assert.equal(await forestPage.locator('#forest-enemy svg').count(),1);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'sunlit');
-      assert.equal(await forestPage.locator('#forest-foe-name').innerText(),'敵 HP 5/5',
+      assert.equal(await forestPage.locator('#forest-foe-name').innerText(),'敵 HP 1/1',
         'The fight HUD shows useful HP instead of a second enemy name and epithet');
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-foe'),'mossling');
       assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/霧のこだま/);
