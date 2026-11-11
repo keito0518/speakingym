@@ -2119,6 +2119,43 @@ const path=require('node:path');
       'A complete browser speech-recognition result must be tracked independently of typed attempts');
     await leavePlay(micPage);
     await micContext.close();
+    // A WebKit recognizer can fire onstart while silently ignoring all speech.
+    // Release it without waiting 15 seconds, keeping the same battle playable
+    // through the native keyboard microphone or typed English.
+    {
+      const {context:stuckContext,page:stuckPage}=await boot(390);
+      await stuckPage.addInitScript(()=>{
+        Object.defineProperty(navigator,'userAgent',{configurable:true,
+          value:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15'});
+        window.__stuckMicSessions=[];
+        Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:class StuckSpeech{
+          start(){window.__stuckMicSessions.push(this);queueMicrotask(()=>this.onstart?.());}
+          abort(){this.aborted=true;queueMicrotask(()=>this.onend?.());}
+          stop(){this.stopped=true;queueMicrotask(()=>this.onend?.());}
+        }});
+      });
+      await stuckPage.reload();
+      await enterHomePanel(stuckPage,'training');
+      await stuckPage.getByRole('button',{name:/スピーキングを始める/}).click();
+      await unlockListening(stuckPage);
+      await stuckPage.clock.install();
+      await stuckPage.locator('#mic-button').click();
+      assert.equal(await stuckPage.locator('#mic-button').getAttribute('aria-pressed'),'true');
+      await stuckPage.clock.fastForward(2600);
+      assert.match(await stuckPage.locator('#speech-helper').innerText(),/まだ英文が届いていません/);
+      assert.equal(await stuckPage.locator('#speech-alternatives').evaluate(el=>el.open),true);
+      await stuckPage.clock.fastForward(6100);
+      assert.equal(await stuckPage.locator('#mic-button').getAttribute('aria-pressed'),'false',
+        'A deaf iPhone recognizer must release the microphone in under nine seconds');
+      assert.equal(await stuckPage.locator('#show-answer').isEnabled(),true,
+        'A silent WebKit recognizer cannot trap answer grading');
+      assert.match(await stuckPage.locator('#speech-helper').innerText(),/iPhone音声入力か手入力/);
+      await stuckPage.locator('#native-ios-dictation').click();
+      assert.equal(await stuckPage.locator('#spoken-answer').evaluate(el=>document.activeElement===el),true);
+      await stuckPage.locator('#spoken-answer').fill('Let me think about it.');
+      assert.equal(await stuckPage.locator('#show-answer').isEnabled(),true);
+      await stuckContext.close();
+    }
     // Simulate an iPhone embedded browser which exposes SpeechRecognition but
     // returns no words. Never keep a fake active microphone indefinitely.
     const {context:iosContext,page:iosPage}=await boot(390);

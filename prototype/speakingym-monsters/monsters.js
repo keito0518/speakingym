@@ -2046,7 +2046,9 @@ function startRecognition(options={}) {
     cue.onerror=()=>resume(false);
     iosSpeechCueTimer=setTimeout(()=>resume(false),2300);
     micView('finishing');
-    if(helper)helper.textContent='マイクを準備中… 合図が聞こえたら英語を話してね。';
+    // The cue plays before SpeechRecognition.start(). Speaking during it is
+    // not recorded, so never invite speech until onstart confirms readiness.
+    if(helper)helper.textContent='マイクを準備中…「いま話してね」と表示されるまで待ってね。';
     try{window.speechSynthesis.speak(cue);}catch{resume(false);}
     return;
   }
@@ -2082,12 +2084,23 @@ function startRecognition(options={}) {
       // watchdog over the stop/final-transcript timeout.
       if(recognitionStopping)return;
       if(helper&&!recognitionStopping)helper.textContent=isIOSDevice()
-        ?'話し終えると自動で文字になります。反応しないときはiPhone音声入力を使ってね。'
+        ?'いま話してね。話し終えると自動で文字になります。反応しないときはiPhone音声入力へ。'
         :'音声認識中です。英語が文字にならなければ標準の音声入力に切り替えられます。';
       recognitionNoResultTimer=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
         if(helper)helper.textContent='まだ英文が届いていません。内蔵ブラウザではマイク認識が使えない場合があります。';
         showSpeechFallback();
+        // iOS may report "start" while its audio service is deaf. The old
+        // 15-second watchdog kept the battle's answer button locked even
+        // after the native keyboard fallback was offered. Release a truly
+        // silent recognizer sooner; do not touch sessions with any transcript.
+        if(isIOSDevice())recognitionNoResultTimer=setTimeout(()=>{
+          if(recognition!==instance||recognitionStopping||$('#spoken-answer')?.value.trim())return;
+          recognitionFailures++;
+          stopRecognition();
+          showSpeechFallback();
+          if(helper)helper.textContent='声を認識できませんでした。iPhone音声入力か手入力で続けられます。';
+        },6000);
       },/iPad|iPhone|iPod/i.test(navigator.userAgent)?2500:7000);
       recognitionWatchdog=setTimeout(()=>{
         if(recognition!==instance||recognitionStopping)return;
