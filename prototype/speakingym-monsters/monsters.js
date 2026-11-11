@@ -2683,7 +2683,9 @@ async function gradeAnswer() {
     if(t){
       battleDetailLog=$('#forest-battle-log').textContent;
       const summary=battleLogSummaryFor(battlePayoff);
-      $('#forest-battle-log').textContent=`${summary} ${battleDetailLog}`;
+      // Keep the arena readable during the hit animation. The full list of
+      // weapon, companion and boss effects remains in the optional explanation.
+      $('#forest-battle-log').textContent=summary;
       $('#forest-battle-log').dataset.result='success';
       $('#forest-battle-log').setAttribute('aria-label',summary);
     }
@@ -2692,7 +2694,7 @@ async function gradeAnswer() {
   if(battlePayoff?.turn==='defense'){
     battleDetailLog=$('#forest-battle-log').textContent;
     const summary=battleLogSummaryFor(battlePayoff);
-    $('#forest-battle-log').textContent=`${summary} ${battleDetailLog}`;
+    $('#forest-battle-log').textContent=summary;
     $('#forest-battle-log').dataset.result='success';
     $('#forest-battle-log').setAttribute('aria-label',summary);
   }

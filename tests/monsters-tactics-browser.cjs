@@ -413,6 +413,8 @@ const assert=require('node:assert/strict');
        assert.equal(resultStrip.overflow,'ellipsis','Full combat details belong in the optional explanation');
        assert.match(resultStrip.announcement,/^敵に\d+ダメージ！/,
          'Assistive technology should announce the short verified outcome');
+       assert.equal(compactLog,resultStrip.announcement,
+         'The arena must show only the verified outcome, without a second copy of the detailed effects');
        assert.equal(await page.locator('#forest-success-explanation').evaluate(el=>el.open),false,
          'Verbose battle mechanics must stay behind the optional learning detail');
        await page.locator('#forest-success-explanation > summary').click();
@@ -499,7 +501,8 @@ const assert=require('node:assert/strict');
    await traitPage.locator('#start-forest').click();
    await traitPage.locator('#forest-explore-continue').click();
    await answer(traitPage);
-   assert.match(await traitPage.locator('#forest-battle-log').innerText(),/武器特性発動！ Speak自力正解で威力＋1/);
+   assert.match(await traitPage.locator('#forest-battle-log').innerText(),/^敵に\d+ダメージ！/);
+   assert.match(await traitPage.locator('#forest-success-explanation').textContent(),/武器特性発動！ Speak自力正解で威力＋1/);
    assert.equal(await traitPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0');
    await traitContext.close();
    // The advanced party system remains regression-tested for a possible return,
@@ -608,7 +611,9 @@ const assert=require('node:assert/strict');
    await answer(partyPage);
    const assistLog=await partyPage.locator('#forest-battle-log').evaluate(el=>({text:el.textContent?.trim()||'',hidden:el.hidden,visible:el.getBoundingClientRect().height>0}));
    assert.ok(assistLog.visible&&!assistLog.hidden,'Team-up combat text must be visible in the actual scene: '+JSON.stringify(assistLog));
-   assert.match(assistLog.text,/連携成功！.*ダメージ＋1/,'Team-up should award its visible damage bonus: '+JSON.stringify(assistLog));
+   assert.match(assistLog.text,/^敵に\d+ダメージ！/,'The scene should lead with the verified result: '+JSON.stringify(assistLog));
+   assert.match(await partyPage.locator('#forest-success-explanation').textContent(),/連携成功！.*ダメージ＋1/,
+     'The full team-up effect remains available in the optional battle explanation');
    assert.equal(await partyPage.locator('[data-tactic-action="assist"]').isEnabled(),false,'Only one team-up per encounter');
    const assistContrast=await partyPage.locator('[data-tactic-action="assist"]').evaluate(el=>{
      const luminance=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
@@ -705,12 +710,13 @@ const assert=require('node:assert/strict');
    await answer(evolutionPage);
    const evolutionResult=await evolutionPage.evaluate(()=>({
      log:document.querySelector('#forest-battle-log').textContent||'',
+     detail:document.querySelector('#forest-success-explanation')?.textContent||'',
      hidden:document.querySelector('#forest-battle-log').hidden,
      prompt:document.querySelector('#play-card').dataset.promptId,
      feedback:document.querySelector('.feedback-box')?.textContent?.slice(0,180)||'',
      gauge:document.querySelector('[aria-label="必殺ゲージ"]')?.getAttribute('aria-valuenow')||''
    }));
-   assert.match(evolutionResult.log,/覚醒・共鳴発動！.*必殺ゲージ＋1/,
+   assert.match(evolutionResult.detail,/覚醒・共鳴発動！.*必殺ゲージ＋1/,
      'Evolved reserve ability must activate in WebKit: '+JSON.stringify(evolutionResult));
    assert.equal(await evolutionPage.locator('[aria-label="必殺ゲージ"]').getAttribute('aria-valuenow'),'2',
      'independent answer and evolved charge support combine');
@@ -798,7 +804,7 @@ const assert=require('node:assert/strict');
    await answer(advancedPage);
    assert.equal(await advancedPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2',
      'An evolved specialty attack scales from base damage while the enemy shell still absorbs one');
-   assert.match(await advancedPage.locator('#forest-battle-log').textContent(),/敵の殻に威力を1防がれた/);
+   assert.match(await advancedPage.locator('#forest-success-explanation').textContent(),/敵の殻に威力を1防がれた/);
    assert.match(await advancedPage.locator('.forest-tactic-foe-style').innerText(),/殻は破れた/);
    const advancedContrast=await advancedPage.locator('.forest-tactic-foe-style').evaluate(el=>{
      const luminance=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{
@@ -842,7 +848,7 @@ const assert=require('node:assert/strict');
    assert.match(await masteryPage.locator('.forest-tactic-mastery').textContent(),/Lv\.4技：黄身の二連撃.*準備OK/);
    assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'false');
    await answer(masteryPage);
-   assert.match(await masteryPage.locator('#forest-battle-log').textContent(),/黄身の二連撃.*追撃ダメージ＋1/);
+   assert.match(await masteryPage.locator('#forest-success-explanation').textContent(),/黄身の二連撃.*追撃ダメージ＋1/);
    assert.equal(await masteryPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'0',
      'Lv.4 first specialty strike is 1 stronger than the untrained Lv.1 version');
    assert.equal(await masteryPage.locator('[data-mastery-used]').getAttribute('data-mastery-used'),'true');
@@ -878,7 +884,7 @@ const assert=require('node:assert/strict');
    assert.match(await shiftingPage.locator('.forest-tactic-heading').innerText(),/敵の弱点：リスニング.*耐性：文法/s);
    await answer(shiftingPage);
    assert.equal(await shiftingPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'4');
-   assert.match(await shiftingPage.locator('#forest-battle-log').textContent(),/属性変化！ 次の弱点は文法/);
+   assert.match(await shiftingPage.locator('#forest-success-explanation').textContent(),/属性変化！ 次の弱点は文法/);
    assert.equal(await shiftingPage.locator('[data-foe-shifted]').getAttribute('data-foe-shifted'),'true');
    assert.equal(await shiftingPage.locator('#forest-enemy-weakness').innerText(),'Weak: Grammar',
      'The visible weakness badge changes when the enemy shifts its affinity');
