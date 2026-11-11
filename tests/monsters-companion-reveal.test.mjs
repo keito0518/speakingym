@@ -30,3 +30,13 @@ test('reward reveal lives before the collapsed battle report and never asks for 
   assert.match(script,/renderCompanionSpotlight\(\$\('#result-companion-reveal'\),companions,monsterArt\)/);
   assert.match(script,/renderDetail\(button\.dataset\.resultCompanion\)/);
 });
+
+test('newly earned companions can become the active solo ally from the reward screen',()=>{
+  const reveal=readFileSync(new URL('../prototype/speakingym-monsters/companion-reveal.js',import.meta.url),'utf8');
+  assert.match(reveal,/use\.dataset\.resultUseCompanion=creature\.id/);
+  const script=readFileSync(new URL('../prototype/speakingym-monsters/monsters.js',import.meta.url),'utf8');
+  const handler=script.slice(script.indexOf("$('#result-companion-reveal').addEventListener"),script.indexOf("$('#result-collection').addEventListener"));
+  assert.match(handler,/save\.ownedMonsters\.includes\(id\)/);
+  assert.match(handler,/persist\(selectMonster\(save,id\)\)/);
+  assert.match(handler,/resultGrowthActionFor\(save,id\)/);
+});

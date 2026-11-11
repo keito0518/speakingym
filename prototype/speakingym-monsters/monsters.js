@@ -1,5 +1,5 @@
 import { ALL_PROMPTS, MONSTERS, PHRASES, PROMPTS, monsterFormName } from './monster-data.js';
-import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, recordLethalBattleReview, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
+import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finishRound, getMonsterProgress, getEvolutionTrialGuide, getMonsterBondProgress, learningSummary, reviewOverview, quizWeaknessOverview, recordAnswer, recordLethalBattleReview, toggleSavedPrompt, savedReviewPrompts, savedReviewQueue, captureEligibleMonsters, flagUncertainReview, selectMonster, selectRoundPrompts, validateSave, normalizeEnglish, normalizeEnglishNumbers } from './monster-engine.js';
 import { monsterHuntBoard, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
@@ -3518,6 +3518,27 @@ $('#leave-play').addEventListener('click',()=>{
 });
 $('#result-home').addEventListener('click',renderHome);
 $('#result-companion-reveal').addEventListener('click',event=>{
+  const useButton=event.target.closest('[data-result-use-companion]');
+  if(useButton){
+    const id=useButton.dataset.resultUseCompanion;
+    if(!save.ownedMonsters.includes(id))return;
+    const previous=save;
+    if(!persist(selectMonster(save,id))){
+      save=previous;
+      useButton.textContent='保存できませんでした。設定を確認してね';
+      return;
+    }
+    $$('[data-result-use-companion]').forEach(button=>{
+      const selected=button.dataset.resultUseCompanion===id;
+      button.textContent=selected?'次の冒険にセット済み':'次の冒険で使う';
+      button.setAttribute('aria-pressed',String(selected));
+      button.closest('.companion-reveal-card')?.classList.toggle('is-selected',selected);
+    });
+    const growth=resultGrowthActionFor(save,id);
+    $('#result-collection').dataset.growthId=growth.id;
+    $('#result-collection').textContent=growth.label;
+    return;
+  }
   const button=event.target.closest('[data-result-companion]');
   if(button&&save.ownedMonsters.includes(button.dataset.resultCompanion))renderDetail(button.dataset.resultCompanion);
 });

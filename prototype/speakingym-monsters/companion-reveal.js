@@ -35,8 +35,7 @@ export function renderCompanionSpotlight(container,companions,artFor){
   const heading=element('div','companion-reveal-heading');
   heading.append(
     element('span','tiny-caps','NEW COMPANIONS · '+companions.length+' JOINED'),
-    element('h2','', '新しい仲間が加わった！'),
-    element('p','', '英語の冒険と復習で出会えた仲間。図鑑で名前の由来と育て方を見てみよう。')
+    element('h2','', '新しい仲間が加わった！')
   );
   const grid=element('div','companion-reveal-grid');
   for(const creature of companions){
@@ -59,10 +58,16 @@ export function renderCompanionSpotlight(container,companions,artFor){
       root.append(word,doc.createTextNode(' = '+creature.rootMeaning));
       info.append(root);
     }
-    const button=element('button','button companion-reveal-open',creature.name+'の図鑑を見る');
+    // Recruiting an ally should let the player USE them directly. Opening a
+    // separate catalog and finding the select action made the reward hollow.
+    const use=element('button','button companion-reveal-use','次の冒険で使う');
+    use.type='button';
+    use.dataset.resultUseCompanion=creature.id;
+    use.setAttribute('aria-pressed','false');
+    const button=element('button','button companion-reveal-open','図鑑を見る');
     button.type='button';
     button.dataset.resultCompanion=creature.id;
-    info.append(button);
+    info.append(use,button);
     card.append(art,info);
     grid.append(card);
   }

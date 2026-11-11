@@ -2658,6 +2658,18 @@ const path=require('node:path');
       'New companions must be celebrated above the optional result details');
     assert.equal(await page.locator('#result-companion-reveal [data-result-companion="katappo"]').count(),1,
       'The earned companion has a direct, tappable field-notes entry');
+    const useNewCompanion=page.locator('#result-companion-reveal [data-result-use-companion="katappo"]');
+    assert.equal(await useNewCompanion.isVisible(),true,
+      'A newly recruited ally should be usable without opening a separate catalog');
+    await useNewCompanion.click();
+    assert.equal(await useNewCompanion.getAttribute('aria-pressed'),'true');
+    assert.match(await useNewCompanion.innerText(),/セット済み/);
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).selectedMonster),'katappo',
+      'Choosing a new ally on the results screen must persist the solo companion');
+    assert.match(await page.locator('#result-collection').innerText(),/Soxieを育てる/,
+      'The XP action should now target the selected new ally');
+    assert.equal(await page.locator('#result-view').isVisible(),true,
+      'Equipping the new ally should not unexpectedly start a dungeon or close the reward');
     assert.equal(await page.locator('#result-discoveries .discovery-card').count(),0,
       'The same recruitment is not repeated inside collapsed details');
     const trainingEarned=88;
@@ -2690,7 +2702,8 @@ const path=require('node:path');
     await page.screenshot({path:path.join(shots,`monsters-${engine}-390-collection.png`),fullPage:true});
     const collectionMetrics=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
     assert.ok(collectionMetrics.scroll<=collectionMetrics.inner+1,`${engine}/390 collection horizontal overflow: ${JSON.stringify(collectionMetrics)}`);
-    await page.locator('[data-select-monster="katappo"]').click();
+    assert.equal(await page.locator('[data-select-monster="katappo"]').isDisabled(),true,
+      'The catalog should agree that the newly recruited ally is already selected');
     await page.locator('#detail-back').click();
     await page.locator('#collection-home').click();
     assert.ok((await page.locator('#stat-independent').innerText()).includes(' / 16'));
