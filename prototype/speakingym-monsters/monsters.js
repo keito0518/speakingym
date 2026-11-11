@@ -994,8 +994,8 @@ function renderForestHud() {
   const weak=$('#forest-enemy-weakness');
   weak.hidden=!play.tactics;
   if(play.tactics){weak.textContent=`Weak: ${WEAK_BADGE_LABELS[affinity.weak]}`;weak.setAttribute('aria-label',`敵の弱点：${BATTLE_LABELS[affinity.weak]}`);weak.dataset.kind=affinity.weak;}
-  // Separate the English name and Japanese epithet at a meaningful line break.
-  $('#forest-foe-name').innerHTML=`<span class="forest-foe-english">${escapeHtml(foe.name)}</span><span class="forest-foe-japanese">${escapeHtml(foe.japanese)}</span>`;
+  // The enemy artwork is already identifiable. Use this scarce mobile HUD
+  // space for current health rather than a second English/Japanese name.
   $('#forest-foe-pattern').textContent=bossPhase?`${tactic.name} · ${bossPhase.signature.name}`:tactic.name;
   updateEnemyHealth();
   $('#forest-tries').textContent=play.endless?`あと${play.remainingTries}回 · ${difficultyCopy[play.difficulty].label}`:
@@ -1039,6 +1039,7 @@ function updateEnemyHealth(hit=false) {
   const left=boss?Math.max(0,BOSS_HITS-play.bossHits):(play.tactics?play.tactics.enemyHp:hit?0:1);
   const meter=$('#forest-boss-hp');
   meter.hidden=false;
+  $('#forest-foe-name').textContent=boss?'ボス':`敵 HP ${left}/${max}`;
   // Show regular-foe vitality as a clean bar, not a second row of numbers.
   // Screen readers retain exact HP and the boss still shows three seals.
   meter.dataset.healthMode=boss?'seals':'bar';
@@ -1214,9 +1215,8 @@ function renderAttackChoice(panel,t){
  panel.dataset.turn='choose';
  // The small '復習' badge on an attack button already communicates the focus.
  // A second explanatory accordion made the choice screen feel like a manual.
- panel.innerHTML=`<div class="forest-attack-select" data-first-fight="${firstFight}" role="group" aria-label="攻撃タイプを先に選ぶ" ${firstFight?'aria-describedby="forest-first-attack-hint"':''}>
-  <strong>${firstFight?'① あなたのターン · 攻撃を選ぶ':'あなたのターン · 攻撃を選ぶ'}</strong>
-  ${firstFight?'<span id="forest-first-attack-hint" class="forest-first-attack-hint">WEAKは敵の弱点。正解でダメージUP。</span>':''}
+ panel.innerHTML=`<div class="forest-attack-select" data-first-fight="${firstFight}" role="group" aria-label="攻撃タイプを先に選ぶ">
+  <strong>攻撃を選ぶ</strong>
   <div class="forest-tactic-kinds">${BATTLE_KINDS.map(kind=>`<button type="button" data-tactic-kind="${kind}" data-weak="${kind===affinity.weak}" data-learning-focus="${String(focus?.kind===kind)}" aria-label="${BATTLE_LABELS[kind]}${kind===affinity.weak?'：敵の弱点・ダメージアップ':''}${focus?.kind===kind?'：復習対象':''}">${BATTLE_LABELS[kind]}${kind===affinity.weak&&focus?.kind===kind?'<small>WEAK · 復習</small>':kind===affinity.weak?'<small>WEAK</small>':focus?.kind===kind?'<small>復習</small>':''}</button>`).join('')}</div></div>`;
  panel.querySelectorAll('[data-tactic-kind]').forEach(button=>button.addEventListener('click',event=>{
   if(!play||play.revealed||play.tactics!==t||t.turn!=='player'||t.attackKindChosen)return;
@@ -1571,6 +1571,8 @@ function renderQuestion() {
   $('#forest-journey').classList.remove('forest-victory');
   play.hintUsed=play.mode==='forest'&&Boolean(play.encounterHelp);play.revealed=false;play.speechState='';play.micTranscript=false;play.quizMissRecorded=false;play.quizMistake='';play.justDroppedWeapon=null;
   if(play.mode==='forest'){
+    $('#forest-battle-log').removeAttribute('data-result');
+    $('#forest-battle-log').removeAttribute('aria-label');
     const key=`${play.wave}:${play.index}`;
     if(play.encounterKey!==key){
       openingEncounter=true;
@@ -2661,13 +2663,19 @@ async function gradeAnswer() {
       :sealNote+(prompt.kind==='listen'?`${companionName}が敵の攻撃を防御！反撃で${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='read'?`${companionName}が敵の作戦を見破った！${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='vocab'?`弱点を発見！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:prompt.kind==='grammar'?`魔法が発動！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`:`${companionName}のこうげき！ ${foe.name}に${special.strikes}ダメージ！${defeated?` ${foe.name}をたおした！`:''}`);
     if(t){
       battleDetailLog=$('#forest-battle-log').textContent;
-      $('#forest-battle-log').textContent=`${battleLogSummaryFor(battlePayoff)} ${battleDetailLog}`;
+      const summary=battleLogSummaryFor(battlePayoff);
+      $('#forest-battle-log').textContent=`${summary} ${battleDetailLog}`;
+      $('#forest-battle-log').dataset.result='success';
+      $('#forest-battle-log').setAttribute('aria-label',summary);
     }
     if(t)renderTacticalControls();
   }
   if(battlePayoff?.turn==='defense'){
     battleDetailLog=$('#forest-battle-log').textContent;
-    $('#forest-battle-log').textContent=`${battleLogSummaryFor(battlePayoff)} ${battleDetailLog}`;
+    const summary=battleLogSummaryFor(battlePayoff);
+    $('#forest-battle-log').textContent=`${summary} ${battleDetailLog}`;
+    $('#forest-battle-log').dataset.result='success';
+    $('#forest-battle-log').setAttribute('aria-label',summary);
   }
   // Count clean attack AND defense answers. A tactical round alternates the
   // two, so resetting on each enemy turn made its old combo effect unreachable.

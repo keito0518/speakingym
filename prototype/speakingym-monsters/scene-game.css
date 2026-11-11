@@ -149,6 +149,14 @@ body:has(#play-view.scene-battle:not([hidden])){overflow:hidden}
  font-size:11px;line-height:1.35;
 }
 #play-view.scene-battle #forest-arena-console #forest-battle-log:empty{display:none!important}
+/* A verified hit already has a large damage/HP payoff beside the answer.
+   Show only the outcome in the arena strip; the full mechanics remain in the
+   optional result explanation and in the log's source text. */
+#play-view.scene-battle #forest-arena-console #forest-battle-log[data-result="success"]{
+ display:block;max-height:25px;min-height:0;white-space:nowrap;
+ -webkit-line-clamp:unset;text-overflow:ellipsis;overflow:hidden;
+ font-size:12px;line-height:1.5;
+}
 #play-view.scene-battle #forest-arena-console #play-card{
  order:2;min-width:0;min-height:0;flex:0 0 auto;max-width:none;max-height:none;
  margin:0;padding:7px 6px 3px 11px!important;

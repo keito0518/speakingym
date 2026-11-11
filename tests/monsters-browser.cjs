@@ -1448,7 +1448,8 @@ const path=require('node:path');
       assert.equal(await forestPage.locator('#forest-world-stage [data-landmark]').count(),0);
       assert.equal(await forestPage.locator('#forest-enemy svg').count(),1);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-route'),'sunlit');
-      assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Mossling/);
+      assert.equal(await forestPage.locator('#forest-foe-name').innerText(),'敵 HP 5/5',
+        'The fight HUD shows useful HP instead of a second enemy name and epithet');
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-foe'),'mossling');
       assert.match(await forestPage.locator('#forest-foe-pattern').innerText(),/霧のこだま/);
       assert.match(await forestPage.locator('.question-top').innerText(),/ENCOUNTER 1 \/ 5/);
@@ -1602,7 +1603,8 @@ const path=require('node:path');
       }
       assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
       assert.equal(await forestPage.locator('.battle-arena-svg').getAttribute('data-arena'),'thorn-vault');
-      assert.match(await forestPage.locator('#forest-foe-name').innerText(),/Thorn King/);
+      assert.equal(await forestPage.locator('#forest-foe-name').innerText(),'ボス',
+        'Boss identity is conveyed by the artwork and chapter, without a redundant English enemy name');
       assert.equal(await forestPage.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'3');
       assert.equal(await forestPage.locator('#forest-world-stage').evaluate(el=>el.classList.contains('forest-boss-stage')),true);
       assert.equal(await forestPage.locator('#forest-world-stage').getAttribute('data-boss-power'),'echo');

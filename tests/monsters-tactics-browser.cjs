@@ -82,13 +82,15 @@ const assert=require('node:assert/strict');
      assert.equal(await page.locator('.forest-attack-select').isVisible(),true,'Player selects the attack type before seeing a question');
      assert.match(await page.locator('.forest-attack-select > strong').innerText(),/攻撃を選ぶ/,
        'The attack buttons must communicate the first action without a paragraph');
-     assert.match(await page.locator('.forest-attack-select > strong').innerText(),/①/,
-       'Only the first battle explains step one before choosing an English task');
-     assert.match(await page.locator('#forest-first-attack-hint').innerText(),/WEAK.*弱点.*ダメージUP/,
-       'The first battle explains the gold weakness option in a single short line');
-     assert.equal(await page.locator('.forest-attack-select').getAttribute('aria-describedby'),'forest-first-attack-hint');
+     assert.equal(await page.locator('.forest-attack-select > strong').innerText(),'攻撃を選ぶ',
+       'The first battle should not repeat a numbered tutorial above the four obvious attack choices');
+     assert.equal(await page.locator('#forest-first-attack-hint').count(),0,
+       'The WEAK button is highlighted and labeled; extra tutorial prose belongs in the optional guide');
+     assert.equal(await page.locator('.forest-attack-select').getAttribute('aria-describedby'),null);
      const firstWeak=page.locator('.forest-attack-select [data-weak="true"]');
      assert.equal(await firstWeak.count(),1,'Beginners see one actionable weakness option');
+     assert.match(await firstWeak.getAttribute('aria-label'),/敵の弱点・ダメージアップ/,
+       'Removing redundant visible prose must not remove accessible weakness meaning');
      assert.equal((await firstWeak.evaluate(el=>getComputedStyle(el).animationName)).includes('forest-first-weak-glow'),width!==375,
        'The first weakness should glow twice, except for users preferring reduced motion');
      assert.match(await page.locator('#forest-world-stage').getAttribute('data-cinematic'),/^(opening|idle)$/,
@@ -401,6 +403,14 @@ const assert=require('node:assert/strict');
        const compactLog=await page.locator('#forest-battle-log').textContent();
        assert.match(compactLog,/^敵に\d+ダメージ！ (?:残りHP \d+\/\d+|撃破！)/,
          'The clipped mobile battle log must lead with actual damage and remaining HP');
+       const resultStrip=await page.locator('#forest-battle-log').evaluate(el=>({
+         status:el.dataset.result,whiteSpace:getComputedStyle(el).whiteSpace,
+         overflow:getComputedStyle(el).textOverflow,announcement:el.getAttribute('aria-label')}));
+       assert.equal(resultStrip.status,'success');
+       assert.equal(resultStrip.whiteSpace,'nowrap','The success strip must not expand into a second long explanation');
+       assert.equal(resultStrip.overflow,'ellipsis','Full combat details belong in the optional explanation');
+       assert.match(resultStrip.announcement,/^敵に\d+ダメージ！/,
+         'Assistive technology should announce the short verified outcome');
        assert.equal(await page.locator('#forest-success-explanation').evaluate(el=>el.open),false,
          'Verbose battle mechanics must stay behind the optional learning detail');
        await page.locator('#forest-success-explanation > summary').click();
