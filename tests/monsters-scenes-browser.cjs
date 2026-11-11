@@ -120,6 +120,18 @@ const path=require('node:path');
         'Achievements and detailed learning records start folded');
       await page.locator('#collection-archive summary').click();
       assert.match(await page.locator('#forest-journal-badges').innerText(),/三世界の踏破者/);
+      const phraseContrast=await page.locator('#phrase-grid .phrase-card').first().evaluate(card=>{
+        const text=getComputedStyle(card.querySelector('strong')).color;
+        const background=getComputedStyle(card).backgroundColor;
+        const luminance=value=>{
+          const rgb=(value.match(/\d+(?:\.\d+)?/g)||[]).slice(0,3).map(Number);
+          return rgb.map(v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;})
+            .reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+        };
+        const [high,low]=[luminance(text),luminance(background)].sort((a,b)=>b-a);
+        return {ratio:(high+.05)/(low+.05),text,background};
+      });
+      assert.ok(phraseContrast.ratio>=7,`${engine}/${width} learning phrases must be readable inside light cards: ${JSON.stringify(phraseContrast)}`);
       assert.match(await page.locator('[data-open-monster="medamago"] .catalog-evolution').textContent(),/Lv\.5 · ボス 1\/1 · あと280 XP/);
       await noOverflow(page,`${width} catalog`);
       await page.waitForTimeout(300); // Let the entry fade finish before visual QA.

@@ -63,6 +63,11 @@ body:not([data-collection-focus="equipment"]) #collection-equipment-back {displa
 .collection-archive[open]>.forest-journal,
 .collection-archive[open]>.phrase-head,
 .collection-archive[open]>.phrase-grid{margin-left:12px;margin-right:12px}
+/* The archive shell is navy with gold type, but its vocabulary progress cards
+   are white. Do not let the shell's gold text inherit into those light cards. */
+.collection-archive .phrase-card{background:#fff;color:#294c3e}
+.collection-archive .phrase-card strong{color:#244638;font-weight:900}
+.collection-archive .phrase-card p{color:#4b6258;font-size:12px;line-height:1.55}
 
 /* A companion's primary action should precede encyclopaedia copy. */
 .character-sheet,.training-sheet{color:#284239}
