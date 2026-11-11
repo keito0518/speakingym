@@ -975,6 +975,19 @@ const path=require('node:path');
         await levelPage.locator(`[data-difficulty="${difficulty}"]`).click();
         assert.equal(await levelPage.locator(`[data-difficulty="${difficulty}"]`).getAttribute('aria-pressed'),'true');
         await levelPage.getByRole('button',{name:/スピーキングを始める/}).click();
+        const returnNav=await levelPage.locator('#leave-play').evaluate(button=>{
+          const style=getComputedStyle(button);
+          const luminance=value=>{
+            const channels=(value.match(/\d+(?:\.\d+)?/g)||[]).slice(0,3).map(Number).map(v=>{
+              const n=v/255;return n<=0.04045?n/12.92:((n+0.055)/1.055)**2.4;
+            });
+            return channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;
+          };
+          const [light,dark]=[luminance(style.color),luminance(style.backgroundColor)].sort((a,b)=>b-a);
+          return {contrast:(light+0.05)/(dark+0.05),fontSize:parseFloat(style.fontSize)};
+        });
+        assert.ok(returnNav.contrast>=4.5&&returnNav.fontSize>=12,
+          `${width}px ${difficulty} home return must not be muted on navy: ${JSON.stringify(returnNav)}`);
         assert.match(await levelPage.locator('#play-card').innerText(),/英語 → 英語|リスニング/);
         if(await levelPage.locator('#play-audio').count()){
           assert.equal(await levelPage.locator('.task-panel').isVisible(),false,'Listening task text must start hidden');
