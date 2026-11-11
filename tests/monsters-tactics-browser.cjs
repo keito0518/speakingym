@@ -323,7 +323,7 @@ const assert=require('node:assert/strict');
          'Two clean turns should awaken the ally aura');
      }
      await page.locator('#next-question').click();
-     assert.match(await page.locator('#forest-tactics').innerText(),/あなたのターン/);
+     assert.match(await page.locator('#forest-tactics').innerText(),/攻撃を選ぶ/);
      assert.equal(await page.locator('#forest-boss-hp').getAttribute('aria-valuenow'),'2');
      const browserLayout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
      assert.ok(browserLayout.scroll<=browserLayout.width+1,`${engine}/${width}: horizontal overflow ${JSON.stringify(browserLayout)}`);
@@ -952,7 +952,7 @@ const assert=require('node:assert/strict');
    await counterPage.locator('#next-question').click();
    assert.equal(Number(await counterPage.locator('#forest-party-hp').getAttribute('aria-valuenow')),hpAfterSecond,
      'A correct correction never schedules an additional attack');
-   assert.match(await counterPage.locator('#forest-tactics').innerText(),/あなたのターン.*攻撃/s);
+   assert.match(await counterPage.locator('#forest-tactics').innerText(),/攻撃を選ぶ/);
    await counterPage.locator('.forest-attack-select [data-tactic-kind="grammar"]').click();
    // Damage varies with guard/ally affinity. Keep submitting verified misses
    // until HP reaches zero; a fixed six misses is not enough on every engine.

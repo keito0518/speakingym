@@ -66,7 +66,18 @@ const path=require('node:path');
           get(){throw new DOMException('Storage blocked','SecurityError');}});
       });
       await page.goto(base,{waitUntil:'networkidle'});
-      assert.equal(await page.locator('#home-navigation').isVisible(),true);
+      const homeIsVisible=await page.locator('#home-navigation').isVisible();
+      if(!homeIsVisible){
+        const diagnostic=await page.evaluate(()=>({
+          homeNavigationPresent:!!document.querySelector('#home-navigation'),
+          homeViewHidden:document.querySelector('#home-view')?.hidden,
+          homeDestination:document.querySelector('.home-destination:not([hidden])')?.id||null,
+          bodyView:document.body.dataset.gameTab,
+          readyState:document.readyState,
+          scriptCount:document.querySelectorAll('script').length
+        }));
+        throw new Error(`Private-storage boot did not show the home navigation (${JSON.stringify({diagnostic,errors})})`);
+      }
       assert.equal(await page.locator('#save-warning-live').getAttribute('hidden'),null,
         'An unavailable storage getter must prepare an in-game backup warning');
       await page.locator('[data-feature-dungeon]').click();
