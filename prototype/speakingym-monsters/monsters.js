@@ -1503,9 +1503,13 @@ function showForestExplore() {
   const area=dungeonAreaFor(play.areaId);
   const isBoss=play.index>=regularCount();
   const stage=Math.min(4,Math.max(0,Math.round(4*play.index/Math.max(1,regularCount()))));
+  const meetingFirstCompanion=play.firstCompanionMeeting && play.index===0;
+  // The first world should reveal its companion during the adventure, not
+  // suddenly place an unexplained fried-egg sprite on the opening route.
+  const mapCompanionArt=meetingFirstCompanion?mysteryMonsterArt():monsterArt(companion.id,formStage,equippedWeapon(save));
   map.innerHTML=forestWorldArt(play.route,play.areaId)+
     '<div class="forest-explore-depth" aria-hidden="true"></div>'+
-    '<div class="forest-explore-companion">'+monsterArt(companion.id,formStage,equippedWeapon(save))+'</div>'+
+    '<div class="forest-explore-companion">'+mapCompanionArt+'</div>'+
     '<div class="forest-explore-destination" aria-hidden="true"></div>';
   // Repeat a softly blurred crop behind the legible, full-width route map.
   // A landscape SVG in a portrait iPhone would otherwise leave huge blank
@@ -1522,10 +1526,9 @@ function showForestExplore() {
   map.dataset.area=play.areaId;
   $('#forest-explore-screen').classList.toggle('boss-approach',isBoss);
   $('#forest-explore-title').textContent=formation?'出撃する仲間を選ぼう':isBoss?`${area.name}のボスへ`:play.index===0?`${area.name}へ出発`:`${area.name} · ${play.index+1}戦目`;
-  const meetingFirstCompanion=play.firstCompanionMeeting && play.index===0;
   $('#forest-explore-description').textContent=formation?'この編成で出発できるよ。':
     isBoss?'ボスが待っている！':
-    meetingFirstCompanion?`森の入口で${companion.name}と合流。ここから一緒に戦おう。`:
+    meetingFirstCompanion?'森の入口に小さな影。先へ進むと正体がわかる。':
     play.index===0?(play.quickStart?'次は「おすすめの攻撃」を選んで、英語の問題に答えよう。':'出発して最初の問題に挑もう。'):
     '次の戦闘へ進もう。';
   const eventPanel=$('#forest-explore-event');

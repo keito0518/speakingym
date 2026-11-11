@@ -531,6 +531,14 @@ const path=require('node:path');
       assert.equal(dungeonLayout.overflow,false,`${engine}/${width} dungeon world selection overflows horizontally`);
       assert.equal(await page.locator('.dungeon-world-card').count(),3);
       assert.equal(await page.locator('.dungeon-selection-banner .dungeon-world-card').count(),0);
+      const lockedAreas=await page.locator('.forest-area-card:disabled').evaluateAll(buttons=>buttons.map(button=>({
+        opacity:getComputedStyle(button).opacity,
+        statusSize:parseFloat(getComputedStyle(button.querySelector('.forest-area-status')).fontSize),
+        text:button.querySelector('.forest-area-status').textContent
+      })));
+      assert.ok(lockedAreas.length>0,`${engine}/${width}: unopened chapters should have visible lock states`);
+      assert.ok(lockedAreas.every(item=>item.opacity==='1'&&item.statusSize>=12),
+        `${engine}/${width}: locked areas must not fade their text into the world background: ${JSON.stringify(lockedAreas)}`);
       await page.screenshot({path:path.join(shots,`monsters-${engine}-${width}-world-select.png`),fullPage:true});
       await page.locator('#home-destination-forest .home-menu-back').click();
       await enterHomePanel(page,'training');

@@ -389,6 +389,23 @@ const path=require('node:path');
       assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('speakingym-monsters-prototype-v1')).monsterXp.medamago),639);
       await context.close();
     }
+    // A fresh user's first *exploration* should not expose the odd starter
+    // sprite before the game has introduced who joins them in the forest.
+    {
+      const {context,page}=await boot(320,'reduce');
+      await page.locator('[data-feature-worlds]').click();
+      await page.locator('#dungeon-other-modes').evaluate(el=>{el.open=true});
+      await page.locator('#start-forest-simple').click();
+      assert.equal(await page.locator('#forest-explore-screen').isVisible(),true);
+      assert.equal(await page.locator('#forest-explore-art .mystery-monster-art').count(),1,
+        'A first-time explorer should see a mysterious presence, not an unexplained fried egg');
+      assert.equal(await page.locator('#forest-explore-art [data-pixel-sprite="medamago"]').count(),0);
+      assert.match(await page.locator('#forest-explore-description').innerText(),/小さな影/);
+      await page.locator('#forest-explore-continue').click();
+      assert.match(await page.locator('#forest-companion-name').innerText(),/森で合流 · Yolkie/,
+        'The battle itself reveals the companion as part of the first encounter');
+      await context.close();
+    }
     // Every owned character uses a distinct actual CSS attack with motion enabled.
     const motions={medamago:'yolk-dive',katappo:'sock-spring',purupun:'pudding-slam',koge:'toast-flip',cone:'cone-drill',nororo:'roll-charge',keshipon:'eraser-sweep',donako:'doughnut-spin',amekurage:'umbrella-float',fuwari:'cloud-gust',kompass:'compass-dash',pikap:'firefly-flash',mokuryu:'dragon-leap'};
     for(const [id,motion] of Object.entries(motions)){
