@@ -98,7 +98,10 @@ const assert=require('node:assert/strict');
   assert.equal((await page.locator('#forest-world-fx').textContent()).trim(),'COVER!');
   await answer(); // Correction must not refund HP, re-trigger cover, or count as unaided.
   assert.equal(await page.locator('#forest-party-hp').getAttribute('aria-valuenow'),after);
-  assert.match(await page.locator('#forest-battle-log').textContent(),/最初の被ダメージ1は残る/);
+  assert.match(await page.locator('#forest-battle-log').textContent(),new RegExp(`味方HP ${after}/`),
+   'The arena keeps a concise, accurate HP outcome');
+  assert.match(await page.locator('#forest-success-explanation').textContent(),/最初の被ダメージ1は残る/,
+   'The correction and cover breakdown remains available in optional details');
   await page.locator('#next-question').click();
   // Optional narrative detours between boss phases are legitimate. Continue
   // through them before inspecting the next actionable fighter roster.
