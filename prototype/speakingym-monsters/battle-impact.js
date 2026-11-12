@@ -31,7 +31,9 @@ export function battlePayoffFor({turn='attack',damage=0,impact='normal',
  const title=defense?(covered?'COVER!':amount?'HIT TAKEN':'GUARD!'):
    boss?'SEAL BREAK!':!hp?'K.O.!':({weak:'WEAK HIT!',pierce:'PIERCE!',ultimate:'ULTIMATE!',resist:'RESIST'}[impact]||'HIT!');
  const amountLabel=defense?(covered?'仲間が援護':amount?`−${amount} HP`:'0 DAMAGE'):
-   boss?`封印 ${max-hp}/${max}`:`−${amount} DMG`;
+   `−${amount} DMG`;
+ // Boss progress is deliberately measured in independent English seals, not
+ // HP, but the damage number must still agree with the arena's hit animation.
  const remainder=defense?`味方 HP ${hp}/${max}`:boss?`残り封印 ${hp}/${max}`:
    hp?`敵 HP ${hp}/${max}`:'敵を撃破！';
  return {turn:turn==='defense'?'defense':'attack',impact,title,amountLabel,remainder,
@@ -53,7 +55,8 @@ export function battleLogSummaryFor(payoff){
  if(payoff.turn!=='attack')return '';
  if(payoff.title==='SEAL BREAK!'){
   const cleared=payoff.max-payoff.current;
-  return `封印 ${cleared}/${payoff.max} 解除！${payoff.current?'':'ボス突破！'}`;
+  const amount=Number(String(payoff.amountLabel).match(/\d+/)?.[0]||0);
+  return `ボスに${amount}ダメージ！ 封印 ${cleared}/${payoff.max} 解除${payoff.current?'！':'！ ボス突破！'}`;
  }
  const amount=Number(String(payoff.amountLabel).match(/\d+/)?.[0]||0);
  return `敵に${amount}ダメージ！ ${payoff.current?`残りHP ${payoff.current}/${payoff.max}`:'撃破！'}`;
