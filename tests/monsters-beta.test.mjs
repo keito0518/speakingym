@@ -107,9 +107,12 @@ test('Monsters preview exposes privacy, terms, support and honest save/voice inf
   const game=readFileSync(new URL('../prototype/speakingym-monsters/index.html',import.meta.url),'utf8');
   const privacy=readFileSync(new URL('../prototype/speakingym-monsters/beta-privacy.html',import.meta.url),'utf8');
   assert.match(game,/<nav class="monster-support-links" aria-label="利用案内とお問い合わせ">/);
-  for(const href of ['./beta-privacy.html','../../terms.html','../../contact.html','./audio-credits.html']){
+  for(const href of ['./beta-privacy.html','./terms.html','../../contact.html','./audio-credits.html']){
     assert.ok(game.includes(`href="${href}"`),`Missing help link: ${href}`);
   }
+  const terms=readFileSync(new URL('../prototype/speakingym-monsters/terms.html',import.meta.url),'utf8');
+  assert.match(terms,/試作版は無料/);
+  assert.match(terms,/別ドメイン間では記録が自動で引き継がれません/);
   assert.match(privacy,/LINE内ブラウザとSafari/);
   assert.match(privacy,/自動で同期されません/);
   assert.match(privacy,/バックアップのない記録は復元できません/);
