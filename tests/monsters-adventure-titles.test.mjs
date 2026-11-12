@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync,statSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {join,sep} from 'node:path';
 import {FOREST_AREAS,CITY_AREAS,RUINS_AREAS} from '../prototype/speakingym-monsters/forest-engine.js';
 import {adventureTitleProgress} from '../prototype/speakingym-monsters/monster-collection.js';
 
@@ -55,4 +57,32 @@ test('Monsters preview has its own accurate free-version terms and privacy route
  assert.match(privacy, /JSONファイルを保存し、移動先で読み込んで復元/);
  assert.match(privacy, /\.\/terms\.html/);
  assert.doesNotMatch(privacy,/サイトのURLごとに管理されます/,'Changing the path alone does not split site storage');
+});
+
+
+test('all player-facing relative asset and help links resolve to files before release',()=>{
+  const site=new URL('../prototype/speakingym-monsters/',import.meta.url);
+  const root=fileURLToPath(new URL('../',import.meta.url));
+  const pages=['index.html','terms.html','beta-privacy.html','audio-credits.html'];
+  let inspected=0;
+  for(const name of pages){
+    const page=new URL(name,site);
+    const html=readFileSync(page,'utf8');
+    // Public game entry, its terms/privacy and attribution pages must not
+    // link to missing assets or docs. External destinations are independent.
+    const attr=/<(?:a|link|script|img|audio|source)\b[^>]*?\b(?:href|src)\s*=\s*(["'])(.*?)\1/gi;
+    for(const match of html.matchAll(attr)){
+      const ref=match[2].trim();
+      if(!ref||/^(?:https?:|mailto:|tel:|data:|#|\/\/)/i.test(ref))continue;
+      const resolved=new URL(ref,page);
+      assert.equal(resolved.protocol,'file:',name+': unexpected URL protocol '+ref);
+      const target=fileURLToPath(resolved);
+      assert.ok(target.startsWith(root+sep),name+': link escapes project root: '+ref);
+      assert.ok(existsSync(target),name+': missing linked file: '+ref);
+      const asset=statSync(target).isDirectory()?join(target,'index.html'):target;
+      assert.ok(existsSync(asset)&&statSync(asset).isFile(),name+': missing linked page: '+ref);
+      inspected++;
+    }
+  }
+  assert.ok(inspected>=25,'The release link test should cover the full support nav and game assets');
 });
