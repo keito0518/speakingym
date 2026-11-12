@@ -38,3 +38,21 @@ test('release preview metadata is accurate and links do not imply progress sync'
   assert.match(html,/別ドメインや別ブラウザ（Safari／LINE内ブラウザ）へ進捗は自動で移りません/);
   assert.match(js,/記録はこのブラウザ・サイトに保存されます（別ドメイン・別ブラウザへ自動同期しません）/);
 });
+
+test('Monsters preview has its own accurate free-version terms and privacy routes',()=>{
+ const html=readFileSync(new URL('../prototype/speakingym-monsters/index.html',import.meta.url),'utf8');
+ const terms=readFileSync(new URL('../prototype/speakingym-monsters/terms.html',import.meta.url),'utf8');
+ const privacy=readFileSync(new URL('../prototype/speakingym-monsters/beta-privacy.html',import.meta.url),'utf8');
+ assert.match(html,/<a href="\.\/terms\.html">利用条件<\/a>/,'Game footer links to game-specific terms');
+ assert.match(terms,/試作版は無料/);
+ assert.match(terms,/ゲーム内のゴールド・XP・武器ガチャ/);
+ assert.match(terms,/現金の購入・決済・有料サブスクリプションの申し込みはこの画面では提供していません/);
+ assert.match(terms,/字幕を使った練習ルート/);
+ assert.match(terms,/セーブのバックアップ・引き継ぎ/);
+ assert.match(terms,/\.\/beta-privacy\.html/);
+ assert.match(terms, /\.\.\/\.\.\/contact\.html/);
+ assert.match(privacy, /サイトのオリジン（ドメイン等）/);
+ assert.match(privacy, /JSONファイルを保存し、移動先で読み込んで復元/);
+ assert.match(privacy, /\.\/terms\.html/);
+ assert.doesNotMatch(privacy,/サイトのURLごとに管理されます/,'Changing the path alone does not split site storage');
+});
