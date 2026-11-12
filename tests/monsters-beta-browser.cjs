@@ -32,11 +32,13 @@ const fs=require('node:fs');
           label:a.textContent.trim(),href:a.getAttribute('href')
         })));
         assert.deepEqual(helpLinks.map(a=>a.href),[
-          './beta-privacy.html','../../terms.html','../../contact.html','./audio-credits.html'
+          './beta-privacy.html','./terms.html','../../contact.html','./audio-credits.html'
         ]);
         for(const link of helpLinks){
           const response=await page.request.get(new URL(link.href,base).href);
           assert.equal(response.status(),200,`${engine}: broken ${link.label} link`);
+          if(link.href==='./terms.html')assert.match(await response.text(),/Speakingym Monsters 利用条件/,
+            `${engine}: terms must show the game-specific free preview contract`);
         }
         const helpWidth=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
         assert.ok(helpWidth.scroll<=helpWidth.width+1,`${engine}: help links overflow ${JSON.stringify(helpWidth)}`);
