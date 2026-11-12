@@ -37,9 +37,11 @@ test('answer-adjacent payoff reports the resolved HP and the remaining foe',()=>
 
 test('boss seals show true task progress without treating attack power as boss HP',()=>{
   assert.deepEqual(battlePayoffFor({boss:true,sealsBroken:1,sealsTotal:3,damage:5,impact:'ultimate'}),{
-    turn:'attack',impact:'ultimate',title:'SEAL BREAK!',amountLabel:'封印 1/3',
+    turn:'attack',impact:'ultimate',title:'SEAL BREAK!',amountLabel:'−5 DMG',
     remainder:'残り封印 2/3',current:2,max:3,percent:67});
   assert.equal(battlePayoffFor({boss:true,sealsBroken:3}).current,0);
+  assert.equal(battlePayoffFor({boss:true,sealsBroken:1,damage:9}).amountLabel,'−9 DMG',
+    'High attack power is visible without clearing additional independent seals');
   assert.equal(battlePayoffFor({boss:true,sealsBroken:100}).percent,0);
 });
 
@@ -50,9 +52,9 @@ test('mobile battle log starts with real damage and remaining HP before optional
   assert.equal(battleLogSummaryFor(battlePayoffFor({damage:6,enemyHp:0,enemyMax:5})),
     '敵に6ダメージ！ 撃破！','a finishing strike displays the same full power as its damage animation');
   assert.equal(battleLogSummaryFor(battlePayoffFor({boss:true,sealsBroken:1,sealsTotal:3,damage:5})),
-    '封印 1/3 解除！');
+    'ボスに5ダメージ！ 封印 1/3 解除！');
   assert.equal(battleLogSummaryFor(battlePayoffFor({boss:true,sealsBroken:3,sealsTotal:3,damage:5})),
-    '封印 3/3 解除！ボス突破！');
+    'ボスに5ダメージ！ 封印 3/3 解除！ ボス突破！');
   assert.equal(battleLogSummaryFor(battlePayoffFor({turn:'defense',damage:1,partyHp:2,partyMax:3})),
     '敵の攻撃で1ダメージ！ 味方HP 2/3','defense reports damage to the ally, not to the enemy');
   assert.equal(battleLogSummaryFor(battlePayoffFor({turn:'defense',damage:0,partyHp:3,partyMax:3})),
