@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c1728">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="description" content="知ってる英語を、話せる英語に。60秒スピーキングと不思議なモンスター育成の試作版。">
+  <meta name="description" content="Englishダンジョンでスピーキング・リスニング・単語・文法を練習。英語で戦い、仲間を育てる無料の学習RPG（開発版）。">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:site_name" content="Speakingym Monsters">
+  <meta property="og:title" content="Speakingym Monsters｜英語で戦う学習RPG">
+  <meta property="og:description" content="Englishダンジョンを冒険しながら、話す・聞く・単語・文法を練習。無料で遊べる開発版です。">
+  <meta name="twitter:card" content="summary">
   <title>Speakingym Monsters — 学んで、話して、育てよう</title>
   <link rel="stylesheet" href="./monsters.css">
   <link rel="stylesheet" href="./forest-game.css">
@@ -156,7 +162,7 @@
               </div>
               <p id="forest-weakness-summary" class="forest-weakness-summary" role="status" hidden></p>
             </section>
-            <span id="save-note" class="save-note">記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）</span>
+            <span id="save-note" class="save-note">記録はこのブラウザ・サイトに保存されます（別ドメイン・別ブラウザへ自動同期しません）</span>
             <details class="save-transfer" id="save-transfer"><summary>セーブのバックアップ・引き継ぎ</summary>
               <div id="save-recovery-notice" class="save-warning-live" role="alert" hidden>
                 <p id="save-recovery-description"></p>
@@ -168,7 +174,7 @@
                 <p>別のタブで進捗が更新されました。古いタブから上書きしないよう、このタブの自動保存を止めています。まず下の「セーブをファイルに保存」で<strong>このタブの記録</strong>を保存してね。次に別タブの記録も別ファイルで保管できます。その後、新しいタブでどちらを復元するか決めよう。</p>
                 <button type="button" id="save-conflict-latest-download" class="save-transfer-button">別タブの新しいセーブも保存</button>
               </div>
-              <p>別のURL・Safari・LINE内ブラウザへ進捗は自動で移りません。移動前にファイルを保存し、移動先で読み込んで復元してね。コピー・貼り付けも使えます。</p>
+              <p>別ドメインや別ブラウザ（Safari／LINE内ブラウザ）へ進捗は自動で移りません。移動前にファイルを保存し、移動先で読み込んで復元してね。コピー・貼り付けも使えます。</p>
               <button type="button" id="save-download" class="save-transfer-button save-download-button">セーブをファイルに保存（おすすめ）</button>
               <button type="button" id="save-export" class="save-transfer-button">今のセーブをコピー</button>
               <label for="save-import-file">保存したセーブファイルを選ぶ（.json）</label>
@@ -369,7 +375,7 @@
       <button type="button" data-game-tab="review"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v15H4V5Z"/><path d="M8 3h8M8 10h8M8 14h5"/></svg><span>復習</span></button>
     </nav>
     <footer>
-      <span>Speakingym Monsters · 試作版 / 無料・AI判定APIや決済なし / 学習記録はこの端末のみ</span>
+      <span>Speakingym Monsters · 試作版 / 無料・AI判定APIや決済なし / 学習記録はこのブラウザ内に保存</span>
       <nav class="monster-support-links" aria-label="利用案内とお問い合わせ">
         <a href="./beta-privacy.html">データ・音声入力について</a>
         <a href="../../terms.html">利用条件</a>

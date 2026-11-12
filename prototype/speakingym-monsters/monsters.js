@@ -379,7 +379,7 @@ function persist(next = save,{replaceUnreadable=false}={}) {
       return false;
     }
     lastStoredSaveRaw=result.raw;
-    $('#save-note').textContent = '記録はこのブラウザ・URLに保存されます（別のURLとは共有されません）';
+    $('#save-note').textContent = '記録はこのブラウザ・サイトに保存されます（別ドメイン・別ブラウザへ自動同期しません）';
     $('#save-warning-live').hidden = true;
     if(replaceUnreadable)unreadableSaveStatus=null;
     syncUnreadableSaveUI();

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {FOREST_AREAS,CITY_AREAS,RUINS_AREAS} from '../prototype/speakingym-monsters/forest-engine.js';
 import {adventureTitleProgress} from '../prototype/speakingym-monsters/monster-collection.js';
 
@@ -22,4 +23,18 @@ test('obsolete route choices cannot unlock titles in an uncompleted adventure',(
   const oldSave={completedAreas:[],routes:['sunlit','moss'],journal:Array.from({length:16},(_,i)=>({eventId:String(i)}))};
   assert.equal(adventureTitleProgress(oldSave).filter(title=>title.earned).length,0);
   assert.ok(adventureTitleProgress(oldSave).every(title=>!/分かれ道|選択|イベント/.test(title.goal)));
+});
+
+// Public profile links must describe the game players actually reach, not an
+// obsolete 60-second-only app. The prototype remains unindexed until GO.
+test('release preview metadata is accurate and links do not imply progress sync',()=>{
+  const html=readFileSync(new URL('../prototype/speakingym-monsters/index.html',import.meta.url),'utf8');
+  const js=readFileSync(new URL('../prototype/speakingym-monsters/monsters.js',import.meta.url),'utf8');
+  assert.match(html,/<meta name="description" content="[^"]*Englishダンジョン[^"]*">/);
+  assert.match(html,/<meta property="og:title" content="Speakingym Monsters[^"]*">/);
+  assert.match(html,/<meta property="og:description" content="[^"]*無料[^"]*開発版[^"]*">/);
+  assert.match(html,/<meta name="robots" content="noindex,nofollow">/,
+    'Do not expose unfinished prototype to indexing before launch approval');
+  assert.match(html,/別ドメインや別ブラウザ（Safari／LINE内ブラウザ）へ進捗は自動で移りません/);
+  assert.match(js,/記録はこのブラウザ・サイトに保存されます（別ドメイン・別ブラウザへ自動同期しません）/);
 });
