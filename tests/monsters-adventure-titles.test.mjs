@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync,statSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {join,sep} from 'node:path';
+import {join,sep,resolve} from 'node:path';
 import {FOREST_AREAS,CITY_AREAS,RUINS_AREAS} from '../prototype/speakingym-monsters/forest-engine.js';
 import {adventureTitleProgress} from '../prototype/speakingym-monsters/monster-collection.js';
 
@@ -62,7 +62,7 @@ test('Monsters preview has its own accurate free-version terms and privacy route
 
 test('all player-facing relative asset and help links resolve to files before release',()=>{
   const site=new URL('../prototype/speakingym-monsters/',import.meta.url);
-  const root=fileURLToPath(new URL('../',import.meta.url));
+  const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
   const pages=['index.html','terms.html','beta-privacy.html','audio-credits.html'];
   let inspected=0;
   for(const name of pages){
