@@ -359,8 +359,21 @@ function syncUnreadableSaveUI(){
   }
   $('#save-conflict-notice').hidden=!storageConflict;
   if(storageConflict){
-    warning.textContent='別のタブでセーブが更新されたため、このタブの自動保存を停止しました。';
-    liveMessage.textContent='別のタブの新しい記録を守るため保存を停止中。下からこのタブのセーブを保管してね。別タブの記録はホームの「セーブの引き継ぎ」から保存できるよ。';
+    // A cross-tab clear() leaves no "newer" save to download. Do not offer
+    // a dead backup button or tell the player to recover deleted bytes.
+    let otherTabHasSave=false;
+    try{otherTabHasSave=gameStorage.getItem(STORAGE_KEY)!==null;}catch{}
+    $('#save-conflict-latest-download').hidden=!otherTabHasSave;
+    const description=$('#save-conflict-notice p');
+    if(otherTabHasSave){
+      warning.textContent='別のタブでセーブが更新されたため、このタブの自動保存を停止しました。';
+      if(description)description.textContent='別のタブで進捗が更新されました。古いタブから上書きしないよう、このタブの自動保存を停止しています。まず「セーブをファイルに保存」でこのタブの記録を保管し、続けて別タブの新しいセーブも保存してね。新しいタブでどちらを復元するか決めよう。';
+      liveMessage.textContent='別のタブの新しい記録を守るため保存を停止中。下からこのタブのセーブを保管してね。別タブの記録はホームの「セーブの引き継ぎ」から保存できるよ。';
+    }else{
+      warning.textContent='別のタブでセーブが削除されたため、このタブの自動保存を停止しました。';
+      if(description)description.textContent='別のタブでサイトのセーブが削除されました。このタブの冒険記録はまだ残っています。「セーブをファイルに保存」で保管し、新しいタブからそのファイルを復元してね。削除されたセーブを自動的に復活させることはありません。';
+      liveMessage.textContent='別のタブで保存データが削除されたため自動保存を停止中。このタブの記録をファイルに保存してね。';
+    }
     live.hidden=false;
   }
 }

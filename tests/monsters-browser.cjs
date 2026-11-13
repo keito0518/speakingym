@@ -232,8 +232,8 @@ const path=require('node:path');
       await oldPage.locator('[data-feature-dungeon]').click();
       await clearingTab.evaluate(()=>localStorage.clear());
       await oldPage.locator('#save-warning-live').waitFor({state:'visible',timeout:6000});
-      assert.match(await oldPage.locator('#save-warning-live').innerText(),/別のタブ/,
-        'The dungeon must immediately warn when another tab clears all site data');
+      assert.match(await oldPage.locator('#save-warning-live').innerText(),/別のタブ.*削除/,
+        'The dungeon must immediately explain a cross-tab deletion');
       assert.equal(await oldPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),null,
         'Detection must not automatically recreate a deliberately cleared save');
       const clearedBackup=oldPage.waitForEvent('download');
@@ -241,6 +241,11 @@ const path=require('node:path');
       const exported=JSON.parse(fs.readFileSync(await (await clearedBackup).path(),'utf8'));
       assert.equal(exported.version,1,'The stale tab must still offer an emergency backup file');
       await leavePlay(oldPage);
+      await enterHomePanel(oldPage,'save');
+      assert.match(await oldPage.locator('#save-conflict-notice').innerText(),/セーブが削除されました/);
+      assert.equal(await oldPage.locator('#save-conflict-latest-download').isVisible(),false,
+        'There is no newer save to download after the other tab has cleared site data');
+      await oldPage.locator('.home-destination:not([hidden]) .home-menu-back').click();
       await enterHomePanel(oldPage,'training');
       await oldPage.locator('[data-difficulty="hard"]').click();
       assert.equal(await oldPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),null,
