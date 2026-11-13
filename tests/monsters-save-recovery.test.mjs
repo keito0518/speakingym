@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSave, validateSave, STORAGE_KEY } from '../prototype/speakingym-monsters/monster-engine.js';
-import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, saveStorageChanged, lazyStorage, UNREADABLE_BACKUP_KEY } from '../prototype/speakingym-monsters/save-recovery.js';
 
 function fakeStorage(initial={}){
   const data=new Map(Object.entries(initial));
@@ -106,4 +106,19 @@ test('a zero-byte damaged original and a prior archive can both be downloaded wi
   assert.equal(unreadableSaveForDownload(store,'blocked'),'');
   assert.equal(conflictingArchiveForDownload(store,'blocked'),old);
   assert.equal(store.getItem(STORAGE_KEY),'');
+});
+
+
+test('clearing localStorage in a different tab immediately invalidates an open save',()=>{
+  const raw=JSON.stringify(createSave());
+  assert.equal(saveStorageChanged({key:null,newValue:null},STORAGE_KEY,raw),true,
+    'clear() sends StorageEvent.key === null, not the individual save key');
+  assert.equal(saveStorageChanged({key:STORAGE_KEY,newValue:null},STORAGE_KEY,raw),true,
+    'removeItem(saveKey) must also invalidate the active tab');
+  assert.equal(saveStorageChanged({key:STORAGE_KEY,newValue:raw},STORAGE_KEY,raw),false,
+    'Identical save snapshots do not create false conflicts');
+  assert.equal(saveStorageChanged({key:'other-setting',newValue:'yes'},STORAGE_KEY,raw),false,
+    'Unrelated preferences must not interrupt gameplay');
+  assert.equal(saveStorageChanged({key:null,newValue:null},STORAGE_KEY,null),false,
+    'A fresh save with nothing stored has no previous revision to protect');
 });

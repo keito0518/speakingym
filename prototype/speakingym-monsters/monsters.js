@@ -3,7 +3,7 @@ import { STORAGE_KEY, XP_PER_LEVEL, chooseDifficulty, createSave, dayKey, finish
 import { monsterHuntBoard, chainChestAt, awardChainChests } from './monster-engagement.js';
 import { WEAPONS, WEAPON_RARITY_LABELS, WEAPON_AFFINITY_LABELS, WEAPON_SHAPE_LABELS, equippedWeapon, equipWeapon, awakenWeapon, awakeningProgress, nextWeaponResonancePreview, weaponBattleVisual, weaponAttack, weaponEffectDescription, weaponTechniqueDescription, resolveWeaponTechniqueTurn, filteredWeaponInventory, levelAttackBonus, weaponAffinityBonus, scaledStrikeDamage, dungeonWeaponDrop, eliteWeaponDrop } from './monster-equipment.js';
 import {GACHA_COST,GACHA_TEN_PULL_COST,GACHA_ODDS,RARE_PITY,EPIC_PITY,WEAPON_DISCOVERY_REWARDS,TREASURES,treasureValue,summonProgress,summonPityProgress,weaponDiscoveryProgress,grantDungeonTreasure,sellTreasure,sellAllTreasures,drawWeaponGacha,drawWeaponGachaTen,gachaPoolSummary,normalizeEconomy} from './monster-economy.js';
-import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent, lazyStorage, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
+import { loadProtectedSave, unreadableSaveForDownload, conflictingArchiveForDownload, writeSaveIfCurrent,saveStorageChanged, lazyStorage, UNREADABLE_BACKUP_KEY } from './save-recovery.js';
 import { monsterArt, forestEncounterEyesArt } from './monster-art.js';
 import { gradeLocalResponse } from './monster-grader.js';
 import { STAGING_SEMANTIC_GRADER_ENDPOINT, askSemanticGrader } from './semantic-client.js';
@@ -3685,7 +3685,7 @@ $('#save-import-button').addEventListener('click',()=>{
 });
 persist(save);
 window.addEventListener('storage',event=>{
-  if(event.key!==currentStorageKey||event.newValue===lastStoredSaveRaw)return;
+  if(!saveStorageChanged(event,currentStorageKey,lastStoredSaveRaw))return;
   storageConflict=true;
   syncUnreadableSaveUI();
 });

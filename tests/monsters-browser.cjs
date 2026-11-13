@@ -222,6 +222,31 @@ const path=require('node:path');
         'Even a confirmed import cannot erase an unseen newer save from the stale tab');
       await tabsContext.close();
     }
+    // Browser site-data resets send a storage event with a null key, unlike
+    // changes to an individual save. Warn immediately inside the dungeon and
+    // keep the old tab's progress exportable without recreating erased data.
+    {
+      const {context:clearedContext,page:oldPage}=await boot(375);
+      const clearingTab=await clearedContext.newPage();
+      await clearingTab.goto(base,{waitUntil:'networkidle'});
+      await oldPage.locator('[data-feature-dungeon]').click();
+      await clearingTab.evaluate(()=>localStorage.clear());
+      await oldPage.locator('#save-warning-live').waitFor({state:'visible',timeout:6000});
+      assert.match(await oldPage.locator('#save-warning-live').innerText(),/別のタブ/,
+        'The dungeon must immediately warn when another tab clears all site data');
+      assert.equal(await oldPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),null,
+        'Detection must not automatically recreate a deliberately cleared save');
+      const clearedBackup=oldPage.waitForEvent('download');
+      await oldPage.locator('#save-warning-download').click();
+      const exported=JSON.parse(fs.readFileSync(await (await clearedBackup).path(),'utf8'));
+      assert.equal(exported.version,1,'The stale tab must still offer an emergency backup file');
+      await leavePlay(oldPage);
+      await enterHomePanel(oldPage,'training');
+      await oldPage.locator('[data-difficulty="hard"]').click();
+      assert.equal(await oldPage.evaluate(()=>localStorage.getItem('speakingym-monsters-prototype-v1')),null,
+        'Subsequent old-tab writes must not silently repopulate cleared site data');
+      await clearedContext.close();
+    }
     // A growing roster remains discoverable, but undiscovered species must
     // not expose names, art or evolution spoilers before recruitment.
     {

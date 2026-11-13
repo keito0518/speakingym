@@ -45,6 +45,16 @@ export function loadProtectedSave(storage,validate){
 // localStorage is shared by tabs at the same URL. A stale tab must never
 // replace a more recently saved adventure just because its own UI is older.
 // Keep the raw snapshot, not a reserialized/normalized save, as the revision.
+// StorageEvent.key is null for localStorage.clear(), not STORAGE_KEY.
+// Without treating that as a revision change, an already-open dungeon can
+// keep presenting stale progress without the emergency backup warning.
+// Keyed updates to unrelated settings do not affect the game's save.
+export function saveStorageChanged(event,storageKey,expectedRaw){
+  if(!event)return false;
+  if(event.key===null)return expectedRaw!==null;
+  return event.key===storageKey&&event.newValue!==expectedRaw;
+}
+
 export function writeSaveIfCurrent(storage,expectedRaw,nextRaw){
   if(storage.getItem(STORAGE_KEY)!==expectedRaw)return {status:'conflict'};
   storage.setItem(STORAGE_KEY,nextRaw);
