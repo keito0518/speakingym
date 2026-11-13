@@ -1,0 +1,143 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { ALL_PROMPTS } from '../prototype/speakingym-monsters/monster-data.js';
+import { createSave, EVOLUTION_XP } from '../prototype/speakingym-monsters/monster-engine.js';
+import { recordRetention } from '../prototype/speakingym-monsters/retention.js';
+import { nextLearningQuestFor, learningProofFor, nextReturnCueFor, homeLearningSignalFor } from '../prototype/speakingym-monsters/next-learning-quest.js';
+
+const today='2026-11-02';
+const first=kind=>ALL_PROMPTS.find(p=>p.kind===kind&&(p.difficulty||'easy')==='easy'&&!p.bossOnly);
+
+test('an honest home learning proof appears only after separate-day independent recall',()=>{
+ const id=first('speak').id;let save=createSave();
+ assert.equal(learningProofFor(save,'2026-10-01'),null);
+ save=recordRetention(save,id,'smooth','2026-10-01').save;
+ assert.equal(learningProofFor(save,'2026-10-01'),null,'First exposure is not next-day mastery');
+ save=recordRetention(save,id,'smooth','2026-10-01').save;
+ assert.equal(learningProofFor(save,'2026-10-01'),null,'Same-day drilling cannot create a milestone');
+ save=recordRetention(save,id,'smooth','2026-10-02').save;
+ assert.deepEqual(learningProofFor(save,'2026-10-02'),{days:1,count:1,label:'翌日もヒントなしで確認できた 1問 · 記録を見る'});
+ save=recordRetention(save,id,'smooth','2026-10-05').save;
+ assert.match(learningProofFor(save,'2026-10-05').label,/3日後も/);
+ save=recordRetention(save,id,'smooth','2026-10-12').save;
+ assert.match(learningProofFor(save,'2026-10-12').label,/7日後も/);
+ save=recordRetention(save,id,'hint','2026-10-13').save;
+ assert.equal(learningProofFor(save,'2026-10-13'),null,'Hint-based recovery must not be presented as independent retention');
+});
+
+test('a new player gets one actionable short lesson, not a fabricated weak area',()=>{
+ const mission=nextLearningQuestFor(createSave(),today);
+ assert.equal(mission.kind,'daily');
+ assert.equal(mission.action,'daily');
+ assert.match(mission.detail,/8問|5分/);
+});
+
+test('a cross-scene answer creates a single direct review mission on the due day only',()=>{
+ const prompt=ALL_PROMPTS.find(p=>p.id==='prefer-city');
+ const save={...createSave(),reviewPrompts:{[prompt.id]:'2026-11-03'},
+  transferReviews:{[prompt.id]:{due:'2026-11-03',status:'confirmed'}}};
+ assert.equal(nextLearningQuestFor(save,today).kind,'daily');
+ const mission=nextLearningQuestFor(save,'2026-11-03');
+ assert.equal(mission.kind,'transfer');
+ assert.equal(mission.action,'transfer-review');
+ assert.match(mission.detail,/街の移動/);
+ assert.match(mission.button,/1問/);
+});
+
+test('due 1/3/7-day recall has highest priority over XP and new adventures',()=>{
+ const base=createSave(),id=first('speak').id;
+ const save={...base,xpWallet:EVOLUTION_XP,retention:{[id]:{stage:1,lastDay:'2026-10-31',nextDay:'2026-11-01'}}};
+ const mission=nextLearningQuestFor(save,today);
+ assert.equal(mission.kind,'retention');
+ assert.equal(mission.action,'retention-quick');
+ assert.match(mission.detail,/1問/);
+});
+
+test('next-day mission stays bite-sized even if twelve or more reviews are due',()=>{
+ const ids=ALL_PROMPTS.filter(p=>(p.difficulty||'easy')==='easy'&&!p.bossOnly).slice(0,15).map(p=>p.id);
+ const save={...createSave(),totalAnswers:15,retention:Object.fromEntries(ids.map(id=>[id,{stage:1,lastDay:'2026-11-01',nextDay:'2026-11-02'}]))};
+ const mission=nextLearningQuestFor(save,today);
+ assert.equal(mission.action,'retention-quick');
+ assert.match(mission.detail,/15問.*3問だけ/);
+ assert.match(mission.button,/3問だけ/);
+ assert.equal(nextReturnCueFor(save,today,ids),null,'Unfinished due reviews take precedence over future promises');
+});
+
+test('return cue is backed by scheduled practice, never a made-up daily streak',()=>{
+ const firstId=first('speak').id;
+ let save=createSave();
+ assert.equal(nextReturnCueFor(save,'2026-11-02',[firstId]),null);
+ save=recordRetention(save,firstId,'smooth','2026-11-02').save;
+ const cue=nextReturnCueFor(save,'2026-11-02',[firstId]);
+ assert.equal(cue.date,'2026-11-03');
+ assert.equal(cue.when,'明日');
+ assert.equal(cue.count,1);
+ assert.match(cue.title,/明日、1問/);
+ assert.equal(nextReturnCueFor(save,'2026-11-03',[firstId]),null,'A due task is actionable now, not a future plan');
+});
+
+test('home shows one short upcoming recall badge, hides it once recall becomes due',()=>{
+ const id=first('speak').id;
+ let save=createSave();
+ assert.equal(homeLearningSignalFor(save,today),null,'No scheduled task means no return promise');
+ save=recordRetention(save,id,'smooth',today).save;
+ assert.deepEqual(homeLearningSignalFor(save,today),{kind:'return',label:'明日 · 復習 1問'});
+ assert.equal(homeLearningSignalFor(save,'2026-11-03'),null,'Today-due recall already has its own primary action');
+});
+
+test('home growth badge compares genuine same-level sessions at least seven days apart',()=>{
+ const session=(date,difficulty,independent)=>({date,difficulty,total:8,independent,hinted:0,elapsedSeconds:240});
+ const earlier=session('2026-10-01','easy',1);
+ const nearest=session('2026-11-02','easy',4);
+ const latest=session('2026-11-09','easy',6);
+ const save={...createSave(),dailyHistory:[earlier,nearest,session('2026-11-03','hard',8),latest]};
+ assert.deepEqual(homeLearningSignalFor(save,'2026-11-09'),{
+  kind:'growth',label:'自力正解率 50% → 75%（同じ難易度・7日以上）'
+ });
+ assert.equal(homeLearningSignalFor({...createSave(),dailyHistory:[nearest,latest]},'2026-11-08'),null,
+  'A future session must not be used to claim current progress');
+});
+
+test('scheduled saved lines get a direct review action without counting all bookmarks as due',()=>{
+ const base=createSave(),due=first('speak'),later=first('grammar');
+ const save={...base,savedPromptIds:[due.id,later.id],reviewPrompts:{[due.id]:today,[later.id]:'2026-11-10'}};
+ const mission=nextLearningQuestFor(save,today);
+ assert.equal(mission.kind,'saved');
+ assert.equal(mission.action,'saved-due');
+ assert.match(mission.detail,/1件/);
+});
+
+test('truly due quiz weakness appears in the authored 8-question plan',()=>{
+ const base=createSave(),quiz=first('grammar');
+ const save={...base,quizProgress:{[quiz.id]:{misses:1,nextReviewDay:today,resolved:false}}};
+ const mission=nextLearningQuestFor(save,today);
+ assert.equal(mission.kind,'review');
+ assert.equal(mission.action,'daily');
+ assert.match(mission.detail,/復習 \d+問/);
+});
+
+test('a wallet-ready ally is guided to the missing boss trial instead of a fake free evolution',()=>{
+ const base=createSave(),save={...base,xpWallet:EVOLUTION_XP};
+ const trialMission=nextLearningQuestFor(save,today);
+ assert.equal(trialMission.kind,'forest');
+ assert.match(trialMission.detail,/ボス攻略/);
+ assert.match(trialMission.detail,/森の入口/,'the suggested boss is actually unlocked');
+ const withTrial={...save,monsterTrials:{medamago:['entry']}};
+ const mission=nextLearningQuestFor(withTrial,today);
+ assert.equal(mission.kind,'growth');
+ assert.equal(mission.action,'growth');
+ assert.match(mission.detail,/ボス試練 1\/1/);
+ assert.equal(save.monsterXp[save.selectedMonster]||0,0);
+ const ready={...withTrial,monsterXp:{medamago:EVOLUTION_XP}};
+ assert.match(nextLearningQuestFor(ready,today).title,/試練クリア/);
+});
+
+test('completed daily training leads back to adventure when no review is due',()=>{
+ const base=createSave(),save={...base,dailyHistory:[{date:today,difficulty:'easy',total:8,independent:8,hinted:0,elapsedSeconds:240}]};
+ const mission=nextLearningQuestFor(save,today);
+ assert.equal(mission.kind,'forest');
+ assert.equal(mission.action,'forest');
+ const quiz=first('grammar'),withWeakness={...save,quizProgress:{[quiz.id]:{misses:1,nextReviewDay:today,resolved:false}}};
+ assert.notEqual(nextLearningQuestFor(withWeakness,today).action,'daily',
+  'A finished daily mission must not immediately recommend the same eight-question routine again');
+});
