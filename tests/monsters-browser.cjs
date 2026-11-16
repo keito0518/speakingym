@@ -1734,7 +1734,24 @@ const path=require('node:path');
         }
         await moveOn();
         assert.equal(await forestPage.locator('#forest-explore-event').isVisible(),false,'Unscored story forks never interrupt a battle');
-        if(await forestPage.locator('#forest-explore-screen').isVisible())await forestPage.locator('#forest-explore-continue').click();
+        if(mob===5&&width===390){
+          // Safari/LINE often background while a boss transition is queued.
+          // The automatic transition must pause, then resume without a new tap.
+          await forestPage.evaluate(()=>{
+            Object.defineProperty(document,'hidden',{configurable:true,value:true});
+            document.dispatchEvent(new Event('visibilitychange'));
+          });
+          await forestPage.waitForTimeout(1250);
+          assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true,
+            'A backgrounded tab must not advance its dungeon offscreen');
+          await forestPage.evaluate(()=>{
+            Object.defineProperty(document,'hidden',{configurable:true,value:false});
+            document.dispatchEvent(new Event('visibilitychange'));
+          });
+          await forestPage.locator('#forest-journey').waitFor({state:'visible',timeout:3500});
+        }else if(await forestPage.locator('#forest-explore-screen').isVisible()){
+          await forestPage.locator('#forest-explore-continue').click();
+        }
         await forestPage.locator('#forest-journey').waitFor({state:'visible'});
       }
       assert.match(await forestPage.locator('.question-top').innerText(),/BOSS ATTACK 1 \/ 3/);
