@@ -296,6 +296,8 @@ let play = null, timer = null, recognition = null, recognitionStartTimer = null,
 // WebKit may still own the microphone after a final result or an error. Do not
 // start a second recognizer until the previous session actually fires onend.
 let retiringRecognition = null, recognitionRetireTimer = null, queuedRecognitionSession = null;
+// Backgrounding a phone must not silently discard a pending transition to the next battle.
+let suspendedForestAdvance = null;
 // iOS 27 has a WebKit regression where a second recognition session can be
 // deaf. A short speech-synthesis cue between naturally ended sessions is a
 // best-effort browser workaround; native iPhone dictation stays available.
@@ -306,13 +308,18 @@ setupBetaFeedback(betaTelemetry);
 function cancelAutoAdvance(){
   if(autoAdvanceTimer!==null)clearTimeout(autoAdvanceTimer);
   autoAdvanceTimer=null;
+  suspendedForestAdvance=null;
 }
 function queueAutoAdvance(callback,delay){
   cancelAutoAdvance();
   const session=play,index=play?.index;
   autoAdvanceTimer=setTimeout(()=>{
     autoAdvanceTimer=null;
-    if(play!==session||play?.index!==index||document.hidden)return;
+    if(play!==session||play?.index!==index)return;
+    if(document.hidden){
+      if(play.mode==='forest')suspendedForestAdvance={session,index};
+      return;
+    }
     callback();
   },delay);
 }
@@ -3714,9 +3721,20 @@ $('#battle-sound-toggle').addEventListener('click',()=>{
 });
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+    // Keep only the intended automatic transition. An opening map or a
+    // player-selected party must never auto-start when Safari is reopened.
+    const pending=autoAdvanceTimer!==null&&play?.mode==='forest'
+      ?{session:play,index:play.index}:suspendedForestAdvance;
     cancelAutoAdvance();
+    if(pending)suspendedForestAdvance=pending;
     cancelPendingSpeech();
     pauseInterruptedListening();
+  }else if(suspendedForestAdvance){
+    const pending=suspendedForestAdvance;
+    suspendedForestAdvance=null;
+    if(play===pending.session&&play?.index===pending.index&&
+      !$('#play-view').hidden&&$('#play-view').classList.contains('forest-exploring'))
+      queueForestEncounter();
   }
 });
 renderHome();
