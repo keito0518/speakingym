@@ -1,0 +1,376 @@
+// Authored comprehension checks, keyed to the *heard* line, not the response
+// learner is expected to speak. Keep prompts independent of the visible task:
+// learners must establish what the other person actually said before replying.
+// Choice zero is canonical in the source data; the UI deterministically shuffles.
+// Advanced levels have longer, naturally phrased audio, not merely more buttons.
+// They retain the base sentence's communicative intent so each meaning check
+// remains accurate. Each pair is [normal, hard].
+const AUDIO_VARIANTS=Object.freeze({
+  'think-trip':['The tour is filling up. Would you like to book it now?', 'We only have a few places left on this tour, and we cannot hold them without a booking. Would you like to reserve a place now, or wait?'],
+  'repeat-station':['The last train for the city leaves at ten forty-five tonight.', 'Because of track maintenance, the last train leaves at ten forty-five, fifteen minutes earlier than usual. Please check your platform before boarding.'],
+  'agree-work':['Our usual meeting time is no longer available. How about Friday instead?', 'Since the conference room is occupied on Thursday, would you be available to meet on Friday instead of our usual day?'],
+  'late-call':['Hi, we have been waiting outside for a few minutes. Are you almost here?', 'We are standing by the main entrance, and everyone else has arrived. Are you nearly here, or should we start without you?'],
+  'clarify-office':['Please send me the updated file before lunch today.', 'I need to review the final figures this afternoon, so could you send the updated file before lunch rather than at the end of the day?'],
+  'prefer-friend':['We could take the bus, but the train is also running. Which would you prefer?', 'There is a bus in ten minutes or a train leaving just after that. Should we take the bus or the train? I am happy with either.'],
+  'help-phone':['You look a bit worried. Is everything all right?', 'I noticed you have been standing here looking at your phone for a while. Is everything okay, or is there something wrong?'],
+  'help-ticket':['The ticket machine can be confusing. Do you need any assistance?', 'I can see you are having some trouble with the machine. Would you like some assistance, or have you managed to work it out?'],
+  'order-coffee':['Welcome to the café. What can I get you this morning?', 'We have a few new iced drinks today as well as our regular coffee menu. Take your time, and let me know what I can get you.'],
+  'order-breakfast':['Your breakfast comes with a drink. Would you like something to drink?', 'While the kitchen prepares your breakfast, could I bring you something to drink, perhaps tea, coffee, or some juice?'],
+  'direction-station':['Excuse me, you look a little lost. Are you looking for something?', 'I noticed you have been checking the street signs for a while. Are you looking for a particular place, or do you already know where to go?'],
+  'direction-museum':['Welcome to the visitor center. How can I help you today?', 'Good morning, and welcome to the city information desk. Are you after directions, or is there something else I can help you with today?'],
+  'recommend-food':['The kitchen is ready whenever you are. Would you like to order now?', 'Our lunch special is still available, but the kitchen will close in about forty minutes. Would you like to order now, or do you need more time?'],
+  'recommend-gift':['Are you looking for a gift for someone, or just browsing?', 'We have some local handmade items on display this week. Are you looking for a gift for somebody, or are you shopping for yourself?'],
+  'booking-table':['Good evening. Do you have a reservation for tonight?', 'Before I show you to a table, may I check whether you already have a reservation? We are fairly busy after seven this evening.'],
+  'booking-tour':['We are running a guided tour tomorrow. Would you like to join?', 'Tomorrow morning we have a small guided walking tour, and a few places are still available. Would you like to join us?'],
+  'apology-late':['I got here quite a while ago, and I have been waiting for you.', 'I arrived at the station twenty minutes ago, and I have been standing near the ticket gate waiting for you ever since.'],
+  'apology-email':['I sent you a message earlier this week. Did you get my last email?', 'I emailed you on Monday with the updated schedule, but I have not heard back yet. Did you receive my last email?'],
+  'decline-dinner':['We are getting together tonight. Are you coming to dinner?', 'A few of us are meeting for dinner at the new restaurant tonight. Are you planning to join us, or do you already have something on?'],
+  'decline-purchase':['This is our most popular item. Would you like to buy it today?', 'We still have your size in stock, and the discount ends this evening. Would you like to purchase it today or keep looking?'],
+  'price-ticket':['Just to confirm, would that be one ticket?', 'Before I take your payment, could I confirm that you are buying one admission ticket rather than a pair?'],
+  'price-rental':['How many days will you need the rental car for?', 'We can arrange a short rental or a weekly booking. How many days do you think you will need the car for?'],
+  'change-time':['I have you down for two o’clock. Does that time still work?', 'We are scheduled to meet at two this afternoon. Does two o’clock still suit you, or have your plans changed?'],
+  'change-seat':['I have finished checking your boarding pass. Do you need anything else?', 'Your boarding pass is ready and your baggage is checked in. Before you go through security, is there anything else you need?'],
+  'problem-wifi':['Good afternoon. Is everything okay with your hotel room?', 'I hope your stay is going well so far. Is everything all right with your room, or is there something we can help with?'],
+  'problem-bill':['Here is your invoice. Does everything look correct on the bill?', 'I have printed the itemized invoice for your stay, including breakfast and room charges. Could you check whether everything on the bill is correct?'],
+  'problem-train':['Good morning. Can I help you with your journey today?', 'Welcome to the information counter. Are you having trouble planning your journey, or is there anything else I can assist you with?']
+});
+const CHECKS = Object.freeze({
+  'think-trip': [
+    ['今ツアーを予約するか聞かれた','ツアーをキャンセルするか聞かれた','ツアーの集合場所を聞かれた'],
+    ['They ask whether to reserve the tour now.','They ask whether to cancel the tour.','They ask where the tour meets.','They say the tour has already been booked.']
+  ],
+  'repeat-station': [
+    ['最終列車は10時45分発だ','最終列車は9時45分発だ','次の列車は10時45分発だ'],
+    ['The last train departs at 10:45.','The last train departs at 9:45.','The next train departs at 10:45.','The station closes at 10:45.']
+  ],
+  'agree-work': [
+    ['金曜日に会議を変更する提案だ','金曜日の会議を中止する連絡だ','金曜日以外にしたいという提案だ'],
+    ['They suggest meeting on Friday instead.','They confirm that Friday is canceled.','They reject meeting on Friday.','They say the meeting was already moved to Thursday.']
+  ],
+  'late-call': [
+    ['もうすぐ到着するか聞かれた','あと何分で出発するか聞かれた','すでに到着したか確認された'],
+    ['They ask whether you are nearly there.','They ask when you will leave.','They ask whether you arrived earlier.','They say they will be late.']
+  ],
+  'clarify-office': [
+    ['昼食前に書類を送ってほしい','昼食後に書類を送ってほしい','昼食前に書類を受け取りたい'],
+    ['They want the file sent before lunch.','They want the file sent after lunch.','They want to receive a file from you tomorrow.','They say the file has already been sent.']
+  ],
+  'prefer-friend': [
+    ['バスと電車のどちらにするか聞かれた','バスが何時に来るか聞かれた','電車の切符を持っているか聞かれた'],
+    ['They ask you to choose between the bus and train.','They ask when the bus arrives.','They ask if you already have a train ticket.','They say the bus is faster than the train.']
+  ],
+  'help-phone': [
+    ['大丈夫かどうか気遣われた','携帯電話を持っているか聞かれた','助けが不要か確認された'],
+    ['They ask if everything is okay.','They ask whether your phone works.','They ask whether you can help them.','They say there is nothing to worry about.']
+  ],
+  'help-ticket': [
+    ['何か手伝いが必要か聞かれた','切符をすでに買ったか聞かれた','手伝いは不要だと言われた'],
+    ['They offer assistance.','They ask if you have already bought a ticket.','They refuse to help.','They ask which train leaves next.']
+  ],
+  'order-coffee': [
+    ['注文を聞かれた','注文を取り消すか聞かれた','注文した商品が届いたと言われた'],
+    ['They ask what you would like to order.','They ask if you want to cancel.','They say your order is ready.','They ask whether you have paid already.']
+  ],
+  'order-breakfast': [
+    ['何か飲み物が欲しいか聞かれた','朝食を追加するか聞かれた','飲み物をすでに頼んだか聞かれた'],
+    ['They offer you something to drink.','They offer an extra breakfast.','They ask whether you ordered drinks earlier.','They say drinks are not included.']
+  ],
+  'direction-station': [
+    ['何かを探しているか聞かれた','ここで待つように言われた','道に迷ったと言われた'],
+    ['They ask whether you are looking for something.','They ask you to wait here.','They say they have lost their way.','They give directions without being asked.']
+  ],
+  'direction-museum': [
+    ['何を手伝えるか聞かれた','どこに行ったか聞かれた','今日は営業していないと言われた'],
+    ['They ask how they can help you.','They ask where you went earlier.','They say the museum is closed today.','They ask you to return tomorrow.']
+  ],
+  'recommend-food': [
+    ['今注文するか聞かれた','料理が美味しかったか聞かれた','おすすめを決めたと言われた'],
+    ['They ask if you are ready to order.','They ask whether you enjoyed your meal.','They say a recommended dish is sold out.','They tell you the kitchen is closing.']
+  ],
+  'recommend-gift': [
+    ['贈り物を探しているか聞かれた','贈り物を包むか聞かれた','贈り物を渡したか聞かれた'],
+    ['They ask if you are shopping for a gift.','They ask if you want gift wrapping.','They ask whether you gave someone a gift.','They offer to deliver the gift later.']
+  ],
+  'booking-table': [
+    ['予約しているか聞かれた','これから予約するか聞かれた','予約を変更するか聞かれた'],
+    ['They ask whether you already have a reservation.','They ask whether you want to make a reservation now.','They ask to change an existing booking.','They say your reservation has been canceled.']
+  ],
+  'booking-tour': [
+    ['明日のツアーに参加したいか聞かれた','今日のツアーに参加したか聞かれた','明日のツアーが中止だと言われた'],
+    ['They ask if you want to join tomorrow\'s tour.','They ask whether you joined today\'s tour.','They say tomorrow\'s tour was canceled.','They say there are no spaces tomorrow.']
+  ],
+  'apology-late': [
+    ['待っていたと言われた','これから待つと言われた','もう待てないと言われた'],
+    ['They say they have been waiting for you.','They say they will wait for you later.','They say they cannot wait any longer.','They say they arrived after you.']
+  ],
+  'apology-email': [
+    ['前に送ったメールを受け取ったか聞かれた','メールをいつ送るか聞かれた','最後のメールを削除したと言われた'],
+    ['They ask if you received their previous email.','They ask when you will send an email.','They say their last email was deleted.','They ask you not to reply to their previous email.']
+  ],
+  'decline-dinner': [
+    ['今夜の夕食に来るか聞かれた','明日の朝食に来るか聞かれた','夕食を作るか聞かれた'],
+    ['They ask if you are coming to dinner tonight.','They ask about breakfast tomorrow.','They ask whether you will cook dinner.','They say dinner has been moved to tomorrow.']
+  ],
+  'decline-purchase': [
+    ['今日それを買うか聞かれた','今日それを返品するか聞かれた','今日もう買ったか聞かれた'],
+    ['They ask if you would like to buy it today.','They ask if you want to return it today.','They ask if you bought it earlier today.','They say the item cannot be purchased today.']
+  ],
+  'price-ticket': [
+    ['切符を1枚買うか確認された','切符を2枚買うか確認された','切符を1枚持っているか確認された'],
+    ['They check whether you want one ticket.','They ask whether you want two tickets.','They check whether you already own a ticket.','They say only one ticket is left.']
+  ],
+  'price-rental': [
+    ['何日間必要か聞かれた','何日間借りたか聞かれた','何日間待てるか聞かれた'],
+    ['They ask how many days you need it for.','They ask how many days you already rented it.','They ask how long you can wait.','They say rentals are limited to one day.']
+  ],
+  'change-time': [
+    ['2時の予定のままで大丈夫か聞かれた','2時に変更したいと言われた','2時の予定を取り消すか聞かれた'],
+    ['They ask whether two o\'clock still suits you.','They suggest changing the time to two.','They ask if you canceled the two o\'clock meeting.','They confirm the meeting has already moved to three.']
+  ],
+  'change-seat': [
+    ['ほかに必要なものがあるか聞かれた','席を変えたいか聞かれた','すべて終わったか聞かれた'],
+    ['They ask if you need anything else.','They ask if you want to change seats.','They ask whether everything is finished.','They say no more changes are possible.']
+  ],
+  'problem-wifi': [
+    ['部屋に問題がないか聞かれた','部屋を変更したいか聞かれた','部屋は準備できていると言われた'],
+    ['They ask whether everything is okay with your room.','They ask if you would like to change rooms.','They say your room is ready.','They ask if your Wi-Fi password works.']
+  ],
+  'problem-bill': [
+    ['請求書の内容が正しいか聞かれた','請求書を受け取ったか聞かれた','請求書を修正したと言われた'],
+    ['They ask if your bill is correct.','They ask if you received your bill.','They say your bill has been corrected.','They ask whether you want to pay later.']
+  ],
+  'problem-train': [
+    ['移動について手伝えるか聞かれた','旅行は順調か聞かれた','別の列車に乗るように言われた'],
+    ['They ask if they can help with your journey.','They ask whether your trip went well.','They tell you to take another train.','They ask whether you have booked your return journey.']
+  ]
+});
+
+// Advanced clips contain more than the main intent. These authored choices
+// test the extra factual detail. Every distractor must contradict the clip,
+// not merely restate another fact that is also true in the recording.
+const HARD_DETAIL_CHECKS=Object.freeze({
+  'think-trip':[
+    'A few tour places remain, but only a booking can hold one.',
+    'The tour is fully booked and no places are left.',
+    'A place can be held without making any booking.',
+    'They are asking you to cancel an existing tour booking.'
+  ],
+  'repeat-station':[
+    'Track maintenance has moved the last train to 10:45, fifteen minutes earlier than usual.',
+    'Track maintenance has delayed the last train by fifteen minutes.',
+    'The last train now leaves at 10:15, not 10:45.',
+    'The platform has already been confirmed and no check is needed.'
+  ],
+  'agree-work':[
+    'The room is occupied on Thursday, so they suggest meeting on Friday.',
+    'The room is free on Thursday, so the original day is confirmed.',
+    'The room is occupied on Friday, so they suggest Thursday.',
+    'The meeting has been canceled and will not be rescheduled.'
+  ],
+  'late-call':[
+    'Everyone else is at the main entrance; they ask if you are near or if they should start.',
+    'No one else has arrived at the main entrance yet.',
+    'They have already started and do not need a reply.',
+    'They ask you to change the meeting place to a different entrance.'
+  ],
+  'clarify-office':[
+    'They need the updated file before lunch to review the figures this afternoon.',
+    'They need the file at the end of the day to review figures tomorrow.',
+    'They have reviewed the figures and no longer need the updated file.',
+    'They ask you to bring printed figures to an evening meeting.'
+  ],
+  'prefer-friend':[
+    'A bus leaves in ten minutes and a train soon after; the speaker is happy with either.',
+    'Only the bus is running, so they insist on taking it.',
+    'The train leaves ten minutes before the bus.',
+    'They have already purchased the train tickets.'
+  ],
+  'help-phone':[
+    'They noticed you looking at your phone for a while and ask if something is wrong.',
+    'They want to borrow your phone to make an urgent call.',
+    'They say they have been waiting for a message from you.',
+    'They tell you the phone has been repaired and is ready to collect.'
+  ],
+  'help-ticket':[
+    'They notice you struggling with the machine and ask if you still need assistance.',
+    'They tell you the ticket machine is broken and cannot be used.',
+    'They ask whether you have helped someone else with the machine.',
+    'They say you must queue at the counter instead of using the machine.'
+  ],
+  'order-coffee':[
+    'The cafe has new iced drinks as well as regular coffee, and you can take your time ordering.',
+    'The cafe has stopped serving regular coffee and only offers iced drinks.',
+    'They say your iced drink is ready and must be collected immediately.',
+    'They ask you to order quickly because the cafe is closing.'
+  ],
+  'order-breakfast':[
+    'Breakfast is being prepared; the speaker offers tea, coffee, or juice.',
+    'Breakfast has finished, and drinks are not included.',
+    'They need you to select a dessert before breakfast.',
+    'The kitchen is closed and only water is available.'
+  ],
+  'direction-station':[
+    'They saw you checking street signs and ask whether you need help finding a place.',
+    'They tell you a particular street is closed to pedestrians.',
+    'They ask you to point out the nearest railway station for them.',
+    'They confirm that you have already found the place you wanted.'
+  ],
+  'direction-museum':[
+    'At the city information desk, they offer directions or another kind of help.',
+    'They say the city information desk is closed for the day.',
+    'They ask you to give directions to another visitor.',
+    'They explain that only museum tickets are sold at this desk.'
+  ],
+  'recommend-food':[
+    'The lunch special is still available, but the kitchen closes in about forty minutes.',
+    'The lunch special has sold out and the kitchen is already closed.',
+    'The kitchen closes in ten minutes and is no longer taking orders.',
+    'They ask whether you liked the lunch special you already ate.'
+  ],
+  'recommend-gift':[
+    'They mention local handmade items and ask if the shopping is for you or a gift.',
+    'They say all local handmade items have sold out this week.',
+    'They ask whether you have already wrapped a gift for somebody.',
+    'They tell you the store only sells gifts for other people.'
+  ],
+  'booking-table':[
+    'Before seating you, they check your reservation because the restaurant is busy after seven.',
+    'They say a confirmed reservation has been canceled without notice.',
+    'They ask you to return tomorrow because the restaurant is closed tonight.',
+    'They say no reservation is needed because it is quiet after seven.'
+  ],
+  'booking-tour':[
+    'Tomorrow morning\'s walking tour still has a few places, and you are invited to join.',
+    'Tomorrow\'s walking tour is already fully booked.',
+    'The walking tour is planned for this evening rather than tomorrow.',
+    'They are asking whether you joined yesterday\'s tour.'
+  ],
+  'apology-late':[
+    'They arrived at the station twenty minutes ago and have waited near the ticket gate.',
+    'They arrived at the station just now and have not started waiting.',
+    'They waited for twenty minutes outside the restaurant.',
+    'They ask you to buy a ticket before they reach the station.'
+  ],
+  'apology-email':[
+    'They sent an updated schedule on Monday and have not received a reply.',
+    'They plan to send an updated schedule next Monday.',
+    'They say they received your reply to the schedule earlier today.',
+    'They ask you to delete the updated schedule from Monday.'
+  ],
+  'decline-dinner':[
+    'A group is meeting at a new restaurant tonight, and they ask whether you can join.',
+    'The group has changed tonight\'s dinner to breakfast tomorrow.',
+    'They ask if you would cook dinner at home for the group.',
+    'The group has canceled its meal because the restaurant is closed.'
+  ],
+  'decline-purchase':[
+    'Your size is in stock, but the discount ends this evening.',
+    'Your size has sold out, but the discount lasts all week.',
+    'They say you have already bought the item at full price.',
+    'They ask you to return the discounted item by this evening.'
+  ],
+  'price-ticket':[
+    'Before payment, they confirm that you want one admission ticket rather than two.',
+    'They say there is only one admission ticket left to sell.',
+    'They ask whether you already paid for two tickets.',
+    'They offer a discount if you purchase two tickets.'
+  ],
+  'price-rental':[
+    'Short and weekly rentals are possible; they ask how many days you need the car.',
+    'Only weekly rentals are available, and shorter bookings are not allowed.',
+    'They say you must return the car today regardless of your booking.',
+    'They confirm that you booked the car for exactly seven days.'
+  ],
+  'change-time':[
+    'The meeting is scheduled for two this afternoon; they ask if that still works.',
+    'The meeting was moved from two to three without consulting you.',
+    'They ask you to cancel the meeting this afternoon.',
+    'They say two o\'clock was never the agreed meeting time.'
+  ],
+  'change-seat':[
+    'Your boarding pass and baggage are ready; they ask if you need anything before security.',
+    'You still need to check your baggage in after passing security.',
+    'They ask you to return to the ticket counter because the boarding pass is missing.',
+    'They announce that security is closed and you cannot board.'
+  ],
+  'problem-bill':[
+    'They ask you to check an itemized hotel invoice with breakfast and room charges.',
+    'They explain that breakfast was accidentally left off the invoice.',
+    'They confirm that the invoice has already been corrected.',
+    'They ask you to pay a deposit before checking any of the charges.'
+  ],
+  'problem-wifi':[
+    'They hope your hotel stay is going well and ask if the room needs attention.',
+    'They say the hotel room is unavailable for tonight.',
+    'They ask you to move to another room immediately.',
+    'They confirm that you complained about the Wi-Fi earlier.'
+  ],
+  'problem-train':[
+    'At the information counter, they offer help planning your journey or something else.',
+    'They say every train has been canceled for the day.',
+    'They ask you to help another traveler plan a journey.',
+    'They announce that the information counter has moved to another station.'
+  ]
+});
+
+// A wrong answer should point learners toward an audible distinction, without
+// showing the transcript or the correct choice before they try again.
+// After a verified answer, show the *exact* spoken evidence and its meaning.
+// [what to listen for, verbatim excerpt from the hard recording, Japanese meaning]
+const HARD_LISTENING_COACH=Object.freeze({
+  'think-trip':['空席の数と、席を確保するための条件','cannot hold them without a booking','予約しないと席は確保できません'],
+  'repeat-station':['終電の時刻と、普段より早いのか遅いのか','fifteen minutes earlier than usual','普段より15分早い'],
+  'agree-work':['会議室が使えない曜日と、提案された曜日','conference room is occupied on Thursday','木曜日は会議室が使用中'],
+  'late-call':['待ち合わせ場所と、すでに到着した人','everyone else has arrived','ほかの全員は到着済み'],
+  'clarify-office':['資料が必要な時刻と、その理由','before lunch rather than at the end of the day','終業時ではなく昼食前に'],
+  'prefer-friend':['バスと電車の出発順と、相手の希望','a bus in ten minutes or a train leaving just after that','バスは10分後、電車はその少し後'],
+  'help-phone':['相手が何を見て、心配したのか','looking at your phone for a while','しばらくスマホを見ている'],
+  'help-ticket':['相手が気づいた困りごとと、その提案','having some trouble with the machine','機械の操作に困っている'],
+  'order-coffee':['新しい飲み物と、従来のメニューの両方','new iced drinks today as well as our regular coffee menu','新しいアイス飲料に加えて定番のコーヒーも'],
+  'order-breakfast':['朝食の準備中に提案された飲み物','perhaps tea, coffee, or some juice','紅茶、コーヒー、またはジュース'],
+  'direction-station':['相手が声をかけた理由','checking the street signs for a while','しばらく道路標識を確認している'],
+  'direction-museum':['案内所で手伝えることの選択肢','Are you after directions, or is there something else','道案内ですか、それとも別のご用件ですか'],
+  'recommend-food':['料理の注文可否と、厨房が閉まるまでの時間','kitchen will close in about forty minutes','厨房はあと約40分で閉まります'],
+  'recommend-gift':['商品が何で、誰のための買い物か','local handmade items on display this week','今週は地元の手作り品を展示中'],
+  'booking-table':['席へ案内する前の確認と、混雑する時間','fairly busy after seven this evening','今夜7時以降はかなり混んでいます'],
+  'booking-tour':['ツアーの日程と、残っている席','a few places are still available','まだ数席空いています'],
+  'apology-late':['到着から何分経ったかと、待っている場所','arrived at the station twenty minutes ago','20分前に駅へ着きました'],
+  'apology-email':['メールを送った曜日と、その内容','emailed you on Monday with the updated schedule','月曜日に更新した予定をメールしました'],
+  'decline-dinner':['食事会の日時と、店の特徴','new restaurant tonight','今夜、新しいレストランで'],
+  'decline-purchase':['サイズの在庫と、割引の期限','discount ends this evening','割引は今夜終了します'],
+  'price-ticket':['チケットが1枚か2枚か','one admission ticket rather than a pair','2枚ではなく入場券を1枚'],
+  'price-rental':['選べるレンタル期間','a short rental or a weekly booking','短期レンタルまたは週単位の予約'],
+  'change-time':['もともとの予定時刻と、変更の有無','scheduled to meet at two this afternoon','今日の午後2時に会う予定'],
+  'change-seat':['保安検査の前に終わった手続き','boarding pass is ready and your baggage is checked in','搭乗券の準備と荷物の預け入れは完了'],
+  'problem-wifi':['ホテルの人が何について確認しているか','Is everything all right with your room','お部屋に問題はありませんか'],
+  'problem-bill':['請求書に含まれている費用','including breakfast and room charges','朝食代と宿泊料金を含みます'],
+  'problem-train':['案内所が申し出ている支援','trouble planning your journey','移動の計画でお困りですか']
+});
+
+const BASE_ID=id=>id.replace(/-(normal|hard)$/,'');
+function orderChoices(id,length){
+  const seed=[...id].reduce((total,char)=>total+char.charCodeAt(0),0);
+  const correctIndex=seed%length;
+  // The distractors rotate too; all three/four buttons are genuine choices.
+  return Array.from({length},(_,i)=>(i-correctIndex+length)%length);
+}
+export function listeningChallengeFor(prompt){
+  if(prompt.kind!=='listen')return null;
+  const authored=CHECKS[BASE_ID(prompt.id)];
+  if(!authored)throw Error('Listening meaning check missing: '+prompt.id);
+  const level=prompt.difficulty||'easy';
+  const source=level==='easy'?authored[0]:level==='hard'?HARD_DETAIL_CHECKS[BASE_ID(prompt.id)]||authored[1]:authored[1];
+  const count=level==='hard'?4:3;
+  const permutation=orderChoices(prompt.id,count);
+  const advancedAudio=AUDIO_VARIANTS[BASE_ID(prompt.id)];
+  const coach=level==='hard'?HARD_LISTENING_COACH[BASE_ID(prompt.id)]:null;
+  return Object.freeze({
+    level,
+    question:level==='easy'?'相手は何を伝えた？':level==='normal'?'What did the speaker mean?':'Which interpretation is the most precise?',
+    options:permutation.map(i=>source[i]),
+    correctIndex:permutation.indexOf(0),
+    coaching:coach?Object.freeze({focus:coach[0],quote:coach[1],meaning:coach[2]}):null,
+    // No task, response, or spoken English is exposed before the audio check.
+    audio:level==='easy'?prompt.audio:advancedAudio?.[level==='normal'?0:1]||prompt.audio
+  });
+}

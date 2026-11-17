@@ -1,0 +1,208 @@
+/* Speakingym Monsters: a whimsical 2D pixel adventure, not a sci-fi console.
+   This single scoped art direction supersedes the older experimental themes
+   without changing summon timing, economy, accessibility or gesture logic. */
+.shop-gacha .summon-banner{
+ border:3px solid #f5d28e;border-radius:20px;
+ background:linear-gradient(90deg,#17394ddc 0%,#183e58ab 58%,#183e5833),url('./assets/storybook-gacha.svg') center 54%/cover;
+ box-shadow:0 6px 0 #263f58,inset 0 0 0 3px #fff1b275}
+.shop-gacha .summon-banner-title{
+ font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;letter-spacing:.02em;
+ color:#fff4bd;text-shadow:0 3px #18334f,2px 0 #18334f,-2px 0 #18334f}
+.shop-gacha .summon-banner-ring{border-color:#ffe4a2a8;box-shadow:0 0 0 7px #a1dcb755,0 0 28px #fff3ae7a;opacity:1}
+.shop-gacha .summon-banner-spark{background:#fff4aa;box-shadow:0 0 18px #ffe58c}
+.shop-gacha .summon-banner::before{display:none}
+
+.summon-screen.theme-storybook{
+ --summon-color:#ffdf87;--summon-glow:#edb35e;--summon-accent:#fff7d6;
+ background:#294f79;color:#fff8dc;font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif}
+.summon-screen.theme-storybook[data-rarity="rare"]{--summon-color:#a7e8fa;--summon-glow:#76c2e5;--summon-accent:#f4fcff}
+.summon-screen.theme-storybook[data-rarity="epic"]{--summon-color:#f6c7ff;--summon-glow:#bf8fe9;--summon-accent:#fff2ff}
+.summon-screen.theme-storybook[data-rarity="legend"]{--summon-color:#fff09b;--summon-glow:#f5bc5b;--summon-accent:#fffbdc}
+.summon-screen.theme-storybook .summon-vault-backdrop{
+ background:linear-gradient(180deg,#16344a77 0%,#173d5470 48%,#17374dbd 100%),url('./assets/storybook-gacha.svg') center 55%/cover no-repeat;
+ background-color:#3f75a2;filter:none;transform:none;transition:opacity .8s}
+.summon-screen.theme-storybook .summon-vault-backdrop::before{display:none}
+.summon-screen.theme-storybook .summon-vault-backdrop::after{
+ background:linear-gradient(90deg,#0e38536e,transparent 15% 85%,#0e38536e),linear-gradient(0deg,#16374d94,transparent 35%)}
+.summon-screen.theme-storybook .summon-vault-doors,
+.summon-screen.theme-storybook .prism-light-streaks,
+.summon-screen.theme-storybook .summon-sigil,
+.summon-screen.theme-storybook .summon-orbit,
+.summon-screen.theme-storybook .summon-ascension{display:none!important}
+.summon-screen.theme-storybook .summon-universe{background:none}
+.summon-screen.theme-storybook .summon-stardust{opacity:.46;animation:star-slide 24s linear infinite}
+.summon-screen.theme-storybook .summon-aura{background:radial-gradient(circle,#ffe3a56a,transparent 70%);filter:blur(24px);opacity:.55}
+.summon-screen.theme-storybook .summon-rays{background:repeating-conic-gradient(from 4deg at 50% 48%,#ffebaa 0deg 7deg,transparent 7deg 29deg);opacity:0}
+.summon-screen.theme-storybook[data-phase="crack"] .summon-rays,
+.summon-screen.theme-storybook[data-phase="surge"] .summon-rays{opacity:.3!important}
+.summon-screen.theme-storybook[data-phase="reveal"] .summon-rays{opacity:.09!important}
+
+.summon-screen.theme-storybook .summon-dialog{width:min(100%,900px);padding-bottom:max(22px,env(safe-area-inset-bottom))}
+.summon-screen.theme-storybook .summon-topline{
+ border-bottom:3px solid #f7d49799;background:#183a57f2;backdrop-filter:none;
+ border-radius:0 0 13px 13px;padding:7px 10px}
+.summon-screen.theme-storybook .summon-brand{color:#fff4c2;font-size:12px;letter-spacing:.06em}
+.summon-screen.theme-storybook .summon-brand b{color:#b9f4d4;font-weight:1000}
+.summon-screen.theme-storybook .summon-icon-button{
+ border:2px solid #d2e9db;border-radius:10px;background:#335b75;color:#fffaf0;font-size:12px}
+.summon-screen.theme-storybook .summon-story{
+ font-size:clamp(15px,3.8vw,22px);font-weight:950;letter-spacing:.03em;line-height:1.5;
+ color:#fff9df;text-shadow:0 3px #203c57,2px 0 #203c57,-2px 0 #203c57}
+.summon-screen.theme-storybook .summon-vault-stage{min-height:clamp(335px,64dvh,575px);justify-content:flex-end;margin-bottom:14px}
+.summon-screen.theme-storybook .summon-vault-stage::before{display:none}
+.summon-screen.theme-storybook .summon-vault-stage::after{
+ top:50%;left:50%;height:23%;width:min(84vw,450px);filter:blur(12px);
+ background:radial-gradient(ellipse,#fce59f99,transparent 75%)}
+.summon-screen.theme-storybook .summon-vault-crest{
+ top:33%;width:clamp(210px,52vw,310px);border:0;border-radius:50%;
+ background:radial-gradient(circle,#ffedb48f 0 33%,#f4e6ad37 44%,transparent 70%);
+ box-shadow:none;animation:storybook-halo 2.6s ease-in-out infinite alternate}
+.summon-screen.theme-storybook .summon-vault-crest::before,
+.summon-screen.theme-storybook .summon-vault-crest::after{display:none}
+.summon-screen.theme-storybook .crest-orbit{border:0;box-shadow:none;animation:none}
+.summon-screen.theme-storybook .crest-spokes{
+ inset:15%;border:0;background:repeating-conic-gradient(#fff2c86b 0deg 9deg,transparent 9deg 45deg);
+ box-shadow:none;clip-path:polygon(50% 0,60% 35%,100% 50%,60% 65%,50% 100%,40% 65%,0 50%,40% 35%)}
+.summon-screen.theme-storybook .summon-vault-seal{
+ top:33%;width:clamp(156px,41vw,202px);aspect-ratio:1;
+ border:0;border-radius:20px;background:transparent;box-shadow:none;filter:drop-shadow(0 13px 0 #223a56a3);
+ padding:0;color:#fff;transform:translate(-50%,-50%);animation:none!important}
+.summon-screen.theme-storybook .summon-vault-seal::before{display:none}
+.summon-screen.theme-storybook .summon-vault-seal:focus-visible{outline:4px solid #fff5ad;outline-offset:5px}
+.summon-screen.theme-storybook .summon-seal-inner{
+ width:100%;height:100%;border:0;border-radius:0;background:none;box-shadow:none;
+ transform:none;display:grid;place-items:center}
+.summon-screen.theme-storybook .summon-seal-inner svg{
+ width:100%;height:100%;stroke:none;fill:none;filter:drop-shadow(0 3px 0 #322645);
+ image-rendering:pixelated;overflow:visible}
+.summon-screen.theme-storybook .summon-seal-inner b{
+ bottom:5%;padding:4px 12px;border:3px solid #33426a;border-radius:7px;
+ background:#fff1a6;color:#28395c;font-size:12px;letter-spacing:.08em;text-shadow:none}
+.summon-screen.theme-storybook .summon-vault-guide{
+ width:min(100%,365px);padding:15px 15px 17px;margin-bottom:6px;gap:7px;
+ border:3px solid #fde1a1;border-radius:20px;background:#fff5d9;
+ box-shadow:0 7px 0 #496a75,inset 0 0 0 2px #fffcf2;text-align:center;color:#233e57;backdrop-filter:none}
+.summon-screen.theme-storybook .summon-vault-guide .tiny-caps{
+ color:#356875;font-size:11px;font-weight:950;letter-spacing:.035em}
+.summon-screen.theme-storybook .summon-vault-guide strong{
+ color:#1d4259;font-size:clamp(19px,4.7vw,25px);letter-spacing:.02em;text-shadow:none}
+.summon-screen.theme-storybook .summon-vault-guide>span:nth-child(3){color:#355d70;font-size:13px;font-weight:700}
+.summon-screen.theme-storybook .summon-seal-meter{
+ height:14px;border:2px solid #607980;border-radius:6px;background:#d5e5d0}
+.summon-screen.theme-storybook .summon-seal-meter span{
+ background:repeating-linear-gradient(90deg,#78bc84 0 13px,#a4da91 13px 23px);
+ border-radius:3px;box-shadow:none}
+.summon-screen.theme-storybook .summon-vault-shards>span{
+ top:32%;height:20px;width:20px;background:#ffed9e;filter:drop-shadow(0 0 4px #fff9dc);
+ clip-path:polygon(50% 0,66% 34%,100% 50%,66% 66%,50% 100%,34% 66%,0 50%,34% 34%)}
+.summon-screen.theme-storybook[data-phase="unseal"] .summon-vault-seal{
+ animation:storybook-chest-pop .8s ease-out both!important}
+.summon-screen.theme-storybook[data-phase="unseal"] .storybook-chest-lid{
+ animation:storybook-chest-lid .8s steps(4,end) both;transform-box:fill-box;transform-origin:center bottom}
+.summon-screen.theme-storybook[data-phase="unseal"] .summon-vault-backdrop{filter:brightness(1.22);transform:none}
+.summon-screen.theme-storybook[data-phase="charge"] .summon-vault-backdrop,
+.summon-screen.theme-storybook[data-phase="crack"] .summon-vault-backdrop,
+.summon-screen.theme-storybook[data-phase="surge"] .summon-vault-backdrop{filter:brightness(.83);transform:none}
+.summon-screen.theme-storybook .summon-vault-heaven{
+ background:radial-gradient(ellipse at 50% 38%,#fff8d4 0,#ffe198a3 17%,transparent 58%)}
+.summon-screen.theme-storybook .summon-vault-doors{display:none}
+
+.summon-screen.theme-storybook .summon-portal{
+ width:min(72vw,290px,35dvh);filter:none;margin:10px auto 9px}
+.summon-screen.theme-storybook .summon-portal::before{
+ border-radius:50%;background:radial-gradient(circle,#fff5dba8,#ffcf8e5a 39%,transparent 70%);
+ box-shadow:none}
+.summon-screen.theme-storybook .summon-core{
+ inset:24%;border:0;border-radius:50%;transform:none;
+ background:radial-gradient(circle,#fffdf1 0 12%,#ffedb3 31%,#ffc985 54%,#f7bf794a 72%,transparent 76%);
+ box-shadow:0 0 35px #ffe9aa88}
+.summon-screen.theme-storybook .summon-core-inner{
+ border:0;border-radius:50%;background:radial-gradient(circle,#fffdf5 0 20%,#fff7cf99 54%,transparent 78%);clip-path:none}
+.summon-screen.theme-storybook[data-phase="crack"] .summon-core{animation:storybook-core-wobble .12s linear infinite alternate}
+.summon-screen.theme-storybook[data-phase="surge"] .summon-portal{animation:storybook-portal-bounce .38s ease-in-out infinite alternate}
+.summon-screen.theme-storybook .summon-flash{background:radial-gradient(circle,#fffad8 0,#ffe197 19%,transparent 65%)}
+.summon-screen.theme-storybook .summon-confetti span{
+ width:9px;height:9px;border-radius:50%;background:#fff1b4;
+ box-shadow:0 0 13px #ffe6a5;clip-path:none}
+.summon-screen.theme-storybook .summon-confetti span:nth-child(3n){width:5px;height:5px;background:#fffdf1}
+.summon-screen.theme-storybook .summon-confetti span:nth-child(5n){background:#a8f3dc}
+.summon-screen.theme-storybook .summon-reveal-art{filter:drop-shadow(0 5px 0 #36526c55)}
+.summon-screen.theme-storybook .summon-weapon-pedestal{border-radius:50%;background:radial-gradient(circle,#fff6c6ab,transparent 65%);filter:none}
+.summon-screen.theme-storybook .summon-weapon-pedestal::before{
+ border:0;border-radius:50%;background:radial-gradient(circle,#fff7d488,transparent 65%);
+ transform:none;box-shadow:none}
+.summon-screen.theme-storybook .summon-weapon-pedestal svg.summon-weapon-illustration{
+ width:86%;height:100%;max-width:220px;max-height:255px;image-rendering:pixelated;
+ filter:drop-shadow(0 6px 0 #273f5999);animation:storybook-pixel-float 2s steps(4,end) infinite alternate}
+.summon-screen.theme-storybook .summon-batch-rewards{gap:12px;max-width:880px}
+.summon-screen.theme-storybook .summon-batch-card{
+ min-width:0;min-height:224px;justify-content:flex-start;padding:14px 9px 12px;gap:5px;
+ border:3px solid #375b77;border-radius:16px;background:#fff6df;color:#283e55;
+ box-shadow:0 6px 0 #294760,inset 0 0 0 3px #d5e7d7;text-shadow:none}
+.summon-screen.theme-storybook .summon-batch-card::before,
+.summon-screen.theme-storybook .summon-batch-card::after{display:none}
+.summon-screen.theme-storybook .summon-batch-card[data-tier="rare"]{background:#e5f4ff;border-color:#4f93c9;box-shadow:0 6px 0 #2d527c}
+.summon-screen.theme-storybook .summon-batch-card[data-tier="epic"]{background:#f5e6ff;border-color:#9c69c5;box-shadow:0 6px 0 #68488f}
+.summon-screen.theme-storybook .summon-batch-card[data-tier="legend"]{background:#fff0c7;border-color:#ce8f40;box-shadow:0 6px 0 #91632c}
+.summon-screen.theme-storybook .summon-batch-card .summon-batch-weapon{
+ width:110px;height:107px;max-width:100%;overflow:hidden;filter:none;isolation:isolate;flex-shrink:0}
+.summon-screen.theme-storybook .summon-batch-card .summon-batch-weapon svg{
+ width:100%;height:100%;overflow:hidden;image-rendering:pixelated}
+.summon-screen.theme-storybook .summon-batch-card .summon-batch-number{color:#405d75;font-weight:1000}
+.summon-screen.theme-storybook .summon-batch-card .summon-batch-rarity{
+ margin-top:1px;color:#315a76;font-size:10px;letter-spacing:.09em}
+.summon-screen.theme-storybook .summon-batch-card[data-tier="epic"] .summon-batch-rarity{color:#69408a}
+.summon-screen.theme-storybook .summon-batch-card[data-tier="legend"] .summon-batch-rarity{color:#8b5b23}
+.summon-screen.theme-storybook .summon-batch-card strong{font-size:13px;color:#213d55;line-height:1.35}
+.summon-screen.theme-storybook .summon-batch-card small,
+.summon-screen.theme-storybook .summon-batch-card[data-duplicate="true"] small{
+ font-size:11px;color:#43556b;line-height:1.4}
+.summon-screen.theme-storybook .summon-batch-card button{
+ width:100%;min-height:41px;margin-top:auto;border:2px solid #275b7f;border-radius:10px;
+ background:#467faf;color:#fff;font-size:12px;font-weight:950;box-shadow:0 3px 0 #244c6d}
+.summon-screen.theme-storybook .summon-batch-card button:focus-visible{outline:3px solid #b0782f}
+.summon-screen.theme-storybook .summon-tier-splash{background:radial-gradient(ellipse,#fff8cf8c,transparent 65%)}
+.summon-screen.theme-storybook .summon-tier-splash span{
+ max-width:90vw;white-space:normal;padding:14px 22px;border:4px solid #fff0c3;border-radius:24px;
+ background:#fbcf83;color:#4d3858;font-family:system-ui,-apple-system,sans-serif;
+ font-size:clamp(22px,5.6vw,48px);font-weight:1000;letter-spacing:.03em;font-style:normal;
+ -webkit-text-stroke:0;text-align:center;text-shadow:0 2px #fff1c9;box-shadow:0 10px 0 #694f67}
+.summon-screen.theme-storybook .summon-rarity{
+ background:#fce6a8;color:#3e4d62;padding:6px 17px;border:2px solid #f5f4cf;border-radius:24px;
+ font-size:clamp(12px,2.6vw,16px);letter-spacing:.06em;text-shadow:none}
+.summon-screen.theme-storybook .summon-reward h2{
+ color:#fff9db;font-size:clamp(25px,5vw,39px);font-family:system-ui,-apple-system,sans-serif;
+ letter-spacing:.015em;text-shadow:0 3px #273950,2px 0 #273950,-2px 0 #273950}
+.summon-screen.theme-storybook #summon-attack{color:#fff5dc;font-size:13px;letter-spacing:.02em;text-shadow:0 2px #233d56}
+.summon-screen.theme-storybook .summon-duplicate{color:#fff7da}
+.summon-screen.theme-storybook .summon-actions button{border-radius:14px;min-height:52px}
+.summon-screen.theme-storybook .summon-primary{
+ background:#ffde92;color:#4e3c57;border:3px solid #fff4bd;box-shadow:0 5px 0 #ae7652}
+.summon-screen.theme-storybook .summon-secondary{
+ background:#426f89;color:#fff8e3;border:2px solid #d6ecde;box-shadow:0 4px 0 #263e5e}
+.summon-screen.theme-storybook .summon-game-only{color:#e1f0ea;font-size:11px;text-shadow:0 1px #224458}
+
+@keyframes storybook-halo{to{filter:brightness(1.15);opacity:.75}}
+@keyframes storybook-chest-pop{
+ 0%{transform:translate(-50%,-50%) scale(1);opacity:1}
+ 45%{transform:translate(-50%,-54%) scale(1.14);opacity:1}
+ 100%{transform:translate(-50%,-67%) scale(1.32);opacity:0}}
+@keyframes storybook-chest-lid{to{transform:translateY(-37px) rotate(-8deg)}}
+@keyframes storybook-core-wobble{to{transform:scale(1.1);filter:brightness(1.14)}}
+@keyframes storybook-portal-bounce{to{transform:scale(1.05)}}
+@keyframes storybook-pixel-float{to{transform:translateY(-5px)}}
+@media(max-width:430px){
+ .summon-screen.theme-storybook .summon-vault-stage{min-height:clamp(320px,57dvh,500px)}
+ .summon-screen.theme-storybook .summon-vault-seal,.summon-screen.theme-storybook .summon-vault-crest,
+ .summon-screen.theme-storybook .summon-vault-shards>span{top:31%}
+ .summon-screen.theme-storybook .summon-vault-guide{padding:12px;margin-bottom:8px}
+ .summon-screen.theme-storybook .summon-batch-card{min-height:216px;padding:11px 7px 12px}
+ .summon-screen.theme-storybook .summon-batch-card .summon-batch-weapon{width:84px;height:94px}
+ .summon-screen.theme-storybook .summon-batch-card strong{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .summon-screen.theme-storybook .summon-vault-crest,.summon-screen.theme-storybook .summon-stardust,
+ .summon-screen.theme-storybook .summon-weapon-pedestal svg.summon-weapon-illustration{animation:none!important}}
+.monsters-quiet-motion .summon-screen.theme-storybook .summon-vault-crest,
+.monsters-quiet-motion .summon-screen.theme-storybook .summon-stardust,
+.monsters-quiet-motion .summon-screen.theme-storybook .summon-weapon-pedestal svg.summon-weapon-illustration{animation:none!important}

@@ -1,0 +1,342 @@
+/* The weapon, not a random attack preset, determines how the ally moves.
+   All effects stay in the SCENIC strip: below the damage/HP HUD and never in
+   the question pane. These are translucent paths, not boxes over the foe. */
+#forest-world-stage{
+ --weapon-line:#b8f4dd;
+ --weapon-light:#e7fff6;
+ --weapon-aura:#84e6d780;
+ --weapon-flare:drop-shadow(0 0 5px var(--weapon-aura));
+}
+#forest-world-stage[data-weapon-rarity="rare"]{--weapon-line:#86caff;--weapon-light:#e5f7ff;--weapon-aura:#6cc9f288}
+#forest-world-stage[data-weapon-rarity="epic"]{--weapon-line:#d5a9ff;--weapon-light:#fbe6ff;--weapon-aura:#b887ff99}
+#forest-world-stage[data-weapon-rarity="legend"]{--weapon-line:#ffe094;--weapon-light:#fffbe1;--weapon-aura:#ffc969bb}
+#forest-world-stage[data-weapon-rank="2"],
+#forest-world-stage[data-weapon-rank="3"]{--weapon-flare:drop-shadow(0 0 10px var(--weapon-aura))}
+
+/* Sound is strictly opt-in. Keep this small control beside Help, outside the
+   battle canvas, so neither the English prompt nor monsters are obstructed. */
+#play-view.scene-battle .play-topline .battle-sound-toggle{
+ min-height:40px;padding:6px 9px;border:1px solid #779693;border-radius:10px;
+ background:#123546;color:#f4f6e8;font-size:12px;font-weight:750;white-space:nowrap;
+ cursor:pointer;
+}
+#play-view.scene-battle .play-topline .battle-sound-toggle[hidden]{display:none}
+#play-view.scene-battle .play-topline .battle-sound-toggle[aria-pressed="true"]{
+ color:#102b3c;background:#f8d88e;border-color:#e6b55e;
+}
+#play-view.scene-battle .play-topline .battle-sound-toggle:focus-visible{
+ outline:3px solid #ffde89;outline-offset:2px;
+}
+@media(max-width:690px){
+ #play-view.scene-battle.forest-active .play-topline{grid-template-columns:minmax(0,1fr) auto auto}
+ #play-view.scene-battle.forest-active .play-topline .battle-sound-toggle{grid-column:2;grid-row:1;min-height:38px;font-size:11px;padding:5px 7px}
+ #play-view.scene-battle.forest-active .play-topline .battle-guide-button{grid-column:3;grid-row:1}
+}
+
+.forest-weapon-fx{
+ position:absolute;z-index:11;left:53%;top:8px;width:35%;height:clamp(110px,20dvh,174px);
+ overflow:hidden;isolation:isolate;pointer-events:none;opacity:0;
+}
+#play-view.scene-battle .forest-weapon-fx{height:calc(var(--scene-top) - 20px);max-height:224px}
+.forest-world-stage.forest-boss-stage .forest-weapon-fx{left:51%;width:43%}
+.weapon-fx-trail,.weapon-fx-core{position:absolute;display:block;pointer-events:none;opacity:0;filter:var(--weapon-flare)}
+.weapon-fx-trail{left:4%;top:48%;width:88%;height:5px;border-radius:90px;background:linear-gradient(90deg,transparent,var(--weapon-line) 26%,var(--weapon-light) 62%,transparent)}
+.weapon-fx-trail-b{top:58%;width:70%;left:17%}
+.weapon-fx-trail-c{top:39%;width:63%;left:25%}
+.weapon-fx-core{left:calc(55% - 14px);top:calc(49% - 14px);width:28px;height:28px;border:3px solid var(--weapon-line);border-radius:50%;box-shadow:0 0 16px var(--weapon-aura)}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .forest-weapon-fx{animation:weapon-fx-lifetime 1.08s ease-out both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-trail-a{animation:weapon-slash .76s ease-out .18s both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-trail-b{animation:weapon-slash .76s ease-out .26s both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-trail-c{animation:weapon-slash .76s ease-out .34s both}
+.forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .weapon-fx-core{animation:weapon-pulse .8s ease-out .27s both}
+
+/* A true ultimate adds concentric, transparent energy rings instead of a
+   solid rectangle or a full-screen flash. The regular weapon motif remains. */
+.forest-weapon-fx::before,.forest-weapon-fx::after{
+ content:'';position:absolute;left:17%;top:9%;width:66%;height:78%;
+ border-radius:50%;pointer-events:none;opacity:0;box-sizing:border-box;
+}
+.forest-world-stage.forest-attack[data-weapon-ultimate="true"] .forest-weapon-fx::before{
+ border:4px solid var(--weapon-line);box-shadow:0 0 24px var(--weapon-aura),inset 0 0 17px var(--weapon-aura);
+ animation:weapon-ultimate-halo 1.08s ease-out .09s both;
+}
+.forest-world-stage.forest-attack[data-weapon-ultimate="true"] .forest-weapon-fx::after{
+ left:27%;top:22%;width:46%;height:53%;border:2px dashed var(--weapon-light);
+ animation:weapon-ultimate-inner .94s ease-out .16s both;
+}
+.forest-world-stage.forest-attack[data-weapon-ultimate="true"] .weapon-fx-trail,
+.forest-world-stage.forest-attack[data-weapon-ultimate="true"] .weapon-fx-core{
+ filter:drop-shadow(0 0 15px var(--weapon-light));
+}
+
+/* Rarity is a SILHOUETTE, not just a hue: common keeps its clean strike,
+   rare flashes a small star, epic draws an orbit, and legend earns a crest.
+   These are transparent details inside the existing clipped, non-clickable
+   stage FX; they cannot conceal the English question or the damage HUD. */
+.weapon-fx-glint,.weapon-fx-orbit,.weapon-fx-crest,.weapon-fx-resonance{
+ position:absolute;box-sizing:border-box;display:block;pointer-events:none;
+ opacity:0;left:50%;top:49%;transform:translate(-50%,-50%);
+ filter:drop-shadow(0 0 5px var(--weapon-aura));
+}
+.weapon-fx-glint{
+ width:42px;height:42px;background:var(--weapon-light);
+ clip-path:polygon(50% 0,57% 41%,100% 50%,57% 59%,50% 100%,43% 59%,0 50%,43% 41%);
+}
+.weapon-fx-orbit{
+ width:94px;height:78px;border:2px dashed var(--weapon-line);border-radius:50%;
+ box-shadow:0 0 12px var(--weapon-aura),inset 0 0 7px var(--weapon-aura);
+}
+.weapon-fx-crest{
+ width:67px;height:67px;background:var(--weapon-light);
+ clip-path:polygon(50% 0,58% 34%,85% 15%,66% 42%,100% 50%,66% 58%,85% 85%,58% 66%,50% 100%,42% 66%,15% 85%,34% 58%,0 50%,34% 42%,15% 15%,42% 34%);
+}
+.weapon-fx-resonance{
+ width:38px;height:38px;border:2px solid var(--weapon-light);border-radius:50%;
+ box-shadow:0 0 9px var(--weapon-aura);
+}
+#forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]):is([data-weapon-rarity="rare"],[data-weapon-rarity="epic"],[data-weapon-rarity="legend"]) .weapon-fx-glint{
+ animation:weapon-tier-glint 1.08s ease-out .13s both;
+}
+#forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]):is([data-weapon-rarity="epic"],[data-weapon-rarity="legend"]) .weapon-fx-orbit{
+ animation:weapon-tier-orbit 1.08s ease-out .09s both;
+}
+#forest-world-stage.forest-attack[data-weapon-rarity="legend"]:not([data-weapon-shape="unarmed"]) .weapon-fx-crest{
+ animation:weapon-tier-crest 1.08s ease-out .2s both;
+}
+#forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]):is([data-weapon-rank="1"],[data-weapon-rank="2"],[data-weapon-rank="3"]) .weapon-fx-resonance{
+ animation:weapon-resonance-echo 1.08s ease-out .25s both;
+}
+#forest-world-stage[data-weapon-rank="2"] .weapon-fx-resonance{
+ width:49px;height:49px;border-style:dotted;border-width:3px;
+}
+#forest-world-stage[data-weapon-rank="3"] .weapon-fx-resonance{
+ width:59px;height:59px;border-style:double;border-width:5px;
+ box-shadow:0 0 16px var(--weapon-aura),inset 0 0 10px var(--weapon-aura);
+}
+
+/* A legendary weapon remains alive between turns. The quiet orbit sits behind
+   the ally sprite, preserving each companion's original breathing animation
+   and leaving the chain aura (::before) untouched. No rare-tier imitation. */
+#play-view.scene-battle #forest-world-stage[data-weapon-rarity="legend"]:not(.forest-attack):not(.forest-player-damaged):not([data-cinematic="victory"]) .forest-party::after{
+ content:'';position:absolute;z-index:1;inset:-9%;border:1.5px dashed #ffe3a5;
+ border-radius:50%;pointer-events:none;opacity:.55;
+ box-shadow:0 0 10px #f9c97266,inset 0 0 9px #f9c97233;
+ animation:weapon-legend-idle-orbit 5.6s linear infinite;
+}
+#forest-world-stage[data-weapon-rarity="legend"][data-weapon-motion="shoot"] .forest-party::after,
+#forest-world-stage[data-weapon-rarity="legend"][data-weapon-motion="thrust"] .forest-party::after{
+ border-style:solid dashed;border-radius:50% 14%;animation-duration:4.8s;
+}
+#forest-world-stage[data-weapon-rarity="legend"]:is([data-weapon-motion="channel"],[data-weapon-motion="pulse"]) .forest-party::after{
+ border-style:dotted;border-width:3px;animation-duration:6.4s;
+}
+#forest-world-stage[data-weapon-rarity="legend"]:is([data-weapon-motion="brace"],[data-weapon-motion="crush"]) .forest-party::after{
+ border-style:double;border-width:3px;border-radius:22%;animation-duration:7.2s;
+}
+#forest-world-stage[data-weapon-rarity="legend"][data-weapon-rank="3"] .forest-party::after{
+ box-shadow:0 0 15px #ffe6a08c,inset 0 0 14px #fff1c15e;
+}
+@keyframes weapon-legend-idle-orbit{
+ 0%{transform:rotate(0deg) scale(.94);opacity:.32}
+ 50%{transform:rotate(180deg) scale(1.04);opacity:.62}
+ 100%{transform:rotate(360deg) scale(.94);opacity:.32}
+}
+
+/* Signature finishers share a safe footprint but NOT a common shape.
+   Sixteen distinct marks keep the weapon identity even at ultimate scale.
+   Every mark is translucent and clipped inside the existing scenic strip. */
+.weapon-fx-finisher-mark{
+ position:absolute;display:block;left:50%;top:48%;width:71%;height:77%;
+ pointer-events:none;opacity:0;box-sizing:border-box;
+ transform:translate(-50%,-50%) scale(.3);
+ filter:drop-shadow(0 0 8px var(--weapon-aura));
+}
+#forest-world-stage.forest-attack[data-weapon-ultimate="true"]:not([data-weapon-shape="unarmed"]) .weapon-fx-finisher-mark{
+ animation:weapon-finisher-signature 1.08s cubic-bezier(.12,.7,.3,1) .13s both;
+}
+[data-weapon-shape="sword"] .weapon-fx-finisher-mark{
+ background:linear-gradient(46deg,transparent 46%,var(--weapon-light) 48% 51%,transparent 53%),linear-gradient(-46deg,transparent 46%,var(--weapon-line) 48% 51%,transparent 53%);
+}
+[data-weapon-shape="dagger"] .weapon-fx-finisher-mark{
+ background:repeating-linear-gradient(117deg,transparent 0 17%,var(--weapon-light) 19% 21%,transparent 23% 31%);
+ clip-path:polygon(15% 0,75% 0,100% 65%,35% 100%);
+}
+[data-weapon-shape="spear"] .weapon-fx-finisher-mark{
+ background:linear-gradient(90deg,transparent 0 43%,var(--weapon-light) 44% 56%,transparent 57%);
+ clip-path:polygon(50% 0,87% 43%,60% 43%,60% 100%,40% 100%,40% 43%,13% 43%);
+}
+[data-weapon-shape="staff"] .weapon-fx-finisher-mark{
+ border:3px dotted var(--weapon-line);border-radius:50%;
+ background:radial-gradient(circle,transparent 0 24%,var(--weapon-light) 25% 27%,transparent 28%);
+}
+[data-weapon-shape="bow"] .weapon-fx-finisher-mark{
+ border-left:5px double var(--weapon-light);border-right:2px solid var(--weapon-line);
+ border-radius:50%;background:linear-gradient(0deg,transparent 49%,var(--weapon-light) 50% 52%,transparent 53%);
+}
+[data-weapon-shape="hammer"] .weapon-fx-finisher-mark{
+ background:linear-gradient(0deg,transparent 69%,var(--weapon-light) 70% 78%,transparent 79%),linear-gradient(90deg,transparent 46%,var(--weapon-line) 47% 54%,transparent 55%);
+ clip-path:polygon(18% 5%,82% 5%,82% 87%,60% 100%,40% 100%,18% 87%);
+}
+[data-weapon-shape="axe"] .weapon-fx-finisher-mark{
+ background:linear-gradient(145deg,transparent 34%,var(--weapon-light) 35% 43%,transparent 44%),linear-gradient(25deg,transparent 54%,var(--weapon-line) 55% 62%,transparent 63%);
+ clip-path:polygon(2% 25%,83% 0,99% 45%,75% 100%,0 73%);
+}
+[data-weapon-shape="scythe"] .weapon-fx-finisher-mark{
+ border-top:6px solid var(--weapon-light);border-right:4px solid var(--weapon-line);
+ border-radius:50%;transform-origin:50% 50%;
+}
+[data-weapon-shape="crossbow"] .weapon-fx-finisher-mark{
+ border:2px solid var(--weapon-line);border-radius:50%;
+ background:linear-gradient(0deg,transparent 47%,var(--weapon-light) 48% 52%,transparent 53%),linear-gradient(90deg,transparent 47%,var(--weapon-light) 48% 52%,transparent 53%);
+}
+[data-weapon-shape="claw"] .weapon-fx-finisher-mark{
+ background:repeating-linear-gradient(145deg,transparent 0 12%,var(--weapon-light) 13% 17%,transparent 18% 30%);
+ clip-path:polygon(0 0,100% 14%,91% 100%,16% 88%);
+}
+[data-weapon-shape="shield"] .weapon-fx-finisher-mark{
+ border:4px double var(--weapon-line);border-radius:34% 34% 49% 49%;
+ background:radial-gradient(ellipse,transparent 0 40%,var(--weapon-light) 42% 44%,transparent 46%);
+ clip-path:polygon(12% 5%,88% 5%,88% 61%,50% 100%,12% 61%);
+}
+[data-weapon-shape="whip"] .weapon-fx-finisher-mark{
+ border-top:4px dashed var(--weapon-light);border-left:3px solid var(--weapon-line);
+ border-radius:70% 15% 65% 32%;
+}
+[data-weapon-shape="fan"] .weapon-fx-finisher-mark{
+ background:repeating-conic-gradient(from 210deg at 50% 90%,var(--weapon-light) 0deg 4deg,transparent 5deg 29deg);
+ clip-path:polygon(50% 95%,0 22%,15% 6%,85% 6%,100% 22%);
+}
+[data-weapon-shape="flute"] .weapon-fx-finisher-mark{
+ background:repeating-radial-gradient(circle at 15% 52%,transparent 0 15px,var(--weapon-line) 16px 18px,transparent 19px 27px);
+ clip-path:ellipse(49% 48% at 50% 50%);
+}
+[data-weapon-shape="lantern"] .weapon-fx-finisher-mark{
+ width:53%;height:68%;border:4px solid var(--weapon-line);border-radius:13%;
+ background:linear-gradient(45deg,transparent 45%,var(--weapon-light) 47% 52%,transparent 54%);
+}
+[data-weapon-shape="ring"] .weapon-fx-finisher-mark{
+ border:6px double var(--weapon-light);border-radius:50%;
+ box-shadow:0 0 13px var(--weapon-aura),inset 0 0 12px var(--weapon-aura);
+}
+@keyframes weapon-finisher-signature{
+ 0%,13%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-28deg)}
+ 46%{opacity:.78;transform:translate(-50%,-50%) scale(1.04) rotate(9deg)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.48) rotate(33deg)}
+}
+@keyframes weapon-tier-glint{
+ 0%,12%{opacity:0;scale:.15}36%{opacity:.86;scale:.9}62%{opacity:.62;scale:1.2}100%{opacity:0;scale:1.6}
+}
+@keyframes weapon-tier-orbit{
+ 0%{opacity:0;scale:.3;rotate:-50deg}28%,64%{opacity:.72;scale:1;rotate:12deg}100%{opacity:0;scale:1.26;rotate:68deg}
+}
+@keyframes weapon-tier-crest{
+ 0%,14%{opacity:0;scale:.1;rotate:-25deg}47%{opacity:.83;scale:1;rotate:12deg}100%{opacity:0;scale:1.55;rotate:45deg}
+}
+@keyframes weapon-resonance-echo{
+ 0%,15%{opacity:0;scale:.35}48%{opacity:.79;scale:1}100%{opacity:0;scale:1.7}
+}
+
+/* The old universal diagonal flash covered the foe, even for staffs and bows.
+   Its cinematic callout, exact damage number and enemy reactions remain. */
+#play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"])::before,
+#play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"])::after{animation:none!important;opacity:0!important}
+#play-view.scene-battle #forest-world-stage.forest-attack:not([data-weapon-shape="unarmed"]) .cinematic-strike{animation:none!important;opacity:0!important}
+
+/* Nine movement families. They override monster-specific attacks only while
+   a weapon is equipped; an unarmed monster keeps its original personality. */
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="sweep"] .forest-party{animation:weapon-sweep-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="flurry"] .forest-party{animation:weapon-flurry-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="crush"] .forest-party{animation:weapon-crush-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="thrust"] .forest-party{animation:weapon-thrust-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="shoot"] .forest-party{animation:weapon-shoot-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="channel"] .forest-party{animation:weapon-channel-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="pulse"] .forest-party{animation:weapon-pulse-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="brace"] .forest-party{animation:weapon-brace-step 1.08s ease-out both!important}
+#play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-motion="lash"] .forest-party{animation:weapon-lash-step 1.08s ease-out both!important}
+
+/* Swords, daggers, axes and claws each leave different cut patterns. */
+[data-weapon-shape="sword"] .weapon-fx-trail-a{transform:rotate(-38deg)}
+[data-weapon-shape="sword"] .weapon-fx-trail-b{transform:rotate(35deg)}
+[data-weapon-shape="sword"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="dagger"] .weapon-fx-trail{height:3px;width:55%;left:30%;transform:rotate(-51deg)}
+[data-weapon-shape="dagger"] .weapon-fx-trail-b{left:19%;top:49%;transform:rotate(48deg)}
+[data-weapon-shape="dagger"] .weapon-fx-trail-c{left:39%;top:64%;transform:rotate(-53deg)}
+[data-weapon-shape="axe"] .weapon-fx-trail-a{width:84%;height:11px;transform:rotate(-68deg);top:42%}
+[data-weapon-shape="axe"] .weapon-fx-trail-b{width:55%;height:7px;top:66%;transform:rotate(-11deg)}
+[data-weapon-shape="axe"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="claw"] .weapon-fx-trail{width:62%;height:3px;left:25%;transform:rotate(-51deg)}
+[data-weapon-shape="claw"] .weapon-fx-trail-a{top:36%}
+[data-weapon-shape="claw"] .weapon-fx-trail-b{top:51%}
+[data-weapon-shape="claw"] .weapon-fx-trail-c{top:66%}
+
+/* Projectile heads are small bright diamonds. Nothing opaque covers the foe. */
+[data-weapon-shape="spear"] .weapon-fx-trail-a,
+[data-weapon-shape="bow"] .weapon-fx-trail-a,
+[data-weapon-shape="crossbow"] .weapon-fx-trail-a{top:46%;height:3px;width:80%;left:2%}
+[data-weapon-shape="spear"] .weapon-fx-trail-b{height:2px;width:72%;top:53%;left:3%}
+[data-weapon-shape="spear"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="bow"] .weapon-fx-trail-b{height:2px;width:47%;top:53%;left:5%;transform:rotate(-10deg)}
+[data-weapon-shape="bow"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="crossbow"] .weapon-fx-trail-b{height:3px;width:75%;top:60%;left:2%}
+[data-weapon-shape="crossbow"] .weapon-fx-trail-c{width:58%;height:2px;left:4%;top:53%}
+[data-weapon-shape="spear"] .weapon-fx-core,
+[data-weapon-shape="bow"] .weapon-fx-core,
+[data-weapon-shape="crossbow"] .weapon-fx-core{left:73%;top:39%;width:21px;height:19px;border:0;border-radius:0;background:var(--weapon-light);clip-path:polygon(0 35%,64% 35%,64% 0,100% 50%,64% 100%,64% 65%,0 65%)}
+
+/* Heavy blows shake the floor; scythes and whips use curved trajectories. */
+[data-weapon-shape="hammer"] .weapon-fx-trail-a{width:9px;height:69%;top:4%;left:65%;background:var(--weapon-line)}
+[data-weapon-shape="hammer"] .weapon-fx-trail-b{width:78%;height:5px;left:11%;top:75%}
+[data-weapon-shape="hammer"] .weapon-fx-trail-c{width:49%;height:3px;left:26%;top:86%}
+[data-weapon-shape="scythe"] .weapon-fx-trail-a,
+[data-weapon-shape="whip"] .weapon-fx-trail-a{width:78%;height:75%;left:13%;top:8%;border:5px solid var(--weapon-line);border-left-color:transparent;border-bottom-color:transparent;border-radius:50%;background:none;transform:rotate(-23deg)}
+[data-weapon-shape="scythe"] .weapon-fx-trail-b{width:48%;height:3px;left:35%;top:75%;transform:rotate(-42deg)}
+[data-weapon-shape="scythe"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="whip"] .weapon-fx-trail-a{border-width:3px;transform:rotate(31deg)}
+[data-weapon-shape="whip"] .weapon-fx-trail-b{width:53%;height:2px;left:17%;top:67%;transform:rotate(23deg)}
+[data-weapon-shape="whip"] .weapon-fx-trail-c{display:none}
+
+/* Casting and support instruments use thin halos, wind or sound. */
+[data-weapon-shape="staff"] .weapon-fx-trail-a,
+[data-weapon-shape="lantern"] .weapon-fx-trail-a,
+[data-weapon-shape="ring"] .weapon-fx-trail-a,
+[data-weapon-shape="flute"] .weapon-fx-trail-a{left:26%;top:19%;width:54%;height:57%;border:3px solid var(--weapon-line);border-radius:50%;background:none}
+[data-weapon-shape="staff"] .weapon-fx-trail-b{left:36%;top:29%;width:33%;height:37%;border:2px dashed var(--weapon-light);border-radius:50%;background:none}
+[data-weapon-shape="staff"] .weapon-fx-trail-c{width:76%;top:47%;left:14%;height:2px}
+[data-weapon-shape="lantern"] .weapon-fx-trail-a{border-style:dotted;transform:scale(.93)}
+[data-weapon-shape="lantern"] .weapon-fx-trail-b{left:43%;top:8%;width:4px;height:80%;background:var(--weapon-line)}
+[data-weapon-shape="lantern"] .weapon-fx-trail-c{left:18%;top:47%;width:69%;height:3px}
+[data-weapon-shape="shield"] .weapon-fx-trail-a{left:27%;top:12%;width:50%;height:72%;border:4px solid var(--weapon-line);border-radius:42% 42% 48% 48%;background:linear-gradient(120deg,transparent,#e9ffff12)}
+[data-weapon-shape="shield"] .weapon-fx-trail-b{left:40%;top:25%;width:24%;height:43%;border:2px solid var(--weapon-light);border-radius:45%;background:none}
+[data-weapon-shape="shield"] .weapon-fx-trail-c{display:none}
+[data-weapon-shape="flute"] .weapon-fx-trail-a{border-left-color:transparent;border-bottom-color:transparent}
+[data-weapon-shape="flute"] .weapon-fx-trail-b{left:34%;top:29%;width:38%;height:38%;border:3px solid var(--weapon-line);border-left-color:transparent;border-radius:50%;background:none}
+[data-weapon-shape="flute"] .weapon-fx-trail-c{left:40%;top:35%;width:25%;height:25%;border:2px solid var(--weapon-light);border-left-color:transparent;border-radius:50%;background:none}
+[data-weapon-shape="fan"] .weapon-fx-trail{left:15%;top:49%;width:72%;height:3px;transform-origin:10% 50%}
+[data-weapon-shape="fan"] .weapon-fx-trail-a{transform:rotate(-43deg)}
+[data-weapon-shape="fan"] .weapon-fx-trail-b{transform:rotate(-12deg)}
+[data-weapon-shape="fan"] .weapon-fx-trail-c{transform:rotate(29deg)}
+[data-weapon-shape="ring"] .weapon-fx-trail-a{border-width:4px;transform:rotate(-26deg)}
+[data-weapon-shape="ring"] .weapon-fx-trail-b{left:37%;top:30%;width:31%;height:36%;border:3px solid var(--weapon-light);border-radius:50%;background:none;transform:rotate(31deg)}
+[data-weapon-shape="ring"] .weapon-fx-trail-c{display:none}
+
+@keyframes weapon-fx-lifetime{0%,15%{opacity:0}25%,68%{opacity:1}100%{opacity:0}}
+@keyframes weapon-slash{0%{opacity:0;scale:.26}30%{opacity:.95;scale:1.08}65%{opacity:1;scale:1}100%{opacity:0;scale:1.25}}
+@keyframes weapon-pulse{0%{opacity:0;scale:.2}38%{opacity:.9;scale:1.12}100%{opacity:0;scale:1.55}}
+@keyframes weapon-ultimate-halo{0%{opacity:0;scale:.36;rotate:-30deg}32%,58%{opacity:.85;scale:1;rotate:8deg}100%{opacity:0;scale:1.35;rotate:28deg}}
+@keyframes weapon-ultimate-inner{0%{opacity:0;scale:.5;rotate:40deg}40%{opacity:.9;scale:1.02;rotate:-20deg}100%{opacity:0;scale:1.26;rotate:-65deg}}
+@keyframes weapon-sweep-step{0%,100%{transform:translate(-50%,9%) rotate(0)}22%{transform:translate(-70%,3%) rotate(-12deg)}52%{transform:translate(84%,-8%) rotate(18deg)}75%{transform:translate(22%,-4%) rotate(-6deg)}}
+@keyframes weapon-flurry-step{0%,100%{transform:translate(-50%,9%)}27%{transform:translate(34%,-11%) scale(.94)}42%{transform:translate(93%,-11%) scale(1.12)}53%{transform:translate(68%,3%) scale(.96)}68%{transform:translate(105%,-8%) scale(1.1)}}
+@keyframes weapon-crush-step{0%,100%{transform:translate(-50%,9%) scale(1)}29%{transform:translate(-48%,-24%) scale(.9,1.15)}53%{transform:translate(62%,17%) scale(1.22,.82)}69%{transform:translate(45%,5%) scale(1)}}
+@keyframes weapon-thrust-step{0%,100%{transform:translate(-50%,9%)}32%{transform:translate(-58%,9%) scale(.94)}47%{transform:translate(106%,-3%) scale(1.08,.96)}63%{transform:translate(35%,3%)}}
+@keyframes weapon-shoot-step{0%,100%{transform:translate(-50%,9%) rotate(0)}28%{transform:translate(-60%,10%) rotate(-8deg)}47%{transform:translate(-32%,5%) rotate(6deg)}68%{transform:translate(-50%,9%)}}
+@keyframes weapon-channel-step{0%,100%{transform:translate(-50%,9%) scale(1)}30%{transform:translate(-50%,-18%) scale(1.06)}55%{transform:translate(-50%,-11%) scale(1.14)}73%{transform:translate(-50%,-4%)}}
+@keyframes weapon-pulse-step{0%,100%{transform:translate(-50%,9%) scale(1)}30%{transform:translate(-50%,2%) scale(.93,1.1)}52%{transform:translate(-50%,-8%) scale(1.1)}72%{transform:translate(-50%,5%)}}
+@keyframes weapon-brace-step{0%,100%{transform:translate(-50%,9%) scale(1)}33%{transform:translate(-35%,17%) scale(1.1,.86)}55%{transform:translate(14%,7%) scale(1.14)}74%{transform:translate(-35%,9%)}}
+@keyframes weapon-lash-step{0%,100%{transform:translate(-50%,9%) rotate(0)}27%{transform:translate(-55%,4%) rotate(-18deg)}52%{transform:translate(-4%,0) rotate(17deg)}70%{transform:translate(-25%,9%) rotate(-9deg)}}
+@media(prefers-reduced-motion:reduce){
+ .forest-weapon-fx{display:none!important}
+ #play-view.scene-battle #forest-world-stage.forest-attack[data-weapon-shape] .forest-party{animation:none!important}
+ #play-view.scene-battle #forest-world-stage .forest-party::after{animation:none!important;opacity:0!important}
+}
+html.monsters-quiet-motion .forest-weapon-fx{display:none!important}
+html.monsters-quiet-motion #play-view.scene-battle #forest-world-stage .forest-party::after{animation:none!important;opacity:0!important}
