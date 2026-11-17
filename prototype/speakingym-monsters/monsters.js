@@ -329,6 +329,23 @@ function queueForestEncounter(){
     if($('#play-view').classList.contains('forest-exploring')&&$('#forest-explore-options').hidden)renderQuestion();
   },1050);
 }
+// Safari may suspend a page through either visibilitychange or pagehide (BFCache).
+// Both paths must preserve the same pending transition, without reviving a
+// cancelled encounter or automatically starting the player's opening map.
+function suspendForestAutoAdvance(){
+  const pending=autoAdvanceTimer!==null&&play?.mode==='forest'
+    ?{session:play,index:play.index}:suspendedForestAdvance;
+  cancelAutoAdvance();
+  if(pending)suspendedForestAdvance=pending;
+}
+function resumeForestAutoAdvance(){
+  if(document.hidden||!suspendedForestAdvance)return;
+  const pending=suspendedForestAdvance;
+  suspendedForestAdvance=null;
+  if(play===pending.session&&play?.index===pending.index&&
+    !$('#play-view').hidden&&$('#play-view').classList.contains('forest-exploring'))
+    queueForestEncounter();
+}
 
 function loadSave() {
   try{
@@ -3710,8 +3727,9 @@ window.addEventListener('storage',event=>{
   syncUnreadableSaveUI();
 });
 window.addEventListener('pagehide',()=>{
-  cancelAutoAdvance();cancelPendingSpeech();pauseInterruptedListening();
+  suspendForestAutoAdvance();cancelPendingSpeech();pauseInterruptedListening();
 });
+window.addEventListener('pageshow',resumeForestAutoAdvance);
 $('#battle-sound-toggle').addEventListener('click',()=>{
   const button=$('#battle-sound-toggle');
   const enabled=battleSounds.setEnabled(!battleSounds.isEnabled());
@@ -3721,21 +3739,10 @@ $('#battle-sound-toggle').addEventListener('click',()=>{
 });
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
-    // Keep only the intended automatic transition. An opening map or a
-    // player-selected party must never auto-start when Safari is reopened.
-    const pending=autoAdvanceTimer!==null&&play?.mode==='forest'
-      ?{session:play,index:play.index}:suspendedForestAdvance;
-    cancelAutoAdvance();
-    if(pending)suspendedForestAdvance=pending;
+    suspendForestAutoAdvance();
     cancelPendingSpeech();
     pauseInterruptedListening();
-  }else if(suspendedForestAdvance){
-    const pending=suspendedForestAdvance;
-    suspendedForestAdvance=null;
-    if(play===pending.session&&play?.index===pending.index&&
-      !$('#play-view').hidden&&$('#play-view').classList.contains('forest-exploring'))
-      queueForestEncounter();
-  }
+  }else resumeForestAutoAdvance();
 });
 renderHome();
 if(gachaTestMode&&!unreadableSaveStatus)openForge();
