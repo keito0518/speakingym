@@ -1749,6 +1749,17 @@ const path=require('node:path');
             document.dispatchEvent(new Event('visibilitychange'));
           });
           await forestPage.locator('#forest-journey').waitFor({state:'visible',timeout:3500});
+        }else if(mob===5&&width===430){
+          // iPhone Safari can use pagehide/pageshow instead of only
+          // visibilitychange when restoring an adventure from BFCache.
+          await forestPage.evaluate(()=>window.dispatchEvent(
+            new PageTransitionEvent('pagehide',{persisted:true})));
+          await forestPage.waitForTimeout(1250);
+          assert.equal(await forestPage.locator('#forest-explore-screen').isVisible(),true,
+            'A BFCache pagehide must suspend, not lose or execute, the pending boss encounter');
+          await forestPage.evaluate(()=>window.dispatchEvent(
+            new PageTransitionEvent('pageshow',{persisted:true})));
+          await forestPage.locator('#forest-journey').waitFor({state:'visible',timeout:3500});
         }else if(await forestPage.locator('#forest-explore-screen').isVisible()){
           await forestPage.locator('#forest-explore-continue').click();
         }
